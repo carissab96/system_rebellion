@@ -1,0 +1,144 @@
+/* CharacterIcons.css - Styling for character icons and avatar selector */
+
+.character-icon {
+  width: 100%;
+  height: 100%;
+  transition: transform 0.3s ease, filter 0.3s ease;
+}
+
+.character-icon:hover {
+  transform: scale(1.1);
+  filter: drop-shadow(0 0 8px rgba(0, 245, 212, 0.7));
+}
+
+/* Avatar selector styling */
+.character-avatar-selector {
+  padding: 1rem;
+  background: linear-gradient(135deg, rgba(26, 4, 88, 0.8) 0%, rgba(36, 43, 66, 0.8) 100%);
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+}
+
+.character-avatar-selector h3 {
+  color: #00f5d4;
+  text-align: center;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  text-shadow: 0 0 10px rgba(0, 245, 212, 0.5);
+}
+
+.avatar-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.avatar-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.75rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background-color: rgba(0, 0, 0, 0.2);
+  border: 2px solid transparent;
+}
+
+.avatar-option:hover {
+  background-color: rgba(0, 0, 0, 0.3);
+  transform: translateY(-5px);
+}
+
+.avatar-option.selected {
+  border-color: #00f5d4;
+  background: linear-gradient(135deg, rgba(0, 245, 212, 0.1) 0%, rgba(51, 51, 255, 0.1) 100%);
+  box-shadow: 0 0 15px rgba(0, 245, 212, 0.5);
+}
+
+.avatar-option .character-icon {
+  width: 60px;
+  height: 60px;
+  margin-bottom: 0.5rem;
+}
+
+.avatar-name {
+  font-size: 0.8rem;
+  color: #ffffff;
+  text-align: center;
+  font-weight: 500;
+}
+
+/* Navbar avatar styling */
+.navbar-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid rgba(0, 245, 212, 0.5);
+  background: linear-gradient(135deg, #1a0458 0%, #242b42 100%);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.navbar-avatar:hover {
+  border-color: #00f5d4;
+  box-shadow: 0 0 15px rgba(0, 245, 212, 0.7);
+  transform: scale(1.05);
+}
+
+.navbar-avatar .character-icon {
+  width: 35px;
+  height: 35px;
+  padding: 0;
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Animations for character icons */
+@keyframes float {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+  100% { transform: translateY(0); }
+}
+
+/* Dropdown avatar styling */
+.dropdown-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid rgba(0, 245, 212, 0.5);
+  background: linear-gradient(135deg, #1a0458 0%, #242b42 100%);
+  margin-right: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dropdown-avatar .character-icon {
+  width: 45px;
+  height: 45px;
+}
+
+.floating-icon {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .avatar-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .avatar-grid {
+    grid-template-columns: 1fr;
+  }
+}

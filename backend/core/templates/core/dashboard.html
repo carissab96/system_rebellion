@@ -1,0 +1,546 @@
+<!-- core/templates/core/dashboard.html -->
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'core/css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'core/css/modals.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+{% endblock %}
+
+{% block extra_js %}
+<!-- Sir Hawkington's Note: No JavaScript here - we use the React/TypeScript frontend instead -->
+{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <!-- Dashboard Header -->
+    <div class="dashboard-header">
+        <h2 class="dashboard-title">
+            <i class="fas fa-tachometer-alt icon"></i>
+            System Optimizer Dashboard
+            <span id="connection-status" class="connection-status status-connecting">Connecting...</span>
+        </h2>
+        <div class="dashboard-actions">
+            {% if user.is_authenticated %}
+            <button id="logout-button" class="dashboard-button secondary">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+            {% else %}
+            <button id="login-button" class="dashboard-button secondary">
+                <i class="fas fa-sign-in-alt"></i> Login
+            </button>
+            <button id="signup-button" class="dashboard-button primary">
+                <i class="fas fa-user-plus"></i> Sign Up
+            </button>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Real-time Metrics Section -->
+    <div class="section">
+        <div class="section-header">
+            <h3 class="section-title">Real-time System Metrics</h3>
+            <div>
+                <span class="metric-time" id="last-update-time">Waiting for data...</span>
+            </div>
+        </div>
+        
+        <!-- Latest Metrics Card -->
+        <div class="metrics-row">
+            <div id="latest-metrics">
+                <div class="metric-card latest">
+                    <div class="metric-header">
+                        <h4>Latest Metrics</h4>
+                        <span class="metric-time">Waiting for data...</span>
+                    </div>
+                    <div class="metric-values">
+                        <div class="metric-value">
+                            <span class="metric-label">CPU:</span>
+                            <span class="metric-number">0.0%</span>
+                            <div class="metric-bar">
+                                <div class="metric-bar-fill" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="metric-value">
+                            <span class="metric-label">Memory:</span>
+                            <span class="metric-number">0.0%</span>
+                            <div class="metric-bar">
+                                <div class="metric-bar-fill" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="metric-value">
+                            <span class="metric-label">Disk:</span>
+                            <span class="metric-number">0.0%</span>
+                            <div class="metric-bar">
+                                <div class="metric-bar-fill" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Charts Section -->
+        <div class="section-header">
+            <h3 class="section-title">Performance Trends</h3>
+        </div>
+        <div class="charts-container">
+            <div class="chart-card">
+                <canvas id="cpu-chart"></canvas>
+            </div>
+            <div class="chart-card">
+                <canvas id="memory-chart"></canvas>
+            </div>
+            <div class="chart-card">
+                <canvas id="disk-chart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Metrics History -->
+        <div class="section-header">
+            <h3 class="section-title">Metrics History</h3>
+        </div>
+        <div id="metrics-history" class="metrics-row">
+            <!-- Metrics history will be populated by JavaScript -->
+        </div>
+    </div>
+
+    <!-- Optimization Controls Section -->
+    <div class="section">
+        <div class="section-header">
+            <h3 class="section-title">Optimization Controls</h3>
+        </div>
+        <div class="optimization-controls">
+            <button class="optimization-control" data-control="cpu">
+                <i class="fas fa-microchip control-icon"></i>
+                <div class="control-title">CPU Optimization</div>
+                <div class="control-description">Tune CPU performance and power settings</div>
+            </button>
+            
+            <button class="optimization-control" data-control="memory">
+                <i class="fas fa-memory control-icon"></i>
+                <div class="control-title">Memory Management</div>
+                <div class="control-description">Optimize memory allocation and caching</div>
+            </button>
+            
+            <button class="optimization-control" data-control="disk">
+                <i class="fas fa-hdd control-icon"></i>
+                <div class="control-title">Disk Optimization</div>
+                <div class="control-description">Improve disk I/O and storage efficiency</div>
+            </button>
+            
+            <button class="optimization-control" data-control="network">
+                <i class="fas fa-network-wired control-icon"></i>
+                <div class="control-title">Network Tuning</div>
+                <div class="control-description">Enhance network throughput and latency</div>
+            </button>
+        </div>
+    </div>
+
+    <!-- Optimization Profiles Section -->
+    <div class="section">
+        <div class="section-header">
+            <h3 class="section-title">Your Optimization Profiles</h3>
+            <button class="dashboard-button secondary" id="create-profile-button">
+                <i class="fas fa-plus"></i> New Profile
+            </button>
+        </div>
+        <div class="profiles-container">
+            {% for profile in profiles %}
+            <div class="profile-card">
+                <div class="profile-header">
+                    <h4>{{ profile.name }}</h4>
+                    <div class="profile-actions">
+                        <button class="profile-action edit" data-profile-id="{{ profile.id }}">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="profile-action delete" data-profile-id="{{ profile.id }}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                <p>{{ profile.description }}</p>
+                <div class="profile-settings">
+                    <pre>{{ profile.settings|pprint }}</pre>
+                </div>
+                <button class="dashboard-button primary apply-profile" data-profile-id="{{ profile.id }}">
+                    Apply Profile
+                </button>
+            </div>
+            {% empty %}
+            <div class="empty-state">
+                <i class="fas fa-folder-open empty-icon"></i>
+                <p>No optimization profiles yet. Create one to get started!</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Recommendations Section -->
+    {% if recommendations %}
+    <div class="section recommendations-section">
+        <div class="section-header">
+            <h3 class="section-title">System Optimization Recommendations</h3>
+        </div>
+        <div class="summary-card">
+            <div class="summary-stats">
+                <div class="stat">
+                    <span class="label">Total Potential Improvement</span>
+                    <span class="value">{{ recommendations.potential_improvement }}</span>
+                </div>
+                <div class="stat">
+                    <span class="label">High Priority Issues</span>
+                    <span class="value">{{ recommendations.high_priority }}</span>
+                </div>
+                <div class="stat">
+                    <span class="label">Medium Priority Issues</span>
+                    <span class="value">{{ recommendations.medium_priority }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="recommendations-grid">
+            {% for rec in recommendations.recommendations %}
+            <div class="recommendation-card {{ rec.severity }}">
+                <div class="card-header">
+                    <h4>{{ rec.title }}</h4>
+                    <span class="severity-badge {{ rec.severity }}">{{ rec.severity|title }}</span>
+                </div>
+                <p>{{ rec.description }}</p>
+                <p class="suggestion">{{ rec.suggestion }}</p>
+                {% if rec.potential_gain %}
+                <div class="gain-indicator">
+                    <i class="fas fa-arrow-up"></i> Potential Improvement: {{ rec.potential_gain }}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Recent Alerts Section -->
+    <div class="section">
+        <div class="section-header">
+            <h3 class="section-title">Recent Alerts</h3>
+        </div>
+        <div class="alerts-container">
+            {% for alert in alerts %}
+            <div class="alert-card alert-{{ alert.severity|lower }}">
+                <div class="alert-header">
+                    <h4>{{ alert.title }}</h4>
+                    <span class="alert-time">{{ alert.timestamp }}</span>
+                </div>
+                <p>{{ alert.message }}</p>
+            </div>
+            {% empty %}
+            <div class="empty-state">
+                <i class="fas fa-bell-slash empty-icon"></i>
+                <p>No recent alerts. All systems running smoothly!</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Authentication Modals -->
+<!-- Login Modal -->
+<div id="login-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Login</h3>
+            <button class="close-modal">&times;</button>
+        </div>
+        <div id="login-success" class="success-message"></div>
+        <div id="login-error" class="error-message"></div>
+        <form id="login-form" class="modal-form">
+            <div class="form-group">
+                <label for="login-username">Username</label>
+                <input type="text" id="login-username" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="login-password">Password</label>
+                <input type="password" id="login-password" class="form-control" required>
+            </div>
+            <button type="submit" class="form-submit">Login</button>
+        </form>
+        <p>Don't have an account? <a href="#" id="show-signup">Sign up</a></p>
+    </div>
+</div>
+
+<!-- Signup Modal -->
+<div id="signup-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Create Account</h3>
+            <button class="close-modal">&times;</button>
+        </div>
+        <div id="signup-error" class="error-message"></div>
+        <form id="signup-form" class="modal-form">
+            <div class="form-group">
+                <label for="signup-username">Username</label>
+                <input type="text" id="signup-username" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="signup-email">Email</label>
+                <input type="email" id="signup-email" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="signup-password">Password</label>
+                <input type="password" id="signup-password" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="signup-confirm-password">Confirm Password</label>
+                <input type="password" id="signup-confirm-password" class="form-control" required>
+            </div>
+            <button type="submit" class="form-submit">Create Account</button>
+        </form>
+        <p>Already have an account? <a href="#" id="show-login">Login</a></p>
+    </div>
+</div>
+
+<!-- Logout Confirmation Modal -->
+<div id="logout-confirm-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Confirm Logout</h3>
+            <button class="close-modal">&times;</button>
+        </div>
+        <p>Are you sure you want to log out?</p>
+        <div class="modal-actions">
+            <button id="logout-confirm-button" class="dashboard-button primary">Yes, Log Out</button>
+            <button class="close-modal dashboard-button secondary">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- Optimization Control Modals -->
+<!-- CPU Optimization Modal -->
+<div id="cpu-modal" class="modal optimization-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">CPU Optimization</h3>
+            <button class="close-modal">&times;</button>
+        </div>
+        <p>Adjust CPU performance and power settings to optimize your system.</p>
+        <form class="optimization-form">
+            <div class="form-group">
+                <label for="cpu-governor">CPU Governor</label>
+                <select id="cpu-governor" class="form-control">
+                    <option value="performance">Performance</option>
+                    <option value="powersave">Power Save</option>
+                    <option value="ondemand">On Demand</option>
+                    <option value="conservative">Conservative</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="cpu-max-freq">Max Frequency (%)</label>
+                <input type="range" id="cpu-max-freq" class="form-control" min="50" max="100" value="100">
+                <output for="cpu-max-freq">100%</output>
+            </div>
+            <div class="form-group">
+                <label for="cpu-priority">Process Priority</label>
+                <select id="cpu-priority" class="form-control">
+                    <option value="high">High</option>
+                    <option value="normal">Normal</option>
+                    <option value="low">Low</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="cpu-cores">Active Cores</label>
+                <select id="cpu-cores" class="form-control">
+                    <option value="all">All Cores</option>
+                    <option value="half">Half Cores</option>
+                    <option value="single">Single Core</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Optimization Profile</label>
+                <div class="profile-options">
+                    <label>
+                        <input type="radio" name="cpu-profile" value="performance"> Performance
+                    </label>
+                    <label>
+                        <input type="radio" name="cpu-profile" value="balanced" checked> Balanced
+                    </label>
+                    <label>
+                        <input type="radio" name="cpu-profile" value="powersave"> Power Save
+                    </label>
+                </div>
+            </div>
+        </form>
+        <div class="optimization-actions">
+            <button class="reset-button">Reset to Default</button>
+            <button class="apply-button">Apply Changes</button>
+        </div>
+    </div>
+</div>
+
+<!-- Memory Optimization Modal -->
+<div id="memory-modal" class="modal optimization-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Memory Management</h3>
+            <button class="close-modal">&times;</button>
+        </div>
+        <p>Configure memory allocation and caching settings for optimal performance.</p>
+        <form class="optimization-form">
+            <div class="form-group">
+                <label for="memory-swappiness">Swappiness</label>
+                <input type="range" id="memory-swappiness" class="form-control" min="0" max="100" value="60">
+                <output for="memory-swappiness">60</output>
+            </div>
+            <div class="form-group">
+                <label for="memory-cache">Cache Pressure</label>
+                <input type="range" id="memory-cache" class="form-control" min="0" max="100" value="50">
+                <output for="memory-cache">50</output>
+            </div>
+            <div class="form-group">
+                <label for="memory-dirty-ratio">Dirty Ratio (%)</label>
+                <input type="range" id="memory-dirty-ratio" class="form-control" min="1" max="50" value="20">
+                <output for="memory-dirty-ratio">20</output>
+            </div>
+            <div class="form-group">
+                <label for="memory-dirty-background-ratio">Dirty Background Ratio (%)</label>
+                <input type="range" id="memory-dirty-background-ratio" class="form-control" min="1" max="30" value="10">
+                <output for="memory-dirty-background-ratio">10</output>
+            </div>
+            <div class="form-group">
+                <label>Optimization Profile</label>
+                <div class="profile-options">
+                    <label>
+                        <input type="radio" name="memory-profile" value="performance"> Performance
+                    </label>
+                    <label>
+                        <input type="radio" name="memory-profile" value="balanced" checked> Balanced
+                    </label>
+                    <label>
+                        <input type="radio" name="memory-profile" value="conservative"> Conservative
+                    </label>
+                </div>
+            </div>
+        </form>
+        <div class="optimization-actions">
+            <button class="reset-button">Reset to Default</button>
+            <button class="apply-button">Apply Changes</button>
+        </div>
+    </div>
+</div>
+
+<!-- Disk Optimization Modal -->
+<div id="disk-modal" class="modal optimization-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Disk Optimization</h3>
+            <button class="close-modal">&times;</button>
+        </div>
+        <p>Tune disk I/O and storage settings for improved performance.</p>
+        <form class="optimization-form">
+            <div class="form-group">
+                <label for="disk-scheduler">I/O Scheduler</label>
+                <select id="disk-scheduler" class="form-control">
+                    <option value="cfq">CFQ (Completely Fair Queuing)</option>
+                    <option value="deadline">Deadline</option>
+                    <option value="noop">NOOP</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="disk-readahead">Read-ahead (KB)</label>
+                <input type="range" id="disk-readahead" class="form-control" min="128" max="4096" step="128" value="256">
+                <output for="disk-readahead">256</output>
+            </div>
+            <div class="form-group">
+                <label for="disk-commit-interval">Commit Interval (sec)</label>
+                <input type="range" id="disk-commit-interval" class="form-control" min="1" max="60" value="5">
+                <output for="disk-commit-interval">5</output>
+            </div>
+            <div class="form-group">
+                <label for="disk-io-priority">I/O Priority</label>
+                <select id="disk-io-priority" class="form-control">
+                    <option value="high">High</option>
+                    <option value="normal">Normal</option>
+                    <option value="low">Low</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Optimization Profile</label>
+                <div class="profile-options">
+                    <label>
+                        <input type="radio" name="disk-profile" value="performance"> Performance
+                    </label>
+                    <label>
+                        <input type="radio" name="disk-profile" value="balanced" checked> Balanced
+                    </label>
+                    <label>
+                        <input type="radio" name="disk-profile" value="durability"> Durability
+                    </label>
+                </div>
+            </div>
+        </form>
+        <div class="optimization-actions">
+            <button class="reset-button">Reset to Default</button>
+            <button class="apply-button">Apply Changes</button>
+        </div>
+    </div>
+</div>
+
+<!-- Network Optimization Modal -->
+<div id="network-modal" class="modal optimization-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Network Tuning</h3>
+            <button class="close-modal">&times;</button>
+        </div>
+        <p>Optimize network settings for improved throughput and reduced latency.</p>
+        <form class="optimization-form">
+            <div class="form-group">
+                <label for="network-congestion">Congestion Algorithm</label>
+                <select id="network-congestion" class="form-control">
+                    <option value="cubic">CUBIC</option>
+                    <option value="bbr">BBR</option>
+                    <option value="reno">Reno</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="network-buffer-size">Buffer Size (KB)</label>
+                <input type="range" id="network-buffer-size" class="form-control" min="64" max="4096" step="64" value="256">
+                <output for="network-buffer-size">256</output>
+            </div>
+            <div class="form-group">
+                <label for="network-tcp-fastopen">TCP Fast Open</label>
+                <select id="network-tcp-fastopen" class="form-control">
+                    <option value="enabled">Enabled</option>
+                    <option value="disabled">Disabled</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="network-qos">QoS Priority</label>
+                <select id="network-qos" class="form-control">
+                    <option value="high">High</option>
+                    <option value="normal">Normal</option>
+                    <option value="low">Low</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Optimization Profile</label>
+                <div class="profile-options">
+                    <label>
+                        <input type="radio" name="network-profile" value="gaming"> Gaming
+                    </label>
+                    <label>
+                        <input type="radio" name="network-profile" value="streaming"> Streaming
+                    </label>
+                    <label>
+                        <input type="radio" name="network-profile" value="balanced" checked> Balanced
+                    </label>
+                </div>
+            </div>
+        </form>
+        <div class="optimization-actions">
+            <button class="reset-button">Reset to Default</button>
+            <button class="apply-button">Apply Changes</button>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,131 @@
+.system-status {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  background: var(--gradient-cosmic);
+  box-shadow: 0 4px 16px rgba(31, 38, 135, 0.3), 0 0 10px rgba(0, 245, 212, 0.3);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 245, 212, 0.3);
+  max-width: 80%;
+  margin: 0 auto;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 8px;
+  transition: all 0.5s ease;
+}
+
+.status-dot.status-active {
+  background: #00f5d4;
+  box-shadow: 0 0 15px #00f5d4;
+  animation: pulse 2s infinite;
+}
+
+.status-dot.status-loading {
+  background: #f59e0b;
+  box-shadow: 0 0 15px #f59e0b;
+  animation: pulse 0.8s infinite;
+}
+
+.status-dot.status-error {
+  background: #ef4444;
+  box-shadow: 0 0 15px #ef4444;
+  animation: pulse 0.5s infinite;
+}
+
+.status-text {
+  flex: 1;
+  white-space: nowrap;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.status-message {
+  display: inline-block;
+  transition: all 0.5s ease;
+}
+
+.status-message.loading {
+  color: #f59e0b;
+}
+
+.status-message.error {
+  color: #ef4444;
+}
+
+.status-message.active {
+  color: #00f5d4;
+  text-shadow: 0 0 10px rgba(0, 245, 212, 0.8);
+}
+
+.ticker-message {
+  position: relative;
+  animation: slide-in 0.5s ease-out, glow 3s infinite;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #00f5d4;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 0.25rem 0;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+@keyframes slide-in {
+  0% { transform: translateX(100%); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes glow {
+  0% { text-shadow: 0 0 5px rgba(0, 245, 212, 0.5); }
+  25% { text-shadow: 0 0 15px rgba(0, 245, 212, 0.7), 0 0 25px rgba(233, 0, 155, 0.3); }
+  50% { text-shadow: 0 0 20px rgba(0, 245, 212, 0.9), 0 0 30px rgba(0, 245, 212, 0.5), 0 0 40px rgba(233, 0, 155, 0.3); }
+  75% { text-shadow: 0 0 15px rgba(0, 245, 212, 0.7), 0 0 25px rgba(233, 0, 155, 0.3); }
+  100% { text-shadow: 0 0 5px rgba(0, 245, 212, 0.5); }
+}
+
+/* Character emoji styling */
+.ticker-message span {
+  display: inline-block;
+  transform: scale(1.2);
+  margin-right: 5px;
+}
+
+/* Add a subtle background pulse effect */
+.system-status::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, rgba(0, 245, 212, 0.1), rgba(233, 0, 155, 0.1));
+  z-index: -1;
+  border-radius: 18px;
+  animation: pulse-bg 8s infinite;
+  opacity: 0.6;
+}
+
+@keyframes pulse-bg {
+  0% { opacity: 0.2; }
+  50% { opacity: 0.6; }
+  100% { opacity: 0.2; }
+}

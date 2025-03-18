@@ -1,0 +1,20 @@
+# core/templates/core/auto_tuner_dashboard.html
+
+{% extends 'base.html' %}
+{% block content %}
+<div class="auto-tuner-dashboard">
+    <div class="tuning-status">
+        <h2>Active Tunings</h2>
+        <div id="active-tunings"></div>
+    </div>
+    
+    <div class="visualization-container">
+        <div class="impact-chart">
+            <canvas id="impactChart"></canvas>
+        </div>
+        <div class="confidence-chart">
+            <canvas id="confidenceChart"></canvas>
+        </div>
+    </div>
+</div>
+{% endblock %}

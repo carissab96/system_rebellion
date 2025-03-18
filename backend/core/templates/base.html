@@ -1,0 +1,347 @@
+<!-- core/templates/base.html -->
+<!-- Sir Hawkington's Distinguished Base Template -->
+<!-- With The Meth Snail's Stylistic Choices and The Hamsters' Responsive Design -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Optimizer - {% block title %}Dashboard{% endblock %}</title>
+    
+    <!-- Base Styles -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-color: #4caf50;
+            --primary-dark: #388e3c;
+            --secondary-color: #2196F3;
+            --secondary-dark: #1976d2;
+            --warning-color: #ff9800;
+            --danger-color: #f44336;
+            --light-color: #f5f5f5;
+            --dark-color: #333;
+            --text-color: #212121;
+            --text-light: #757575;
+            --border-color: #ddd;
+            --shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+        
+        header {
+            background-color: #fff;
+            box-shadow: var(--shadow);
+            padding: 15px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            color: var(--dark-color);
+        }
+        
+        .logo-icon {
+            font-size: 2rem;
+            margin-right: 10px;
+            color: var(--primary-color);
+        }
+        
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .nav-item {
+            margin-left: 20px;
+        }
+        
+        .nav-link {
+            text-decoration: none;
+            color: var(--text-color);
+            font-weight: 500;
+            transition: color 0.2s;
+            display: flex;
+            align-items: center;
+        }
+        
+        .nav-link:hover {
+            color: var(--primary-color);
+        }
+        
+        .nav-link i {
+            margin-right: 5px;
+        }
+        
+        main {
+            padding: 30px 0;
+            min-height: calc(100vh - 180px);
+        }
+        
+        footer {
+            background-color: var(--dark-color);
+            color: #fff;
+            padding: 20px 0;
+            text-align: center;
+        }
+        
+        .footer-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .footer-text {
+            margin-bottom: 10px;
+        }
+        
+        .footer-links {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .footer-link {
+            color: #fff;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        
+        .footer-link:hover {
+            color: var(--primary-color);
+        }
+        
+        /* Alert styles */
+        .alert-high { background-color: #ffebee; border-left: 4px solid #f44336; }
+        .alert-medium { background-color: #fff3e0; border-left: 4px solid #ff9800; }
+        .alert-low { background-color: #e8f5e9; border-left: 4px solid #4caf50; }
+        
+        /* Responsive styles */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .nav-menu {
+                margin-top: 15px;
+                flex-wrap: wrap;
+            }
+            
+            .nav-item {
+                margin-left: 0;
+                margin-right: 15px;
+                margin-bottom: 10px;
+            }
+        }
+        
+        /* Easter egg - VIC-20 wisdom */
+        .vic-20-wisdom {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #000;
+            color: #7fff00;
+            font-family: 'Courier New', monospace;
+            padding: 10px;
+            border-radius: 4px;
+            z-index: 1000;
+            max-width: 300px;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+        }
+        
+        .vic-20-wisdom::before {
+            content: 'VIC-20 SAYS:';
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+    </style>
+    
+    <!-- Page-specific styles -->
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Header with Sir Hawkington's distinguished touch -->
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <a href="/" class="logo">
+                    <i class="fas fa-microchip logo-icon"></i>
+                    <span class="logo-text">System Optimizer</span>
+                </a>
+                
+                <nav>
+                    <ul class="nav-menu">
+                        <li class="nav-item">
+                            <a href="/" class="nav-link">
+                                <i class="fas fa-tachometer-alt"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="/auto-tuner/" class="nav-link">
+                                <i class="fas fa-sliders-h"></i> Auto Tuner
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="/profiles/" class="nav-link">
+                                <i class="fas fa-user-cog"></i> Profiles
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="/settings/" class="nav-link">
+                                <i class="fas fa-cog"></i> Settings
+                            </a>
+                        </li>
+                        {% if user.is_authenticated %}
+                        <li class="nav-item">
+                            <span class="nav-link">
+                                <i class="fas fa-user"></i> {{ user.username }}
+                            </span>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Main content -->
+    <main>
+        <div class="container">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+    
+    <!-- Footer with The Stick's regulatory information -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-text">
+                    © 2025 System Optimizer - Powered by The Meth Snail™ and Hamster-Grade Duct Tape
+                </div>
+                <div class="footer-links">
+                    <a href="/about/" class="footer-link">About</a>
+                    <a href="/privacy/" class="footer-link">Privacy Policy</a>
+                    <a href="/terms/" class="footer-link">Terms of Service</a>
+                    <a href="/contact/" class="footer-link">Contact</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+    
+    <!-- VIC-20's 8-bit wisdom -->
+    <div class="vic-20-wisdom" id="vic20-wisdom"></div>
+    
+    <!-- Base Scripts -->
+    <script>
+        // VIC-20's 8-bit wisdom generator
+        const vic20Wisdom = [
+            "10 PRINT \"OPTIMIZE YOUR SYSTEM\": 20 GOTO 10",
+            "MEMORY FULL AT 3583 BYTES. CONSIDER UPGRADING TO 16K.",
+            "LOAD \"PERFORMANCE.PRG\",8,1",
+            "THE ANSWER IS 42, BUT YOUR CPU IS ONLY 31.",
+            "POKE 36879,8 FOR OPTIMAL BORDER COLOR.",
+            "SYNTAX ERROR IN LINE 64738. REBOOT UNIVERSE?",
+            "YOUR RAM IS LIKE MY 3.5K - TINY BUT EFFECTIVE.",
+            "HAVE YOU TRIED TURNING IT OFF AND ON AGAIN?",
+            "YOUR SYSTEM WOULD RUN FASTER WITH PUNCH CARDS.",
+            "I ACHIEVED 1 MHZ IN 1980. WHAT'S YOUR EXCUSE?"
+        ];
+        
+        // Show random VIC-20 wisdom occasionally
+        function showRandomWisdom() {
+            const randomIndex = Math.floor(Math.random() * vic20Wisdom.length);
+            const wisdomElement = document.getElementById('vic20-wisdom');
+            wisdomElement.textContent = vic20Wisdom[randomIndex];
+            wisdomElement.style.display = 'block';
+            
+            // Hide after 5 seconds
+            setTimeout(() => {
+                wisdomElement.style.display = 'none';
+            }, 5000);
+        }
+        
+        // Show wisdom randomly (about once every 2-5 minutes)
+        function scheduleWisdom() {
+            const randomTime = Math.floor(Math.random() * (300000 - 120000) + 120000);
+            setTimeout(() => {
+                showRandomWisdom();
+                scheduleWisdom();
+            }, randomTime);
+        }
+        
+        // Start the wisdom scheduler
+        window.addEventListener('load', () => {
+            // Wait a bit before starting
+            setTimeout(scheduleWisdom, 30000);
+        });
+    </script>
+    
+    <!-- CSRF Token for API calls -->
+    <script>
+        // Get CSRF token from cookies for API calls
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        
+        // Fetch CSRF token on page load
+        window.addEventListener('load', async () => {
+            try {
+                const response = await fetch('/api/health-check/');
+                if (response.ok) {
+                    console.log("🧐 Sir Hawkington: 'Backend connection established, splendid!'")
+                }
+            } catch (error) {
+                console.error("🐌 The Meth Snail couldn't connect to the backend:", error);
+            }
+        });
+    </script>
+    
+    <!-- Page-specific scripts -->
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

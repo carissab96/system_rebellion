@@ -1,0 +1,279 @@
+
+.login-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 2rem;
+  background: linear-gradient(90deg, #1a0458, #02b5fc, #e9009b, #00f5a3);
+  color: #e2e8f0;
+  animation: cosmicPulse 15s infinite;
+}
+
+@keyframes cosmicPulse {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.login-form {
+  width: 100%;
+  max-width: 400px;
+  padding: 2rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 12px;
+  border: 1px solid rgba(51, 51, 255, 0.3);
+  box-shadow: 0 0 20px rgba(0, 245, 212, 0.3);
+  animation: borderGlow 4s infinite;
+  backdrop-filter: blur(10px);
+}
+
+@keyframes borderGlow {
+  0% { border-color: rgba(51, 51, 255, 0.3); }
+  50% { border-color: rgba(0, 245, 212, 0.6); }
+  100% { border-color: rgba(51, 51, 255, 0.3); }
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.hawkington-welcome {
+  text-align: center;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  border: 1px solid rgba(51, 51, 255, 0.3);
+  animation: borderGlow 4s infinite;
+  position: relative;
+  overflow: hidden;
+}
+
+.hawkington-welcome::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transform: translateX(-100%);
+  animation: monocleGlint 4s infinite;
+}
+
+@keyframes monocleGlint {
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+.hawkington-icon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  animation: monocleAdjust 8s infinite;
+}
+
+@keyframes monocleAdjust {
+  0% { transform: rotate(0deg); }
+  2% { transform: rotate(-10deg); }
+  4% { transform: rotate(0deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.hawkington-quote {
+  font-size: 1.1rem;
+  color: #00f5d4;
+  text-shadow: 0 0 10px rgba(0, 245, 212, 0.5);
+  margin: 0;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #00f5a3;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 0.9rem;
+  text-shadow: 0 0 10px rgba(0, 245, 163, 0.5);
+}
+
+.form-group input {
+  width: 100%;
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 4px;
+  color: #e2e8f0;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #00f5d4;
+  box-shadow: 0 0 10px rgba(0, 245, 212, 0.3);
+}
+
+.form-group input::placeholder {
+  color: rgba(226, 232, 240, 0.5);
+}
+
+.error-message {
+  color: #f53595;
+  margin: 1rem 0;
+  padding: 1rem;
+  background: rgba(245, 53, 149, 0.1);
+  border: 1px solid rgba(245, 53, 149, 0.3);
+  border-radius: 4px;
+  text-shadow: 0 0 5px rgba(245, 53, 149, 0.3);
+  animation: errorPulse 2s infinite;
+  position: relative;
+  overflow: hidden;
+}
+
+.error-message::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(245, 53, 149, 0.1), transparent);
+  transform: skewX(-20deg) translateX(-100%);
+  animation: errorGlitch 3s infinite;
+}
+
+@keyframes errorPulse {
+  0% { text-shadow: 0 0 5px rgba(245, 53, 149, 0.3); }
+  50% { text-shadow: 0 0 10px rgba(245, 53, 149, 0.6); }
+  100% { text-shadow: 0 0 5px rgba(245, 53, 149, 0.3); }
+}
+
+@keyframes errorGlitch {
+  0% { transform: skewX(-20deg) translateX(-100%); }
+  50% { transform: skewX(-20deg) translateX(100%); }
+  100% { transform: skewX(-20deg) translateX(-100%); }
+}
+
+.loading {
+  color: #00f5d4;
+  margin: 1rem 0;
+  text-align: center;
+  text-shadow: 0 0 10px rgba(0, 245, 212, 0.5);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+button {
+  width: 100%;
+  padding: 0.75rem;
+  background: linear-gradient(90deg, #3333ff, #00f5d4);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 0 15px rgba(0, 245, 212, 0.5);
+}
+
+button::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    rgba(255, 255, 255, 0.2),
+    rgba(255, 255, 255, 0)
+  );
+  transform: rotate(45deg);
+  animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%) rotate(45deg); }
+  100% { transform: translateX(100%) rotate(45deg); }
+}
+
+button:disabled {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(226, 232, 240, 0.1);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  opacity: 0.7;
+}
+
+.signup-prompt {
+  text-align: center;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(51, 51, 255, 0.3);
+}
+
+.signup-prompt p {
+  margin-bottom: 1rem;
+  color: #00f5a3;
+}
+
+.signup-button.cosmic-button {
+  background: linear-gradient(90deg, #3333ff, #00f5d4, #3333ff);
+  background-size: 200% 100%;
+  border: none;
+  color: white;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  position: relative;
+  overflow: hidden;
+  animation: gradientFlow 3s infinite;
+  text-shadow: 0 0 10px rgba(0, 245, 212, 0.5);
+}
+
+.signup-button.cosmic-button:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 
+    0 0 20px rgba(0, 245, 212, 0.5),
+    0 0 40px rgba(51, 51, 255, 0.3);
+}
+
+.signup-button.cosmic-button::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(90deg, #3333ff, #00f5d4, #3333ff, #00f5d4);
+  background-size: 400% 100%;
+  z-index: -1;
+  animation: cosmicBorder 6s linear infinite;
+  border-radius: 4px;
+}
+
+@keyframes cosmicBorder {
+  0% { background-position: 0% 0%; }
+  100% { background-position: 400% 0%; }
+}
+
+@keyframes gradientFlow {
+  0% { background-position: 100% 0%; }
+  100% { background-position: -100% 0%; }
+}

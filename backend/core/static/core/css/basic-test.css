@@ -1,0 +1,10 @@
+/* core/static/css/basic-test.css */
+.test-container {
+    padding: 20px;
+}
+.error {
+    color: red;
+}
+.success {
+    color: green;
+}
