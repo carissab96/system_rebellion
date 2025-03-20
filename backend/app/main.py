@@ -32,7 +32,6 @@ def create_application() -> FastAPI:
 
 # Create the app
 app = create_application()
-sqlalchemy.url = sqlite:///./system_rebellion.db
 # CORS Configuration
 app.add_middleware(
     CORSMiddleware,

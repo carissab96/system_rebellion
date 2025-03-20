@@ -26,6 +26,6 @@
     "isolatedModules": true,
     "noEmit": true
   },
-  "include": ["src"],
+  "include": ["src", "jest.config.js", "setupTests.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
