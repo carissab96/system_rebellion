@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text, JSON
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
 
@@ -19,6 +20,21 @@ class User(Base):
     bio = Column(Text, nullable=True)
     profile_picture = Column(String(255), nullable=True)
     
+    # System Profile Information
+    operating_system = Column(String(50), nullable=True)
+    os_version = Column(String(50), nullable=True)
+    linux_distro = Column(String(50), nullable=True)
+    linux_distro_version = Column(String(50), nullable=True)
+    cpu_cores = Column(Integer, nullable=True)
+    total_memory = Column(Integer, nullable=True)  # in MB
+    avatar = Column(String(50), default='sir-hawkington')
+    
+    # User Preferences
+    preferences = Column(JSON, default=lambda: {
+        "optimization_level": "moderate",
+        "theme_preferences": {"use_dark_mode": True}
+    })
+    
     # Account Status & Security
     is_active = Column(Boolean, default=True)
     is_superuser = Column(Boolean, default=False)
@@ -32,6 +48,11 @@ class User(Base):
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    configurations = relationship("SystemConfiguration", back_populates="user", cascade="all, delete-orphan")
+    optimization_profiles = relationship("OptimizationProfile", back_populates="user", cascade="all, delete-orphan")
+    alerts = relationship("SystemAlert", back_populates="user", cascade="all, delete-orphan")
 
 class UserProfile(Base):
     __tablename__ = "user_profiles"

@@ -2,13 +2,15 @@
 import { websocketService } from '../utils/websocketService';
 // Base metric type for individual readings
 export interface SystemMetric {
-    timestamp: string;
-    cpu_usage: number;
-    memory_usage: number;
-    disk_usage: number;
-    network_usage: number;
-    process_count: number;
-    additional_metrics?: Record<string, any>;
+  id: string;
+  user_id: string;
+  timestamp: string;
+  cpu_usage: number;
+  memory_usage: number;
+  disk_usage: number;
+  network_usage?: number;
+  process_count?: number;
+  additional_metrics?: Record<string, any>;
   }
   
   // Type for optimization profile thresholds
@@ -41,17 +43,9 @@ export interface SystemMetric {
   export type IntervalID = NodeJS.Timeout;
 
 export interface MetricsState {
-  current: SystemMetric | null;
-  historical: SystemMetric[];
-  alerts: string[];
-  thresholds: {
-    cpu: number;
-    memory: number;
-    disk: number;
-    network: number;
-  };
-  loading: boolean;  // TypeScript needs to know this exists
-  error: string | null;  // And this too
+  metrics: SystemMetric[];
+  loading: boolean;
+  error: string | null;
   lastUpdated: string | null;
   websocketService: typeof websocketService | null;
 }

@@ -10,12 +10,20 @@ import { checkBackendAvailability } from './api';
 // Raw metrics data from WebSocket as sent by the backend
 // Sir Hawkington's Distinguished Raw Metric Interface
 interface RawMetricData {
-    // Backend sends these properties
-    cpu: number;        // CPU usage percentage (0-100)
-    memory: number;     // Memory usage percentage (0-100)
-    disk: number;       // Disk usage percentage (0-100)
-    timestamp: string;  // ISO timestamp
-    connection_id: string; // WebSocket connection ID
+    // Backend sends these properties - support both naming conventions
+    cpu?: number;                // CPU usage percentage (0-100)
+    cpu_usage?: number;         // Alternative property name
+    memory?: number;            // Memory usage percentage (0-100)
+    memory_usage?: number;      // Alternative property name
+    disk?: number;              // Disk usage percentage (0-100)
+    disk_usage?: number;        // Alternative property name
+    network_io?: {
+        sent: number;           // Bytes sent
+        recv: number;           // Bytes received
+    };
+    process_count?: number;     // Number of running processes
+    timestamp: string;          // ISO timestamp
+    connection_id?: string;     // WebSocket connection ID
 }
 
 // WebSocket message structure
@@ -100,16 +108,17 @@ class WebSocketService implements IWebSocketService {
                 }
 
                 // Sir Hawkington's Distinguished WebSocket URL Determination Protocol
-                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-                // Use the same host as the current page for both production and development
-                // This leverages the proxy configured in vite.config.ts - The Quantum Shadow People's suggestion
-                const host = window.location.host;
+                const protocol = 'ws:';
+                // Use the backend server directly instead of relying on proxy
+                const host = 'localhost:8000';
                 
-                // The Hamsters insist on using the proxy path for WebSocket connections
-                this.wsUrl = `${protocol}//${host}/ws/metrics/`;
+                // Connect directly to the backend WebSocket endpoint
+                this.wsUrl = `${protocol}//${host}/ws/system-metrics`;
                 console.log(`🧐 Sir Hawkington has determined the WebSocket URL with aristocratic precision: ${this.wsUrl}`);
                 console.log(`🐌 The Meth Snail is preparing the WebSocket pipes...`);
                 
+                // No need for CSRF token for WebSocket connections
+                console.log("🧐 Sir Hawkington declares: WebSockets don't require CSRF tokens!");
                 this.socket = new WebSocket(this.wsUrl);
                 
                 this.socket.onopen = () => {
@@ -185,22 +194,33 @@ class WebSocketService implements IWebSocketService {
             const data = JSON.parse(event.data) as WebSocketMessage;
             console.log("📨 WebSocket message received:", data);
             
-            if (data.type === 'metrics_update' && data.data) {
+            if (data.type === 'system_metrics' && data.data) {
                 // Sir Hawkington's Distinguished Data Transformation Protocol
                 console.log("🧐 Sir Hawkington is examining the raw metrics data with his monocle...");
                 console.log("🔍 Raw data from the Hamsters' WebSocket tubes:", data.data);
                 
                 // Transform the raw WebSocket data into the format expected by our components
+                console.log('🔬 Detailed data inspection:', JSON.stringify(data));
+                
+                // Extract the actual metrics from the nested data structure
+                const rawMetrics = data.data;
+                
                 const metricData: SystemMetric = {
+                    // Required fields for SystemMetric interface
+                    id: crypto.randomUUID ? crypto.randomUUID() : `metric-${Date.now()}`,
+                    user_id: 'system', // System-generated metrics don't have a specific user
                     // Transform backend properties to match frontend expectations
-                    cpu_usage: data.data.cpu,
-                    memory_usage: data.data.memory,
-                    disk_usage: data.data.disk,
-                    network_usage: 0, // The Quantum Shadow People suggest a default value
-                    process_count: 0, // The VIC-20 provides 8-bit wisdom on process counting
-                    timestamp: data.data.timestamp,
+                    cpu_usage: rawMetrics.cpu_usage || 0,
+                    memory_usage: rawMetrics.memory_usage || 0,
+                    disk_usage: rawMetrics.disk_usage || 0,
+                    network_usage: rawMetrics.network_io ? 
+                        (rawMetrics.network_io.sent + rawMetrics.network_io.recv) / 1024 / 1024 : 0, // Convert to MB
+                    process_count: rawMetrics.process_count || 0,
+                    timestamp: rawMetrics.timestamp || new Date().toISOString(),
                     additional_metrics: {}
                 };
+                
+                console.log('🧪 Transformed metric data:', metricData);
                 
                 console.log("✨ The Meth Snail has processed the metrics data at ludicrous speed:", metricData);
                 

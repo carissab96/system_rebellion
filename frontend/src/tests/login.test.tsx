@@ -1,10 +1,9 @@
-import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { BrowserRouter } from 'react-router-dom';
 import { configureStore } from '@reduxjs/toolkit';
 import authReducer from '../store/slices/authSlice';
-import { Login } from '../components/Auth/login/index';
+import { Login } from '../components/Auth/login/Login';
 
 // Mock dependencies
 jest.mock('../utils/api', () => ({
@@ -31,7 +30,6 @@ const renderComponent = () => {
 describe('Login Component', () => {
   it('renders login form', () => {
     renderComponent();
-    
     expect(screen.getByLabelText(/username/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /enter the system rebellion/i })).toBeInTheDocument();
@@ -42,7 +40,7 @@ describe('Login Component', () => {
     
     const usernameInput = screen.getByLabelText(/username/i);
     const passwordInput = screen.getByLabelText(/password/i);
-    
+   
     fireEvent.change(usernameInput, { target: { value: 'testuser' } });
     fireEvent.change(passwordInput, { target: { value: 'password123' } });
     
@@ -58,8 +56,11 @@ describe('Login Component', () => {
       }
     }));
 
-    // Mock the login action in the store
-    jest.spyOn(mockStore.dispatch, 'dispatch').mockImplementation(mockLogin);
+    // Mock the dispatch method to return the action (which would be the first argument)
+    jest.spyOn(mockStore, 'dispatch').mockImplementation((action) => {
+      mockLogin();
+      return action; // Return the action to satisfy TypeScript
+    });
 
     renderComponent();
     

@@ -126,3 +126,38 @@ def get_password_reset_token(email: str):
         {"sub": email}, 
         expires_delta=timedelta(hours=1)
     )
+
+async def get_current_user(request: Request):
+    """
+    Sir Hawkington's User Authentication Protocol
+    Verifies the user's identity with distinguished precision!
+    """
+    credentials_exception = HTTPException(
+        status_code=401,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    
+    # Extract token from Authorization header
+    authorization = request.headers.get("Authorization")
+    if not authorization or not authorization.startswith("Bearer "):
+        raise credentials_exception
+    
+    token = authorization.replace("Bearer ", "")
+    
+    try:
+        # Decode the JWT token
+        payload = decode_token(token)
+        user_id = payload.get("sub")
+        if user_id is None:
+            raise credentials_exception
+        
+        # In a real application, you would fetch the user from the database here
+        # For now, we'll just return the user ID and some mock data
+        return {
+            "id": user_id,
+            "email": payload.get("email", "user@example.com"),
+            "is_active": True
+        }
+    except JWTError:
+        raise credentials_exception

@@ -1,6 +1,10 @@
-import React from 'react';
+import * as React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 
-export const MockRouter: React.FC = ({ children }) => (
+type MockRouterProps = {
+  children: React.ReactNode;
+};
+
+export const MockRouter: React.FC<MockRouterProps> = ({ children }) => (
   <MemoryRouter initialEntries={['/']}>{children}</MemoryRouter>
 );

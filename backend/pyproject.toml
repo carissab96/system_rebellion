@@ -1,0 +1,4 @@
+# pyproject.toml
+[tool.poetry]
+name = "system-rebellion"
+packages = [{include = "backend"}]

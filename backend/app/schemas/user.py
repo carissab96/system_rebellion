@@ -12,10 +12,10 @@ class UserCreate(UserBase):
     password: constr(min_length=8)
 
 class UserResponse(UserBase):
-    id: int
+    id: str
     is_active: bool
     created_at: datetime
     updated_at: datetime
-
-class Config:
-    orm_mode = True
+    
+    class Config:
+        orm_mode = True

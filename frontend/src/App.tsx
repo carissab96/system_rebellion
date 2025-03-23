@@ -10,6 +10,8 @@ import Layout from './components/common/Layout';
 import OptimizationProfiles from './components/optimization/OptimizationProfiles';
 import SystemAlerts from './components/alerts/SystemAlerts';
 import SystemConfiguration from './components/configuration/SystemConfiguration';
+import SystemMetrics from './components/metrics/SystemMetrics';
+import AutoTunerComponent from './components/auto_tuners/auto_tuner';
 import './App.css';
 
 const App: React.FC = () => {
@@ -58,14 +60,20 @@ const App: React.FC = () => {
             if (available) {
                 // Backend is now available
                 console.log("🔒 Backend available, initializing CSRF protection...");
-                await initializeCsrf();
-                console.log("✅ CSRF token initialized successfully");
+                try {
+                    await initializeCsrf();
+                    console.log("✅ CSRF token initialized successfully");
+                } catch (csrfError) {
+                    console.warn("⚠️ CSRF token initialization failed, but continuing anyway:", csrfError);
+                    // We'll proceed without CSRF token - WebSockets don't need it
+                }
+                
                 setShowOfflineNotification(false);
                 setReconnectAttempts(0);
                 
-                // Try to reconnect WebSocket if needed
+                // Try to reconnect WebSocket if needed (regardless of CSRF status)
                 if (!websocketService.isConnected()) {
-                    console.log("🔌 Reconnecting WebSocket service...");
+                    console.log("🔌 Reconnecting WebSocket service (CSRF status independent)...");
                     try {
                         await websocketService.connect();
                         websocketService.resetReconnectAttempts();
@@ -115,12 +123,19 @@ const App: React.FC = () => {
                 setBackendAvailable(available);
                 
                 if (available) {
+                    // Try to initialize CSRF protection, but continue even if it fails
                     console.log("🔒 Initializing CSRF protection...");
-                    await initializeCsrf();
-                    console.log("✅ CSRF token initialized successfully");
-                    
-                    // Initialize WebSocket connection
                     try {
+                        await initializeCsrf();
+                        console.log("✅ CSRF token initialized successfully");
+                    } catch (csrfError) {
+                        console.warn("⚠️ CSRF token initialization failed, but continuing anyway:", csrfError);
+                        // We'll proceed without CSRF token - WebSockets don't need it
+                    }
+                    
+                    // Initialize WebSocket connection regardless of CSRF status
+                    try {
+                        console.log("🔌 Connecting WebSocket (CSRF status independent)...");
                         await websocketService.connect();
                         console.log("✅ WebSocket connected successfully on app initialization");
                     } catch (wsError) {
@@ -277,10 +292,7 @@ const App: React.FC = () => {
                         path="/auto-tuners" 
                         element={
                             <PrivateRoute>
-                                <div className="coming-soon">
-                                    <h2>Auto Tuners</h2>
-                                    <p>🧐 Sir Hawkington is currently fine-tuning this section while the Meth Snail frantically optimizes the algorithms.</p>
-                                </div>
+                                <AutoTunerComponent />
                             </PrivateRoute>
                         } 
                     />
@@ -288,10 +300,7 @@ const App: React.FC = () => {
                         path="/system-metrics" 
                         element={
                             <PrivateRoute>
-                                <div className="coming-soon">
-                                    <h2>System Metrics</h2>
-                                    <p>🐹 The Hamsters are still gathering your system metrics with their authentication-grade duct tape. They'll be ready soon!</p>
-                                </div>
+                                <SystemMetrics />
                             </PrivateRoute>
                         } 
                     />
