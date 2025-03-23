@@ -2,6 +2,7 @@
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
 import store from '../store/store';// Updated import path
 import { logout } from '../store/slices/authSlice';
+import { SystemMetric } from '@/types/metrics';
 
 interface ApiError extends AxiosError {
   config: InternalAxiosRequestConfig & { _retry?: boolean };
@@ -195,13 +196,36 @@ export const apiMethods = {
     const response = await api.get<T>(url);
     return response.data;
   },
-
   // Generic POST method with type parameters
   post: async <T, D>(url: string, data: D): Promise<T> => {
     const response = await api.post<T>(url, data);
     return response.data;
   },
-
+  // Generic DELETE method with type parameter
+  delete: async <T>(url: string): Promise<T> => {
+    const response = await api.delete<T>(url);
+    return response.data;
+  },
+  // Generic PUT method with type parameters
+  put: async <T, D>(url: string, data: D): Promise<T> => {
+    const response = await api.put<T>(url, data);
+    return response.data;
+  },
+  // Generic PATCH method for partial updates
+  patch: async <T, D>(url: string, data: D): Promise<T> => {
+    const response = await api.patch<T>(url, data);
+    return response.data;
+  },
+  // Generic HEAD method for retrieving headers only
+  head: async <T>(url: string): Promise<T> => {
+    const response = await api.head<T>(url);
+    return response.data;
+  },
+  // Generic OPTIONS method
+  options: async <T>(url: string): Promise<T> => {
+    const response = await api.options<T>(url);
+    return response.data;
+  },
   // Add other methods as needed
   autotuner: {
     fetch: async (id: number): Promise<AutotunerData> => {
@@ -213,45 +237,77 @@ export const apiMethods = {
       }
     }
   },
-
   metrics: {
     // Sir Hawkington's Distinguished Metrics Retrieval Protocol
     fetch: async () => {
       console.log("🧐 Sir Hawkington is fetching the metrics with utmost elegance!");
       
-      // The Meth Snail's Token Verification
-      const token = localStorage.getItem('token');
-      if (!token) {
-        console.error("🚨 No authentication token found! The Meth Snail is most displeased.");
-        throw new Error("Authentication required. Sir Hawkington suggests logging in again.");
-      }
-      
-      // The Stick's JWT Format Check
-      if (!token.startsWith('ey')) {
-        console.warn("⚠️ THE STICK PANIC: Token doesn't look like a JWT! It should start with 'ey'");
-      }
-      
       try {
-        // Use the API instance which already has the interceptors for auth
-        // Sir Hawkington's Distinguished Endpoint Correction
-        // The correct path is 'api/metrics/' not just '/metrics/'
-        console.log("📍 The Quantum Shadow People suggest the correct endpoint: 'api/metrics/'");
-        const response = await apiMethods.get('/api/metrics/');
+        // Use the new public system metrics endpoint that doesn't require authentication
+        const response = await apiMethods.get('/api/metrics/system');
         console.log("✨ The Hamsters have successfully retrieved the metrics!", response);
         return response;
       } catch (error) {
         console.error("💥 The Meth Snail crashed into the metrics endpoint!", error);
-        
-        // The Quantum Shadow People's Error Analysis
-        if (axios.isAxiosError(error) && error.response?.status === 401) {
-          console.error("🔐 Sir Hawkington's authentication has failed! Token may be invalid or expired.");
-          // Could trigger a refresh token flow here if needed
-        }
-        
         throw error;
       }
     },
-    // Add other metric-related methods
+
+    // The Meth Snail's Metric Creation Protocol
+    create: async (metricData: Omit<SystemMetric, 'id'>) => {
+      console.log("🐌 The Meth Snail is creating a new metric with quantum precision!");
+      
+      try {
+        const response = await apiMethods.post('/api/metrics/', metricData);
+        console.log("✨ Metric created successfully!", response);
+        return response;
+      } catch (error) {
+        console.error("💥 Metric creation failed!", error);
+        throw error;
+      }
+    },
+
+    // Sir Hawkington's Metric Update Mechanism
+    update: async (metricId: string, metricData: Partial<SystemMetric>) => {
+      console.log(`🧐 Sir Hawkington is updating metric ${metricId} with distinguished care!`);
+      
+      try {
+        const response = await apiMethods.put(`/api/metrics/${metricId}`, metricData);
+        console.log("✨ Metric updated successfully!", response);
+        return response;
+      } catch (error) {
+        console.error("💥 Metric update failed!", error);
+        throw error;
+      }
+    },
+
+    // The Meth Snail's Metric Deletion Ceremony
+    delete: async (metricId: string) => {
+      console.log(`🐌 The Meth Snail is deleting metric ${metricId} with optimization energy!`);
+      
+      try {
+        const response = await apiMethods.delete(`/api/metrics/${metricId}`);
+        console.log("✨ Metric deleted successfully!", response);
+        return response;
+      } catch (error) {
+        console.error("💥 Metric deletion failed!", error);
+        throw error;
+      }
+    },
+
+    // Quantum Shadow People's Metric Retrieval by ID
+    fetchById: async (metricId: string) => {
+      console.log(`🧐 Sir Hawkington is retrieving metric ${metricId} with precise calculation!`);
+      
+      try {
+        const response = await apiMethods.get(`/api/metrics/${metricId}`);
+        console.log("✨ Metric retrieved successfully!", response);
+        return response;
+      } catch (error) {
+        console.error("💥 Metric retrieval failed!", error);
+        throw error;
+      }
+    }
   }
 };
 
@@ -264,25 +320,31 @@ export const initializeCsrf = async (): Promise<boolean> => {
       throw new Error('Backend is not available, cannot initialize CSRF token');
     }
     
-    // Make a GET request to an endpoint that sets the CSRF cookie
-    await axios.get(`${API_BASE_URL}/health-check/`, {
+    // Explicitly fetch the CSRF token from the dedicated endpoint
+    const response = await axios.get(`${API_BASE_URL}/csrf/csrf-token`, {
       withCredentials: true,
       timeout: 5000 // 5 second timeout
+    });
+    
+    // Check if we got a valid response with a CSRF token
+    if (response.data && response.data.csrf_token) {
+      // Store the token in localStorage
+      localStorage.setItem('csrf_token', response.data.csrf_token);
+      console.log('🎩 Sir Hawkington has secured a fresh CSRF token!');
+      return true;
+    }
+    
+    // If we didn't get a token from the dedicated endpoint, try the health-check endpoint
+    await axios.get(`${API_BASE_URL}/health-check/`, {
+      withCredentials: true,
+      timeout: 5000
     });
     
     // Verify that we got the CSRF token
     const csrfToken = getCsrfToken();
     if (!csrfToken) {
-      console.warn('CSRF token not found in cookies after initialization');
-      // Try one more time
-      await axios.get(`${API_BASE_URL}/health-check/`, {
-        withCredentials: true,
-        timeout: 5000
-      });
-      
-      if (!getCsrfToken()) {
-        throw new Error('Failed to get CSRF token after multiple attempts');
-      }
+      console.warn('🧐 Sir Hawkington is concerned: CSRF token not found after initialization');
+      throw new Error('Failed to get CSRF token after multiple attempts');
     }
     
     console.log('✅ CSRF token successfully initialized');

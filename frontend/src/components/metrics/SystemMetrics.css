@@ -1,0 +1,73 @@
+/* SystemMetrics.css */
+
+.system-metrics-container {
+  min-height: 100vh;
+  padding: 2rem;
+  background: linear-gradient(23deg, #6366f1, #f53595, #5108fa, #00f5d5);
+  color: #ffffff;
+  font-style: italic;
+  font-weight: 800;
+}
+
+.metrics-header {
+  background: linear-gradient(90deg, #1a0458, #02b5fc, #e9009b, #00f5a3);
+  padding: 2rem;
+  backdrop-filter: blur(50px);
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+  border-radius: 15px;
+  margin-bottom: 20px;
+}
+
+.metrics-header::before, 
+.metrics-header::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  right: 5px;
+  height: 3px;
+  background: linear-gradient(90deg, #3333ff, #00f5d4, #3333ff, #00f5d4);
+  background-size: 200% 100%;
+  animation: glitch-line 4s linear infinite;
+  border-radius: 3px;
+}
+
+.metrics-header::before {
+  top: 0;
+}
+
+.metrics-header::after {
+  bottom: 0;
+  animation-direction: reverse;
+}
+
+.metrics-header h1 {
+  font-size: 2.5rem;
+  margin: 0 auto 1rem auto;
+  font-weight: 900;
+  color: #00f5d4;
+  text-shadow: 0 0 15px rgba(0, 245, 212, 0.7), 0 0 25px rgba(0, 245, 212, 0.4);
+  letter-spacing: 1px;
+  transform: skew(-5deg);
+  text-transform: uppercase;
+  position: relative;
+  display: inline-block;
+}
+
+.metrics-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 2rem;
+}
+
+@keyframes glitch-line {
+  0% { background-position: 0% 0; }
+  100% { background-position: 200% 0; }
+}

@@ -1,10 +1,15 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useAppSelector, useAppDispatch } from "../../../store/hooks";
 import { updateProfile } from "../../../store/slices/authSlice";
 import { CharacterAvatarSelector, getCharacterById } from "../../common/CharacterIcons";
 import "./UserProfile.css";
 
-export const UserProfile: React.FC = () => {
+interface UserProfileProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export const UserProfile: React.FC<UserProfileProps> = ({ isOpen, onClose }) => {
     const dispatch = useAppDispatch();
     const user = useAppSelector(state => state.auth.user);
     const profile = useAppSelector(state => state.auth.user?.profile);
@@ -72,8 +77,35 @@ export const UserProfile: React.FC = () => {
       setIsEditing(!isEditing);
     };
   
+    // Handle escape key press
+    useEffect(() => {
+      const handleEscapeKey = (event: KeyboardEvent) => {
+        if (event.key === 'Escape' && onClose) {
+          onClose();
+        }
+      };
+
+      if (isOpen) {
+        document.addEventListener('keydown', handleEscapeKey);
+      }
+
+      return () => {
+        document.removeEventListener('keydown', handleEscapeKey);
+      };
+    }, [isOpen, onClose]);
+
+    // Don't render anything if not open and isOpen prop is provided
+    if (isOpen === false) {
+      return null;
+    }
+
     return (
-      <div className="user-profile-card">
+      <div className={`user-profile-card ${isOpen ? 'visible' : ''}`}>
+        {onClose && (
+          <button className="close-button" onClick={onClose}>
+            ×
+          </button>
+        )}
         <h2 className="profile-title">System Profile</h2>
   
         <div className="system-info-section">

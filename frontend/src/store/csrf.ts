@@ -66,13 +66,27 @@ const xsrfMiddleware: Middleware = () => next => (action: any) => {
 
 export async function restoreCSRF() {
   try {
-    const response = await fetchWithCsrf('/api/csrf/restore/');
+    console.log('🧐 Sir Hawkington is attempting to restore the CSRF token...');
+    const response = await fetchWithCsrf('/api/csrf/csrf-token');
     if (!response.ok) {
-      throw new Error('Failed to restore CSRF token');
+      console.error('🚨 Failed to restore CSRF token, status:', response.status);
+      throw new Error(`Failed to restore CSRF token: ${response.statusText}`);
     }
+    
+    // Extract the token from the response
+    const data = await response.json();
+    if (data && data.csrf_token) {
+      // Manually set the cookie
+      Cookies.set('XSRF-TOKEN', data.csrf_token, { path: '/' });
+      console.log('✅ CSRF token successfully restored!');
+    } else {
+      console.error('🚨 CSRF token not found in response');
+      throw new Error('CSRF token not found in response');
+    }
+    
     return response;
   } catch (error) {
-    console.error('Error restoring CSRF token:', error);
+    console.error('🚨 Error restoring CSRF token:', error);
     throw error;
   }
 }

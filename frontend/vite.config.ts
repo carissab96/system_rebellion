@@ -11,7 +11,7 @@ export default defineConfig({
     proxy: {
       // All /api requests will be proxied to the backend with aristocratic elegance
       '/api': {
-        target: 'http://127.0.0.1:5000',
+        target: 'http://127.0.0.1:8000',
         changeOrigin: true,
         secure: false,
         configure: (proxy, _options) => {
@@ -25,7 +25,7 @@ export default defineConfig({
       },
       // WebSocket proxy for metrics - The Hamsters' domain
       '/ws': {
-        target: 'ws://127.0.0.1:5000',
+        target: 'ws://127.0.0.1:8000',
         ws: true,
         changeOrigin: true,
         secure: false,

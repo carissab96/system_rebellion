@@ -33,10 +33,14 @@ const initialState: ConfigurationState = {
 // Async Thunks
 export const fetchSystemConfigurations = createAsyncThunk(
   'configuration/fetchConfigurations',
-  async (_, { rejectWithValue }) => {
+  async ({ config_type }: { config_type?: string } = {}, { rejectWithValue }) => {
     try {
       console.log("🧐 Sir Hawkington is fetching system configurations with distinguished elegance...");
-      const response = await axios.get(`${API_BASE_URL}/api/configurations/`);
+      let url = `${API_BASE_URL}/api/system-configurations/`;
+      if (config_type) {
+        url += `?config_type=${config_type}`;
+      }
+      const response = await axios.get(url);
       console.log("🧐 Sir Hawkington returned with configurations:", response.data);
       return response.data;
     } catch (error: any) {
@@ -54,7 +58,7 @@ export const createSystemConfiguration = createAsyncThunk(
   async (configData: any, { rejectWithValue }) => {
     try {
       console.log("🧐 Sir Hawkington is creating a new system configuration with distinguished precision...");
-      const response = await axios.post(`${API_BASE_URL}/api/configurations/`, configData);
+      const response = await axios.post(`${API_BASE_URL}/api/system-configurations/`, configData);
       console.log("🧐 Sir Hawkington created a new configuration:", response.data);
       return response.data;
     } catch (error: any) {
@@ -73,7 +77,7 @@ export const updateSystemConfiguration = createAsyncThunk(
     try {
       const { id, ...data } = configData;
       console.log(`🧐 Sir Hawkington is updating system configuration ${id} with distinguished care...`);
-      const response = await axios.put(`${API_BASE_URL}/api/configurations/${id}/`, data);
+      const response = await axios.put(`${API_BASE_URL}/api/system-configurations/${id}`, data);
       console.log("🧐 Sir Hawkington updated the configuration:", response.data);
       return response.data;
     } catch (error: any) {
@@ -91,7 +95,7 @@ export const deleteSystemConfiguration = createAsyncThunk(
   async (id: string, { rejectWithValue }) => {
     try {
       console.log(`🧐 Sir Hawkington is deleting system configuration ${id} with a heavy heart...`);
-      await axios.delete(`${API_BASE_URL}/api/configurations/${id}/`);
+      await axios.delete(`${API_BASE_URL}/api/system-configurations/${id}`);
       console.log("🧐 Sir Hawkington deleted the configuration successfully");
       return id;
     } catch (error: any) {

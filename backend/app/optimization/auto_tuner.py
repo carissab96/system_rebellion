@@ -4,16 +4,9 @@ import json
 from enum import Enum
 from dataclasses import dataclass
 from datetime import datetime
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 
-from rest_framework import viewsets, permissions
-from core.models import AutoTuner
-from core.api.serializers import AutoTuningSerializer
-
-class AutoTuningViewSet(viewsets.ModelViewSet):
-    queryset = AutoTuner.objects.all()
-    serializer_class = AutoTuningSerializer
-    permission_classes = [permissions.IsAuthenticated]
+# FastAPI doesn't need viewsets or serializers like Django REST framework
 
 class TuningParameter(Enum):
     CPU_GOVERNOR = "cpu_governor"

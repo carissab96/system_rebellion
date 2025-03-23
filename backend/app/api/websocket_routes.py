@@ -1,0 +1,45 @@
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from app.websockets import websocket_manager
+import psutil
+import asyncio
+from datetime import datetime
+
+router = APIRouter()
+
+@router.websocket("/system-metrics")
+async def system_metrics_socket(websocket: WebSocket):
+    """
+    Sir Hawkington's Distinguished System Metrics WebSocket
+    The Meth Snail monitors your system with quantum precision!
+    """
+    # No authentication required for system metrics
+    await websocket_manager.connect(websocket)
+    
+    try:
+        while True:
+            # Collect system metrics
+            metrics = {
+                "cpu_usage": psutil.cpu_percent(),
+                "memory_usage": psutil.virtual_memory().percent,
+                "disk_usage": psutil.disk_usage('/').percent,
+                "network_io": {
+                    "sent": psutil.net_io_counters().bytes_sent,
+                    "recv": psutil.net_io_counters().bytes_recv
+                },
+                "timestamp": datetime.utcnow().isoformat()
+            }
+            
+            # Broadcast metrics
+            await websocket_manager.broadcast({
+                "type": "system_metrics",
+                "data": metrics
+            })
+            
+            # Sleep to control update frequency
+            await asyncio.sleep(5)  # Update every 5 seconds
+    
+    except WebSocketDisconnect:
+        websocket_manager.disconnect(websocket)
+    except Exception as e:
+        print(f"Quantum Shadow People interfered: {e}")
+        websocket_manager.disconnect(websocket)

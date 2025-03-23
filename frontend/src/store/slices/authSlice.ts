@@ -4,15 +4,23 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { AuthState, LoginCredentials } from '../../types/auth';
 import axios from 'axios';
 
-// Function to get CSRF token from cookies
+// Function to get CSRF token from cookies or session
 const getCsrfToken = (): string | null => {
+  // First check for csrftoken in cookies
   const cookies = document.cookie.split(';');
   for (let cookie of cookies) {
     const [name, value] = cookie.trim().split('=');
-    if (name === 'csrftoken') {
+    if (name === 'csrftoken' || name === 'csrf_token' || name === 'session') {
       return value;
     }
   }
+  
+  // If not found in cookies, check if it's stored in localStorage
+  const storedToken = localStorage.getItem('csrf_token');
+  if (storedToken) {
+    return storedToken;
+  }
+  
   return null;
 };
 
@@ -36,23 +44,34 @@ export const registerUser = createAsyncThunk(
                 profile: userData.profile
             }));
 
-            const csrfToken = getCsrfToken();
+            // Get CSRF token from localStorage or cookies
+            let csrfToken = localStorage.getItem('csrf_token') || getCsrfToken();
             if (!csrfToken) {
                 console.log("🎩 Sir Hawkington is fetching a fresh CSRF token...");
-                await axios.get('http://127.0.0.1:5000/api/auth/token/', {
-                    withCredentials: true
-                });
+                try {
+                    const response = await axios.get('/api/csrf/csrf-token', {
+                        withCredentials: true
+                    });
+                    
+                    if (response.data && response.data.csrf_token) {
+                        localStorage.setItem('csrf_token', response.data.csrf_token);
+                        csrfToken = response.data.csrf_token;
+                        console.log("🎩 Sir Hawkington has secured a fresh CSRF token!");
+                    }
+                } catch (error) {
+                    console.error("🚨 Failed to fetch CSRF token:", error);
+                }
             }
 
             console.log("🐌 The Meth Snail is frantically validating your system specs...");
             console.log("🐹 The Hamsters are preparing their authentication-grade duct tape...");
             
             // Make the registration request
-            const response = await fetch('http://127.0.0.1:5000/api/auth/register/', {
+            const response = await fetch('/api/auth/register', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': getCsrfToken() || '',
+                    'X-CSRFToken': csrfToken || '',
                 },
                 credentials: 'include',
                 body: JSON.stringify(userData)
@@ -78,16 +97,20 @@ export const registerUser = createAsyncThunk(
 
             // After successful registration, get the user's token
             console.log("🔑 Retrieving authentication tokens...");
-            const tokenResponse = await fetch('http://127.0.0.1:5000/api/auth/token/', {
+            
+            // Store username in localStorage for future reference
+            localStorage.setItem('username', userData.username);
+            
+            const tokenResponse = await fetch('/api/auth/token', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/x-www-form-urlencoded',
                     'X-CSRFToken': getCsrfToken() || '',
                 },
                 credentials: 'include',
-                body: JSON.stringify({
-                    username: userData.username,
-                    password: userData.password
+                body: new URLSearchParams({
+                    'username': userData.username,
+                    'password': userData.password
                 })
             });
 
@@ -103,15 +126,23 @@ export const registerUser = createAsyncThunk(
             }
 
             const tokenData = await tokenResponse.json();
-            console.log("🔐 Authentication tokens received");
+            console.log("🔐 Authentication tokens received:", tokenData);
             
             // Store the tokens and user data
-            if (tokenData.data && tokenData.data.access) {
-                localStorage.setItem('token', tokenData.data.access);
-                localStorage.setItem('refreshToken', tokenData.data.refresh || '');
-                localStorage.setItem('user_id', tokenData.data.user?.id || data.id || 'temp-id');
+            // Handle both response formats (nested data or direct properties)
+            const accessToken = tokenData.access || (tokenData.data && tokenData.data.access);
+            const refreshToken = tokenData.refresh || (tokenData.data && tokenData.data.refresh);
+            const userId = (tokenData.data && tokenData.data.user && tokenData.data.user.id) || 
+                          (tokenData.user && tokenData.user.id) || 
+                          data.id || 
+                          'temp-id';
+            
+            if (accessToken) {
+                localStorage.setItem('token', accessToken);
+                localStorage.setItem('refreshToken', refreshToken || '');
+                localStorage.setItem('user_id', userId);
                 localStorage.setItem('username', userData.username);
-                localStorage.setItem('system_id', data.system_id);
+                localStorage.setItem('system_id', data.system_id || 'system-1');
                 
                 // Clean up temporary registration data
                 localStorage.removeItem('temp_registration_data');
@@ -119,14 +150,19 @@ export const registerUser = createAsyncThunk(
                 // Return combined data for the reducer
                 return {
                     user: {
-                        id: tokenData.data.user?.id || data.id || 'temp-id',
+                        id: userId,
                         username: userData.username,
-                        profile: userData.profile,
+                        profile: userData.profile || {
+                            operating_system: 'linux',
+                            os_version: '5.x',
+                            cpu_cores: 4,
+                            total_memory: 8192
+                        },
                         preferences: userData.preferences || { optimization_level: 'balanced', notification_preferences: {}, system_settings: {} }
                     },
-                    access: tokenData.data.access,
-                    refresh: tokenData.data.refresh,
-                    system_id: data.system_id
+                    access: accessToken,
+                    refresh: refreshToken,
+                    system_id: data.system_id || 'system-1'
                 };
             }
             
@@ -159,24 +195,28 @@ export const login = createAsyncThunk(
             // First, get CSRF token if we don't have it
             if (!getCsrfToken()) {
                 console.log("🍪 No CSRF token found, fetching one...");
-                await axios.get('http://127.0.0.1:5000/api/auth/token/', {
+                await axios.get('/api/csrf/csrf-token', {
                     withCredentials: true
                 });
                 console.log("🍪 CSRF cookie received:", getCsrfToken() ? "Yes" : "No");
             }
 
-            const csrfToken = getCsrfToken();
-            console.log("🛡️ Using CSRF token:", csrfToken);
+            // Get CSRF token from localStorage or cookies
+            const csrfToken = localStorage.getItem('csrf_token') || getCsrfToken();
+            console.log("🛡️ Using CSRF token:", csrfToken ? "Yes" : "No");
 
-            // Use absolute URL to backend server instead of relative URL
-            const response = await fetch('http://127.0.0.1:5000/api/auth/token/', {
+            // Use the proxy configured in vite.config.ts
+            const response = await fetch('/api/auth/token', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/x-www-form-urlencoded',
                     'X-CSRFToken': csrfToken || '',
                 },
                 credentials: 'include',  // Important for cookies
-                body: JSON.stringify(credentials)
+                body: new URLSearchParams({
+                    'username': credentials.username,
+                    'password': credentials.password
+                })
             });
 
             console.log("📡 Login response status:", response.status);
@@ -188,14 +228,27 @@ export const login = createAsyncThunk(
             }
 
             const data = await response.json();
-            console.log("✨ Login successful:", {
-                hasToken: !!data.data.access,
-                hasRefresh: !!data.data.refresh
+            console.log("✨ Login successful, raw response:", data);
+            
+            // Handle different response formats
+            const accessToken = data.access || (data.data && data.data.access);
+            const refreshToken = data.refresh || (data.data && data.data.refresh);
+            
+            console.log("✨ Extracted tokens:", {
+                hasToken: !!accessToken,
+                hasRefresh: !!refreshToken
             });
 
             // Store the tokens
-            localStorage.setItem('token', data.data.access);
-            localStorage.setItem('refreshToken', data.data.refresh);
+            if (accessToken) {
+                localStorage.setItem('token', accessToken);
+            } else {
+                console.error("No access token found in response");
+            }
+            
+            if (refreshToken) {
+                localStorage.setItem('refreshToken', refreshToken);
+            }
 
             return data;
         } catch (error) {
@@ -302,9 +355,40 @@ const authSlice = createSlice({
             .addCase(login.fulfilled, (state, action) => {
                 state.isAuthenticated = true;
                 state.loading = false;
-                state.user = action.payload.data.user;
-                state.token = action.payload.data.access;
-                state.refreshToken = action.payload.data.refresh;
+                
+                // Handle different response formats
+                const payload = action.payload;
+                console.log('Login fulfilled payload:', payload);
+                
+                // Extract user data safely
+                if (payload.data && payload.data.user) {
+                    state.user = payload.data.user;
+                } else if (payload.user) {
+                    state.user = payload.user;
+                } else {
+                    // Create a minimal user object if none exists
+                    state.user = {
+                        id: localStorage.getItem('user_id') || 'unknown',
+                        username: localStorage.getItem('username') || 'user',
+                        profile: {
+                            operating_system: 'linux',
+                            os_version: '5.x',
+                            cpu_cores: 4,
+                            total_memory: 8192
+                        },
+                        preferences: { optimization_level: 'balanced', notification_preferences: {}, system_settings: {} }
+                    };
+                }
+                
+                // Extract token data safely
+                state.token = payload.access || 
+                              (payload.data && payload.data.access) || 
+                              localStorage.getItem('token');
+                              
+                state.refreshToken = payload.refresh || 
+                                    (payload.data && payload.data.refresh) || 
+                                    localStorage.getItem('refreshToken');
+                                    
                 state.error = null;
             })
             .addCase(login.rejected, (state, action) => {

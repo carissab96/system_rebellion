@@ -121,7 +121,6 @@ def refresh_token(
             "refresh_token": new_refresh_token,
             "token_type": "bearer"
         }
-    
     except jwt.JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -143,12 +142,6 @@ def request_password_reset(email: str, db: Session = Depends(get_db)):
         return {"message": "If the email exists, a reset link will be sent"}
     
     reset_token = get_password_reset_token(email)
-    
-    # TODO: Implement email sending logic
-    # This would typically involve:
-    # 1. Generate reset link with token
-    # 2. Send email via service like SendGrid
-    # 3. Log password reset request
     
     return {"message": "Password reset link sent. Check your email!"}
 
