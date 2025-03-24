@@ -1,10 +1,18 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import axios from 'axios';
+import { API_BASE_URL } from '../../utils/api';
 
 export const fetchUserProfile = createAsyncThunk(
   'userProfile/fetch',
   async () => {
-    const response = await fetch('/api/users/profile/');
-    return response.json();
+    try {
+      console.log('Fetching user profile with authentication...');
+      const response = await axios.get(`${API_BASE_URL}/users/profile/`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching user profile:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.detail || 'Failed to fetch user profile');
+    }
   }
 );
 

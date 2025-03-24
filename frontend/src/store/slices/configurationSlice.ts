@@ -36,7 +36,7 @@ export const fetchSystemConfigurations = createAsyncThunk(
   async ({ config_type }: { config_type?: string } = {}, { rejectWithValue }) => {
     try {
       console.log("🧐 Sir Hawkington is fetching system configurations with distinguished elegance...");
-      let url = `${API_BASE_URL}/api/system-configurations/`;
+      let url = `${API_BASE_URL}/system-configurations/`;
       if (config_type) {
         url += `?config_type=${config_type}`;
       }
@@ -58,7 +58,7 @@ export const createSystemConfiguration = createAsyncThunk(
   async (configData: any, { rejectWithValue }) => {
     try {
       console.log("🧐 Sir Hawkington is creating a new system configuration with distinguished precision...");
-      const response = await axios.post(`${API_BASE_URL}/api/system-configurations/`, configData);
+      const response = await axios.post(`${API_BASE_URL}/system-configurations/`, configData);
       console.log("🧐 Sir Hawkington created a new configuration:", response.data);
       return response.data;
     } catch (error: any) {
@@ -77,7 +77,7 @@ export const updateSystemConfiguration = createAsyncThunk(
     try {
       const { id, ...data } = configData;
       console.log(`🧐 Sir Hawkington is updating system configuration ${id} with distinguished care...`);
-      const response = await axios.put(`${API_BASE_URL}/api/system-configurations/${id}`, data);
+      const response = await axios.put(`${API_BASE_URL}/system-configurations/${id}`, data);
       console.log("🧐 Sir Hawkington updated the configuration:", response.data);
       return response.data;
     } catch (error: any) {
@@ -95,7 +95,7 @@ export const deleteSystemConfiguration = createAsyncThunk(
   async (id: string, { rejectWithValue }) => {
     try {
       console.log(`🧐 Sir Hawkington is deleting system configuration ${id} with a heavy heart...`);
-      await axios.delete(`${API_BASE_URL}/api/system-configurations/${id}`);
+      await axios.delete(`${API_BASE_URL}/system-configurations/${id}`);
       console.log("🧐 Sir Hawkington deleted the configuration successfully");
       return id;
     } catch (error: any) {
@@ -113,7 +113,7 @@ export const applySystemConfiguration = createAsyncThunk(
   async (id: string, { rejectWithValue }) => {
     try {
       console.log(`🧐 Sir Hawkington is applying system configuration ${id} with distinguished elegance...`);
-      const response = await axios.post(`${API_BASE_URL}/api/configurations/${id}/apply/`);
+      const response = await axios.post(`${API_BASE_URL}/configurations/${id}/apply/`);
       console.log("🧐 Sir Hawkington applied the configuration:", response.data);
       return response.data;
     } catch (error: any) {

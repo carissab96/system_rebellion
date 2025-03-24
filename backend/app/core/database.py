@@ -1,11 +1,7 @@
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy import create_engine
-import os
-
-# Base declarative model
-Base = declarative_base()
+from app.core.base import Base
 
 # Database URLs
 ASYNC_DATABASE_URL = "sqlite+aiosqlite:///./system_rebellion.db"
@@ -17,13 +13,11 @@ async_engine = create_async_engine(
     echo=True,  # Logging for debugging
     future=True
 )
-
 sync_engine = create_engine(
     SYNC_DATABASE_URL,
     echo=True,  # Logging for debugging
     future=True
 )
-
 # Async session
 AsyncSessionLocal = sessionmaker(
     async_engine, 
@@ -37,6 +31,22 @@ SessionLocal = sessionmaker(
     autocommit=False, 
     autoflush=False
 )
+def log_registered_models():
+    """
+    Sir Hawkington's Model Inspection Protocol
+    The Meth Snail's paranoid sketched-out ass watches ALL!
+    """
+    print("REGISTERED MODELS")
+    print("\n")
+    for table_name in Base.metadata.tables.keys():
+        print(f"The snail Found Model: {table_name}")
+    print("\n")
+#Model Creation Funciton
+async def init_models():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    log_registered_models()
+    print("Models initialized successfully.")
 
 # Async database getter
 async def get_async_db():
@@ -54,4 +64,3 @@ def get_db():
 # For backwards compatibility, make get_db the default
 # This allows existing code to work without changes
 get_db_dependency = get_db
-

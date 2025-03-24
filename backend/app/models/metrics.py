@@ -1,8 +1,6 @@
-from sqlalchemy import Column, Integer, Float, String, DateTime, JSON
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Column, Integer, Float, DateTime, JSON
 from datetime import datetime
-
-Base = declarative_base()
+from app.core.base import Base
 
 class SystemMetrics(Base):
     __tablename__ = "system_metrics"

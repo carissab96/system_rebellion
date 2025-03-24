@@ -33,8 +33,13 @@ class AutoTuner:
         self.logger = logging.getLogger('WebAutoTuner')
         self.tuning_history = []
         self.active_tunings = {}
+        self._initialize_system_state()
 
-    def get_current_metrics(self) -> Dict:
+    async def _initialize_system_state(self):
+        # Initialize system state here
+        pass
+
+    async def get_current_metrics(self) -> Dict:
         """Get current system metrics directly from the system"""
         try:
             return {
@@ -48,9 +53,9 @@ class AutoTuner:
             self.logger.error(f"Error getting system metrics: {str(e)}")
             return None
 
-    def apply_tuning(self, data: Dict) -> Optional[Dict]:
+    async def apply_tuning(self, data: Dict) -> Optional[Dict]:
         """Apply a tuning action
-        o
+        
         Args:
             data: Dictionary containing tuning parameters
             
@@ -72,7 +77,7 @@ class AutoTuner:
                 tuning_data = data
 
             # Get metrics before applying tuning
-            metrics_before = self.get_current_metrics()
+            metrics_before = await self.get_current_metrics()
             
             # Apply the actual system changes here
             # This is where we'd implement the actual system modifications
@@ -82,7 +87,7 @@ class AutoTuner:
             
             if success:
                 # Get metrics after applying tuning
-                metrics_after = self.get_current_metrics()
+                metrics_after = await self.get_current_metrics()
                 
                 # Update active tunings
                 self.active_tunings[tuning_data['parameter']] = tuning_data
@@ -103,9 +108,6 @@ class AutoTuner:
         except Exception as e:
             self.logger.error(f"Error applying tuning: {str(e)}")
             return None
-        except Exception as e:
-            self.logger.error(f"Error applying tuning: {str(e)}")
-            return None
 
     async def get_tuning_recommendations(self):
         """Get tuning recommendations based on current metrics"""
@@ -115,7 +117,7 @@ class AutoTuner:
                 return []
             
             recommendations = []
-            current_time = timezone.now()
+            current_time = datetime.now()
         
             # CPU Usage Recommendations
             if metrics['cpu_usage'] > 80:

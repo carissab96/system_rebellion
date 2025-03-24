@@ -35,7 +35,7 @@ export const fetchSystemAlerts = createAsyncThunk(
   async ({ skip = 0, limit = 20, is_read }: { skip?: number, limit?: number, is_read?: boolean } = {}, { rejectWithValue }) => {
     try {
       console.log("🦉 Sir Hawkington is fetching system alerts...");
-      let url = `${API_BASE_URL}/api/system-alerts/?skip=${skip}&limit=${limit}`;
+      let url = `${API_BASE_URL}/system-alerts/?skip=${skip}&limit=${limit}`;
       if (is_read !== undefined) {
         url += `&is_read=${is_read}`;
       }
@@ -57,7 +57,7 @@ export const createSystemAlert = createAsyncThunk(
   async (alertData: Omit<SystemAlert, 'id' | 'timestamp' | 'created_at' | 'updated_at'>, { rejectWithValue }) => {
     try {
       console.log("🦉 Sir Hawkington is creating a new system alert...");
-      const response = await axios.post(`${API_BASE_URL}/api/system-alerts/`, alertData);
+      const response = await axios.post(`${API_BASE_URL}/system-alerts/`, alertData);
       console.log("🦉 Sir Hawkington created a new alert:", response.data);
       return response.data;
     } catch (error: any) {
@@ -75,7 +75,7 @@ export const markAlertAsRead = createAsyncThunk(
   async (id: string, { rejectWithValue }) => {
     try {
       console.log(`🦉 Sir Hawkington is marking alert ${id} as read...`);
-      const response = await axios.post(`${API_BASE_URL}/api/system-alerts/${id}/mark-as-read`);
+      const response = await axios.post(`${API_BASE_URL}/system-alerts/${id}/mark-as-read`);
       console.log("🦉 Sir Hawkington marked the alert as read:", response.data);
       return response.data;
     } catch (error: any) {
@@ -93,7 +93,7 @@ export const markAllAlertsAsRead = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       console.log("🦉 Sir Hawkington is marking all alerts as read...");
-      await axios.post(`${API_BASE_URL}/api/system-alerts/mark-all-as-read`);
+      await axios.post(`${API_BASE_URL}/system-alerts/mark-all-as-read`);
       console.log("🦉 Sir Hawkington marked all alerts as read");
       return true;
     } catch (error: any) {
@@ -111,7 +111,7 @@ export const deleteSystemAlert = createAsyncThunk(
   async (id: string, { rejectWithValue }) => {
     try {
       console.log(`🦉 Sir Hawkington is deleting alert ${id}...`);
-      await axios.delete(`${API_BASE_URL}/api/system-alerts/${id}`);
+      await axios.delete(`${API_BASE_URL}/system-alerts/${id}`);
       console.log("🦉 Sir Hawkington deleted the alert successfully");
       return id;
     } catch (error: any) {
