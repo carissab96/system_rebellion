@@ -1,7 +1,8 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { SystemMetric, MetricsState, MetricThresholds, MetricAlert, MetricsApiResponse } from '../../types/metrics';
 import { websocketService } from '../../utils/websocketService';
-import { apiMethods } from '../../utils/api';
+import axios from 'axios';
+import { apiMethods, API_BASE_URL } from '../../utils/api';
 
 // Extended state interface to match our actual implementation
 interface ExtendedMetricsState extends MetricsState {
@@ -63,13 +64,9 @@ export const initializeWebSocket = createAsyncThunk(
         // Fallback to REST API if WebSocket connection fails
         try {
           console.log('💾 Falling back to REST API for metrics...');
-          const response = await fetch('http://localhost:8000/api/metrics/system');
+          const response = await axios.get(`${API_BASE_URL}/metrics/system`);
           
-          if (!response.ok) {
-            throw new Error(`API returned ${response.status}: ${response.statusText}`);
-          }
-          
-          const data = await response.json();
+          const data = response.data;
           console.log('💾 REST API metrics data:', data);
           
           // Transform the data to match the expected format
@@ -93,10 +90,8 @@ export const initializeWebSocket = createAsyncThunk(
           // Store the interval ID in a variable that we can access for cleanup
           const pollInterval = setInterval(async () => {
             try {
-              const pollResponse = await fetch('http://localhost:8000/api/metrics/system');
-              if (!pollResponse.ok) throw new Error('API poll failed');
-              
-              const pollData = await pollResponse.json();
+              const pollResponse = await axios.get(`${API_BASE_URL}/metrics/system`);
+              const pollData = pollResponse.data;
               const updatedMetric = {
                 ...metricData,
                 id: crypto.randomUUID ? crypto.randomUUID() : `metric-${Date.now()}`,

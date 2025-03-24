@@ -22,9 +22,19 @@ async def create_superuser(username: str, email: str, password: str):
             is_superuser=True,
             is_active=True,
             is_verified=True,
-            last_login=None,
-            failed_login_attempts=0,
-            lockout_until=None
+            
+            # Add new columns from recent migration
+            operating_system='Linux',
+            os_version='22.04',
+            linux_distro='Ubuntu',
+            linux_distro_version='22.04',
+            cpu_cores=4,
+            total_memory=16,
+            avatar='sir-hawkington',
+            preferences={
+                "optimization_level": "moderate",
+                "theme_preferences": {"use_dark_mode": True}
+            }
         )
         
         session.add(superuser)

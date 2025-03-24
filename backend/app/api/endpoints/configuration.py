@@ -65,6 +65,7 @@ async def create_system_configuration(
     """
     configuration = SystemConfiguration(
         user_id=current_user.id,
+        user=current_user,
         name=config_data.name,
         description=config_data.description,
         config_type=config_data.config_type,

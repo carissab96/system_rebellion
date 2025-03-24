@@ -1,10 +1,9 @@
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text, JSON
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
+from app.core.base import Base
 
-Base = declarative_base()
 
 class User(Base):
     __tablename__ = "users"
@@ -46,14 +45,27 @@ class User(Base):
     lockout_until = Column(DateTime, nullable=True)
     
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
     
     # Relationships
-    configurations = relationship("SystemConfiguration", back_populates="user", cascade="all, delete-orphan")
-    optimization_profiles = relationship("OptimizationProfile", back_populates="user", cascade="all, delete-orphan")
-    alerts = relationship("SystemAlert", back_populates="user", cascade="all, delete-orphan")
-
+    
+    # Use string-based relationships to avoid circular imports
+    configurations = relationship(
+        "SystemConfiguration", 
+        back_populates="user", 
+        cascade="all, delete-orphan"
+    )
+    optimization_profiles = relationship(
+        "OptimizationProfile", 
+        back_populates="user", 
+        cascade="all, delete-orphan"
+    )
+    alerts = relationship(
+        "SystemAlert", 
+        back_populates="user", 
+        cascade="all, delete-orphan"
+    )
 class UserProfile(Base):
     __tablename__ = "user_profiles"
     
@@ -73,4 +85,5 @@ class UserProfile(Base):
     
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.now)
+

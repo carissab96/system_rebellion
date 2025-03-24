@@ -3,6 +3,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { AuthState, LoginCredentials } from '../../types/auth';
 import axios from 'axios';
+import { API_BASE_URL } from '../../utils/api';
 
 // Function to get CSRF token from cookies or session
 const getCsrfToken = (): string | null => {
@@ -67,31 +68,15 @@ export const registerUser = createAsyncThunk(
             console.log("🐹 The Hamsters are preparing their authentication-grade duct tape...");
             
             // Make the registration request
-            const response = await fetch('/api/auth/register', {
-                method: 'POST',
+            console.log("Making registration request to", `${API_BASE_URL}/auth/register`);
+            const response = await axios.post(`${API_BASE_URL}/auth/register`, userData, {
                 headers: {
-                    'Content-Type': 'application/json',
                     'X-CSRFToken': csrfToken || '',
                 },
-                credentials: 'include',
-                body: JSON.stringify(userData)
+                withCredentials: true
             });
 
-            // Handle registration errors
-            if (!response.ok) {
-                let errorMessage = 'Registration failed';
-                try {
-                    const errorData = await response.json();
-                    errorMessage = errorData.error || errorData.detail || JSON.stringify(errorData);
-                } catch (e) {
-                    errorMessage = await response.text();
-                }
-                
-                console.error("💥 Registration failed! Sir Hawkington drops his monocle in shock!", errorMessage);
-                return rejectWithValue(errorMessage);
-            }
-
-            const data = await response.json();
+            const data = response.data;
             console.log("✨ Registration successful! Sir Hawkington welcomes you with a distinguished bow!");
             console.log("🎭 System ID assigned:", data.system_id);
 
@@ -101,21 +86,22 @@ export const registerUser = createAsyncThunk(
             // Store username in localStorage for future reference
             localStorage.setItem('username', userData.username);
             
-            const tokenResponse = await fetch('/api/auth/token', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-CSRFToken': getCsrfToken() || '',
-                },
-                credentials: 'include',
-                body: new URLSearchParams({
+            const tokenResponse = await axios.post(`${API_BASE_URL}/auth/token`, 
+                new URLSearchParams({
                     'username': userData.username,
                     'password': userData.password
-                })
-            });
+                }),
+                {
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': getCsrfToken() || '',
+                    },
+                    withCredentials: true
+                }
+            );
 
             // If token retrieval fails, still return the registration data
-            if (!tokenResponse.ok) {
+            if (!tokenResponse.data) {
                 console.warn("⚠️ Token retrieval failed, but registration was successful");
                 return {
                     status: 'success',
@@ -125,7 +111,7 @@ export const registerUser = createAsyncThunk(
                 };
             }
 
-            const tokenData = await tokenResponse.json();
+            const tokenData = tokenResponse.data;
             console.log("🔐 Authentication tokens received:", tokenData);
             
             // Store the tokens and user data
@@ -206,29 +192,30 @@ export const login = createAsyncThunk(
             console.log("🛡️ Using CSRF token:", csrfToken ? "Yes" : "No");
 
             // Use the proxy configured in vite.config.ts
-            const response = await fetch('/api/auth/token', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-CSRFToken': csrfToken || '',
-                },
-                credentials: 'include',  // Important for cookies
-                body: new URLSearchParams({
-                    'username': credentials.username,
-                    'password': credentials.password
-                })
-            });
+            let data;
+            try {
+                console.log("Making login request to", `${API_BASE_URL}/auth/token`);
+                const response = await axios.post(`${API_BASE_URL}/auth/token`,
+                    new URLSearchParams({
+                        'username': credentials.username,
+                        'password': credentials.password
+                    }),
+                    {
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-CSRFToken': csrfToken || '',
+                        },
+                        withCredentials: true  // Important for cookies
+                    }
+                );
 
-            console.log("📡 Login response status:", response.status);
-
-            if (!response.ok) {
-                const errorData = await response.text();
-                console.error("💩 Login failed:", errorData);
-                return rejectWithValue(errorData);
+                console.log("📡 Login response status:", response.status);
+                data = response.data;
+                console.log("✨ Login successful, raw response:", data);
+            } catch (error: any) {
+                console.error("💩 Login failed:", error.response?.data || error.message);
+                return rejectWithValue(error.response?.data?.detail || 'Login failed');
             }
-
-            const data = await response.json();
-            console.log("✨ Login successful, raw response:", data);
             
             // Handle different response formats
             const accessToken = data.access || (data.data && data.data.access);
@@ -271,25 +258,20 @@ export const refreshToken = createAsyncThunk(
             console.log("🛡️ Using CSRF token for refresh:", csrfToken);
 
             // Use absolute URL to backend server instead of relative URL
-            const response = await fetch('http://127.0.0.1:5000/api/auth/token/refresh/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken || '',
-                },
-                credentials: 'include',
-                body: JSON.stringify({ refresh: refreshTokenStr })
-            });
+            console.log("Making token refresh request to", `${API_BASE_URL}/auth/token/refresh/`);
+            const response = await axios.post(`${API_BASE_URL}/auth/token/refresh/`, 
+                { refresh: refreshTokenStr },
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken || '',
+                    },
+                    withCredentials: true
+                }
+            );
 
             console.log("📡 Refresh response status:", response.status);
-
-            if (!response.ok) {
-                const errorData = await response.text();
-                console.error("💩 Token refresh failed:", errorData);
-                return rejectWithValue(errorData);
-            }
-
-            const data = await response.json();
+            const data = response.data;
             console.log("✨ Token refresh successful");
 
             // Update the tokens

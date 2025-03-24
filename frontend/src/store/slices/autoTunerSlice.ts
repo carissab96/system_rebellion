@@ -2,6 +2,8 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { PayloadAction } from '@reduxjs/toolkit';
 import { AutoTunerState } from '../../types/autoTuner';
 import { OptimizationProfile } from '../../types/metrics';
+import axios from 'axios';
+import { API_BASE_URL } from '../../utils/api';
 
 const initialState: AutoTunerState = {
   currentMetrics: null,
@@ -18,77 +20,86 @@ const initialState: AutoTunerState = {
 export const fetchCurrentMetrics = createAsyncThunk(
   'autoTuner/fetchCurrentMetrics',
   async () => {
-    const response = await fetch('/api/auto-tuner/metrics/current');
-    if (!response.ok) {
-      throw new Error('Failed to fetch current metrics');
+    try {
+      console.log('Fetching current metrics with authentication...');
+      const response = await axios.get(`${API_BASE_URL}/auto-tuner/metrics/current`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching metrics:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.detail || 'Failed to fetch current metrics');
     }
-    return response.json();
   }
 );
 
 export const fetchRecommendations = createAsyncThunk(
   'autoTuner/fetchRecommendations',
   async () => {
-    const response = await fetch('/api/auto-tuner/recommendations');
-    if (!response.ok) {
-      throw new Error('Failed to fetch recommendations');
+    try {
+      console.log('Fetching recommendations with authentication...');
+      const response = await axios.get(`${API_BASE_URL}/auto-tuner/recommendations`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching recommendations:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.detail || 'Failed to fetch recommendations');
     }
-    return response.json();
   }
 );
 
 export const fetchPatterns = createAsyncThunk(
   'autoTuner/fetchPatterns',
   async () => {
-    const response = await fetch('/api/auto-tuner/patterns');
-    if (!response.ok) {
-      throw new Error('Failed to fetch patterns');
+    try {
+      console.log('Fetching patterns with authentication...');
+      const response = await axios.get(`${API_BASE_URL}/auto-tuner/patterns`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching patterns:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.detail || 'Failed to fetch patterns');
     }
-    return response.json();
   }
 );
 
 export const fetchTuningHistory = createAsyncThunk(
   'autoTuner/fetchTuningHistory',
   async () => {
-    const response = await fetch('/api/auto-tuner/history');
-    if (!response.ok) {
-      throw new Error('Failed to fetch tuning history');
+    try {
+      console.log('Fetching tuning history with authentication...');
+      const response = await axios.get(`${API_BASE_URL}/auto-tuner/history`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching tuning history:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.detail || 'Failed to fetch tuning history');
     }
-    return response.json();
   }
 );
 
 export const applyOptimizationProfile = createAsyncThunk(
   'autoTuner/applyOptimizationProfile',
   async (profileId: string) => {
-    const response = await fetch(`/api/auto-tuner/profiles/${profileId}/apply`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-    if (!response.ok) {
-      throw new Error('Failed to apply optimization profile');
+    try {
+      console.log(`Applying optimization profile ${profileId} with authentication...`);
+      const response = await axios.post(`${API_BASE_URL}/auto-tuner/profiles/${profileId}/apply`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error applying optimization profile:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.detail || 'Failed to apply optimization profile');
     }
-    return response.json();
   }
 );
 
 export const applyRecommendation = createAsyncThunk(
   'autoTuner/applyRecommendation',
   async (recommendationId: number) => {
-    const response = await fetch('/api/auto-tuner/recommendations/apply', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ recommendation_id: recommendationId }),
-    });
-    if (!response.ok) {
-      throw new Error('Failed to apply recommendation');
+    try {
+      console.log(`Applying recommendation ${recommendationId} with authentication...`);
+      const response = await axios.post(`${API_BASE_URL}/auto-tuner/recommendations/apply`, {
+        recommendation_id: recommendationId
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error('Error applying recommendation:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.detail || 'Failed to apply recommendation');
     }
-    return response.json();
   }
 );
 

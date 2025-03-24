@@ -1,6 +1,6 @@
-from sqlalchemy import Column, Integer, String, Boolean, JSON, DateTime, Enum, ForeignKey, Text
+from sqlalchemy import Column, String, Boolean, JSON, DateTime, Enum, ForeignKey, Text
 from sqlalchemy.orm import relationship
-from app.models import Base
+from app.core.base import Base
 from datetime import datetime
 import uuid
 import enum
@@ -21,8 +21,8 @@ class SystemConfiguration(Base):
     config_type = Column(Enum(ConfigType), nullable=False)
     settings = Column(JSON, nullable=False)
     is_active = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
     # Relationship with User
     user = relationship("User", back_populates="configurations")
@@ -36,8 +36,8 @@ class OptimizationProfile(Base):
     description = Column(Text, nullable=True)
     settings = Column(JSON, nullable=False)
     is_active = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
     
     # Relationship with User
     user = relationship("User", back_populates="optimization_profiles")

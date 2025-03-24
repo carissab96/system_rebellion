@@ -113,8 +113,7 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     refresh_token = create_refresh_token(data={"sub": user.username})
     
     # Update last login
-    from datetime import datetime
-    user.last_login = datetime.utcnow()
+    user.last_login = datetime.now()
     user.failed_login_attempts = 0  # Reset failed attempts
     user.lockout_until = None  # Clear any lockouts
     

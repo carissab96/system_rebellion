@@ -31,6 +31,7 @@ def init_db_sync(db_engine=None):
 
 def create_application() -> FastAPI:
     # Create FastAPI app
+    print("Available models in registry:", Base.registry._class_registry)
     app = FastAPI(
         title="System Rebellion",
         description="Quantum Optimization Platform",
@@ -59,7 +60,7 @@ def create_application() -> FastAPI:
     @app.on_event("startup")
     async def startup_event():
         await init_db()
-    
+
     # Include routers
     app.include_router(
         csrf.router, 
