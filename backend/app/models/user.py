@@ -12,6 +12,7 @@ class User(Base):
     username = Column(String(50), unique=True, nullable=False, index=True)
     email = Column(String(100), unique=True, nullable=False, index=True)
     hashed_password = Column(String(255), nullable=False)
+    needs_onboarding = Column(Boolean, default=True)
     
     # Profile Information
     first_name = Column(String(50), nullable=True)

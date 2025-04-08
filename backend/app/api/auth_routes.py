@@ -1,24 +1,20 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from typing import Dict
 
 from core.database import get_db
-from core.security import (
-    create_access_token, 
-    create_refresh_token, 
-    get_password_reset_token
-)
 from services.auth_service import AuthService
 from schemas.auth import UserCreate, UserProfileCreate, UserResponse
 from models.user import User
+import jwt
+from core.config import settings
+from core.security import hash_password, verify_password, create_access_token, create_refresh_token
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 @router.post("/register", response_model=UserResponse)
 def register_user(
-    user_data: UserCreate,
-    profile_data: UserProfileCreate = None,
+    user_data: UserCreate,  # This should now include the profile field
     db: Session = Depends(get_db)
 ):
     """
@@ -28,13 +24,17 @@ def register_user(
     The Meth Snail prepares your optimization credentials.
     """
     try:
-        new_user = AuthService.create_user(db, user_data, profile_data)
+        # Pass both to the service
+        new_user = AuthService.create_user(db, user_data)
+        
+        # Return the response
         return UserResponse(
             id=new_user.id,
             username=new_user.username,
             email=new_user.email,
             is_active=new_user.is_active,
-            created_at=new_user.created_at
+            created_at=new_user.created_at,
+            needs_onboarding=new_user.needs_onboarding
         )
     except HTTPException as e:
         # The Quantum Shadow People tried to interfere
@@ -72,7 +72,8 @@ def login(
         "user": {
             "id": user.id,
             "username": user.username,
-            "email": user.email
+            "email": user.email,
+            "needs_onboarding": user.needs_onboarding
         }
     }
 

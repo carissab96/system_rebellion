@@ -30,7 +30,7 @@ def verify_password(plain_password: str, hashed_password: str):
         print(f"🚨 Password verification failed: {e}")
         return False
 
-def get_password_hash(password: str):
+def hash_password(password: str):
     """
     Sir Hawkington's Password Hashing Mechanism
     Quantum-grade password protection with aristocratic precision!

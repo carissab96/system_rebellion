@@ -9,8 +9,9 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str = Field(..., min_length=12)
+    profile: Optional[UserProfileCreate] = None
     
-    @validator('password')
+    @field_validator('password')
     def validate_password(cls, password):
         # Sir Hawkington's Distinguished Password Validation
         if not re.search(r'[A-Z]', password):

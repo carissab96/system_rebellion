@@ -12,6 +12,7 @@ import SystemAlerts from './components/alerts/SystemAlerts';
 import SystemConfiguration from './components/configuration/SystemConfiguration';
 import SystemMetrics from './components/metrics/SystemMetrics';
 import AutoTunerComponent from './components/auto_tuners/auto_tuner';
+import { OnboardingPage } from './pages/OnboardingPage';
 import './App.css';
 
 const App: React.FC = () => {
@@ -285,6 +286,14 @@ const App: React.FC = () => {
                         element={
                             <PrivateRoute>
                                 <Dashboard />
+                            </PrivateRoute>
+                        } 
+                    />
+                    <Route 
+                        path="/onboarding" 
+                        element={
+                            <PrivateRoute>
+                                <OnboardingPage />
                             </PrivateRoute>
                         } 
                     />

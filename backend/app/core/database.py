@@ -5,18 +5,21 @@ from app.core.base import Base
 
 # Database URLs
 ASYNC_DATABASE_URL = "sqlite+aiosqlite:///./system_rebellion.db"
-SYNC_DATABASE_URL = "sqlite:///./system_rebellion.db"
+SYNC_DATABASE_URL = "sqlite:///./system_rebellion.db?check_same_thread=False"
 
 # Create engines
 async_engine = create_async_engine(
     ASYNC_DATABASE_URL, 
     echo=True,  # Logging for debugging
-    future=True
+    future=True,
+    pool_pre_ping=True  # Ensure connections are valid
 )
 sync_engine = create_engine(
     SYNC_DATABASE_URL,
     echo=True,  # Logging for debugging
-    future=True
+    future=True,
+    pool_pre_ping=True,  # Ensure connections are valid
+    connect_args={"check_same_thread": False}  # Allow thread sharing
 )
 # Async session
 AsyncSessionLocal = sessionmaker(

@@ -34,6 +34,9 @@ export default defineConfig({
             console.log('🐌 The Meth Snail reports a WebSocket error:', err);
             console.log('🐌 Attempting to fix with quantum-grade duct tape...');
           });
+          proxy.on('proxyReq', (proxyReq, req, _res) => {
+            console.log('🔌 WebSocket request to:', req.url);
+          });
         }
       }
     }

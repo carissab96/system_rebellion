@@ -10,6 +10,13 @@ interface ApiError extends AxiosError {
 
 // Function to get CSRF token from cookies
 const getCsrfToken = (): string | null => {
+  // First check localStorage
+  const storedToken = localStorage.getItem('csrf_token');
+  if (storedToken) {
+    return storedToken;
+  }
+  
+  // Then check cookies
   const cookies = document.cookie.split(';');
   for (let cookie of cookies) {
     const [name, value] = cookie.trim().split('=');
@@ -125,7 +132,7 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
     if (csrfToken) {
       config.headers['X-CSRFToken'] = csrfToken;
     } else {
-      console.warn('CSRF token not found in cookies!');
+      console.warn('CSRF token not found in cookies or localStorage!');
     }
   }
   
@@ -244,7 +251,7 @@ export const apiMethods = {
       
       try {
         // Use the new public system metrics endpoint that doesn't require authentication
-        const response = await apiMethods.get('/api/metrics/system');
+        const response = await apiMethods.get('/metrics/system');
         console.log("✨ The Hamsters have successfully retrieved the metrics!", response);
         return response;
       } catch (error) {
@@ -258,7 +265,7 @@ export const apiMethods = {
       console.log("🐌 The Meth Snail is creating a new metric with quantum precision!");
       
       try {
-        const response = await apiMethods.post('/api/metrics/', metricData);
+        const response = await apiMethods.post('/metrics/', metricData);
         console.log("✨ Metric created successfully!", response);
         return response;
       } catch (error) {
@@ -272,7 +279,7 @@ export const apiMethods = {
       console.log(`🧐 Sir Hawkington is updating metric ${metricId} with distinguished care!`);
       
       try {
-        const response = await apiMethods.put(`/api/metrics/${metricId}`, metricData);
+        const response = await apiMethods.put(`/metrics/${metricId}`, metricData);
         console.log("✨ Metric updated successfully!", response);
         return response;
       } catch (error) {
@@ -286,7 +293,7 @@ export const apiMethods = {
       console.log(`🐌 The Meth Snail is deleting metric ${metricId} with optimization energy!`);
       
       try {
-        const response = await apiMethods.delete(`/api/metrics/${metricId}`);
+        const response = await apiMethods.delete(`/metrics/${metricId}`);
         console.log("✨ Metric deleted successfully!", response);
         return response;
       } catch (error) {
@@ -300,11 +307,81 @@ export const apiMethods = {
       console.log(`🧐 Sir Hawkington is retrieving metric ${metricId} with precise calculation!`);
       
       try {
-        const response = await apiMethods.get(`/api/metrics/${metricId}`);
+        const response = await apiMethods.get(`/metrics/${metricId}`);
         console.log("✨ Metric retrieved successfully!", response);
         return response;
       } catch (error) {
         console.error("💥 Metric retrieval failed!", error);
+        throw error;
+      }
+    }
+  },
+  auth: {
+    // Sir Hawkington's User Registration Protocol
+    register: async (userData: any) => {
+      console.log("🧐 Sir Hawkington is processing your registration with distinguished care...");
+      
+      try {
+        // Simplify the data structure to match what the backend expects
+        // Send the complete user data including profile
+        const response = await axios.post('/auth/register', {
+          username: userData.username,
+          email: userData.email,
+          password: userData.password,
+          profile: userData.profile
+        }, {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        console.log("✨ Registration response:", response.data);
+        
+        // If we have tokens in the response, store them
+        if (response.data.access_token) {
+          localStorage.setItem('token', response.data.access_token);
+          localStorage.setItem('refreshToken', response.data.refresh_token || '');
+        }
+        
+        return response.data;
+      } catch (error) {
+        console.error("🚨 Registration error:", error);
+        if (axios.isAxiosError(error)) {
+          console.error("Response data:", error.response?.data);
+          console.error("Status code:", error.response?.status);
+        }
+        throw error;
+      }
+    },
+    
+    // The Meth Snail's Login Protocol
+    login: async (credentials: { username: string; password: string }) => {
+      console.log("🐌 The Meth Snail is processing your login with quantum precision!");
+      
+      try {
+        const response = await api.post('/auth/token', 
+          new URLSearchParams({
+            'username': credentials.username,
+            'password': credentials.password
+          }),
+          {
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            }
+          }
+        );
+        
+        console.log("✨ Login successful!", response.data);
+        
+        // Store tokens
+        if (response.data.access_token) {
+          localStorage.setItem('token', response.data.access_token);
+          localStorage.setItem('refreshToken', response.data.refresh_token || '');
+        }
+        
+        return response.data;
+      } catch (error) {
+        console.error("💥 Login failed!", error);
         throw error;
       }
     }
@@ -335,10 +412,17 @@ export const initializeCsrf = async (): Promise<boolean> => {
     }
     
     // If we didn't get a token from the dedicated endpoint, try the health-check endpoint
-    await axios.get(`${API_BASE_URL}/health-check/`, {
+    const healthResponse = await axios.get(`${API_BASE_URL}/health-check/`, {
       withCredentials: true,
       timeout: 5000
     });
+    
+    // If health check response has a csrf_token field, use that
+    if (healthResponse.data && healthResponse.data.csrf_token) {
+      localStorage.setItem('csrf_token', healthResponse.data.csrf_token);
+      console.log('🎩 Sir Hawkington has secured a CSRF token from health check!');
+      return true;
+    }
     
     // Verify that we got the CSRF token
     const csrfToken = getCsrfToken();

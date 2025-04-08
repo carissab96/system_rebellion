@@ -60,6 +60,12 @@ class WebSocketService implements IWebSocketService {
 
     private constructor() {
         console.log("🎭 WebSocket Service Constructor Called");
+        
+        // Set WebSocket URL based on environment
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const host = window.location.host;
+        this.wsUrl = `${protocol}//${host}/ws/system-metrics`;
+        console.log("🔌 WebSocket URL set to:", this.wsUrl);
     }
 
     public static getInstance(): WebSocketService {
@@ -70,7 +76,7 @@ class WebSocketService implements IWebSocketService {
     }
 
     public async connect(): Promise<void> {
-        console.log("🔌 ATTEMPTING WEBSOCKET CONNECTION...");
+        console.log("🔌 ATTEMPTING WEBSOCKET CONNECTION to:", this.wsUrl);
         console.log(`🔍 Current time: ${new Date().toISOString()}`);
         
         // If we've permanently failed, don't even try
@@ -87,99 +93,71 @@ class WebSocketService implements IWebSocketService {
             return this.connectionPromise;
         }
 
-        // Check if backend is available before attempting WebSocket connection
-        try {
-            const backendAvailable = await checkBackendAvailability();
-            if (!backendAvailable) {
-                console.log("⚠️ Backend is not available, skipping WebSocket connection");
-                return Promise.reject(new Error("Backend unavailable"));
-            }
-        } catch (error) {
-            console.log("⚠️ Backend availability check failed, skipping WebSocket connection");
-            return Promise.reject(error);
-        }
-
         this.connectionPromise = new Promise((resolve, reject) => {
             try {
-                if (this.socket?.readyState === WebSocket.OPEN) {
-                    console.log("✅ WebSocket already connected!");
-                    resolve();
-                    return;
-                }
+                // Check if backend is available before attempting WebSocket connection
+                checkBackendAvailability().then(backendAvailable => {
+                    if (!backendAvailable) {
+                        console.log("❌ Backend server is not available");
+                        this.permanentlyFailed = true;
+                        return reject(new Error("Backend server is not available"));
+                    }
 
-                // Sir Hawkington's Distinguished WebSocket URL Determination Protocol
-                const protocol = 'ws:';
-                // Use the backend server directly instead of relying on proxy
-                const host = 'localhost:8000';
-                
-                // Connect directly to the backend WebSocket endpoint
-                this.wsUrl = `${protocol}//${host}/ws/system-metrics`;
-                console.log(`🧐 Sir Hawkington has determined the WebSocket URL with aristocratic precision: ${this.wsUrl}`);
-                console.log(`🐌 The Meth Snail is preparing the WebSocket pipes...`);
-                
-                // No need for CSRF token for WebSocket connections
-                console.log("🧐 Sir Hawkington declares: WebSockets don't require CSRF tokens!");
-                this.socket = new WebSocket(this.wsUrl);
-                
-                this.socket.onopen = () => {
-                    console.log('🎩 Sir Hawkington announces: WebSocket connection established with distinguished elegance! 🎉');
-                    console.log(`🔍 WebSocket readyState: ${this.socket?.readyState}`);
-                    console.log(`🐹 The Hamsters report successful WebSocket tunneling`);
-                    this.reconnectAttempts = 0;
-                    this.clearConnectionTimeout();
-                    resolve();
-                };
-                
-                this.socket.onmessage = (event) => {
-                    console.log(`📨 Raw message received: ${event.data}`);
-                    console.log(`🐌 The Meth Snail is processing data at ludicrous speed`);
-                    this.handleMessage(event);
-                };
-                
-                this.socket.onerror = (event) => {
-                    console.error("🚨 WebSocket error detected!");
-                    console.error("🧐 Sir Hawkington adjusts his monocle in distress:", event);
-                    console.error("🪄 The Stick is attempting to manage the anxiety...");
-                    this.handleError(event);
-                    if (!this.isIntentionalDisconnect) {
-                        reject(new Error("WebSocket connection error - The Hamsters have failed us"));
-                    }
-                };
-                
-                this.socket.onclose = (event) => {
-                    console.log(`💔 WebSocket closed with code: ${event.code}, reason: ${event.reason}`);
-                    console.log(`🧐 Sir Hawkington laments: "A most unfortunate disconnection, old chap!"`); 
-                    console.log(`🐹 The Hamsters scurry to assess the damage...`);
-                    this.handleClose();
-                    if (!this.isIntentionalDisconnect) {
-                        reject(new Error(`WebSocket closed: ${event.reason || 'Unknown reason - The VIC-20 is confused'}`));
-                    }
-                };
-                
-                // Add a timeout to detect connection issues
-                this.setConnectionTimeout();
-                
+                    // Create WebSocket connection
+                    this.socket = new WebSocket(this.wsUrl);
+
+                    // Set up event handlers
+                    this.socket.onopen = () => {
+                        console.log("✅ WebSocket connection established");
+                        this.reconnectAttempts = 0;
+                        this.permanentlyFailed = false;
+                        this.clearConnectionTimeout();
+                        this.clearReconnectTimeout();
+                        resolve();
+                    };
+
+                    this.socket.onmessage = (event) => {
+                        this.handleMessage(event);
+                    };
+
+                    this.socket.onerror = (event) => {
+                        console.error("🚨 WebSocket error detected!", event);
+                        this.handleError(event);
+                        reject(event);
+                    };
+
+                    this.socket.onclose = (event) => {
+                        console.log("🚪 WebSocket connection closed", event);
+                        this.handleClose(event);
+                        reject(event);
+                    };
+
+                    // Set connection timeout
+                    this.setConnectionTimeout();
+                });
             } catch (error) {
-                console.error("🔥 WEBSOCKET CREATION FAILED:", error);
-                this.connectionPromise = null;
+                console.error("❌ Error creating WebSocket connection:", error);
                 reject(error);
             }
         });
-        
+
         return this.connectionPromise;
     }
 
     private setConnectionTimeout(): void {
         this.clearConnectionTimeout();
         this.connectionTimeoutId = window.setTimeout(() => {
-            if (this.socket?.readyState !== WebSocket.OPEN) {
-                console.error(`⏰ WebSocket connection timeout. Current state: ${this.getConnectionState()}`);
-                if (this.socket) {
-                    this.socket.close();
-                }
-                this.connectionPromise = null;
+            if (this.socket && this.socket.readyState !== WebSocket.OPEN) {
+                const stateNames = {
+                    [WebSocket.CONNECTING]: 'CONNECTING',
+                    [WebSocket.OPEN]: 'OPEN',
+                    [WebSocket.CLOSING]: 'CLOSING',
+                    [WebSocket.CLOSED]: 'CLOSED'
+                };
+                console.error("⏰ WebSocket connection timeout. Current state:", stateNames[this.socket.readyState]);
+                this.handleClose();
             }
-        }, 5000);
+        }, 5000); // 5 second timeout
     }
 
     private clearConnectionTimeout(): void {
@@ -243,19 +221,25 @@ class WebSocketService implements IWebSocketService {
 
     private handleError(error: Event): void {
         console.error("🚨 WebSocket error occurred:", error);
-        this.connectionPromise = null;
-    }
-
-    private handleClose(): void {
-        console.log("💔 WebSocket connection closed");
-        console.log("🧐 Sir Hawkington adjusts his monocle and reaches for the emergency teacup...");
-        this.connectionPromise = null;
         
-        if (!this.isIntentionalDisconnect) {
-            console.log("🐹 The Hamsters are preparing the reconnection apparatus...");
+        if (this.reconnectAttempts < this.MAX_ATTEMPTS) {
             this.handleReconnect();
         } else {
-            console.log("🪄 The Stick confirms this was an intentional disconnection. No anxiety detected.");
+            this.permanentlyFailed = true;
+            console.error("💀 Maximum reconnection attempts reached. WebSocket permanently disabled.");
+        }
+    }
+
+    private handleClose(event?: CloseEvent): void {
+        console.log("🚪 WebSocket connection closed", event);
+        
+        if (!this.isIntentionalDisconnect && !this.permanentlyFailed) {
+            if (this.reconnectAttempts < this.MAX_ATTEMPTS) {
+                this.handleReconnect();
+            } else {
+                this.permanentlyFailed = true;
+                console.error("💀 Maximum reconnection attempts reached. WebSocket permanently disabled.");
+            }
         }
     }
 

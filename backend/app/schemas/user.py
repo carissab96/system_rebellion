@@ -16,6 +16,7 @@ class UserResponse(UserBase):
     is_active: bool
     created_at: datetime
     updated_at: datetime
+    needs_onboarding: bool
     
     class Config:
         orm_mode = True

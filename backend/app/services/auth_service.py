@@ -39,17 +39,37 @@ class AuthService:
                 )
                 db.add(db_profile)
             
-            db.commit()
-            db.refresh(db_user)
+            # Attempt to commit the transaction
+            try:
+                db.commit()
+                db.refresh(db_user)
+                return db_user
+            except Exception as commit_error:
+                db.rollback()
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"Database commit failed: {str(commit_error)}"
+                )
             
-            return db_user
-        
-        except IntegrityError:
+        except IntegrityError as integrity_error:
             db.rollback()
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Username or email already exists. The Quantum Shadow People are laughing."
-            )
+            # Extract specific error message
+            error_msg = str(integrity_error)
+            if "username" in error_msg:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Username already exists. The Quantum Shadow People are laughing."
+                )
+            elif "email" in error_msg:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Email already exists. The Quantum Shadow People are laughing."
+                )
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Integrity error: {str(integrity_error)}"
+                )
         except Exception as e:
             db.rollback()
             raise HTTPException(
