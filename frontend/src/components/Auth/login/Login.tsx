@@ -114,9 +114,17 @@ export const Login: React.FC = () => {
       console.log('✅ Login result:', result); // Debug log
       
       if (result && result.data && result.data.access) {
-        console.log('🎉 Login successful, navigating to dashboard...');
+        console.log('🎉 Login successful!');
         updateHawkingtonQuote('success');
-        navigate('/dashboard');
+        
+        // Check if user needs onboarding
+        if (result.data.user && result.data.user.needs_onboarding) {
+          console.log('🧐 Sir Hawkington notices you need to set up your system...');
+          navigate('/onboarding');
+        } else {
+          console.log('🎩 Sir Hawkington welcomes you back to your dashboard!');
+          navigate('/dashboard');
+        }
       } else {
         console.error('❌ Login response missing expected data structure');
         setError('Invalid response from server. Please try again.');

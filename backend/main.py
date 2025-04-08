@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from app.core.database import async_engine as engine, Base
@@ -42,6 +42,7 @@ def create_application() -> FastAPI:
     setup_middleware(app)
     
     # Add health-check endpoint
+    @app.get("/health-check/")
     @app.get("/api/health-check/")
     async def health_check():
         """
@@ -114,7 +115,7 @@ def create_application() -> FastAPI:
     # CORS Configuration
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:5173", "http://localhost:5174"],
+        allow_origins=["*"],  # Allow all origins for development
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*", "X-CSRFToken"],

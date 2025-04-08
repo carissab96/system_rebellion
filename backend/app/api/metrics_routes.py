@@ -30,8 +30,8 @@ async def get_system_metrics():
             "recv": network_io.bytes_recv
         },
         "process_count": len(psutil.pids()),
-        "timestamp": datetime.utcnow().isoformat()
-    }
+        "timestamp": datetime.now(datetime.timezone.utc).isoformat()
+    }   
 
 @router.post("/", response_model=MetricResponse)
 async def create_metric(
