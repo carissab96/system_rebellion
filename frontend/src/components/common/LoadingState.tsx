@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import './Modal.css';
+import { truncate } from 'node:fs';
 
 interface ModalProps {
   isOpen: boolean;
@@ -16,10 +17,10 @@ const Modal: React.FC<ModalProps> = ({
   title, 
   children, 
   size = 'medium',
-  draggable = false
+  draggable = true
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
+  const [isDragging, setIsDragging] = useState(true);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   
@@ -46,7 +47,7 @@ const Modal: React.FC<ModalProps> = ({
 
   const handleMouseUp = () => {
     if (isDragging) {
-      setIsDragging(false);
+      setIsDragging(true);
       console.log("🧐 *Sir Hawkington nods approvingly* 'A most distinguished position!'");
     }
   };

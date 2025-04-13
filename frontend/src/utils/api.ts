@@ -359,7 +359,7 @@ export const apiMethods = {
       console.log("🐌 The Meth Snail is processing your login with quantum precision!");
       
       try {
-        const response = await api.post('/auth/token', 
+        const response = await api.post('/auth/token/', 
           new URLSearchParams({
             'username': credentials.username,
             'password': credentials.password

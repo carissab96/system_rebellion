@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { Login } from './components/Auth/login/Login';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Login from './components/Auth/login/Login';
 import { Dashboard } from './components/dashboard/Dashboard/Dashboard';
 import { PrivateRoute } from './utils/PrivateRoute';
 import { websocketService } from './utils/websocketService';
@@ -12,7 +12,8 @@ import SystemAlerts from './components/alerts/SystemAlerts';
 import SystemConfiguration from './components/configuration/SystemConfiguration';
 import SystemMetrics from './components/metrics/SystemMetrics';
 import AutoTunerComponent from './components/auto_tuners/auto_tuner';
-import { OnboardingPage } from './pages/OnboardingPage';
+import OnboardingPage from './pages/OnboardingPage';
+import LandingPage from './pages/LandingPage';
 import './App.css';
 
 const App: React.FC = () => {
@@ -22,14 +23,14 @@ const App: React.FC = () => {
     
     // Log auth status on mount for debugging purposes
     useEffect(() => {
-        console.log('🔐 Auth dispatcher ready');
+        console.log(' Auth dispatcher ready');
     }, [dispatch]);
     // This state tracks backend availability and is used throughout the component
     const [backendAvailable, setBackendAvailable] = useState<boolean>(true);
     
     // Log backend availability changes
     useEffect(() => {
-        console.log(`🌐 Backend availability changed: ${backendAvailable ? 'Available' : 'Unavailable'}`);
+        console.log(` Backend availability changed: ${backendAvailable ? 'Available' : 'Unavailable'}`);
     }, [backendAvailable]);
     const [showOfflineNotification, setShowOfflineNotification] = useState<boolean>(false);
     const [reconnectAttempts, setReconnectAttempts] = useState<number>(0);
@@ -46,7 +47,7 @@ const App: React.FC = () => {
         
         // If we've reached the maximum number of attempts, mark as permanently failed
         if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-            console.error('💀 Maximum reconnection attempts reached. Giving up.');
+            console.error(' Maximum reconnection attempts reached. Giving up.');
             setPermanentlyFailed(true);
             setShowOfflineNotification(true);
             return;
@@ -54,18 +55,18 @@ const App: React.FC = () => {
         
         setIsReconnecting(true);
         try {
-            console.log(`🔄 Attempting to reconnect to backend (attempt ${reconnectAttempts + 1} of ${MAX_RECONNECT_ATTEMPTS})...`);
+            console.log(` Attempting to reconnect to backend (attempt ${reconnectAttempts + 1} of ${MAX_RECONNECT_ATTEMPTS})...`);
             const available = await checkBackendAvailability(true); // Force a fresh check
             
             setBackendAvailable(available);
             if (available) {
                 // Backend is now available
-                console.log("🔒 Backend available, initializing CSRF protection...");
+                console.log(" Initializing CSRF protection...");
                 try {
                     await initializeCsrf();
-                    console.log("✅ CSRF token initialized successfully");
+                    console.log(" CSRF token initialized successfully");
                 } catch (csrfError) {
-                    console.warn("⚠️ CSRF token initialization failed, but continuing anyway:", csrfError);
+                    console.warn(" CSRF token initialization failed, but continuing anyway:", csrfError);
                     // We'll proceed without CSRF token - WebSockets don't need it
                 }
                 
@@ -74,25 +75,25 @@ const App: React.FC = () => {
                 
                 // Try to reconnect WebSocket if needed (regardless of CSRF status)
                 if (!websocketService.isConnected()) {
-                    console.log("🔌 Reconnecting WebSocket service (CSRF status independent)...");
+                    console.log(" Reconnecting WebSocket service (CSRF status independent)...");
                     try {
                         await websocketService.connect();
                         websocketService.resetReconnectAttempts();
-                        console.log("✅ WebSocket reconnected successfully");
+                        console.log(" WebSocket reconnected successfully");
                     } catch (wsError) {
-                        console.warn("⚠️ WebSocket reconnection failed, will retry later");
+                        console.warn(" WebSocket reconnection failed, will retry later");
                     }
                 }
             } else {
                 // Backend is still unavailable
-                console.error("❌ Backend server is still not available");
+                console.error(" Backend server is still not available");
                 setShowOfflineNotification(true);
                 setReconnectAttempts(prev => prev + 1);
                 
                 // Schedule another reconnection attempt with exponential backoff
                 if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS - 1) { // Limit to MAX_RECONNECT_ATTEMPTS
                     const delay = Math.min(30000, 1000 * Math.pow(2, reconnectAttempts)); // Max 30 seconds
-                    console.log(`⏱️ Scheduling next reconnection attempt in ${delay/1000} seconds`);
+                    console.log(` Scheduling next reconnection attempt in ${delay/1000} seconds`);
                     
                     if (reconnectTimeoutRef.current) {
                         window.clearTimeout(reconnectTimeoutRef.current);
@@ -104,7 +105,7 @@ const App: React.FC = () => {
                 }
             }
         } catch (error) {
-            console.error("❌ Reconnection attempt failed:", error);
+            console.error(" Reconnection attempt failed:", error);
             setBackendAvailable(false);
             setShowOfflineNotification(true);
             setReconnectAttempts(prev => prev + 1);
@@ -119,37 +120,37 @@ const App: React.FC = () => {
         // Initialize CSRF token and check backend availability when app loads
         const initializeApp = async () => {
             try {
-                console.log("🔍 Checking backend availability...");
+                console.log(" Checking backend availability...");
                 const available = await checkBackendAvailability(true);
                 setBackendAvailable(available);
                 
                 if (available) {
                     // Try to initialize CSRF protection, but continue even if it fails
-                    console.log("🔒 Initializing CSRF protection...");
+                    console.log(" Initializing CSRF protection...");
                     try {
                         await initializeCsrf();
-                        console.log("✅ CSRF token initialized successfully");
+                        console.log(" CSRF token initialized successfully");
                     } catch (csrfError) {
-                        console.warn("⚠️ CSRF token initialization failed, but continuing anyway:", csrfError);
+                        console.warn(" CSRF token initialization failed, but continuing anyway:", csrfError);
                         // We'll proceed without CSRF token - WebSockets don't need it
                     }
                     
                     // Initialize WebSocket connection regardless of CSRF status
                     try {
-                        console.log("🔌 Connecting WebSocket (CSRF status independent)...");
+                        console.log(" Connecting WebSocket (CSRF status independent)...");
                         await websocketService.connect();
-                        console.log("✅ WebSocket connected successfully on app initialization");
+                        console.log(" WebSocket connected successfully on app initialization");
                     } catch (wsError) {
-                        console.warn("⚠️ Initial WebSocket connection failed, will retry later", wsError);
+                        console.warn(" Initial WebSocket connection failed, will retry later", wsError);
                     }
                 } else {
-                    console.error("❌ Backend server is not available");
+                    console.error(" Backend server is not available");
                     setShowOfflineNotification(true);
                     // Schedule a reconnection attempt
                     attemptReconnect();
                 }
             } catch (error) {
-                console.error("❌ Failed to initialize application:", error);
+                console.error(" Failed to initialize application:", error);
                 setBackendAvailable(false);
                 setShowOfflineNotification(true);
                 // Schedule a reconnection attempt
@@ -161,7 +162,7 @@ const App: React.FC = () => {
         const setupBackendCheck = () => {
             // Don't set up checks if we've permanently failed
             if (permanentlyFailed) {
-                console.log('💀 Not setting up backend checks - system is permanently offline');
+                console.log(' Not setting up backend checks - system is permanently offline');
                 return null;
             }
             
@@ -182,7 +183,7 @@ const App: React.FC = () => {
                             attemptReconnect();
                         } else {
                             // Backend is now unavailable
-                            console.error("📴 Backend became unavailable");
+                            console.error(" Backend became unavailable");
                             setShowOfflineNotification(true);
                             
                             // Reset reconnect attempts since this is a new disconnection
@@ -192,16 +193,16 @@ const App: React.FC = () => {
                     
                     // Check WebSocket connection status regardless of backend availability
                     if (isNowAvailable && !websocketService.isConnected()) {
-                        console.log("🔌 WebSocket disconnected but backend available, attempting reconnection...");
+                        console.log(" WebSocket disconnected but backend available, attempting reconnection...");
                         try {
                             await websocketService.connect();
-                            console.log("✅ WebSocket reconnected successfully during periodic check");
+                            console.log(" WebSocket reconnected successfully during periodic check");
                         } catch (wsError) {
-                            console.warn("⚠️ WebSocket reconnection failed during periodic check");
+                            console.warn(" WebSocket reconnection failed during periodic check");
                         }
                     }
                 } catch (error) {
-                    console.error("❌ Error checking backend availability:", error);
+                    console.error(" Error checking backend availability:", error);
                 }
             }, 30000); // 30 seconds
             
@@ -214,7 +215,7 @@ const App: React.FC = () => {
 
         return () => {
             cleanupRef.current = true;
-            console.log("📱 App unmounting...");
+            console.log(" App unmounting...");
             
             // Clear all timers
             if (checkIntervalRef.current) {
@@ -229,12 +230,12 @@ const App: React.FC = () => {
             
             const cleanup = () => {
                 if (cleanupRef.current) {
-                    console.log("🧹 Performing final cleanup...");
+                    console.log(" Performing final cleanup...");
                     if (websocketService.isConnected()) {
-                        console.log("🔌 Disconnecting established connection...");
+                        console.log(" Disconnecting established connection...");
                         websocketService.disconnect();
                     } else {
-                        console.log("⚠️ No active connection to disconnect");
+                        console.log(" No active connection to disconnect");
                     }
                 }
             };
@@ -249,7 +250,7 @@ const App: React.FC = () => {
                 <div className="offline-notification">
                     {permanentlyFailed ? (
                         <>
-                            <span>💀 Server connection permanently failed. Please refresh the page to try again.</span>
+                            <span> Server connection permanently failed. Please refresh the page to try again.</span>
                             <button 
                                 onClick={() => window.location.reload()}
                                 className="refresh-button"
@@ -259,7 +260,7 @@ const App: React.FC = () => {
                         </>
                     ) : (
                         <>
-                            <span>⚠️ Server connection lost. Some features may be unavailable.</span>
+                            <span> Server connection lost. Some features may be unavailable.</span>
                             <button 
                                 disabled={isReconnecting}
                                 onClick={attemptReconnect}
@@ -280,7 +281,13 @@ const App: React.FC = () => {
             )}
             <Layout>
                 <Routes>
-                    <Route path="/login" element={<Login />} />
+                    <Route path="/" element={<LandingPage />} />
+                    <Route path="/login" element={
+                      <Login 
+                        isOpen={true}
+                        onClose={() => console.log('Login closed')} 
+                      />
+                    } />
                     <Route 
                         path="/dashboard" 
                         element={
@@ -336,10 +343,6 @@ const App: React.FC = () => {
                                 <SystemConfiguration />
                             </PrivateRoute>
                         } 
-                    />
-                    <Route 
-                        path="/" 
-                        element={<Navigate to="/dashboard" replace />} 
                     />
                 </Routes>
             </Layout>

@@ -1,4 +1,24 @@
+/* SignupModal.css - Cleaned */
+
+/* Modal Structure */
+.signup-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.75);
+  z-index: 1000;
+  padding: 20px;
+  overflow-y: auto;
+}
+
 .signup-modal-content {
+  background: linear-gradient(90deg, #1a0458, #02b5fc, #e9009b, #00f5a3);
+  border-radius: 1rem;
   padding: 2rem;
   color: #e2e8f0;
   background: linear-gradient(135deg, rgba(26, 4, 88, 0.9), rgba(2, 181, 252, 0.9));
@@ -105,8 +125,17 @@
   text-shadow: 0 0 10px rgba(0, 245, 163, 0.5);
 }
 
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
 .form-group {
   margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .form-group label {
@@ -121,10 +150,39 @@
   transition: all 0.3s ease;
 }
 
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 4px;
+  color: #e2e8f0;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #00f5d4;
+  box-shadow: 0 0 10px rgba(0, 245, 212, 0.3);
+}
+
 .form-group input:focus + label,
 .form-group select:focus + label {
   color: #e9009b;
   text-shadow: 0 0 8px rgba(233, 0, 155, 0.5);
+}
+
+.form-group input::placeholder {
+  color: rgba(226, 232, 240, 0.5);
+}
+
+.form-group input:disabled,
+.form-group select:disabled {
+  background-color: rgba(0, 0, 0, 0.2);
+  cursor: not-allowed;
 }
 
 .input-with-description {

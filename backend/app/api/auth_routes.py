@@ -57,25 +57,7 @@ def login(
         form_data.password
     )
     
-    access_token = create_access_token(
-        data={"sub": user.username, "user_id": user.id}
-    )
-    
-    refresh_token = create_refresh_token(
-        data={"sub": user.username, "user_id": user.id}
-    )
-    
-    return {
-        "access_token": access_token,
-        "refresh_token": refresh_token,
-        "token_type": "bearer",
-        "user": {
-            "id": user.id,
-            "username": user.username,
-            "email": user.email,
-            "needs_onboarding": user.needs_onboarding
-        }
-    }
+    return AuthService.generate_tokens(user)
 
 @router.post("/token/refresh")
 def refresh_token(
