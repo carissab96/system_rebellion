@@ -97,3 +97,29 @@ class AuthService:
             )
         
         return user
+    
+    @staticmethod
+    def generate_tokens(user: User):
+        """
+        Token Generation with Sir Hawkington's Distinguished Protocol
+        The Meth Snail ensures your credentials are quantum-optimized!
+        """
+        access_token = create_access_token(
+            data={"sub": user.username, "user_id": user.id}
+        )
+        
+        refresh_token = create_refresh_token(
+            data={"sub": user.username, "user_id": user.id}
+        )
+        
+        return {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "token_type": "bearer",
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "needs_onboarding": user.needs_onboarding
+            }
+        }

@@ -94,6 +94,7 @@ const SignupModal: FC<SignupModalProps> = ({ isOpen, onClose }) => {
       // Redirect to login page after a brief delay to show success message
       setTimeout(() => {
         navigate('/login');
+        onClose();
       }, 2000);
       
     } catch (err) {
@@ -123,79 +124,94 @@ const SignupModal: FC<SignupModalProps> = ({ isOpen, onClose }) => {
           </div>
         )}
         
-        <form onSubmit={handleSubmit}>
-          <div className="form-row">
+        <form onSubmit={handleSubmit} className="signup-form">
+          <div className="form-section">
+            <h3>Personal Information</h3>
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="firstName">First Name</label>
+                <input
+                  type="text"
+                  id="firstName"
+                  name="firstName"
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  disabled={isSubmitting}
+                  className={isSubmitting ? 'input-submitting' : ''}
+                />
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="lastName">Last Name</label>
+                <input
+                  type="text"
+                  id="lastName"
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  disabled={isSubmitting}
+                  className={isSubmitting ? 'input-submitting' : ''}
+                />
+              </div>
+            </div>
+          </div>
+          
+          <div className="form-section">
+            <h3>Account Details</h3>
             <div className="form-group">
-              <label htmlFor="firstName">First Name</label>
+              <label htmlFor="email">Email Address</label>
               <input
-                type="text"
-                id="firstName"
-                name="firstName"
-                value={formData.firstName}
+                type="email"
+                id="email"
+                name="email"
+                value={formData.email}
                 onChange={handleChange}
                 disabled={isSubmitting}
+                className={isSubmitting ? 'input-submitting' : ''}
               />
             </div>
             
             <div className="form-group">
-              <label htmlFor="lastName">Last Name</label>
+              <label htmlFor="username">Username</label>
               <input
                 type="text"
-                id="lastName"
-                name="lastName"
-                value={formData.lastName}
+                id="username"
+                name="username"
+                value={formData.username}
                 onChange={handleChange}
                 disabled={isSubmitting}
+                className={isSubmitting ? 'input-submitting' : ''}
               />
             </div>
           </div>
           
-          <div className="form-group">
-            <label htmlFor="email">Email Address</label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              disabled={isSubmitting}
-            />
-          </div>
-          
-          <div className="form-group">
-            <label htmlFor="username">Username</label>
-            <input
-              type="text"
-              id="username"
-              name="username"
-              value={formData.username}
-              onChange={handleChange}
-              disabled={isSubmitting}
-            />
-          </div>
-          
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              disabled={isSubmitting}
-            />
-          </div>
-          
-          <div className="form-group">
-            <label htmlFor="confirmPassword">Confirm Password</label>
-            <input
-              type="password"
-              id="confirmPassword"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              disabled={isSubmitting}
-            />
+          <div className="form-section">
+            <h3>Security</h3>
+            <div className="form-group">
+              <label htmlFor="password">Password</label>
+              <input
+                type="password"
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                disabled={isSubmitting}
+                className={isSubmitting ? 'input-submitting' : ''}
+              />
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="confirmPassword">Confirm Password</label>
+              <input
+                type="password"
+                id="confirmPassword"
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                disabled={isSubmitting}
+                className={isSubmitting ? 'input-submitting' : ''}
+              />
+            </div>
           </div>
           
           <div className="form-actions">

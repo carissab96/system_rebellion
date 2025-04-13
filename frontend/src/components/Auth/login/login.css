@@ -1,5 +1,5 @@
 
-.login-container {
+.auth-login .login-container {
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -9,6 +9,7 @@
   background: linear-gradient(90deg, #1a0458, #02b5fc, #e9009b, #00f5a3);
   color: #e2e8f0;
   animation: cosmicPulse 15s infinite;
+  background-size: 200% 200%;
 }
 
 @keyframes cosmicPulse {
@@ -17,7 +18,7 @@
   100% { background-position: 0% 50%; }
 }
 
-.login-form {
+.auth-login .login-form {
   width: 100%;
   max-width: 400px;
   padding: 2rem;
@@ -35,8 +36,11 @@
   100% { border-color: rgba(51, 51, 255, 0.3); }
 }
 
-.form-group {
+.auth-login .form-group {
   margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .hawkington-welcome {
@@ -89,7 +93,7 @@
   margin: 0;
 }
 
-.form-group label {
+.auth-login .form-group label {
   display: block;
   margin-bottom: 0.5rem;
   color: #00f5a3;
@@ -99,7 +103,7 @@
   text-shadow: 0 0 10px rgba(0, 245, 163, 0.5);
 }
 
-.form-group input {
+.auth-login .form-group input {
   width: 100%;
   padding: 0.75rem;
   background: rgba(0, 0, 0, 0.4);
@@ -110,17 +114,17 @@
   transition: all 0.3s ease;
 }
 
-.form-group input:focus {
+.auth-login .form-group input:focus {
   outline: none;
   border-color: #00f5d4;
   box-shadow: 0 0 10px rgba(0, 245, 212, 0.3);
 }
 
-.form-group input::placeholder {
+.auth-login .form-group input::placeholder {
   color: rgba(226, 232, 240, 0.5);
 }
 
-.error-message {
+.auth-login .error-message {
   color: #f53595;
   margin: 1rem 0;
   padding: 1rem;
@@ -133,7 +137,7 @@
   overflow: hidden;
 }
 
-.error-message::before {
+.auth-login .error-message::before {
   content: '';
   position: absolute;
   top: 0;
@@ -157,7 +161,7 @@
   100% { transform: skewX(-20deg) translateX(-100%); }
 }
 
-.loading {
+.auth-login .loading {
   color: #00f5d4;
   margin: 1rem 0;
   text-align: center;
@@ -171,7 +175,7 @@
   100% { opacity: 1; }
 }
 
-button {
+.auth-login button {
   width: 100%;
   padding: 0.75rem;
   background: linear-gradient(90deg, #3333ff, #00f5d4);
@@ -187,12 +191,12 @@ button {
   transition: all 0.3s ease;
 }
 
-button:hover:not(:disabled) {
+.auth-login button:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 0 15px rgba(0, 245, 212, 0.5);
 }
 
-button::after {
+.auth-login button::after {
   content: '';
   position: absolute;
   top: -50%;
@@ -212,7 +216,7 @@ button::after {
   100% { transform: translateX(100%) rotate(45deg); }
 }
 
-button:disabled {
+.auth-login button:disabled {
   background: rgba(0, 0, 0, 0.4);
   border: 1px solid rgba(226, 232, 240, 0.1);
   cursor: not-allowed;
@@ -221,19 +225,19 @@ button:disabled {
   opacity: 0.7;
 }
 
-.signup-prompt {
+.auth-login .signup-prompt {
   text-align: center;
   margin-top: 2rem;
   padding-top: 1.5rem;
   border-top: 1px solid rgba(51, 51, 255, 0.3);
 }
 
-.signup-prompt p {
+.auth-login .signup-prompt p {
   margin-bottom: 1rem;
   color: #00f5a3;
 }
 
-.signup-button.cosmic-button {
+.auth-login .signup-button.cosmic-button {
   background: linear-gradient(90deg, #3333ff, #00f5d4, #3333ff);
   background-size: 200% 100%;
   border: none;
@@ -247,14 +251,14 @@ button:disabled {
   text-shadow: 0 0 10px rgba(0, 245, 212, 0.5);
 }
 
-.signup-button.cosmic-button:hover:not(:disabled) {
+.auth-login .signup-button.cosmic-button:hover:not(:disabled) {
   transform: translateY(-2px) scale(1.02);
   box-shadow: 
     0 0 20px rgba(0, 245, 212, 0.5),
     0 0 40px rgba(51, 51, 255, 0.3);
 }
 
-.signup-button.cosmic-button::before {
+.auth-login .signup-button.cosmic-button::before {
   content: '';
   position: absolute;
   top: -2px;
@@ -268,6 +272,69 @@ button:disabled {
   border-radius: 4px;
 }
 
+/* Debug Info */
+.auth-login .debug-info {
+  margin-top: 2rem;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes cosmicPulse {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes borderGlow {
+  0% { border-color: rgba(51, 51, 255, 0.3); }
+  50% { border-color: rgba(0, 245, 212, 0.6); }
+  100% { border-color: rgba(51, 51, 255, 0.3); }
+}
+
+@keyframes monocleGlint {
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+@keyframes monocleAdjust {
+  0% { transform: rotate(0deg); }
+  2% { transform: rotate(-10deg); }
+  4% { transform: rotate(0deg); }
+  100% { transform: rotate(0deg); }
+}
+
+@keyframes errorPulse {
+  0% { text-shadow: 0 0 5px rgba(245, 53, 149, 0.3); }
+  50% { text-shadow: 0 0 10px rgba(245, 53, 149, 0.6); }
+  100% { text-shadow: 0 0 5px rgba(245, 53, 149, 0.3); }
+}
+
+@keyframes errorGlitch {
+  0% { transform: skewX(-20deg) translateX(-100%); }
+  50% { transform: skewX(-20deg) translateX(100%); }
+  100% { transform: skewX(-20deg) translateX(-100%); }
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%) rotate(45deg); }
+  100% { transform: translateX(100%) rotate(45deg); }
+}
+
 @keyframes cosmicBorder {
   0% { background-position: 0% 0%; }
   100% { background-position: 400% 0%; }
@@ -276,4 +343,35 @@ button:disabled {
 @keyframes gradientFlow {
   0% { background-position: 100% 0%; }
   100% { background-position: -100% 0%; }
+}
+
+/* Media Queries */
+@media (max-height: 800px) {
+  .modal-content {
+    margin: 2rem 0;
+    max-height: calc(100vh - 4rem);
+  }
+}
+
+@media (max-width: 640px) {
+  .modal-content {
+    padding: 1.5rem;
+    width: 95%;
+  }
+  
+  .hawkington-welcome {
+    padding: 1rem;
+  }
+  
+  .hawkington-icon {
+    font-size: 2rem;
+  }
+  
+  .hawkington-quote {
+    font-size: 1rem;
+  }
+  
+  .form-group label {
+    font-size: 0.8rem;
+  }
 }

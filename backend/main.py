@@ -58,9 +58,10 @@ def create_application() -> FastAPI:
         )
     
     # Register startup event to initialize database
-    @app.on_event("startup")
     async def startup_event():
         await init_db()
+
+    app.add_event_handler("startup", startup_event)
 
     # Include routers
     app.include_router(

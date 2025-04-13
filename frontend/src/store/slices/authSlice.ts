@@ -114,13 +114,8 @@ export const registerUser = createAsyncThunk<
 // First, let's add some console logging to track the auth flow
 export const login = createAsyncThunk(
     'auth/login',
-    async (credentials: any, { rejectWithValue }) => {
+    async (credentials: { username: string; password: string }, { rejectWithValue }) => {
         try {
-            console.log(" Attempting login with credentials:", {
-                username: credentials.username,
-                passwordLength: credentials.password.length
-            });
-
             // First, get CSRF token if we don't have it
             if (!getCsrfToken()) {
                 console.log(" No CSRF token found, fetching one...");
@@ -134,29 +129,22 @@ export const login = createAsyncThunk(
             const csrfToken = getCsrfToken();
             console.log(" Using CSRF token:", csrfToken ? "Yes" : "No");
 
-            // Use the proxy configured in vite.config.ts
-            let data;
-            try {
-                const response = await axios.post('/api/auth/login', credentials, {
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': csrfToken
-                    },
-                    withCredentials: true
-                });
+            // Use OAuth2 token endpoint
+            const response = await axios.post('/api/auth/token', credentials, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                }
+            });
 
-                console.log(" Login response status:", response.status);
-                data = response.data;
-                console.log(" Login successful, raw response:", data);
-            } catch (error: any) {
-                console.error(" Login failed:", error.response?.data || error.message);
-                return rejectWithValue(error.response?.data?.detail || 'Login failed');
-            }
-            
+            console.log(" Login response status:", response.status);
+            const data = response.data;
+            console.log(" Login successful, raw response:", data);
+
             // Extract tokens
-            const accessToken = data.access || (data.data && data.data.access);
-            const refreshToken = data.refresh || (data.data && data.data.refresh);
-            
+            const accessToken = data.access_token;
+            const refreshToken = data.refresh_token;
+
             console.log(" Extracted tokens:", {
                 hasToken: !!accessToken,
                 hasRefresh: !!refreshToken
@@ -171,11 +159,13 @@ export const login = createAsyncThunk(
             }
 
             return data;
-        } catch (error) {
+        } catch (error: unknown) {
+            if (axios.isAxiosError(error)) {
+                console.error(" Login failed:", error.response?.data || error.message);
+                return rejectWithValue(error.response?.data?.detail || 'Login failed');
+            }
             console.error(" Login error:", error);
-            return rejectWithValue(
-                error instanceof Error ? error.message : 'Failed to login'
-            );
+            return rejectWithValue('Failed to login');
         }
     }
 );
@@ -190,8 +180,6 @@ export const refreshToken = createAsyncThunk(
             const csrfToken = getCsrfToken();
             console.log(" Using CSRF token for refresh:", csrfToken);
 
-            // Use absolute URL to backend server instead of relative URL
-            console.log("Making token refresh request to", `${API_BASE_URL}/auth/token/refresh/`);
             const response = await axios.post(`${API_BASE_URL}/auth/token/refresh/`, 
                 { refresh: refreshTokenStr },
                 {
@@ -214,11 +202,9 @@ export const refreshToken = createAsyncThunk(
             }
 
             return data;
-        } catch (error) {
+        } catch (error: unknown) {
             console.error(" Token refresh error:", error);
-            return rejectWithValue(
-                error instanceof Error ? error.message : 'Failed to refresh token'
-            );
+            return rejectWithValue('Failed to refresh token');
         }
     }
 );
@@ -270,8 +256,8 @@ const authSlice = createSlice({
                 state.loading = false;
                 state.isAuthenticated = true;
                 state.error = null;
-                state.token = action.payload.access;
-                state.refreshToken = action.payload.refresh;
+                state.token = action.payload.access_token;
+                state.refreshToken = action.payload.refresh_token;
             })
             .addCase(login.rejected, (state, action) => {
                 state.loading = false;
