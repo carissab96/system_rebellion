@@ -210,8 +210,33 @@ export const UserProfile: React.FC<UserProfileProps> = ({ isOpen, onClose }) => 
           }
           
           console.log("✨ Sir Hawkington has saved your profile changes with aristocratic flair!");
-        } catch (error) {
+        } catch (error: any) {
           console.error("❌ Error updating user information:", error);
+          
+          // Provide more specific error messages based on the error
+          if (error.response) {
+            // The request was made and the server responded with a status code
+            // that falls out of the range of 2xx
+            console.error("❌ Error updating user information:", error.response.data);
+            
+            if (error.response.status === 404) {
+              setError("User not found. Please log in again.");
+            } else if (error.response.status === 401) {
+              setError("Authentication failed. Please log in again.");
+            } else if (error.response.status === 500) {
+              setError("Server error. Please try again later.");
+            } else {
+              setError(`Failed to update profile: ${error.response.data.detail || 'Unknown error'}`);
+            }
+          } else if (error.request) {
+            // The request was made but no response was received
+            console.error("❌ No response received:", error.request);
+            setError("No response from server. Please check your connection.");
+          } else {
+            // Something happened in setting up the request that triggered an Error
+            console.error("❌ Error setting up request:", error.message);
+            setError(error.message || "Failed to update profile. Please try again later.");
+          }
         }
       } else {
         console.log("📝 Sir Hawkington is now in edit mode, adjusting his monocle for precision...");
