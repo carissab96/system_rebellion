@@ -78,7 +78,7 @@ export const SystemConfiguration: React.FC = () => {
   ];
 
   useEffect(() => {
-    dispatch(fetchSystemConfigurations());
+    dispatch(fetchSystemConfigurations({}));
     setHawkingtonQuote(hawkingtonQuotes[Math.floor(Math.random() * hawkingtonQuotes.length)]);
   }, [dispatch]);
 
@@ -169,7 +169,7 @@ export const SystemConfiguration: React.FC = () => {
       <div className="error-container">
         <h3>Sir Hawkington has encountered a most unfortunate error!</h3>
         <p>{error}</p>
-        <button onClick={() => dispatch(fetchSystemConfigurations())}>
+        <button onClick={() => dispatch(fetchSystemConfigurations({}))}>
           Assist Sir Hawkington in trying again
         </button>
       </div>

@@ -21,6 +21,8 @@ interface RawMetricData {
         sent: number;           // Bytes sent
         recv: number;           // Bytes received
     };
+    sent?: number;              // Alternative property name
+    recv?: number;              // Alternative property name
     process_count?: number;     // Number of running processes
     timestamp: string;          // ISO timestamp
     connection_id?: string;     // WebSocket connection ID
@@ -98,45 +100,60 @@ class WebSocketService implements IWebSocketService {
                 // Check if backend is available before attempting WebSocket connection
                 checkBackendAvailability().then(backendAvailable => {
                     if (!backendAvailable) {
-                        console.log("❌ Backend server is not available");
-                        this.permanentlyFailed = true;
-                        return reject(new Error("Backend server is not available"));
+                        console.error("🔌 Backend is not available, cannot establish WebSocket connection");
+                        this.connectionPromise = null;
+                        reject(new Error("Backend is not available"));
+                        return;
                     }
-
-                    // Create WebSocket connection
-                    this.socket = new WebSocket(this.wsUrl);
-
+                    
+                    // Get authentication token from localStorage
+                    const token = localStorage.getItem('token');
+                    
+                    // Create WebSocket URL with token if available
+                    let wsUrlWithAuth = this.wsUrl;
+                    if (token) {
+                        // Add token as a query parameter or use a custom header depending on backend implementation
+                        wsUrlWithAuth = `${this.wsUrl}?token=${token}`;
+                        console.log("🔑 Adding authentication token to WebSocket connection");
+                    }
+                    
+                    console.log("🔌 Creating WebSocket with URL:", wsUrlWithAuth);
+                    this.socket = new WebSocket(wsUrlWithAuth);
+                    
+                    // Set up connection timeout
+                    this.setConnectionTimeout();
+                    
                     // Set up event handlers
                     this.socket.onopen = () => {
-                        console.log("✅ WebSocket connection established");
-                        this.reconnectAttempts = 0;
-                        this.permanentlyFailed = false;
+                        console.log("✅ WebSocket connection established!");
+                        console.log("🧐 Sir Hawkington adjusts his monocle in approval!");
                         this.clearConnectionTimeout();
-                        this.clearReconnectTimeout();
+                        this.reconnectAttempts = 0; // Reset reconnect attempts on successful connection
                         resolve();
                     };
-
+                    
                     this.socket.onmessage = (event) => {
                         this.handleMessage(event);
                     };
-
+                    
                     this.socket.onerror = (event) => {
-                        console.error("🚨 WebSocket error detected!", event);
+                        console.error("❌ WebSocket error:", event);
                         this.handleError(event);
-                        reject(event);
                     };
-
+                    
                     this.socket.onclose = (event) => {
-                        console.log("🚪 WebSocket connection closed", event);
+                        console.log("👋 WebSocket closed:", event);
                         this.handleClose(event);
-                        reject(event);
                     };
-
-                    // Set connection timeout
-                    this.setConnectionTimeout();
+                    
+                }).catch(error => {
+                    console.error("❌ Error checking backend availability:", error);
+                    this.connectionPromise = null;
+                    reject(error);
                 });
             } catch (error) {
-                console.error("❌ Error creating WebSocket connection:", error);
+                console.error("❌ Error creating WebSocket:", error);
+                this.connectionPromise = null;
                 reject(error);
             }
         });
@@ -145,19 +162,21 @@ class WebSocketService implements IWebSocketService {
     }
 
     private setConnectionTimeout(): void {
+        // Clear any existing timeout
         this.clearConnectionTimeout();
+        
+        // Set a new timeout - 10 seconds to establish connection
         this.connectionTimeoutId = window.setTimeout(() => {
-            if (this.socket && this.socket.readyState !== WebSocket.OPEN) {
-                const stateNames = {
-                    [WebSocket.CONNECTING]: 'CONNECTING',
-                    [WebSocket.OPEN]: 'OPEN',
-                    [WebSocket.CLOSING]: 'CLOSING',
-                    [WebSocket.CLOSED]: 'CLOSED'
-                };
-                console.error("⏰ WebSocket connection timeout. Current state:", stateNames[this.socket.readyState]);
-                this.handleClose();
+            console.error("⏱️ WebSocket connection timeout after 10 seconds");
+            
+            if (this.socket && this.socket.readyState === WebSocket.CONNECTING) {
+                console.error("🔌 WebSocket still in CONNECTING state after timeout, closing");
+                this.socket.close();
+                this.socket = null;
             }
-        }, 5000); // 5 second timeout
+            
+            this.connectionPromise = null;
+        }, 10000); // 10 second timeout
     }
 
     private clearConnectionTimeout(): void {
@@ -169,105 +188,117 @@ class WebSocketService implements IWebSocketService {
 
     private handleMessage(event: MessageEvent): void {
         try {
-            const data = JSON.parse(event.data) as WebSocketMessage;
-            console.log("📨 WebSocket message received:", data);
+            console.log("📨 Raw WebSocket message received:", event.data);
             
-            if (data.type === 'system_metrics' && data.data) {
-                // Sir Hawkington's Distinguished Data Transformation Protocol
-                console.log("🧐 Sir Hawkington is examining the raw metrics data with his monocle...");
-                console.log("🔍 Raw data from the Hamsters' WebSocket tubes:", data.data);
+            // Parse the message
+            const message = JSON.parse(event.data);
+            console.log("📨 Parsed WebSocket message:", message);
+            
+            // Process the message based on its type
+            if (message.type === 'system_metrics' && message.data) {
+                console.log("📊 System metrics received:", message.data);
                 
-                // Transform the raw WebSocket data into the format expected by our components
-                console.log('🔬 Detailed data inspection:', JSON.stringify(data));
-                
-                // Extract the actual metrics from the nested data structure
-                const rawMetrics = data.data;
-                
+                // Transform the data into our SystemMetric format
                 const metricData: SystemMetric = {
-                    // Required fields for SystemMetric interface
                     id: crypto.randomUUID ? crypto.randomUUID() : `metric-${Date.now()}`,
-                    user_id: 'system', // System-generated metrics don't have a specific user
-                    // Transform backend properties to match frontend expectations
-                    cpu_usage: rawMetrics.cpu_usage || 0,
-                    memory_usage: rawMetrics.memory_usage || 0,
-                    disk_usage: rawMetrics.disk_usage || 0,
-                    network_usage: rawMetrics.network_io ? 
-                        (rawMetrics.network_io.sent + rawMetrics.network_io.recv) / 1024 / 1024 : 0, // Convert to MB
-                    process_count: rawMetrics.process_count || 0,
-                    timestamp: rawMetrics.timestamp || new Date().toISOString(),
+                    user_id: 'system',
+                    cpu_usage: message.data.cpu_usage || message.data.cpu || 0,
+                    memory_usage: message.data.memory_usage || message.data.memory || 0,
+                    disk_usage: message.data.disk_usage || message.data.disk || 0,
+                    network_usage: message.data.network_io ? 
+                        (message.data.network_io.sent + message.data.network_io.recv) / 1024 / 1024 : 
+                        ((message.data.sent || 0) + (message.data.recv || 0)) / 1024 / 1024,
+                    process_count: message.data.process_count || 0,
+                    timestamp: message.data.timestamp || new Date().toISOString(),
                     additional_metrics: {}
                 };
                 
-                console.log('🧪 Transformed metric data:', metricData);
-                
-                console.log("✨ The Meth Snail has processed the metrics data at ludicrous speed:", metricData);
-                
-                // Dispatch the transformed data to Redux
+                // Dispatch to Redux store
                 store.dispatch(updateMetrics(metricData));
-                console.log("🐹 The Hamsters have delivered the metrics to Sir Hawkington's Redux store");
-                
-                // Then call callback if set
-                if (this.messageCallback) {
-                    this.messageCallback({
-                        type: data.type,
-                        data: metricData as any // Type cast to satisfy the callback
-                    });
-                }
+            }
+            
+            // Call the callback if set
+            if (this.messageCallback) {
+                this.messageCallback(message);
             }
         } catch (error) {
-            console.error("💩 Error parsing metric data:", error);
+            console.error("❌ Error handling WebSocket message:", error);
+            console.error("🐌 The Meth Snail is confused by this message format!");
         }
     }
 
     private handleError(error: Event): void {
-        console.error("🚨 WebSocket error occurred:", error);
+        console.error("❌ WebSocket error:", error);
+        console.error("🐹 The Hamsters report a critical failure in the WebSocket tubes!");
         
-        if (this.reconnectAttempts < this.MAX_ATTEMPTS) {
-            this.handleReconnect();
-        } else {
-            this.permanentlyFailed = true;
-            console.error("💀 Maximum reconnection attempts reached. WebSocket permanently disabled.");
+        // If we have a connection promise, reject it
+        if (this.connectionPromise) {
+            this.connectionPromise = null;
         }
     }
 
     private handleClose(event?: CloseEvent): void {
-        console.log("🚪 WebSocket connection closed", event);
+        console.log("👋 WebSocket closed:", event);
         
-        if (!this.isIntentionalDisconnect && !this.permanentlyFailed) {
-            if (this.reconnectAttempts < this.MAX_ATTEMPTS) {
-                this.handleReconnect();
-            } else {
-                this.permanentlyFailed = true;
-                console.error("💀 Maximum reconnection attempts reached. WebSocket permanently disabled.");
-            }
+        // If this was an intentional disconnect, don't try to reconnect
+        if (this.isIntentionalDisconnect) {
+            console.log("🧐 Sir Hawkington notes this was an intentional disconnect. No reconnection needed.");
+            return;
         }
+        
+        // Try to reconnect
+        this.handleReconnect();
     }
 
     private handleReconnect(): void {
+        // Don't try to reconnect if we've permanently failed
+        if (this.permanentlyFailed) {
+            console.log("💀 WebSocket permanently disabled, not attempting reconnection");
+            return;
+        }
+        
+        this.reconnectAttempts++;
+        console.log(`🔄 Reconnection attempt ${this.reconnectAttempts}/${this.MAX_ATTEMPTS}`);
+        
+        // Clear any existing reconnect timeout
         this.clearReconnectTimeout();
         
-        if (this.reconnectAttempts < this.MAX_ATTEMPTS) {
-            this.reconnectAttempts++;
-            console.log(`🔄 Attempting reconnection #${this.reconnectAttempts} of ${this.MAX_ATTEMPTS}`);
-            console.log(`🧐 Sir Hawkington declares: "We shall not surrender! Prepare for reconnection!"`); 
-            console.log(`🐌 The Meth Snail is injecting more methamphetamine to power the reconnection...`);
+        if (this.reconnectAttempts <= this.MAX_ATTEMPTS) {
+            // Exponential backoff: 1s, 2s, 4s, etc.
+            const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts - 1), 30000);
             
-            // The Quantum Shadow People suggested this exponential backoff algorithm
-            const delay = 1000 * Math.min(30, Math.pow(2, this.reconnectAttempts - 1)); // Exponential backoff
             this.reconnectTimeoutId = window.setTimeout(async () => {
+                console.log(`⏱️ Attempting reconnection after ${delay}ms delay`);
+                
                 try {
-                    // Check backend availability before reconnecting
+                    // Check if backend is available before attempting reconnection
                     const backendAvailable = await checkBackendAvailability();
+                    
                     if (backendAvailable) {
-                        this.connect();
+                        console.log("✅ Backend is available, attempting WebSocket reconnection");
+                        
+                        // Reset connection promise so we can try again
+                        this.connectionPromise = null;
+                        
+                        try {
+                            await this.connect();
+                            console.log("✅ WebSocket reconnection successful!");
+                            console.log("🧐 Sir Hawkington is pleased with the reconnection!");
+                            this.reconnectAttempts = 0; // Reset on successful reconnection
+                        } catch (reconnectError) {
+                            console.error("❌ WebSocket reconnection failed:", reconnectError);
+                            
+                            if (this.reconnectAttempts >= this.MAX_ATTEMPTS) {
+                                this.permanentlyFailed = true;
+                                console.error("💀 Maximum reconnection attempts reached. WebSocket permanently disabled.");
+                                console.error("🧐 Sir Hawkington removes his monocle in defeat: 'The WebSocket has fallen, and it cannot get up!'");
+                                console.error("🎮 The VIC-20 suggests turning it off and on again, but alas, it's too late.");
+                            }
+                        }
                     } else {
-                        console.log("⚠️ Backend still unavailable, skipping reconnection attempt");
-                        console.log("🪄 The Stick's anxiety levels are increasing...");
-                        // Still count as an attempt
-                        if (this.reconnectAttempts < this.MAX_ATTEMPTS) {
-                            console.log("🐹 The Hamsters suggest trying again with more duct tape...");
-                            this.handleReconnect();
-                        } else {
+                        console.log("❌ Backend is not available, will try again later");
+                        
+                        if (this.reconnectAttempts >= this.MAX_ATTEMPTS) {
                             this.permanentlyFailed = true;
                             console.error("💀 Maximum reconnection attempts reached. WebSocket permanently disabled.");
                             console.error("🧐 Sir Hawkington removes his monocle in defeat: 'The WebSocket has fallen, and it cannot get up!'");

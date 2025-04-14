@@ -7,14 +7,14 @@ import { MemoryMetric } from '../Metrics/MemoryMetric/MemoryMetric';
 import { DiskMetric } from '../Metrics/DiskMetric/DiskMetric';
 import { NetworkMetric } from '../Metrics/NetworkMetric/NetworkMetric';
 import { initializeWebSocket } from '../../../store/slices/metricsSlice';
-import SystemStatus  from './SystemStatus/SystemStatus';
-
+import SystemStatus from './SystemStatus/SystemStatus';
 
 export const Dashboard: React.FC = () => {
   const dispatch = useAppDispatch();
   const wsRef = useRef<AbortController | null>(null);
   const error = useAppSelector((state) => state.metrics.error);
   const isLoading = useAppSelector((state) => state.metrics.loading);
+  const { user } = useAppSelector((state) => state.auth);
   const mountCountRef = useRef(0);
 
   useEffect(() => {
@@ -42,7 +42,7 @@ export const Dashboard: React.FC = () => {
             }
         } catch (error) {
             if (!signal.aborted) {
-                console.error("💩 WebSocket initialization fucked up:", error);
+                console.error("💩 WebSocket initialization error:", error);
                 console.log("🐌 The Meth Snail is attempting emergency repairs on the WebSocket connection...");
             }
         }
@@ -54,7 +54,16 @@ export const Dashboard: React.FC = () => {
         console.log(`🧹 Dashboard unmounting... (Mount #${mountCountRef.current})`);
         wsRef.current?.abort();
     };
-}, [dispatch]);
+  }, [dispatch]);
+
+  // Display personalized welcome message if user is available
+  const getWelcomeMessage = () => {
+    if (user && user.username) {
+      return `Welcome back, ${user.username}!`;
+    }
+    return "System Rebellion HQ";
+  };
+
   if (isLoading) {
       return <div>Loading your distinguished metrics...</div>;
   }
@@ -74,7 +83,7 @@ export const Dashboard: React.FC = () => {
   return (
     <div className="dashboard-container">
       <header className="dashboard-header">
-        <h1>System Rebellion HQ</h1>
+        <h1>{getWelcomeMessage()}</h1>
         <SystemStatus loading={isLoading} error={error} />
       </header>
       <div className="dashboard-content">

@@ -4,8 +4,9 @@ import Login from './components/Auth/login/Login';
 import { Dashboard } from './components/dashboard/Dashboard/Dashboard';
 import { PrivateRoute } from './utils/PrivateRoute';
 import { websocketService } from './utils/websocketService';
-import { initializeCsrf, checkBackendAvailability, getBackendAvailability } from './utils/api';
+import { checkBackendAvailability, getBackendAvailability } from './utils/api';
 import { useAppDispatch } from './store/hooks';
+import { checkAuthStatus } from './store/slices/authSlice';
 import Layout from './components/common/Layout';
 import OptimizationProfiles from './components/optimization/OptimizationProfiles';
 import SystemAlerts from './components/alerts/SystemAlerts';
@@ -18,49 +19,24 @@ import './App.css';
 
 const App: React.FC = () => {
     const cleanupRef = useRef<boolean>(false);
-    // We'll use dispatch in a useEffect to handle auth-related actions when needed
     const dispatch = useAppDispatch();
+    // We don't need to use these variables directly as they're handled by the PrivateRoute component
+    // but we do need to dispatch checkAuthStatus
     
     // Initialize authentication on app startup
     useEffect(() => {
-        console.log(' Auth dispatcher ready');
-        
-        // Check if we have a token in localStorage and set it in the axios headers
-        const token = localStorage.getItem('token');
-        if (token) {
-            console.log(' Found existing auth token, initializing authorization header');
-            // Import axios and set the authorization header
-            import('axios').then(axios => {
-                // Set the token directly on axios defaults
-                axios.default.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-                console.log(' Authorization header set successfully');
-                
-                // Make a test request to verify the token is working
-                axios.default.get('/api/auth/status/')
-                    .then(response => {
-                        console.log(' Auth status check successful:', response.data);
-                    })
-                    .catch(error => {
-                        console.error(' Auth status check failed:', error);
-                        // If token is invalid, clear it
-                        if (error.response?.status === 401) {
-                            console.log(' Token appears to be invalid, clearing it');
-                            localStorage.removeItem('token');
-                            localStorage.removeItem('refreshToken');
-                        }
-                    });
-            });
-        } else {
-            console.log(' No auth token found in localStorage');
-        }
+        console.log('Initializing authentication status');
+        dispatch(checkAuthStatus());
     }, [dispatch]);
+    
     // This state tracks backend availability and is used throughout the component
     const [backendAvailable, setBackendAvailable] = useState<boolean>(true);
     
     // Log backend availability changes
     useEffect(() => {
-        console.log(` Backend availability changed: ${backendAvailable ? 'Available' : 'Unavailable'}`);
+        console.log(`Backend availability changed: ${backendAvailable ? 'Available' : 'Unavailable'}`);
     }, [backendAvailable]);
+    
     const [showOfflineNotification, setShowOfflineNotification] = useState<boolean>(false);
     const [reconnectAttempts, setReconnectAttempts] = useState<number>(0);
     const MAX_RECONNECT_ATTEMPTS = 3; // Maximum number of reconnection attempts
@@ -71,211 +47,174 @@ const App: React.FC = () => {
 
     // Function to attempt reconnection to the backend
     const attemptReconnect = useCallback(async () => {
-        // Don't try to reconnect if we've permanently failed
+        // Don't try to reconnect if we've already reconnecting or permanently failed
         if (isReconnecting || permanentlyFailed) return;
         
-        // If we've reached the maximum number of attempts, mark as permanently failed
-        if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-            console.error(' Maximum reconnection attempts reached. Giving up.');
-            setPermanentlyFailed(true);
-            setShowOfflineNotification(true);
-            return;
-        }
-        
         setIsReconnecting(true);
+        console.log(`Attempting to reconnect to backend (attempt ${reconnectAttempts + 1}/${MAX_RECONNECT_ATTEMPTS})`);
+        
         try {
-            console.log(` Attempting to reconnect to backend (attempt ${reconnectAttempts + 1} of ${MAX_RECONNECT_ATTEMPTS})...`);
-            const available = await checkBackendAvailability(true); // Force a fresh check
+            const available = await checkBackendAvailability();
+            console.log(`Reconnection check result: ${available ? 'Success' : 'Failed'}`);
             
-            setBackendAvailable(available);
             if (available) {
-                // Backend is now available
-                console.log(" Initializing CSRF protection...");
-                try {
-                    await initializeCsrf();
-                    console.log(" CSRF token initialized successfully");
-                } catch (csrfError) {
-                    console.warn(" CSRF token initialization failed, but continuing anyway:", csrfError);
-                    // We'll proceed without CSRF token - WebSockets don't need it
-                }
-                
+                // Backend is back online
+                setBackendAvailable(true);
                 setShowOfflineNotification(false);
                 setReconnectAttempts(0);
+                setPermanentlyFailed(false);
                 
-                // Try to reconnect WebSocket if needed (regardless of CSRF status)
-                if (!websocketService.isConnected()) {
-                    console.log(" Attempting to reconnect WebSocket...");
-                    try {
-                        await websocketService.connect();
-                        console.log(" WebSocket reconnected successfully");
-                    } catch (wsError) {
-                        console.warn(" WebSocket reconnection failed:", wsError);
-                        // We'll proceed without WebSocket
-                    }
-                }
+                // Re-check auth status when backend becomes available
+                dispatch(checkAuthStatus());
+                
+                // Restart websocket connection if needed
+                websocketService.connect();
             } else {
-                // Backend is still unavailable
-                setReconnectAttempts(prev => prev + 1);
-                console.log(` Reconnection attempt ${reconnectAttempts + 1} failed. ${MAX_RECONNECT_ATTEMPTS - reconnectAttempts - 1} attempts remaining.`);
+                // Backend is still offline
+                const newAttempts = reconnectAttempts + 1;
+                setReconnectAttempts(newAttempts);
                 
-                // Schedule another reconnection attempt if we haven't reached the maximum
-                if (reconnectAttempts + 1 < MAX_RECONNECT_ATTEMPTS) {
-                    const nextDelay = Math.min(2000 * Math.pow(2, reconnectAttempts), 30000); // Exponential backoff with max of 30 seconds
-                    console.log(` Scheduling next reconnection attempt in ${nextDelay / 1000} seconds...`);
-                    
+                if (newAttempts >= MAX_RECONNECT_ATTEMPTS) {
+                    console.log('Maximum reconnection attempts reached. Giving up automatic reconnection.');
+                    setPermanentlyFailed(true);
+                } else {
+                    // Schedule another reconnection attempt
                     if (reconnectTimeoutRef.current) {
                         window.clearTimeout(reconnectTimeoutRef.current);
                     }
-                    
                     reconnectTimeoutRef.current = window.setTimeout(() => {
                         attemptReconnect();
-                    }, nextDelay);
-                } else {
-                    console.error(' All reconnection attempts failed. Giving up.');
-                    setPermanentlyFailed(true);
+                    }, 5000); // Try again in 5 seconds
                 }
             }
         } catch (error) {
-            console.error(' Error during reconnection attempt:', error);
-            setReconnectAttempts(prev => prev + 1);
+            console.error('Error during reconnection attempt:', error);
+            const newAttempts = reconnectAttempts + 1;
+            setReconnectAttempts(newAttempts);
+            
+            if (newAttempts >= MAX_RECONNECT_ATTEMPTS) {
+                console.log('Maximum reconnection attempts reached. Giving up automatic reconnection.');
+                setPermanentlyFailed(true);
+            }
         } finally {
             setIsReconnecting(false);
         }
-    }, [isReconnecting, permanentlyFailed, reconnectAttempts, MAX_RECONNECT_ATTEMPTS]);
-    
-    // Initialize CSRF token and check backend availability when app loads
-    const initializeApp = useCallback(async () => {
-        try {
-            console.log(" Checking backend availability...");
-            const available = await checkBackendAvailability();
-            setBackendAvailable(available);
-            
-            if (available) {
-                console.log(" Backend is available. Initializing CSRF protection...");
-                try {
-                    await initializeCsrf();
-                    console.log(" CSRF token initialized successfully");
-                } catch (csrfError) {
-                    console.warn(" CSRF token initialization failed:", csrfError);
-                    // We'll proceed without CSRF token
-                }
-                
-                // Initialize WebSocket connection
-                console.log(" Initializing WebSocket connection...");
-                try {
-                    await websocketService.connect();
-                    console.log(" WebSocket connected successfully");
-                } catch (wsError) {
-                    console.warn(" WebSocket connection failed:", wsError);
-                    // We'll proceed without WebSocket
-                }
-            } else {
-                console.warn(" Backend is not available. Some features may be limited.");
-                setShowOfflineNotification(true);
-            }
-        } catch (error) {
-            console.error(" Error during app initialization:", error);
-            setBackendAvailable(false);
-            setShowOfflineNotification(true);
-        }
-    }, []);
-    
-    // Set up periodic backend availability check
-    const setupBackendCheck = useCallback(() => {
-        if (checkIntervalRef.current) {
-            window.clearInterval(checkIntervalRef.current);
-        }
-        
-        // Check backend availability every 30 seconds
-        checkIntervalRef.current = window.setInterval(async () => {
-            if (cleanupRef.current) return; // Don't run if component is unmounting
-            
+    }, [reconnectAttempts, isReconnecting, permanentlyFailed, dispatch]);
+
+    // Initialize backend availability check
+    useEffect(() => {
+        const checkBackend = async () => {
             try {
-                // Only check if we're not already trying to reconnect
-                if (!isReconnecting && !permanentlyFailed) {
-                    const wasAvailable = backendAvailable;
-                    const isAvailable = await getBackendAvailability(); // Use cached value if available
+                const available = await getBackendAvailability();
+                if (backendAvailable !== available) {
+                    console.log(`Backend availability changed to: ${available ? 'Available' : 'Unavailable'}`);
+                    setBackendAvailable(available);
                     
-                    if (wasAvailable && !isAvailable) {
+                    if (!available) {
                         // Backend just went offline
-                        console.warn(" Backend connection lost!");
-                        setBackendAvailable(false);
                         setShowOfflineNotification(true);
-                        
-                        // Attempt to reconnect immediately
                         attemptReconnect();
-                    } else if (!wasAvailable && isAvailable) {
+                    } else {
                         // Backend just came back online
-                        console.log(" Backend connection restored!");
-                        setBackendAvailable(true);
                         setShowOfflineNotification(false);
                         setReconnectAttempts(0);
                         setPermanentlyFailed(false);
                         
-                        // Re-initialize CSRF and WebSocket
-                        initializeApp();
+                        // Re-check auth status when backend becomes available
+                        dispatch(checkAuthStatus());
                     }
                 }
             } catch (error) {
-                console.error(" Error during backend availability check:", error);
-            }
-        }, 30000);
-        
-        return () => {
-            if (checkIntervalRef.current) {
-                window.clearInterval(checkIntervalRef.current);
+                console.error('Error checking backend availability:', error);
+                if (backendAvailable) {
+                    // If we were previously online, now we're offline
+                    setBackendAvailable(false);
+                    setShowOfflineNotification(true);
+                    attemptReconnect();
+                }
             }
         };
-    }, [backendAvailable, isReconnecting, permanentlyFailed, attemptReconnect, initializeApp]);
-    
-    // Initialize app on mount
-    useEffect(() => {
-        initializeApp();
-        const cleanup = setupBackendCheck();
         
+        // Initial check
+        checkBackend();
+        
+        // Set up periodic checking
+        if (checkIntervalRef.current === null) {
+            checkIntervalRef.current = window.setInterval(checkBackend, 30000); // Check every 30 seconds
+        }
+        
+        // Initialize websocket connection if backend is available
+        if (backendAvailable) {
+            websocketService.connect();
+        }
+        
+        // Cleanup function
         return () => {
             cleanupRef.current = true;
-            cleanup();
+            
+            // Clear any pending timeouts/intervals
+            if (checkIntervalRef.current) {
+                window.clearInterval(checkIntervalRef.current);
+                checkIntervalRef.current = null;
+            }
             
             if (reconnectTimeoutRef.current) {
                 window.clearTimeout(reconnectTimeoutRef.current);
+                reconnectTimeoutRef.current = null;
             }
+            
+            // Disconnect websocket
+            websocketService.disconnect();
         };
-    }, [initializeApp, setupBackendCheck]);
-    
+    }, [backendAvailable, attemptReconnect, dispatch]);
+
+    // Handle manual reconnection attempt
+    const handleManualReconnect = () => {
+        console.log('Manual reconnection attempt initiated by user');
+        setReconnectAttempts(0);
+        setPermanentlyFailed(false);
+        attemptReconnect();
+    };
+
     return (
         <BrowserRouter>
+            {/* Backend offline notification */}
             {showOfflineNotification && (
-                <div className="offline-notification">
-                    {permanentlyFailed ? (
-                        <>
-                            <span> Server connection failed. Please check your network or server status.</span>
-                            <button 
-                                onClick={() => window.location.reload()}
-                                className="refresh-button"
-                            >
-                                Refresh Page
-                            </button>
-                        </>
-                    ) : (
-                        <>
-                            <span> Server connection lost. Some features may be unavailable.</span>
-                            <button 
-                                disabled={isReconnecting}
-                                onClick={attemptReconnect}
-                                className={isReconnecting ? 'reconnecting' : ''}
-                            >
-                                {isReconnecting ? 'Reconnecting...' : 'Retry Connection'}
-                            </button>
-                            {reconnectAttempts > 0 && (
-                                <span className="reconnect-attempts">
-                                    {reconnectAttempts >= MAX_RECONNECT_ATTEMPTS - 1 
-                                        ? 'Multiple reconnection attempts failed. Please check your network or server status.' 
-                                        : `Reconnection attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}`}
-                                </span>
+                <div className="backend-offline-notification">
+                    <div className="offline-content">
+                        <div className="offline-icon">🔌</div>
+                        <div className="offline-message">
+                            <h3>Backend Connection Lost</h3>
+                            <p>We're having trouble connecting to the System Rebellion backend services.</p>
+                            {permanentlyFailed ? (
+                                <p className="offline-help">
+                                    Please check your network connection and ensure the backend server is running.
+                                </p>
+                            ) : (
+                                <p className="offline-help">
+                                    Attempting to reconnect automatically...
+                                </p>
                             )}
-                        </>
-                    )}
+                        </div>
+                        {permanentlyFailed && (
+                            <>
+                                <button 
+                                    className={`reconnect-button ${isReconnecting ? 'reconnecting' : ''}`} 
+                                    onClick={handleManualReconnect}
+                                    disabled={isReconnecting}
+                                >
+                                    {isReconnecting ? 'Reconnecting...' : 'Retry Connection'}
+                                </button>
+                                {reconnectAttempts > 0 && (
+                                    <span className="reconnect-attempts">
+                                        {reconnectAttempts >= MAX_RECONNECT_ATTEMPTS - 1 
+                                            ? 'Multiple reconnection attempts failed. Please check your network or server status.' 
+                                            : `Reconnection attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}`}
+                                    </span>
+                                )}
+                            </>
+                        )}
+                    </div>
                 </div>
             )}
             <Routes>

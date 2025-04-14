@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { updateProfile } from '../../store/slices/authSlice';
 import { RootState } from '../../store/store';
-import axios from 'axios';
 import './onboarding.css';
 
 // Define the system information interface
@@ -17,8 +16,7 @@ interface SystemInfo {
 const Onboarding: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const auth = useAppSelector((state: RootState) => state.auth);
-  const isAuthenticated = auth.isAuthenticated;
+  const { isAuthenticated, isLoading: authLoading } = useAppSelector((state: RootState) => state.auth);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState(1);
@@ -79,10 +77,10 @@ const Onboarding: React.FC = () => {
 
   // Check if user is authenticated
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!authLoading && !isAuthenticated) {
       navigate('/login');
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, authLoading]);
 
   // Handle form input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -114,113 +112,34 @@ const Onboarding: React.FC = () => {
         throw new Error("Please fill in all required fields!");
       }
 
-      // Format the system info data for the API - properly structure for both User model and profile
-      const userData = {
-        // Direct user fields
-        operating_system: systemInfo.operating_system,
-        os_version: systemInfo.os_version,
-        cpu_cores: systemInfo.cpu_cores,
-        total_memory: systemInfo.total_memory,
-        
-        // Also include as nested profile for frontend compatibility
-        profile: {
-          operating_system: systemInfo.operating_system,
-          os_version: systemInfo.os_version,
-          cpu_cores: systemInfo.cpu_cores,
-          total_memory: systemInfo.total_memory
-        },
-        
-        // Add default preferences
-        preferences: {
-          optimization_level: "moderate",
-          theme_preferences: {
-            use_dark_mode: true
-          }
-        }
-      };
-      
-      console.log("🧐 Sir Hawkington is saving your distinguished system information:", userData);
-      
-      // Update profile in Redux state with proper structure
-      dispatch(updateProfile({
-        profile: {
-          operating_system: systemInfo.operating_system,
-          os_version: systemInfo.os_version,
-          cpu_cores: systemInfo.cpu_cores,
-          total_memory: systemInfo.total_memory
-        },
-        preferences: {
-          optimization_level: "moderate"
-        }
-      }));
-      
-      // Send the user data to the backend
-      try {
-        // Get the current user's username from Redux state
-        const username = auth.user?.username;
-        
-        if (!username) {
-          throw new Error("Username not found in state. Please log in again.");
-        }
-        
-        console.log("Using direct profile update endpoint with username:", username);
-        
-        // Use the direct profile update endpoint with proper authorization
-        try {
-          const token = localStorage.getItem('token');
-          const response = await axios.post(`/api/auth/direct-profile-update/${username}`, userData, {
-            headers: {
-              'Authorization': token?.startsWith('Bearer ') ? token : `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          });
-          console.log("🧐 User information updated successfully:", response.data);
-          
-          // Make a second request to fetch the complete user profile
-          try {
-            const userResponse = await axios.get(`/api/users/me`, {
-              headers: {
-                'Authorization': token?.startsWith('Bearer ') ? token : `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              }
-            });
-            console.log("🧐 User profile retrieved successfully:", userResponse.data);
-            
-            // Update Redux state with the complete user data from the backend
-            if (userResponse.data) {
-              dispatch(updateProfile({
-                profile: userResponse.data,
-                preferences: userResponse.data.preferences
-              }));
-            }
-          } catch (userError) {
-            console.error("🧐 Error retrieving updated user profile:", userError);
-            // Continue anyway - we've already updated the local state
-          }
-        } catch (apiError) {
-          console.error("🧐 API error, but continuing with local state update:", apiError);
-          // Continue anyway - we'll update the local state
-        }
-      } catch (updateError) {
-        console.error("Error updating user information:", updateError);
-        // Continue anyway - we'll treat this as a success for better UX
-        console.log("Continuing despite error for better user experience");
-      }
-      
-      // We already tried to complete onboarding in the previous step
-      // No need to try again
+      // Update Hawkington quote
+      setHawkingtonQuote("🧐 Sir Hawkington is processing your system information with aristocratic precision!");
 
-      // Show success message
-      setHawkingtonQuote("🧐 *adjusts monocle* Splendid! Your system information has been recorded!");
+      // Format the profile data for the API
+      const profileData = {
+        system_info: {
+          operating_system: systemInfo.operating_system,
+          os_version: systemInfo.os_version,
+          cpu_cores: systemInfo.cpu_cores,
+          total_memory: systemInfo.total_memory
+        },
+        onboarding_completed: true
+      };
+
+      // Dispatch the update profile action
+      await dispatch(updateProfile(profileData)).unwrap();
       
-      // Navigate to dashboard after a brief delay
+      // Show success message
+      setHawkingtonQuote("🧐 Sir Hawkington is pleased with your system specifications! Welcome aboard!");
+      
+      // Redirect to dashboard after a short delay
       setTimeout(() => {
         navigate('/dashboard');
-      }, 2000);
-    } catch (err) {
+      }, 1500);
+    } catch (err: any) {
       console.error("Onboarding error:", err);
-      setError(err instanceof Error ? err.message : "Failed to complete onboarding");
-      setHawkingtonQuote("🧐 *monocle drops in shock* I say, we've encountered a technical hiccup!");
+      setError(err.message || "An error occurred during onboarding. Please try again.");
+      setHawkingtonQuote("🧐 *adjusts monocle in concern* I say, something seems amiss with your system information!");
     } finally {
       setLoading(false);
     }
@@ -233,7 +152,7 @@ const Onboarding: React.FC = () => {
         return (
           <div className="onboarding-step">
             <h3>System Information</h3>
-            <p>Please provide information about your system to optimize performance.</p>
+            <p>Please provide information about your system to help us optimize your experience.</p>
             
             <div className="form-group">
               <label htmlFor="operating_system">Operating System</label>
@@ -248,6 +167,8 @@ const Onboarding: React.FC = () => {
                 <option value="Windows">Windows</option>
                 <option value="MacOS">MacOS</option>
                 <option value="Linux">Linux</option>
+                <option value="Android">Android</option>
+                <option value="iOS">iOS</option>
                 <option value="Other">Other</option>
               </select>
             </div>

@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../../store/hooks';
-import { logout } from '../../store/slices/authSlice';
+import { logout, checkAuthStatus } from '../../store/slices/authSlice';
 import { getCharacterById } from './CharacterIcons';
 import Modal from './Modal';
 import { UserProfile } from '../dashboard/UserProfile/UserProfile';
 import SignupModal from '../Auth/SignupModal/SignupModal';
+import Login from '../Auth/login/Login';
 import './Navbar.css';
 
 const Navbar: React.FC = () => {
@@ -19,8 +20,12 @@ const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const dropdownRef = useRef<HTMLDivElement>(null);
   
-  const isAuthenticated = useAppSelector(state => state.auth.isAuthenticated);
-  const user = useAppSelector(state => state.auth.user);
+  const { isAuthenticated, user } = useAppSelector(state => state.auth);
+  
+  // Check auth status when component mounts
+  useEffect(() => {
+    dispatch(checkAuthStatus());
+  }, [dispatch]);
   
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -67,6 +72,14 @@ const Navbar: React.FC = () => {
     setIsDropdownOpen(false);
   };
   
+  // Get avatar from user data
+  const getUserAvatar = () => {
+    if (user) {
+      return user.avatar || (user.profile && user.profile.avatar) || 'sir-hawkington';
+    }
+    return 'sir-hawkington';
+  };
+  
   return (
     <nav className="navbar">
       <div className="navbar-container">
@@ -105,11 +118,7 @@ const Navbar: React.FC = () => {
         
         <div className="navbar-profile" ref={dropdownRef}>
           <div className="navbar-avatar" onClick={toggleDropdown}>
-            {isAuthenticated && user?.profile?.avatar ? (
-              getCharacterById(user.profile.avatar)
-            ) : (
-              getCharacterById('sir-hawkington')
-            )}
+            {getCharacterById(getUserAvatar())}
           </div>
           
           {isDropdownOpen && (
@@ -118,11 +127,7 @@ const Navbar: React.FC = () => {
                 <>
                   <div className="dropdown-user-info">
                     <div className="dropdown-avatar">
-                      {user?.profile?.avatar ? (
-                        getCharacterById(user.profile.avatar)
-                      ) : (
-                        getCharacterById('sir-hawkington')
-                      )}
+                      {getCharacterById(getUserAvatar())}
                     </div>
                     <div className="dropdown-user-details">
                       <span className="dropdown-username">{user?.username}</span>
@@ -160,30 +165,14 @@ const Navbar: React.FC = () => {
       
       {/* Modals */}
       {showProfileModal && (
-        <Modal 
-          isOpen={showProfileModal} 
-          onClose={() => setShowProfileModal(false)}
-          title="Profile Settings"
-          size="medium"
-        >
-          <div style={{ width: '100%', height: '100%', overflow: 'auto' }}>
-            <UserProfile isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} />
-          </div>
-        </Modal>
+        <UserProfile isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} />
       )}
       
       {showLoginModal && (
-        <Modal 
+        <Login 
           isOpen={showLoginModal} 
           onClose={() => setShowLoginModal(false)}
-          title="Login"
-          size="small"
-        >
-          <div className="modal-placeholder">
-            <p>Sir Hawkington is preparing your login form with aristocratic precision.</p>
-            <p>The Meth Snail is frantically optimizing your authentication algorithms.</p>
-          </div>
-        </Modal>
+        />
       )}
       
       {showSignupModal && (
