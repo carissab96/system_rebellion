@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, ReactNode } from 'react';
+import ReactDOM from 'react-dom';
 import './Modal.css';
 
 interface ModalProps {
@@ -60,12 +61,13 @@ const Modal = ({
 
   if (!isOpen) return null;
 
-  return (
+  // Using React Portal to render the modal outside the normal DOM hierarchy
+  // This ensures it's not affected by parent component styles or z-index issues
+  const modalContent = (
     <div className="modal-overlay" onClick={onClose}>
       <div
         ref={modalRef}
         className={`modal-content ${size} ${draggable ? 'draggable' : ''}`}
-        style={{ transform: `translate(${position.x}px, ${position.y}px)` }}
         onClick={(e) => e.stopPropagation()}
         onMouseDown={handleMouseDown}
       >
@@ -80,6 +82,12 @@ const Modal = ({
         </div>
       </div>
     </div>
+  );
+  
+  // Create a portal to render the modal at the end of the document body
+  return ReactDOM.createPortal(
+    modalContent,
+    document.body
   );
 };
 

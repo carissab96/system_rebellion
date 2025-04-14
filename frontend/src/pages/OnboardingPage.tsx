@@ -12,8 +12,17 @@ const OnboardingPage = () => {
     return <Navigate to="/login" />;
   }
   
-  // Redirect to dashboard if user has already completed onboarding
-  if (user && !user.needs_onboarding) {
+  // Check if user already has system profile information
+  const hasSystemInfo = user?.profile && (
+    user.profile.operating_system ||
+    user.profile.os_version ||
+    user.profile.cpu_cores ||
+    user.profile.total_memory
+  );
+  
+  // Redirect to dashboard if user has already completed system profile
+  if (user && hasSystemInfo) {
+    console.log("User already has system profile information, redirecting to dashboard");
     return <Navigate to="/dashboard" />;
   }
   

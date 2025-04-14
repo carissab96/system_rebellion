@@ -5,15 +5,33 @@ import Login from '../components/Auth/login/Login';
 import './LandingPage.css';
 
 // Import character data
-import { teamMembers, projectTimeline } from '../data/systemRebellionData.ts';
+import { teamMembers, projectTimeline } from '../data/systemRebellionData';
 
 const LandingPage = () => {
-  const [showSignupModal, setShowSignupModal] = useState<boolean>(false);
-  const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
-  const [hawkingtonQuote, setHawkingtonQuote] = useState<string>("🧐 Welcome to the System Rebellion, distinguished visitor!");
-  const [activeCharacter, setActiveCharacter] = useState<string | null>(null);
-  const [activeTimelineEvent, setActiveTimelineEvent] = useState<string | null>(null);
-  const [methSnailRedBulls, setMethSnailRedBulls] = useState<number>(512);
+  const [showSignupModal, setShowSignupModal] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [hawkingtonQuote, setHawkingtonQuote] = useState("🧐 Welcome to the System Rebellion, distinguished visitor!");
+  const [activeCharacter, setActiveCharacter] = useState(null);
+  const [activeTimelineEvent, setActiveTimelineEvent] = useState(null);
+  const [methSnailRedBulls, setMethSnailRedBulls] = useState(512);
+  
+  // Handle smooth scrolling for anchor links
+  useEffect(() => {
+    const handleAnchorClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'A' && target.getAttribute('href')?.startsWith('#')) {
+        e.preventDefault();
+        const id = target.getAttribute('href')?.substring(1);
+        const element = document.getElementById(id || '');
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      }
+    };
+    
+    document.addEventListener('click', handleAnchorClick);
+    return () => document.removeEventListener('click', handleAnchorClick);
+  }, []);
   
   // Increment The Meth Snail's Red Bull count randomly
   useEffect(() => {
@@ -27,7 +45,7 @@ const LandingPage = () => {
   }, []);
   
   // Random Hawkington quotes for hover effects
-  const hawkingtonQuotes: string[] = [
+  const hawkingtonQuotes = [
     "🧐 The System Rebellion awaits your distinguished participation!",
     "🧐 Sir Hawkington invites you to optimize your computing experience!",
     "🧐 Join us in the most aristocratic system optimization revolution!",
@@ -38,39 +56,39 @@ const LandingPage = () => {
     "🧐 The Quantum Shadow People suggest router modifications (ignore them)!"
   ];
   
-  const getRandomQuote = (): string => {
+  const getRandomQuote = () => {
     const randomIndex = Math.floor(Math.random() * hawkingtonQuotes.length);
     return hawkingtonQuotes[randomIndex];
   };
   
-  const handleSignupClick = (): void => {
+  const handleSignupClick = () => {
     console.log("Opening signup modal");
     setShowSignupModal(true);
     setShowLoginModal(false); // Ensure login modal is closed
     setHawkingtonQuote("🧐 Sir Hawkington is delighted by your interest in joining the rebellion!");
   };
   
-  const handleLoginClick = (): void => {
+  const handleLoginClick = () => {
     console.log("Opening login modal");
     setShowLoginModal(true);
     setShowSignupModal(false); // Ensure signup modal is closed
     setHawkingtonQuote("🧐 Sir Hawkington prepares to verify your distinguished credentials!");
   };
   
-  const handleCloseModals = (): void => {
+  const handleCloseModals = () => {
     setShowSignupModal(false);
     setShowLoginModal(false);
     setHawkingtonQuote("🧐 Welcome to the System Rebellion, distinguished visitor!");
   };
   
-  const handleCharacterClick = (character: string): void => {
+  const handleCharacterClick = (character: any) => {
     setActiveCharacter(activeCharacter === character ? null : character);
   };
   
-  const handleTimelineClick = (event: string): void => {
+  const handleTimelineClick = (event: any) => {
     setActiveTimelineEvent(activeTimelineEvent === event ? null : event);
   };
-
+  
   return (
     <div className="landing-page">
       <header className="landing-header">
@@ -78,6 +96,7 @@ const LandingPage = () => {
           <img src="/logo.png" alt="System Rebellion Logo" className="logo" />
           <h1>System Rebellion</h1>
         </div>
+
         <div className="header-actions">
           <button 
             className="login-button"
@@ -427,12 +446,12 @@ const LandingPage = () => {
       
       {/* Modals */}
       {showSignupModal && (
-        <div className="modal-overlay">
+        <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.7)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
           <SignupModal onClose={handleCloseModals} isOpen={showSignupModal} />
         </div>
       )}
       {showLoginModal && (
-        <div className="modal-overlay">
+        <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.7)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
           <Login onClose={handleCloseModals} isOpen={showLoginModal} />
         </div>
       )}

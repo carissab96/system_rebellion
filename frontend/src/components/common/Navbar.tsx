@@ -166,7 +166,9 @@ const Navbar: React.FC = () => {
           title="Profile Settings"
           size="medium"
         >
-          <UserProfile isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} />
+          <div style={{ width: '100%', height: '100%', overflow: 'auto' }}>
+            <UserProfile isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} />
+          </div>
         </Modal>
       )}
       

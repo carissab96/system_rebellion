@@ -9,6 +9,7 @@ from app.api.endpoints import optimization
 from app.api.endpoints import configuration
 from app.api.endpoints import alerts
 from app.api.endpoints import auto_tuner
+from app.api.endpoints import users
 from app.api import router as metrics_router
 # Import websocket routes
 from app.api import websocket_routes
@@ -111,6 +112,13 @@ def create_application() -> FastAPI:
         auto_tuner.router,
         prefix="/api/auto-tuner",
         tags=["Auto-Tuner"]
+    )
+    
+    # Add users router
+    app.include_router(
+        users.router,
+        prefix="/api/users",
+        tags=["Users"]
     )
 
     # CORS Configuration

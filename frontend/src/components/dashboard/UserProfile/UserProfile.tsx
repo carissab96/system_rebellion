@@ -2,7 +2,20 @@ import React, { useState, useRef, useEffect } from "react";
 import { useAppSelector, useAppDispatch } from "../../../store/hooks";
 import { updateProfile } from "../../../store/slices/authSlice";
 import { CharacterAvatarSelector, getCharacterById } from "../../common/CharacterIcons";
+import axios from "axios";
 import "./UserProfile.css";
+
+// Define extended profile interface to include all possible fields
+interface ExtendedProfile {
+  operating_system: string;
+  os_version: string;
+  cpu_cores: number;
+  total_memory: number;
+  linux_distro?: string;
+  linux_distro_version?: string;
+  avatar?: string;
+  [key: string]: any; // Allow for additional fields
+}
 
 interface UserProfileProps {
   isOpen?: boolean;
@@ -12,7 +25,66 @@ interface UserProfileProps {
 export const UserProfile: React.FC<UserProfileProps> = ({ isOpen, onClose }) => {
     const dispatch = useAppDispatch();
     const user = useAppSelector(state => state.auth.user);
-    const profile = useAppSelector(state => state.auth.user?.profile);
+    
+    // Debug user state to understand what's happening
+    useEffect(() => {
+      console.log('🧐 User state in UserProfile:', user);
+      
+      // If user is null but we have a username in localStorage, try to load the profile
+      if (!user && localStorage.getItem('username')) {
+        const loadProfileData = async () => {
+          try {
+            const username = localStorage.getItem('username');
+            const token = localStorage.getItem('token');
+            
+            if (username && token) {
+              console.log('🧐 Attempting to load profile data for:', username);
+              
+              const response = await axios.get(`/api/auth/auth-status`, {
+                headers: {
+                  'Authorization': `Bearer ${token}`
+                },
+                withCredentials: true
+              });
+              
+              if (response.data && response.data.user) {
+                console.log('✅ Loaded user data from server:', response.data.user);
+                dispatch(updateProfile(response.data.user));
+              }
+            }
+          } catch (error: any) {
+            console.error('❌ Failed to load profile data:', error.message);
+          }
+        };
+        
+        loadProfileData();
+      }
+    }, [user, dispatch]);
+    
+    // Get profile data from either nested profile object or direct user fields
+    const getProfileData = () => {
+      if (!user) return null;
+      
+      // Create a merged profile object that combines both sources
+      const mergedProfile: ExtendedProfile = {
+        // Start with any existing profile data
+        ...(user.profile as ExtendedProfile || {}),
+        
+        // Override with direct user fields if they exist
+        operating_system: user.operating_system || (user.profile as ExtendedProfile | undefined)?.operating_system || '',
+        os_version: user.os_version || (user.profile as ExtendedProfile | undefined)?.os_version || '',
+        linux_distro: user.linux_distro || (user.profile as ExtendedProfile | undefined)?.linux_distro || '',
+        linux_distro_version: user.linux_distro_version || (user.profile as ExtendedProfile | undefined)?.linux_distro_version || '',
+        cpu_cores: user.cpu_cores || (user.profile as ExtendedProfile | undefined)?.cpu_cores || 0,
+        total_memory: user.total_memory || (user.profile as ExtendedProfile | undefined)?.total_memory || 0,
+        avatar: user.avatar || (user.profile as ExtendedProfile | undefined)?.avatar || 'sir-hawkington'
+      };
+      
+      console.log('🧐 Sir Hawkington has merged the profile data:', mergedProfile);
+      return mergedProfile;
+    };
+    
+    const profile = getProfileData();
     const [isEditing, setIsEditing] = useState(false);
     const [selectedAvatar, setSelectedAvatar] = useState<string>(profile?.avatar || 'sir-hawkington');
     
@@ -29,7 +101,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ isOpen, onClose }) => 
         console.log(`🧐 Sir Hawkington: "Ah, I see you've chosen ${avatarId} as your digital persona. Splendid choice!"`); 
     };
     
-    const handleEditClick = () => {
+    const handleEditClick = async () => {
       console.log("🧐 Sir Hawkington is preparing his quill to edit your distinguished profile...");
       
       if (isEditing) {
@@ -50,8 +122,8 @@ export const UserProfile: React.FC<UserProfileProps> = ({ isOpen, onClose }) => 
         const distroName = distroParts[0] || '';
         const distroVersion = distroParts.slice(1).join(' ') || '';
         
-        // Dispatch action to update profile
-        dispatch(updateProfile({
+        // Create profile data object
+        const profileData = {
           profile: {
             operating_system: osName,
             os_version: osVersion,
@@ -67,9 +139,80 @@ export const UserProfile: React.FC<UserProfileProps> = ({ isOpen, onClose }) => 
               use_dark_mode: true // Default to dark mode for cyberpunk aesthetic
             }
           }
-        }));
+        };
         
-        console.log("✨ Sir Hawkington has saved your profile changes with aristocratic flair!");
+        try {
+          // Get username from localStorage - this is our source of truth
+          const username = localStorage.getItem('username');
+          const token = localStorage.getItem('token');
+          
+          if (!username) {
+            console.error("❌ Cannot update profile: No username found in localStorage");
+            throw new Error("Username not found in state. Please log in again.");
+          }
+          
+          if (!token) {
+            console.error("❌ Cannot update profile: No token found in localStorage");
+            throw new Error("Authentication token not found. Please log in again.");
+          }
+          
+          console.log("🧐 Sir Hawkington is sending your profile data to the server for user:", username);
+          
+          // First update local state via Redux
+          dispatch(updateProfile({
+            ...profileData,
+            username: username // Ensure username is in the user object
+          }));
+          
+          // Check if the user exists in the backend before updating
+          try {
+            // Verify user exists by checking status
+            const statusCheck = await axios.get(`/api/auth/status/`, {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              },
+              withCredentials: true
+            });
+            
+            console.log("🧐 User status check:", statusCheck.data);
+            
+            if (!statusCheck.data.is_authenticated) {
+              console.error("❌ User is not authenticated according to status check");
+              throw new Error("Authentication failed. Please log in again.");
+            }
+          } catch (statusError) {
+            console.error("❌ Error checking user status:", statusError);
+            // Continue anyway - we'll let the profile update attempt handle errors
+          }
+          
+          // Then send to the backend
+          const response = await axios.post(
+            `/api/auth/direct-profile-update/${username}`,
+            profileData,
+            {
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              withCredentials: true
+            }
+          );
+          
+          console.log("✅ Profile data saved to server:", response.data);
+          
+          // Update Redux store with the returned user data
+          if (response.data && response.data.user) {
+            // Make sure to include the username in the update
+            dispatch(updateProfile({
+              ...response.data.user,
+              username: username
+            }));
+          }
+          
+          console.log("✨ Sir Hawkington has saved your profile changes with aristocratic flair!");
+        } catch (error) {
+          console.error("❌ Error updating user information:", error);
+        }
       } else {
         console.log("📝 Sir Hawkington is now in edit mode, adjusting his monocle for precision...");
       }
@@ -195,7 +338,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ isOpen, onClose }) => 
             <div className="avatar-display">
               {getCharacterById(profile?.avatar || 'sir-hawkington')}
               <span className="avatar-name">
-                {profile?.avatar ? profile.avatar.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') : 'Sir Hawkington'}
+                {profile?.avatar ? profile.avatar.split('-').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') : 'Sir Hawkington'}
               </span>
             </div>
           </div>
