@@ -21,9 +21,38 @@ const App: React.FC = () => {
     // We'll use dispatch in a useEffect to handle auth-related actions when needed
     const dispatch = useAppDispatch();
     
-    // Log auth status on mount for debugging purposes
+    // Initialize authentication on app startup
     useEffect(() => {
         console.log(' Auth dispatcher ready');
+        
+        // Check if we have a token in localStorage and set it in the axios headers
+        const token = localStorage.getItem('token');
+        if (token) {
+            console.log(' Found existing auth token, initializing authorization header');
+            // Import axios and set the authorization header
+            import('axios').then(axios => {
+                // Set the token directly on axios defaults
+                axios.default.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                console.log(' Authorization header set successfully');
+                
+                // Make a test request to verify the token is working
+                axios.default.get('/api/auth/status/')
+                    .then(response => {
+                        console.log(' Auth status check successful:', response.data);
+                    })
+                    .catch(error => {
+                        console.error(' Auth status check failed:', error);
+                        // If token is invalid, clear it
+                        if (error.response?.status === 401) {
+                            console.log(' Token appears to be invalid, clearing it');
+                            localStorage.removeItem('token');
+                            localStorage.removeItem('refreshToken');
+                        }
+                    });
+            });
+        } else {
+            console.log(' No auth token found in localStorage');
+        }
     }, [dispatch]);
     // This state tracks backend availability and is used throughout the component
     const [backendAvailable, setBackendAvailable] = useState<boolean>(true);
@@ -75,25 +104,24 @@ const App: React.FC = () => {
                 
                 // Try to reconnect WebSocket if needed (regardless of CSRF status)
                 if (!websocketService.isConnected()) {
-                    console.log(" Reconnecting WebSocket service (CSRF status independent)...");
+                    console.log(" Attempting to reconnect WebSocket...");
                     try {
                         await websocketService.connect();
-                        websocketService.resetReconnectAttempts();
                         console.log(" WebSocket reconnected successfully");
                     } catch (wsError) {
-                        console.warn(" WebSocket reconnection failed, will retry later");
+                        console.warn(" WebSocket reconnection failed:", wsError);
+                        // We'll proceed without WebSocket
                     }
                 }
             } else {
                 // Backend is still unavailable
-                console.error(" Backend server is still not available");
-                setShowOfflineNotification(true);
                 setReconnectAttempts(prev => prev + 1);
+                console.log(` Reconnection attempt ${reconnectAttempts + 1} failed. ${MAX_RECONNECT_ATTEMPTS - reconnectAttempts - 1} attempts remaining.`);
                 
-                // Schedule another reconnection attempt with exponential backoff
-                if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS - 1) { // Limit to MAX_RECONNECT_ATTEMPTS
-                    const delay = Math.min(30000, 1000 * Math.pow(2, reconnectAttempts)); // Max 30 seconds
-                    console.log(` Scheduling next reconnection attempt in ${delay/1000} seconds`);
+                // Schedule another reconnection attempt if we haven't reached the maximum
+                if (reconnectAttempts + 1 < MAX_RECONNECT_ATTEMPTS) {
+                    const nextDelay = Math.min(2000 * Math.pow(2, reconnectAttempts), 30000); // Exponential backoff with max of 30 seconds
+                    console.log(` Scheduling next reconnection attempt in ${nextDelay / 1000} seconds...`);
                     
                     if (reconnectTimeoutRef.current) {
                         window.clearTimeout(reconnectTimeoutRef.current);
@@ -101,156 +129,127 @@ const App: React.FC = () => {
                     
                     reconnectTimeoutRef.current = window.setTimeout(() => {
                         attemptReconnect();
-                    }, delay);
+                    }, nextDelay);
+                } else {
+                    console.error(' All reconnection attempts failed. Giving up.');
+                    setPermanentlyFailed(true);
                 }
             }
         } catch (error) {
-            console.error(" Reconnection attempt failed:", error);
-            setBackendAvailable(false);
-            setShowOfflineNotification(true);
+            console.error(' Error during reconnection attempt:', error);
             setReconnectAttempts(prev => prev + 1);
         } finally {
             setIsReconnecting(false);
         }
-    }, [reconnectAttempts, isReconnecting, permanentlyFailed, MAX_RECONNECT_ATTEMPTS]);
+    }, [isReconnecting, permanentlyFailed, reconnectAttempts, MAX_RECONNECT_ATTEMPTS]);
     
-    useEffect(() => {
-        cleanupRef.current = false;
-
-        // Initialize CSRF token and check backend availability when app loads
-        const initializeApp = async () => {
-            try {
-                console.log(" Checking backend availability...");
-                const available = await checkBackendAvailability(true);
-                setBackendAvailable(available);
+    // Initialize CSRF token and check backend availability when app loads
+    const initializeApp = useCallback(async () => {
+        try {
+            console.log(" Checking backend availability...");
+            const available = await checkBackendAvailability();
+            setBackendAvailable(available);
+            
+            if (available) {
+                console.log(" Backend is available. Initializing CSRF protection...");
+                try {
+                    await initializeCsrf();
+                    console.log(" CSRF token initialized successfully");
+                } catch (csrfError) {
+                    console.warn(" CSRF token initialization failed:", csrfError);
+                    // We'll proceed without CSRF token
+                }
                 
-                if (available) {
-                    // Try to initialize CSRF protection, but continue even if it fails
-                    console.log(" Initializing CSRF protection...");
-                    try {
-                        await initializeCsrf();
-                        console.log(" CSRF token initialized successfully");
-                    } catch (csrfError) {
-                        console.warn(" CSRF token initialization failed, but continuing anyway:", csrfError);
-                        // We'll proceed without CSRF token - WebSockets don't need it
-                    }
+                // Initialize WebSocket connection
+                console.log(" Initializing WebSocket connection...");
+                try {
+                    await websocketService.connect();
+                    console.log(" WebSocket connected successfully");
+                } catch (wsError) {
+                    console.warn(" WebSocket connection failed:", wsError);
+                    // We'll proceed without WebSocket
+                }
+            } else {
+                console.warn(" Backend is not available. Some features may be limited.");
+                setShowOfflineNotification(true);
+            }
+        } catch (error) {
+            console.error(" Error during app initialization:", error);
+            setBackendAvailable(false);
+            setShowOfflineNotification(true);
+        }
+    }, []);
+    
+    // Set up periodic backend availability check
+    const setupBackendCheck = useCallback(() => {
+        if (checkIntervalRef.current) {
+            window.clearInterval(checkIntervalRef.current);
+        }
+        
+        // Check backend availability every 30 seconds
+        checkIntervalRef.current = window.setInterval(async () => {
+            if (cleanupRef.current) return; // Don't run if component is unmounting
+            
+            try {
+                // Only check if we're not already trying to reconnect
+                if (!isReconnecting && !permanentlyFailed) {
+                    const wasAvailable = backendAvailable;
+                    const isAvailable = await getBackendAvailability(); // Use cached value if available
                     
-                    // Initialize WebSocket connection regardless of CSRF status
-                    try {
-                        console.log(" Connecting WebSocket (CSRF status independent)...");
-                        await websocketService.connect();
-                        console.log(" WebSocket connected successfully on app initialization");
-                    } catch (wsError) {
-                        console.warn(" Initial WebSocket connection failed, will retry later", wsError);
+                    if (wasAvailable && !isAvailable) {
+                        // Backend just went offline
+                        console.warn(" Backend connection lost!");
+                        setBackendAvailable(false);
+                        setShowOfflineNotification(true);
+                        
+                        // Attempt to reconnect immediately
+                        attemptReconnect();
+                    } else if (!wasAvailable && isAvailable) {
+                        // Backend just came back online
+                        console.log(" Backend connection restored!");
+                        setBackendAvailable(true);
+                        setShowOfflineNotification(false);
+                        setReconnectAttempts(0);
+                        setPermanentlyFailed(false);
+                        
+                        // Re-initialize CSRF and WebSocket
+                        initializeApp();
                     }
-                } else {
-                    console.error(" Backend server is not available");
-                    setShowOfflineNotification(true);
-                    // Schedule a reconnection attempt
-                    attemptReconnect();
                 }
             } catch (error) {
-                console.error(" Failed to initialize application:", error);
-                setBackendAvailable(false);
-                setShowOfflineNotification(true);
-                // Schedule a reconnection attempt
-                attemptReconnect();
+                console.error(" Error during backend availability check:", error);
             }
-        };
-
-        // Set up periodic backend availability check
-        const setupBackendCheck = () => {
-            // Don't set up checks if we've permanently failed
-            if (permanentlyFailed) {
-                console.log(' Not setting up backend checks - system is permanently offline');
-                return null;
-            }
-            
-            // Check every 30 seconds
-            const intervalId = window.setInterval(async () => {
-                if (cleanupRef.current) return;
-                
-                try {
-                    const wasAvailable = getBackendAvailability();
-                    const isNowAvailable = await checkBackendAvailability();
-                    
-                    // Update state only if availability changed
-                    if (wasAvailable !== isNowAvailable) {
-                        setBackendAvailable(isNowAvailable);
-                        
-                        if (isNowAvailable) {
-                            // Backend is now available, try to initialize CSRF and reconnect
-                            attemptReconnect();
-                        } else {
-                            // Backend is now unavailable
-                            console.error(" Backend became unavailable");
-                            setShowOfflineNotification(true);
-                            
-                            // Reset reconnect attempts since this is a new disconnection
-                            setReconnectAttempts(0);
-                        }
-                    }
-                    
-                    // Check WebSocket connection status regardless of backend availability
-                    if (isNowAvailable && !websocketService.isConnected()) {
-                        console.log(" WebSocket disconnected but backend available, attempting reconnection...");
-                        try {
-                            await websocketService.connect();
-                            console.log(" WebSocket reconnected successfully during periodic check");
-                        } catch (wsError) {
-                            console.warn(" WebSocket reconnection failed during periodic check");
-                        }
-                    }
-                } catch (error) {
-                    console.error(" Error checking backend availability:", error);
-                }
-            }, 30000); // 30 seconds
-            
-            checkIntervalRef.current = intervalId;
-            return intervalId;
-        };
-
-        initializeApp();
-        setupBackendCheck(); // Sets up interval for checking backend availability
-
+        }, 30000);
+        
         return () => {
-            cleanupRef.current = true;
-            console.log(" App unmounting...");
-            
-            // Clear all timers
             if (checkIntervalRef.current) {
                 window.clearInterval(checkIntervalRef.current);
-                checkIntervalRef.current = null;
             }
+        };
+    }, [backendAvailable, isReconnecting, permanentlyFailed, attemptReconnect, initializeApp]);
+    
+    // Initialize app on mount
+    useEffect(() => {
+        initializeApp();
+        const cleanup = setupBackendCheck();
+        
+        return () => {
+            cleanupRef.current = true;
+            cleanup();
             
             if (reconnectTimeoutRef.current) {
                 window.clearTimeout(reconnectTimeoutRef.current);
-                reconnectTimeoutRef.current = null;
             }
-            
-            const cleanup = () => {
-                if (cleanupRef.current) {
-                    console.log(" Performing final cleanup...");
-                    if (websocketService.isConnected()) {
-                        console.log(" Disconnecting established connection...");
-                        websocketService.disconnect();
-                    } else {
-                        console.log(" No active connection to disconnect");
-                    }
-                }
-            };
-
-            setTimeout(cleanup, 100);
         };
-    }, [attemptReconnect]);
-
+    }, [initializeApp, setupBackendCheck]);
+    
     return (
         <BrowserRouter>
             {showOfflineNotification && (
                 <div className="offline-notification">
                     {permanentlyFailed ? (
                         <>
-                            <span> Server connection permanently failed. Please refresh the page to try again.</span>
+                            <span> Server connection failed. Please check your network or server status.</span>
                             <button 
                                 onClick={() => window.location.reload()}
                                 className="refresh-button"
@@ -279,73 +278,80 @@ const App: React.FC = () => {
                     )}
                 </div>
             )}
-            <Layout>
-                <Routes>
-                    <Route path="/" element={<LandingPage />} />
-                    <Route path="/login" element={
-                      <Login 
+            <Routes>
+                {/* Landing page route - outside of Layout */}
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/login" element={
+                    <Login 
                         isOpen={true}
                         onClose={() => console.log('Login closed')} 
-                      />
-                    } />
-                    <Route 
-                        path="/dashboard" 
-                        element={
-                            <PrivateRoute>
-                                <Dashboard />
-                            </PrivateRoute>
-                        } 
                     />
-                    <Route 
-                        path="/onboarding" 
-                        element={
-                            <PrivateRoute>
-                                <OnboardingPage />
-                            </PrivateRoute>
-                        } 
-                    />
-                    <Route 
-                        path="/auto-tuners" 
-                        element={
-                            <PrivateRoute>
-                                <AutoTunerComponent />
-                            </PrivateRoute>
-                        } 
-                    />
-                    <Route 
-                        path="/system-metrics" 
-                        element={
-                            <PrivateRoute>
-                                <SystemMetrics />
-                            </PrivateRoute>
-                        } 
-                    />
-                    <Route 
-                        path="/optimizations" 
-                        element={
-                            <PrivateRoute>
-                                <OptimizationProfiles />
-                            </PrivateRoute>
-                        } 
-                    />
-                    <Route 
-                        path="/system-alerts" 
-                        element={
-                            <PrivateRoute>
-                                <SystemAlerts />
-                            </PrivateRoute>
-                        } 
-                    />
-                    <Route 
-                        path="/system-configuration" 
-                        element={
-                            <PrivateRoute>
-                                <SystemConfiguration />
-                            </PrivateRoute>
-                        } 
-                    />
-                </Routes>
-            </Layout>
+                } />
+                
+                {/* All other routes wrapped in Layout */}
+                <Route path="/*" element={
+                    <Layout>
+                        <Routes>
+                            <Route 
+                                path="dashboard" 
+                                element={
+                                    <PrivateRoute>
+                                        <Dashboard />
+                                    </PrivateRoute>
+                                } 
+                            />
+                            <Route 
+                                path="onboarding" 
+                                element={
+                                    <PrivateRoute>
+                                        <OnboardingPage />
+                                    </PrivateRoute>
+                                } 
+                            />
+                            <Route 
+                                path="auto-tuners" 
+                                element={
+                                    <PrivateRoute>
+                                        <AutoTunerComponent />
+                                    </PrivateRoute>
+                                } 
+                            />
+                            <Route 
+                                path="system-metrics" 
+                                element={
+                                    <PrivateRoute>
+                                        <SystemMetrics />
+                                    </PrivateRoute>
+                                } 
+                            />
+                            <Route 
+                                path="optimizations" 
+                                element={
+                                    <PrivateRoute>
+                                        <OptimizationProfiles />
+                                    </PrivateRoute>
+                                } 
+                            />
+                            <Route 
+                                path="system-alerts" 
+                                element={
+                                    <PrivateRoute>
+                                        <SystemAlerts />
+                                    </PrivateRoute>
+                                } 
+                            />
+                            <Route 
+                                path="system-configuration" 
+                                element={
+                                    <PrivateRoute>
+                                        <SystemConfiguration />
+                                    </PrivateRoute>
+                                } 
+                            />
+                        </Routes>
+                    </Layout>
+                } />
+            </Routes>
         </BrowserRouter>
     );
 };

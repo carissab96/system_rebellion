@@ -3,7 +3,8 @@ import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { registerUser } from '../../../store/slices/authSlice';
 import { AppDispatch } from '../../../store/store';
-import './SignupModal.css'; // Assuming you have some styling
+import './SignupModal.css';
+import '../../../components/common/Modal.css';
 
 interface SignupModalProps {
   isOpen: boolean;
@@ -21,7 +22,6 @@ interface RegistrationData {
 }
 
 const SignupModal: FC<SignupModalProps> = ({ isOpen, onClose }) => {
-  if (!isOpen) return null;  
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   
@@ -40,6 +40,8 @@ const SignupModal: FC<SignupModalProps> = ({ isOpen, onClose }) => {
   const [error, setError] = useState<string | null>(null);
   const [hawkingtonQuote, setHawkingtonQuote] = useState("🧐 Sir Hawkington awaits your distinguished registration!");
   
+  if (!isOpen) return null;
+  
   // Handle input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -55,7 +57,7 @@ const SignupModal: FC<SignupModalProps> = ({ isOpen, onClose }) => {
     setIsSubmitting(true);
     setError(null);
     
-    // Basic validation
+    // Enhanced validation
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match! The Meth Snail is confused by the dimensional discrepancy!");
       setHawkingtonQuote("🧐 I say, your passwords seem to be in disagreement with each other!");
@@ -70,17 +72,48 @@ const SignupModal: FC<SignupModalProps> = ({ isOpen, onClose }) => {
       return;
     }
     
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError("Please enter a valid email address! The Quantum Shadow People cannot deliver notifications to invalid dimensions.");
+      setHawkingtonQuote("🧐 I say, that email address appears to be from an alternate reality!");
+      setIsSubmitting(false);
+      return;
+    }
+    
+    // Username validation - no spaces, special characters limited
+    const usernameRegex = /^[a-zA-Z0-9_-]{3,20}$/;
+    if (!usernameRegex.test(formData.username)) {
+      setError("Username must be 3-20 characters and can only contain letters, numbers, underscores, and hyphens.");
+      setHawkingtonQuote("🧐 A proper username adheres to aristocratic standards of simplicity!");
+      setIsSubmitting(false);
+      return;
+    }
+    
+    // Password strength validation
+    if (formData.password.length < 8) {
+      setError("Password must be at least 8 characters! The Stick insists on proper security measures.");
+      setHawkingtonQuote("🧐 The Stick measures your password and finds it wanting in length!");
+      setIsSubmitting(false);
+      return;
+    }
+    
     try {
-      // Prepare registration data - SIMPLE VERSION
+      // Prepare registration data with properly formatted fields
       const registrationData: RegistrationData = {
-        username: formData.username,
-        email: formData.email,
+        username: formData.username.trim(),
+        email: formData.email.trim(),
         password: formData.password,
         profile: {
-          first_name: formData.firstName,
-          last_name: formData.lastName
+          first_name: formData.firstName.trim(),
+          last_name: formData.lastName.trim()
         }
       };
+      
+      console.log("Attempting registration with:", {
+        ...registrationData,
+        password: "***"
+      });
       
       // Dispatch registration action
       await dispatch(registerUser(registrationData));
@@ -90,28 +123,94 @@ const SignupModal: FC<SignupModalProps> = ({ isOpen, onClose }) => {
       
       // Success message
       setHawkingtonQuote("🎩 Welcome aboard! Sir Hawkington is most pleased with your registration!");
+      setIsSubmitting(false);
       
-      // Redirect to login page after a brief delay to show success message
+      // Show success state before closing
       setTimeout(() => {
         navigate('/login');
         onClose();
       }, 2000);
       
-    } catch (err) {
+    } catch (err: any) {
       console.error("🔥 REGISTRATION ERROR:", err);
-      const errorMsg = err instanceof Error ? err.message : 'Registration failed';
-      setError(errorMsg);
-      setHawkingtonQuote("🧐 I say, we've encountered a bit of a registration hiccup!");
+      
+      // Try to extract the actual error message from the server response
+      let errorMsg = 'Registration failed';
+      
+      if (err.response && err.response.data) {
+        if (typeof err.response.data === 'string') {
+          errorMsg = err.response.data;
+        } else if (err.response.data.detail) {
+          errorMsg = typeof err.response.data.detail === 'string' 
+            ? err.response.data.detail 
+            : JSON.stringify(err.response.data.detail);
+        }
+      } else if (err.message) {
+        errorMsg = err.message;
+      }
+      
+      console.error("🔥 SERVER RESPONSE:", errorMsg);
+      
+      // Handle specific error cases
+      if (errorMsg.includes('already exists')) {
+        setError("This username or email is already registered! The VIC-20 has detected a duplicate in the system.");
+        setHawkingtonQuote("🧐 I say, it appears you're already a distinguished member of our rebellion!");
+      } else {
+        setError(`Registration failed: ${errorMsg}`);
+        setHawkingtonQuote("🧐 I say, we've encountered a bit of a registration hiccup!");
+      }
+      
       setIsSubmitting(false);
     }
   };
   
   return (
-    <div className="signup-modal">
-      <div className="modal-content">
-        <div className="modal-header">
-          <h2>Join the System Rebellion</h2>
-          <button className="close-button" onClick={onClose}>×</button>
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0, 0, 0, 0.8)',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 1000,
+    }}>
+      <div style={{
+        backgroundColor: '#1a0458',
+        borderRadius: '12px',
+        boxShadow: '0 0 20px rgba(0, 245, 212, 0.5)',
+        width: '90%',
+        maxWidth: '600px',
+        padding: '2rem',
+        position: 'relative',
+        color: '#e2e8f0',
+        border: '1px solid rgba(51, 51, 255, 0.3)',
+        maxHeight: '90vh',
+        overflowY: 'auto',
+      }}>
+        <div style={{
+          marginBottom: '1.5rem',
+          textAlign: 'center',
+          position: 'relative',
+        }}>
+          <h2 style={{
+            fontSize: '1.8rem',
+            color: '#00f5d4',
+            marginBottom: '0.5rem',
+          }}>Join the System Rebellion</h2>
+          <button style={{
+            position: 'absolute',
+            top: '0',
+            right: '0',
+            background: 'transparent',
+            border: 'none',
+            color: '#00f5d4',
+            fontSize: '24px',
+            cursor: 'pointer',
+            zIndex: 10,
+          }} onClick={onClose}>×</button>
         </div>
         
         <div className="hawkington-quote">

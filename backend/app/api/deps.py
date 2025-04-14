@@ -12,8 +12,9 @@ from app.core.database import SessionLocal
 from app.models.user import User
 from app.schemas.token import TokenPayload
 
+# Fix the tokenUrl to match the actual endpoint in auth.py
 oauth2_scheme = OAuth2PasswordBearer(
-    tokenUrl=f"{settings.API_V1_STR}/auth/token"
+    tokenUrl="/api/auth/token"
 )
 
 async def get_db() -> Generator:
@@ -27,22 +28,58 @@ async def get_current_user(
     db: AsyncSession = Depends(get_db),
     token: str = Depends(oauth2_scheme),
 ) -> User:
+    import logging
+    logger = logging.getLogger(__name__)
+    
     try:
+        # Log token info for debugging (don't log the full token in production)
+        logger.info(f"Decoding token: {token[:10]}...")
+        
+        # Decode the JWT token
         payload = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
         )
+        logger.info(f"Token payload decoded successfully")
+        
+        # Validate the token data
         token_data = TokenPayload(**payload)
-    except (JWTError, ValidationError):
+        logger.info(f"Token subject: {token_data.sub}")
+        
+    except JWTError as e:
+        logger.error(f"JWT error: {str(e)}")
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Could not validate credentials",
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Invalid authentication token: {str(e)}",
         )
-    # Query for the user by username
-    result = await db.execute(select(User).where(User.username == token_data.sub))
-    user = result.scalars().first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return user
+    except ValidationError as e:
+        logger.error(f"Token validation error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Invalid token payload: {str(e)}",
+        )
+    
+    try:
+        # Query for the user by username
+        logger.info(f"Looking up user: {token_data.sub}")
+        result = await db.execute(select(User).where(User.username == token_data.sub))
+        user = result.scalars().first()
+        
+        if not user:
+            logger.error(f"User not found: {token_data.sub}")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, 
+                detail=f"User {token_data.sub} not found"
+            )
+            
+        logger.info(f"User authenticated successfully: {user.username}")
+        return user
+        
+    except Exception as e:
+        logger.error(f"Database error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error retrieving user: {str(e)}",
+        )
 
 async def get_current_active_user(
     current_user: User = Depends(get_current_user),

@@ -5,7 +5,7 @@ import { initializeCsrf, checkBackendAvailability } from '../../../utils/api';
 import SignupModal from '../SignupModal/SignupModal';
 import './login.css';
 import { useState, useEffect } from 'react';
-import '../../../common/Modal.css';
+import '../../../components/common/Modal.css';
 
 interface LoginProps {
   onClose: () => void;
@@ -71,6 +71,13 @@ const Login: React.FC<LoginProps> = ({ onClose, isOpen }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate form data
+    if (!username || !password) {
+      setError('Username and password are required');
+      updateHawkingtonQuote('error');
+      return;
+    }
+    
     console.log("Login attempt with:", { username, password: "***" });
 
     if (!backendAvailable) {
@@ -91,10 +98,48 @@ const Login: React.FC<LoginProps> = ({ onClose, isOpen }) => {
     }
 
     try {
-      console.log("Dispatching login action");
-      const result = await dispatch(login({ username, password })).unwrap();
+      console.log("Dispatching login action with:", { username, password: '***' });
+      updateHawkingtonQuote('loading');
+      
+      // Ensure we're sending the correct data format
+      const loginData = {
+        username: username.trim(),
+        password: password
+      };
+      
+      // Store username in localStorage before dispatching login
+      // This ensures it's available even if the Redux store doesn't populate it correctly
+      localStorage.setItem('username', username.trim());
+      console.log("Stored username in localStorage:", username.trim());
+      
+      const result = await dispatch(login(loginData)).unwrap();
       console.log("Login successful", result);
-      navigate('/dashboard');
+      updateHawkingtonQuote('success');
+      
+      // Always redirect to onboarding for new users
+      // The onboarding page will check if the user has completed onboarding and redirect to dashboard if needed
+      console.log("Login response:", result);
+      
+      // Check if the user object has a profile with system information
+      const user = result.user;
+      const hasSystemInfo = user?.profile && (
+        user.profile.operating_system ||
+        user.profile.os_version ||
+        user.profile.cpu_cores ||
+        user.profile.total_memory
+      );
+      
+      // Short delay to show success message before navigating
+      setTimeout(() => {
+        if (!hasSystemInfo) {
+          console.log("User needs to complete system profile, redirecting to onboarding page");
+          navigate('/onboarding');
+        } else {
+          console.log("User has system profile information, redirecting to dashboard");
+          navigate('/dashboard');
+        }
+        onClose();
+      }, 1000);
     } catch (err) {
       console.error("Login failed", err);
       setError('Login failed. Please check your credentials and try again.');
@@ -117,12 +162,49 @@ const Login: React.FC<LoginProps> = ({ onClose, isOpen }) => {
 
   return (
     <>
-      <div className="auth-login modal">
-        <div className="auth-login modal-overlay" onClick={onClose}></div>
-        <div className="auth-login modal-content">
-          <button className="auth-login close-button" onClick={onClose}>×</button>
-          <div className="auth-login modal-header">
-            <h2>System Rebellion Login</h2>
+      <div className="auth-login-container" style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 1000,
+      }}>
+        <div className="auth-login-content" style={{
+          backgroundColor: '#1a0458',
+          borderRadius: '12px',
+          boxShadow: '0 0 20px rgba(0, 245, 212, 0.5)',
+          width: '90%',
+          maxWidth: '500px',
+          padding: '2rem',
+          position: 'relative',
+          color: '#e2e8f0',
+          border: '1px solid rgba(51, 51, 255, 0.3)',
+        }}>
+          <button style={{
+            position: 'absolute',
+            top: '10px',
+            right: '10px',
+            background: 'transparent',
+            border: 'none',
+            color: '#00f5d4',
+            fontSize: '24px',
+            cursor: 'pointer',
+            zIndex: 10,
+          }} onClick={onClose}>×</button>
+          <div style={{
+            marginBottom: '1.5rem',
+            textAlign: 'center',
+          }}>
+            <h2 style={{
+              fontSize: '1.8rem',
+              color: '#00f5d4',
+              marginBottom: '0.5rem',
+            }}>System Rebellion Login</h2>
           </div>
           <div className="auth-login modal-body">
             <div className="hawkington-welcome">

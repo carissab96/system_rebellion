@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import './Modal.css';
-import { truncate } from 'node:fs';
 
 interface ModalProps {
   isOpen: boolean;

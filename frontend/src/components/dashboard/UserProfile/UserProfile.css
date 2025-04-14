@@ -22,8 +22,9 @@
     border: 1.5px solid rgba(0, 245, 212, 0.3);
     box-shadow: 0 8px 30px rgba(7, 9, 94, 0.2), 0 0 15px rgba(0, 245, 212, 0.2);
     position: relative;
-    max-height: 80vh;
-    overflow-y: auto;
+    max-height: none;
+    overflow-y: visible;
+    width: 100%;
   }
   
   /* When used in a modal context */
@@ -33,14 +34,15 @@
     top: auto;
     left: auto;
     transform: none;
-    max-height: 70vh;
+    max-height: 100%;
     width: 100%;
     margin: 0;
     box-shadow: none;
     border: none;
     background: transparent;
-    overflow-y: auto;
-    z-index: 10000;
+    overflow-y: visible;
+    z-index: 1;
+    padding: 0;
   }
   
   /* Avatar section styling */
@@ -174,7 +176,9 @@
 .user-profile-card.visible {
   display: block;
   opacity: 1;
-  z-index: 10000;
+  z-index: 1;
+  height: auto;
+  overflow-y: visible;
 }
 
 .edit-button {

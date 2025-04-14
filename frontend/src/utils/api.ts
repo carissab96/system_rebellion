@@ -123,7 +123,11 @@ const api: AxiosInstance = axios.create({
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = localStorage.getItem('token');
   if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+    // Make sure token has Bearer prefix
+    config.headers.Authorization = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+    console.log('🧐 Sir Hawkington set Authorization header:', config.headers.Authorization.substring(0, 20) + '...');
+  } else {
+    console.warn('🧐 Sir Hawkington is concerned: No token found in localStorage!');
   }
   
   // Add CSRF token to non-GET requests
