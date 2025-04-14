@@ -87,6 +87,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ isOpen, onClose }) => 
     const profile = getProfileData();
     const [isEditing, setIsEditing] = useState(false);
     const [selectedAvatar, setSelectedAvatar] = useState<string>(profile?.avatar || 'sir-hawkington');
+    const [error, setError] = useState<string | null>(null);
     
     // Refs to store the edited values
     const osRef = useRef<HTMLInputElement>(null);
@@ -275,6 +276,12 @@ export const UserProfile: React.FC<UserProfileProps> = ({ isOpen, onClose }) => 
           </button>
         )}
         <h2 className="profile-title">System Profile</h2>
+        
+        {error && (
+          <div className="error-message">
+            <p>{error}</p>
+          </div>
+        )}
   
         <div className="system-info-section">
           <h3>System Information</h3>

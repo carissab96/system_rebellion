@@ -1,33 +1,47 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
-import { API_BASE_URL } from '../../utils/api';
+import authService from '../../services/authService';
+
+// Define the user profile state interface
+interface UserProfileState {
+  data: any | null;
+  loading: boolean;
+  error: string | null;
+}
+
+// Initial state
+const initialState: UserProfileState = {
+  data: null,
+  loading: false,
+  error: null
+};
 
 export const fetchUserProfile = createAsyncThunk(
   'userProfile/fetch',
-  async () => {
+  async (_, { rejectWithValue }) => {
     try {
-      console.log('Fetching user profile with authentication...');
-      const response = await axios.get(`${API_BASE_URL}/users/profile/`);
-      return response.data;
+      // Use the authService to get the current user profile
+      const user = await authService.getCurrentUser();
+      return user;
     } catch (error: any) {
-      console.error('Error fetching user profile:', error.response?.data || error.message);
-      throw new Error(error.response?.data?.detail || 'Failed to fetch user profile');
+      console.error('Error fetching user profile:', error.message);
+      return rejectWithValue(error.message || 'Failed to fetch user profile');
     }
   }
 );
 
 const userProfileSlice = createSlice({
   name: 'userProfile',
-  initialState: {
-    data: null,
-    loading: false,
-    error: null as string | null
+  initialState,
+  reducers: {
+    clearProfileError: (state) => {
+      state.error = null;
+    }
   },
-  reducers: {},
   extraReducers: (builder) => {
     builder
       .addCase(fetchUserProfile.pending, (state) => {
         state.loading = true;
+        state.error = null;
       })
       .addCase(fetchUserProfile.fulfilled, (state, action) => {
         state.loading = false;
@@ -35,9 +49,10 @@ const userProfileSlice = createSlice({
       })
       .addCase(fetchUserProfile.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'An unknown error occurred';
+        state.error = action.payload as string || 'An unknown error occurred';
       });
   }
 });
 
+export const { clearProfileError } = userProfileSlice.actions;
 export default userProfileSlice.reducer;

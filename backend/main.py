@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from app.core.database import async_engine as engine, Base
-from app.core.middlware import setup_middleware
+from app.core.middleware import setup_middleware
 from app.api.endpoints import csrf
 from app.api.endpoints import auth
 from app.api.endpoints import optimization

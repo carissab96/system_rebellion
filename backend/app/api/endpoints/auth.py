@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Request, Header
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Dict, Any, Union
+from typing import Dict, Any, Union, Optional
 import inspect
 import secrets
 from datetime import datetime, timedelta
@@ -12,8 +12,9 @@ from fastapi.security import OAuth2PasswordRequestForm
 from app.api.deps import get_current_user   
 from app.core.database import get_db, get_async_db
 from app.models.user import User
-from app.schemas.user import UserCreate
-from app.core.security import hash_password, verify_password, create_access_token, create_refresh_token
+from app.schemas.user import UserCreate, UserResponse
+from app.schemas.token import Token
+from app.core.security import hash_password, verify_password, create_access_token, create_refresh_token, decode_token, SECRET_KEY, ALGORITHM
 from app.core.security import ACCESS_TOKEN_EXPIRE_MINUTES
 from app.core.config import settings
 
@@ -28,6 +29,66 @@ class UserProfileCreate(BaseModel):
     pass
 
 router = APIRouter()
+
+@router.post("/refresh-token", response_model=Dict[str, str])
+async def refresh_access_token(
+    x_refresh_token: Optional[str] = Header(None),
+    db: AsyncSession = Depends(get_async_db)
+):
+    """
+    Sir Hawkington's Token Refresh Protocol
+    Refreshes an expired access token using the refresh token.
+    """
+    if not x_refresh_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token is required",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+    
+    try:
+        # Decode the refresh token
+        payload = jwt.decode(
+            x_refresh_token, SECRET_KEY, algorithms=[ALGORITHM]
+        )
+        username = payload.get("sub")
+        
+        if not username:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid refresh token",
+                headers={"WWW-Authenticate": "Bearer"}
+            )
+        
+        # Find the user
+        result = await db.execute(select(User).where(User.username == username))
+        user = result.scalars().first()
+        
+        if not user or not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid user or inactive account",
+                headers={"WWW-Authenticate": "Bearer"}
+            )
+        
+        # Generate a new access token
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"sub": user.username},
+            expires_delta=access_token_expires
+        )
+        
+        return {
+            "access_token": access_token,
+            "token_type": "bearer"
+        }
+        
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
 
 async def is_async_session(session) -> bool:
     """Check if the session is async or not"""
@@ -196,11 +257,11 @@ async def create_test_user(db: Union[Session, AsyncSession] = Depends(get_db)):
             db.rollback()
         return {"error": str(e)}
 
-@router.post("/token")
+@router.post("/token", response_model=Token)
 async def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(), 
     db: Union[Session, AsyncSession] = Depends(get_db)
-) -> Dict[str, Any]:
+) -> Token:
     """
     The Meth Snail's Authentication Protocol
     Validates user credentials and returns access token
@@ -236,6 +297,7 @@ async def login_for_access_token(
     else:
         db.commit()
     
+    # Return full token with complete user information
     return {
         "access_token": access_token,
         "refresh_token": refresh_token,
@@ -243,7 +305,18 @@ async def login_for_access_token(
         "user": {
             "id": user.id,
             "username": user.username,
-            "email": user.email
+            "email": user.email,
+            "is_active": user.is_active,
+            "created_at": user.created_at,
+            "updated_at": user.updated_at,
+            "needs_onboarding": user.needs_onboarding,
+            "operating_system": user.operating_system,
+            "os_version": user.os_version,
+            "cpu_cores": user.cpu_cores,
+            "total_memory": user.total_memory,
+            "avatar": user.avatar,
+            "profile": user.profile if hasattr(user, 'profile') else None,
+            "preferences": user.preferences if hasattr(user, 'preferences') else None
         }
     }
 # Add this to a route to check your User model structure
