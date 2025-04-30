@@ -46,7 +46,7 @@ def log_registered_models():
     print("\n")
 #Model Creation Funciton
 async def init_models():
-    async with engine.begin() as conn:
+    async with async_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     log_registered_models()
     print("Models initialized successfully.")

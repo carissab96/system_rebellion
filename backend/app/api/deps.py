@@ -1,4 +1,4 @@
-from typing import Generator, Optional
+from typing import Generator
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.core.config import settings
-from app.core.database import SessionLocal
+from app.core.database import AsyncSessionLocal
 from app.models.user import User
 from app.schemas.token import TokenPayload
 
@@ -18,11 +18,8 @@ oauth2_scheme = OAuth2PasswordBearer(
 )
 
 async def get_db() -> Generator:
-    try:
-        db = SessionLocal()
+    async with AsyncSessionLocal() as db:
         yield db
-    finally:
-     db.close()
 
 async def get_current_user(
     db: AsyncSession = Depends(get_db),
@@ -61,18 +58,34 @@ async def get_current_user(
     try:
         # Query for the user by username
         logger.info(f"Looking up user: {token_data.sub}")
-        result = await db.execute(select(User).where(User.username == token_data.sub))
-        user = result.scalars().first()
         
-        if not user:
-            logger.error(f"User not found: {token_data.sub}")
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, 
-                detail=f"User {token_data.sub} not found"
-            )
+        # Use a completely different approach to avoid ChunkedIteratorResult issues
+        # Create a synchronous session and execute the query
+        from sqlalchemy.orm import Session
+        from app.core.database import sync_engine
+        
+        # Get a synchronous session
+        sync_session = Session(sync_engine)
+        try:
+            # Execute the query synchronously
+            user = sync_session.query(User).filter(User.username == token_data.sub).first()
             
-        logger.info(f"User authenticated successfully: {user.username}")
-        return user
+            if not user:
+                logger.error(f"User not found: {token_data.sub}")
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND, 
+                    detail=f"User {token_data.sub} not found"
+                )
+                
+            # Create a copy of the user object to return
+            from copy import deepcopy
+            user_copy = deepcopy(user)
+            
+            logger.info(f"User authenticated successfully: {user.username}")
+            return user_copy
+        finally:
+            # Always close the session
+            sync_session.close()
         
     except Exception as e:
         logger.error(f"Database error: {str(e)}")

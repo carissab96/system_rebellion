@@ -67,7 +67,7 @@ class WebSocketService implements IWebSocketService {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const host = window.location.host;
         this.wsUrl = `${protocol}//${host}/ws/system-metrics`;
-        console.log("🔌 WebSocket URL set to:", this.wsUrl);
+        console.log("🧐 Sir Hawkington says: WebSocket URL configured to:", this.wsUrl);
     }
 
     public static getInstance(): WebSocketService {

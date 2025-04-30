@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Login from './components/Auth/login/Login';
 import { Dashboard } from './components/dashboard/Dashboard/Dashboard';
-import { PrivateRoute } from './utils/PrivateRoute';
 import { websocketService } from './utils/websocketService';
 import { checkBackendAvailability, getBackendAvailability } from './utils/api';
 import { useAppDispatch } from './store/hooks';
@@ -16,8 +15,41 @@ import AutoTunerComponent from './components/auto_tuners/auto_tuner';
 import OnboardingPage from './pages/OnboardingPage';
 import LandingPage from './pages/LandingPage';
 import './App.css';
+import ProtectedRoute from './utils/ProtectedRoute';
+import OnboardingCheck from './utils/OnboardingCheck';
+
+// Simple error boundary component
+class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean, error: Error | null}> {
+  constructor(props: {children: React.ReactNode}) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error("React Error Boundary caught an error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+          <h1>Something went wrong</h1>
+          <p>Error: {this.state.error?.message}</p>
+          <p>Check the console for more details.</p>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 const App: React.FC = () => {
+  console.log("App component rendering");
     const cleanupRef = useRef<boolean>(false);
     const dispatch = useAppDispatch();
     // We don't need to use these variables directly as they're handled by the PrivateRoute component
@@ -177,6 +209,7 @@ const App: React.FC = () => {
     };
 
     return (
+        <ErrorBoundary>
         <BrowserRouter>
             {/* Backend offline notification */}
             {showOfflineNotification && (
@@ -234,57 +267,69 @@ const App: React.FC = () => {
                             <Route 
                                 path="dashboard" 
                                 element={
-                                    <PrivateRoute>
-                                        <Dashboard />
-                                    </PrivateRoute>
+                                    <ProtectedRoute>
+                                        <OnboardingCheck>
+                                            <Dashboard />
+                                        </OnboardingCheck>
+                                    </ProtectedRoute>
                                 } 
                             />
                             <Route 
                                 path="onboarding" 
                                 element={
-                                    <PrivateRoute>
+                                    <ProtectedRoute>
                                         <OnboardingPage />
-                                    </PrivateRoute>
+                                    </ProtectedRoute>
                                 } 
                             />
                             <Route 
                                 path="auto-tuners" 
                                 element={
-                                    <PrivateRoute>
-                                        <AutoTunerComponent />
-                                    </PrivateRoute>
+                                    <ProtectedRoute>
+                                        <OnboardingCheck>
+                                            <AutoTunerComponent />
+                                        </OnboardingCheck>
+                                    </ProtectedRoute>
                                 } 
                             />
                             <Route 
                                 path="system-metrics" 
                                 element={
-                                    <PrivateRoute>
-                                        <SystemMetrics />
-                                    </PrivateRoute>
+                                    <ProtectedRoute>
+                                        <OnboardingCheck>
+                                            <SystemMetrics />
+                                        </OnboardingCheck>
+                                    </ProtectedRoute>
                                 } 
                             />
                             <Route 
                                 path="optimizations" 
                                 element={
-                                    <PrivateRoute>
-                                        <OptimizationProfiles />
-                                    </PrivateRoute>
+                                    <ProtectedRoute>
+                                        <OnboardingCheck>
+                                            <OptimizationProfiles />
+                                        </OnboardingCheck>
+                                    </ProtectedRoute>
                                 } 
                             />
                             <Route 
                                 path="system-alerts" 
                                 element={
-                                    <PrivateRoute>
-                                        <SystemAlerts />
-                                    </PrivateRoute>
+                                    <ProtectedRoute>
+                                        <OnboardingCheck>
+                                            <SystemAlerts />
+                                        </OnboardingCheck>
+                                    </ProtectedRoute>
                                 } 
                             />
                             <Route 
                                 path="system-configuration" 
                                 element={
-                                    <PrivateRoute>
-                                        <SystemConfiguration />
-                                    </PrivateRoute>
+                                    <ProtectedRoute>
+                                        <OnboardingCheck>
+                                            <SystemConfiguration />
+                                        </OnboardingCheck>
+                                    </ProtectedRoute>
                                 } 
                             />
                         </Routes>
@@ -292,6 +337,7 @@ const App: React.FC = () => {
                 } />
             </Routes>
         </BrowserRouter>
+        </ErrorBoundary>
     );
 };
 

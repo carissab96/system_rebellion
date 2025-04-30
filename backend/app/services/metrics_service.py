@@ -16,7 +16,7 @@ class MetricsService:
         """
         db_metric = SystemMetrics(
             id=str(uuid.uuid4()),
-            **metric_data.dict()
+            **metric_data.model_dump()
         )
         
         db.add(db_metric)
@@ -68,7 +68,7 @@ class MetricsService:
         """
         query = update(SystemMetrics).where(
             SystemMetrics.id == str(metric_id)
-        ).values(**metric_data.dict(exclude_unset=True))
+        ).values(**metric_data.model_dump(exclude_unset=True))
         
         await db.execute(query)
         await db.commit()

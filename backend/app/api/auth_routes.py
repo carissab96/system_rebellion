@@ -1,171 +1,291 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+# app/api/routes/auth.py
+from fastapi import APIRouter, Depends, HTTPException, status, Request
+from sqlalchemy.ext.asyncio import AsyncSession
+import secrets
+from datetime import datetime, timedelta
+import uuid
+from app.core.database import get_async_db
+from app.models.user import User
+from app.schemas.user import UserCreate, UserProfileUpdate
+from app.core.security import hash_password, verify_password, create_access_token, create_refresh_token
+from app.core.security import ACCESS_TOKEN_EXPIRE_MINUTES
+from app.core.auth import get_current_user, get_optional_user
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from pydantic import BaseModel
 
-from core.database import get_db
-from services.auth_service import AuthService
-from schemas.auth import UserCreate, UserProfileCreate, UserResponse
-from models.user import User
-import jwt
-from core.config import settings
-from core.security import hash_password, verify_password, create_access_token, create_refresh_token
+router = APIRouter()
 
-router = APIRouter(prefix="/auth", tags=["Authentication"])
 
-@router.post("/register", response_model=UserResponse)
-def register_user(
-    user_data: UserCreate,  # This should now include the profile field
-    db: Session = Depends(get_db)
+class TokenResponse(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str
+    user: dict
+
+class StatusResponse(BaseModel):
+    status: str
+    auth_service: str
+    is_authenticated: bool
+    username: str = None
+    timestamp: str
+
+@router.post("/register", response_model=TokenResponse)
+async def register_user(
+    user_data: UserCreate,
+    db: AsyncSession = Depends(get_async_db)
 ):
-    """
-    User Registration Endpoint
-    
-    Sir Hawkington welcomes you to the System Rebellion!
-    The Meth Snail prepares your optimization credentials.
-    """
-    try:
-        # Pass both to the service
-        new_user = AuthService.create_user(db, user_data)
-        
-        # Return the response
-        return UserResponse(
-            id=new_user.id,
-            username=new_user.username,
-            email=new_user.email,
-            is_active=new_user.is_active,
-            created_at=new_user.created_at,
-            needs_onboarding=new_user.needs_onboarding
+    """Register a new user and return access tokens."""
+    # Check if user already exists
+    result = await db.execute(
+        select(User).where(
+            (User.username == user_data.username) | (User.email == user_data.email)
         )
-    except HTTPException as e:
-        # The Quantum Shadow People tried to interfere
-        raise e
-
-@router.post("/token")
-def login(
-    form_data: OAuth2PasswordRequestForm = Depends(),
-    db: Session = Depends(get_db)
-):
-    """
-    JWT Token Generation Endpoint
+    )
+    existing_user = result.scalars().first()
     
-    Sir Hawkington's Distinguished Authentication Protocol
-    The Meth Snail vibrates with token-generating energy!
-    """
-    user = AuthService.authenticate_user(
-        db, 
-        form_data.username, 
-        form_data.password
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username or email already exists"
+        )
+    
+    # Create user with UUID
+    user_id = str(uuid.uuid4())
+    hashed_password = hash_password(user_data.password)
+    
+    new_user = User(
+        id=user_id,
+        username=user_data.username,
+        email=user_data.email,
+        hashed_password=hashed_password,
+        is_active=True,
+        created_at=datetime.now(),
+        needs_onboarding=True  # New users need onboarding
     )
     
-    return AuthService.generate_tokens(user)
-
-@router.post("/token/refresh")
-def refresh_token(
-    refresh_token: str,
-    db: Session = Depends(get_db)
-):
-    """
-    Token Refresh Endpoint
+    # Save to database
+    db.add(new_user)
+    await db.commit()
+    await db.refresh(new_user)
     
-    The Quantum Shadow People are denied access!
-    Sir Hawkington regenerates your authentication credentials.
-    """
-    try:
-        # Validate and decode refresh token
-        payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
-        username = payload.get("sub")
-        
-        if not username:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid refresh token. Nice try, Quantum Shadow People!"
-            )
-        
-        # Find user
-        user = db.query(User).filter(User.username == username).first()
-        
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found. The Meth Snail is confused!"
-            )
-        
-        # Generate new tokens
-        new_access_token = create_access_token(
-            data={"sub": user.username, "user_id": user.id}
-        )
-        
-        new_refresh_token = create_refresh_token(
-            data={"sub": user.username, "user_id": user.id}
-        )
-        
-        return {
-            "access_token": new_access_token,
-            "refresh_token": new_refresh_token,
-            "token_type": "bearer"
+    # Generate tokens
+    access_token = create_access_token(
+        data={"sub": new_user.username, "user_id": new_user.id}
+    )
+    
+    refresh_token = create_refresh_token(
+        data={"sub": new_user.username, "user_id": new_user.id}
+    )
+    
+    # Return user data with tokens
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+        "user": {
+            "id": new_user.id,
+            "username": new_user.username,
+            "email": new_user.email,
+            "is_active": new_user.is_active,
+            "created_at": new_user.created_at.isoformat(),
+            "needs_onboarding": new_user.needs_onboarding
         }
-    except jwt.JWTError:
+    }
+
+@router.post("/token", response_model=TokenResponse)
+async def login_for_access_token(
+    form_data: OAuth2PasswordRequestForm = Depends(), 
+    db: AsyncSession = Depends(get_async_db)
+):
+    """Login with username/password and return access tokens."""
+    # Find user
+    result = await db.execute(select(User).where(User.username == form_data.username))
+    user = result.scalars().first()
+    
+    # Validate credentials
+    if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token validation failed. Quantum Shadow People, GTFO!"
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # Create access token
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.username, "user_id": user.id},
+        expires_delta=access_token_expires
+    )
+    
+    # Create refresh token
+    refresh_token = create_refresh_token(
+        data={"sub": user.username, "user_id": user.id}
+    )
+    
+    # Update last login
+    user.last_login = datetime.now()
+    db.add(user)
+    await db.commit()
+    
+    # Return tokens and user data
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+        "user": {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "needs_onboarding": user.needs_onboarding,
+            "operating_system": user.operating_system,
+            "os_version": user.os_version,
+            "cpu_cores": user.cpu_cores,
+            "total_memory": user.total_memory,
+            "avatar": user.avatar,
+            "profile": user.profile,
+            "preferences": user.preferences
+        }
+    }
+
+@router.get("/status", response_model=StatusResponse)
+async def auth_status(
+    request: Request,
+    user: User = Depends(get_optional_user)
+):
+    """Check authentication status without requiring valid auth."""
+    return {
+        "status": "operational",
+        "auth_service": "active",
+        "is_authenticated": user is not None,
+        "username": user.username if user else None,
+        "timestamp": datetime.now().isoformat()
+    }
+
+@router.post("/profile")
+async def update_user_profile(
+    profile_data: UserProfileUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db)
+):
+    """Update user profile with validation."""
+    try:
+        # Update user profile fields
+        if hasattr(profile_data, "profile") and profile_data.profile:
+            # Create profile dict if it doesn't exist
+            if not current_user.profile:
+                current_user.profile = {}
+                
+            # Update system information
+            system_fields = [
+                "operating_system", "os_version", "cpu_cores", "total_memory", 
+                "linux_distro", "linux_distro_version", "avatar"
+            ]
+            
+            for field in system_fields:
+                if hasattr(profile_data.profile, field) and getattr(profile_data.profile, field) is not None:
+                    # Update DB column
+                    if hasattr(current_user, field):
+                        setattr(current_user, field, getattr(profile_data.profile, field))
+                    
+                    # Update profile dict
+                    current_user.profile[field] = getattr(profile_data.profile, field)
+        
+        # Update preferences if provided
+        if hasattr(profile_data, "preferences") and profile_data.preferences:
+            if not current_user.preferences:
+                current_user.preferences = {}
+            
+            # Update preferences dict with new values
+            current_user.preferences.update(profile_data.preferences.model_dump(exclude_unset=True))
+        
+        # Mark onboarding as completed
+        current_user.needs_onboarding = False
+        
+        # Save changes
+        db.add(current_user)
+        await db.commit()
+        await db.refresh(current_user)
+        
+        return {
+            "message": "Profile updated successfully",
+            "user": {
+                "id": current_user.id,
+                "username": current_user.username,
+                "email": current_user.email,
+                "operating_system": current_user.operating_system,
+                "os_version": current_user.os_version,
+                "cpu_cores": current_user.cpu_cores,
+                "total_memory": current_user.total_memory,
+                "avatar": current_user.avatar,
+                "needs_onboarding": current_user.needs_onboarding,
+                "profile": current_user.profile,
+                "preferences": current_user.preferences
+            }
+        }
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error updating profile: {str(e)}"
         )
 
-@router.post("/password-reset/request")
-def request_password_reset(email: str, db: Session = Depends(get_db)):
-    """
-    Password Reset Request Endpoint
+@router.get("/csrf-token")
+async def get_csrf_token(response: Response):
+    """Generate a new CSRF token and set it as a secure cookie."""
+    csrf_token = secrets.token_urlsafe(32)
     
-    Sir Hawkington prepares the reset mechanism.
-    The Meth Snail ensures secure password resurrection!
-    """
-    user = db.query(User).filter(User.email == email).first()
+    response.set_cookie(
+        key="csrftoken", 
+        value=csrf_token, 
+        httponly=True,
+        secure=True,
+        samesite='lax'
+    )
     
-    if not user:
-        # Deliberately vague for security
-        return {"message": "If the email exists, a reset link will be sent"}
-    
-    reset_token = get_password_reset_token(email)
-    
-    return {"message": "Password reset link sent. Check your email!"}
+    return {"csrf_token": csrf_token}
 
-@router.post("/password-reset/confirm")
-def confirm_password_reset(
-    token: str, 
-    new_password: str,
-    db: Session = Depends(get_db)
+@router.post("/refresh-token")
+async def refresh_access_token(
+    request: Request,
+    db: AsyncSession = Depends(get_async_db)
 ):
-    """
-    Password Reset Confirmation Endpoint
+    """Get a new access token using a refresh token."""
+    refresh_token = request.headers.get("X-Refresh-Token")
+    if not refresh_token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Refresh token is required"
+        )
     
-    The Quantum Shadow People are DENIED!
-    Sir Hawkington resets your credentials with distinguished precision.
-    """
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        email = payload.get("sub")
+        # Validate refresh token
+        payload = jwt.decode(
+            refresh_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+        )
+        username = payload.get("sub")
         
-        if not email:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid reset token. Nice try, shadow people!"
-            )
-        
-        user = db.query(User).filter(User.email == email).first()
+        # Get user
+        result = await db.execute(select(User).where(User.username == username))
+        user = result.scalars().first()
         
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found. The Meth Snail is perplexed!"
+                detail="User not found"
             )
         
-        # Update password
-        user.hashed_password = hash_password(new_password)
-        db.commit()
+        # Generate new access token
+        access_token = create_access_token(data={"sub": username, "user_id": user.id})
         
-        return {"message": "Password reset successful. Welcome back, rebel!"}
-    
-    except jwt.JWTError:
+        return {
+            "access_token": access_token,
+            "token_type": "bearer"
+        }
+        
+    except JWTError:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Token expired or invalid. Quantum Shadow People, BEGONE!"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token",
+            headers={"WWW-Authenticate": "Bearer"}
         )

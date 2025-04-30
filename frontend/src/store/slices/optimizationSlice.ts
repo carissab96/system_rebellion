@@ -39,7 +39,19 @@ export const fetchOptimizationProfiles = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       console.log("🐌 The Meth Snail is fetching optimization profiles...");
-      const response = await axios.get(`${API_BASE_URL}/optimization-profiles/`);
+      
+      // Get authentication token
+      const token = localStorage.getItem('token');
+      if (!token) {
+        return rejectWithValue("Authentication required. Please log in.");
+      }
+      
+      const response = await axios.get(`${API_BASE_URL}/optimization-profiles/`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
       console.log("🐌 The Meth Snail returned with profiles:", response.data);
       return response.data.profiles;
     } catch (error: any) {
@@ -57,7 +69,20 @@ export const createOptimizationProfile = createAsyncThunk(
   async (profileData: any, { rejectWithValue }) => {
     try {
       console.log("🐌 The Meth Snail is creating a new optimization profile...");
-      const response = await axios.post(`${API_BASE_URL}/optimization-profiles/`, profileData);
+      
+      // Get authentication token
+      const token = localStorage.getItem('token');
+      if (!token) {
+        return rejectWithValue("Authentication required. Please log in.");
+      }
+      
+      const response = await axios.post(`${API_BASE_URL}/optimization-profiles/`, profileData, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
       console.log("🐌 The Meth Snail created a new profile:", response.data);
       return response.data;
     } catch (error: any) {
@@ -76,7 +101,27 @@ export const updateOptimizationProfile = createAsyncThunk(
     try {
       const { id, ...data } = profileData;
       console.log(`🐌 The Meth Snail is updating optimization profile ${id}...`);
-      const response = await axios.put(`${API_BASE_URL}/optimization-profiles/${id}`, data);
+      
+      // Get authentication token
+      const token = localStorage.getItem('token');
+      if (!token) {
+        return rejectWithValue("Authentication required. Please log in.");
+      }
+      
+      // Validate if the ID is a valid UUID
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(id)) {
+        console.error(`🐌 The Meth Snail is confused! ID ${id} is not a valid UUID.`);
+        return rejectWithValue(`Invalid profile ID format. Expected a UUID but got: ${id}`);
+      }
+      
+      const response = await axios.put(`${API_BASE_URL}/optimization-profiles/${id}`, data, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
       console.log("🐌 The Meth Snail updated the profile:", response.data);
       return response.data;
     } catch (error: any) {
@@ -94,7 +139,26 @@ export const deleteOptimizationProfile = createAsyncThunk(
   async (id: string, { rejectWithValue }) => {
     try {
       console.log(`🐌 The Meth Snail is deleting optimization profile ${id}...`);
-      await axios.delete(`${API_BASE_URL}/optimization-profiles/${id}`);
+      
+      // Get authentication token
+      const token = localStorage.getItem('token');
+      if (!token) {
+        return rejectWithValue("Authentication required. Please log in.");
+      }
+      
+      // Validate if the ID is a valid UUID
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(id)) {
+        console.error(`🐌 The Meth Snail is confused! ID ${id} is not a valid UUID.`);
+        return rejectWithValue(`Invalid profile ID format. Expected a UUID but got: ${id}`);
+      }
+      
+      await axios.delete(`${API_BASE_URL}/optimization-profiles/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
       console.log("🐌 The Meth Snail deleted the profile successfully");
       return id;
     } catch (error: any) {
@@ -112,7 +176,27 @@ export const activateOptimizationProfile = createAsyncThunk(
   async (id: string, { rejectWithValue }) => {
     try {
       console.log(`🐌 The Meth Snail is activating optimization profile ${id}...`);
-      const response = await axios.post(`${API_BASE_URL}/optimization-profiles/${id}/activate`);
+      
+      // Get authentication token
+      const token = localStorage.getItem('token');
+      if (!token) {
+        return rejectWithValue("Authentication required. Please log in.");
+      }
+      
+      // Validate if the ID is a valid UUID
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(id)) {
+        console.error(`🐌 The Meth Snail is confused! ID ${id} is not a valid UUID.`);
+        return rejectWithValue(`Invalid profile ID format. Expected a UUID but got: ${id}`);
+      }
+      
+      const response = await axios.post(`${API_BASE_URL}/optimization-profiles/${id}/activate`, {}, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
       console.log("🐌 The Meth Snail activated the profile:", response.data);
       return response.data;
     } catch (error: any) {

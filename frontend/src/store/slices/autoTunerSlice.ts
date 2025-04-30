@@ -92,9 +92,8 @@ export const applyRecommendation = createAsyncThunk(
   async (recommendationId: number) => {
     try {
       console.log(`Applying recommendation ${recommendationId} with authentication...`);
-      const response = await axios.post(`${API_BASE_URL}/auto-tuner/recommendations/apply`, {
-        recommendation_id: recommendationId
-      });
+      // Pass the recommendation_id as a query parameter
+      const response = await axios.post(`${API_BASE_URL}/auto-tuner/recommendations/apply?recommendation_id=${recommendationId}`);
       return response.data;
     } catch (error: any) {
       console.error('Error applying recommendation:', error.response?.data || error.message);

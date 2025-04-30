@@ -1,3 +1,3 @@
-import { AutoTunerComponent } from './auto_tuner';
+import { AutoTuner } from './auto_tuner';
 
-export default AutoTunerComponent;
+export default AutoTuner;
