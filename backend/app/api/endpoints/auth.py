@@ -32,6 +32,7 @@ router = APIRouter()
 
 @router.post("/refresh-token", response_model=Dict[str, str])
 async def refresh_access_token(
+    request: Request,
     x_refresh_token: Optional[str] = Header(None),
     db: AsyncSession = Depends(get_async_db)
 ):
@@ -39,7 +40,21 @@ async def refresh_access_token(
     Sir Hawkington's Token Refresh Protocol
     Refreshes an expired access token using the refresh token.
     """
-    if not x_refresh_token:
+    print(f"🔄 Refresh token request received. Headers: {request.headers}")
+    
+    # Try to get token from header or request body
+    refresh_token = x_refresh_token
+    
+    if not refresh_token:
+        # Try to get from request body
+        try:
+            body = await request.json()
+            refresh_token = body.get('refresh_token')
+        except:
+            pass
+    
+    if not refresh_token:
+        print("❌ No refresh token provided in headers or body")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Refresh token is required",
@@ -47,47 +62,68 @@ async def refresh_access_token(
         )
     
     try:
+        print(f"🔍 Decoding refresh token")
         # Decode the refresh token
         payload = jwt.decode(
-            x_refresh_token, SECRET_KEY, algorithms=[ALGORITHM]
+            refresh_token, SECRET_KEY, algorithms=[ALGORITHM]
         )
         username = payload.get("sub")
         
         if not username:
+            print("❌ No username in token payload")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid refresh token",
+                detail="Invalid refresh token - no username",
                 headers={"WWW-Authenticate": "Bearer"}
             )
         
+        print(f"👤 Looking up user: {username}")
         # Find the user
         result = await db.execute(select(User).where(User.username == username))
         user = result.scalars().first()
         
-        if not user or not user.is_active:
+        if not user:
+            print(f"❌ User not found: {username}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid user or inactive account",
+                detail="User not found",
+                headers={"WWW-Authenticate": "Bearer"}
+            )
+            
+        if not user.is_active:
+            print(f"❌ User inactive: {username}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Account is inactive",
                 headers={"WWW-Authenticate": "Bearer"}
             )
         
+        print(f"🔑 Generating new access token for {username}")
         # Generate a new access token
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(
-            data={"sub": user.username},
+            data={"sub": user.username, "user_id": user.id},
             expires_delta=access_token_expires
         )
         
+        print(f"✅ Token refresh successful for {username}")
         return {
             "access_token": access_token,
             "token_type": "bearer"
         }
         
-    except JWTError:
+    except JWTError as e:
+        print(f"❌ JWT Error: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid refresh token",
+            detail=f"Invalid refresh token: {str(e)}",
             headers={"WWW-Authenticate": "Bearer"}
+        )
+    except Exception as e:
+        print(f"❌ Unexpected error in refresh_token: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error processing refresh token: {str(e)}"
         )
 
 async def is_async_session(session) -> bool:
@@ -174,6 +210,7 @@ async def register_user(
             email=user_data.email,
             hashed_password=hashed_password,
             is_active=True,
+            needs_onboarding=True,  # Explicitly set needs_onboarding to True for new users
             created_at=datetime.now()
         )
         
@@ -211,6 +248,7 @@ async def register_user(
                 "username": new_user.username,
                 "email": new_user.email,
                 "is_active": new_user.is_active,
+                "needs_onboarding": new_user.needs_onboarding,  # Include needs_onboarding flag
                 "created_at": new_user.created_at
             },
             "access_token": access_token,
@@ -266,10 +304,25 @@ async def login_for_access_token(
     The Meth Snail's Authentication Protocol
     Validates user credentials and returns access token
     """
+    print(f"🔐 Login attempt for user: {form_data.username}")
+    print(f"🔐 Form data received: {form_data}")
+    
     # Find the user
     user = await find_user_by_username_or_email(db, username=form_data.username)
-    # Validate user and password
-    if not user or not verify_password(form_data.password, user.hashed_password):
+    
+    if not user:
+        print(f"❌ User not found: {form_data.username}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    print(f"👤 User found: {user.username} (ID: {user.id})")
+    
+    # Validate password
+    if not verify_password(form_data.password, user.hashed_password):
+        print(f"❌ Invalid password for user: {form_data.username}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
@@ -449,7 +502,7 @@ async def health_check(response: Response):
     ) 
 
 @router.get("/status/")
-async def auth_status(request: Request):
+async def auth_status(request: Request, db: AsyncSession = Depends(get_db)):
     """
     Sir Hawkington's Authentication Status Protocol
     The Quantum Shadow People shall not interfere!
@@ -462,6 +515,7 @@ async def auth_status(request: Request):
         auth_header = request.headers.get('Authorization')
         is_authenticated = False
         username = None
+        user_data = None
         
         if auth_header and auth_header.startswith('Bearer '):
             token = auth_header.replace('Bearer ', '')
@@ -473,17 +527,49 @@ async def auth_status(request: Request):
                 username = payload.get("sub")
                 is_authenticated = True
                 print(f"🧐 Token validated successfully for user: {username}")
+                
+                # If authenticated, fetch the user data
+                if username:
+                    try:
+                        # Use sync_engine for user lookup to avoid async issues
+                        from app.core.database import sync_engine
+                        from sqlalchemy.orm import Session
+                        
+                        sync_session = Session(sync_engine)
+                        try:
+                            user = sync_session.query(User).filter(User.username == username).first()
+                            if user:
+                                user_data = {
+                                    "id": str(user.id),
+                                    "username": user.username,
+                                    "email": user.email,
+                                    "operating_system": user.operating_system,
+                                    "os_version": user.os_version,
+                                    "cpu_cores": user.cpu_cores,
+                                    "total_memory": user.total_memory,
+                                    "needs_onboarding": user.needs_onboarding
+                                }
+                        finally:
+                            sync_session.close()
+                    except Exception as user_error:
+                        print(f"⚠️ Error fetching user data: {str(user_error)}")
             except Exception as e:
                 print(f"⚠️ Token validation failed: {str(e)}")
                 # Don't fail the request, just note that auth failed
         
-        return {
+        response_data = {
             "status": "operational",
             "auth_service": "active",
             "is_authenticated": is_authenticated,
             "username": username,
             "timestamp": datetime.now().isoformat()
         }
+        
+        # Include user data if available
+        if user_data:
+            response_data["user"] = user_data
+            
+        return response_data
     except Exception as e:
         print(f"❌ Auth status error: {str(e)}")
         # Return a 200 response even on error to prevent frontend issues
@@ -491,10 +577,22 @@ async def auth_status(request: Request):
             "status": "operational",
             "auth_service": "active",
             "is_authenticated": False,
-            "error": str(e),
             "timestamp": datetime.now().isoformat()
         }
-    
+
+@router.get("/me")
+async def read_users_me(current_user: User = Depends(get_current_user)):
+    return {
+        "id": str(current_user.id),
+        "username": current_user.username,
+        "email": current_user.email,
+        "operating_system": current_user.operating_system,
+        "os_version": current_user.os_version,
+        "cpu_cores": current_user.cpu_cores,
+        "total_memory": current_user.total_memory,
+        "needs_onboarding": current_user.needs_onboarding
+    }
+
 @router.post("/users/complete-onboarding")
 async def complete_onboarding(
     current_user: User = Depends(get_current_user),
@@ -657,8 +755,7 @@ async def direct_profile_update(
 @router.post("/update-profile")
 async def update_profile(
     profile_data: dict,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    current_user: User = Depends(get_current_user)
 ):
     """
     Sir Hawkington's Profile Update Protocol
@@ -668,25 +765,44 @@ async def update_profile(
         print(f"🧐 Updating profile for user: {current_user.username}")
         print(f"🧐 Profile data: {profile_data}")
         
-        # Update the user's system information
-        if "operating_system" in profile_data:
-            current_user.operating_system = profile_data["operating_system"]
-        if "os_version" in profile_data:
-            current_user.os_version = profile_data["os_version"]
-        if "cpu_cores" in profile_data:
-            current_user.cpu_cores = profile_data["cpu_cores"]
-        if "total_memory" in profile_data:
-            current_user.total_memory = profile_data["total_memory"]
+        # Check if system_info is in the profile data (from onboarding)
+        if "system_info" in profile_data:
+            system_info = profile_data["system_info"]
+            print(f"🧐 System info: {system_info}")
+            
+            # Update the user's system information from nested structure
+            if "operating_system" in system_info:
+                current_user.operating_system = system_info["operating_system"]
+            if "os_version" in system_info:
+                current_user.os_version = system_info["os_version"]
+            if "cpu_cores" in system_info:
+                current_user.cpu_cores = system_info["cpu_cores"]
+            if "total_memory" in system_info:
+                current_user.total_memory = system_info["total_memory"]
+        else:
+            # Handle direct properties (from profile updates)
+            if "operating_system" in profile_data:
+                current_user.operating_system = profile_data["operating_system"]
+            if "os_version" in profile_data:
+                current_user.os_version = profile_data["os_version"]
+            if "cpu_cores" in profile_data:
+                current_user.cpu_cores = profile_data["cpu_cores"]
+            if "total_memory" in profile_data:
+                current_user.total_memory = profile_data["total_memory"]
         
-        # Mark onboarding as completed
+        # Always mark onboarding as completed when profile data is updated
+        # This ensures the user won't be redirected back to onboarding
+        print(f"🧐 Setting needs_onboarding to False for user: {current_user.username}")
         current_user.needs_onboarding = False
         
-        # Save changes to database
-        db.add(current_user)
-        await db.commit()
-        await db.refresh(current_user)
+        # Save changes to database using AsyncSessionLocal directly
+        from app.core.database import AsyncSessionLocal
         
-        print(f"✅ Profile updated successfully for {current_user.username}")
+        async with AsyncSessionLocal() as db:
+            db.add(current_user)
+            await db.commit()
+            await db.refresh(current_user)
+            print(f"✅ Profile updated successfully for {current_user.username}")
         
         return {
             "message": "Profile updated successfully",
@@ -703,7 +819,7 @@ async def update_profile(
         }
     except Exception as e:
         print(f"❌ Error updating profile: {str(e)}")
-        await db.rollback()
+        # No need to handle rollback as the context manager will do it automatically
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error updating profile: {str(e)}"

@@ -1,21 +1,24 @@
 import React, { useEffect, useState } from 'react';
-import { useAppDispatch, useAppSelector } from "../../../store/hooks";
-import { 
-  fetchCurrentMetrics, 
-  fetchRecommendations, 
-  fetchPatterns, 
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '../../../store/store';
+import {
+  fetchCurrentMetrics,
+  fetchRecommendations,
+  fetchPatterns,
   fetchTuningHistory,
+  applyRecommendation,
   applyOptimizationProfile,
-  applyRecommendation
-} from "../../../store/slices/autoTunerSlice";
-import './auto_tuner.css';
-import { TuningRecommendation, SystemPattern, TuningResult } from '../../../types/autoTuner';
+  setActiveProfile
+} from '../../../store/slices/autoTunerSlice';
+import { AppDispatch } from '../../../store/store';
 import { OptimizationProfile } from '../../../types/metrics';
+import { ParameterDescription, AutoTunerHelp } from './parameter_descriptions';
+import './auto_tuner.css';
 
 // Current Metrics Component
 const CurrentMetricsPanel: React.FC = () => {
-  const metrics = useAppSelector((state: any) => state.autoTuner.currentMetrics);
-  const status = useAppSelector((state: any) => state.autoTuner.status);
+  const metrics = useSelector((state: RootState) => state.autoTuner.currentMetrics);
+  const status = useSelector((state: RootState) => state.autoTuner.status);
 
   if (status === 'loading') {
     return <div className="metrics-panel loading">Loading metrics...</div>;
@@ -38,6 +41,9 @@ const CurrentMetricsPanel: React.FC = () => {
               style={{ width: `${metrics.cpu_usage}%`, backgroundColor: metrics.cpu_usage > 80 ? '#ff4d4f' : '#52c41a' }}
             ></div>
           </div>
+          <div className="help-text">
+            <small title="The percentage of CPU usage">CPU usage is the percentage of CPU resources being used.</small>
+          </div>
         </div>
         <div className="metric-card">
           <h3>Memory Usage</h3>
@@ -48,6 +54,9 @@ const CurrentMetricsPanel: React.FC = () => {
               style={{ width: `${metrics.memory_usage}%`, backgroundColor: metrics.memory_usage > 80 ? '#ff4d4f' : '#52c41a' }}
             ></div>
           </div>
+          <div className="help-text">
+            <small title="The percentage of memory usage">Memory usage is the percentage of memory resources being used.</small>
+          </div>
         </div>
         <div className="metric-card">
           <h3>Disk Usage</h3>
@@ -57,6 +66,9 @@ const CurrentMetricsPanel: React.FC = () => {
               className="metric-fill" 
               style={{ width: `${metrics.disk_usage}%`, backgroundColor: metrics.disk_usage > 80 ? '#ff4d4f' : '#52c41a' }}
             ></div>
+          </div>
+          <div className="help-text">
+            <small title="The percentage of disk usage">Disk usage is the percentage of disk resources being used.</small>
           </div>
         </div>
         <div className="metric-card">
@@ -70,6 +82,9 @@ const CurrentMetricsPanel: React.FC = () => {
               ></div>
             </div>
           )}
+          <div className="help-text">
+            <small title="The amount of network usage in MB/s">Network usage is the amount of network resources being used.</small>
+          </div>
         </div>
       </div>
       <div className="metric-timestamp">
@@ -79,63 +94,88 @@ const CurrentMetricsPanel: React.FC = () => {
   );
 };
 
-// Recommendations Component
+// Recommendations Panel
 const RecommendationsPanel: React.FC = () => {
-  const dispatch = useAppDispatch();
-  const recommendations = useAppSelector((state: any) => state.autoTuner.recommendations);
-  const status = useAppSelector((state: any) => state.autoTuner.status);
+  const dispatch = useDispatch<AppDispatch>();
+  const { recommendations, status, error } = useSelector((state: RootState) => state.autoTuner);
+  const [selectedParameter, setSelectedParameter] = useState<string | null>(null);
 
   const handleApplyRecommendation = (recommendationId: number) => {
     dispatch(applyRecommendation(recommendationId));
   };
 
-  if (status === 'loading') {
-    return <div className="recommendations-panel loading">Loading recommendations...</div>;
-  }
-
-  if (!recommendations || recommendations.length === 0) {
-    return <div className="recommendations-panel empty">No recommendations available</div>;
-  }
+  const toggleParameterDescription = (parameter: string) => {
+    if (selectedParameter === parameter) {
+      setSelectedParameter(null);
+    } else {
+      setSelectedParameter(parameter);
+    }
+  };
 
   return (
-    <div className="recommendations-panel">
-      <h2>Optimization Recommendations</h2>
-      <div className="recommendations-list">
-        {recommendations.map((recommendation: TuningRecommendation, index: number) => (
-          <div key={index} className="recommendation-card">
-            <div className="recommendation-header">
-              <h3>{recommendation.parameter}</h3>
-              <div className="recommendation-score">
-                Impact: <span className={`score-${Math.floor(recommendation.impact_score / 20)}`}>
-                  {recommendation.impact_score.toFixed(1)}
-                </span>
-              </div>
-            </div>
-            <div className="recommendation-details">
-              <div>Current: <span className="current-value">{JSON.stringify(recommendation.current_value)}</span></div>
-              <div>Recommended: <span className="recommended-value">{JSON.stringify(recommendation.recommended_value)}</span></div>
-              <div className="recommendation-reason">{recommendation.reason}</div>
-            </div>
-            <div className="recommendation-actions">
-              <button 
-                className="apply-button" 
-                onClick={() => handleApplyRecommendation(index)}
-              >
-                Apply
-              </button>
-              <div className="confidence">Confidence: {(recommendation.confidence * 100).toFixed(0)}%</div>
-            </div>
-          </div>
-        ))}
+    <div className="panel recommendations-panel">
+      <h3>Tuning Recommendations</h3>
+      <div className="help-text">
+        <small>Click on any parameter name to see detailed information about what it means.</small>
       </div>
+      {status === 'loading' && <p>Loading recommendations...</p>}
+      {error && <p className="error">Error: {error}</p>}
+      {recommendations.length === 0 ? (
+        <p>No recommendations available at this time.</p>
+      ) : (
+        <ul className="recommendations-list">
+          {recommendations.map((recommendation, index) => (
+            <li key={index} className="recommendation-item">
+              <div className="recommendation-header">
+                <span 
+                  className="parameter clickable" 
+                  onClick={() => toggleParameterDescription(recommendation.parameter)}
+                  title="Click for more information"
+                >
+                  {recommendation.parameter}
+                </span>
+                <div className="scores">
+                  <span className="impact-score" title="How significant this change will be (0.0-1.0)">
+                    Impact: {recommendation.impact_score.toFixed(2)}
+                  </span>
+                  <span className="confidence" title="How certain the system is about this recommendation">
+                    Confidence: {(recommendation.confidence * 100).toFixed(0)}%
+                  </span>
+                </div>
+              </div>
+              
+              {selectedParameter === recommendation.parameter && (
+                <div className="parameter-info">
+                  <ParameterDescription parameter={recommendation.parameter} />
+                </div>
+              )}
+              
+              <div className="recommendation-details">
+                <div className="values">
+                  <span className="current-value" title="The current setting on your system">Current: {recommendation.current_value}</span>
+                  <span className="recommended-value" title="The recommended optimal setting">Recommended: {recommendation.recommended_value}</span>
+                </div>
+                <p className="reason">{recommendation.reason}</p>
+                <button 
+                  className="apply-button" 
+                  onClick={() => handleApplyRecommendation(index)}
+                  title="Apply this recommendation to your system"
+                >
+                  Apply
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 };
 
 // Patterns Component
 const PatternsPanel: React.FC = () => {
-  const patterns = useAppSelector((state: any) => state.autoTuner.patterns);
-  const status = useAppSelector((state: any) => state.autoTuner.status);
+  const patterns = useSelector((state: RootState) => state.autoTuner.patterns);
+  const status = useSelector((state: RootState) => state.autoTuner.status);
 
   if (status === 'loading') {
     return <div className="patterns-panel loading">Loading patterns...</div>;
@@ -149,7 +189,7 @@ const PatternsPanel: React.FC = () => {
     <div className="patterns-panel">
       <h2>Detected System Patterns</h2>
       <div className="patterns-list">
-        {patterns.map((pattern: SystemPattern, index: number) => (
+        {patterns.map((pattern, index) => (
           <div key={index} className="pattern-card">
             <div className="pattern-header">
               <h3>{pattern.type}</h3>
@@ -176,8 +216,8 @@ const PatternsPanel: React.FC = () => {
 
 // Tuning History Component
 const TuningHistoryPanel: React.FC = () => {
-  const tuningHistory = useAppSelector((state: any) => state.autoTuner.tuningHistory);
-  const status = useAppSelector((state: any) => state.autoTuner.status);
+  const tuningHistory = useSelector((state: RootState) => state.autoTuner.tuningHistory);
+  const status = useSelector((state: RootState) => state.autoTuner.status);
 
   if (status === 'loading') {
     return <div className="history-panel loading">Loading tuning history...</div>;
@@ -191,7 +231,7 @@ const TuningHistoryPanel: React.FC = () => {
     <div className="history-panel">
       <h2>Optimization History</h2>
       <div className="history-list">
-        {tuningHistory.map((result: TuningResult, index: number) => (
+        {tuningHistory.map((result, index) => (
           <div key={index} className={`history-card ${result.success ? 'success' : 'failure'}`}>
             <div className="history-header">
               <h3>{result.parameter}</h3>
@@ -225,8 +265,8 @@ const TuningHistoryPanel: React.FC = () => {
 
 // Profiles Component
 const ProfilesPanel: React.FC = () => {
-  const dispatch = useAppDispatch();
-  const activeProfile = useAppSelector((state: any) => state.autoTuner.activeProfile);
+  const dispatch = useDispatch<AppDispatch>();
+  const activeProfile = useSelector((state: RootState) => state.autoTuner.activeProfile);
   const [profiles, setProfiles] = useState<OptimizationProfile[]>([]);
   
   // In a real implementation, we would fetch profiles from the API
@@ -259,7 +299,14 @@ const ProfilesPanel: React.FC = () => {
   }, []);
 
   const handleApplyProfile = (profileId: string) => {
-    dispatch(applyOptimizationProfile(profileId));
+    // Find the profile to set as active
+    const profileToApply = profiles.find(p => p.id === profileId);
+    if (profileToApply) {
+      // Set the profile as active in the Redux store
+      dispatch(setActiveProfile(profileToApply));
+      // Apply the profile settings
+      dispatch(applyOptimizationProfile(profileId));
+    }
   };
 
   return (
@@ -301,92 +348,63 @@ const ProfilesPanel: React.FC = () => {
 };
 
 // Main Auto-Tuner Component
-export const AutoTunerComponent: React.FC = () => {
-  const dispatch = useAppDispatch();
-  const [activeTab, setActiveTab] = useState<string>('metrics');
-  
+export const AutoTuner: React.FC = () => {
+  const dispatch = useDispatch<AppDispatch>();
+  const { lastUpdated } = useSelector((state: RootState) => state.autoTuner);
+  const [showHelp, setShowHelp] = useState(false);
+
   useEffect(() => {
-    // Fetch data when component mounts
+    // Fetch initial data
     dispatch(fetchCurrentMetrics());
     dispatch(fetchRecommendations());
     dispatch(fetchPatterns());
     dispatch(fetchTuningHistory());
-    
-    // Set up interval to refresh metrics
-    const intervalId = setInterval(() => {
+
+    // Set up polling for metrics and recommendations
+    const pollingInterval = setInterval(() => {
       dispatch(fetchCurrentMetrics());
-    }, 30000); // Refresh every 30 seconds
-    
-    return () => clearInterval(intervalId);
+      dispatch(fetchRecommendations());
+    }, 30000); // Poll every 30 seconds
+
+    return () => clearInterval(pollingInterval);
   }, [dispatch]);
-  
-  const renderActiveTab = () => {
-    switch (activeTab) {
-      case 'metrics':
-        return <CurrentMetricsPanel />;
-      case 'recommendations':
-        return <RecommendationsPanel />;
-      case 'patterns':
-        return <PatternsPanel />;
-      case 'history':
-        return <TuningHistoryPanel />;
-      case 'profiles':
-        return <ProfilesPanel />;
-      default:
-        return <CurrentMetricsPanel />;
-    }
-  };
-  
-  const handleRefresh = () => {
-    dispatch(fetchCurrentMetrics());
-    dispatch(fetchRecommendations());
-    dispatch(fetchPatterns());
-    dispatch(fetchTuningHistory());
-  };
-  
+
   return (
     <div className="auto-tuner-container">
       <div className="auto-tuner-header">
-        <h1>System Auto Tuner</h1>
-        <p>Optimizing your system resources in real-time</p>
-        <button className="refresh-button" onClick={handleRefresh}>Refresh Data</button>
+        <h2>System Auto-Tuner</h2>
+        <button 
+          className="help-button" 
+          onClick={() => setShowHelp(!showHelp)}
+          title="Learn about auto-tuner values"
+        >
+          {showHelp ? 'Hide Help' : 'What do these values mean?'}
+        </button>
+        {lastUpdated && (
+          <div className="last-updated">
+            Last updated: {new Date(lastUpdated).toLocaleTimeString()}
+          </div>
+        )}
       </div>
       
-      <div className="auto-tuner-tabs">
-        <button 
-          className={`tab-button ${activeTab === 'metrics' ? 'active' : ''}`}
-          onClick={() => setActiveTab('metrics')}
-        >
-          Current Metrics
-        </button>
-        <button 
-          className={`tab-button ${activeTab === 'recommendations' ? 'active' : ''}`}
-          onClick={() => setActiveTab('recommendations')}
-        >
-          Recommendations
-        </button>
-        <button 
-          className={`tab-button ${activeTab === 'patterns' ? 'active' : ''}`}
-          onClick={() => setActiveTab('patterns')}
-        >
-          System Patterns
-        </button>
-        <button 
-          className={`tab-button ${activeTab === 'history' ? 'active' : ''}`}
-          onClick={() => setActiveTab('history')}
-        >
-          Tuning History
-        </button>
-        <button 
-          className={`tab-button ${activeTab === 'profiles' ? 'active' : ''}`}
-          onClick={() => setActiveTab('profiles')}
-        >
-          Optimization Profiles
-        </button>
-      </div>
+      {showHelp && (
+        <div className="help-panel">
+          <AutoTunerHelp />
+        </div>
+      )}
       
-      <div className="auto-tuner-content">
-        {renderActiveTab()}
+      <div className="auto-tuner-panels">
+        <div className="panel-row">
+          <CurrentMetricsPanel />
+          <RecommendationsPanel />
+        </div>
+        <div className="panel-row">
+          <PatternsPanel />
+          <TuningHistoryPanel />
+        </div>
+        <div className="panel-row">
+          <ProfilesPanel />
+        </div>
       </div>
     </div>
   );

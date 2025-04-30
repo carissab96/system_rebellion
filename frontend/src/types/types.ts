@@ -2,21 +2,6 @@
 
 
 
-  export interface UserProfile {
-    id: string;
-    username: string;
-    operating_system: 'linux' | 'windows' | 'macos';
-    os_version: string;
-    linux_distro?: string;
-    linux_distro_version?: string;
-    cpu_cores?: number;
-    total_memory?: number;
-  }
-  
-  export interface UserPreferences {
-    theme: 'light' | 'dark' | 'system';
-    language: string;
-  }
 
 
     export interface Options {

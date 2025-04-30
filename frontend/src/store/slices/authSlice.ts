@@ -18,6 +18,8 @@ const initialState: AuthState = {
   error: null
 };
 
+console.log('Auth Slice Initial State:', initialState);
+
 // Async thunks for authentication actions
 export const login = createAsyncThunk(
   'auth/login',
@@ -33,11 +35,20 @@ export const login = createAsyncThunk(
 
 export const register = createAsyncThunk(
   'auth/register',
-  async ({ username, email, password }: { username: string; email: string; password: string }, { rejectWithValue }) => {
+  async (userData: any, { rejectWithValue }) => {
     try {
+      // Extract the basic required fields for registration
+      const { username, email, password } = userData;
+      
+      if (!username || !email || !password) {
+        return rejectWithValue('Username, email and password are required');
+      }
+      
+      console.log('Registering with data:', { ...userData, password: '***' });
       const user = await authService.register(username, email, password);
       return user;
     } catch (error: any) {
+      console.error('Registration error:', error);
       return rejectWithValue(error.response?.data?.detail || 'Registration failed');
     }
   }

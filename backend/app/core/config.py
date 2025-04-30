@@ -1,13 +1,20 @@
 import secrets
-from typing import Any, Dict, List, Optional, Union
+import os
+from typing import List, Union
 
 from pydantic import AnyHttpUrl, field_validator
 from pydantic_settings import BaseSettings
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 
 class Settings(BaseSettings):
     API_V1_STR: str = "/api"
-    SECRET_KEY: str = secrets.token_urlsafe(32)
+    # Use a fixed SECRET_KEY for consistent token validation
+    # In production, this should be set via environment variable
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "system-rebellion-fixed-secret-key-for-development-only")
     # 60 minutes * 24 hours * 8 days = 8 days
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
     SERVER_NAME: str = "System Rebellion"
@@ -15,9 +22,7 @@ class Settings(BaseSettings):
     # BACKEND_CORS_ORIGINS is a JSON-formatted list of origins
     # e.g: ["http://localhost", "http://localhost:4200", "http://localhost:3000"]
     BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = [
-        "http://localhost:3000",
         "http://localhost:8000",
-        "http://localhost:8080",
     ]
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")

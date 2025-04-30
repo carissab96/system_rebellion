@@ -2,7 +2,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from app.websockets import WebSocketManager
 import psutil
 import asyncio
-from datetime import datetime
+from datetime import datetime, timezone
 
 # The Meth Snail's Global WebSocket Manager
 websocket_manager = WebSocketManager()
@@ -30,7 +30,7 @@ async def system_metrics_socket(websocket: WebSocket):
                 "sent": psutil.net_io_counters().bytes_sent,
                 "recv": psutil.net_io_counters().bytes_recv
             },
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
         
         # Send initial metrics
@@ -51,7 +51,7 @@ async def system_metrics_socket(websocket: WebSocket):
                         "sent": psutil.net_io_counters().bytes_sent,
                         "recv": psutil.net_io_counters().bytes_recv
                     },
-                    "timestamp": datetime.utcnow().isoformat()
+                    "timestamp": datetime.now(timezone.utc).isoformat()
                 }
                 
                 # Broadcast metrics

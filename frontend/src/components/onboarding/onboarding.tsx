@@ -10,7 +10,7 @@ interface SystemInfo {
   operating_system: string;
   os_version: string;
   cpu_cores: number;
-  total_memory: number; // in GB
+  total_memory: number;
 }
 
 const Onboarding: React.FC = () => {
@@ -20,7 +20,7 @@ const Onboarding: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState(1);
-  const [hawkingtonQuote, setHawkingtonQuote] = useState("🧐 Sir Hawkington requires some information about your system!");
+  const [hawkingtonQuote, setHawkingtonQuote] = useState(" Sir Hawkington requires some information about your system!");
 
   // System information state
   const [systemInfo, setSystemInfo] = useState<SystemInfo>({
@@ -65,7 +65,7 @@ const Onboarding: React.FC = () => {
           cpu_cores: detectedCores || prev.cpu_cores
         }));
 
-        setHawkingtonQuote("🧐 I've detected some of your system information! Please verify and complete the form.");
+        setHawkingtonQuote(" I've detected some of your system information! Please verify and complete the form.");
       } catch (err) {
         console.error("Error auto-detecting system info:", err);
         // No need to show error to user, just fall back to manual entry
@@ -108,38 +108,88 @@ const Onboarding: React.FC = () => {
 
     try {
       // Validate form data
-      if (!systemInfo.operating_system || !systemInfo.os_version || !systemInfo.cpu_cores || !systemInfo.total_memory) {
-        throw new Error("Please fill in all required fields!");
+      const requiredFields = {
+        'Operating System': systemInfo.operating_system,
+        'OS Version': systemInfo.os_version,
+        'CPU Cores': systemInfo.cpu_cores,
+        'RAM': systemInfo.total_memory
+      };
+
+      const missingFields = Object.entries(requiredFields)
+        .filter(([_, value]) => !value)
+        .map(([field]) => field);
+
+      if (missingFields.length > 0) {
+        throw new Error(`Please fill in the following required fields: ${missingFields.join(', ')}`);
+      }
+
+      // Validate numeric fields
+      if (systemInfo.cpu_cores <= 0) {
+        throw new Error('CPU Cores must be greater than 0');
+      }
+      if (systemInfo.total_memory <= 0) {
+        throw new Error('RAM must be greater than 0');
       }
 
       // Update Hawkington quote
-      setHawkingtonQuote("🧐 Sir Hawkington is processing your system information with aristocratic precision!");
+      setHawkingtonQuote(" Sir Hawkington is processing your system information with aristocratic precision!");
 
-      // Format the profile data for the API
-      const profileData = {
-        system_info: {
-          operating_system: systemInfo.operating_system,
-          os_version: systemInfo.os_version,
-          cpu_cores: systemInfo.cpu_cores,
-          total_memory: systemInfo.total_memory
-        },
-        onboarding_completed: true
-      };
+      console.log('Submitting onboarding data:', systemInfo);
 
-      // Dispatch the update profile action
-      await dispatch(updateProfile(profileData)).unwrap();
-      
-      // Show success message
-      setHawkingtonQuote("🧐 Sir Hawkington is pleased with your system specifications! Welcome aboard!");
-      
-      // Redirect to dashboard after a short delay
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 1500);
+      // Implement retry logic with a maximum of 3 attempts
+      let retryCount = 0;
+      const maxRetries = 3;
+      let success = false;
+
+      while (retryCount < maxRetries && !success) {
+        try {
+          console.log(`Attempt ${retryCount + 1} of ${maxRetries} to submit profile`);
+          
+          // Make the API call
+          const result = await dispatch(updateProfile(systemInfo)).unwrap();
+          success = true;
+          console.log('Profile updated successfully!', result);
+          
+          // Check if onboarding status was updated properly
+          if (result && result.needs_onboarding === false) {
+            setHawkingtonQuote(" Splendid! Your system information has been recorded with utmost sophistication!");
+            
+            // Small delay for user to see success message
+            setTimeout(() => {
+              navigate('/dashboard');
+            }, 1500);
+          } else {
+            throw new Error('Onboarding status not updated properly');
+          }
+          
+          break; // Exit the loop on success
+        } catch (retryError) {
+          retryCount++;
+          console.error(`Attempt ${retryCount} failed:`, retryError);
+          
+          if (retryCount >= maxRetries) {
+            throw retryError; // Re-throw if we've used all retries
+          }
+          
+          // Wait before retry (exponential backoff)
+          await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retryCount)));
+        }
+      }
     } catch (err: any) {
-      console.error("Onboarding error:", err);
-      setError(err.message || "An error occurred during onboarding. Please try again.");
-      setHawkingtonQuote("🧐 *adjusts monocle in concern* I say, something seems amiss with your system information!");
+      console.error('Error during onboarding:', err);
+      let errorMessage = 'An error occurred during onboarding';
+      
+      if (err.response?.status === 400) {
+        errorMessage = 'Invalid data provided. Please check your input and try again.';
+      } else if (err.response?.status === 401) {
+        errorMessage = 'Your session has expired. Please log in again.';
+        navigate('/login');
+      } else if (err.response?.status === 500) {
+        errorMessage = 'Server error. Please try again later.';
+      }
+      
+      setError(err.message || errorMessage);
+      setHawkingtonQuote(" Oh dear, it seems we've encountered a spot of bother!");
     } finally {
       setLoading(false);
     }
@@ -151,14 +201,14 @@ const Onboarding: React.FC = () => {
       case 1:
         return (
           <div className="onboarding-step">
-            <h3>System Information</h3>
-            <p>Please provide information about your system to help us optimize your experience.</p>
+            <h3>Your System Information</h3>
+            <p>Please provide details about your system to optimize your experience.</p>
             
             <div className="form-group">
               <label htmlFor="operating_system">Operating System</label>
-              <select 
-                id="operating_system" 
-                name="operating_system" 
+              <select
+                id="operating_system"
+                name="operating_system"
                 value={systemInfo.operating_system}
                 onChange={handleInputChange}
                 required
@@ -167,8 +217,6 @@ const Onboarding: React.FC = () => {
                 <option value="Windows">Windows</option>
                 <option value="MacOS">MacOS</option>
                 <option value="Linux">Linux</option>
-                <option value="Android">Android</option>
-                <option value="iOS">iOS</option>
                 <option value="Other">Other</option>
               </select>
             </div>

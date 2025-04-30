@@ -24,7 +24,6 @@ def setup_middleware(app: FastAPI):
         CORSMiddleware,
         allow_origins=[
             "http://localhost:5173",  # Frontend dev server
-            "http://localhost:3000",  # Frontend dev server alternative port
             "https://system-rebellion.com"  # Production domain
         ],
         allow_credentials=True,

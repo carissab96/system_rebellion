@@ -1,7 +1,7 @@
 import React, { useState, FC } from 'react';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { registerUser } from '../../../store/slices/authSlice';
+import { register } from '../../../store/slices/authSlice';
 import { AppDispatch } from '../../../store/store';
 import './SignupModal.css';
 import '../../../components/common/Modal.css';
@@ -11,15 +11,7 @@ interface SignupModalProps {
   onClose: () => void;
 }
 
-interface RegistrationData {
-  username: string;
-  email: string;
-  password: string;
-  profile: {
-    first_name: string;
-    last_name: string;
-  };
-}
+// Registration data is now directly defined in the component
 
 const SignupModal: FC<SignupModalProps> = ({ isOpen, onClose }) => {
   const dispatch = useDispatch<AppDispatch>();
@@ -99,15 +91,12 @@ const SignupModal: FC<SignupModalProps> = ({ isOpen, onClose }) => {
     }
     
     try {
-      // Prepare registration data with properly formatted fields
-      const registrationData: RegistrationData = {
+      // Prepare registration data with properly formatted fields - backend only expects username, email, password
+      const registrationData = {
         username: formData.username.trim(),
         email: formData.email.trim(),
-        password: formData.password,
-        profile: {
-          first_name: formData.firstName.trim(),
-          last_name: formData.lastName.trim()
-        }
+        password: formData.password
+        // Note: profile data will be added later after successful registration
       };
       
       console.log("Attempting registration with:", {
@@ -116,7 +105,7 @@ const SignupModal: FC<SignupModalProps> = ({ isOpen, onClose }) => {
       });
       
       // Dispatch registration action
-      await dispatch(registerUser(registrationData));
+      await dispatch(register(registrationData));
       
       // Store username for convenience on the login page
       localStorage.setItem('registered_username', formData.username);

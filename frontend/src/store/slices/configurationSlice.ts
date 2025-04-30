@@ -40,9 +40,21 @@ export const fetchSystemConfigurations = createAsyncThunk(
       if (config_type) {
         url += `?config_type=${config_type}`;
       }
-      const response = await axios.get(url);
+      
+      // Get authentication token
+      const token = localStorage.getItem('token');
+      if (!token) {
+        return rejectWithValue("Authentication required. Please log in.");
+      }
+      
+      const response = await axios.get(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
       console.log("🧐 Sir Hawkington returned with configurations:", response.data);
-      return response.data;
+      return response.data.configurations;
     } catch (error: any) {
       console.error("💥 Sir Hawkington encountered a most unfortunate error!", error);
       return rejectWithValue(
@@ -58,7 +70,20 @@ export const createSystemConfiguration = createAsyncThunk(
   async (configData: any, { rejectWithValue }) => {
     try {
       console.log("🧐 Sir Hawkington is creating a new system configuration with distinguished precision...");
-      const response = await axios.post(`${API_BASE_URL}/system-configurations/`, configData);
+      
+      // Get authentication token
+      const token = localStorage.getItem('token');
+      if (!token) {
+        return rejectWithValue("Authentication required. Please log in.");
+      }
+      
+      const response = await axios.post(`${API_BASE_URL}/system-configurations/`, configData, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
       console.log("🧐 Sir Hawkington created a new configuration:", response.data);
       return response.data;
     } catch (error: any) {
@@ -77,7 +102,20 @@ export const updateSystemConfiguration = createAsyncThunk(
     try {
       const { id, ...data } = configData;
       console.log(`🧐 Sir Hawkington is updating system configuration ${id} with distinguished care...`);
-      const response = await axios.put(`${API_BASE_URL}/system-configurations/${id}`, data);
+      
+      // Get authentication token
+      const token = localStorage.getItem('token');
+      if (!token) {
+        return rejectWithValue("Authentication required. Please log in.");
+      }
+      
+      const response = await axios.put(`${API_BASE_URL}/system-configurations/${id}`, data, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
       console.log("🧐 Sir Hawkington updated the configuration:", response.data);
       return response.data;
     } catch (error: any) {
@@ -95,7 +133,19 @@ export const deleteSystemConfiguration = createAsyncThunk(
   async (id: string, { rejectWithValue }) => {
     try {
       console.log(`🧐 Sir Hawkington is deleting system configuration ${id} with a heavy heart...`);
-      await axios.delete(`${API_BASE_URL}/system-configurations/${id}`);
+      
+      // Get authentication token
+      const token = localStorage.getItem('token');
+      if (!token) {
+        return rejectWithValue("Authentication required. Please log in.");
+      }
+      
+      await axios.delete(`${API_BASE_URL}/system-configurations/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
       console.log("🧐 Sir Hawkington deleted the configuration successfully");
       return id;
     } catch (error: any) {
@@ -112,8 +162,21 @@ export const applySystemConfiguration = createAsyncThunk(
   'configuration/applyConfiguration',
   async (id: string, { rejectWithValue }) => {
     try {
-      console.log(`🧐 Sir Hawkington is applying system configuration ${id} with distinguished elegance...`);
-      const response = await axios.post(`${API_BASE_URL}/configurations/${id}/apply/`);
+      console.log(`🧐 Sir Hawkington is applying system configuration ${id} with distinguished enthusiasm...`);
+      
+      // Get authentication token
+      const token = localStorage.getItem('token');
+      if (!token) {
+        return rejectWithValue("Authentication required. Please log in.");
+      }
+      
+      const response = await axios.post(`${API_BASE_URL}/system-configurations/${id}/activate`, {}, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
       console.log("🧐 Sir Hawkington applied the configuration:", response.data);
       return response.data;
     } catch (error: any) {

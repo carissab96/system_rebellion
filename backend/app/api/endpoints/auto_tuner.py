@@ -110,7 +110,7 @@ async def apply_optimization_profile(
 
 @router.post("/recommendations/apply")
 async def apply_recommendation(
-    recommendation_id: int,
+    recommendation_id: int = None,
     current_user: User = Depends(get_current_user)
 ):
     """

@@ -6,7 +6,7 @@ from app.schemas.metrics import MetricCreate, MetricResponse, MetricUpdate
 from app.core.security import get_current_user
 import uuid
 import psutil
-from datetime import datetime
+from datetime import datetime, timezone
 
 router = APIRouter(tags=["metrics"])
 
@@ -30,7 +30,7 @@ async def get_system_metrics():
             "recv": network_io.bytes_recv
         },
         "process_count": len(psutil.pids()),
-        "timestamp": datetime.now(datetime.timezone.utc).isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }   
 
 @router.post("/", response_model=MetricResponse)

@@ -24,9 +24,9 @@ const Login: React.FC<LoginProps> = ({ onClose, isOpen }) => {
   const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
   const [hawkingtonQuote, setHawkingtonQuote] = useState("🧐 Sir Hawkington prepares to verify your distinguished credentials!");
 
-  const isLoading = useAppSelector((state: { auth: { loading: any; }; }) => state.auth.loading);
-  const isAuthenticated = useAppSelector((state: { auth: { isAuthenticated: any; }; }) => state.auth.isAuthenticated);
-  const authError = useAppSelector((state: { auth: { error: any; }; }) => state.auth.error);
+  const isLoading = useAppSelector((state) => state.auth.isLoading);
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
+  const authError = useAppSelector((state) => state.auth.error);
 
   const updateHawkingtonQuote = (scenario: 'welcome' | 'error' | 'loading' | 'success') => {
     const quotes = {
@@ -70,6 +70,7 @@ const Login: React.FC<LoginProps> = ({ onClose, isOpen }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(''); // Clear previous errors
     
     // Validate form data
     if (!username || !password) {
@@ -80,19 +81,36 @@ const Login: React.FC<LoginProps> = ({ onClose, isOpen }) => {
     
     console.log("Login attempt with:", { username, password: "***" });
 
-    if (!backendAvailable) {
-      console.log("Backend not available, aborting login");
-      setError('Cannot login: Server is currently unavailable');
+    // Check backend availability first
+    try {
+      const available = await checkBackendAvailability();
+      if (!available) {
+        console.log("Backend not available, aborting login");
+        setError('Cannot login: Server is currently unavailable');
+        updateHawkingtonQuote('error');
+        return;
+      }
+      setBackendAvailable(true);
+    } catch (err) {
+      console.error("Backend availability check failed", err);
+      setError('Cannot connect to server. Please try again later.');
       updateHawkingtonQuote('error');
       return;
     }
     
+    // Initialize CSRF if needed
     if (!csrfInitialized) {
-      const csrfSuccess = await initializeCsrf();
-      setCsrfInitialized(csrfSuccess);
-      
-      if (!csrfSuccess) {
-        setError('Security token initialization failed. Please refresh the page.');
+      try {
+        const csrfSuccess = await initializeCsrf();
+        setCsrfInitialized(csrfSuccess);
+        
+        if (!csrfSuccess) {
+          setError('Security token initialization failed. Please refresh the page.');
+          return;
+        }
+      } catch (err) {
+        console.error("CSRF initialization failed", err);
+        setError('Security setup failed. Please refresh and try again.');
         return;
       }
     }
@@ -107,21 +125,25 @@ const Login: React.FC<LoginProps> = ({ onClose, isOpen }) => {
         password: password
       };
       
+      // Clear any existing tokens to prevent conflicts
+      localStorage.removeItem('token');
+      localStorage.removeItem('refresh_token');
+      
       // Store username in localStorage before dispatching login
-      // This ensures it's available even if the Redux store doesn't populate it correctly
       localStorage.setItem('username', username.trim());
       console.log("Stored username in localStorage:", username.trim());
       
       const result = await dispatch(login(loginData)).unwrap();
       console.log("Login successful", result);
+      
+      if (!result) {
+        throw new Error('Invalid response received from server');
+      }
+      
       updateHawkingtonQuote('success');
       
-      // Always redirect to onboarding for new users
-      // The onboarding page will check if the user has completed onboarding and redirect to dashboard if needed
-      console.log("Login response:", result);
-      
       // Check if the user object has a profile with system information
-      const user = result.user;
+      const user = result;
       const hasSystemInfo = user?.profile && (
         user.profile.operating_system ||
         user.profile.os_version ||
@@ -140,9 +162,19 @@ const Login: React.FC<LoginProps> = ({ onClose, isOpen }) => {
         }
         onClose();
       }, 1000);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Login failed", err);
-      setError('Login failed. Please check your credentials and try again.');
+      
+      // Extract meaningful error message if possible
+      let errorMessage = 'Login failed. Please check your credentials and try again.';
+      
+      if (err.response?.data?.detail) {
+        errorMessage = `Login failed: ${err.response.data.detail}`;
+      } else if (err.message) {
+        errorMessage = `Login failed: ${err.message}`;
+      }
+      
+      setError(errorMessage);
       updateHawkingtonQuote('error');
     }
   };
@@ -259,6 +291,31 @@ const Login: React.FC<LoginProps> = ({ onClose, isOpen }) => {
                   disabled={isLoading || isCheckingBackend}
                 >
                   Join the System Rebellion
+                </button>
+              </div>
+              
+              <div className="auth-login test-user-section" style={{ marginTop: '20px', textAlign: 'center' }}>
+                <p style={{ fontSize: '0.9em', color: '#00f5d4' }}>🧐 Sir Hawkington suggests using the test account:</p>
+                <button 
+                  type="button" 
+                  style={{
+                    background: 'rgba(0, 245, 212, 0.2)',
+                    border: '1px solid #00f5d4',
+                    borderRadius: '4px',
+                    padding: '8px 12px',
+                    color: '#00f5d4',
+                    cursor: 'pointer',
+                    fontSize: '0.9em',
+                    marginTop: '5px'
+                  }}
+                  onClick={() => {
+                    setUsername('testuser');
+                    setPassword('password123');
+                    updateHawkingtonQuote('welcome');
+                  }}
+                  disabled={isLoading || isCheckingBackend}
+                >
+                  Use Test Credentials
                 </button>
               </div>
 

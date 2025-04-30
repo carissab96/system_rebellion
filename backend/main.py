@@ -15,7 +15,6 @@ from app.api import router as metrics_router
 from app.api import websocket_routes
 from datetime import datetime
 import uvicorn
-import asyncio
 
 # Database initialization
 async def init_db(db_engine=None):
@@ -53,7 +52,7 @@ def create_application() -> FastAPI:
         return JSONResponse(
             content={
                 "status": "operational",
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now().isoformat(),
                 "version": "0.1.0"
             }
         )

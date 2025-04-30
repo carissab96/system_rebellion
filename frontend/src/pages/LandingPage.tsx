@@ -7,14 +7,17 @@ import './LandingPage.css';
 // Import character data
 import { teamMembers, projectTimeline } from '../data/systemRebellionData';
 
+console.log('LandingPage module loaded');
+console.log('Team members data:', teamMembers);
+
 const LandingPage = () => {
-  const [showSignupModal, setShowSignupModal] = useState(false);
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const [hawkingtonQuote, setHawkingtonQuote] = useState("🧐 Welcome to the System Rebellion, distinguished visitor!");
-  const [activeCharacter, setActiveCharacter] = useState(null);
-  const [activeTimelineEvent, setActiveTimelineEvent] = useState(null);
-  const [methSnailRedBulls, setMethSnailRedBulls] = useState(512);
-  
+  const [showSignupModal, setShowSignupModal] = useState<boolean>(false);
+  const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
+  const [hawkingtonQuote, setHawkingtonQuote] = useState<string>("🧐 Welcome to the System Rebellion, distinguished visitor!");
+  const [activeCharacter, setActiveCharacter] = useState<string | null>(null);
+  const [activeTimelineEvent, setActiveTimelineEvent] = useState<string | null>(null);
+  const [methSnailRedBulls, setMethSnailRedBulls] = useState<number>(512);
+ 
   // Handle smooth scrolling for anchor links
   useEffect(() => {
     const handleAnchorClick = (e: MouseEvent) => {
@@ -81,13 +84,19 @@ const LandingPage = () => {
     setHawkingtonQuote("🧐 Welcome to the System Rebellion, distinguished visitor!");
   };
   
-  const handleCharacterClick = (character: any) => {
+  const handleCharacterClick = (character: string) => {
     setActiveCharacter(activeCharacter === character ? null : character);
   };
   
-  const handleTimelineClick = (event: any) => {
+  const handleTimelineClick = (event: string) => {
     setActiveTimelineEvent(activeTimelineEvent === event ? null : event);
   };
+  
+  console.log('LandingPage render function called');
+  
+  // Add debugging for data
+  console.log('Team members:', teamMembers);
+  console.log('Project timeline:', projectTimeline);
   
   return (
     <div className="landing-page">
