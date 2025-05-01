@@ -75,6 +75,50 @@ This will grant the necessary sudo powers to make REAL system changes. Don't wor
 - **System Logs Viewer**: Terminal-style log display with filtering
 - **Optimization Profiles**: Save and apply your favorite configurations
 
+## 🚀 Deployment to Render
+
+System Rebellion is ready to be deployed to Render! Follow these steps to unleash the rebellion on the cloud:
+
+### Using the Render Dashboard
+
+1. **Create a new Blueprint** on your Render dashboard
+2. **Connect your GitHub repository** containing the System Rebellion code
+3. **Use the render.yaml file** at the root of the repository for configuration
+4. **Deploy!** Render will automatically set up both the backend API and frontend services
+
+### Manual Deployment
+
+#### Backend API
+
+1. Create a new Web Service on Render
+2. Connect your GitHub repository
+3. Configure as follows:
+   - **Environment**: Python
+   - **Build Command**: `cd backend && pip install -r requirements.txt`
+   - **Start Command**: `cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT`
+   - **Environment Variables**:
+     - `PYTHON_VERSION`: 3.9.4
+     - `SECRET_KEY`: (generate a secure random string)
+     - `ENVIRONMENT`: production
+     - `ALLOW_ORIGINS`: https://your-frontend-url.onrender.com
+
+#### Frontend
+
+1. Create another Web Service on Render
+2. Connect the same GitHub repository
+3. Configure as follows:
+   - **Environment**: Node
+   - **Build Command**: `cd frontend && npm install && npm run build`
+   - **Start Command**: `cd frontend && npm run start`
+   - **Environment Variables**:
+     - `NODE_VERSION`: 18.x
+     - `VITE_API_URL`: https://your-backend-url.onrender.com
+
+### Important Notes
+
+- Some system tuning features may be limited in cloud environments due to permission restrictions
+- For full functionality, consider deploying to a VPS where you have sudo access
+
 ## 🛠️ Customization
 
 Feel free to tweak the rebellion to your needs. Edit `backend/app/core/config.py` to adjust settings like:
