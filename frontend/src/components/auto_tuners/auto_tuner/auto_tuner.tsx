@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../../store/store';
 import {
@@ -13,14 +13,27 @@ import {
 import { AppDispatch } from '../../../store/store';
 import { OptimizationProfile } from '../../../types/metrics';
 import { ParameterDescription, AutoTunerHelp } from './parameter_descriptions';
+import SystemLogsViewer from '../../dashboard/SystemLogs/SystemLogsViewer';
 import './auto_tuner.css';
 
 // Current Metrics Component
 const CurrentMetricsPanel: React.FC = () => {
   const metrics = useSelector((state: RootState) => state.autoTuner.currentMetrics);
   const status = useSelector((state: RootState) => state.autoTuner.status);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const prevMetricsRef = useRef(metrics);
 
-  if (status === 'loading') {
+  // Detect when metrics change to trigger smooth update animation
+  useEffect(() => {
+    if (metrics && prevMetricsRef.current && JSON.stringify(metrics) !== JSON.stringify(prevMetricsRef.current)) {
+      setIsUpdating(true);
+      const timer = setTimeout(() => setIsUpdating(false), 1000);
+      return () => clearTimeout(timer);
+    }
+    prevMetricsRef.current = metrics;
+  }, [metrics]);
+
+  if (status === 'loading' && !metrics) {
     return <div className="metrics-panel loading">Loading metrics...</div>;
   }
 
@@ -29,12 +42,12 @@ const CurrentMetricsPanel: React.FC = () => {
   }
 
   return (
-    <div className="metrics-panel">
+    <div className={`metrics-panel ${isUpdating ? 'data-updating' : ''}`}>
       <h2>Current System Metrics</h2>
       <div className="metrics-grid">
         <div className="metric-card">
           <h3>CPU Usage</h3>
-          <div className="metric-value">{metrics.cpu_usage.toFixed(2)}%</div>
+          <div className="metric-value" key={`cpu-${metrics.cpu_usage}`}>{metrics.cpu_usage.toFixed(2)}%</div>
           <div className="metric-gauge">
             <div 
               className="metric-fill" 
@@ -47,7 +60,7 @@ const CurrentMetricsPanel: React.FC = () => {
         </div>
         <div className="metric-card">
           <h3>Memory Usage</h3>
-          <div className="metric-value">{metrics.memory_usage.toFixed(2)}%</div>
+          <div className="metric-value" key={`memory-${metrics.memory_usage}`}>{metrics.memory_usage.toFixed(2)}%</div>
           <div className="metric-gauge">
             <div 
               className="metric-fill" 
@@ -60,7 +73,7 @@ const CurrentMetricsPanel: React.FC = () => {
         </div>
         <div className="metric-card">
           <h3>Disk Usage</h3>
-          <div className="metric-value">{metrics.disk_usage.toFixed(2)}%</div>
+          <div className="metric-value" key={`disk-${metrics.disk_usage}`}>{metrics.disk_usage.toFixed(2)}%</div>
           <div className="metric-gauge">
             <div 
               className="metric-fill" 
@@ -73,7 +86,7 @@ const CurrentMetricsPanel: React.FC = () => {
         </div>
         <div className="metric-card">
           <h3>Network Usage</h3>
-          <div className="metric-value">{metrics.network_usage ? `${metrics.network_usage.toFixed(2)} MB/s` : 'N/A'}</div>
+          <div className="metric-value" key={`network-${metrics.network_usage || 0}`}>{metrics.network_usage ? `${metrics.network_usage.toFixed(2)} MB/s` : 'N/A'}</div>
           {metrics.network_usage && (
             <div className="metric-gauge">
               <div 
@@ -347,11 +360,37 @@ const ProfilesPanel: React.FC = () => {
   );
 };
 
+// System Logs Panel Component
+const SystemLogsPanel: React.FC = () => {
+  return (
+    <div className="system-logs-panel">
+      <SystemLogsViewer 
+        title="System Activity Logs" 
+        maxHeight={400} 
+        autoRefresh={true}
+        refreshInterval={10000}
+      />
+    </div>
+  );
+};
+
 // Main Auto-Tuner Component
 export const AutoTuner: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { lastUpdated } = useSelector((state: RootState) => state.autoTuner);
   const [showHelp, setShowHelp] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const lastUpdatedRef = useRef(lastUpdated);
+  
+  // Detect when data updates to trigger animation
+  useEffect(() => {
+    if (lastUpdated && lastUpdatedRef.current !== lastUpdated) {
+      setIsUpdating(true);
+      const timer = setTimeout(() => setIsUpdating(false), 1000);
+      return () => clearTimeout(timer);
+    }
+    lastUpdatedRef.current = lastUpdated;
+  }, [lastUpdated]);
 
   useEffect(() => {
     // Fetch initial data
@@ -370,7 +409,7 @@ export const AutoTuner: React.FC = () => {
   }, [dispatch]);
 
   return (
-    <div className="auto-tuner-container">
+    <div className={`auto-tuner-container ${isUpdating ? 'data-updating' : ''}`}>
       <div className="auto-tuner-header">
         <h2>System Auto-Tuner</h2>
         <button 
@@ -404,6 +443,9 @@ export const AutoTuner: React.FC = () => {
         </div>
         <div className="panel-row">
           <ProfilesPanel />
+        </div>
+        <div className="panel-row">
+          <SystemLogsPanel />
         </div>
       </div>
     </div>

@@ -9,6 +9,8 @@ from app.models.system import OptimizationProfile
 from app.optimization.auto_tuner import AutoTuner
 from app.optimization.resource_monitor import ResourceMonitor
 from app.optimization.pattern_analyzer import PatternAnalyzer
+from app.services.system_metrics_service import SystemMetricsService
+from app.services.system_log_service import SystemLogService
 
 router = APIRouter()
 
@@ -22,8 +24,9 @@ async def get_current_metrics(
     
     Returns real-time metrics about CPU, memory, disk, and network usage.
     """
-    monitor = ResourceMonitor()
-    metrics = await monitor.collect_metrics()
+    # Use the centralized metrics service instead of creating a new ResourceMonitor
+    metrics_service = await SystemMetricsService.get_instance()
+    metrics = await metrics_service.get_metrics()
     return metrics
 
 
@@ -80,6 +83,16 @@ async def apply_optimization_profile(
     # Initialize the auto-tuner
     tuner = AutoTuner()
     
+    # Get the log service
+    log_service = await SystemLogService.get_instance()
+    
+    # Log the start of profile application
+    log_service.add_log(
+        message=f"Applying optimization profile: {profile.name}",
+        level="info",
+        source="tuner"
+    )
+    
     # Apply the profile settings
     tuning_results = []
     for setting_key, setting_value in profile.settings.items():
@@ -93,8 +106,26 @@ async def apply_optimization_profile(
                 "impact_score": 0.8,
                 "reason": f"Applied from profile: {profile.name}"
             })
+            
+            # Log each setting application
+            success = True if result and result.get("success") else False
+            log_service.add_tuner_log(
+                action=f"Profile '{profile.name}':",
+                parameter=setting_key,
+                old_value="current",
+                new_value=setting_value,
+                success=success
+            )
+            
             tuning_results.append(result)
         except Exception as e:
+            # Log the error
+            log_service.add_log(
+                message=f"Error applying setting {setting_key}: {str(e)}",
+                level="error",
+                source="tuner"
+            )
+            
             tuning_results.append({
                 "parameter": setting_key,
                 "success": False,
@@ -133,8 +164,19 @@ async def apply_recommendation(
     selected_recommendation = recommendations[recommendation_id]
     result = await tuner.apply_tuning(selected_recommendation)
     
+    # Log the tuning action
+    log_service = await SystemLogService.get_instance()
+    success = True if result and result.get("success") else False
+    log_service.add_tuner_log(
+        action="Auto-tuner recommendation",
+        parameter=selected_recommendation.parameter.value,
+        old_value=selected_recommendation.current_value,
+        new_value=selected_recommendation.new_value,
+        success=success
+    )
+    
     return {
-        "success": True if result and result.get("success") else False,
+        "success": success,
         "recommendation": {
             "parameter": selected_recommendation.parameter.value,
             "old_value": selected_recommendation.current_value,

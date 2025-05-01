@@ -1,10 +1,14 @@
 import logging
 import psutil
 import json
+import subprocess
+import os
 from enum import Enum
 from dataclasses import dataclass
 from datetime import datetime
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional, Any, Tuple
+from app.optimization.system_permissions import check_required_permissions, get_permission_summary
+from app.services.system_metrics_service import SystemMetricsService
 
 # FastAPI doesn't need viewsets or serializers like Django REST framework
 
@@ -33,22 +37,46 @@ class AutoTuner:
         self.logger = logging.getLogger('WebAutoTuner')
         self.tuning_history = []
         self.active_tunings = {}
-        self._initialize_system_state()
+        self.permissions = {}
+        self._initialized = False
+        # Initialize with default permissions
+        self.permissions = {
+            'cpu_governor': False,
+            'network_buffer': False,
+            'disk_read_ahead': False,
+            'io_scheduler': False,
+            'swap_tendency': False,
+            'cache_pressure': False,
+            'memory_pressure': False,
+            'process_priority': True  # Non-negative nice values don't require sudo
+        }
+        # Note: We'll properly initialize in the first get_tuning_recommendations call
+        # Can't await in __init__, so we'll do it lazily
 
     async def _initialize_system_state(self):
+        # Only initialize once
+        if self._initialized:
+            return
+            
         # Initialize system state here
-        pass
+        self.permissions = check_required_permissions()
+        has_all_permissions, missing = get_permission_summary()
+        
+        if not has_all_permissions:
+            self.logger.warning(f"Missing system permissions for full auto-tuning: {', '.join(missing)}")
+            
+        # Log permission status
+        self.logger.info(f"System permissions initialized. Full access: {has_all_permissions}")
+        
+        # Mark as initialized
+        self._initialized = True
 
     async def get_current_metrics(self) -> Dict:
-        """Get current system metrics directly from the system"""
+        """Get current system metrics from the centralized metrics service"""
         try:
-            return {
-                'cpu_usage': psutil.cpu_percent(interval=1),
-                'memory_usage': psutil.virtual_memory().percent,
-                'disk_usage': psutil.disk_usage('/').percent,
-                'network_usage': sum(nic.bytes_sent + nic.bytes_recv for nic in psutil.net_io_counters(pernic=True).values()),
-                'process_count': len(psutil.pids())
-            }
+            # Use the centralized metrics service
+            metrics_service = await SystemMetricsService.get_instance()
+            return await metrics_service.get_metrics()
         except Exception as e:
             self.logger.error(f"Error getting system metrics: {str(e)}")
             return None
@@ -80,10 +108,89 @@ class AutoTuner:
             metrics_before = await self.get_current_metrics()
             
             # Apply the actual system changes here
-            # This is where we'd implement the actual system modifications
-            # For now, we'll just simulate success
+            parameter = tuning_data['parameter']
+            new_value = tuning_data['new_value']
             success = True
             error_message = None
+            
+            try:
+                # Check if we have permission for this parameter
+                if parameter in [p.value for p in TuningParameter] and not self.permissions.get(parameter, False):
+                    self.logger.warning(f"No permission to modify {parameter}. Skipping.")
+                    success = False
+                    error_message = f"No permission to modify {parameter}"
+                
+                if parameter == TuningParameter.CPU_GOVERNOR.value:
+                    # Set CPU governor
+                    cmd = f"echo {new_value} | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor"
+                    subprocess.run(cmd, shell=True, check=True)
+                    self.logger.info(f"Applied CPU governor: {new_value}")
+                
+                elif parameter == TuningParameter.NETWORK_BUFFER.value:
+                    # Set network buffer size
+                    cmd = f"sudo sysctl -w net.core.rmem_max={new_value} net.core.wmem_max={new_value}"
+                    subprocess.run(cmd, shell=True, check=True)
+                    self.logger.info(f"Applied network buffer: {new_value}")
+                
+                elif parameter == TuningParameter.DISK_READ_AHEAD.value:
+                    # Set disk read-ahead buffer
+                    cmd = f"sudo blockdev --setra {new_value} /dev/sda"
+                    subprocess.run(cmd, shell=True, check=True)
+                    self.logger.info(f"Applied disk read-ahead: {new_value}")
+                
+                elif parameter == TuningParameter.IO_SCHEDULER.value:
+                    # Set I/O scheduler
+                    cmd = f"echo {new_value} | sudo tee /sys/block/sda/queue/scheduler"
+                    subprocess.run(cmd, shell=True, check=True)
+                    self.logger.info(f"Applied I/O scheduler: {new_value}")
+                
+                elif parameter == TuningParameter.SWAP_TENDENCY.value:
+                    # Set swap tendency (vm.swappiness)
+                    cmd = f"sudo sysctl -w vm.swappiness={new_value}"
+                    subprocess.run(cmd, shell=True, check=True)
+                    self.logger.info(f"Applied swap tendency: {new_value}")
+                
+                elif parameter == TuningParameter.CACHE_PRESSURE.value:
+                    # Set cache pressure (vm.vfs_cache_pressure)
+                    cmd = f"sudo sysctl -w vm.vfs_cache_pressure={new_value}"
+                    subprocess.run(cmd, shell=True, check=True)
+                    self.logger.info(f"Applied cache pressure: {new_value}")
+                
+                elif parameter == TuningParameter.MEMORY_PRESSURE.value:
+                    # This is more complex, as it's not a direct sysctl parameter
+                    # For demonstration, we'll adjust the min_free_kbytes
+                    if new_value == "high":
+                        value = "65536"  # 64MB
+                    elif new_value == "critical":
+                        value = "131072"  # 128MB
+                    else:
+                        value = "32768"  # 32MB (normal)
+                    
+                    cmd = f"sudo sysctl -w vm.min_free_kbytes={value}"
+                    subprocess.run(cmd, shell=True, check=True)
+                    self.logger.info(f"Applied memory pressure ({new_value}): vm.min_free_kbytes={value}")
+                
+                elif parameter == TuningParameter.PROCESS_PRIORITY.value:
+                    # This would typically adjust nice values for specific processes
+                    # For demonstration, we'll adjust the default nice value
+                    # Note: This is simplified; real implementation would target specific processes
+                    if int(new_value) < 0:
+                        # Requires sudo for negative nice values (higher priority)
+                        cmd = f"sudo renice {new_value} -p $$"
+                    else:
+                        cmd = f"renice {new_value} -p $$"
+                    subprocess.run(cmd, shell=True, check=True)
+                    self.logger.info(f"Applied process priority: {new_value}")
+                
+                else:
+                    self.logger.warning(f"Unknown parameter: {parameter}")
+                    success = False
+                    error_message = f"Unknown parameter: {parameter}"
+            
+            except Exception as e:
+                self.logger.error(f"Error applying system change: {str(e)}")
+                success = False
+                error_message = str(e)
             
             if success:
                 # Get metrics after applying tuning
@@ -112,6 +219,12 @@ class AutoTuner:
     async def get_tuning_recommendations(self):
         """Get tuning recommendations based on current metrics"""
         try:
+            # Initialize system state if this is the first call
+            await self._initialize_system_state()
+            
+            # Refresh permissions to ensure we have the latest status
+            self.permissions = check_required_permissions()
+            
             metrics = await self.get_current_metrics()
             if not metrics:
                 return []
@@ -248,7 +361,21 @@ class AutoTuner:
                 key=lambda x: (x.confidence * x.impact_score), 
                 reverse=True
             )
-            return recommendations[:5]  # Return top 5 most impactful recommendations
+            
+            # Filter recommendations based on permissions
+            filtered_recommendations = []
+            for rec in recommendations:
+                param_name = rec.parameter.value
+                # Convert parameter enum value to permission key
+                perm_key = param_name.lower()
+                
+                # Add recommendation only if we have permission or it's not in our permission list
+                if perm_key not in self.permissions or self.permissions[perm_key]:
+                    filtered_recommendations.append(rec)
+                else:
+                    self.logger.info(f"Filtering out recommendation for {param_name} due to missing permission")
+            
+            return filtered_recommendations[:5]  # Return top 5 most impactful recommendations that we can apply
         except Exception as e:
             self.logger.error(f"Error getting tuning recommendations: {str(e)}")
             return []   

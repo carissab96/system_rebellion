@@ -1,12 +1,12 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import './Dashboard.css';
-import { UserProfile } from '../UserProfile/UserProfile';
 import { CPUMetric } from '../Metrics/CPUMetrics/CPUMetric';
 import { MemoryMetric } from '../Metrics/MemoryMetric/MemoryMetric';
 import { DiskMetric } from '../Metrics/DiskMetric/DiskMetric';
 import { NetworkMetric } from '../Metrics/NetworkMetric/NetworkMetric';
 import { initializeWebSocket } from '../../../store/slices/metricsSlice';
+import { fetchPatterns } from '../../../store/slices/autoTunerSlice';
 import SystemStatus from './SystemStatus/SystemStatus';
 
 export const Dashboard: React.FC = () => {
@@ -15,7 +15,24 @@ export const Dashboard: React.FC = () => {
   const error = useAppSelector((state) => state.metrics.error);
   const isLoading = useAppSelector((state) => state.metrics.loading);
   const { user } = useAppSelector((state) => state.auth);
+  const metrics = useAppSelector((state) => state.metrics.current);
+  const patterns = useAppSelector((state) => state.autoTuner.patterns);
+  const patternsStatus = useAppSelector((state) => state.autoTuner.status);
   const mountCountRef = useRef(0);
+  
+  // State for data update animations
+  const [isUpdating, setIsUpdating] = useState(false);
+  const prevMetricsRef = useRef(metrics);
+
+  // Effect for data update animations
+  useEffect(() => {
+    if (metrics && prevMetricsRef.current && JSON.stringify(metrics) !== JSON.stringify(prevMetricsRef.current)) {
+      setIsUpdating(true);
+      const timer = setTimeout(() => setIsUpdating(false), 1000);
+      return () => clearTimeout(timer);
+    }
+    prevMetricsRef.current = metrics;
+  }, [metrics]);
 
   useEffect(() => {
     mountCountRef.current += 1;
@@ -49,6 +66,9 @@ export const Dashboard: React.FC = () => {
     };
 
     initializeWS();
+    
+    // Fetch system patterns
+    dispatch(fetchPatterns());
 
     return () => {
         console.log(`🧹 Dashboard unmounting... (Mount #${mountCountRef.current})`);
@@ -86,7 +106,7 @@ export const Dashboard: React.FC = () => {
         <h1>{getWelcomeMessage()}</h1>
         <SystemStatus loading={isLoading} error={error} />
       </header>
-      <div className="dashboard-content">
+      <div className={`dashboard-content ${isUpdating ? 'data-updating' : ''}`}>
         <div className="metrics-row">
           <CPUMetric /> 
           <MemoryMetric />
@@ -95,55 +115,6 @@ export const Dashboard: React.FC = () => {
         </div>
 
         <div className="controls-section">
-          <div className="profile-section">
-            <UserProfile />
-          </div>
-
-          <div className="optimization-controls">
-            <h2>Optimization Controls</h2>
-            <div className="control-description">
-              Activate the Meth Snail's optimization routines, Sir Hawkington's distinguished system configurations, and keep the Quantum Shadow People away from your router.
-            </div>
-            <div className="buttons-row">
-              <button 
-                className="control-button"
-                disabled={isLoading || !!error}
-                onClick={() => {
-                  console.log("🐌 The Meth Snail is powering up the optimization engine...");
-                  alert("The Meth Snail is now optimizing your system with the power of methamphetamine! Please wait while it frantically reorganizes your bits.");
-                  // In a real implementation, this would dispatch an action to run optimization
-                }}
-              >
-                <span className="button-icon">⚡</span>
-                <span className="button-text">Run Optimization</span>
-              </button>
-              <button 
-                className="control-button"
-                disabled={isLoading || !!error}
-                onClick={() => {
-                  console.log("🧐 Sir Hawkington is adjusting his monocle to inspect your system profile...");
-                  alert("Sir Hawkington is updating your system profile with distinguished elegance. Your profile shall be most refined!");
-                  // In a real implementation, this would open a modal or navigate to profile update page
-                }}
-              >
-                <span className="button-icon">🧐</span>
-                <span className="button-text">Update Profile</span>
-              </button>
-              <button 
-                className="control-button"
-                disabled={isLoading || !!error}
-                onClick={() => {
-                  console.log("🪄 The Stick is configuring your anxiety management alerts...");
-                  alert("The Stick is now configuring your system alerts. It's not much, but it's honest work.");
-                  // In a real implementation, this would open alert configuration modal
-                }}
-              >
-                <span className="button-icon">🔔</span>
-                <span className="button-text">Configure Alerts</span>
-              </button>
-            </div>
-          </div>
-
           <div className="system-alerts">
             <h2>System Alerts</h2>
             {error && (
@@ -152,6 +123,38 @@ export const Dashboard: React.FC = () => {
               </div>
             )}
             {/* More alerts will go here */}
+          </div>
+
+          <div className="system-patterns">
+            <h2>Detected System Patterns</h2>
+            {patternsStatus === 'loading' ? (
+              <div className="patterns-loading">Loading patterns...</div>
+            ) : !patterns || patterns.length === 0 ? (
+              <div className="patterns-empty">No patterns detected</div>
+            ) : (
+              <div className="patterns-list">
+                {patterns.map((pattern, index) => (
+                  <div key={index} className="pattern-card">
+                    <div className="pattern-header">
+                      <h3>{pattern.type}</h3>
+                      <div className="pattern-confidence">
+                        Confidence: {(pattern.confidence * 100).toFixed(0)}%
+                      </div>
+                    </div>
+                    <div className="pattern-details">
+                      <div className="pattern-description">{pattern.pattern}</div>
+                      <div className="pattern-info">
+                        {Object.entries(pattern.details).map(([key, value]) => (
+                          <div key={key} className="pattern-detail-item">
+                            <span className="detail-key">{key}:</span> {JSON.stringify(value)}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.services.metrics_service import MetricsService
+from app.services.system_metrics_service import SystemMetricsService
 from app.schemas.metrics import MetricCreate, MetricResponse, MetricUpdate
 from app.core.security import get_current_user
 import uuid
@@ -15,22 +16,21 @@ async def get_system_metrics():
     """
     Public endpoint for system metrics that doesn't require authentication
     """
-    # Get system metrics using psutil
-    cpu_usage = psutil.cpu_percent(interval=0.5)
-    memory = psutil.virtual_memory()
-    disk = psutil.disk_usage('/')
-    network_io = psutil.net_io_counters()
+    # Use the centralized metrics service
+    metrics_service = await SystemMetricsService.get_instance()
+    metrics = await metrics_service.get_metrics()
     
+    # Format the response to match the existing API structure
     return {
-        "cpu_usage": cpu_usage,
-        "memory_usage": memory.percent,
-        "disk_usage": disk.percent,
+        "cpu_usage": metrics["cpu_usage"],
+        "memory_usage": metrics["memory_usage"],
+        "disk_usage": metrics["disk_usage"],
         "network_io": {
-            "sent": network_io.bytes_sent,
-            "recv": network_io.bytes_recv
+            "sent": metrics["additional"]["network_details"]["bytes_sent"],
+            "recv": metrics["additional"]["network_details"]["bytes_recv"]
         },
-        "process_count": len(psutil.pids()),
-        "timestamp": datetime.now(timezone.utc).isoformat()
+        "process_count": metrics["process_count"],
+        "timestamp": metrics["timestamp"]
     }   
 
 @router.post("/", response_model=MetricResponse)

@@ -2,8 +2,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { PayloadAction } from '@reduxjs/toolkit';
 import { AutoTunerState } from '../../types/autoTuner';
 import { OptimizationProfile } from '../../types/metrics';
-import axios from 'axios';
-import { API_BASE_URL } from '../../utils/api';
+import api from '../../utils/api';
 
 const initialState: AutoTunerState = {
   currentMetrics: null,
@@ -22,7 +21,7 @@ export const fetchCurrentMetrics = createAsyncThunk(
   async () => {
     try {
       console.log('Fetching current metrics with authentication...');
-      const response = await axios.get(`${API_BASE_URL}/auto-tuner/metrics/current`);
+      const response = await api.get(`/auto-tuner/metrics/current`);
       return response.data;
     } catch (error: any) {
       console.error('Error fetching metrics:', error.response?.data || error.message);
@@ -36,7 +35,7 @@ export const fetchRecommendations = createAsyncThunk(
   async () => {
     try {
       console.log('Fetching recommendations with authentication...');
-      const response = await axios.get(`${API_BASE_URL}/auto-tuner/recommendations`);
+      const response = await api.get(`/auto-tuner/recommendations`);
       return response.data;
     } catch (error: any) {
       console.error('Error fetching recommendations:', error.response?.data || error.message);
@@ -50,7 +49,7 @@ export const fetchPatterns = createAsyncThunk(
   async () => {
     try {
       console.log('Fetching patterns with authentication...');
-      const response = await axios.get(`${API_BASE_URL}/auto-tuner/patterns`);
+      const response = await api.get(`/auto-tuner/patterns`);
       return response.data;
     } catch (error: any) {
       console.error('Error fetching patterns:', error.response?.data || error.message);
@@ -64,7 +63,7 @@ export const fetchTuningHistory = createAsyncThunk(
   async () => {
     try {
       console.log('Fetching tuning history with authentication...');
-      const response = await axios.get(`${API_BASE_URL}/auto-tuner/history`);
+      const response = await api.get(`/auto-tuner/history`);
       return response.data;
     } catch (error: any) {
       console.error('Error fetching tuning history:', error.response?.data || error.message);
@@ -78,7 +77,7 @@ export const applyOptimizationProfile = createAsyncThunk(
   async (profileId: string) => {
     try {
       console.log(`Applying optimization profile ${profileId} with authentication...`);
-      const response = await axios.post(`${API_BASE_URL}/auto-tuner/profiles/${profileId}/apply`);
+      const response = await api.post(`/auto-tuner/profiles/${profileId}/apply`);
       return response.data;
     } catch (error: any) {
       console.error('Error applying optimization profile:', error.response?.data || error.message);
@@ -93,7 +92,7 @@ export const applyRecommendation = createAsyncThunk(
     try {
       console.log(`Applying recommendation ${recommendationId} with authentication...`);
       // Pass the recommendation_id as a query parameter
-      const response = await axios.post(`${API_BASE_URL}/auto-tuner/recommendations/apply?recommendation_id=${recommendationId}`);
+      const response = await api.post(`/auto-tuner/recommendations/apply?recommendation_id=${recommendationId}`);
       return response.data;
     } catch (error: any) {
       console.error('Error applying recommendation:', error.response?.data || error.message);
