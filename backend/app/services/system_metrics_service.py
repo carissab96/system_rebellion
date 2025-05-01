@@ -98,13 +98,32 @@ class SystemMetricsService:
                 except Exception:
                     python_processes = 0
                 
+                # Calculate network rate (bytes per second)
+                # Store previous network values for rate calculation
+                current_time = time.time()
+                current_bytes_total = network_io.bytes_sent + network_io.bytes_recv
+                
+                # Initialize network rate
+                network_rate_mbps = 0
+                
+                # If we have previous values, calculate the rate
+                if hasattr(self, '_prev_network_time') and hasattr(self, '_prev_network_bytes'):
+                    time_diff = current_time - self._prev_network_time
+                    if time_diff > 0:  # Avoid division by zero
+                        bytes_diff = current_bytes_total - self._prev_network_bytes
+                        network_rate_mbps = (bytes_diff / time_diff) / (1024 * 1024)  # MB/s
+                
+                # Store current values for next calculation
+                self._prev_network_time = current_time
+                self._prev_network_bytes = current_bytes_total
+                
                 # Build metrics dictionary
                 metrics = {
                     'timestamp': datetime.now().isoformat(),
                     'cpu_usage': cpu_usage,
                     'memory_usage': memory.percent,
                     'disk_usage': disk.percent,
-                    'network_usage': (network_io.bytes_sent + network_io.bytes_recv) / 1024 / 1024,  # MB
+                    'network_usage': network_rate_mbps,  # MB/s (real-time rate)
                     'process_count': process_count,
                     'additional': {
                         'swap_usage': psutil.swap_memory().percent,
@@ -116,6 +135,7 @@ class SystemMetricsService:
                             'bytes_recv': network_io.bytes_recv,
                             'packets_sent': network_io.packets_sent,
                             'packets_recv': network_io.packets_recv,
+                            'rate_mbps': network_rate_mbps
                         }
                     }
                 }

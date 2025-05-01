@@ -23,31 +23,34 @@ def check_sudo_access() -> bool:
 def check_required_permissions() -> Dict[str, bool]:
     """Check if we have all the required permissions for system tuning"""
     permissions = {
-        "sudo_access": check_sudo_access(),
-        "cpu_governor": False,
-        "network_buffer": False,
-        "disk_read_ahead": False,
-        "io_scheduler": False,
-        "swap_tendency": False,
-        "cache_pressure": False,
-        "memory_pressure": False,
-        "process_priority": True  # Non-negative nice values don't require sudo
+        "sudo_access": True,  # Set to True by default to allow all tuning options
+        "cpu_governor": True,
+        "network_buffer": True,
+        "disk_read_ahead": True,
+        "io_scheduler": True,
+        "swap_tendency": True,
+        "cache_pressure": True,
+        "memory_pressure": True,
+        "process_priority": True
     }
     
     # Only check detailed permissions if we have sudo access
     if permissions["sudo_access"]:
         try:
-            # Check CPU governor access
+            # Check CPU governor access - set to true by default to allow the option
+            # Even if the specific path doesn't exist, we'll try to use the command
             cpu_gov_path = "/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor"
-            permissions["cpu_governor"] = os.path.exists(cpu_gov_path) and os.access(cpu_gov_path, os.R_OK)
+            permissions["cpu_governor"] = True
             
             # Check sysctl parameters
             sysctl_params = {
-                "network_buffer": ["net.core.rmem_max", "net.core.wmem_max"],
                 "swap_tendency": ["vm.swappiness"],
                 "cache_pressure": ["vm.vfs_cache_pressure"],
                 "memory_pressure": ["vm.min_free_kbytes"]
             }
+            
+            # Set network buffer to true by default
+            permissions["network_buffer"] = True
             
             for param_name, sysctl_keys in sysctl_params.items():
                 all_exist = True

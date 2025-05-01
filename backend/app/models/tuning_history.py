@@ -2,13 +2,14 @@ from sqlalchemy import Column, Integer, String, Boolean, Float, DateTime, Foreig
 from sqlalchemy.orm import relationship
 from datetime import datetime
 
-from app.db.base_class import Base
+from app.core.base import Base
 
 
 class TuningHistory(Base):
     """
     Model to store system tuning history
     """
+    __tablename__ = "tuning_history"
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     parameter = Column(String, nullable=False)
