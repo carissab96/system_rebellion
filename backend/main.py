@@ -11,6 +11,7 @@ from app.api.endpoints import alerts
 from app.api.endpoints import auto_tuner
 from app.api.endpoints import users
 from app.api.endpoints import system_logs
+from app.api.endpoints import health
 from app.api import router as metrics_router
 # Import websocket routes
 from app.api import websocket_routes
@@ -126,6 +127,13 @@ def create_application() -> FastAPI:
         system_logs.router,
         prefix="/api/system-logs",
         tags=["System Logs"]
+    )
+    
+    # Add health check router
+    app.include_router(
+        health.router,
+        prefix="/api",
+        tags=["Health"]
     )
 
     # CORS Configuration
