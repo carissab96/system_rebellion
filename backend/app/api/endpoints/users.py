@@ -27,7 +27,7 @@ class UserUpdateSchema(BaseModel):
     bio: str = None
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 @router.get("/me", response_model=Dict[str, Any])
 async def get_current_user_info(
