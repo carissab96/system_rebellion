@@ -1,16 +1,38 @@
 /* SystemMetrics.css */
+:root {
+  /* Color-blind accessible cyberpunk palette */
+  --primary: #3a86ff; /* Accessible blue */
+  --primary-light: #61a0ff;
+  --primary-dark: #2667cc;
+  --secondary: #8338ec; /* Purple */
+  --accent: #ff006e; /* Hot pink */
+  --accent-light: #ff4d94;
+  --success: #38b000; /* Green */
+  --warning: #ffbe0b; /* Amber */
+  --danger: #ff3838; /* Red */
+  --background: #f8f9fa;
+  --card-bg: #ffffff;
+  --panel-bg: #f0f2f5;
+  --text-primary: #121212; /* Darker for better contrast */
+  --text-secondary: #333333; /* Darker for better contrast */
+  --text-muted: #555555; /* Darker for better contrast */
+  --border-color: #dee2e6;
+  --glow: 0 0 10px rgba(58, 134, 255, 0.5);
+  --glow-accent: 0 0 10px rgba(255, 0, 110, 0.5);
+  --gradient-cosmic: linear-gradient(90deg, #3a86ff, #ff006e, #8338ec, #00f5d4);
+}
 
 .system-metrics-container {
   min-height: 100vh;
   padding: 2rem;
-  background: linear-gradient(23deg, #6366f1, #f53595, #5108fa, #00f5d5);
+  background: var(--gradient-cosmic);
   color: #ffffff;
   font-style: italic;
   font-weight: 800;
 }
 
 .metrics-header {
-  background: linear-gradient(90deg, #1a0458, #02b5fc, #e9009b, #00f5a3);
+  background: var(--gradient-cosmic);
   padding: 2rem;
   backdrop-filter: blur(50px);
   position: relative;
@@ -27,7 +49,7 @@
   left: 5px;
   right: 5px;
   height: 3px;
-  background: linear-gradient(90deg, #3333ff, #00f5d4, #3333ff, #00f5d4);
+  background: var(--gradient-cosmic);
   background-size: 200% 100%;
   animation: glitch-line 4s linear infinite;
   border-radius: 3px;
@@ -46,7 +68,7 @@
   font-size: 2.5rem;
   margin: 0 auto 1rem auto;
   font-weight: 900;
-  color: #00f5d4;
+  color: var(--text-secondary);
   text-shadow: 0 0 15px rgba(0, 245, 212, 0.7), 0 0 25px rgba(0, 245, 212, 0.4);
   letter-spacing: 1px;
   transform: skew(-5deg);

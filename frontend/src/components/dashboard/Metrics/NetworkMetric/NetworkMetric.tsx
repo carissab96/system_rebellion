@@ -11,8 +11,11 @@ export const NetworkMetric: React.FC = () => {
   const historicalMetrics = useAppSelector((state: RootState) => state.metrics.historical) as SystemMetric[];
   const isLoading = useAppSelector((state: RootState) => state.metrics.loading);
 
-  // Type your chart data
-  const chartData: SystemMetric[] = historicalMetrics;
+  // Type your chart data and ensure network_usage exists
+  const chartData: SystemMetric[] = historicalMetrics.map(metric => ({
+    ...metric,
+    network_usage: metric.network_usage ?? 0 // Ensure network_usage is never undefined
+  }));
 
   if (isLoading) {
     return <div className="metric-card">The Quantum Shadow People are measuring network packets and suggesting router configurations...</div>;
@@ -22,15 +25,15 @@ export const NetworkMetric: React.FC = () => {
     <div className="metric-card">
       <h3>Network Usage</h3>
       <div className="metric-value">
-        {currentMetric?.network_usage?.toFixed(1) ?? 0} MB/s
+        {(currentMetric?.network_usage ?? 0).toFixed(1)} MB/s
       </div>
       <div className="chart-container">
         <ResponsiveContainer width="100%" height={200}>
           <AreaChart data={chartData}>
             <defs>
               <linearGradient id="networkGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
-                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.2}/>
+                <stop offset="5%" stopColor="#00F5D4" stopOpacity={0.8}/>
+                <stop offset="95%" stopColor="#00F5D4" stopOpacity={0.2}/>
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
@@ -48,17 +51,17 @@ export const NetworkMetric: React.FC = () => {
               formatter={(value: number) => [`${Number(value).toFixed(1)} MB/s`, 'Network Usage']}
               labelFormatter={(label: string) => new Date(label).toLocaleString()}
               contentStyle={{ background: 'rgba(0, 0, 0, 0.8)', border: 'none', borderRadius: '8px' }}
-              itemStyle={{ color: '#3b82f6' }}
+              itemStyle={{ color: '#00F5D4' }}
               labelStyle={{ color: 'white' }}
             />
             <Area 
               type="monotone" 
               dataKey="network_usage" 
-              stroke="#3b82f6" 
-              strokeWidth={3}
+              stroke="#00F5D4" 
+              strokeWidth={4}
               fillOpacity={1}
               fill="url(#networkGradient)"
-              activeDot={{ r: 6, strokeWidth: 0, fill: '#3b82f6' }}
+              activeDot={{ r: 6, strokeWidth: 0, fill: '#00F5D4' }}
               isAnimationActive={true}
             />
           </AreaChart>

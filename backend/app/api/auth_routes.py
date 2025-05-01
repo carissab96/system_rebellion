@@ -185,8 +185,8 @@ async def update_user_profile(
             for field in system_fields:
                 if hasattr(profile_data.profile, field) and getattr(profile_data.profile, field) is not None:
                     # Update DB column
-                    if hasattr(current_user, field):
-                        setattr(current_user, field, getattr(profile_data.profile, field))
+                    if hasattr(current_user.profile, field):
+                        setattr(current_user.profile, field, getattr(profile_data.profile, field))
                     
                     # Update profile dict
                     current_user.profile[field] = getattr(profile_data.profile, field)

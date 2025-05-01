@@ -1,68 +1,87 @@
 .metric-card {
-  background: linear-gradient(135deg, rgba(194, 7, 122, 0.2), rgba(77, 0, 255, 0.15));
+  background: linear-gradient(135deg, rgba(58, 134, 255, 0.05), rgba(131, 56, 236, 0.05));
   padding: 1.5rem;
-  border-radius: 18px;
-  box-shadow: 0 8px 38px rgba(31, 38, 135, 0.3);
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
-  border: 1.5px solid rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(5px);
+  border: 1px solid rgba(58, 134, 255, 0.2);
   margin-bottom: 1rem;
   position: relative;
   z-index: 1;
 }
 
+.metric-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(180deg, #3a86ff, #8338ec);
+  border-radius: 4px 0 0 4px;
+}
+
 .metric-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 0 38px rgba(31, 38, 135, 0.4);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15), 0 0 10px rgba(58, 134, 255, 0.3);
 }
 
 .metric-card h3 {
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 1.5rem;
+  color: #121212;
+  font-size: 1.2rem;
   margin-bottom: 0.5rem;
-  text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+  font-weight: 600;
 }
 
 .metric-value {
   font-size: 2.5rem;
   font-weight: bold;
   margin: 0.5rem 0;
-  color: #fff;
-  text-shadow: 0 0 35px rgba(16, 185, 129, 0.8);
+  background: linear-gradient(90deg, #3a86ff, #8338ec);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  transition: all 0.3s ease;
 }
 
 .chart-container {
   margin-top: 1rem;
   position: relative;
-  border-radius: 18px;
+  border-radius: 12px;
   overflow: hidden;
-  background: rgba(0, 0, 0, 0.4);
-  padding: 0.5rem;
-  box-shadow: 0 0 35px rgba(16, 185, 129, 0.6);
-  z-index: 2;
-  border: 1.5px solid rgba(16, 185, 129, 0.3);
+  background: rgba(10, 1, 48, 0.8);
+  padding: 1rem;
+  border: 2px solid rgba(58, 134, 255, 0.8);
+  box-shadow: 0 0 20px rgba(58, 134, 255, 0.6);
+  transition: all 0.3s ease;
 }
 
-/* Sir Hawkington's Distinguished Chart Styles */
+/* Chart Styles */
 .recharts-cartesian-grid-horizontal line,
 .recharts-cartesian-grid-vertical line {
-  stroke: rgba(255, 255, 255, 0.1);
+  stroke: rgba(58, 134, 255, 0.5);
+  stroke-width: 1px;
 }
 
 .recharts-tooltip-wrapper .recharts-default-tooltip {
-  background: rgba(0, 0, 0, 0.9) !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
-  border-radius: 18px !important;
-  box-shadow: 0 0 35px rgba(16, 185, 129, 0.5) !important;
+  background: rgba(10, 1, 48, 0.95) !important;
+  border: 2px solid rgba(58, 134, 255, 0.8) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 0 20px rgba(58, 134, 255, 0.6) !important;
+  color: white !important;
+  font-weight: bold !important;
+  padding: 10px !important;
 }
 
-/* The Meth Snail's Performance Glow */
 .recharts-area-curve {
-  filter: drop-shadow(0 0 35px rgba(16, 185, 129, 0.9));
+  filter: drop-shadow(0 0 20px rgba(58, 134, 255, 1));
+  stroke-width: 4px;
+  stroke: rgb(58, 134, 255);
 }
 
 .recharts-area-area {
-  filter: brightness(1.8) contrast(1.4);
+  /* No filters to ensure maximum visibility */
+  opacity: 1;
 }
 
 /* Additional chart enhancements */
@@ -71,5 +90,6 @@
 }
 
 .recharts-layer {
-  mix-blend-mode: lighten;
+  /* Removing blend mode to ensure visibility */
+  mix-blend-mode: normal;
 }

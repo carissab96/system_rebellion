@@ -17,6 +17,7 @@ from app.schemas.token import Token
 from app.core.security import hash_password, verify_password, create_access_token, create_refresh_token, decode_token, SECRET_KEY, ALGORITHM
 from app.core.security import ACCESS_TOKEN_EXPIRE_MINUTES
 from app.core.config import settings
+from app.services.system_log_service import SystemLogService
 
 # Define a simple UserProfileCreate if it doesn't exist in your schemas
 from pydantic import BaseModel
@@ -310,8 +311,18 @@ async def login_for_access_token(
     # Find the user
     user = await find_user_by_username_or_email(db, username=form_data.username)
     
-    if not user:
-        print(f"❌ User not found: {form_data.username}")
+    # Get the system log service
+    log_service = await SystemLogService.get_instance()
+    
+    if not user or not verify_password(form_data.password, user.hashed_password):
+        print(f"❌ Invalid credentials for username: {form_data.username}")
+        
+        # Log failed authentication attempt
+        log_service.add_auth_log(
+            username=form_data.username,
+            success=False
+        )
+        
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
@@ -332,12 +343,18 @@ async def login_for_access_token(
     # Create access token
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user.username},
+        data={"sub": user.username, "user_id": user.id},
         expires_delta=access_token_expires
     )
     
     # Create refresh token
     refresh_token = create_refresh_token(data={"sub": user.username})
+    
+    # Log successful authentication
+    log_service.add_auth_log(
+        username=user.username,
+        success=True
+    )
     
     # Update last login
     user.last_login = datetime.now()
@@ -366,7 +383,7 @@ async def login_for_access_token(
             "operating_system": user.operating_system,
             "os_version": user.os_version,
             "cpu_cores": user.cpu_cores,
-            "total_memory": user.total_memory,
+            "total_memory": int(user.total_memory) if user.total_memory is not None else None,
             "avatar": user.avatar,
             "profile": user.profile if hasattr(user, 'profile') else None,
             "preferences": user.preferences if hasattr(user, 'preferences') else None

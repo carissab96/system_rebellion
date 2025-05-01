@@ -151,7 +151,7 @@ api.interceptors.response.use(
     
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      const refreshTokenStr = localStorage.getItem('refreshToken');
+      const refreshTokenStr = localStorage.getItem('refresh_token');
       
       if (refreshTokenStr) {
         try {
@@ -180,7 +180,7 @@ api.interceptors.response.use(
           console.error('Token refresh failed:', refreshError);
           // Clear auth data and redirect to login
           localStorage.removeItem('token');
-          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('refresh_token');
           store.dispatch(logout());
           return Promise.reject(refreshError);
         }
@@ -344,7 +344,7 @@ export const apiMethods = {
         // If we have tokens in the response, store them
         if (response.data.access_token) {
           localStorage.setItem('token', response.data.access_token);
-          localStorage.setItem('refreshToken', response.data.refresh_token || '');
+          localStorage.setItem('refresh_token', response.data.refresh_token || '');
         }
         
         return response.data;
@@ -380,7 +380,7 @@ export const apiMethods = {
         // Store tokens
         if (response.data.access_token) {
           localStorage.setItem('token', response.data.access_token);
-          localStorage.setItem('refreshToken', response.data.refresh_token || '');
+          localStorage.setItem('refresh_token', response.data.refresh_token || '');
         }
         
         return response.data;
