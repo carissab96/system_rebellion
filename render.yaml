@@ -1,0 +1,35 @@
+services:
+  # Backend API service
+  - type: web
+    name: system-rebellion-api
+    env: python
+    buildCommand: cd backend && pip install -r requirements.txt
+    startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.9.4
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ENVIRONMENT
+        value: production
+      - key: ALLOW_ORIGINS
+        value: https://system-rebellion.onrender.com
+      - key: FIRST_SUPERUSER
+        value: admin@systemrebellion.com
+      - key: FIRST_SUPERUSER_PASSWORD
+        generateValue: true
+    healthCheckPath: /api/health-check
+    autoDeploy: true
+    
+  # Frontend service
+  - type: web
+    name: system-rebellion
+    env: node
+    buildCommand: cd frontend && npm install && npm run build
+    startCommand: cd frontend && npm run start
+    envVars:
+      - key: NODE_VERSION
+        value: 18.x
+      - key: API_URL
+        value: https://system-rebellion-api.onrender.com
+    autoDeploy: true
