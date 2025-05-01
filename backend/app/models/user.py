@@ -67,6 +67,11 @@ class User(Base):
         back_populates="user", 
         cascade="all, delete-orphan"
     )
+    tuning_history = relationship(
+        "TuningHistory",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
 class UserProfile(Base):
     __tablename__ = "user_profiles"
     
