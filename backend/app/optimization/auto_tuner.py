@@ -9,6 +9,8 @@ from datetime import datetime
 from typing import List, Dict, Optional, Any, Tuple
 from app.optimization.system_permissions import check_required_permissions, get_permission_summary
 from app.services.system_metrics_service import SystemMetricsService
+from app.models.tuning_history import TuningHistory
+from app.db.session import SessionLocal
 
 # FastAPI doesn't need viewsets or serializers like Django REST framework
 
@@ -81,11 +83,12 @@ class AutoTuner:
             self.logger.error(f"Error getting system metrics: {str(e)}")
             return None
 
-    async def apply_tuning(self, data: Dict) -> Optional[Dict]:
+    async def apply_tuning(self, data: Dict, user_id: str = None) -> Optional[Dict]:
         """Apply a tuning action
         
         Args:
             data: Dictionary containing tuning parameters
+            user_id: ID of the user applying the tuning
             
         Returns:
             Dictionary containing the result of the tuning action
@@ -99,101 +102,90 @@ class AutoTuner:
                     'new_value': data.new_value,
                     'confidence': data.confidence,
                     'impact_score': data.impact_score,
-                    'reason': data.reason
+                    'reason': data.reason,
+                    'success': False,
+                    'error': None,
+                    'metrics_before': None,
+                    'metrics_after': None,
+                    'timestamp': datetime.now().isoformat()
                 }
             else:
-                tuning_data = data
-
-            # Get metrics before applying tuning
-            metrics_before = await self.get_current_metrics()
+                tuning_data = {
+                    'parameter': data['parameter'],
+                    'current_value': data['current_value'],
+                    'new_value': data['new_value'],
+                    'success': False,
+                    'error': None,
+                    'metrics_before': None,
+                    'metrics_after': None,
+                    'timestamp': datetime.now().isoformat()
+                }
+                
+            # Get metrics before applying the change
+            metrics_service = await SystemMetricsService.get_instance()
+            metrics_before = await metrics_service.get_metrics(force_refresh=True)
+            tuning_data['metrics_before'] = metrics_before
             
-            # Apply the actual system changes here
+            # Check if we have permission to modify this parameter
             parameter = tuning_data['parameter']
+            if parameter in self.permissions and not self.permissions[parameter]:
+                tuning_data['error'] = f"Missing permission to modify {parameter}"
+                tuning_data['success'] = False
+                # Store in memory for the session
+                self.tuning_history.append(tuning_data)
+                # Store in database if user_id is provided
+                if user_id:
+                    await self._save_tuning_history_to_db(tuning_data, user_id)
+                return tuning_data
+            
+            # Apply the tuning action based on the parameter
             new_value = tuning_data['new_value']
-            success = True
-            error_message = None
             
-            try:
-                # Check if we have permission for this parameter
-                if parameter in [p.value for p in TuningParameter] and not self.permissions.get(parameter, False):
-                    self.logger.warning(f"No permission to modify {parameter}. Skipping.")
-                    success = False
-                    error_message = f"No permission to modify {parameter}"
+            if parameter == TuningParameter.CPU_GOVERNOR.value:
+                # Set CPU governor
+                cmd = f"echo {new_value} | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor"
+                subprocess.run(cmd, shell=True, check=True)
+                self.logger.info(f"Applied CPU governor: {new_value}")
                 
-                if parameter == TuningParameter.CPU_GOVERNOR.value:
-                    # Set CPU governor
-                    cmd = f"echo {new_value} | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor"
-                    subprocess.run(cmd, shell=True, check=True)
-                    self.logger.info(f"Applied CPU governor: {new_value}")
+            elif parameter == TuningParameter.NETWORK_BUFFER.value:
+                # Set network buffer size
+                cmd = f"sudo sysctl -w net.core.rmem_max={new_value} net.core.wmem_max={new_value}"
+                subprocess.run(cmd, shell=True, check=True)
+                self.logger.info(f"Applied network buffer: {new_value}")
                 
-                elif parameter == TuningParameter.NETWORK_BUFFER.value:
-                    # Set network buffer size
-                    cmd = f"sudo sysctl -w net.core.rmem_max={new_value} net.core.wmem_max={new_value}"
-                    subprocess.run(cmd, shell=True, check=True)
-                    self.logger.info(f"Applied network buffer: {new_value}")
+            elif parameter == TuningParameter.DISK_READ_AHEAD.value:
+                # Set disk read-ahead buffer
+                cmd = f"sudo blockdev --setra {new_value} /dev/sda"
+                subprocess.run(cmd, shell=True, check=True)
+                self.logger.info(f"Applied disk read-ahead: {new_value}")
                 
-                elif parameter == TuningParameter.DISK_READ_AHEAD.value:
-                    # Set disk read-ahead buffer
-                    cmd = f"sudo blockdev --setra {new_value} /dev/sda"
-                    subprocess.run(cmd, shell=True, check=True)
-                    self.logger.info(f"Applied disk read-ahead: {new_value}")
+            elif parameter == TuningParameter.IO_SCHEDULER.value:
+                # Set I/O scheduler
+                cmd = f"echo {new_value} | sudo tee /sys/block/sda/queue/scheduler"
+                subprocess.run(cmd, shell=True, check=True)
+                self.logger.info(f"Applied I/O scheduler: {new_value}")
                 
-                elif parameter == TuningParameter.IO_SCHEDULER.value:
-                    # Set I/O scheduler
-                    cmd = f"echo {new_value} | sudo tee /sys/block/sda/queue/scheduler"
-                    subprocess.run(cmd, shell=True, check=True)
-                    self.logger.info(f"Applied I/O scheduler: {new_value}")
+            elif parameter == TuningParameter.SWAP_TENDENCY.value:
+                # Set swap tendency (vm.swappiness)
+                cmd = f"sudo sysctl -w vm.swappiness={new_value}"
+                subprocess.run(cmd, shell=True, check=True)
+                self.logger.info(f"Applied swap tendency: {new_value}")
                 
-                elif parameter == TuningParameter.SWAP_TENDENCY.value:
-                    # Set swap tendency (vm.swappiness)
-                    cmd = f"sudo sysctl -w vm.swappiness={new_value}"
-                    subprocess.run(cmd, shell=True, check=True)
-                    self.logger.info(f"Applied swap tendency: {new_value}")
+            elif parameter == TuningParameter.CACHE_PRESSURE.value:
+                # Set cache pressure (vm.vfs_cache_pressure)
+                cmd = f"sudo sysctl -w vm.vfs_cache_pressure={new_value}"
+                subprocess.run(cmd, shell=True, check=True)
+                self.logger.info(f"Applied cache pressure: {new_value}")
                 
-                elif parameter == TuningParameter.CACHE_PRESSURE.value:
-                    # Set cache pressure (vm.vfs_cache_pressure)
-                    cmd = f"sudo sysctl -w vm.vfs_cache_pressure={new_value}"
-                    subprocess.run(cmd, shell=True, check=True)
-                    self.logger.info(f"Applied cache pressure: {new_value}")
-                
-                elif parameter == TuningParameter.MEMORY_PRESSURE.value:
-                    # This is more complex, as it's not a direct sysctl parameter
-                    # For demonstration, we'll adjust the min_free_kbytes
-                    if new_value == "high":
-                        value = "65536"  # 64MB
-                    elif new_value == "critical":
-                        value = "131072"  # 128MB
-                    else:
-                        value = "32768"  # 32MB (normal)
-                    
-                    cmd = f"sudo sysctl -w vm.min_free_kbytes={value}"
-                    subprocess.run(cmd, shell=True, check=True)
-                    self.logger.info(f"Applied memory pressure ({new_value}): vm.min_free_kbytes={value}")
-                
-                elif parameter == TuningParameter.PROCESS_PRIORITY.value:
-                    # This would typically adjust nice values for specific processes
-                    # For demonstration, we'll adjust the default nice value
-                    # Note: This is simplified; real implementation would target specific processes
-                    if int(new_value) < 0:
-                        # Requires sudo for negative nice values (higher priority)
-                        cmd = f"sudo renice {new_value} -p $$"
-                    else:
-                        cmd = f"renice {new_value} -p $$"
-                    subprocess.run(cmd, shell=True, check=True)
-                    self.logger.info(f"Applied process priority: {new_value}")
-                
+            elif parameter == TuningParameter.MEMORY_PRESSURE.value:
+                # This is more complex, as it's not a direct sysctl parameter
+                # For demonstration, we'll adjust the min_free_kbytes
+                if new_value == "high":
+                    value = "65536"  # 64MB
+                elif new_value == "critical":
+                    value = "131072"  # 128MB
                 else:
-                    self.logger.warning(f"Unknown parameter: {parameter}")
-                    success = False
-                    error_message = f"Unknown parameter: {parameter}"
-            
-            except Exception as e:
-                self.logger.error(f"Error applying system change: {str(e)}")
-                success = False
-                error_message = str(e)
-            
-            if success:
-                # Get metrics after applying tuning
+                    value = "32768"  # 32MB (normal)
                 metrics_after = await self.get_current_metrics()
                 
                 # Update active tunings

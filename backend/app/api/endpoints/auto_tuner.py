@@ -11,6 +11,7 @@ from app.optimization.resource_monitor import ResourceMonitor
 from app.optimization.pattern_analyzer import PatternAnalyzer
 from app.services.system_metrics_service import SystemMetricsService
 from app.services.system_log_service import SystemLogService
+from app.optimization.auto_tuner_db_helpers import save_tuning_history_to_db, get_tuning_history_from_db
 
 router = APIRouter()
 
@@ -105,7 +106,7 @@ async def apply_optimization_profile(
                 "confidence": 1.0,  # User-selected settings have 100% confidence
                 "impact_score": 0.8,
                 "reason": f"Applied from profile: {profile.name}"
-            })
+            }, user_id=current_user.id)
             
             # Log each setting application
             success = True if result and result.get("success") else False
@@ -162,7 +163,7 @@ async def apply_recommendation(
     
     # Apply the selected recommendation
     selected_recommendation = recommendations[recommendation_id]
-    result = await tuner.apply_tuning(selected_recommendation)
+    result = await tuner.apply_tuning(selected_recommendation, user_id=current_user.id)
     
     # Log the tuning action
     log_service = await SystemLogService.get_instance()
@@ -222,7 +223,8 @@ async def get_system_patterns(
 
 @router.get("/history")
 async def get_optimization_history(
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    limit: int = 100
 ):
     """
     Get history of applied optimizations.
@@ -231,9 +233,10 @@ async def get_optimization_history(
     """
     tuner = AutoTuner()
     
-    # In a real implementation, this would fetch from a database
-    # For now, we'll return the in-memory history
+    # Get history from database
+    db_history = await get_tuning_history_from_db(user_id=current_user.id, limit=limit)
+    
     return {
-        "history": tuner.tuning_history,
+        "history": db_history,
         "active_tunings": tuner.active_tunings
     }
