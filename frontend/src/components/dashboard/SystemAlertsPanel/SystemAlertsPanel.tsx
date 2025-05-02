@@ -14,6 +14,7 @@ import {
   markSelectedAlertsAsRead
 } from '../../../store/slices/systemAlertsSlice';
 import { QuantumShadowPerson } from '../../common/CharacterIcons';
+import { Button } from '../../../design-system/components';
 import './SystemAlertsPanel.css';
 
 interface SystemAlertsPanelProps {
@@ -140,39 +141,68 @@ export const SystemAlertsPanel: React.FC<SystemAlertsPanelProps> = ({
             <div className="bulk-actions">
               <span className="selected-count">{selectedCount} selected</span>
               <div className="bulk-action-buttons">
-                <button className="bulk-action-button" onClick={handleMarkSelectedAsRead}>
+                <Button 
+                  variant="primary" 
+                  size="sm" 
+                  onClick={handleMarkSelectedAsRead}
+                >
                   Mark Read
-                </button>
-                <button className="bulk-action-button" onClick={handleDeleteSelected}>
+                </Button>
+                <Button 
+                  variant="danger" 
+                  size="sm" 
+                  onClick={handleDeleteSelected}
+                >
                   Delete
-                </button>
+                </Button>
                 <div className="action-status-dropdown">
-                  <button 
-                    className="bulk-action-button action-status-toggle" 
+                  <Button 
+                    variant="secondary" 
+                    size="sm" 
                     onClick={() => setShowActionMenu(!showActionMenu)}
                   >
                     Set Status
-                  </button>
+                  </Button>
                   {showActionMenu && (
                     <div className="action-status-menu">
-                      <button onClick={() => handleUpdateActionStatus('actioned')}>
+                      <Button 
+                        variant="secondary" 
+                        size="sm" 
+                        onClick={() => handleUpdateActionStatus('actioned')}
+                      >
                         Actioned
-                      </button>
-                      <button onClick={() => handleUpdateActionStatus('not_actioned')}>
+                      </Button>
+                      <Button 
+                        variant="secondary" 
+                        size="sm" 
+                        onClick={() => handleUpdateActionStatus('not_actioned')}
+                      >
                         Not Actioned
-                      </button>
-                      <button onClick={() => handleUpdateActionStatus('to_action_later')}>
+                      </Button>
+                      <Button 
+                        variant="secondary" 
+                        size="sm" 
+                        onClick={() => handleUpdateActionStatus('to_action_later')}
+                      >
                         Action Later
-                      </button>
-                      <button onClick={() => handleUpdateActionStatus('none')}>
+                      </Button>
+                      <Button 
+                        variant="secondary" 
+                        size="sm" 
+                        onClick={() => handleUpdateActionStatus('none')}
+                      >
                         No Status
-                      </button>
+                      </Button>
                     </div>
                   )}
                 </div>
-                <button className="bulk-action-button" onClick={handleDeselectAll}>
+                <Button 
+                  variant="secondary" 
+                  size="sm" 
+                  onClick={handleDeselectAll}
+                >
                   Deselect All
-                </button>
+                </Button>
               </div>
             </div>
           )}
@@ -245,21 +275,25 @@ export const SystemAlertsPanel: React.FC<SystemAlertsPanelProps> = ({
                   
                   <div className="alert-actions">
                     {!alert.is_read && (
-                      <button 
-                        className="mark-read-button" 
+                      <Button 
+                        variant="primary" 
+                        size="sm"
+                        circle
                         onClick={(e) => handleMarkAsRead(alert.id, e)}
                         title="Mark as Read"
                       >
                         ✓
-                      </button>
+                      </Button>
                     )}
-                    <button 
-                      className="delete-button" 
+                    <Button 
+                      variant="danger" 
+                      size="sm"
+                      circle
                       onClick={(e) => handleDelete(alert.id, e)}
                       title="Delete"
                     >
                       ×
-                    </button>
+                    </Button>
                   </div>
                 </div>
               ))
@@ -267,13 +301,21 @@ export const SystemAlertsPanel: React.FC<SystemAlertsPanelProps> = ({
           </div>
 
           <div className="alerts-card-footer">
-            <button className="select-all-button" onClick={handleSelectAll}>
+            <Button 
+              variant="primary" 
+              size="sm" 
+              onClick={handleSelectAll}
+            >
               Select All
-            </button>
+            </Button>
             {showAllLink && (
-              <button className="view-all-button" onClick={handleViewAllAlerts}>
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                onClick={handleViewAllAlerts}
+              >
                 View All Alerts
-              </button>
+              </Button>
             )}
           </div>
         </>
