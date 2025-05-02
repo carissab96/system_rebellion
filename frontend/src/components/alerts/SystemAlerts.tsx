@@ -20,6 +20,7 @@ import {
 import Modal from '../common/Modal';
 import { QuantumShadowPerson } from '../common/CharacterIcons';
 import alertUtils from '../../utils/alertUtils';
+import { Button } from '../../design-system/components';
 
 // Direct backend URL instead of using the relative API_BASE_URL
 const BACKEND_URL = 'http://127.0.0.1:8000';
@@ -395,21 +396,30 @@ export const SystemAlerts: React.FC = () => {
           <p>Full Alerts Endpoint: {`${BACKEND_URL}/api${API_PATH}`}</p>
           <p>Redux API Call Path: {`/api${API_PATH}`}</p>
           <p>{debugInfo}</p>
-          <button className="debug-button" onClick={testApiConnection}>Test API Connection</button>
+          <Button variant="cyber" size="sm" onClick={testApiConnection}>Test API Connection</Button>
         </div>
         <div className="error-actions">
-          <button onClick={() => dispatch(fetchSystemAlerts({ skip: 0, limit: 20, is_read: undefined }))}>
+          <Button 
+            variant="primary"
+            onClick={() => dispatch(fetchSystemAlerts({ skip: 0, limit: 20, is_read: undefined }))}
+          >
             Recalibrate the quantum field and try again
-          </button>
-          <button onClick={async () => {
-            const success = await loginForFreshToken();
-            if (success) dispatch(fetchSystemAlerts({ skip: 0, limit: 20, is_read: undefined }));
-          }}>
+          </Button>
+          <Button 
+            variant="accent"
+            onClick={async () => {
+              const success = await loginForFreshToken();
+              if (success) dispatch(fetchSystemAlerts({ skip: 0, limit: 20, is_read: undefined }));
+            }}
+          >
             Login with test credentials
-          </button>
-          <button onClick={() => navigate('/login')}>
+          </Button>
+          <Button 
+            variant="secondary"
+            onClick={() => navigate('/login')}
+          >
             Return to login portal
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -426,15 +436,23 @@ export const SystemAlerts: React.FC = () => {
         </div>
         <div className="shadow-quote">{shadowQuote}</div>
         <div className="alert-actions-container">
-          <button className="create-alert-button" onClick={openCreateModal}>
-            <span className="button-icon">⚠️</span>
-            <span>Create New Alert</span>
-          </button>
+          <Button 
+            variant="accent" 
+            onClick={openCreateModal}
+            leftIcon="⚠️"
+            glow
+          >
+            Create New Alert
+          </Button>
           {alerts && alerts.length > 0 && alerts.some((alert: any) => !alert.is_read) && (
-            <button className="mark-all-read-button" onClick={handleMarkAllAsRead}>
-              <span className="button-icon">✓</span>
-              <span>Mark All as Read</span>
-            </button>
+            <Button 
+              variant="primary" 
+              onClick={handleMarkAllAsRead}
+              leftIcon="✓"
+              glow
+            >
+              Mark All as Read
+            </Button>
           )}
         </div>
       </div>
@@ -444,43 +462,48 @@ export const SystemAlerts: React.FC = () => {
         <div className="bulk-actions">
           <span className="selected-count">{selectedCount} selected</span>
           <div className="bulk-action-buttons">
-            <button className="bulk-action-button" onClick={handleMarkSelectedAsRead}>
-              <span className="button-icon">✓</span>
-              <span>Mark Read</span>
-            </button>
-            <button className="bulk-action-button" onClick={handleDeleteSelected}>
-              <span className="button-icon">🗑️</span>
-              <span>Delete</span>
-            </button>
+            <Button 
+              variant="primary" 
+              size="sm"
+              onClick={handleMarkSelectedAsRead}
+              leftIcon="✓"
+            >
+              Mark Selected as Read
+            </Button>
+            <Button 
+              variant="danger" 
+              size="sm"
+              onClick={handleDeleteSelected}
+              leftIcon="🗑️"
+            >
+              Delete Selected
+            </Button>
             <div className="action-status-dropdown">
-              <button 
-                className="bulk-action-button action-status-toggle" 
+              <Button 
+                variant="secondary" 
+                size="sm"
                 onClick={() => setShowActionMenu(!showActionMenu)}
+                leftIcon="🔄"
               >
-                <span className="button-icon">🔄</span>
-                <span>Set Status</span>
-              </button>
+                Set Status
+              </Button>
               {showActionMenu && (
                 <div className="action-status-menu">
-                  <button onClick={() => handleUpdateActionStatus('actioned')}>
-                    Actioned
-                  </button>
-                  <button onClick={() => handleUpdateActionStatus('not_actioned')}>
-                    Not Actioned
-                  </button>
-                  <button onClick={() => handleUpdateActionStatus('to_action_later')}>
-                    Action Later
-                  </button>
-                  <button onClick={() => handleUpdateActionStatus('none')}>
-                    No Status
-                  </button>
+                  <Button variant="success" size="sm" onClick={() => handleUpdateActionStatus('actioned')} fullWidth>Actioned</Button>
+                  <Button variant="danger" size="sm" onClick={() => handleUpdateActionStatus('not_actioned')} fullWidth>Not Actioned</Button>
+                  <Button variant="warning" size="sm" onClick={() => handleUpdateActionStatus('to_action_later')} fullWidth>Action Later</Button>
+                  <Button variant="secondary" size="sm" onClick={() => handleUpdateActionStatus('none')} fullWidth>No Status</Button>
                 </div>
               )}
             </div>
-            <button className="bulk-action-button" onClick={handleDeselectAll}>
-              <span className="button-icon">❌</span>
-              <span>Deselect All</span>
-            </button>
+            <Button 
+              variant="secondary" 
+              size="sm"
+              onClick={handleDeselectAll}
+              leftIcon="✕"
+            >
+              Deselect All
+            </Button>
           </div>
         </div>
       )}
@@ -547,30 +570,36 @@ export const SystemAlerts: React.FC = () => {
               
               <div className="alert-actions">
                 {!alert.is_read && (
-                  <button 
-                    className="mark-read-button alert-action-button" 
+                  <Button 
+                    variant="primary" 
+                    size="sm"
+                    circle
                     onClick={(e) => handleMarkAsRead(alert.id, e)}
-                    data-tooltip="Mark as Read"
+                    title="Mark as Read"
                   >
                     ✓
-                  </button>
+                  </Button>
                 )}
                 {alert.additional_data && alert.additional_data.actionable && (
-                  <button 
-                    className="action-button alert-action-button" 
+                  <Button 
+                    variant="cyber" 
+                    size="sm"
+                    circle
                     onClick={(e) => { e.stopPropagation(); handleAlertAction(alert); }}
-                    data-tooltip={alert.additional_data.action_type === 'apply_recommendation' ? 'Apply' : 'View'}
+                    title={alert.additional_data.action_type === 'apply_recommendation' ? 'Apply' : 'View'}
                   >
                     ⚡
-                  </button>
+                  </Button>
                 )}
-                <button 
-                  className="delete-button alert-action-button" 
+                <Button 
+                  variant="danger" 
+                  size="sm"
+                  circle
                   onClick={(e) => handleDelete(alert.id, e)}
-                  data-tooltip="Delete"
+                  title="Delete"
                 >
                   ×
-                </button>
+                </Button>
               </div>
             </div>
           ))
@@ -583,9 +612,13 @@ export const SystemAlerts: React.FC = () => {
       </div>
       
       <div className="alerts-footer">
-        <button className="select-all-button" onClick={handleSelectAll}>
+        <Button 
+          variant="primary" 
+          size="sm" 
+          onClick={handleSelectAll}
+        >
           Select All
-        </button>
+        </Button>
       </div>
 
       {/* Create Alert Modal */}
@@ -651,18 +684,22 @@ export const SystemAlerts: React.FC = () => {
           </div>
           
           <div className="form-actions">
-            <button className="cancel-button" onClick={() => setIsModalOpen(false)}>
-              <span className="button-icon">✕</span>
-              <span>Cancel</span>
-            </button>
-            <button 
-              className="submit-button" 
+            <Button 
+              variant="secondary" 
+              onClick={() => setIsModalOpen(false)}
+              leftIcon="✕"
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="accent" 
               onClick={handleSubmit}
               disabled={!formData.title || !formData.message}
+              leftIcon="⚠️"
+              glow
             >
-              <span className="button-icon">⚠️</span>
-              <span>Create Alert</span>
-            </button>
+              Create Alert
+            </Button>
           </div>
         </div>
       </Modal>
@@ -726,18 +763,22 @@ export const SystemAlerts: React.FC = () => {
             </div>
             
             <div className="form-actions">
-              <button className="cancel-button" onClick={() => setIsActionModalOpen(false)}>
-                <span className="button-icon">✕</span>
-                <span>Cancel</span>
-              </button>
-              <button 
-                className="apply-button" 
+              <Button 
+                variant="secondary" 
+                onClick={() => setIsActionModalOpen(false)}
+                leftIcon="✕"
+              >
+                Cancel
+              </Button>
+              <Button 
+                variant="cyber" 
                 onClick={applyRecommendation}
                 disabled={!!actionResult}
+                leftIcon="⚡"
+                glow
               >
-                <span className="button-icon">⚡</span>
-                <span>Apply Recommendation</span>
-              </button>
+                Apply Recommendation
+              </Button>
             </div>
           </div>
         )}
