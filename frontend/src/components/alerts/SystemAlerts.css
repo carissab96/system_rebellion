@@ -66,48 +66,23 @@
   justify-content: flex-start;
 }
 
-.create-alert-button {
+/* Alert actions container styles */
+.alert-actions-container {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  background: linear-gradient(45deg, #e9009b, #f53595);
-  border: none;
-  color: white;
-  padding: 12px 24px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: bold;
-  transition: all 0.3s;
-  box-shadow: 0 0 15px rgba(233, 0, 155, 0.5);
-  z-index: 1;
-  font-size: 1rem;
+  flex-wrap: wrap;
+  gap: 15px;
+  z-index: 0;
+  margin-top: 20px;
+  width: 100%;
+  justify-content: flex-start;
 }
 
-.mark-all-read-button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: linear-gradient(45deg, #3333ff, #00f5d4);
-  border: none;
-  color: white;
-  padding: 12px 24px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: bold;
-  transition: all 0.3s;
-  box-shadow: 0 0 15px rgba(0, 245, 212, 0.5);
-  z-index: 1;
-  font-size: 1rem;
-}
-
-.create-alert-button:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 0 20px rgba(233, 0, 155, 0.7);
-}
-
-.mark-all-read-button:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 0 20px rgba(0, 245, 212, 0.7);
+/* Responsive styles */
+@media (max-width: 768px) {
+  .alert-actions-container {
+    flex-direction: column;
+    width: 100%;
+  }
 }
 
 .button-icon {
@@ -318,91 +293,12 @@
   margin-left: 10px;
 }
 
-.mark-read-button, .delete-button, .action-button {
-  width: 36px;
-  height: 36px;
-  border: none;
-  border-radius: 50%;
-  cursor: pointer;
-  font-weight: bold;
-  transition: all 0.3s;
-  font-size: 1rem;
+/* Alert action styles are now handled by the design system */
+.alert-actions {
   display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.mark-read-button {
-  background: linear-gradient(45deg, #3333ff, #00f5d4);
-  color: white;
-}
-
-.action-button {
-  background: linear-gradient(45deg, #00f5a3, #02b5fc);
-  color: white;
-}
-
-.delete-button {
-  background: linear-gradient(45deg, #e9009b, #f53595);
-  color: white;
-}
-
-.mark-read-button:hover, .action-button:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 0 15px rgba(0, 245, 212, 0.7);
-}
-
-.delete-button:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 0 15px rgba(233, 0, 155, 0.7);
-}
-
-.apply-button-small {
-  width: 36px;
-  height: 36px;
-  border: 2px solid #ffffff;
-  border-radius: 50%;
-  cursor: pointer;
-  font-weight: bold;
-  transition: all 0.3s;
-  font-size: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #ffaa00;
-  color: #000000;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}
-
-.apply-button-small:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 0 15px rgba(0, 245, 212, 0.7);
-}
-
-.alert-action-button {
-  position: relative;
-}
-
-.alert-action-button::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  right: 120%;
-  top: 50%;
-  transform: translateY(-50%);
-  background: rgba(10, 10, 40, 0.9);
-  color: white;
-  padding: 5px 10px;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  white-space: nowrap;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.3s;
-  z-index: 10;
-}
-
-.alert-action-button:hover::after {
-  opacity: 1;
+  flex-direction: column;
+  gap: 8px;
+  margin-left: 10px;
 }
 
 .no-alerts {
@@ -614,52 +510,12 @@
 
 .form-actions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  margin-top: 20px;
   gap: 15px;
-  margin-top: 30px;
 }
 
-.cancel-button, .submit-button {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-weight: bold;
-  transition: all 0.2s;
-}
-
-.cancel-button {
-  background: rgba(100, 100, 150, 0.3);
-  color: #b8b8ff;
-}
-
-
-
-.submit-button {
-  background: linear-gradient(45deg, #e9009b, #f53595);
-  color: white;
-}
-
-.submit-button:disabled, .apply-button:disabled {
-  background: #666;
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none !important;
-  box-shadow: none !important;
-}
-
-.cancel-button:hover, .submit-button:hover, .apply-button:hover {
-  transform: translateY(-2px);
-}
-
-@keyframes shimmer {
-  0% {
-    background-position: -300px 0;
-  }
-  100% {
-    background-position: 300px 0;
-  }
-}
+/* Form button styles are now handled by the design system */
 
 @keyframes pulsate {
   0% {
@@ -821,28 +677,7 @@
   width: 100%;
 }
 
-.bulk-action-button {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: bold;
-  font-size: 1rem;
-  background: rgba(51, 51, 255, 0.2);
-  color: #e0e0ff;
-  transition: all 0.3s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-width: 120px;
-}
-
-.bulk-action-button:hover {
-  background: rgba(51, 51, 255, 0.4);
-  transform: translateY(-3px);
-  box-shadow: 0 4px 12px rgba(51, 51, 255, 0.3);
-}
+/* Bulk action button styles are now handled by the design system */
 
 .action-status-dropdown {
   position: relative;
@@ -944,21 +779,7 @@
   margin-top: 20px;
 }
 
-.select-all-button {
-  background: linear-gradient(45deg, #3333ff, #00f5d4);
-  border: none;
-  color: white;
-  padding: 10px 20px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-weight: bold;
-  transition: all 0.3s;
-}
-
-.select-all-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 0 15px rgba(0, 245, 212, 0.5);
-}
+/* Select all button styles are now handled by the design system */
 
 @media (max-width: 768px) {
   .alerts-header {
