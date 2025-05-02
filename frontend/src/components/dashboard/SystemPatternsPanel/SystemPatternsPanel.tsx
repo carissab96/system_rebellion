@@ -2,6 +2,7 @@ import React from 'react';
 import { useAppSelector, useAppDispatch } from '../../../store/hooks';
 import { fetchPatterns } from '../../../store/slices/autoTunerSlice';
 import { MethSnail } from '../../common/CharacterIcons';
+import { Button } from '../../../design-system/components';
 import './SystemPatternsPanel.css';
 
 interface SystemPatternsPanelProps {
@@ -43,9 +44,14 @@ export const SystemPatternsPanel: React.FC<SystemPatternsPanelProps> = ({
       ) : !patterns || patterns.length === 0 ? (
         <div className="patterns-empty">
           <p>No patterns detected yet</p>
-          <button className="reload-patterns-button" onClick={handleReloadPatterns}>
+          <Button 
+            variant="cyber" 
+            size="sm" 
+            onClick={handleReloadPatterns}
+            glow
+          >
             Poke the Snail
-          </button>
+          </Button>
         </div>
       ) : (
         <div className="patterns-list">
@@ -73,9 +79,13 @@ export const SystemPatternsPanel: React.FC<SystemPatternsPanelProps> = ({
           {patterns.length > displayPatterns.length && (
             <div className="more-patterns">
               <p>{patterns.length - displayPatterns.length} more patterns available</p>
-              <button className="view-all-patterns-button" onClick={handleReloadPatterns}>
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                onClick={handleReloadPatterns}
+              >
                 View All Patterns
-              </button>
+              </Button>
             </div>
           )}
         </div>
