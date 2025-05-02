@@ -17,6 +17,7 @@ import LandingPage from './pages/LandingPage';
 import './App.css';
 import ProtectedRoute from './utils/ProtectedRoute';
 import OnboardingCheck from './utils/OnboardingCheck';
+import { DesignSystemShowcase } from './design-system/docs';
 
 // Simple error boundary component
 class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean, error: Error | null}> {
@@ -329,6 +330,14 @@ const App: React.FC = () => {
                                         <OnboardingCheck>
                                             <SystemConfiguration />
                                         </OnboardingCheck>
+                                    </ProtectedRoute>
+                                } 
+                            />
+                            <Route 
+                                path="design-system" 
+                                element={
+                                    <ProtectedRoute>
+                                        <DesignSystemShowcase />
                                     </ProtectedRoute>
                                 } 
                             />

@@ -1,4 +1,5 @@
-/* src/components/dashboard/Dashboard/Dashboard.css` */
+/* src/components/dashboard/Dashboard/Dashboard.css */
+/* Main Dashboard Layout and Structure */
 :root {
   /* Color-blind accessible cyberpunk palette */
   --primary: #3a86ff; /* Accessible blue */
@@ -375,51 +376,382 @@
 .system-alerts {
   padding: 1.5rem;
   border-radius: 12px;
-  background: linear-gradient(135deg, rgba(0, 245, 212, 0.05), rgba(58, 134, 255, 0.05));
-  border: 1px solid rgba(0, 245, 212, 0.2);
+  background: linear-gradient(135deg, #ce5b8c0d, #79a1e00d);
+  border: 1px solid rgba(255, 0, 110, 0.2);
   color: var(--text-primary);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
   height: calc(100% - 3rem);
   display: flex;
   flex-direction: column;
-  position: relative;
-  overflow: hidden;
-  min-height: 200px;
-}
-
-.system-alerts::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 4px;
   height: 100%;
-  background: linear-gradient(180deg, var(--accent), var(--secondary));
+  background: linear-gradient(180deg, var(--secondary), var(--primary));
   border-radius: 4px 0 0 4px;
 }
 
-.system-alerts h2 {
-  background: linear-gradient(90deg, var(--secondary), #00f5d4);
+.alerts-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  position: relative;
+  padding-bottom: 8px;
+  border-bottom: 3px solid;
+  border-image: linear-gradient(90deg, var(--accent), var(--primary)) 1;
+}
+
+.alerts-card-header h2 {
+  background: linear-gradient(90deg, var(--accent), var(--primary));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
   font-size: 1.5rem;
-  margin-bottom: 15px;
-  position: relative;
-  padding-bottom: 8px;
+  margin: 0;
   font-weight: 700;
   text-shadow: 0 0 5px rgba(0, 245, 212, 0.3);
 }
 
-.system-alerts h2::after {
+.quantum-shadow-icon {
+  opacity: 0.7;
+}
+
+.shadow-icon {
+  width: 30px;
+  height: 30px;
+  filter: drop-shadow(0 0 5px rgba(255, 0, 110, 0.7));
+}
+
+.system-patterns h2::after {
   content: '';
   position: absolute;
   bottom: 0;
   left: 0;
   width: 60px;
   height: 3px;
-  background: linear-gradient(90deg, var(--accent), var(--secondary));
+  background: linear-gradient(90deg, var(--secondary), var(--primary));
   border-radius: 3px;
+}
+
+.dashboard-alerts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  max-height: 300px;
+  margin-bottom: 15px;
+}
+
+.dashboard-alert-card {
+  background: var(--card-bg);
+  border-radius: 8px;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+}
+
+.dashboard-alert-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  border-color: var(--primary-light);
+}
+
+.dashboard-alert-card.unread {
+  border-left: 4px solid var(--accent);
+}
+
+.dashboard-alert-card.selected {
+  background: rgba(58, 134, 255, 0.05);
+  border-color: var(--primary);
+  box-shadow: 0 0 10px rgba(58, 134, 255, 0.2);
+}
+
+.dashboard-alert-card.expanded {
+  padding-bottom: 15px;
+}
+
+.alert-selection {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 2px;
+}
+
+.alert-selection input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--primary);
+}
+
+.alert-content {
+  flex: 1;
+  overflow: hidden;
+}
+
+.alert-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+
+.alert-header h3 {
+  font-size: 0.95rem;
+  margin: 0;
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.severity-indicator {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.severity-low {
+  background-color: var(--success);
+  color: white;
+}
+
+.severity-medium {
+  background-color: var(--primary);
+  color: white;
+}
+
+.severity-high {
+  background-color: var(--warning);
+  color: var(--text-primary);
+}
+
+.severity-critical {
+  background-color: var(--danger);
+  color: white;
+  animation: pulse 1.5s infinite;
+}
+
+.unread-badge {
+  background: var(--accent);
+  color: white;
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-weight: bold;
+}
+
+.action-status-badge {
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-weight: bold;
+}
+
+.action-status-badge.actioned {
+  background: var(--success);
+  color: white;
+}
+
+.action-status-badge.not_actioned {
+  background: var(--danger);
+  color: white;
+}
+
+.action-status-badge.to_action_later {
+  background: var(--warning);
+  color: var(--text-primary);
+}
+
+.alert-timestamp {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 5px;
+}
+
+.alert-message {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+
+.action-status-selector {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 5px;
+}
+
+.action-status-selector span {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.action-status-selector select {
+  font-size: 0.75rem;
+  padding: 2px 5px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  color: var(--text-primary);
+}
+
+.alert-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.mark-read-button, .delete-button {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: white;
+  transition: all 0.2s;
+}
+
+.mark-read-button {
+  background: var(--primary);
+}
+
+.delete-button {
+  background: var(--danger);
+}
+
+.mark-read-button:hover, .delete-button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+}
+
+.alerts-loading, .alerts-error, .no-alerts {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.alerts-error {
+  color: var(--danger);
+}
+
+.alerts-card-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: 10px;
+}
+
+.select-all-button, .view-all-button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.2s;
+}
+
+.select-all-button {
+  background: var(--panel-bg);
+  color: var(--text-secondary);
+}
+
+.view-all-button {
+  background: var(--primary);
+  color: white;
+}
+
+.select-all-button:hover, .view-all-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Bulk Actions */
+.bulk-actions {
+  background: var(--panel-bg);
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.selected-count {
+  font-size: 0.8rem;
+  font-weight: bold;
+  color: var(--primary);
+}
+
+.bulk-action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.bulk-action-button {
+  padding: 4px 8px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  background: var(--card-bg);
+  color: var(--text-primary);
+  transition: all 0.2s;
+}
+
+.bulk-action-button:hover {
+  background: var(--primary-light);
+  color: white;
+}
+
+.action-status-dropdown {
+  position: relative;
+}
+
+.action-status-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 10;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  padding: 5px 0;
+  min-width: 120px;
+}
+
+.action-status-menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 5px 10px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 0.75rem;
+  color: var(--text-primary);
+}
+
+.action-status-menu button:hover {
+  background: var(--panel-bg);
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
 }
 
 .alert {

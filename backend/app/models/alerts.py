@@ -19,11 +19,11 @@ class SystemAlert(Base):
     title = Column(String(100), nullable=False)
     message = Column(Text, nullable=False)
     severity = Column(Enum(AlertSeverity), default=AlertSeverity.MEDIUM)
-    timestamp = Column(DateTime, default=datetime.now)
+    timestamp = Column(DateTime, default=datetime.now())
     is_read = Column(Boolean, default=False)
     additional_data = Column(JSON, nullable=True)
-    created_at = Column(DateTime, default=datetime.now)
-    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+    created_at = Column(DateTime, default=datetime.now())
+    updated_at = Column(DateTime, default=datetime.now(), onupdate=datetime.now())
     
     # Relationship with User
     user = relationship("User", back_populates="alerts")

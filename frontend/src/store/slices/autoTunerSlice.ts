@@ -3,6 +3,7 @@ import { PayloadAction } from '@reduxjs/toolkit';
 import { AutoTunerState } from '../../types/autoTuner';
 import { OptimizationProfile } from '../../types/metrics';
 import api from '../../utils/api';
+import { createAlertFromRecommendation, createAlertFromPattern } from '../../utils/alertUtils';
 
 const initialState: AutoTunerState = {
   currentMetrics: null,
@@ -144,6 +145,16 @@ const autoTunerSlice = createSlice({
         state.status = 'succeeded';
         state.recommendations = action.payload;
         state.lastUpdated = new Date().toISOString();
+        
+        // Create alerts for new recommendations
+        if (action.payload && action.payload.length > 0) {
+          // Only create alerts for high-impact recommendations
+          action.payload
+            .filter((rec: any) => (rec.confidence * rec.impact_score) > 0.5)
+            .forEach((recommendation: any) => {
+              createAlertFromRecommendation(recommendation);
+            });
+        }
       })
       .addCase(fetchRecommendations.rejected, (state, action) => {
         state.status = 'failed';
@@ -159,6 +170,16 @@ const autoTunerSlice = createSlice({
         state.status = 'succeeded';
         state.patterns = action.payload.detected_patterns;
         state.lastUpdated = new Date().toISOString();
+        
+        // Create alerts for significant patterns
+        if (action.payload.detected_patterns && action.payload.detected_patterns.length > 0) {
+          // Only create alerts for patterns with high confidence
+          action.payload.detected_patterns
+            .filter((pattern: any) => pattern.confidence > 0.6) // Only high confidence patterns
+            .forEach((pattern: any) => {
+              createAlertFromPattern(pattern);
+            });
+        }
       })
       .addCase(fetchPatterns.rejected, (state, action) => {
         state.status = 'failed';

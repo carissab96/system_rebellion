@@ -1,0 +1,228 @@
+/**
+ * System Rebellion UI - Alert Component Styles
+ * 
+ * Proprietary alert styling for the System Rebellion design system.
+ * These styles implement our cyberpunk aesthetic while maintaining clear information hierarchy.
+ */
+
+.sr-alert {
+  /* Base alert styles */
+  display: flex;
+  align-items: flex-start;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+  transition: all 0.3s ease;
+  margin-bottom: 16px;
+}
+
+/* Alert variants */
+.sr-alert-info {
+  background-color: #f0f7ff;
+  color: #121212;
+  border-left: 4px solid #3a86ff;
+}
+
+.sr-alert-success {
+  background-color: #f0fff5;
+  color: #121212;
+  border-left: 4px solid #38b000;
+}
+
+.sr-alert-warning {
+  background-color: #fffbf0;
+  color: #121212;
+  border-left: 4px solid #ffbe0b;
+}
+
+.sr-alert-danger {
+  background-color: #fff0f5;
+  color: #121212;
+  border-left: 4px solid #ff3838;
+}
+
+.sr-alert-cyber {
+  background-color: #f0fffc;
+  color: #121212;
+  border-left: 4px solid #00f5d4;
+}
+
+/* Alert sizes */
+.sr-alert-sm {
+  padding: 8px 12px;
+  font-size: 0.875rem;
+}
+
+.sr-alert-md {
+  padding: 12px 16px;
+  font-size: 1rem;
+}
+
+.sr-alert-lg {
+  padding: 16px 20px;
+  font-size: 1.125rem;
+}
+
+/* Glow effect */
+.sr-alert-glow {
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+}
+
+.sr-alert-info.sr-alert-glow {
+  box-shadow: 0 0 15px rgba(58, 134, 255, 0.2);
+}
+
+.sr-alert-success.sr-alert-glow {
+  box-shadow: 0 0 15px rgba(56, 176, 0, 0.2);
+}
+
+.sr-alert-warning.sr-alert-glow {
+  box-shadow: 0 0 15px rgba(255, 190, 11, 0.2);
+}
+
+.sr-alert-danger.sr-alert-glow {
+  box-shadow: 0 0 15px rgba(255, 56, 56, 0.2);
+}
+
+.sr-alert-cyber.sr-alert-glow {
+  box-shadow: 0 0 15px rgba(0, 245, 212, 0.2);
+}
+
+/* Bordered alerts */
+.sr-alert-bordered {
+  border: 1px solid;
+}
+
+.sr-alert-info.sr-alert-bordered {
+  border-color: rgba(58, 134, 255, 0.3);
+}
+
+.sr-alert-success.sr-alert-bordered {
+  border-color: rgba(56, 176, 0, 0.3);
+}
+
+.sr-alert-warning.sr-alert-bordered {
+  border-color: rgba(255, 190, 11, 0.3);
+}
+
+.sr-alert-danger.sr-alert-bordered {
+  border-color: rgba(255, 56, 56, 0.3);
+}
+
+.sr-alert-cyber.sr-alert-bordered {
+  border-color: rgba(0, 245, 212, 0.3);
+}
+
+/* Alert icon */
+.sr-alert-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  font-size: 1.25em;
+}
+
+/* Alert content */
+.sr-alert-content {
+  flex: 1;
+}
+
+/* Alert title */
+.sr-alert-title {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+/* Alert message */
+.sr-alert-message {
+  color: inherit;
+  opacity: 0.9;
+}
+
+/* Dismiss button */
+.sr-alert-dismiss {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.5em;
+  line-height: 1;
+  padding: 0;
+  margin-left: 12px;
+  color: inherit;
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
+}
+
+.sr-alert-dismiss:hover {
+  opacity: 0.8;
+}
+
+/* Action button */
+.sr-alert-action {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 4px 12px;
+  background: none;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875em;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.sr-alert-info .sr-alert-action {
+  color: #3a86ff;
+}
+
+.sr-alert-success .sr-alert-action {
+  color: #38b000;
+}
+
+.sr-alert-warning .sr-alert-action {
+  color: #ffbe0b;
+}
+
+.sr-alert-danger .sr-alert-action {
+  color: #ff3838;
+}
+
+.sr-alert-cyber .sr-alert-action {
+  color: #00f5d4;
+}
+
+.sr-alert-action:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Dark mode overrides */
+@media (prefers-color-scheme: dark) {
+  .sr-alert-info {
+    background-color: rgba(58, 134, 255, 0.1);
+    color: #e0e0ff;
+  }
+  
+  .sr-alert-success {
+    background-color: rgba(56, 176, 0, 0.1);
+    color: #e0e0ff;
+  }
+  
+  .sr-alert-warning {
+    background-color: rgba(255, 190, 11, 0.1);
+    color: #e0e0ff;
+  }
+  
+  .sr-alert-danger {
+    background-color: rgba(255, 56, 56, 0.1);
+    color: #e0e0ff;
+  }
+  
+  .sr-alert-cyber {
+    background-color: rgba(0, 245, 212, 0.1);
+    color: #e0e0ff;
+  }
+  
+  .sr-alert-action:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+}

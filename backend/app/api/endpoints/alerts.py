@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy import func
 from typing import Optional
 from uuid import UUID
 from datetime import datetime
@@ -46,7 +47,7 @@ async def get_system_alerts(
     alerts = result.scalars().all()
     
     # Count total alerts
-    count_query = select(SystemAlert).where(
+    count_query = select(func.count()).select_from(SystemAlert).where(
         SystemAlert.user_id == current_user.id
     )
     
@@ -57,7 +58,7 @@ async def get_system_alerts(
         count_query = count_query.where(SystemAlert.is_read == is_read)
     
     count_result = await db.execute(count_query)
-    total = len(count_result.scalars().all())
+    total = count_result.scalar_one()
     
     return {"alerts": alerts, "total": total}
 
@@ -98,7 +99,7 @@ async def get_system_alert(
     Get a specific system alert by ID.
     """
     query = select(SystemAlert).where(
-        SystemAlert.id == str(alert_id),
+        SystemAlert.id == alert_id,
         SystemAlert.user_id == current_user.id
     )
     
@@ -125,7 +126,7 @@ async def update_system_alert(
     Update an existing system alert.
     """
     query = select(SystemAlert).where(
-        SystemAlert.id == str(alert_id),
+        SystemAlert.id == alert_id,
         SystemAlert.user_id == current_user.id
     )
     
@@ -166,7 +167,7 @@ async def delete_system_alert(
     Delete a system alert.
     """
     query = select(SystemAlert).where(
-        SystemAlert.id == str(alert_id),
+        SystemAlert.id == alert_id,
         SystemAlert.user_id == current_user.id
     )
     
@@ -195,7 +196,7 @@ async def mark_alert_as_read(
     Mark a specific system alert as read.
     """
     query = select(SystemAlert).where(
-        SystemAlert.id == str(alert_id),
+        SystemAlert.id == alert_id,
         SystemAlert.user_id == current_user.id
     )
     

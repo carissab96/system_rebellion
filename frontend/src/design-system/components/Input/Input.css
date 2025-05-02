@@ -1,0 +1,267 @@
+/**
+ * System Rebellion UI - Input Component Styles
+ * 
+ * Proprietary input styling for the System Rebellion design system.
+ * These styles implement our cyberpunk aesthetic for form inputs.
+ */
+
+.sr-input-wrapper {
+  /* Base input wrapper styles */
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.sr-input-full-width {
+  width: 100%;
+}
+
+.sr-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.sr-input {
+  /* Base input styles */
+  font-family: inherit;
+  background-color: #f5f5f5;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  padding: 0 12px;
+  width: 100%;
+  color: #333333;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.sr-input:focus {
+  border-color: #3a86ff;
+  box-shadow: 0 0 0 2px rgba(58, 134, 255, 0.2);
+}
+
+/* Input sizes */
+.sr-input-sm .sr-input {
+  height: 32px;
+  font-size: 0.875rem;
+}
+
+.sr-input-md .sr-input {
+  height: 40px;
+  font-size: 0.9375rem;
+}
+
+.sr-input-lg .sr-input {
+  height: 48px;
+  font-size: 1rem;
+}
+
+/* Input variants */
+.sr-input-primary .sr-input:focus {
+  border-color: #3a86ff;
+  box-shadow: 0 0 0 2px rgba(58, 134, 255, 0.2);
+}
+
+.sr-input-secondary .sr-input:focus {
+  border-color: #8338ec;
+  box-shadow: 0 0 0 2px rgba(131, 56, 236, 0.2);
+}
+
+.sr-input-accent .sr-input:focus {
+  border-color: #ff006e;
+  box-shadow: 0 0 0 2px rgba(255, 0, 110, 0.2);
+}
+
+.sr-input-cyber .sr-input:focus {
+  border-color: #00f5d4;
+  box-shadow: 0 0 0 2px rgba(0, 245, 212, 0.2);
+}
+
+/* Glow effect */
+.sr-input-glow .sr-input:focus {
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
+}
+
+.sr-input-primary.sr-input-glow .sr-input:focus {
+  box-shadow: 0 0 8px rgba(58, 134, 255, 0.4);
+}
+
+.sr-input-secondary.sr-input-glow .sr-input:focus {
+  box-shadow: 0 0 8px rgba(131, 56, 236, 0.4);
+}
+
+.sr-input-accent.sr-input-glow .sr-input:focus {
+  box-shadow: 0 0 8px rgba(255, 0, 110, 0.4);
+}
+
+.sr-input-cyber.sr-input-glow .sr-input:focus {
+  box-shadow: 0 0 12px rgba(0, 245, 212, 0.5);
+}
+
+/* Glass effect */
+.sr-input-glass .sr-input {
+  background-color: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(8px);
+}
+
+/* Cyber border */
+.sr-input-cyber-border .sr-input {
+  border: none;
+  background-clip: padding-box;
+  position: relative;
+}
+
+.sr-input-cyber-border .sr-input-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 4px;
+  padding: 1px;
+  background: linear-gradient(90deg, #00f5d4, #00d2ff, #3a86ff);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Disabled state */
+.sr-input-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sr-input-disabled .sr-input {
+  background-color: #f0f0f0;
+  cursor: not-allowed;
+  user-select: none;
+}
+
+/* Error state */
+.sr-input-error .sr-input {
+  border-color: #ff3838;
+}
+
+.sr-input-error .sr-input:focus {
+  border-color: #ff3838;
+  box-shadow: 0 0 0 2px rgba(255, 56, 56, 0.2);
+}
+
+/* Label styles */
+.sr-input-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #555555;
+  margin-bottom: 2px;
+}
+
+.sr-input-error .sr-input-label {
+  color: #ff3838;
+}
+
+/* Helper text styles */
+.sr-input-helper-text {
+  font-size: 0.75rem;
+  color: #666666;
+  margin-top: 2px;
+}
+
+.sr-input-helper-text-error {
+  color: #ff3838;
+}
+
+/* Icon styles */
+.sr-input-icon {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666666;
+  z-index: 2;
+}
+
+.sr-input-start-icon {
+  left: 12px;
+}
+
+.sr-input-end-icon {
+  right: 12px;
+}
+
+.sr-input-has-start-icon {
+  padding-left: 36px;
+}
+
+.sr-input-has-end-icon {
+  padding-right: 36px;
+}
+
+.sr-input-sm .sr-input-icon {
+  font-size: 0.875rem;
+}
+
+.sr-input-md .sr-input-icon {
+  font-size: 1rem;
+}
+
+.sr-input-lg .sr-input-icon {
+  font-size: 1.125rem;
+}
+
+/* Focus within styles */
+.sr-input-container:focus-within .sr-input-icon {
+  color: #333333;
+}
+
+.sr-input-primary .sr-input-container:focus-within .sr-input-icon {
+  color: #3a86ff;
+}
+
+.sr-input-secondary .sr-input-container:focus-within .sr-input-icon {
+  color: #8338ec;
+}
+
+.sr-input-accent .sr-input-container:focus-within .sr-input-icon {
+  color: #ff006e;
+}
+
+.sr-input-cyber .sr-input-container:focus-within .sr-input-icon {
+  color: #00f5d4;
+}
+
+/* Dark mode overrides */
+@media (prefers-color-scheme: dark) {
+  .sr-input {
+    background-color: #2a2a2a;
+    border-color: #444444;
+    color: #e0e0e0;
+  }
+  
+  .sr-input-disabled .sr-input {
+    background-color: #222222;
+  }
+  
+  .sr-input-label {
+    color: #b0b0b0;
+  }
+  
+  .sr-input-helper-text {
+    color: #999999;
+  }
+  
+  .sr-input-icon {
+    color: #999999;
+  }
+  
+  .sr-input-container:focus-within .sr-input-icon {
+    color: #e0e0e0;
+  }
+  
+  .sr-input-glass .sr-input {
+    background-color: rgba(30, 30, 30, 0.7);
+  }
+}

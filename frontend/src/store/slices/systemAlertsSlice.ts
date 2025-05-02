@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import axios from 'axios';
 import { API_BASE_URL } from '../../utils/api';
 
+const BASE_PATH =  `${API_BASE_URL}/system-alerts/`;
 // Types
 export interface SystemAlert {
   id: string;
@@ -10,6 +11,8 @@ export interface SystemAlert {
   severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   timestamp: string;
   is_read: boolean;
+  action_status?: 'none' | 'actioned' | 'not_actioned' | 'to_action_later';
+  selected?: boolean; // For bulk operations
   additional_data?: any;
   created_at: string;
   updated_at: string;
@@ -20,13 +23,15 @@ interface SystemAlertsState {
   loading: boolean;
   error: string | null;
   total: number;
+  selectedCount: number;
 }
 
 const initialState: SystemAlertsState = {
   alerts: [],
   loading: false,
   error: null,
-  total: 0
+  total: 0,
+  selectedCount: 0
 };
 
 // Async Thunks
@@ -35,7 +40,7 @@ export const fetchSystemAlerts = createAsyncThunk(
   async ({ skip = 0, limit = 20, is_read }: { skip?: number, limit?: number, is_read?: boolean } = {}, { rejectWithValue }) => {
     try {
       console.log("🦉 Sir Hawkington is fetching system alerts...");
-      let url = `${API_BASE_URL}/system-alerts/?skip=${skip}&limit=${limit}`;
+      let url = `${BASE_PATH}?skip=${skip}&limit=${limit}`;
       if (is_read !== undefined) {
         url += `&is_read=${is_read}`;
       }
@@ -57,7 +62,7 @@ export const createSystemAlert = createAsyncThunk(
   async (alertData: Omit<SystemAlert, 'id' | 'timestamp' | 'created_at' | 'updated_at'>, { rejectWithValue }) => {
     try {
       console.log("🦉 Sir Hawkington is creating a new system alert...");
-      const response = await axios.post(`${API_BASE_URL}/system-alerts/`, alertData);
+      const response = await axios.post(`${BASE_PATH}`, alertData);
       console.log("🦉 Sir Hawkington created a new alert:", response.data);
       return response.data;
     } catch (error: any) {
@@ -75,7 +80,7 @@ export const markAlertAsRead = createAsyncThunk(
   async (id: string, { rejectWithValue }) => {
     try {
       console.log(`🦉 Sir Hawkington is marking alert ${id} as read...`);
-      const response = await axios.post(`${API_BASE_URL}/system-alerts/${id}/mark-as-read`);
+      const response = await axios.post(`${BASE_PATH}${id}/mark-as-read`);
       console.log("🦉 Sir Hawkington marked the alert as read:", response.data);
       return response.data;
     } catch (error: any) {
@@ -93,7 +98,7 @@ export const markAllAlertsAsRead = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       console.log("🦉 Sir Hawkington is marking all alerts as read...");
-      await axios.post(`${API_BASE_URL}/system-alerts/mark-all-as-read`);
+      await axios.post(`${BASE_PATH}/mark-all-as-read`);
       console.log("🦉 Sir Hawkington marked all alerts as read");
       return true;
     } catch (error: any) {
@@ -111,7 +116,7 @@ export const deleteSystemAlert = createAsyncThunk(
   async (id: string, { rejectWithValue }) => {
     try {
       console.log(`🦉 Sir Hawkington is deleting alert ${id}...`);
-      await axios.delete(`${API_BASE_URL}/system-alerts/${id}`);
+      await axios.delete(`${BASE_PATH}${id}`);
       console.log("🦉 Sir Hawkington deleted the alert successfully");
       return id;
     } catch (error: any) {
@@ -134,11 +139,65 @@ const systemAlertsSlice = createSlice({
       state.total += 1;
     },
     clearAlert: (state, action: PayloadAction<string>) => {
+      const alertToRemove = state.alerts.find(alert => alert.id === action.payload);
+      if (alertToRemove?.selected) {
+        state.selectedCount -= 1;
+      }
       state.alerts = state.alerts.filter(alert => alert.id !== action.payload);
       state.total -= 1;
     },
     clearSystemAlertsError: (state) => {
       state.error = null;
+    },
+    updateAlertActionStatus: (state, action: PayloadAction<{id: string, status: 'none' | 'actioned' | 'not_actioned' | 'to_action_later'}>) => {
+      const { id, status } = action.payload;
+      const alertIndex = state.alerts.findIndex(alert => alert.id === id);
+      if (alertIndex !== -1) {
+        state.alerts[alertIndex].action_status = status;
+      }
+    },
+    toggleAlertSelection: (state, action: PayloadAction<string>) => {
+      const alertIndex = state.alerts.findIndex(alert => alert.id === action.payload);
+      if (alertIndex !== -1) {
+        const currentSelected = state.alerts[alertIndex].selected || false;
+        state.alerts[alertIndex].selected = !currentSelected;
+        state.selectedCount += currentSelected ? -1 : 1;
+      }
+    },
+    selectAllAlerts: (state) => {
+      state.alerts.forEach(alert => {
+        if (!alert.selected) {
+          alert.selected = true;
+          state.selectedCount += 1;
+        }
+      });
+    },
+    deselectAllAlerts: (state) => {
+      state.alerts.forEach(alert => {
+        if (alert.selected) {
+          alert.selected = false;
+        }
+      });
+      state.selectedCount = 0;
+    },
+    deleteSelectedAlerts: (state) => {
+      state.alerts = state.alerts.filter(alert => !alert.selected);
+      state.total -= state.selectedCount;
+      state.selectedCount = 0;
+    },
+    updateSelectedAlertsActionStatus: (state, action: PayloadAction<'none' | 'actioned' | 'not_actioned' | 'to_action_later'>) => {
+      state.alerts.forEach(alert => {
+        if (alert.selected) {
+          alert.action_status = action.payload;
+        }
+      });
+    },
+    markSelectedAlertsAsRead: (state) => {
+      state.alerts.forEach(alert => {
+        if (alert.selected && !alert.is_read) {
+          alert.is_read = true;
+        }
+      });
     }
   },
   extraReducers: (builder) => {
@@ -194,6 +253,17 @@ const systemAlertsSlice = createSlice({
   }
 });
 
-export const { addAlert, clearAlert, clearSystemAlertsError } = systemAlertsSlice.actions;
+export const { 
+  addAlert, 
+  clearAlert, 
+  clearSystemAlertsError,
+  updateAlertActionStatus,
+  toggleAlertSelection,
+  selectAllAlerts,
+  deselectAllAlerts,
+  deleteSelectedAlerts,
+  updateSelectedAlertsActionStatus,
+  markSelectedAlertsAsRead
+} = systemAlertsSlice.actions;
 
 export default systemAlertsSlice.reducer;
