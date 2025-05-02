@@ -197,14 +197,22 @@ export const authService = {
   async logout() {
     try {
       console.log('Logging out...');
-      await authApi.post('/logout');
+      // No need to call a backend endpoint for logout
+      // Just clear the local storage and redirect
+      localStorage.removeItem('token');
+      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('username');
+      console.log('Local storage cleared, redirecting to login page');
+      window.location.href = '/login';
+      return true;
+    } catch (error) {
+      console.error('Logout failed:', error);
+      // Even if there's an error, try to clear local storage
       localStorage.removeItem('token');
       localStorage.removeItem('refresh_token');
       localStorage.removeItem('username');
       window.location.href = '/login';
-    } catch (error) {
-      console.error('Logout failed:', error);
-      throw error;
+      return false;
     }
   },
   

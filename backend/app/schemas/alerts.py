@@ -20,6 +20,17 @@ class SystemAlertBase(BaseModel):
     is_read: bool = False
 
 
+class SystemAlertInDB(SystemAlertBase):
+    id: str
+    user_id: str
+    timestamp: datetime
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
 class SystemAlertCreate(SystemAlertBase):
     pass
 
@@ -30,17 +41,6 @@ class SystemAlertUpdate(BaseModel):
     severity: Optional[AlertSeverity] = None
     additional_data: Optional[Dict[str, Any]] = None
     is_read: Optional[bool] = None
-
-
-class SystemAlertInDB(SystemAlertBase):
-    id: UUID
-    user_id: UUID
-    timestamp: datetime
-    created_at: datetime
-    updated_at: datetime
-
-    class Config:
-        from_attributes = True
 
 
 class SystemAlert(SystemAlertInDB):

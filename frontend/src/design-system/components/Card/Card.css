@@ -1,0 +1,183 @@
+/**
+ * System Rebellion UI - Card Component Styles
+ * 
+ * Proprietary card styling for the System Rebellion design system.
+ * These styles implement our cyberpunk aesthetic while maintaining a clean, modern look.
+ */
+
+.sr-card {
+  /* Base card styles */
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+/* Card variants */
+.sr-card-default {
+  background-color: #ffffff;
+  color: #121212;
+}
+
+.sr-card-primary {
+  background-color: #f0f7ff;
+  color: #121212;
+  border-top: 4px solid #3a86ff;
+}
+
+.sr-card-secondary {
+  background-color: #f5f0ff;
+  color: #121212;
+  border-top: 4px solid #8338ec;
+}
+
+.sr-card-accent {
+  background-color: #fff0f5;
+  color: #121212;
+  border-top: 4px solid #ff006e;
+}
+
+.sr-card-cyber {
+  background-color: #f0fffc;
+  color: #121212;
+  border-top: 4px solid #00f5d4;
+}
+
+/* Card elevations */
+.sr-card-elevation-flat {
+  box-shadow: none;
+}
+
+.sr-card-elevation-low {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.sr-card-elevation-medium {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.sr-card-elevation-high {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+/* Bordered cards */
+.sr-card-bordered {
+  border: 1px solid #dee2e6;
+}
+
+/* Gradient border cards */
+.sr-card-gradient-border {
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  position: relative;
+}
+
+.sr-card-gradient-border::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: -1;
+  margin: -1px;
+  border-radius: inherit;
+  background: linear-gradient(23deg, #6366f1, #f53595, #5108fa, #00f5d5);
+}
+
+/* Glow effect */
+.sr-card-glow {
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+}
+
+.sr-card-primary.sr-card-glow {
+  box-shadow: 0 0 20px rgba(58, 134, 255, 0.2);
+}
+
+.sr-card-secondary.sr-card-glow {
+  box-shadow: 0 0 20px rgba(131, 56, 236, 0.2);
+}
+
+.sr-card-accent.sr-card-glow {
+  box-shadow: 0 0 20px rgba(255, 0, 110, 0.2);
+}
+
+.sr-card-cyber.sr-card-glow {
+  box-shadow: 0 0 20px rgba(0, 245, 212, 0.2);
+}
+
+/* Glass effect */
+.sr-card-glass {
+  background-color: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+}
+
+/* Interactive cards */
+.sr-card-interactive {
+  cursor: pointer;
+}
+
+.sr-card-interactive:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+/* Card sections */
+.sr-card-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #f0f2f5;
+  font-weight: 600;
+}
+
+.sr-card-body {
+  padding: 20px;
+  flex: 1;
+}
+
+.sr-card-footer {
+  padding: 16px 20px;
+  border-top: 1px solid #f0f2f5;
+}
+
+/* Dark mode overrides */
+@media (prefers-color-scheme: dark) {
+  .sr-card-default {
+    background-color: #1e1e3c;
+    color: #e0e0ff;
+  }
+  
+  .sr-card-primary {
+    background-color: #1a2a4a;
+    color: #e0e0ff;
+  }
+  
+  .sr-card-secondary {
+    background-color: #2a1a4a;
+    color: #e0e0ff;
+  }
+  
+  .sr-card-accent {
+    background-color: #3a1a2a;
+    color: #e0e0ff;
+  }
+  
+  .sr-card-cyber {
+    background-color: #1a3a3a;
+    color: #e0e0ff;
+  }
+  
+  .sr-card-bordered {
+    border-color: #333366;
+  }
+  
+  .sr-card-header,
+  .sr-card-footer {
+    border-color: #333366;
+  }
+  
+  .sr-card-glass {
+    background-color: rgba(30, 30, 60, 0.7);
+  }
+}

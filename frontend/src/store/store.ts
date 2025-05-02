@@ -5,12 +5,11 @@ import userProfileReducer from './slices/userProfileSlice';
 import systemAlertsReducer from './slices/systemAlertsSlice';
 import autoTunerReducer from './slices/autoTunerSlice';
 import optimizationReducer from './slices/optimizationSlice';
-import alertsReducer from './slices/alertsSlice';
 import configurationReducer from './slices/configurationSlice';
 import { MetricsState } from '../types/metrics';
 import xsrfMiddleware from './csrf';
 
-const store = configureStore({
+export const store = configureStore({
   reducer: {
     auth: authReducer,
     metrics: metricsReducer,
@@ -18,7 +17,6 @@ const store = configureStore({
     systemAlerts: systemAlertsReducer,
     autoTuner: autoTunerReducer,
     optimization: optimizationReducer,
-    alerts: alertsReducer,
     configuration: configurationReducer,
     //... other reducers
   },

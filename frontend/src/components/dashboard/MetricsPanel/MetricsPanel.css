@@ -1,0 +1,120 @@
+/* MetricsPanel.css */
+:root {
+  /* Color-blind accessible cyberpunk palette */
+  --primary: #3a86ff; /* Accessible blue */
+  --primary-light: #61a0ff;
+  --primary-dark: #2667cc;
+  --secondary: #8338ec; /* Purple */
+  --accent: #ff006e; /* Hot pink */
+  --accent-light: #ff4d94;
+  --success: #38b000; /* Green */
+  --warning: #ffbe0b; /* Amber */
+  --danger: #ff3838; /* Red */
+  --background: #f8f9fa;
+  --card-bg: #ffffff;
+  --panel-bg: #f0f2f5;
+  --text-primary: #121212;
+  --text-secondary: #333333;
+  --text-muted: #555555;
+  --border-color: #dee2e6;
+}
+
+/* Animation keyframes */
+@keyframes pulse-subtle {
+  0% { opacity: 1; }
+  50% { opacity: 0.8; }
+  100% { opacity: 1; }
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-5px); }
+  100% { transform: translateY(0px); }
+}
+
+/* Add animation for data updates */
+.data-updating {
+  animation: pulse-subtle 1s ease-in-out;
+}
+
+.metrics-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.metrics-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 8px;
+  border-bottom: 3px solid;
+  border-image: linear-gradient(90deg, var(--primary), var(--secondary)) 1;
+}
+
+.metrics-panel-header h2 {
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-size: 1.5rem;
+  margin: 0;
+  font-weight: 700;
+  text-shadow: 0 0 5px rgba(58, 134, 255, 0.3);
+}
+
+.sir-hawkington-icon {
+  position: relative;
+  opacity: 0.8;
+  transition: all 0.3s;
+}
+
+.sir-hawkington-icon:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+.hawk-icon {
+  width: 30px;
+  height: 30px;
+  filter: drop-shadow(0 0 5px rgba(58, 134, 255, 0.7));
+  animation: float 3s ease-in-out infinite;
+}
+
+.character-tooltip {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: rgba(10, 10, 40, 0.9);
+  border: 1px solid var(--primary);
+  border-radius: 8px;
+  padding: 10px;
+  width: 200px;
+  color: white;
+  font-size: 0.8rem;
+  z-index: 10;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.sir-hawkington-icon:hover .character-tooltip {
+  opacity: 1;
+}
+
+.metrics-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  width: 100%;
+  transition: all 0.3s ease;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .metrics-row {
+    grid-template-columns: 1fr;
+  }
+}

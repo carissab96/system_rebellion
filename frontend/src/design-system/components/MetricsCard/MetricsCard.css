@@ -1,0 +1,190 @@
+/**
+ * System Rebellion UI - MetricsCard Component Styles
+ * 
+ * Proprietary metrics card styling for the System Rebellion design system.
+ * These styles implement our cyberpunk aesthetic for system metrics visualization.
+ */
+
+.sr-metrics-card {
+  /* Base metrics card styles */
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+/* Status-based styling */
+.sr-metrics-status-normal {
+  border-top: 3px solid #02b5fc;
+}
+
+.sr-metrics-status-warning {
+  border-top: 3px solid #ffbe0b;
+}
+
+.sr-metrics-status-critical {
+  border-top: 3px solid #ff3838;
+  animation: metrics-critical-pulse 2s infinite;
+}
+
+.sr-metrics-status-optimized {
+  border-top: 3px solid #38b000;
+}
+
+@keyframes metrics-critical-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 56, 56, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(255, 56, 56, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 56, 56, 0);
+  }
+}
+
+/* Updating animation */
+.sr-metrics-updating {
+  animation: metrics-updating 1.5s ease-in-out;
+}
+
+@keyframes metrics-updating {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Header section */
+.sr-metrics-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.sr-metrics-title {
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #333333;
+}
+
+.sr-metrics-icon {
+  margin-right: 8px;
+  font-size: 1.1em;
+}
+
+/* Value container */
+.sr-metrics-value-container {
+  display: flex;
+  align-items: baseline;
+  margin-bottom: 12px;
+}
+
+.sr-metrics-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-right: 12px;
+  color: #121212;
+}
+
+.sr-metrics-unit {
+  font-size: 0.9rem;
+  font-weight: 400;
+  opacity: 0.7;
+  margin-left: 4px;
+}
+
+/* Trend indicators */
+.sr-metrics-trend {
+  display: flex;
+  align-items: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.sr-metrics-trend-icon {
+  margin-right: 4px;
+}
+
+.sr-metrics-trend-positive {
+  color: #38b000;
+}
+
+.sr-metrics-trend-negative {
+  color: #ff3838;
+}
+
+.sr-metrics-trend-stable {
+  color: #02b5fc;
+}
+
+.sr-metrics-trend-up {
+  color: #ff006e;
+}
+
+.sr-metrics-trend-down {
+  color: #00f5d4;
+}
+
+.sr-metrics-change-percentage {
+  font-size: 0.85rem;
+}
+
+/* Sparkline */
+.sr-metrics-sparkline {
+  height: 40px;
+  margin: 12px 0;
+  position: relative;
+}
+
+.sr-metrics-sparkline-visual {
+  display: flex;
+  align-items: flex-end;
+  height: 100%;
+  width: 100%;
+  gap: 2px;
+}
+
+.sr-metrics-sparkline-point {
+  flex: 1;
+  background: linear-gradient(to top, rgba(2, 181, 252, 0.3), rgba(2, 181, 252, 0.7));
+  border-radius: 2px 2px 0 0;
+  min-height: 4px;
+  transition: height 0.3s ease;
+}
+
+/* Last updated timestamp */
+.sr-metrics-last-updated {
+  font-size: 0.75rem;
+  color: #666666;
+  opacity: 0.7;
+  text-align: right;
+  margin-top: 8px;
+}
+
+/* Dark mode overrides */
+@media (prefers-color-scheme: dark) {
+  .sr-metrics-title {
+    color: #e0e0ff;
+  }
+  
+  .sr-metrics-value {
+    color: #ffffff;
+  }
+  
+  .sr-metrics-last-updated {
+    color: #b8b8ff;
+  }
+  
+  .sr-metrics-sparkline-point {
+    background: linear-gradient(to top, rgba(2, 181, 252, 0.3), rgba(2, 181, 252, 0.8));
+  }
+}
