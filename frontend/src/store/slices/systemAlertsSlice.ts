@@ -1,8 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import axios from 'axios';
-import { API_BASE_URL } from '../../utils/api';
+import { apiMethods } from '../../utils/api';
 
-const BASE_PATH =  `${API_BASE_URL}/system-alerts/`;
+const BASE_PATH =  `/system-alerts/`;
 // Types
 export interface SystemAlert {
   id: string;
@@ -34,8 +33,17 @@ const initialState: SystemAlertsState = {
   selectedCount: 0
 };
 
+// Define response types
+interface AlertsResponse {
+  alerts: SystemAlert[];
+  total: number;
+}
+
 // Async Thunks
-export const fetchSystemAlerts = createAsyncThunk(
+export const fetchSystemAlerts = createAsyncThunk<
+  AlertsResponse,
+  { skip?: number, limit?: number, is_read?: boolean }
+>(
   'systemAlerts/fetchAlerts',
   async ({ skip = 0, limit = 20, is_read }: { skip?: number, limit?: number, is_read?: boolean } = {}, { rejectWithValue }) => {
     try {
@@ -44,9 +52,10 @@ export const fetchSystemAlerts = createAsyncThunk(
       if (is_read !== undefined) {
         url += `&is_read=${is_read}`;
       }
-      const response = await axios.get(url);
-      console.log("🦉 Sir Hawkington returned with alerts:", response.data);
-      return response.data;
+      console.log("Fetching alerts from:", url);
+      const response = await apiMethods.get<AlertsResponse>(url);
+      console.log("🦉 Sir Hawkington returned with alerts:", response);
+      return response as AlertsResponse;
     } catch (error: any) {
       console.error("💥 Sir Hawkington crashed while fetching alerts!", error);
       return rejectWithValue(
@@ -57,14 +66,17 @@ export const fetchSystemAlerts = createAsyncThunk(
   }
 );
 
-export const createSystemAlert = createAsyncThunk(
+export const createSystemAlert = createAsyncThunk<
+  SystemAlert,
+  Omit<SystemAlert, 'id' | 'timestamp' | 'created_at' | 'updated_at'>
+>(
   'systemAlerts/createAlert',
   async (alertData: Omit<SystemAlert, 'id' | 'timestamp' | 'created_at' | 'updated_at'>, { rejectWithValue }) => {
     try {
       console.log("🦉 Sir Hawkington is creating a new system alert...");
-      const response = await axios.post(`${BASE_PATH}`, alertData);
-      console.log("🦉 Sir Hawkington created a new alert:", response.data);
-      return response.data;
+      const response = await apiMethods.post<SystemAlert, typeof alertData>(`${BASE_PATH}`, alertData);
+      console.log("🦉 Sir Hawkington created a new alert:", response);
+      return response as SystemAlert;
     } catch (error: any) {
       console.error("💥 Sir Hawkington crashed while creating an alert!", error);
       return rejectWithValue(
@@ -75,14 +87,17 @@ export const createSystemAlert = createAsyncThunk(
   }
 );
 
-export const markAlertAsRead = createAsyncThunk(
+export const markAlertAsRead = createAsyncThunk<
+  SystemAlert,
+  string
+>(
   'systemAlerts/markAsRead',
   async (id: string, { rejectWithValue }) => {
     try {
       console.log(`🦉 Sir Hawkington is marking alert ${id} as read...`);
-      const response = await axios.post(`${BASE_PATH}${id}/mark-as-read`);
-      console.log("🦉 Sir Hawkington marked the alert as read:", response.data);
-      return response.data;
+      const response = await apiMethods.post<SystemAlert, {}>(`${BASE_PATH}${id}/mark-as-read`, {});
+      console.log("🦉 Sir Hawkington marked the alert as read:", response);
+      return response as SystemAlert;
     } catch (error: any) {
       console.error("💥 Sir Hawkington crashed while marking an alert as read!", error);
       return rejectWithValue(
@@ -93,14 +108,17 @@ export const markAlertAsRead = createAsyncThunk(
   }
 );
 
-export const markAllAlertsAsRead = createAsyncThunk(
+export const markAllAlertsAsRead = createAsyncThunk<
+  boolean,
+  void
+>(
   'systemAlerts/markAllAsRead',
   async (_, { rejectWithValue }) => {
     try {
       console.log("🦉 Sir Hawkington is marking all alerts as read...");
-      await axios.post(`${BASE_PATH}/mark-all-as-read`);
+      const response = await apiMethods.post<{success: boolean}, {}>(`${BASE_PATH}mark-all-as-read`, {});
       console.log("🦉 Sir Hawkington marked all alerts as read");
-      return true;
+      return response.success;
     } catch (error: any) {
       console.error("💥 Sir Hawkington crashed while marking all alerts as read!", error);
       return rejectWithValue(
@@ -111,13 +129,16 @@ export const markAllAlertsAsRead = createAsyncThunk(
   }
 );
 
-export const deleteSystemAlert = createAsyncThunk(
+export const deleteSystemAlert = createAsyncThunk<
+  string,
+  string
+>(
   'systemAlerts/deleteAlert',
   async (id: string, { rejectWithValue }) => {
     try {
       console.log(`🦉 Sir Hawkington is deleting alert ${id}...`);
-      await axios.delete(`${BASE_PATH}${id}`);
-      console.log("🦉 Sir Hawkington deleted the alert successfully");
+      await apiMethods.delete<{success: boolean}>(`${BASE_PATH}${id}`);
+      console.log(`🦉 Sir Hawkington deleted alert ${id}`);
       return id;
     } catch (error: any) {
       console.error("💥 Sir Hawkington crashed while deleting an alert!", error);

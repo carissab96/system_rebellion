@@ -35,6 +35,9 @@ class NetworkMetricsService:
         self._previous_latency_checks = {}
         self._connection_history = defaultdict(list)  # Track connection history for quality metrics
         self._packet_loss_history = {}  # Track packet loss over time
+        self._interface_stats_history = defaultdict(list)  # Track per-interface stats over time
+        self._dns_query_history = []  # Track DNS query performance
+        self._protocol_breakdown_cache = {}  # Cache for protocol breakdown analysis
     
     async def get_metrics(self) -> Dict[str, Any]:
         """
@@ -62,13 +65,29 @@ class NetworkMetricsService:
             # Get top bandwidth consumers by process
             top_bandwidth_processes = await self._get_top_bandwidth_processes(5)
             
+            # Get per-interface statistics
+            interface_stats = self._get_per_interface_stats()
+            
+            # Get DNS performance metrics
+            dns_metrics = await self._get_dns_metrics()
+            
+            # Get internet connectivity metrics
+            internet_metrics = await self._get_internet_connectivity_metrics()
+            
+            # Get protocol breakdown by connection type
+            protocol_breakdown = self._get_protocol_breakdown()
+            
             return {
                 'interfaces': interfaces,
                 'io_stats': io_stats,
                 'connections': connections,
                 'protocol_stats': protocol_stats,
                 'connection_quality': connection_quality,
-                'top_bandwidth_processes': top_bandwidth_processes
+                'top_bandwidth_processes': top_bandwidth_processes,
+                'interface_stats': interface_stats,
+                'dns_metrics': dns_metrics,
+                'internet_metrics': internet_metrics,
+                'protocol_breakdown': protocol_breakdown
             }
         except Exception as e:
             self.logger.error(f"Error collecting network metrics: {str(e)}")
@@ -80,20 +99,50 @@ class NetworkMetricsService:
                     'packets_sent': 0,
                     'packets_recv': 0,
                     'sent_rate': 0,
-                    'recv_rate': 0
+                    'recv_rate': 0,
+                    'errors_in': 0,
+                    'errors_out': 0,
+                    'drops_in': 0,
+                    'drops_out': 0
                 },
                 'connections': [],
                 'protocol_stats': {
                     'tcp': {'active': 0, 'listening': 0, 'established': 0, 'time_wait': 0},
                     'udp': {'active': 0},
-                    'http': {'connections': 0}
+                    'http': {'connections': 0},
+                    'https': {'connections': 0},
+                    'dns': {'queries': 0, 'responses': 0}
                 },
                 'connection_quality': {
                     'average_latency': 0,
                     'packet_loss_percent': 0,
-                    'connection_stability': 100
+                    'connection_stability': 100,
+                    'jitter': 0,
+                    'gateway_latency': 0,
+                    'dns_latency': 0,
+                    'internet_latency': 0
                 },
-                'top_bandwidth_processes': []
+                'top_bandwidth_processes': [],
+                'interface_stats': {},
+                'dns_metrics': {
+                    'query_time_ms': 0,
+                    'success_rate': 100,
+                    'cache_hit_ratio': 0
+                },
+                'internet_metrics': {
+                    'connected': True,
+                    'download_speed': 0,
+                    'upload_speed': 0,
+                    'isp_latency': 0
+                },
+                'protocol_breakdown': {
+                    'web': 0,
+                    'email': 0,
+                    'streaming': 0,
+                    'gaming': 0,
+                    'file_transfer': 0,
+                    'other': 0
+                }
             }
     
     def _get_network_interfaces(self) -> List[Dict[str, Any]]:

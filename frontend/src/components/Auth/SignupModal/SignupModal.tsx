@@ -116,7 +116,9 @@ const SignupModal: FC<SignupModalProps> = ({ isOpen, onClose }) => {
       
       // Show success state before closing
       setTimeout(() => {
-        navigate('/login');
+        // New users should be redirected to onboarding page after signup
+        // The backend should have set needs_onboarding to true
+        navigate('/onboarding');
         onClose();
       }, 2000);
       

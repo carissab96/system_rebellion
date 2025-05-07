@@ -68,6 +68,17 @@ const Login: React.FC<LoginProps> = ({ onClose, isOpen }) => {
     }
   }, [isOpen]);
 
+  useEffect(() => {
+    if (isAuthenticated) {
+      console.log('User is authenticated via login modal, redirecting directly to dashboard');
+      // Force redirect to dashboard for login users, bypassing onboarding check
+      navigate('/dashboard', { replace: true });
+      if (onClose) {
+        onClose();
+      }
+    }
+  }, [isAuthenticated, navigate, onClose]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(''); // Clear previous errors
@@ -144,24 +155,11 @@ const Login: React.FC<LoginProps> = ({ onClose, isOpen }) => {
       
       // Check if the user object has a profile with system information
       const user = result;
-      const hasSystemInfo = user?.profile && (
-        user.profile.operating_system ||
-        user.profile.os_version ||
-        user.profile.cpu_cores ||
-        user.profile.total_memory
-      );
       
-      // Short delay to show success message before navigating
-      setTimeout(() => {
-        if (!hasSystemInfo) {
-          console.log("User needs to complete system profile, redirecting to onboarding page");
-          navigate('/onboarding');
-        } else {
-          console.log("User has system profile information, redirecting to dashboard");
-          navigate('/dashboard');
-        }
-        onClose();
-      }, 1000);
+      // Login users should always go directly to dashboard
+      console.log('Login successful via login modal, will redirect to dashboard');
+      
+      // No need to check system info for login users - the useEffect will handle the redirect
     } catch (err: any) {
       console.error("Login failed", err);
       

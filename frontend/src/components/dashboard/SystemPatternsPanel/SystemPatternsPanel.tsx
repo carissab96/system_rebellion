@@ -15,9 +15,32 @@ export const SystemPatternsPanel: React.FC<SystemPatternsPanelProps> = ({
   const dispatch = useAppDispatch();
   const patterns = useAppSelector((state) => state.autoTuner.patterns);
   const patternsStatus = useAppSelector((state) => state.autoTuner.status);
+  const error = useAppSelector((state) => state.autoTuner.error);
+  
+  // Fetch patterns on component mount
+  React.useEffect(() => {
+    console.log('SystemPatternsPanel: Fetching patterns...');
+    dispatch(fetchPatterns());
+    
+    // Set up polling for patterns
+    const intervalId = setInterval(() => {
+      console.log('SystemPatternsPanel: Polling for patterns...');
+      dispatch(fetchPatterns());
+    }, 60000); // Poll every minute
+    
+    return () => clearInterval(intervalId);
+  }, [dispatch]);
+  
+  // Log patterns for debugging
+  React.useEffect(() => {
+    console.log('SystemPatternsPanel: Current patterns:', patterns);
+    console.log('SystemPatternsPanel: Patterns status:', patternsStatus);
+    console.log('SystemPatternsPanel: Error:', error);
+  }, [patterns, patternsStatus, error]);
   
   // Function to reload patterns
   const handleReloadPatterns = () => {
+    console.log('SystemPatternsPanel: Manually reloading patterns...');
     dispatch(fetchPatterns());
   };
 

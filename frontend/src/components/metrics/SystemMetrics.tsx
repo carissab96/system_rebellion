@@ -4,7 +4,7 @@ import { initializeWebSocket } from '../../store/slices/metricsSlice';
 import CPUMetric from '../dashboard/Metrics/CPUMetrics/CPUMetric';
 import MemoryMetric from '../dashboard/Metrics/MemoryMetric/MemoryMetric';
 import DiskMetric from '../dashboard/Metrics/DiskMetric/DiskMetric';
-import NetworkMetric from '../dashboard/Metrics/NetworkMetric/NetworkMetric';
+import { NetworkMetric } from '../dashboard/Metrics/NetworkMetric/NetworkMetric';
 import { SystemStatus } from '../dashboard/Dashboard/SystemStatus/SystemStatus';
 import './SystemMetrics.css';
 

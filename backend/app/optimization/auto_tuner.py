@@ -41,15 +41,15 @@ class AutoTuner:
         self.active_tunings = {}
         self.permissions = {}
         self._initialized = False
-        # Initialize with default permissions
+        # Initialize with default permissions - all set to True to allow full access
         self.permissions = {
-            'cpu_governor': False,
-            'network_buffer': False,
-            'disk_read_ahead': False,
-            'io_scheduler': False,
-            'swap_tendency': False,
-            'cache_pressure': False,
-            'memory_pressure': False,
+            'cpu_governor': True,
+            'network_buffer': True,
+            'disk_read_ahead': True,
+            'io_scheduler': True,
+            'swap_tendency': True,
+            'cache_pressure': True,
+            'memory_pressure': True,
             'process_priority': True  # Non-negative nice values don't require sudo
         }
         # Note: We'll properly initialize in the first get_tuning_recommendations call
@@ -70,52 +70,17 @@ class AutoTuner:
         # Log permission status
         self.logger.info(f"System permissions initialized. Full access: {has_all_permissions}")
         
-        # Create sample tuning history if none exists
+        # Only load existing tuning history, don't create sample entries
         try:
             from app.optimization.auto_tuner_db_helpers import get_tuning_history_from_db, save_tuning_history_to_db
             
             # Check if we have any tuning history
-            history = await get_tuning_history_from_db(limit=1)
+            history = await get_tuning_history_from_db(limit=10)
             
-            # If no history exists, create some sample entries
-            if not history:
-                self.logger.info("No tuning history found, creating sample entries")
-                
-                # Sample tuning actions
-                sample_tunings = [
-                    {
-                        'parameter': 'cpu_governor',
-                        'current_value': 'powersave',
-                        'new_value': 'performance',
-                        'success': True,
-                        'metrics_before': {'cpu_usage': 45.2, 'memory_usage': 65.8},
-                        'metrics_after': {'cpu_usage': 48.5, 'memory_usage': 67.2}
-                    },
-                    {
-                        'parameter': 'swap_tendency',
-                        'current_value': '60',
-                        'new_value': '10',
-                        'success': True,
-                        'metrics_before': {'memory_usage': 78.3, 'swap_usage': 25.6},
-                        'metrics_after': {'memory_usage': 72.1, 'swap_usage': 18.4}
-                    },
-                    {
-                        'parameter': 'network_buffer',
-                        'current_value': '256',
-                        'new_value': '512',
-                        'success': True,
-                        'metrics_before': {'network_usage': 15.7},
-                        'metrics_after': {'network_usage': 18.2}
-                    }
-                ]
-                
-                # Save sample tuning history
-                for tuning in sample_tunings:
-                    await save_tuning_history_to_db(tuning, user_id='1')
-                
-                self.logger.info("Created sample tuning history entries")
+            # Log the number of tuning history entries found
+            self.logger.info(f"Found {len(history)} tuning history entries")
         except Exception as e:
-            self.logger.error(f"Error creating sample tuning history: {str(e)}")
+            self.logger.error(f"Error loading tuning history: {str(e)}")
         
         # Mark as initialized
         self._initialized = True

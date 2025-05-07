@@ -78,7 +78,20 @@ async def get_tuning_history_from_db(user_id: Optional[str] = None, limit: int =
             history_dicts = []
             for record in tuning_history:
                 try:
-                    history_dicts.append(record.to_dict())
+                    # Create dictionary directly from record attributes to avoid greenlet_spawn errors
+                    history_dict = {
+                        "id": record.id,
+                        "user_id": record.user_id,
+                        "parameter": record.parameter,
+                        "old_value": record.old_value,
+                        "new_value": record.new_value,
+                        "success": record.success,
+                        "error": record.error,
+                        "metrics_before": record.metrics_before,
+                        "metrics_after": record.metrics_after,
+                        "timestamp": record.timestamp.isoformat() if record.timestamp else None
+                    }
+                    history_dicts.append(history_dict)
                 except Exception as e:
                     logger.error(f"Error converting record to dict: {str(e)}")
             

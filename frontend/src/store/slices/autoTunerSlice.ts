@@ -3,7 +3,8 @@ import { PayloadAction } from '@reduxjs/toolkit';
 import { AutoTunerState } from '../../types/autoTuner';
 import { OptimizationProfile } from '../../types/metrics';
 import api from '../../utils/api';
-import { createAlertFromRecommendation, createAlertFromPattern } from '../../utils/alertUtils';
+import alertUtils from '../../utils/alertUtils';
+import { createSystemAlert } from './systemAlertsSlice';
 
 const initialState: AutoTunerState = {
   currentMetrics: null,
@@ -14,6 +15,32 @@ const initialState: AutoTunerState = {
   status: 'idle',
   error: null,
   lastUpdated: null,
+};
+
+// Helper functions to create alerts from patterns and recommendations
+// These are separate from the reducers to avoid the "may not call store.getState() while the reducer is executing" error
+export const createAlertsFromPatterns = (patterns: any[], dispatch: any) => {
+  if (patterns && patterns.length > 0) {
+    // Only create alerts for high confidence patterns
+    patterns
+      .filter(pattern => pattern.confidence > 0.6)
+      .forEach(pattern => {
+        const alertData = alertUtils.createAlertFromPattern(pattern);
+        dispatch(createSystemAlert(alertData));
+      });
+  }
+};
+
+export const createAlertsFromRecommendations = (recommendations: any[], dispatch: any) => {
+  if (recommendations && recommendations.length > 0) {
+    // Only create alerts for high impact recommendations
+    recommendations
+      .filter(rec => (rec.confidence * rec.impact_score) > 0.5)
+      .forEach(recommendation => {
+        const alertData = alertUtils.createAlertFromRecommendation(recommendation);
+        dispatch(createSystemAlert(alertData));
+      });
+  }
 };
 
 // Async thunks for API calls
@@ -33,10 +60,16 @@ export const fetchCurrentMetrics = createAsyncThunk(
 
 export const fetchRecommendations = createAsyncThunk(
   'autoTuner/fetchRecommendations',
-  async () => {
+  async (_, { dispatch }) => {
     try {
       console.log('Fetching recommendations with authentication...');
       const response = await api.get(`/auto-tuner/recommendations`);
+      
+      // Create alerts from recommendations outside of the reducer
+      if (response.data && Array.isArray(response.data)) {
+        createAlertsFromRecommendations(response.data, dispatch);
+      }
+      
       return response.data;
     } catch (error: any) {
       console.error('Error fetching recommendations:', error.response?.data || error.message);
@@ -47,10 +80,29 @@ export const fetchRecommendations = createAsyncThunk(
 
 export const fetchPatterns = createAsyncThunk(
   'autoTuner/fetchPatterns',
-  async () => {
+  async (_, { dispatch }) => {
     try {
       console.log('Fetching patterns with authentication...');
       const response = await api.get(`/auto-tuner/patterns`);
+      console.log('Patterns API response:', response.data);
+      
+      // Ensure we're returning the expected format even if the API response structure changes
+      if (!response.data) {
+        console.error('Empty response from patterns API');
+        return { detected_patterns: [] };
+      }
+      
+      // Extract patterns from the response
+      let patterns = [];
+      if (response.data.detected_patterns) {
+        patterns = response.data.detected_patterns;
+      } else if (Array.isArray(response.data)) {
+        patterns = response.data;
+      }
+      
+      // Create alerts from patterns outside of the reducer
+      createAlertsFromPatterns(patterns, dispatch);
+      
       return response.data;
     } catch (error: any) {
       console.error('Error fetching patterns:', error.response?.data || error.message);
@@ -145,16 +197,6 @@ const autoTunerSlice = createSlice({
         state.status = 'succeeded';
         state.recommendations = action.payload;
         state.lastUpdated = new Date().toISOString();
-        
-        // Create alerts for new recommendations
-        if (action.payload && action.payload.length > 0) {
-          // Only create alerts for high-impact recommendations
-          action.payload
-            .filter((rec: any) => (rec.confidence * rec.impact_score) > 0.5)
-            .forEach((recommendation: any) => {
-              createAlertFromRecommendation(recommendation);
-            });
-        }
       })
       .addCase(fetchRecommendations.rejected, (state, action) => {
         state.status = 'failed';
@@ -168,22 +210,52 @@ const autoTunerSlice = createSlice({
       })
       .addCase(fetchPatterns.fulfilled, (state, action) => {
         state.status = 'succeeded';
-        state.patterns = action.payload.detected_patterns;
+        
+        // Enhanced debug logging
+        console.log('Patterns payload:', action.payload);
+        
+        // Handle the case where detected_patterns might be undefined
+        if (action.payload && action.payload.detected_patterns) {
+          // This is the expected format from the backend
+          state.patterns = action.payload.detected_patterns;
+          console.log('Setting patterns in state from detected_patterns:', action.payload.detected_patterns);
+        } else if (Array.isArray(action.payload)) {
+          // Handle case where API might return an array directly
+          state.patterns = action.payload;
+          console.log('Setting patterns array in state:', action.payload);
+        } else {
+          // Fallback to empty array if no patterns found
+          console.warn('No patterns found in payload, setting empty array. Payload:', action.payload);
+          state.patterns = [];
+        }
+        
+        // Additional validation to ensure patterns are in the expected format
+        if (state.patterns.length > 0) {
+          // Verify that each pattern has the required fields
+          const validPatterns = state.patterns.filter((pattern: any) => {
+            return pattern && 
+                   typeof pattern === 'object' && 
+                   'type' in pattern && 
+                   'pattern' in pattern && 
+                   'confidence' in pattern && 
+                   'details' in pattern;
+          });
+          
+          if (validPatterns.length !== state.patterns.length) {
+            console.warn(`Filtered out ${state.patterns.length - validPatterns.length} invalid patterns`);
+            state.patterns = validPatterns;
+          }
+        }
+        
         state.lastUpdated = new Date().toISOString();
         
-        // Create alerts for significant patterns
-        if (action.payload.detected_patterns && action.payload.detected_patterns.length > 0) {
-          // Only create alerts for patterns with high confidence
-          action.payload.detected_patterns
-            .filter((pattern: any) => pattern.confidence > 0.6) // Only high confidence patterns
-            .forEach((pattern: any) => {
-              createAlertFromPattern(pattern);
-            });
-        }
+        // We'll handle alerts creation after the reducer completes
+        // We don't create alerts here to avoid the "may not call store.getState() while the reducer is executing" error
       })
       .addCase(fetchPatterns.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.error.message || 'Failed to fetch patterns';
+        console.error('Failed to fetch patterns:', action.error);
       })
       
     // Tuning History
