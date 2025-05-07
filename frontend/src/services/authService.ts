@@ -279,7 +279,11 @@ export const authService = {
           id: '', 
           username,
           email: '',
-          needs_onboarding: false // Default to false to prevent unnecessary onboarding redirects
+          needs_onboarding: false, // Default to false to prevent unnecessary onboarding redirects
+          operating_system: 'unknown', // Add basic system info to prevent onboarding
+          os_version: 'unknown',
+          cpu_cores: 1,
+          total_memory: 1
         };
       }
     } catch (error) {

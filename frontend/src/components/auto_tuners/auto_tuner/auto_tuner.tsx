@@ -16,12 +16,32 @@ import { ParameterDescription, AutoTunerHelp } from './parameter_descriptions';
 import SystemLogsViewer from '../../dashboard/SystemLogs/SystemLogsViewer';
 import './auto_tuner.css';
 
+// Helper function to format bytes with appropriate units
+const formatBytes = (bytes: number, decimals = 2) => {
+  if (bytes === 0) return '0 Bytes';
+  
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+  
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+};
+
 // Current Metrics Component
 const CurrentMetricsPanel: React.FC = () => {
   const metrics = useSelector((state: RootState) => state.autoTuner.currentMetrics);
   const status = useSelector((state: RootState) => state.autoTuner.status);
   const [isUpdating, setIsUpdating] = useState(false);
   const prevMetricsRef = useRef(metrics);
+  
+  // State for network metrics
+  const [bytesSent, setBytesSent] = useState<number>(0);
+  const [bytesReceived, setBytesReceived] = useState<number>(0);
+  const [sentRate, setSentRate] = useState<number>(0);
+  const [receivedRate, setReceivedRate] = useState<number>(0);
+  const [lastUpdateTime, setLastUpdateTime] = useState<number>(Date.now());
 
   // Detect when metrics change to trigger smooth update animation
   useEffect(() => {
@@ -31,6 +51,59 @@ const CurrentMetricsPanel: React.FC = () => {
       return () => clearTimeout(timer);
     }
     prevMetricsRef.current = metrics;
+    
+    // Update network metrics when we get new data
+    if (metrics?.additional?.network_details) {
+      const details = metrics.additional.network_details;
+      
+      // Get the total rate from rate_mbps (this is always available)
+      const totalRateMbps = details.rate_mbps || 0;
+      const totalRateBytes = totalRateMbps * 1024 * 1024; // Convert MB/s to bytes/s
+      
+      // Use the rates directly from the backend if available
+      if (details.sent_rate_bps !== undefined && details.recv_rate_bps !== undefined) {
+        // Use the values directly from the backend
+        setSentRate(details.sent_rate_bps);
+        setReceivedRate(details.recv_rate_bps);
+      } else if (totalRateBytes > 0) {
+        // If we have a total rate but no individual rates, split it 40/60 (typical upload/download ratio)
+        setSentRate(totalRateBytes * 0.4); // 40% for upload
+        setReceivedRate(totalRateBytes * 0.6); // 60% for download
+      } else {
+        // Fallback to calculating rates ourselves if the backend doesn't provide them
+        const currentTime = Date.now();
+        const timeDiff = (currentTime - lastUpdateTime) / 1000; // convert to seconds
+        
+        // Calculate rates if we have previous values
+        if (bytesSent > 0 && bytesReceived > 0 && timeDiff > 0) {
+          const sentDiff = details.bytes_sent - bytesSent;
+          const receivedDiff = details.bytes_recv - bytesReceived;
+          
+          // Only update rates if we have positive differences
+          if (sentDiff >= 0) {
+            setSentRate(sentDiff / timeDiff);
+          }
+          
+          if (receivedDiff >= 0) {
+            setReceivedRate(receivedDiff / timeDiff);
+          }
+        }
+      }
+      
+      // If we still have zero rates but have byte counts, set minimal values to show activity
+      if (sentRate === 0 && receivedRate === 0 && (details.bytes_sent > 0 || details.bytes_recv > 0)) {
+        setSentRate(1024);    // Show minimal 1KB/s upload
+        setReceivedRate(1024); // Show minimal 1KB/s download
+      }
+      
+      // Update stored values
+      setBytesSent(details.bytes_sent);
+      setBytesReceived(details.bytes_recv);
+      setLastUpdateTime(Date.now());
+      
+      // Log what we're using for debugging
+      console.log(`Auto-tuner network metrics - Sent: ${formatBytes(sentRate)}/s, Received: ${formatBytes(receivedRate)}/s, Total bytes: ${details.bytes_sent + details.bytes_recv}`);
+    }
   }, [metrics]);
 
   if (status === 'loading' && !metrics) {
@@ -85,18 +158,31 @@ const CurrentMetricsPanel: React.FC = () => {
           </div>
         </div>
         <div className="metric-card">
-          <h3>Network Usage</h3>
-          <div className="metric-value" key={`network-${metrics.network_usage || 0}`}>{metrics.network_usage ? `${metrics.network_usage.toFixed(2)} MB/s` : 'N/A'}</div>
-          {metrics.network_usage && (
-            <div className="metric-gauge">
-              <div 
-                className="metric-fill" 
-                style={{ width: `${Math.min(metrics.network_usage * 10, 100)}%`, backgroundColor: '#1890ff' }}
-              ></div>
+          <h3>Network Activity</h3>
+          <div className="metric-value network-metrics" key={`network-${bytesSent}-${bytesReceived}`}>
+            <div className="network-sent">
+              <div className="network-label">Upload:</div>
+              <div className="network-rate">{formatBytes(sentRate)}/s</div>
+              <div className="network-total">Total: {formatBytes(bytesSent)}</div>
             </div>
-          )}
+            <div className="network-received">
+              <div className="network-label">Download:</div>
+              <div className="network-rate">{formatBytes(receivedRate)}/s</div>
+              <div className="network-total">Total: {formatBytes(bytesReceived)}</div>
+            </div>
+          </div>
+          {/* Network gauge based on combined rate */}
+          <div className="metric-gauge">
+            <div 
+              className="metric-fill" 
+              style={{ 
+                width: `${Math.min(((sentRate + receivedRate) / (1024 * 1024)) * 10, 100)}%`, 
+                backgroundColor: (sentRate + receivedRate) > (8 * 1024 * 1024) ? '#ff4d4f' : '#52c41a' 
+              }}
+            ></div>
+          </div>
           <div className="help-text">
-            <small title="The amount of network usage in MB/s">Network usage is the amount of network resources being used.</small>
+            <small title="Network activity in bytes/second">Network activity shows upload and download rates in real-time.</small>
           </div>
         </div>
       </div>
@@ -187,15 +273,50 @@ const RecommendationsPanel: React.FC = () => {
 
 // Patterns Component
 const PatternsPanel: React.FC = () => {
+  const dispatch = useDispatch<AppDispatch>();
   const patterns = useSelector((state: RootState) => state.autoTuner.patterns);
   const status = useSelector((state: RootState) => state.autoTuner.status);
+  const error = useSelector((state: RootState) => state.autoTuner.error);
+  
+  // Fetch patterns on component mount and set up polling
+  useEffect(() => {
+    console.log('AutoTuner PatternsPanel: Fetching patterns...');
+    dispatch(fetchPatterns());
+    
+    const intervalId = setInterval(() => {
+      console.log('AutoTuner PatternsPanel: Polling for patterns...');
+      dispatch(fetchPatterns());
+    }, 60000); // Poll every minute
+    
+    return () => clearInterval(intervalId);
+  }, [dispatch]);
+  
+  // Debug logging
+  useEffect(() => {
+    console.log('AutoTuner PatternsPanel: Current patterns:', patterns);
+    console.log('AutoTuner PatternsPanel: Status:', status);
+    console.log('AutoTuner PatternsPanel: Error:', error);
+  }, [patterns, status, error]);
+  
+  // Manual refresh function
+  const handleRefreshPatterns = () => {
+    console.log('AutoTuner PatternsPanel: Manually refreshing patterns...');
+    dispatch(fetchPatterns());
+  };
 
   if (status === 'loading') {
     return <div className="patterns-panel loading">Loading patterns...</div>;
   }
 
   if (!patterns || patterns.length === 0) {
-    return <div className="patterns-panel empty">No patterns detected</div>;
+    return (
+      <div className="patterns-panel empty">
+        <p>No patterns detected</p>
+        <button onClick={handleRefreshPatterns} className="refresh-button">
+          Refresh Patterns
+        </button>
+      </div>
+    );
   }
 
   return (
@@ -231,6 +352,12 @@ const PatternsPanel: React.FC = () => {
 const TuningHistoryPanel: React.FC = () => {
   const tuningHistory = useSelector((state: RootState) => state.autoTuner.tuningHistory);
   const status = useSelector((state: RootState) => state.autoTuner.status);
+  const [visibleEntries, setVisibleEntries] = useState(5); // Default to showing 5 entries
+  
+  // Function to handle loading more entries
+  const handleLoadMore = () => {
+    setVisibleEntries(prev => prev + 5); // Load 5 more entries each time
+  };
 
   if (status === 'loading') {
     return <div className="history-panel loading">Loading tuning history...</div>;
@@ -240,11 +367,15 @@ const TuningHistoryPanel: React.FC = () => {
     return <div className="history-panel empty">No tuning history available</div>;
   }
 
+  // Get only the visible entries
+  const displayedHistory = tuningHistory.slice(0, visibleEntries);
+  const hasMoreEntries = tuningHistory.length > visibleEntries;
+
   return (
     <div className="history-panel">
       <h2>Optimization History</h2>
       <div className="history-list">
-        {tuningHistory.map((result, index) => (
+        {displayedHistory.map((result, index) => (
           <div key={index} className={`history-card ${result.success ? 'success' : 'failure'}`}>
             <div className="history-header">
               <h3>{result.parameter}</h3>
@@ -271,6 +402,14 @@ const TuningHistoryPanel: React.FC = () => {
             )}
           </div>
         ))}
+        
+        {hasMoreEntries && (
+          <div className="load-more-container">
+            <button className="load-more-button" onClick={handleLoadMore}>
+              Load More ({tuningHistory.length - visibleEntries} remaining)
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

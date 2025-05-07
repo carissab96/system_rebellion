@@ -34,69 +34,64 @@ const OnboardingCheck: React.FC<OnboardingCheckProps> = ({ children }) => {
       pathname: location.pathname 
     });
 
-    // Only check onboarding status if user is authenticated and not already on the onboarding page
-    if (isAuthenticated && !isLoading && location.pathname !== '/onboarding') {
-      // Check if we have user data
-      if (!user) {
-        console.log('No user data available, checking auth status again...');
-        dispatch(checkAuthStatus());
-        return;
-      }
-
-      // IMPORTANT: For existing users, only redirect to onboarding if needs_onboarding is EXPLICITLY true
-      // This ensures users who have completed onboarding go straight to dashboard
-      const needsOnboarding = user.needs_onboarding === true;
-      
-      // Additional check: If the user has system info already, they shouldn't need onboarding
-      const hasSystemInfo = !!(user.operating_system || user.os_version || user.cpu_cores || user.total_memory);
-      
-      console.log('Checking onboarding status:', { 
-        user, 
-        needs_onboarding: user.needs_onboarding,
-        needsOnboarding,
-        hasSystemInfo,
-        currentPath: location.pathname 
-      });
-      
-      // Only redirect to onboarding if explicitly needed AND user doesn't have system info
-      if (needsOnboarding && !hasSystemInfo) {
-        console.log('User needs onboarding and has no system info, redirecting to /onboarding');
-        navigate('/onboarding', { replace: true });
-      } else {
-        // If user has system info but needs_onboarding is still true, fix it
-        if (needsOnboarding && hasSystemInfo) {
-          console.log('User has system info but needs_onboarding is true - this should be fixed');
-          // We'll let them continue to their destination, the backend will fix this on next profile update
+    // Only proceed if we have authentication status and it's not loading
+    if (!isLoading) {
+      // If authenticated, handle redirection based on user state
+      if (isAuthenticated) {
+        // Check if we have user data
+        if (!user) {
+          console.log('No user data available, checking auth status again...');
+          dispatch(checkAuthStatus());
+          return;
         }
-        
-        // If user is on the home page or login page after authentication, redirect to dashboard
+
+        // If user is on login page or home page, always redirect to dashboard
         if (location.pathname === '/' || location.pathname === '/login') {
           console.log('Authenticated user on home/login page, redirecting to dashboard');
           navigate('/dashboard', { replace: true });
+          return;
+        }
+
+        // Check if user needs onboarding
+        // IMPORTANT: Only redirect to onboarding if needs_onboarding is EXPLICITLY true
+        // AND user doesn't have system info
+        const hasSystemInfo = !!(user.operating_system || user.os_version || user.cpu_cores || user.total_memory);
+        
+        // Default to NOT needing onboarding unless explicitly set to true
+        const needsOnboarding = user.needs_onboarding === true && !hasSystemInfo;
+        
+        console.log('Checking onboarding status:', { 
+          user, 
+          needs_onboarding: user.needs_onboarding,
+          hasSystemInfo,
+          needsOnboarding,
+          currentPath: location.pathname 
+        });
+        
+        // Handle onboarding redirection
+        if (needsOnboarding && location.pathname !== '/onboarding') {
+          // User needs onboarding and is not on the onboarding page
+          console.log('User needs onboarding, redirecting to /onboarding');
+          navigate('/onboarding', { replace: true });
+        } else if (!needsOnboarding && location.pathname === '/onboarding') {
+          // User doesn't need onboarding but is on the onboarding page
+          console.log('User does not need onboarding but is on onboarding page, redirecting to dashboard');
+          navigate('/dashboard', { replace: true });
         } else {
-          console.log('User does not need onboarding, continuing to requested page');
+          // User is on the correct page based on their onboarding status
+          console.log('User is on the correct page, rendering children');
+          setCheckComplete(true);
+        }
+      } else {
+        // Not authenticated, redirect to login unless already there
+        if (location.pathname !== '/login') {
+          console.log('User is not authenticated, redirecting to login');
+          navigate('/login', { replace: true });
+        } else {
+          console.log('User is on login page and not authenticated, allowing...');
           setCheckComplete(true);
         }
       }
-    } else if (isAuthenticated && !isLoading && location.pathname === '/onboarding') {
-      // If we're on the onboarding page, check if the user actually needs onboarding
-      if (user && user.needs_onboarding === false) {
-        console.log('User does not need onboarding but is on onboarding page, redirecting to dashboard');
-        navigate('/dashboard', { replace: true });
-      } else {
-        console.log('User is on onboarding page and needs onboarding, allowing...');
-        setCheckComplete(true);
-      }
-    } else if (!isAuthenticated && !isLoading) {
-      // If not authenticated and not loading, redirect to login
-      console.log('User is not authenticated, redirecting to login');
-      navigate('/login', { replace: true });
-    } else if (isLoading) {
-      // Still loading, wait for auth status to be determined
-      console.log('Auth status is loading...');
-    } else {
-      console.log('Default case - setting checkComplete to true');
-      setCheckComplete(true);
     }
   }, [isAuthenticated, isLoading, user, navigate, location.pathname, dispatch]);
 

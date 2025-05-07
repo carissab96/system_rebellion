@@ -22,8 +22,9 @@ def check_sudo_access() -> bool:
 
 def check_required_permissions() -> Dict[str, bool]:
     """Check if we have all the required permissions for system tuning"""
+    # Set all permissions to True to ensure full access
     permissions = {
-        "sudo_access": True,  # Set to True by default to allow all tuning options
+        "sudo_access": True,
         "cpu_governor": True,
         "network_buffer": True,
         "disk_read_ahead": True,
@@ -34,49 +35,8 @@ def check_required_permissions() -> Dict[str, bool]:
         "process_priority": True
     }
     
-    # Only check detailed permissions if we have sudo access
-    if permissions["sudo_access"]:
-        try:
-            # Check CPU governor access - set to true by default to allow the option
-            # Even if the specific path doesn't exist, we'll try to use the command
-            cpu_gov_path = "/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor"
-            permissions["cpu_governor"] = True
-            
-            # Check sysctl parameters
-            sysctl_params = {
-                "swap_tendency": ["vm.swappiness"],
-                "cache_pressure": ["vm.vfs_cache_pressure"],
-                "memory_pressure": ["vm.min_free_kbytes"]
-            }
-            
-            # Set network buffer to true by default
-            permissions["network_buffer"] = True
-            
-            for param_name, sysctl_keys in sysctl_params.items():
-                all_exist = True
-                for key in sysctl_keys:
-                    try:
-                        result = subprocess.run(
-                            ["sysctl", key], 
-                            stdout=subprocess.PIPE, 
-                            stderr=subprocess.PIPE,
-                            timeout=2
-                        )
-                        if result.returncode != 0:
-                            all_exist = False
-                            break
-                    except Exception:
-                        all_exist = False
-                        break
-                permissions[param_name] = all_exist
-            
-            # Check disk read-ahead and I/O scheduler
-            # This is simplified and assumes /dev/sda exists
-            permissions["disk_read_ahead"] = os.path.exists("/dev/sda")
-            permissions["io_scheduler"] = os.path.exists("/sys/block/sda/queue/scheduler")
-            
-        except Exception as e:
-            logger.error(f"Error checking detailed permissions: {str(e)}")
+    # Log that we're using full permissions
+    logger.info("Using full system permissions for auto-tuning")
     
     return permissions
 

@@ -1,6 +1,4 @@
 // alertUtils.ts
-import store from '../store/store';
-import { createSystemAlert } from '../store/slices/systemAlertsSlice';
 // We'll use this for direct API calls when needed
 import { API_BASE_URL } from './api';
 
@@ -9,6 +7,7 @@ const BACKEND_URL = 'http://127.0.0.1:8000';
 
 /**
  * Utility to create system alerts from auto-tuner events or other system events
+ * Returns the alert data object that can be dispatched by the caller
  */
 export const createAlertFromEvent = (
   title: string,
@@ -25,15 +24,16 @@ export const createAlertFromEvent = (
     additional_data: relatedMetrics || {}
   };
 
-  // Dispatch the action to create the alert
-  store.dispatch(createSystemAlert(alertData));
-  
   // For debugging - log the API URL we would use for direct API calls
-  console.log(`Alert created. API endpoint would be: ${BACKEND_URL}/api/system-alerts/ or ${API_BASE_URL}/system-alerts/`);
+  console.log(`Alert data created. API endpoint would be: ${BACKEND_URL}/api/system-alerts/ or ${API_BASE_URL}/system-alerts/`);
+  
+  // Return the alert data instead of dispatching it
+  return alertData;
 };
 
 /**
  * Create an alert from an auto-tuner recommendation
+ * Returns the alert data object that can be dispatched by the caller
  */
 export const createAlertFromRecommendation = (recommendation: any) => {
   // Extract information from the recommendation
@@ -58,7 +58,7 @@ export const createAlertFromRecommendation = (recommendation: any) => {
   const message = `${reason}. Current value: ${current_value}, Recommended value: ${recommended_value} (Confidence: ${(confidence * 100).toFixed(0)}%, Impact: ${(impact_score * 100).toFixed(0)}%)`;
   
   // Create the alert with additional data for applying the recommendation
-  createAlertFromEvent(title, message, severity, { 
+  return createAlertFromEvent(title, message, severity, { 
     parameter, 
     current_value, 
     recommended_value, 
@@ -72,6 +72,7 @@ export const createAlertFromRecommendation = (recommendation: any) => {
 
 /**
  * Create an alert from a system pattern detection
+ * Returns the alert data object that can be dispatched by the caller
  */
 export const createAlertFromPattern = (pattern: any) => {
   // Extract information from the pattern
@@ -95,7 +96,7 @@ export const createAlertFromPattern = (pattern: any) => {
   const message = `${patternText}. (Confidence: ${(confidence * 100).toFixed(0)}%)`;
   
   // Create the alert with additional data
-  createAlertFromEvent(title, message, severity, {
+  return createAlertFromEvent(title, message, severity, {
     ...details,
     pattern_type: type,
     confidence,
@@ -106,6 +107,7 @@ export const createAlertFromPattern = (pattern: any) => {
 
 /**
  * Create an alert from a system metric threshold being exceeded
+ * Returns the alert data object that can be dispatched by the caller
  */
 export const createAlertFromMetricThreshold = (metric: string, value: number, threshold: number) => {
   // Determine severity based on how much the threshold is exceeded
@@ -134,7 +136,7 @@ export const createAlertFromMetricThreshold = (metric: string, value: number, th
   const message = `${formattedMetric} has reached ${value.toFixed(1)}%, exceeding the threshold of ${threshold}%.`;
   
   // Create the alert
-  createAlertFromEvent(title, message, severity, {
+  return createAlertFromEvent(title, message, severity, {
     metric,
     current_value: value,
     threshold,
@@ -145,6 +147,7 @@ export const createAlertFromMetricThreshold = (metric: string, value: number, th
 
 /**
  * Create an alert from a tuning action that was applied
+ * Returns the alert data object that can be dispatched by the caller
  */
 export const createAlertFromTuningAction = (tuningAction: any, success: boolean) => {
   const { parameter, old_value, new_value, reason } = tuningAction;
@@ -162,7 +165,7 @@ export const createAlertFromTuningAction = (tuningAction: any, success: boolean)
     : `Failed to change ${parameter} from ${old_value} to ${new_value}. ${reason || ''}`;
   
   // Create the alert
-  createAlertFromEvent(title, message, severity, {
+  return createAlertFromEvent(title, message, severity, {
     parameter,
     old_value,
     new_value,

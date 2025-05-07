@@ -37,5 +37,6 @@ class TuningHistory(Base):
             "metrics_before": self.metrics_before,
             "metrics_after": self.metrics_after,
             "timestamp": self.timestamp.isoformat() if self.timestamp else None,
-            "username": self.user.username if self.user else None
+            # Don't access the user relationship to avoid greenlet_spawn error
+            "username": None
         }
