@@ -6,12 +6,14 @@ across all parts of the application, ensuring consistent values
 are shown in the dashboard, auto-tuner, and system metrics pages.
 """
 
-import psutil
-import logging
 import asyncio
-from typing import Dict, Optional, Any
-from datetime import datetime
+import logging
 import time
+from typing import Dict, Any, Optional, List
+from datetime import datetime
+
+# Import the new metrics service
+from app.services.metrics.metrics_service import MetricsService
 
 class SystemMetricsService:
     _instance = None
@@ -31,6 +33,10 @@ class SystemMetricsService:
         self.last_metrics = None
         self.last_update_time = 0
         self.cache_ttl = 2  # seconds - how long to cache metrics before refreshing
+        
+        # Initialize the new metrics service
+        self.metrics_service = MetricsService()
+        
         self._initialized = True
         self.logger.info("SystemMetricsService initialized as singleton")
     
@@ -44,128 +50,132 @@ class SystemMetricsService:
         Returns:
             Dictionary containing system metrics
         """
-        current_time = time.time()
-        
-        # Use cached metrics if they're fresh enough and not forcing refresh
-        if (not force_refresh and 
-            self.last_metrics is not None and 
-            current_time - self.last_update_time < self.cache_ttl):
-            return self.last_metrics
-        
-        # Acquire lock to prevent multiple concurrent metric collections
-        async with self._lock:
-            # Double-check if another thread already updated metrics while we were waiting
-            if (not force_refresh and 
-                self.last_metrics is not None and 
-                current_time - self.last_update_time < self.cache_ttl):
+        try:
+            # Delegate to the new metrics service
+            metrics = await self.metrics_service.get_metrics(force_refresh)
+            
+            # Store in our local cache for backward compatibility
+            self.last_metrics = metrics
+            self.last_update_time = time.time()
+            
+            return metrics
+        except Exception as e:
+            self.logger.error(f"Error collecting system metrics: {str(e)}")
+            
+            # If we have cached metrics, return those instead of failing
+            if self.last_metrics is not None:
                 return self.last_metrics
-                
-            # Collect fresh metrics
-            try:
-                # Use a consistent interval for CPU measurements
-                cpu_usage = psutil.cpu_percent(interval=1)
-                memory = psutil.virtual_memory()
-                disk = psutil.disk_usage('/')
-                network_io = psutil.net_io_counters()
-                
-                # Get process count
-                try:
-                    process_count = len(list(psutil.process_iter()))
-                except Exception as e:
-                    self.logger.error(f"Error counting processes: {str(e)}")
-                    process_count = 0
-                
-                # Get CPU temperature if available
-                try:
-                    temps = psutil.sensors_temperatures()
-                    if temps and 'coretemp' in temps:
-                        cpu_temp = temps['coretemp'][0].current
-                    else:
-                        cpu_temp = None
-                except Exception:
-                    cpu_temp = None
-                
-                # Get load average
-                try:
-                    load_avg = [x / psutil.cpu_count() * 100 for x in psutil.getloadavg()]
-                except Exception:
-                    load_avg = [0, 0, 0]
-                
-                # Count Python processes
-                try:
-                    python_processes = len([p for p in list(psutil.process_iter(['name'])) 
-                                           if 'python' in p.info['name'].lower()])
-                except Exception:
-                    python_processes = 0
-                
-                # Calculate network rate (bytes per second)
-                # Store previous network values for rate calculation
-                current_time = time.time()
-                current_bytes_total = network_io.bytes_sent + network_io.bytes_recv
-                
-                # Initialize network rate
-                network_rate_mbps = 0
-                
-                # If we have previous values, calculate the rate
-                if hasattr(self, '_prev_network_time') and hasattr(self, '_prev_network_bytes'):
-                    time_diff = current_time - self._prev_network_time
-                    if time_diff > 0:  # Avoid division by zero
-                        bytes_diff = current_bytes_total - self._prev_network_bytes
-                        network_rate_mbps = (bytes_diff / time_diff) / (1024 * 1024)  # MB/s
-                
-                # Store current values for next calculation
-                self._prev_network_time = current_time
-                self._prev_network_bytes = current_bytes_total
-                
-                # Build metrics dictionary
-                metrics = {
-                    'timestamp': datetime.now().isoformat(),
-                    'cpu_usage': cpu_usage,
-                    'memory_usage': memory.percent,
-                    'disk_usage': disk.percent,
-                    'network_usage': network_rate_mbps,  # MB/s (real-time rate)
-                    'process_count': process_count,
-                    'additional': {
-                        'swap_usage': psutil.swap_memory().percent,
-                        'cpu_temperature': cpu_temp,
-                        'active_python_processes': python_processes,
-                        'load_average': load_avg,
-                        'network_details': {
-                            'bytes_sent': network_io.bytes_sent,
-                            'bytes_recv': network_io.bytes_recv,
-                            'packets_sent': network_io.packets_sent,
-                            'packets_recv': network_io.packets_recv,
-                            'rate_mbps': network_rate_mbps
-                        }
-                    }
+            
+            # Otherwise, return a minimal set of metrics
+            return {
+                'timestamp': datetime.now().isoformat(),
+                'cpu_usage': 0,
+                'memory_usage': 0,
+                'disk_usage': 0,
+                'network_usage': 0,
+                'process_count': 0,
+                'additional': {
+                    'error': str(e)
                 }
-                
-                # Update cache
-                self.last_metrics = metrics
-                self.last_update_time = time.time()
-                
-                return metrics
-                
-            except Exception as e:
-                self.logger.error(f"Error collecting system metrics: {str(e)}")
-                
-                # If we have cached metrics, return those instead of failing
-                if self.last_metrics is not None:
-                    return self.last_metrics
-                
-                # Otherwise, return a minimal set of metrics
-                return {
-                    'timestamp': datetime.now().isoformat(),
-                    'cpu_usage': 0,
-                    'memory_usage': 0,
-                    'disk_usage': 0,
-                    'network_usage': 0,
-                    'process_count': 0,
-                    'additional': {
-                        'error': str(e)
-                    }
-                }
+            }
     
+    def _get_detailed_cpu_metrics(self) -> Dict[str, Any]:
+        """
+        Get detailed CPU metrics including per-core usage, top processes, and temperature.
+        
+        Returns:
+            Dictionary containing detailed CPU metrics
+        """
+        # Get overall CPU usage with a consistent interval
+        total_percent = psutil.cpu_percent(interval=1)
+        
+        # Get per-core CPU usage
+        per_core_percent = psutil.cpu_percent(interval=0, percpu=True)
+        
+        # Get CPU frequency information
+        try:
+            cpu_freq = psutil.cpu_freq()
+            current_freq = cpu_freq.current if cpu_freq else None
+            min_freq = cpu_freq.min if cpu_freq and hasattr(cpu_freq, 'min') else None
+            max_freq = cpu_freq.max if cpu_freq and hasattr(cpu_freq, 'max') else None
+        except Exception as e:
+            self.logger.error(f"Error getting CPU frequency: {str(e)}")
+            current_freq, min_freq, max_freq = None, None, None
+        
+        # Get CPU temperature if available
+        cpu_temp = None
+        try:
+            temps = psutil.sensors_temperatures()
+            if temps:
+                # Try different temperature sensors based on platform
+                for sensor_name in ['coretemp', 'k10temp', 'acpitz', 'cpu_thermal']:
+                    if sensor_name in temps:
+                        cpu_temp = temps[sensor_name][0].current
+                        break
+        except Exception as e:
+            self.logger.error(f"Error getting CPU temperature: {str(e)}")
+        
+        # Get top CPU-consuming processes
+        top_cpu_processes = []
+        try:
+            # Get all processes and sort by CPU usage
+            processes = []
+            for proc in psutil.process_iter(['pid', 'name', 'username', 'cpu_percent', 'memory_percent', 'create_time']):
+                try:
+                    # Update CPU usage value
+                    proc.cpu_percent(interval=0)
+                    processes.append(proc)
+                except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                    pass
+            
+            # Sleep briefly to allow CPU percent to be measured
+            time.sleep(0.1)
+            
+            # Get CPU percent again and create process info
+            for proc in processes:
+                try:
+                    cpu_usage = proc.cpu_percent(interval=0)
+                    if cpu_usage > 0:  # Only include processes actually using CPU
+                        top_cpu_processes.append({
+                            'pid': proc.info['pid'],
+                            'name': proc.info['name'],
+                            'username': proc.info['username'],
+                            'cpu_percent': cpu_usage,
+                            'memory_percent': proc.info['memory_percent'],
+                            'create_time': datetime.fromtimestamp(proc.info['create_time']).isoformat() if proc.info['create_time'] else None
+                        })
+                except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                    pass
+            
+            # Sort by CPU usage (descending) and take top 5
+            top_cpu_processes = sorted(top_cpu_processes, key=lambda x: x['cpu_percent'], reverse=True)[:5]
+        except Exception as e:
+            self.logger.error(f"Error getting top CPU processes: {str(e)}")
+        
+        # Get CPU count information
+        try:
+            logical_cores = psutil.cpu_count()
+            physical_cores = psutil.cpu_count(logical=False)
+        except Exception as e:
+            self.logger.error(f"Error getting CPU count: {str(e)}")
+            logical_cores, physical_cores = None, None
+        
+        return {
+            'total_percent': total_percent,
+            'per_core_percent': per_core_percent,
+            'temperature': cpu_temp,
+            'frequency': {
+                'current': current_freq,
+                'min': min_freq,
+                'max': max_freq
+            },
+            'cores': {
+                'logical': logical_cores,
+                'physical': physical_cores
+            },
+            'top_processes': top_cpu_processes
+        }
+        
     @classmethod
     async def get_instance(cls):
         """Get the singleton instance of the service"""
