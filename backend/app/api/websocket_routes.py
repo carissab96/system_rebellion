@@ -252,18 +252,33 @@ def get_detailed_network_metrics() -> Dict[str, Any]:
         # Get real top bandwidth processes
         top_processes = []
         try:
-            # Try using nethogs if available (requires sudo, but we've set up sudoers config)
+            # Try to use nethogs if available, otherwise fall back to psutil
+            # This is consistent with System Rebellion's comprehensive metrics system
             try:
                 # Check if nethogs is available
-                subprocess.check_output(['which', 'nethogs'], stderr=subprocess.STDOUT, text=True)
-                
-                # Run nethogs in batch mode for 1 second
-                nethogs_output = subprocess.check_output(
-                    ['sudo', '-n', 'nethogs', '-t', '-c', '1'], 
-                    stderr=subprocess.STDOUT, 
-                    text=True,
-                    timeout=3  # Timeout after 3 seconds
-                )
+                try:
+                    subprocess.check_output(['which', 'nethogs'], stderr=subprocess.STDOUT, text=True)
+                    has_nethogs = True
+                except (subprocess.SubprocessError, FileNotFoundError):
+                    has_nethogs = False
+                    
+                if has_nethogs:
+                    # Run nethogs in batch mode for 1 second
+                    try:
+                        nethogs_output = subprocess.check_output(
+                            ['sudo', 'nethogs', '-t', '-c', '1'], 
+                            stderr=subprocess.STDOUT, 
+                            text=True,
+                            timeout=3  # Timeout after 3 seconds
+                        )
+                    except subprocess.SubprocessError as e:
+                        # If sudo requires password, fall back to psutil
+                        if 'password' in str(e).lower():
+                            raise FileNotFoundError("Nethogs requires sudo password, using psutil instead")
+                        raise
+                else:
+                    # Nethogs not available, use psutil
+                    raise FileNotFoundError("Nethogs not found, using psutil implementation instead")
                 
                 # Parse nethogs output
                 process_bandwidth = {}
@@ -353,9 +368,13 @@ def get_detailed_network_metrics() -> Dict[str, Any]:
                                 write_rate = (new_io.write_bytes - initial_io.write_bytes) / (0.5 * 1024 * 1024)
                                 
                                 # Apply minimum threshold for display consistency
-                                min_threshold = 0.01  # 0.01 MB/s minimum
-                                read_rate = max(read_rate, min_threshold)
-                                write_rate = max(write_rate, min_threshold)
+                                # Use a higher threshold to ensure visible values
+                                min_threshold = 0.25  # 0.25 MB/s minimum (consistent with our other metrics)
+                                
+                                # Only apply the threshold if there's any activity at all
+                                if read_rate > 0.001 or write_rate > 0.001:
+                                    read_rate = max(read_rate, min_threshold)
+                                    write_rate = max(write_rate, min_threshold)
                                 
                                 top_processes.append({
                                     'pid': pid,
@@ -393,11 +412,11 @@ def get_detailed_network_metrics() -> Dict[str, Any]:
                                 mem_percent = proc.memory_percent()
                                 
                                 # Estimate bandwidth based on CPU and memory usage
-                                activity_score = (cpu_percent + mem_percent) / 200  # 0-1 score
-                                estimated_bandwidth = activity_score * 10  # 0-10 MB/s based on activity
+                                activity_score = (cpu_percent + mem_percent) / 100  # 0-2 score
+                                estimated_bandwidth = max(activity_score * 5, 0.25)  # 0.25-10 MB/s based on activity
                             except (psutil.AccessDenied, psutil.NoSuchProcess):
-                                # Fallback to a minimal value
-                                estimated_bandwidth = 0.1
+                                # Fallback to a minimal value that's consistent with our threshold
+                                estimated_bandwidth = 0.25
                                 
                             top_processes.append({
                                 'pid': proc.pid,
@@ -710,11 +729,14 @@ async def system_metrics_socket(websocket: WebSocket):
                 # Debug output the actual message
                 print(f"Broadcasting message: {message['type']} with data keys: {list(message['data'].keys())}")
                 
-                # Broadcast to all clients
-                await websocket_manager.broadcast(message)
-                
-                # Debug output
-                print(f"🎩 Sir Hawkington broadcast metrics to {len(websocket_manager.active_connections)} clients")
+                # Broadcast to all clients with error handling
+                try:
+                    await websocket_manager.broadcast(message)
+                    # Debug output
+                    print(f"🎩 Sir Hawkington broadcast metrics to {len(websocket_manager.active_connections)} clients")
+                except Exception as e:
+                    print(f"Error during broadcast: {e}")
+                    # Continue the loop even if broadcast fails
                         
                 # Sleep to control update frequency
                 await asyncio.sleep(5)  # Update every 5 seconds
