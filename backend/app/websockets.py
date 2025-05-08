@@ -32,13 +32,29 @@ class WebSocketManager:
             connections = self.active_connections.copy()
         
         # Send messages outside the lock to avoid deadlocks
+        disconnected_connections = []
         for connection in connections:
             try:
-                await connection.send_json(message)
+                # Use a timeout to prevent hanging on broken connections
+                try:
+                    await asyncio.wait_for(connection.send_json(message), timeout=2.0)
+                except asyncio.TimeoutError:
+                    print(f"Timeout sending message to WebSocket")
+                    disconnected_connections.append(connection)
+                    continue
+            except WebSocketDisconnect:
+                print(f"WebSocket disconnected during broadcast")
+                disconnected_connections.append(connection)
             except Exception as e:
                 print(f"Error sending message to WebSocket: {e}")
-                # Remove the problematic connection
-                await self.disconnect(connection)
+                # Check specifically for EPIPE errors which indicate broken pipe
+                if "EPIPE" in str(e) or "ConnectionClosed" in str(e) or "WebSocketDisconnect" in str(e):
+                    print(f"Connection closed or broken pipe, removing connection")
+                    disconnected_connections.append(connection)
+        
+        # Remove all disconnected connections
+        for connection in disconnected_connections:
+            await self.disconnect(connection)
 
     async def handle_connection(self, websocket: WebSocket):
         """Handle connection with retry logic"""
