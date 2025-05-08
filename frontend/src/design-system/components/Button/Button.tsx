@@ -1,6 +1,5 @@
 import React from 'react';
 import './Button.css';
-import { colors, effects, spacing, typography } from '../../tokens';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'accent' | 'success' | 'warning' | 'danger' | 'cyber';
 export type ButtonSize = 'sm' | 'md' | 'lg';

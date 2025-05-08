@@ -1,13 +1,12 @@
-# core/optimization/system_optimizer.py
+# SystemOptimizer (Legacy)
 
-import asyncio
-from typing import Dict, Optional
-from datetime import datetime
-from django.db import transaction
-from core.models import SystemMetrics, OptimizationProfile
-from .resource_monitor import ResourceMonitor
-from .pattern_analyzer import PatternAnalyzer
+> *Preserved from the early Django implementation of System Rebellion*
 
+## Overview
+
+The SystemOptimizer was the central orchestration component of the original System Rebellion application, combining monitoring, analysis, and optimization in an async-first design with a humorous, musical-themed approach.
+
+```python
 class SystemOptimizer:
     """
     Warning: This code contains:
@@ -106,3 +105,23 @@ class SystemOptimizer:
     async def _get_latest_metrics(self) -> Optional[SystemMetrics]:
         """Get latest metrics (latest performance stats)"""
         return await SystemMetrics.objects.order_by('-timestamp').afirst()
+```
+
+## Key Features
+
+1. **Resource Monitoring**: Used a `ResourceMonitor` instance to collect system metrics (CPU, memory, disk, network usage, process count).
+
+2. **Pattern Analysis**: Employed a `PatternAnalyzer` to identify patterns in system behavior based on collected metrics.
+
+3. **Profile-based Optimization**: Applied optimizations based on selected optimization profiles.
+
+## Design Patterns
+
+1. **Asynchronous Architecture**: Used Python's `asyncio` for non-blocking operations.
+2. **Modular Components**: Separated concerns between monitoring, analysis, and optimization.
+3. **Database Integration**: Stored metrics for historical analysis using Django ORM with transaction support.
+4. **Error Handling**: Implemented robust error handling with logging and recovery mechanisms.
+
+## Historical Note
+
+This component was part of the original Django implementation of System Rebellion before the migration to FastAPI. The musical metaphors and irreverent tone exemplify the project's unique character-driven approach to system optimization.
