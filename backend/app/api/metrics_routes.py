@@ -16,22 +16,54 @@ async def get_system_metrics():
     """
     Public endpoint for system metrics that doesn't require authentication
     """
-    # Use the centralized metrics service
-    metrics_service = await SystemMetricsService.get_instance()
-    metrics = await metrics_service.get_metrics()
-    
-    # Format the response to match the existing API structure
-    return {
-        "cpu_usage": metrics["cpu_usage"],
-        "memory_usage": metrics["memory_usage"],
-        "disk_usage": metrics["disk_usage"],
-        "network_io": {
-            "sent": metrics["additional"]["network_details"]["bytes_sent"],
-            "recv": metrics["additional"]["network_details"]["bytes_recv"]
-        },
-        "process_count": metrics["process_count"],
-        "timestamp": metrics["timestamp"]
-    }   
+    try:
+        # Use the centralized metrics service
+        metrics_service = await SystemMetricsService.get_instance()
+        metrics = await metrics_service.get_metrics()
+        
+        # Get network details with proper error handling
+        network_sent = 0
+        network_recv = 0
+        
+        # Handle different possible structures for network metrics
+        if "additional" in metrics and "network_details" in metrics["additional"]:
+            network_details = metrics["additional"]["network_details"]
+            if isinstance(network_details, dict):
+                network_sent = network_details.get("bytes_sent", 0)
+                network_recv = network_details.get("bytes_recv", 0)
+        
+        # If we couldn't get network details from the metrics service, use psutil directly
+        if network_sent == 0 and network_recv == 0:
+            net_io = psutil.net_io_counters()
+            network_sent = net_io.bytes_sent
+            network_recv = net_io.bytes_recv
+        
+        # Format the response to match the existing API structure
+        return {
+            "cpu_usage": metrics.get("cpu_usage", 0),
+            "memory_usage": metrics.get("memory_usage", 0),
+            "disk_usage": metrics.get("disk_usage", 0),
+            "network_io": {
+                "sent": network_sent,
+                "recv": network_recv
+            },
+            "process_count": metrics.get("process_count", 0),
+            "timestamp": metrics.get("timestamp", datetime.now(timezone.utc).isoformat())
+        }
+    except Exception as e:
+        print(f"Error getting system metrics: {e}")
+        # Return fallback metrics
+        return {
+            "cpu_usage": psutil.cpu_percent(),
+            "memory_usage": psutil.virtual_memory().percent,
+            "disk_usage": psutil.disk_usage('/').percent,
+            "network_io": {
+                "sent": psutil.net_io_counters().bytes_sent,
+                "recv": psutil.net_io_counters().bytes_recv
+            },
+            "process_count": len(psutil.pids()),
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
 
 @router.post("/", response_model=MetricResponse)
 async def create_metric(
