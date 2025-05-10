@@ -193,25 +193,33 @@ class WebSocketService implements IWebSocketService {
             // Parse the message
             const message = JSON.parse(event.data);
             console.log("📨 Parsed WebSocket message:", message);
+            console.log("RECEIVED DATA STRUCTURE - KEYS:", Object.keys(message.data || {}));
+                console.log("NETWORK DATA PRESENT:", 'network' in (message.data || {}));
+            if ('network' in (message.data || {})) {
+                console.log("NETWORK DATA KEYS:", Object.keys(message.data.network || {}));
+            }
             
             // Process the message based on its type
             if (message.type === 'system_metrics' && message.data) {
                 console.log("📊 System metrics received:", message.data);
                 
-                // Transform the data into our SystemMetric format
+                // Transform the data, preserving the network structure
                 const metricData: SystemMetric = {
                     id: crypto.randomUUID ? crypto.randomUUID() : `metric-${Date.now()}`,
                     user_id: 'system',
-                    cpu_usage: message.data.cpu_usage || message.data.cpu || 0,
-                    memory_usage: message.data.memory_usage || message.data.memory || 0,
-                    disk_usage: message.data.disk_usage || message.data.disk || 0,
-                    network_usage: message.data.network_io ? 
-                        (message.data.network_io.sent + message.data.network_io.recv) / 1024 / 1024 : 
-                        ((message.data.sent || 0) + (message.data.recv || 0)) / 1024 / 1024,
+                    cpu_usage: message.data.cpu_usage || 0,
+                    memory_usage: message.data.memory_usage || 0,
+                    disk_usage: message.data.disk_usage || 0,
+                    // For backward compatibility
+                    network_usage: (message.data.network?.total_usage_mb || 0),
                     process_count: message.data.process_count || 0,
                     timestamp: message.data.timestamp || new Date().toISOString(),
+                    // Preserve the network structure
+                    network: message.data.network || {},
                     additional_metrics: {}
                 };
+                
+                console.log("📊 Processed metric data to store:", metricData);
                 
                 // Dispatch to Redux store
                 store.dispatch(updateMetrics(metricData));

@@ -703,41 +703,45 @@ async def system_metrics_socket(websocket: WebSocket):
     try:
         await websocket_manager.connect(websocket)
         
+        # Add this: Create a ResourceMonitor instance to use its data collection
+        from app.optimization.resource_monitor import ResourceMonitor
+        resource_monitor = ResourceMonitor()
+        await resource_monitor.initialize()
+        
         while True:
             try:
-                # Collect system metrics
-                metrics = {
-                    "cpu_usage": psutil.cpu_percent(),
-                    "memory_usage": psutil.virtual_memory().percent,
-                    "disk_usage": psutil.disk_usage('/').percent,
-                    "timestamp": datetime.now(timezone.utc).isoformat()
-                }
+                # Replace the existing metrics collection with this:
+                # Collect system metrics using ResourceMonitor
+                metrics = await resource_monitor.collect_metrics()
                 
-                # Get detailed network metrics
-                network_metrics = get_detailed_network_metrics()
-                metrics["network"] = network_metrics
-                        
-                # Add debugging output before broadcast
-                print(f"Network metrics to broadcast: {network_metrics['io_stats']}")
+                # Format the timestamp to ISO format for JSON serialization if needed
+                if isinstance(metrics['timestamp'], datetime):
+                    metrics['timestamp'] = metrics['timestamp'].isoformat()
                 
-                # Broadcast metrics
+                # The rest of your function can remain largely the same
+                # Just make sure you're sending the full metrics object
+                
+                # Debug output
+                print(f"Network metrics to broadcast - keys: {list(metrics.get('network', {}).keys())}")
+                print(f"Full metrics structure - keys: {list(metrics.keys())}")
+
                 message = {
                     "type": "system_metrics",
                     "data": metrics
                 }
+
+                # Debug output the actual message structure
+                print(f"Broadcasting message type: {message['type']}")
+                print(f"Message data keys: {list(message['data'].keys())}")
+                print(f"Network data included: {'network' in message['data']}")
                 
-                # Debug output the actual message
-                print(f"Broadcasting message: {message['type']} with data keys: {list(message['data'].keys())}")
-                
-                # Broadcast to all clients with error handling
+                # Rest of your existing function...
                 try:
                     await websocket_manager.broadcast(message)
-                    # Debug output
                     print(f"🎩 Sir Hawkington broadcast metrics to {len(websocket_manager.active_connections)} clients")
                 except Exception as e:
                     print(f"Error during broadcast: {e}")
-                    # Continue the loop even if broadcast fails
-                        
+                    
                 # Sleep to control update frequency
                 await asyncio.sleep(5)  # Update every 5 seconds
                 

@@ -1,7 +1,8 @@
 import React from 'react';
 import './NetworkMetrics.css';
 
-interface QualityData {
+
+export interface QualityData {
   overall_score?: number;
   latency?: {
     avg_ms?: number;
@@ -22,21 +23,22 @@ interface QualityData {
   };
 }
 
-interface DNSMetrics {
+export interface DNSMetrics {
   query_time_ms?: number;
   success_rate?: number;
   cache_hit_ratio?: number;
   last_failures?: number;
 }
 
-interface InternetMetrics {
+export interface InternetMetrics {
   gateway_latency_ms?: number;
   internet_latency_ms?: number;
   hop_count?: number;
   isp_performance_score?: number;
 }
 
-interface NetworkQualityMetricsProps {
+// Define the props type for the component
+export interface NetworkQualityMetricsProps {
   qualityData: QualityData;
   dnsMetrics: DNSMetrics;
   internetMetrics: InternetMetrics;

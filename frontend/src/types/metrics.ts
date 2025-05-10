@@ -126,13 +126,13 @@ export interface AdditionalMetrics {
 export interface SystemMetric {
   id: string;
   user_id: string;
-  timestamp: string;
   cpu_usage: number;
   memory_usage: number;
   disk_usage: number;
-  network_usage?: number;
-  process_count?: number;
-  additional?: AdditionalMetrics;
+  network_usage: number; // Keep for backward compatibility
+  network?: any; // Add this to store detailed network data
+  process_count: number;
+  timestamp: string;
   additional_metrics?: Record<string, any>;
 }
   
