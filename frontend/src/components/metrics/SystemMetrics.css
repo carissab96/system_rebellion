@@ -10,13 +10,13 @@
   --success: #38b000; /* Green */
   --warning: #ffbe0b; /* Amber */
   --danger: #ff3838; /* Red */
-  --background: #f8f9fa;
-  --card-bg: #ffffff;
-  --panel-bg: #f0f2f5;
-  --text-primary: #121212; /* Darker for better contrast */
-  --text-secondary: #333333; /* Darker for better contrast */
-  --text-muted: #555555; /* Darker for better contrast */
-  --border-color: #dee2e6;
+  --background: #121212;
+  --card-bg: #1e1e1e;
+  --panel-bg: #2a2a2a;
+  --text-primary: #f8f9fa; /* Light text for dark theme */
+  --text-secondary: #adb5bd; /* Muted light text */
+  --text-muted: #6c757d; /* More muted light text */
+  --border-color: #333333;
   --glow: 0 0 10px rgba(58, 134, 255, 0.5);
   --glow-accent: 0 0 10px rgba(255, 0, 110, 0.5);
   --gradient-cosmic: linear-gradient(90deg, #3a86ff, #ff006e, #8338ec, #00f5d4);
@@ -36,13 +36,13 @@
 .system-metrics-container {
   min-height: 100vh;
   padding: 2rem;
-  background-color: var(--bg-dark);
+  background-color: var(--card-bg);
   color: var(--text-primary);
 }
 
 .metrics-header {
   margin-bottom: 30px;
-  border-bottom: 1px solid var(--border-accent);
+  border-bottom: 1px solid var(--accent);
   padding-bottom: 15px;
   position: relative;
 }
@@ -373,34 +373,88 @@
   padding-bottom: 8px;
 }
 
-.network-charts-grid {
+/* Chart Styling */
+.chart-container {
+  position: relative;
+  background: var(--card-bg);
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* Recharts Components Styling */
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+  stroke: var(--border);
+  stroke-width: 1px;
+  stroke-opacity: 0.2;
+}
+
+.recharts-tooltip-wrapper .recharts-default-tooltip {
+  background-color: var(--card-bg) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 4px !important;
+  padding: 8px !important;
+}
+
+.recharts-tooltip-wrapper .recharts-default-tooltip .recharts-tooltip-label {
+  color: var(--text-primary) !important;
+}
+
+.recharts-tooltip-wrapper .recharts-default-tooltip .recharts-tooltip-item {
+  color: var(--text-secondary) !important;
+}
+
+.recharts-area-curve {
+  stroke-width: 2px;
+}
+
+.recharts-area-area {
+  opacity: 0.15;
+}
+
+/* Axis Styling */
+.recharts-xAxis .recharts-cartesian-axis-tick-value,
+.recharts-yAxis .recharts-cartesian-axis-tick-value {
+  fill: var(--text-secondary);
+  font-size: 12px;
+}
+
+/* Chart Grid */
+.metrics-charts-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
   gap: 20px;
 }
 
-.network-summary-stats {
+/* Stats Display */
+.metrics-stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 15px;
+  margin: 1rem 0;
 }
 
-.network-stat {
+.stat-card {
   display: flex;
   flex-direction: column;
-  padding: 10px;
-  background-color: rgba(0, 0, 0, 0.2);
-  border-radius: 5px;
+  padding: 1rem;
+  background-color: var(--card-bg);
+  border-radius: 8px;
+  border: 1px solid var(--border);
 }
 
 .stat-label {
   font-size: 0.9rem;
   color: var(--text-secondary);
-  margin-bottom: 5px;
+  margin-bottom: 0.5rem;
 }
 
 .stat-value {
   font-size: 1.4rem;
   font-weight: bold;
-  color: var(--accent-primary);
+  color: var(--text-primary);
+  text-shadow: 0 0 10px rgba(58, 134, 255, 0.3);
 }

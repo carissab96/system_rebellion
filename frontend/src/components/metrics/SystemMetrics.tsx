@@ -81,6 +81,9 @@ const SystemMetrics: React.FC = () => {
   const currentMetrics = metrics?.current || {};
   const networkMetrics = currentMetrics?.network || {};
   
+  // State for selected network interface
+  const [selectedInterface, setSelectedInterface] = useState<string>('');
+  
   // Debug output to console
   useEffect(() => {
     console.log('Current metrics state:', metrics);
@@ -244,6 +247,8 @@ const SystemMetrics: React.FC = () => {
                 <NetworkInterfaceMetrics 
                   interfaces={networkMetrics?.interfaces || []} 
                   interfaceStats={networkMetrics?.interface_stats || {}} 
+                  selectedInterface={selectedInterface || ''}
+                  setSelectedInterface={setSelectedInterface}
                 />
               </Card>
             </div>
@@ -252,9 +257,9 @@ const SystemMetrics: React.FC = () => {
               <Card className="metrics-panel">
                 <h3>Connection Quality</h3>
                 <NetworkQualityMetrics 
-                  qualityData={networkMetrics?.connection_quality || {}} 
-                  dnsMetrics={networkMetrics?.dns_metrics || {}} 
-                  internetMetrics={networkMetrics?.internet_metrics || {}} 
+                      qualityData={networkMetrics?.connection_quality || {}} 
+                      dnsMetrics={networkMetrics?.dns_metrics || {}} 
+                      internetMetrics={networkMetrics?.internet_metrics || {}}  
                 />
               </Card>
             </div>
