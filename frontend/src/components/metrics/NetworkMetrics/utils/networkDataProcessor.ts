@@ -1,7 +1,39 @@
 // frontend/src/components/metrics/NetworkMetrics/utils/networkDataProcessor.ts
 
 import { SystemMetric } from '../../../../types/metrics';
-import { NetworkData, NetworkInterface } from '../types';
+import { NetworkInterface, NetworkIOStats, ConnectionQuality, ProtocolStats } from '../tabs/types';
+
+interface NetworkData {
+  interfaces: NetworkInterface[];
+  io_stats: NetworkIOStats;
+  connection_quality: ConnectionQuality;
+  protocol_stats: ProtocolStats;
+  protocol_breakdown: {
+    web: number;
+    email: number;
+    streaming: number;
+    gaming: number;
+    file_transfer: number;
+    other: number;
+  };
+  top_bandwidth_processes: Array<{
+    name: string;
+    pid: number;
+    upload: number;
+    download: number;
+  }>;
+  dns_metrics?: {
+    query_time_ms: number;
+    [key: string]: any;
+  };
+  internet_metrics?: {
+    isp_latency: number;
+    [key: string]: any;
+  };
+  timestamp: string;
+  [key: string]: any; // Allow additional properties
+}
+
 
 /**
  * Processes raw network data from a system metric into a structured format
@@ -34,6 +66,8 @@ export function processNetworkData(currentMetric: SystemMetric | null): {
     
     // Build the network data structure from raw data
     const processedData: NetworkData = {
+      interfaces: interfaces, // Add the processed interfaces
+      timestamp: new Date().toISOString(), // Add default timestamp
       io_stats: {
         bytes_sent: rawNetworkData.io_stats?.bytes_sent ?? rawNetworkData.bytes_sent ?? 0,
         bytes_recv: rawNetworkData.io_stats?.bytes_recv ?? rawNetworkData.bytes_recv ?? 0,
@@ -68,7 +102,7 @@ export function processNetworkData(currentMetric: SystemMetric | null): {
       },
       top_bandwidth_processes: rawNetworkData.top_bandwidth_processes || 
                                rawNetworkData.processes || [],
-      interfaces: interfaces,
+
       dns_metrics: rawNetworkData.dns_metrics,
       internet_metrics: rawNetworkData.internet_metrics
     };
@@ -117,3 +151,5 @@ function processInterfacesData(interfaces: any): NetworkInterface[] {
   
   return [];
 }
+
+export default processNetworkData;

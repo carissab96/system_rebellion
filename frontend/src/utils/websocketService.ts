@@ -199,22 +199,91 @@ class WebSocketService implements IWebSocketService {
                 console.log("📊 System metrics received:", message.data);
                 
                 // Transform the data into our SystemMetric format
-                const metricData: SystemMetric = {
+                const networkIo = message.data.network_io || {};
+                const networkUsage = message.data.network_io ? 
+                    (networkIo.sent + networkIo.recv) / 1024 / 1024 : 
+                    ((message.data.sent || 0) + (message.data.recv || 0)) / 1024 / 1024;
+
+                // Create a base metric with required fields
+                const baseMetric: Partial<SystemMetric> = {
                     id: crypto.randomUUID ? crypto.randomUUID() : `metric-${Date.now()}`,
                     user_id: 'system',
+                    timestamp: message.data.timestamp || new Date().toISOString(),
                     cpu_usage: message.data.cpu_usage || message.data.cpu || 0,
                     memory_usage: message.data.memory_usage || message.data.memory || 0,
                     disk_usage: message.data.disk_usage || message.data.disk || 0,
-                    network_usage: message.data.network_io ? 
-                        (message.data.network_io.sent + message.data.network_io.recv) / 1024 / 1024 : 
-                        ((message.data.sent || 0) + (message.data.recv || 0)) / 1024 / 1024,
+                    network_usage: networkUsage,
                     process_count: message.data.process_count || 0,
-                    timestamp: message.data.timestamp || new Date().toISOString(),
-                    additional_metrics: {},
-                    
-                    // Preserve the network data from the backend
-                    network: message.data.network || {}
+                    // Required fields with default values
+                    memory_total: 0,
+                    memory_available: 0,
+                    memory_free: 0,
+                    memory_buffer: 0,
+                    memory_cache: 0,
+                    memory_swap: 0,
+                    memory_swap_total: 0,
+                    memory_swap_free: 0,
+                    memory_swap_used: 0,
+                    memory_swap_percent: 0,
+                    memory_percent: 0,
+                    disk_total: 0,
+                    disk_available: 0,
+                    disk_free: 0,
+                    disk_used: 0,
+                    disk_percent: 0,
+                    network_total: 0,
+                    network_available: 0,
+                    network_free: 0,
+                    network_used: 0,
+                    network_percent: 0,
+                    cpu: {
+                        name: message.data.cpu_model || 'Unknown CPU',
+                        frequency: 0,
+                        temp: {
+                            current: 0,
+                            min: 0,
+                            max: 100,
+                            critical: 90,
+                            throttle_threshold: 80,
+                            unit: 'C' as const
+                        },
+                        processes: [],
+                        core_count: 0,
+                        usage_percent: undefined,
+                        overall_usage: message.data.cpu_usage || message.data.cpu || 0,
+                        process_count: 0,
+                        thread_count: 0,
+                        physical_cores: 0,
+                        logical_cores: 0,
+                        model_name: message.data.cpu_model || 'Unknown',
+                        frequency_mhz: 0,
+                        temperature: {
+                            current: 0,
+                            min: 0,
+                            max: 100,
+                            critical: 90,
+                            throttle_threshold: 80,
+                            unit: 'C' as const
+                        },
+                        top_processes: [],
+                        cores: []
+                    },
+                    additional_metrics: {}
                 };
+
+                // Merge with any additional data and ensure all required fields are set
+                const metricData: SystemMetric = {
+                    // Base fields with defaults
+                    ...baseMetric,
+                    // Override with any additional metrics from the message
+                    ...(message.data.additional_metrics || {}),
+                    // Ensure network data is properly set
+                    network: message.data.network_io || message.data.network || {},
+                    // Ensure timestamp is set
+                    timestamp: message.data.timestamp || new Date().toISOString(),
+                    // Ensure additional_metrics exists
+                    additional_metrics: message.data.additional_metrics || {}
+                } as SystemMetric;
                 
                 // Log the network data specifically
                 console.log("🌐 Network data being preserved:", metricData.network);

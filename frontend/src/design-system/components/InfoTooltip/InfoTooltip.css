@@ -1,0 +1,117 @@
+.info-tooltip-container {
+  display: inline-block;
+  position: relative;
+}
+
+.info-tooltip-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: help;
+}
+
+.info-tooltip-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: var(--color-border);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: bold;
+  line-height: 1;
+  margin-left: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.info-tooltip-trigger:hover .info-tooltip-icon {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.info-tooltip {
+  position: absolute;
+  z-index: 1000;
+  width: max-content;
+  max-width: 300px;
+  padding: 12px;
+  background-color: var(--color-bg-elevated);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--color-text);
+  pointer-events: none;
+}
+
+/* Position variants */
+.info-tooltip.top {
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 8px;
+}
+
+.info-tooltip.right {
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-left: 8px;
+}
+
+.info-tooltip.bottom {
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 8px;
+}
+
+.info-tooltip.left {
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-right: 8px;
+}
+
+/* Arrow */
+.info-tooltip-arrow {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-color: transparent;
+}
+
+.info-tooltip.top .info-tooltip-arrow {
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 5px 5px 0;
+  border-top-color: var(--color-bg-elevated);
+}
+
+.info-tooltip.right .info-tooltip-arrow {
+  left: -5px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-width: 5px 5px 5px 0;
+  border-right-color: var(--color-bg-elevated);
+}
+
+.info-tooltip.bottom .info-tooltip-arrow {
+  top: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 0 5px 5px;
+  border-bottom-color: var(--color-bg-elevated);
+}
+
+.info-tooltip.left .info-tooltip-arrow {
+  right: -5px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-width: 5px 0 5px 5px;
+  border-left-color: var(--color-bg-elevated);
+}

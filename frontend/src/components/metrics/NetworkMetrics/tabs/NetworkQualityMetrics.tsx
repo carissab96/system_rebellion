@@ -1,16 +1,15 @@
 // frontend/src/components/metrics/NetworkMetrics/tabs/NetworkQualityMetrics.tsx
 
 import React from 'react';
-import { ConnectionQuality } from '../types';
+import { ConnectionQuality } from './types';
 import { formatLatency, getQualityClass, getLatencyClass } from '../utils/formatters';
 import './NetworkMetrics.css';
 
 interface NetworkQualityMetricsProps {
   data: ConnectionQuality;
-  compact?: boolean;
 }
 
-const NetworkQualityMetrics: React.FC<NetworkQualityMetricsProps> = ({ data, compact = false }) => {
+const NetworkQualityMetrics: React.FC<NetworkQualityMetricsProps> = ({ data }) => {
   return (
     <div className="network-section">
       <div className="network-section-title">Connection Quality Score</div>

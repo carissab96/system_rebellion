@@ -2,7 +2,7 @@
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
 import store from '../store/store';// Updated import path
 import { logout } from '../store/slices/authSlice';
-import { SystemMetric } from '@/types/metrics';
+import { SystemMetric } from '../types/metrics';
 
 interface ApiError extends AxiosError {
   config: InternalAxiosRequestConfig & { _retry?: boolean };

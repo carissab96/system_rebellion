@@ -1,4 +1,5 @@
 // src/types/metrics.ts
+import { CPUData } from '../components/metrics/CPU/types';
 import { websocketService } from '../utils/websocketService';
 // Base metric type for individual readings
 export interface NetworkDetails {
@@ -127,12 +128,55 @@ export interface SystemMetric {
   id: string;
   user_id: string;
   cpu_usage: number;
+  cpu_temperature?: number;
+  cpu_frequency?: number;
+  cpu_core_count?: number;
+  cpu_thread_count?: number;
+  cpu_model?: string;
+  cpu_vendor?: string;
+  cpu_cache?: number;
+  cpu_cache_size?: number;
+  cpu_cache_lines?: number;
+  cpu_cache_type?: string;
+  cpu_cache_level?: number;
+  cpu_cache_associativity?: number;
+  cpu_cache_line_size?: number;
+  cpu_cache_line_count?: number;
+  cpu_cache_line_associativity?: number;
+  cpu: CPUData;
   memory_usage: number;
+  memory_total: number;
+  memory_available: number;
+  memory_free: number;
+  memory_buffer: number;
+  memory_cache: number;
+  memory_swap: number;
+  memory_swap_total: number;
+  memory_swap_free: number;
+  memory_swap_used: number;
+  memory_swap_percent: number;
+  memory_percent: number;
   disk_usage: number;
+<<<<<<< HEAD
   network_usage: number; // Keep for backward compatibility
   network?: any; // Add this to store detailed network data
   process_count: number;
   timestamp: string;
+=======
+  disk_total: number;
+  disk_available: number;
+  disk_free: number;
+  disk_used: number;
+  disk_percent: number;
+  network_usage?: number;
+  network_total: number;
+  network_available: number;
+  network_free: number;
+  network_used: number;
+  network_percent: number;
+  process_count?: number;
+  additional?: AdditionalMetrics;
+>>>>>>> c2232c1 (feat: implement disk and CPU performance monitoring components with metrics visualization)
   additional_metrics?: Record<string, any>;
   network?: any; // Added to support direct network data access
 }
