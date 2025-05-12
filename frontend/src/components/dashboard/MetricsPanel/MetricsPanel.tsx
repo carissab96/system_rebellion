@@ -3,7 +3,7 @@ import { useAppSelector } from '../../../store/hooks';
 import { CPUMetric } from '../Metrics/CPUMetrics/CPUMetric';
 import { MemoryMetric } from '../Metrics/MemoryMetric/MemoryMetric';
 import { DiskMetric } from '../Metrics/DiskMetric/DiskMetric';
-import { NetworkMetric } from '../Metrics/NetworkMetric/NetworkMetric';
+import DashboardNetworkMetric from '../Metrics/NetworkMetric/NetworkMetric';
 import { SirHawkington } from '../../common/CharacterIcons';
 import './MetricsPanel.css';
 
@@ -46,7 +46,7 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({
         <CPUMetric />
         <MemoryMetric />
         <DiskMetric />
-        <NetworkMetric />
+        <DashboardNetworkMetric />
       </div>
     </div>
   );
