@@ -73,14 +73,68 @@ export const initializeWebSocket = createAsyncThunk(
           const metricData: SystemMetric = {
             id: crypto.randomUUID ? crypto.randomUUID() : `metric-${Date.now()}`,
             user_id: 'system',
+            timestamp: data.timestamp || new Date().toISOString(),
             cpu_usage: data.cpu_usage || 0,
             memory_usage: data.memory_usage || 0,
             disk_usage: data.disk_usage || 0,
             network_usage: data.network_io ? 
               (data.network_io.sent + data.network_io.recv) / 1024 / 1024 : 0,
             process_count: data.process_count || 0,
-            timestamp: data.timestamp || new Date().toISOString(),
-            additional_metrics: {}
+            cpu: {
+              name: data.cpu_model || 'Unknown CPU',
+              frequency: 0,
+              temp: {
+                current: 0,
+                min: 0,
+                max: 100,
+                critical: 90,
+                throttle_threshold: 80,
+                unit: 'C' as const
+              },
+              processes: [],
+              core_count: data.cpu_core_count || 0,
+              usage_percent: undefined,
+              overall_usage: data.cpu_usage || 0,
+              process_count: 0,
+              thread_count: 0,
+              physical_cores: data.cpu_core_count || 0,
+              logical_cores: data.cpu_core_count || 0,
+              model_name: data.cpu_model || 'Unknown',
+              frequency_mhz: 0,
+              temperature: {
+                current: 0,
+                min: 0,
+                max: 100,
+                critical: 90,
+                throttle_threshold: 80,
+                unit: 'C' as const
+              },
+              top_processes: [],
+              cores: []
+            },
+            memory_total: data.memory_total || 0,
+            memory_available: data.memory_available || 0,
+            memory_free: data.memory_free || 0,
+            memory_buffer: 0,
+            memory_cache: 0,
+            memory_swap: 0,
+            memory_swap_total: 0,
+            memory_swap_free: 0,
+            memory_swap_used: 0,
+            memory_swap_percent: 0,
+            memory_percent: data.memory_usage || 0,
+            disk_total: data.disk_total || 0,
+            disk_available: data.disk_available || 0,
+            disk_free: data.disk_free || 0,
+            disk_used: 0,
+            disk_percent: data.disk_usage || 0,
+            network_total: 0,
+            network_available: 0,
+            network_free: 0,
+            network_used: 0,
+            network_percent: 0,
+            additional_metrics: {},
+            additional: {}
           };
           
           // Update metrics with the REST API data
