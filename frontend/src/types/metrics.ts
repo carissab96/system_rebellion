@@ -134,6 +134,7 @@ export interface SystemMetric {
   process_count: number;
   timestamp: string;
   additional_metrics?: Record<string, any>;
+  network?: any; // Added to support direct network data access
 }
   
   // Type for optimization profile thresholds
