@@ -2,10 +2,11 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { Provider as ReduxProvider, useDispatch } from 'react-redux';
 import { store, AppDispatch } from './store/store';
+import { ToastProvider } from './components/common/Toast';
 import { checkBackendAvailability } from './utils/api';
 import { initializeCsrf } from './utils/csrf';
 import { runDiagnostics } from './utils/diagnostics';
-import { websocketService } from './utils/websocketService';
+import webSocketService from './utils/websocketService';
 import { checkAuthStatus } from './store/slices/authSlice';
 import './App.css';
 
@@ -81,9 +82,13 @@ const App: React.FC = () => {
     }
   }, [dispatch]);
 
+  // Debug log when component mounts
+  console.log('App component mounted');
+
   // Main initialization effect
   useEffect(() => {
     let isMounted = true;
+    console.log('Initialization effect running');
 
     const initializeApp = async () => {
       try {
@@ -109,7 +114,7 @@ const App: React.FC = () => {
 
         // 5. Set up WebSocket connection
         try {
-          await websocketService.connect();
+          await webSocketService.connect();
         } catch (error) {
           console.warn('WebSocket connection failed:', error);
         }
@@ -155,16 +160,40 @@ const App: React.FC = () => {
       }
       
       // Clean up WebSocket
-      websocketService.disconnect();
+      webSocketService.disconnect();
     };
   }, [dispatch]);
 
   // Loading state
   if (!isInitialized) {
+    console.log('App is in loading state');
     return (
-      <div className="app-loading">
-        <div className="loading-spinner"></div>
+      <div className="app-loading" style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100vh',
+        backgroundColor: '#120258',
+        color: 'white',
+        fontSize: '1.5rem',
+        textAlign: 'center',
+        padding: '2rem'
+      }}>
+        <div style={{
+          width: '50px',
+          height: '50px',
+          border: '5px solid #f3f3f3',
+          borderTop: '5px solid #3498db',
+          borderRadius: '50%',
+          animation: 'spin 2s linear infinite',
+          marginBottom: '1rem'
+        }}></div>
         <p>Initializing application...</p>
+        <p style={{ fontSize: '1rem', opacity: 0.8 }}>Please wait while we set things up</p>
+        <style>{
+          `@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`
+        }</style>
       </div>
     );
   }
@@ -191,35 +220,37 @@ const App: React.FC = () => {
 
   // Main app content
   return (
-    <ErrorBoundary>
-      <ReduxProvider store={store}>
-        <BrowserRouter>
-          <Layout>
-            <Routes>
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/login" element={<Login {...loginProps} />} />
-              
-              <Route element={
-                <ProtectedRoute>
-                  <Outlet />
-                </ProtectedRoute>
-              }>
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/optimization" element={<OptimizationProfiles />} />
-                <Route path="/alerts" element={<SystemAlerts />} />
-                <Route path="/configuration" element={<SystemConfiguration />} />
-                <Route path="/metrics" element={<SystemMetrics />} />
-                <Route path="/auto-tuner" element={<AutoTunerComponent />} />
-                <Route path="/onboarding" element={<OnboardingPage />} />
-                <Route path="/design-system" element={<DesignSystemShowcase />} />
-              </Route>
+    <ReduxProvider store={store}>
+      <ToastProvider>
+        <ErrorBoundary>
+          <BrowserRouter>
+            <Layout>
+              <Routes>
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/login" element={<Login {...loginProps} />} />
+                
+                <Route element={
+                  <ProtectedRoute>
+                    <Outlet />
+                  </ProtectedRoute>
+                }>
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/optimization" element={<OptimizationProfiles />} />
+                  <Route path="/alerts" element={<SystemAlerts />} />
+                  <Route path="/configuration" element={<SystemConfiguration />} />
+                  <Route path="/metrics" element={<SystemMetrics />} />
+                  <Route path="/auto-tuner" element={<AutoTunerComponent />} />
+                  <Route path="/onboarding" element={<OnboardingPage />} />
+                  <Route path="/design-system" element={<DesignSystemShowcase />} />
+                </Route>
 
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
           </Layout>
         </BrowserRouter>
-      </ReduxProvider>
-    </ErrorBoundary>
+        </ErrorBoundary>
+      </ToastProvider>
+    </ReduxProvider>
   );
 };
 

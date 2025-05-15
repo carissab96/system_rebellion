@@ -25,18 +25,30 @@ export default defineConfig({
       },
       // WebSocket proxy for metrics - The Hamsters' domain
       '/ws': {
-        target: 'http://127.0.0.1:8000',
+        target: 'ws://127.0.0.1:8000',
         ws: true,
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/ws/, '/api/ws'),
         configure: (proxy, _options) => {
-          proxy.on('error', (err) => {
-            console.log('🐌 The Meth Snail reports a WebSocket error:', err);
-            console.log('🐌 Attempting to fix with quantum-grade duct tape...');
+          proxy.on('error', (err, req, _res) => {
+            console.error('🐌 The Meth Snail reports a WebSocket error:', err);
+            console.error('🐌 Request that caused the error:', req?.url);
           });
-          proxy.on('proxyReq', (_proxyReq, req, _res) => {
-            console.log('🔌 WebSocket request to:', req.url);
+          proxy.on('proxyReqWs', (proxyReq, req, socket, _options) => {
+            console.log('🔌 WebSocket connection established to:', req.url);
+            socket.on('error', (err) => {
+              console.error('🔌 WebSocket socket error:', err);
+            });
+          });
+          proxy.on('open', () => {
+            console.log('🔌 WebSocket proxy connection opened');
+          });
+          proxy.on('close', (req, socket) => {
+            console.log('🔌 WebSocket proxy connection closed');
+            if (socket) {
+              socket.end();
+            }
           });
         }
       }
