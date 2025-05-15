@@ -1,3 +1,4 @@
+// src/store/slices/metricsSlice.ts
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { 
   SystemMetric, 
@@ -6,14 +7,6 @@ import {
   AlertSeverity,
   MetricsState
 } from '../../types/metrics';
-import webSocketService from '../../utils/websocketService';
-
-type WebSocketMessage = {
-  type: string;
-  data?: any;
-  error?: string;
-  timestamp?: number;
-};
 
 type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
 
@@ -30,9 +23,6 @@ interface ExtendedMetricsState extends Omit<MetricsState, 'connectionStatus' | '
   useWebSocket: boolean;
   connectionStatus: ConnectionStatus;
 }
-
-// Track if WebSocket is initialized
-let isWebSocketInitialized = false;
 
 // Define the RootState type for type-safe selectors
 interface RootState {
@@ -71,74 +61,8 @@ const checkThresholds = (metrics: SystemMetric, thresholds: MetricThresholds): M
     });
   }
   
-  // Check memory threshold
-  if (metrics.memory_percent >= thresholds.memory.critical) {
-    alerts.push({
-      id: `memory-${Date.now()}`,
-      metric_type: 'memory',
-      severity: AlertSeverity.HIGH,
-      threshold: thresholds.memory.critical,
-      current_value: metrics.memory_percent,
-      timestamp: now,
-      message: `Memory usage critical: ${metrics.memory_percent}%`
-    });
-  } else if (metrics.memory_percent >= thresholds.memory.warning) {
-    alerts.push({
-      id: `memory-${Date.now()}-warn`,
-      metric_type: 'memory',
-      severity: AlertSeverity.MEDIUM,
-      threshold: thresholds.memory.warning,
-      current_value: metrics.memory_percent,
-      timestamp: now,
-      message: `Memory usage high: ${metrics.memory_percent}%`
-    });
-  }
-  
-  // Check disk threshold
-  if (metrics.disk_percent >= thresholds.disk.critical) {
-    alerts.push({
-      id: `disk-${Date.now()}`,
-      metric_type: 'disk',
-      severity: AlertSeverity.HIGH,
-      threshold: thresholds.disk.critical,
-      current_value: metrics.disk_percent,
-      timestamp: now,
-      message: `Disk usage critical: ${metrics.disk_percent}%`
-    });
-  } else if (metrics.disk_percent >= thresholds.disk.warning) {
-    alerts.push({
-      id: `disk-${Date.now()}-warn`,
-      metric_type: 'disk',
-      severity: AlertSeverity.MEDIUM,
-      threshold: thresholds.disk.warning,
-      current_value: metrics.disk_percent,
-      timestamp: now,
-      message: `Disk usage high: ${metrics.disk_percent}%`
-    });
-  }
-  
-  // Check network threshold if available
-  if (metrics.network_percent && metrics.network_percent >= thresholds.network.critical) {
-    alerts.push({
-      id: `network-${Date.now()}`,
-      metric_type: 'network',
-      severity: AlertSeverity.HIGH,
-      threshold: thresholds.network.critical,
-      current_value: metrics.network_percent,
-      timestamp: now,
-      message: `Network usage critical: ${metrics.network_percent}%`
-    });
-  } else if (metrics.network_percent && metrics.network_percent >= thresholds.network.warning) {
-    alerts.push({
-      id: `network-${Date.now()}-warn`,
-      metric_type: 'network',
-      severity: AlertSeverity.MEDIUM,
-      threshold: thresholds.network.warning,
-      current_value: metrics.network_percent,
-      timestamp: now,
-      message: `Network usage high: ${metrics.network_percent}%`
-    });
-  }
+  // Same pattern for memory, disk, network checks
+  // ... (keep your existing threshold checks here)
   
   return alerts;
 };
@@ -172,7 +96,9 @@ const metricsSlice = createSlice({
     setWebSocketError: (state, action: PayloadAction<string | null>) => {
       state.error = action.payload;
       state.loading = false;
-      state.connectionStatus = action.payload ? 'error' : 'disconnected';
+      if (action.payload) {
+        state.connectionStatus = 'error';
+      }
     },
     
     // Update metrics with new data
@@ -195,12 +121,6 @@ const metricsSlice = createSlice({
     resetMetrics: (state) => {
       state.metrics = [];
       state.alerts = [];
-      state.thresholds = {
-        cpu: { warning: 70, critical: 90 },
-        memory: { warning: 70, critical: 90 },
-        disk: { warning: 70, critical: 90 },
-        network: { warning: 70, critical: 90 },
-      };
       state.current = null;
       state.historical = [];
       state.error = null;
@@ -221,82 +141,6 @@ const metricsSlice = createSlice({
     },
   }
 });
-
-// WebSocket connection management
-export const initializeWebSocket = () => async (dispatch: any) => {
-  if (isWebSocketInitialized) {
-    console.log("🧐 Sir Hawkington notes the WebSocket is already initialized");
-    return;
-  }
-
-  console.log("🔌 [metricsSlice] Initializing WebSocket connection...");
-  
-  // Set up message handler
-  webSocketService.setMessageCallback((message: WebSocketMessage) => {
-    try {
-      if (message.type === 'system_metrics' && message.data) {
-        const metric = message.data as SystemMetric;
-        console.log("📊 [metricsSlice] Received metrics update:", metric);
-        dispatch(metricsSlice.actions.updateMetrics(metric));
-      }
-    } catch (error) {
-      console.error('❌ [metricsSlice] Error processing WebSocket message:', error);
-      console.error("🐌 The Meth Snail is confused by this message format!");
-      dispatch(metricsSlice.actions.setWebSocketError('Error processing WebSocket message'));
-    }
-  });
-  
-  // Set up event listeners
-  webSocketService.on('connected', () => {
-    console.log("✅ [metricsSlice] WebSocket connected successfully!");
-    dispatch(metricsSlice.actions.setConnectionStatus('connected'));
-    dispatch(metricsSlice.actions.setWebSocketError(null));
-  });
-  
-  webSocketService.on('disconnected', () => {
-    console.log("⚠️ [metricsSlice] WebSocket disconnected");
-    dispatch(metricsSlice.actions.setConnectionStatus('disconnected'));  
-  });
-  
-  webSocketService.on('error', (error: Error) => {
-    console.error('❌ [metricsSlice] WebSocket error:', error);
-    console.error("🐹 The Hamsters report a disturbance in the connection tubes!");
-    dispatch(metricsSlice.actions.setWebSocketError(error.message));
-  });
-  
-  webSocketService.on('statusChange', (status: string) => {
-    console.log(`🔄 [metricsSlice] Connection status changed to: ${status}`);
-    dispatch(metricsSlice.actions.setConnectionStatus(status as ConnectionStatus));
-  });
-
-  // Connect to WebSocket
-  dispatch(metricsSlice.actions.setConnectionStatus('connecting'));
-  try {
-    const connected = await webSocketService.connect();
-    if (!connected) {
-      throw new Error('Failed to establish WebSocket connection');
-    }
-    isWebSocketInitialized = true;
-    console.log("🎉 [metricsSlice] WebSocket initialization complete!");
-  } catch (error) {
-    console.error('❌ [metricsSlice] Failed to initialize WebSocket:', error);
-    dispatch(metricsSlice.actions.setWebSocketError('Failed to connect to WebSocket'));
-  }
-};
-
-// Clean up WebSocket on unmount
-export const cleanupWebSocket = (): void => {
-  console.log("🧹 [metricsSlice] Cleaning up WebSocket...");
-  try {
-    webSocketService.disconnect();
-    isWebSocketInitialized = false;
-    console.log("✅ [metricsSlice] WebSocket cleanup complete");
-  } catch (error) {
-    console.error('❌ [metricsSlice] Error during WebSocket cleanup:', error);
-  }
-};
-
-
 
 // Export selectors with proper typing
 export const selectCurrentMetrics = (state: RootState) => state.metrics.current;

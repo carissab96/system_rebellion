@@ -6,7 +6,6 @@ import { ToastProvider } from './components/common/Toast';
 import { checkBackendAvailability } from './utils/api';
 import { initializeCsrf } from './utils/csrf';
 import { runDiagnostics } from './utils/diagnostics';
-import webSocketService from './utils/websocketService';
 import { checkAuthStatus } from './store/slices/authSlice';
 import './App.css';
 
@@ -82,18 +81,55 @@ const App: React.FC = () => {
     }
   }, [dispatch]);
 
-  // Debug log when component mounts
-  console.log('App component mounted');
-
   // Main initialization effect
   useEffect(() => {
     let isMounted = true;
     console.log('Initialization effect running');
 
+    // Define a timeout wrapper function
+    const withTimeout = <T,>(promise: Promise<T>, ms: number, errorMsg: string): Promise<T> => {
+      return new Promise<T>((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+          reject(new Error(errorMsg));
+        }, ms);
+        
+        promise
+          .then(result => {
+            clearTimeout(timeoutId);
+            resolve(result);
+          })
+          .catch(error => {
+            clearTimeout(timeoutId);
+            reject(error);
+          });
+      });
+    };
+
     const initializeApp = async () => {
+      // Overall timeout to ensure we don't get stuck
+      const overallTimeoutId = setTimeout(() => {
+        if (isMounted) {
+          console.log('Force completing initialization due to timeout');
+          setInitializationError(new Error('Initialization timed out'));
+          setIsInitialized(true); // Force complete even with error
+        }
+      }, 15000); // 15 seconds total
+
       try {
         // 1. Check backend availability
-        const isAvailable = await checkBackendAvailability();
+        console.log('Checking backend availability...');
+        let isAvailable = false;
+        try {
+          isAvailable = await withTimeout(
+            checkBackendAvailability(),
+            5000, 
+            'Backend availability check timed out'
+          );
+        } catch (error) {
+          console.error('Backend availability check failed:', error);
+          throw new Error('Backend service is not available');
+        }
+
         if (!isMounted) return;
         
         if (!isAvailable) {
@@ -101,40 +137,62 @@ const App: React.FC = () => {
         }
 
         // 2. Initialize CSRF
-        const csrfInitialized = await initializeCsrf();
+        console.log('Initializing CSRF...');
+        let csrfInitialized = false;
+        try {
+          csrfInitialized = await withTimeout(
+            initializeCsrf(),
+            5000,
+            'CSRF initialization timed out'
+          );
+        } catch (error) {
+          console.error('CSRF initialization failed:', error);
+          throw new Error('Failed to initialize security token');
+        }
+
+        if (!isMounted) return;
+        
         if (!csrfInitialized) {
           throw new Error('Failed to initialize security token');
         }
 
-        // 3. Check authentication status
-        await dispatch(checkAuthStatus());
+        // 3. Check authentication (non-blocking)
+        console.log('Checking authentication status...');
+        withTimeout(
+          dispatch(checkAuthStatus()),
+          5000,
+          'Authentication check timed out'
+        ).catch(error => {
+          console.warn('Authentication check failed (continuing anyway):', error);
+        });
 
         // 4. Run diagnostics (non-blocking)
-        runDiagnostics().catch(console.error);
-
-        // 5. Set up WebSocket connection
-        try {
-          await webSocketService.connect();
-        } catch (error) {
-          console.warn('WebSocket connection failed:', error);
-        }
-
-        // 6. Set up periodic health checks
+        console.log('Running diagnostics...');
+        runDiagnostics().catch(error => {
+          console.warn('Diagnostics failed (continuing anyway):', error);
+        });
+        
+        // 5. Set up backend availability monitoring
         const checkBackend = async () => {
           if (!isMounted) return;
           
           try {
-            await checkBackendAvailability();
+            const isStillAvailable = await checkBackendAvailability();
+            if (!isStillAvailable && isMounted) {
+              console.error('Backend connection lost');
+              setInitializationError(new Error('Lost connection to backend services'));
+            }
           } catch (error) {
-            console.error('Health check failed:', error);
+            if (isMounted) {
+              console.error('Backend health check failed:', error);
+            }
           }
         };
 
-        // Initial check
-        await checkBackend();
-        
-        // Set up interval for periodic checks
+        // Start periodic checks
         checkIntervalRef.current = window.setInterval(checkBackend, 30000);
+        
+        console.log('Initialization completed successfully');
 
       } catch (error) {
         console.error('Initialization error:', error);
@@ -142,7 +200,11 @@ const App: React.FC = () => {
           setInitializationError(error instanceof Error ? error : new Error('Initialization failed'));
         }
       } finally {
+        clearTimeout(overallTimeoutId);
+        
+        // Always set initialized to true to prevent getting stuck
         if (isMounted) {
+          console.log('Setting isInitialized to true');
           setIsInitialized(true);
         }
       }
@@ -157,10 +219,8 @@ const App: React.FC = () => {
       
       if (checkIntervalRef.current) {
         window.clearInterval(checkIntervalRef.current);
+        checkIntervalRef.current = null;
       }
-      
-      // Clean up WebSocket
-      webSocketService.disconnect();
     };
   }, [dispatch]);
 
@@ -246,8 +306,8 @@ const App: React.FC = () => {
 
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
-          </Layout>
-        </BrowserRouter>
+            </Layout>
+          </BrowserRouter>
         </ErrorBoundary>
       </ToastProvider>
     </ReduxProvider>
