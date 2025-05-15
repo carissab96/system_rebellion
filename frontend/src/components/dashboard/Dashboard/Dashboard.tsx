@@ -1,10 +1,9 @@
 import React, { useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
-import { useToast } from '../../../components/common/Toast';
 import './Dashboard.css';
 import { fetchPatterns } from '../../../store/slices/autoTunerSlice';
 import { fetchSystemAlerts } from '../../../store/slices/systemAlertsSlice';
-import { initializeWebSocket } from '../../../store/slices/metricsSlice';
+import useMetricsWebSocket from '../../../store/useMetricsWebSocket';
 import { RootState } from '../../../store/store';
 import SystemStatus from './SystemStatus/SystemStatus';
 import MetricsPanel from '../MetricsPanel/MetricsPanel';
@@ -15,16 +14,17 @@ interface DashboardProps {}
 
 export const Dashboard: React.FC<DashboardProps> = () => {
   const dispatch = useAppDispatch();
-  const toast = useToast();
   const { user } = useAppSelector((state) => state.auth);
-  const { loading, error, useWebSocket, connectionStatus } = useAppSelector((state: RootState) => state.metrics);
+  const { loading, error, useWebSocket, connectionStatus } = useAppSelector(
+    (state: RootState) => state.metrics
+  );
   
-  // Initialize WebSocket and fetch initial data
+  // Use the WebSocket hook - this replaces the initializeWebSocket call
+  useMetricsWebSocket();
+  
+  // Fetch initial data
   useEffect(() => {
     console.log("🚀 Initializing Dashboard...");
-    
-    // Initialize WebSocket connection
-    dispatch(initializeWebSocket() as any);
     
     // Fetch initial data
     dispatch(fetchPatterns() as any);
