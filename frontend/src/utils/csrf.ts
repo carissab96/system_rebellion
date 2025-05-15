@@ -3,15 +3,25 @@ import axios from 'axios';
 import { API_BASE_URL } from './api';
 
 export const getCsrfToken = async () => {
-    try {
-        const response = await axios.get('/csrf-token', { 
-            withCredentials: true 
-        });
-        return response.data.csrf_token;
-    } catch (error) {
-        console.error('Failed to get CSRF token', error);
-        return null;
-    }
+  try {
+      const response = await axios.get('/csrf_token/csrf_token', { 
+          withCredentials: true,
+          headers: {
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache',
+              'Expires': '0',
+              'Cache': 'no-cache'
+          },
+          params: {
+              _t: Date.now() // Add timestamp to prevent caching
+          }
+      });
+
+      return response.data.csrf_token;
+  } catch (error) {
+      console.error('Failed to get CSRF token', error);
+      return null;
+  }
 };
 
 // Add CSRF token to all axios requests

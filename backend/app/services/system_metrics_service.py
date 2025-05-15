@@ -1,10 +1,19 @@
 """
-Centralized System Metrics Service
+DEPRECATED: This module is deprecated and will be removed in a future version.
+Please use the new metrics service at `app.services.metrics`.
 
 This service provides a single source of truth for system metrics
 across all parts of the application, ensuring consistent values
 are shown in the dashboard, auto-tuner, and system metrics pages.
 """
+
+import warnings
+warnings.warn(
+    "The system_metrics_service module is deprecated and will be removed in a future version. "
+    "Please use the new metrics service at app.services.metrics.",
+    DeprecationWarning,
+    stacklevel=2
+)
 
 import asyncio
 import logging

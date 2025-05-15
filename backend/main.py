@@ -1,9 +1,9 @@
-from fastapi import FastAPI, Depends, Request
+from fastapi import FastAPI, Depends, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from app.core.database import async_engine as engine, Base
+from app.core.database import async_engine as engine, Base, init_models, log_registered_models
 from app.core.middleware import setup_middleware
-from app.api.endpoints import csrf
+from app.api.endpoints.csrf import router as csrf_router
 from app.api.endpoints import auth
 from app.api.endpoints import optimization
 from app.api.endpoints import configuration
@@ -12,38 +12,86 @@ from app.api.endpoints import auto_tuner
 from app.api.endpoints import users
 from app.api.endpoints import system_logs
 from app.api.endpoints import health
+from app.api import router as api_router
 from app.api import router as metrics_router
+from app.api import router as debug_router
 # Import websocket routes
 from app.api import websocket_routes
 from datetime import datetime
 import uvicorn
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Import all models to ensure they are registered with SQLAlchemy
+from app.models import *  # noqa
 
 # Database initialization
 async def init_db(db_engine=None):
-    # Use provided engine or default to the global engine
-    engine_to_use = db_engine or engine
-    async with engine_to_use.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    try:
+        # Log registered models for debugging
+        log_registered_models()
+        
+        # Use provided engine or default to the global engine
+        engine_to_use = db_engine or engine
+        
+        # Initialize models (create tables)
+        await init_models()
+        
+        logger.info("Database initialization complete")
+        return True
+    except Exception as e:
+        logger.error(f"Error initializing database: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Database initialization failed: {str(e)}")
 
 def init_db_sync(db_engine=None):
     """Synchronous version of init_db for testing"""
-    engine_to_use = db_engine or engine
-    with engine_to_use.begin() as conn:
-        conn.run_sync(Base.metadata.create_all)
+    try:
+        # Log registered models for debugging
+        log_registered_models()
+        
+        engine_to_use = db_engine or engine
+        with engine_to_use.begin() as conn:
+            Base.metadata.create_all(conn)
+        
+        logger.info("Synchronous database initialization complete")
+        return True
+    except Exception as e:
+        logger.error(f"Error in synchronous database initialization: {str(e)}", exc_info=True)
+        raise
 
 def create_application() -> FastAPI:
+    # Log registered models for debugging
+    log_registered_models()
+    
     # Create FastAPI app
-    print("Available models in registry:", Base.registry._class_registry)
     app = FastAPI(
         title="System Rebellion",
         description="Quantum Optimization Platform",
         version="0.1.0"
     )
     
+    # Initialize database on startup
+    @app.on_event("startup")
+    async def startup_event():
+        logger.info("Starting up application...")
+        try:
+            await init_db()
+            logger.info("Database initialization successful")
+        except Exception as e:
+            logger.error(f"Failed to initialize database: {str(e)}")
+            raise
+    
     # Setup middleware
     setup_middleware(app)
     
-    # Add health-check endpoint
+    # Debug endpoint
+    @app.get("/api/debug/ping")
+    def ping():
+        return {"message": "pong"}
+    # Health check endpoint
     @app.get("/health-check/")
     @app.get("/api/health-check/")
     async def health_check():
@@ -67,8 +115,8 @@ def create_application() -> FastAPI:
 
     # Include routers
     app.include_router(
-        csrf.router, 
-        prefix="/api/csrf", 
+        csrf_router, 
+        prefix="/api/csrf_token", 
         tags=["CSRF"]
     )
     app.include_router(
@@ -84,6 +132,11 @@ def create_application() -> FastAPI:
             tags=["WebSockets"]
         )
     # Add other routers...
+    app.include_router(
+        debug_router,
+        prefix="/api/debug",
+        tags=["Debug"]
+    )
     app.include_router(
         metrics_router,
         prefix="/api/metrics",
@@ -132,18 +185,26 @@ def create_application() -> FastAPI:
     # Add health check router
     app.include_router(
         health.router,
-        prefix="/api",
+        prefix="/api/health-check",
         tags=["Health"]
     )
-
-    # CORS Configuration
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],  # Allow all origins for development
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*", "X-CSRFToken"],
+    
+    # Include API router (includes WebSocket routes)
+    app.include_router(
+        api_router,
+        prefix="/api"
     )
+
+    # CORS is handled in core/middleware.py
+    # WebSocket CORS is handled by the CORS middleware
+    # @app.middleware("http")
+    # async def add_cors_headers(request, call_next):
+    #     response = await call_next(request)
+    #     response.headers["Access-Control-Allow-Origin"] = "*"
+    #     response.headers["Access-Control-Allow-Methods"] = "*"
+    #     response.headers["Access-Control-Allow-Headers"] = "*"
+    #     response.headers["Access-Control-Allow-Credentials"] = "true"
+    #     return response
     
     return app
 
@@ -153,8 +214,8 @@ app = create_application()
 if __name__ == "__main__":
     uvicorn.run(
         "main:app", 
-        host="0.0.0.0", 
-        port=8000, 
+        host="127.0.0.1", 
+        port=8000,
         reload=True,
-        log_level="info"
+        log_level="debug"
     )

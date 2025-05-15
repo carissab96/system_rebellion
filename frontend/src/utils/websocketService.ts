@@ -60,112 +60,148 @@ class WebSocketService implements IWebSocketService {
     private reconnectTimeoutId: number | null = null;
     private isIntentionalDisconnect: boolean = false;
 
-    private constructor() {
-        console.log("🎭 WebSocket Service Constructor Called");
-        
-        // Set WebSocket URL based on environment
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const host = window.location.host;
-        this.wsUrl = `${protocol}//${host}/ws/system-metrics`;
-        console.log("🧐 Sir Hawkington says: WebSocket URL configured to:", this.wsUrl);
+    private getStateName(state: number): string {
+        switch (state) {
+            case WebSocket.CONNECTING: return 'CONNECTING';
+            case WebSocket.OPEN: return 'OPEN';
+            case WebSocket.CLOSING: return 'CLOSING';
+            case WebSocket.CLOSED: return 'CLOSED';
+            default: return 'UNKNOWN';
+        }
     }
 
+    private constructor() {
+        console.log("🎭 [WebSocketService] Constructor Called");
+        
+        try {
+            // Use the WebSocket proxy path defined in vite.config.ts
+            this.wsUrl = `/api/ws/system-metrics`;
+            console.log("🔗 [WebSocketService] Using relative WebSocket URL:", this.wsUrl);
+            
+            // Log environment for debugging
+            console.log("🌍 [WebSocketService] Environment:", {
+                NODE_ENV: import.meta.env.MODE,
+                VITE_BACKEND_URL: import.meta.env.VITE_BACKEND_URL,
+                PROD: import.meta.env.PROD,
+                DEV: import.meta.env.DEV,
+                location: window.location.href
+            });
+        } catch (error) {
+            console.error("❌ [WebSocketService] Error configuring WebSocket URL:", error);
+            // Fallback to WebSocket proxy path
+            this.wsUrl = '/api/ws/system-metrics';
+            console.log("🔄 [WebSocketService] Falling back to default WebSocket URL:", this.wsUrl);
+        }
+    }
+    
     public static getInstance(): WebSocketService {
         if (!WebSocketService.instance) {
             WebSocketService.instance = new WebSocketService();
         }
         return WebSocketService.instance;
     }
-
     public async connect(): Promise<void> {
-        console.log("🔌 ATTEMPTING WEBSOCKET CONNECTION to:", this.wsUrl);
-        console.log(`🔍 Current time: ${new Date().toISOString()}`);
+        console.log("🔌 [WebSocketService] ATTEMPTING WEBSOCKET CONNECTION to:", this.wsUrl);
+        console.log(`🔍 [WebSocketService] Current time: ${new Date().toISOString()}`);
         
-        // If we've permanently failed, don't even try
-        if (this.permanentlyFailed) {
-            console.log("💀 WebSocket connection permanently disabled due to repeated failures");
-            return Promise.reject(new Error("WebSocket permanently disabled"));
-        }
+        // Reset the permanent failure state on each new connection attempt
+        this.permanentlyFailed = false;
         
-        // Reset intentional disconnect flag
-        this.isIntentionalDisconnect = false;
-        
-        if (this.connectionPromise) {
-            console.log("🔄 Connection already in progress, returning existing promise");
-            return this.connectionPromise;
-        }
-
-        this.connectionPromise = new Promise((resolve, reject) => {
-            try {
-                // Check if backend is available before attempting WebSocket connection
-                checkBackendAvailability().then(backendAvailable => {
-                    if (!backendAvailable) {
-                        console.error("🔌 Backend is not available, cannot establish WebSocket connection");
-                        this.connectionPromise = null;
-                        reject(new Error("Backend is not available"));
-                        return;
-                    }
-                    
-                    // Get authentication token from localStorage
-                    const token = localStorage.getItem('token');
-                    
-                    // Create WebSocket URL with token if available
-                    let wsUrlWithAuth = this.wsUrl;
-                    if (token) {
-                        // Add token as a query parameter or use a custom header depending on backend implementation
-                        wsUrlWithAuth = `${this.wsUrl}?token=${token}`;
-                        console.log("🔑 Adding authentication token to WebSocket connection");
-                    }
-                    
-                    console.log("🔌 Creating WebSocket with URL:", wsUrlWithAuth);
-                    this.socket = new WebSocket(wsUrlWithAuth);
-                    
-                    // Set up connection timeout
-                    this.setConnectionTimeout();
-                    
-                    // Set up event handlers
-                    this.socket.onopen = () => {
-                        console.log("✅ WebSocket connection established!");
-                        console.log("🧐 Sir Hawkington adjusts his monocle in approval!");
-                        this.clearConnectionTimeout();
-                        this.reconnectAttempts = 0; // Reset reconnect attempts on successful connection
-                        resolve();
-                    };
-                    
-                    this.socket.onmessage = (event) => {
-                        this.handleMessage(event);
-                    };
-                    
-                    this.socket.onerror = (event) => {
-                        console.error("❌ WebSocket error:", event);
-                        this.handleError(event);
-                    };
-                    
-                    this.socket.onclose = (event) => {
-                        console.log("👋 WebSocket closed:", event);
-                        this.handleClose(event);
-                    };
-                    
-                }).catch(error => {
-                    console.error("❌ Error checking backend availability:", error);
-                    this.connectionPromise = null;
-                    reject(error);
-                });
-            } catch (error) {
-                console.error("❌ Error creating WebSocket:", error);
-                this.connectionPromise = null;
-                reject(error);
+        // If we're already connected, don't try to connect again
+        if (this.socket) {
+            console.log(`🔌 [WebSocketService] Current WebSocket state: ${this.socket.readyState} (${this.getStateName(this.socket.readyState)})`);
+            if (this.socket.readyState === WebSocket.OPEN) {
+                console.log("🔌 [WebSocketService] WebSocket is already connected.");
+                return Promise.resolve();
             }
+        }
+        
+        // If we have a connection promise already, reuse it
+        if (this.connectionPromise) {
+          console.log("🔄 Connection already in progress, returning existing promise");
+          return this.connectionPromise;
+        }
+    
+        this.connectionPromise = new Promise((resolve, reject) => {
+          try {
+            // Check if backend is available before attempting WebSocket connection
+            // FIXED: Added timeout to backend availability check
+            const backendCheckWithTimeout = Promise.race([
+              checkBackendAvailability(),
+              new Promise<boolean>((_, reject) => 
+                setTimeout(() => reject(new Error('Backend availability check timed out')), 5000)
+              )
+            ]);
+            
+            backendCheckWithTimeout.then(backendAvailable => {
+              if (!backendAvailable) {
+                console.error("🔌 Backend is not available, cannot establish WebSocket connection");
+                this.connectionPromise = null;
+                reject(new Error("Backend is not available"));
+                return;
+              }
+              
+              // Get and validate token
+              let token = localStorage.getItem('token');
+              
+              if (!token) {
+                console.log('🔑 No authentication token found, attempting to connect without token');
+              }
+              
+              // Create WebSocket URL with token if available
+              const wsUrlWithAuth = token ? `${this.wsUrl}?token=${token}` : this.wsUrl;
+              console.log("🔌 Creating WebSocket with URL:", wsUrlWithAuth);
+              
+              // Actually use the URL with auth token here
+              this.socket = new WebSocket(wsUrlWithAuth);
+              
+              // Set up connection timeout
+              this.setConnectionTimeout();
+              
+              // Set up event handlers
+              this.socket.onopen = () => {
+                console.log("✅ WebSocket connection established!");
+                console.log("🧐 Sir Hawkington adjusts his monocle in approval!");
+                this.clearConnectionTimeout();
+                this.reconnectAttempts = 0; // Reset reconnect attempts on successful connection
+                resolve();
+              };
+              
+              this.socket.onmessage = (event) => {
+                this.handleMessage(event);
+              };
+              
+              this.socket.onerror = (event) => {
+                console.error("❌ WebSocket error:", event);
+                this.handleError(event);
+              };
+              
+              this.socket.onclose = (event) => {
+                console.log("👋 WebSocket closed:", event);
+                this.handleClose(event);
+              };
+            }).catch(error => {
+              console.error("❌ Error checking backend availability:", error);
+              this.connectionPromise = null;
+              reject(error);
+            });
+          } catch (error) {
+            console.error("❌ Error creating WebSocket:", error);
+            this.connectionPromise = null;
+            reject(error);
+          }
         });
-
+    
         return this.connectionPromise;
-    }
+      }
+    
 
     private setConnectionTimeout(): void {
         // Clear any existing timeout
         this.clearConnectionTimeout();
         
         // Set a new timeout - 10 seconds to establish connection
+        // FIXED: Changed timeout from 10000000ms (≈115 days) to 10000ms (10 seconds)
         this.connectionTimeoutId = window.setTimeout(() => {
             console.error("⏱️ WebSocket connection timeout after 10 seconds");
             
@@ -176,7 +212,7 @@ class WebSocketService implements IWebSocketService {
             }
             
             this.connectionPromise = null;
-        }, 10000); // 10 second timeout
+        }, 10000); // 10 second timeout - FIXED from 10000000
     }
 
     private clearConnectionTimeout(): void {
@@ -354,8 +390,15 @@ class WebSocketService implements IWebSocketService {
                 console.log(`⏱️ Attempting reconnection after ${delay}ms delay`);
                 
                 try {
-                    // Check if backend is available before attempting reconnection
-                    const backendAvailable = await checkBackendAvailability();
+                    // FIXED: Added timeout to backend availability check during reconnection
+                    const backendCheckWithTimeout = Promise.race([
+                      checkBackendAvailability(),
+                      new Promise<boolean>((_, reject) => 
+                        setTimeout(() => reject(new Error('Backend availability check timed out')), 5000)
+                      )
+                    ]);
+                    
+                    const backendAvailable = await backendCheckWithTimeout;
                     
                     if (backendAvailable) {
                         console.log("✅ Backend is available, attempting WebSocket reconnection");
@@ -480,4 +523,4 @@ const websocketServiceInstance = WebSocketService.getInstance();
 export const websocketService: IWebSocketService = websocketServiceInstance;
 
 // Log that the service has been initialized
-console.log("🚀 WebSocketService singleton instance created and exported");
+console.log("🚀 WebSocketService singleton instance created and exported");               

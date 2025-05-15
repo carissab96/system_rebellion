@@ -124,6 +124,15 @@ export interface AdditionalMetrics {
   [key: string]: any;
 }
 
+// Type for optimization profile thresholds
+export interface MetricThresholds {
+  cpu: number;
+  memory: number;
+  disk: number;
+  network: number;
+  timestamp?: string;
+}
+
 export interface SystemMetric {
   id: string;
   user_id: string;
@@ -157,12 +166,6 @@ export interface SystemMetric {
   memory_swap_percent: number;
   memory_percent: number;
   disk_usage: number;
-<<<<<<< HEAD
-  network_usage: number; // Keep for backward compatibility
-  network?: any; // Add this to store detailed network data
-  process_count: number;
-  timestamp: string;
-=======
   disk_total: number;
   disk_available: number;
   disk_free: number;
@@ -174,41 +177,32 @@ export interface SystemMetric {
   network_free: number;
   network_used: number;
   network_percent: number;
-  process_count?: number;
-  additional?: AdditionalMetrics;
->>>>>>> c2232c1 (feat: implement disk and CPU performance monitoring components with metrics visualization)
+  network?: NetworkDetails;
+  process_count: number;
+  timestamp: string;
   additional_metrics?: Record<string, any>;
-  network?: any; // Added to support direct network data access
+  additional?: AdditionalMetrics;
 }
   
-  // Type for optimization profile thresholds
-  export interface MetricThresholds {
-    cpu: number;
-    memory: number;
-    disk: number;
-    network: number;
-    timestamp?: string;
-  }
-  
-  // Type for metric alerts
-  export enum AlertSeverity {
-    LOW = 'LOW',
-    MEDIUM = 'MEDIUM',
-    HIGH = 'HIGH',
-    CRITICAL = 'CRITICAL'
-  }
-  
-  export interface MetricAlert {
-    id: string;
-    metric_type: 'cpu' | 'memory' | 'disk' | 'network';
-    severity: AlertSeverity;
-    threshold: number;
-    current_value: number;
-    timestamp: string;
-    message: string;
-  }
+// Type for metric alerts
+export enum AlertSeverity {
+  LOW = 'LOW',
+  MEDIUM = 'MEDIUM',
+  HIGH = 'HIGH',
+  CRITICAL = 'CRITICAL'
+}
 
-  export type IntervalID = NodeJS.Timeout;
+export interface MetricAlert {
+  id: string;
+  metric_type: 'cpu' | 'memory' | 'disk' | 'network';
+  severity: AlertSeverity;
+  threshold: number;
+  current_value: number;
+  timestamp: string;
+  message: string;
+}
+
+export type IntervalID = NodeJS.Timeout;
 
 export interface MetricsState {
   metrics: SystemMetric[];
@@ -218,115 +212,91 @@ export interface MetricsState {
   websocketService: typeof websocketService | null;
 }
 
-  // Type for historical data
-  export interface HistoricalMetrics {
-    data: SystemMetric[];
-    start_time: string;
-    end_time: string;
-    interval: number;
-  }
+// Type for historical data
+export interface HistoricalMetrics {
+  data: SystemMetric[];
+  start_time: string;
+  end_time: string;
+  interval: number;
+}
 
-  
-  // Response types from API
-  export interface SystemMetricsResponse {
-    data: SystemMetric;
-    alerts: MetricAlert[];
-  }
-  
-  // Request types for API
-  export interface MetricsQueryParams {
-    start_time?: string;
-    end_time?: string;
-    interval?: number;
-    limit?: number;
-  }
-  
-  // Optimization types
-  export interface OptimizationResult {
-    id: string;
-    timestamp: string;
-    metrics_before: SystemMetric;
-    metrics_after: SystemMetric;
-    actions_taken: string[];
-    success: boolean;
-  }
+// Response types from API
+export interface SystemMetricsResponse {
+  data: SystemMetric;
+  alerts: MetricAlert[];
+}
 
-  export interface OptimizationProfile {
-    id: string;
-    name: string;
-    description: string;
-    thresholds: MetricThresholds;
-    actions: string[];
-  }
+// Request types for API
+export interface MetricsQueryParams {
+  start_time?: string;
+  end_time?: string;
+  interval?: number;
+  limit?: number;
+}
 
-  export interface MetricsApiResponse {
-    data: SystemMetric;
-    timestamp: string;
-  }
+// Optimization types
+export interface OptimizationResult {
+  id: string;
+  timestamp: string;
+  metrics_before: SystemMetric;
+  metrics_after: SystemMetric;
+  actions_taken: string[];
+  success: boolean;
+}
 
-  // export interface SystemThresholds {
-  //   cpu: number;
-  //   memory: number;
-  //   disk: number;
-  //   network: number;
-  // }
- 
-  export interface SystemAlert {
-    id: string;
-    timestamp: string;
-    title: string;
-    message: string;
-    severity: AlertSeverity;
-  }
- 
-  export interface MetricAlert {
-    id: string;
-    metric_type: 'cpu' | 'memory' | 'disk' | 'network';
-    severity: AlertSeverity;
-    threshold: number;
-    current_value: number;
-    timestamp: string;
-    message: string;
-  }
-    
-  export interface AutoTunerState {
-    uuid: string;
-    user: string;
-    // profile: UserProfile;
-    // preferences: UserPreferences;
-    // optimization_profile: OptimizationProfile;
-    // optimization_results: OptimizationResult[];
-    status: string;
-    success: boolean;
-    loading: boolean;
-    error: string | null;
-    lastUpdated: string | null;
-  }
-  
-  export interface AutoTunerApiResponse {
-    uuid: string;
-    user: string;
-    // profile: UserProfile;
-    // preferences: UserPreferences;
-    // optimization_profile: OptimizationProfile;
-    // optimization_results: OptimizationResult[];
-    status: string;
-    success: boolean;
-    timestamp: string;
-  }
+export interface OptimizationProfile {
+  id: string;
+  name: string;
+  description: string;
+  thresholds: MetricThresholds;
+  actions: string[];
+}
 
-  export interface AutoTunerAlert {
-    id: string;
-    metric_type: 'cpu' | 'memory' | 'disk' | 'network';
-    severity: AlertSeverity;
-    threshold: number;
-    current_value: number;
-    timestamp: string;
-    message: string;
-  }
-  
-  export interface AutoTunerAlertState {
-    alerts: AutoTunerAlert[];
-    loading: boolean;
-    error: string | null;
-  }
+export interface MetricsApiResponse {
+  data: SystemMetric;
+  timestamp: string;
+}
+
+// System alert interface
+export interface SystemAlert {
+  id: string;
+  timestamp: string;
+  title: string;
+  message: string;
+  severity: AlertSeverity;
+}
+
+// Auto tuner interfaces
+export interface AutoTunerState {
+  uuid: string;
+  user: string;
+  status: string;
+  success: boolean;
+  loading: boolean;
+  error: string | null;
+  lastUpdated: string | null;
+}
+
+export interface AutoTunerApiResponse {
+  uuid: string;
+  user: string;
+  status: string;
+  success: boolean;
+  timestamp: string;
+}
+
+export interface AutoTunerAlert {
+  id: string;
+  metric_type: 'cpu' | 'memory' | 'disk' | 'network';
+  severity: AlertSeverity;
+  threshold: number;
+  current_value: number;
+  timestamp: string;
+  message: string;
+}
+
+export interface AutoTunerAlertState {
+  alerts: AutoTunerAlert[];
+  loading: boolean;
+  error: string | null;
+}

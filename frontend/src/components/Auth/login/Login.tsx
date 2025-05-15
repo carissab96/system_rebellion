@@ -6,8 +6,9 @@ import SignupModal from '../SignupModal/SignupModal';
 import './login.css';
 import { useState, useEffect } from 'react';
 import '../../../components/common/Modal.css';
+import axios from 'axios';
 
-interface LoginProps {
+export interface LoginProps {
   onClose: () => void;
   isOpen: boolean;
 }
@@ -78,6 +79,32 @@ const Login: React.FC<LoginProps> = ({ onClose, isOpen }) => {
       }
     }
   }, [isAuthenticated, navigate, onClose]);
+
+  // Add to your Login component
+const handleDirectLogin = async () => {
+  try {
+    const response = await axios.post('http://127.0.0.1:8000/api/auth/token', 
+      new URLSearchParams({
+        'username': 'test',
+        'password': 'test'
+      }),
+      {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        withCredentials: true
+      }
+    );
+    
+    console.log("✅ Direct login succeeded:", response.data);
+    localStorage.setItem('token', response.data.access_token);
+    localStorage.setItem('refresh_token', response.data.refresh_token);
+    // Redirect or update UI
+  } catch (error) {
+    console.error("❌ Direct login failed:", error);
+  }
+};
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -152,9 +179,6 @@ const Login: React.FC<LoginProps> = ({ onClose, isOpen }) => {
       }
       
       updateHawkingtonQuote('success');
-      
-      // Check if the user object has a profile with system information
-      const user = result;
       
       // Login users should always go directly to dashboard
       console.log('Login successful via login modal, will redirect to dashboard');
@@ -278,6 +302,10 @@ const Login: React.FC<LoginProps> = ({ onClose, isOpen }) => {
                 disabled={isLoading || !csrfInitialized || isCheckingBackend || !backendAvailable}
               >
                 {isLoading ? 'Sir Hawkington is verifying...' : 'Enter the System Rebellion'}
+              </button>
+              
+              <button type="button" onClick={handleDirectLogin}>
+                Direct Login Test
               </button>
 
               <div className="auth-login signup-prompt">

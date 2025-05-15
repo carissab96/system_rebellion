@@ -20,19 +20,20 @@ def setup_middleware(app: FastAPI):
     # )
 
     # CORS Configuration
+    origins = [
+        "http://localhost:5173",  # Frontend dev server
+        "http://localhost:8000",   # Default Vite port
+        "https://system-rebellion.com",  # Production domain
+        "https://system-rebellion.onrender.com",  # Render domain
+        "https://system-rebellion-api.onrender.com"  # Render API domain
+    ]
+    
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[
-            "http://localhost:5173",  # Frontend dev server
-            "http://127.0.0.1:5173",  # Frontend dev server alternative URL
-            "http://127.0.0.1:41585",  # Current browser preview URL
-            "http://localhost:*",      # Any localhost port
-            "http://127.0.0.1:*",     # Any 127.0.0.1 port
-            "https://system-rebellion.com",  # Production domain
-            "https://system-rebellion.onrender.com",  # Render domain
-            "https://system-rebellion-api.onrender.com"  # Render API domain
-        ],
+        allow_origins=["*"],
         allow_credentials=True,
         allow_methods=["*"],
-        allow_headers=["*", "X-CSRFToken", "Authorization"]
+        allow_headers=["*", "X-CSRFToken", "Authorization"],
+        expose_headers=["Content-Type", "X-CSRFToken", "Authorization"],
+        max_age=600
     )
