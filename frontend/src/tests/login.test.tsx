@@ -3,7 +3,7 @@ import { Provider } from 'react-redux';
 import { BrowserRouter } from 'react-router-dom';
 import { configureStore } from '@reduxjs/toolkit';
 import authReducer from '../store/slices/authSlice';
-import { Login } from '../components/Auth/login/Login';
+import Login from '../components/Auth/login/Login';
 
 // Mock dependencies
 jest.mock('../utils/api', () => ({
@@ -21,7 +21,9 @@ const renderComponent = () => {
   return render(
     <Provider store={mockStore}>
       <BrowserRouter>
-        <Login />
+        <Login onClose={function (): void {
+          throw new Error('Function not implemented.');
+        } } isOpen={true} />
       </BrowserRouter>
     </Provider>
   );

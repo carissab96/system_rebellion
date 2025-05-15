@@ -1,3 +1,15 @@
+"""
+DEPRECATED: This module is deprecated and will be removed in a future version.
+Please use the new metrics service at `app.services.metrics.database.repository`.
+"""
+import warnings
+warnings.warn(
+    "The metrics_service module is deprecated and will be removed in a future version. "
+    "Please use app.services.metrics.database.repository.MetricsRepository instead.",
+    DeprecationWarning,
+    stacklevel=2
+)
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import delete, update

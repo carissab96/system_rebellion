@@ -1,24 +1,25 @@
-from fastapi import APIRouter, Request
-from app.core.security import CSRFProtection
+from fastapi import APIRouter, Request, Response
+import secrets
 
+# Create router without prefix - we'll add it in main.py
 router = APIRouter()
 
-@router.get("/csrf-token")
-async def get_csrf_token(request: Request):
-    """Endpoint to get CSRF token"""
-    csrf = CSRFProtection()
-    token = csrf.generate_csrf_token(request)
+@router.get("/csrf_token")
+async def get_csrf_token(response: Response):
+    """Generate a new CSRF token and set it as a cookie and in headers"""
+    csrf_token = secrets.token_urlsafe(32)
     
-    # Set the token in a cookie as well for browsers that don't support JavaScript
-    from fastapi.responses import JSONResponse
-    response = JSONResponse({"csrf_token": token})
+    # Set cookie that matches frontend expectations
     response.set_cookie(
-        key="csrf_token",
-        value=token,
-        httponly=False,  # Allow JavaScript to read this cookie
-        samesite="lax",  # Protect against CSRF while allowing navigation
+        key="XSRF-TOKEN",
+        value=csrf_token,
+        httponly=False,  # Allow JavaScript to read
         secure=False,    # Set to True in production with HTTPS
-        max_age=3600     # 1 hour expiration
+        samesite="lax",  # Protect against CSRF while allowing navigation
+        max_age=3600,    # 1 hour expiration
+        path="/"
     )
-    
-    return response
+    # Also include the token in the response header
+    response.headers["X-CSRFToken"] = csrf_token    
+        
+    return {"csrf_token": csrf_token}

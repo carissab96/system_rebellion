@@ -25,7 +25,7 @@ interface LoginResponse {
 
 // Set up axios instance with authentication
 const authApi = axios.create({
-  baseURL: '/api/auth',
+  baseURL: 'http://127.0.0.1:8000/api/auth',
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json'

@@ -4,30 +4,53 @@ from typing import List
 
 class WebSocketManager:
     def __init__(self):
-        self.active_connections: List[WebSocket] = []
-        self._lock = asyncio.Lock()  # Add a lock for thread safety
-        self._max_retries = 3  # Maximum number of reconnection attempts
-        self._retry_delay = 1  # Delay between retries in seconds
-
+        self.active_connections = []
+        self._connection_lock = asyncio.Lock()
+    
     async def connect(self, websocket: WebSocket):
-        try:
-            await websocket.accept()
-            async with self._lock:
-                if websocket not in self.active_connections:
-                    self.active_connections.append(websocket)
-            print("WebSocket connected successfully")
-        except Exception as e:
-            print(f"Error connecting WebSocket: {e}")
-            raise
-
+        """Add a websocket connection with proper locking."""
+        async with self._connection_lock:
+            if websocket not in self.active_connections:
+                self.active_connections.append(websocket)
+                print(f"WebSocket connected. Total connections: {len(self.active_connections)}")
+    
     async def disconnect(self, websocket: WebSocket):
-        async with self._lock:
+        """Remove a websocket connection with proper locking."""
+        async with self._connection_lock:
             if websocket in self.active_connections:
                 self.active_connections.remove(websocket)
-        print("WebSocket disconnected")
+                print(f"WebSocket disconnected. Remaining connections: {len(self.active_connections)}")
+    
+    async def broadcast(self, message: dict):
+        """Broadcast a message to all active connections."""
+        # Make a copy of the connections list to avoid modification during iteration
+        async with self._connection_lock:
+            connections = self.active_connections.copy()
+        
+        # Track connections to remove
+        connections_to_remove = []
+        
+        for connection in connections:
+            try:
+                # Check if the connection is still open before sending
+                if connection.client_state.name == "CONNECTED":
+                    await connection.send_json(message)
+                else:
+                    connections_to_remove.append(connection)
+            except Exception as e:
+                print(f"Error sending message: {e}")
+                connections_to_remove.append(connection)
+        
+        # Remove closed connections
+        if connections_to_remove:
+            async with self._connection_lock:
+                for connection in connections_to_remove:
+                    if connection in self.active_connections:
+                        self.active_connections.remove(connection)
+                print(f"Removed {len(connections_to_remove)} closed connections. Remaining: {len(self.active_connections)}")
 
     async def broadcast(self, message: dict):
-        async with self._lock:
+        async with self._connection_lock:
             # Make a copy of the connections to avoid modification during iteration
             connections = self.active_connections.copy()
         

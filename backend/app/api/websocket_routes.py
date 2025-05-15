@@ -700,17 +700,33 @@ async def system_metrics_socket(websocket: WebSocket):
     Sir Hawkington's Distinguished System Metrics WebSocket
     The Meth Snail monitors your system with quantum precision!
     """
+    # Process query parameters to get token if present
+    query_params = dict(websocket.query_params)
+    token = query_params.get("token")
+    
+    # Track connection state
+    connection_active = False
+    
     try:
-        await websocket_manager.connect(websocket)
+            # Accept the WebSocket connection
+        await websocket.accept()
+        print("WebSocket connection accepted")
         
-        # Add this: Create a ResourceMonitor instance to use its data collection
+        # Send initial connection message
+        await websocket.send_json({"type": "connection_established", "message": "Connected to WebSocket"})
+        
+        # Connect to the WebSocket manager
+        await websocket_manager.connect(websocket)
+        connection_active = True
+        
+        # Create a ResourceMonitor instance to use its data collection
         from app.optimization.resource_monitor import ResourceMonitor
         resource_monitor = ResourceMonitor()
         await resource_monitor.initialize()
         
+        # Main WebSocket loop
         while True:
             try:
-                # Replace the existing metrics collection with this:
                 # Collect system metrics using ResourceMonitor
                 metrics = await resource_monitor.collect_metrics()
                 
@@ -718,30 +734,18 @@ async def system_metrics_socket(websocket: WebSocket):
                 if isinstance(metrics['timestamp'], datetime):
                     metrics['timestamp'] = metrics['timestamp'].isoformat()
                 
-                # The rest of your function can remain largely the same
-                # Just make sure you're sending the full metrics object
-                
-                # Debug output
-                print(f"Network metrics to broadcast - keys: {list(metrics.get('network', {}).keys())}")
-                print(f"Full metrics structure - keys: {list(metrics.keys())}")
-
                 message = {
                     "type": "system_metrics",
                     "data": metrics
                 }
-
-                # Debug output the actual message structure
-                print(f"Broadcasting message type: {message['type']}")
-                print(f"Message data keys: {list(message['data'].keys())}")
-                print(f"Network data included: {'network' in message['data']}")
                 
-                # Rest of your existing function...
-                try:
-                    await websocket_manager.broadcast(message)
-                    print(f"🎩 Sir Hawkington broadcast metrics to {len(websocket_manager.active_connections)} clients")
-                except Exception as e:
-                    print(f"Error during broadcast: {e}")
-                    
+                # Only send if the connection is still open
+                if websocket.client_state.name == "CONNECTED":
+                    await websocket.send_json(message)
+                else:
+                    print("WebSocket is no longer connected. Breaking loop.")
+                    break
+                
                 # Sleep to control update frequency
                 await asyncio.sleep(5)  # Update every 5 seconds
                 
@@ -749,10 +753,14 @@ async def system_metrics_socket(websocket: WebSocket):
                 print("WebSocket disconnected by client")
                 break
             except Exception as e:
-                print(f"Error in metrics collection: {e}")
-                # Don't break the loop on errors, just continue
-                await asyncio.sleep(5)  # Wait before retrying
+                print(f"Error in metrics collection or sending: {e}")
+                # Break the loop on errors for this specific client
+                break
                 
     except Exception as e:
-        print(f"WebSocket error: {e}")
-        await websocket_manager.disconnect(websocket)
+        print(f"WebSocket error during setup: {e}")
+    finally:
+        # Clean up connection if it was established
+        if connection_active:
+            await websocket_manager.disconnect(websocket)
+            print("WebSocket disconnected and cleaned up")

@@ -67,7 +67,7 @@ const xsrfMiddleware: Middleware = () => next => (action: any) => {
 export async function restoreCSRF() {
   try {
     console.log('🧐 Sir Hawkington is attempting to restore the CSRF token...');
-    const response = await fetchWithCsrf('/api/csrf/csrf-token');
+    const response = await fetchWithCsrf('/api/csrf/csrf_token/csrf_token');
     if (!response.ok) {
       console.error('🚨 Failed to restore CSRF token, status:', response.status);
       throw new Error(`Failed to restore CSRF token: ${response.statusText}`);

@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import { checkAuthStatus } from '../store/slices/authSlice';
 
-interface ProtectedRouteProps {
+export interface ProtectedRouteProps {
   children: React.ReactNode;
   redirectTo?: string;
 }
@@ -20,7 +20,14 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   useEffect(() => {
     // Check authentication status if not already known
     if (!isAuthenticated && !isLoading) {
-      dispatch(checkAuthStatus());
+      // Add timeout to auth check
+      const authPromise = dispatch(checkAuthStatus());
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Auth check timed out')), 15000)
+      );
+      
+      Promise.race([authPromise, timeoutPromise])
+        .catch(error => console.error('Auth check failed:', error));
     }
   }, [isAuthenticated, isLoading, dispatch]);
 

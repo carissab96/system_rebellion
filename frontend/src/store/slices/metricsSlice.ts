@@ -2,7 +2,11 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { SystemMetric, MetricsState, MetricThresholds, MetricAlert, MetricsApiResponse } from '../../types/metrics';
 import { websocketService } from '../../utils/websocketService';
 import axios from 'axios';
-import { apiMethods, API_BASE_URL } from '../../utils/api';
+import { API_BASE_URL, apiMethods } from '../../utils/api';
+
+// Track if we're currently using the fallback
+let isUsingFallback = false;
+let fallbackInterval: NodeJS.Timeout | null = null;
 
 // Extended state interface to match our actual implementation
 interface ExtendedMetricsState extends MetricsState {
@@ -10,6 +14,8 @@ interface ExtendedMetricsState extends MetricsState {
   historical: SystemMetric[];
   alerts: MetricAlert[];
   thresholds: MetricThresholds;
+  useWebSocket: boolean;
+  lastUpdate: number | null;
 }
 
 const initialState: ExtendedMetricsState = {
@@ -19,13 +25,15 @@ const initialState: ExtendedMetricsState = {
   alerts: [],
   loading: false,
   thresholds: {
-    cpu: 0,
-    memory: 0,
-    disk: 0,
-    network: 0,
+    cpu: 80, // Default thresholds (percentage)
+    memory: 80,
+    disk: 80,
+    network: 80,
   },
   error: null,
   lastUpdated: null,
+  useWebSocket: true,
+  lastUpdate: null,
   websocketService: null
 };
 
@@ -39,160 +47,89 @@ interface WebSocketMessage {
   data?: SystemMetric;
 }
 
+// Function to handle fallback to REST API
+const startFallbackPolling = async (dispatch: any) => {
+  if (isUsingFallback) return; // Already in fallback mode
+  
+  isUsingFallback = true;
+  console.log('💾 Starting REST API fallback polling...');
+  
+  // Initial fetch
+  await fetchMetricsWithFallback(dispatch);
+  
+  // Set up polling every 5 seconds
+  fallbackInterval = setInterval(async () => {
+    await fetchMetricsWithFallback(dispatch);
+  }, 5000);
+};
+
+// Stop fallback polling
+const stopFallbackPolling = () => {
+  if (fallbackInterval) {
+    clearInterval(fallbackInterval);
+    fallbackInterval = null;
+  }
+  isUsingFallback = false;
+  console.log('🔌 Stopped REST API fallback, returning to WebSocket');
+};
+
+// Helper function to fetch metrics with fallback
+const fetchMetricsWithFallback = async (dispatch: any) => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/metrics/system`);
+    const data = response.data;
+    
+    if (data) {
+      // Update Redux with the data from REST API
+      dispatch(updateMetrics(data));
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error fetching metrics via REST API:', error);
+    return null;
+  }
+};
+
 export const initializeWebSocket = createAsyncThunk(
   'metrics/initializeWebSocket',
   async (_, { dispatch }) => {
     console.log("🚀 Initializing WebSocket connection...");
     
-    try {
-      websocketService.setMessageCallback((data: WebSocketMessage) => {
-        console.log('🎩 Sir Hawkington received WebSocket message:', data);
-        if (data.type === 'system_metrics' && data.data) {
-          console.log('🐹 The Hamsters are processing metrics data:', data.data);
-          dispatch(updateMetrics(data.data));
-        }
-      });
-
-      try {
-        await websocketService.connect();
-        return { 
-          status: 'connected' 
-        } as WebSocketInitStatus;
-      } catch (wsError) {
-        console.warn('WebSocket connection failed, falling back to REST API:', wsError);
-        
-        // Fallback to REST API if WebSocket connection fails
-        try {
-          console.log('💾 Falling back to REST API for metrics...');
-          const response = await axios.get(`${API_BASE_URL}/metrics/system`);
-          
-          const data = response.data;
-          console.log('💾 REST API metrics data:', data);
-          
-          // Transform the data to match the expected format
-          const metricData: SystemMetric = {
-            id: crypto.randomUUID ? crypto.randomUUID() : `metric-${Date.now()}`,
-            user_id: 'system',
-            timestamp: data.timestamp || new Date().toISOString(),
-            cpu_usage: data.cpu_usage || 0,
-            memory_usage: data.memory_usage || 0,
-            disk_usage: data.disk_usage || 0,
-            network_usage: data.network_io ? 
-              (data.network_io.sent + data.network_io.recv) / 1024 / 1024 : 0,
-            process_count: data.process_count || 0,
-            cpu: {
-              name: data.cpu_model || 'Unknown CPU',
-              frequency: 0,
-              temp: {
-                current: 0,
-                min: 0,
-                max: 100,
-                critical: 90,
-                throttle_threshold: 80,
-                unit: 'C' as const
-              },
-              processes: [],
-              core_count: data.cpu_core_count || 0,
-              usage_percent: undefined,
-              overall_usage: data.cpu_usage || 0,
-              process_count: 0,
-              thread_count: 0,
-              physical_cores: data.cpu_core_count || 0,
-              logical_cores: data.cpu_core_count || 0,
-              model_name: data.cpu_model || 'Unknown',
-              frequency_mhz: 0,
-              temperature: {
-                current: 0,
-                min: 0,
-                max: 100,
-                critical: 90,
-                throttle_threshold: 80,
-                unit: 'C' as const
-              },
-              top_processes: [],
-              cores: []
-            },
-            memory_total: data.memory_total || 0,
-            memory_available: data.memory_available || 0,
-            memory_free: data.memory_free || 0,
-            memory_buffer: 0,
-            memory_cache: 0,
-            memory_swap: 0,
-            memory_swap_total: 0,
-            memory_swap_free: 0,
-            memory_swap_used: 0,
-            memory_swap_percent: 0,
-            memory_percent: data.memory_usage || 0,
-            disk_total: data.disk_total || 0,
-            disk_available: data.disk_available || 0,
-            disk_free: data.disk_free || 0,
-            disk_used: 0,
-            disk_percent: data.disk_usage || 0,
-            network_total: 0,
-            network_available: 0,
-            network_free: 0,
-            network_used: 0,
-            network_percent: 0,
-            additional_metrics: {},
-            additional: {}
-          };
-          
-          // Update metrics with the REST API data
-          dispatch(updateMetrics(metricData));
-          
-          // Set up a polling interval to fetch metrics regularly
-          // Store the interval ID in a variable that we can access for cleanup
-          const pollInterval = setInterval(async () => {
-            try {
-              const pollResponse = await axios.get(`${API_BASE_URL}/metrics/system`);
-              const pollData = pollResponse.data;
-              const updatedMetric = {
-                ...metricData,
-                id: crypto.randomUUID ? crypto.randomUUID() : `metric-${Date.now()}`,
-                cpu_usage: pollData.cpu_usage || 0,
-                memory_usage: pollData.memory_usage || 0,
-                disk_usage: pollData.disk_usage || 0,
-                network_usage: pollData.network_io ? 
-                  (pollData.network_io.sent + pollData.network_io.recv) / 1024 / 1024 : 0,
-                process_count: pollData.process_count || 0,
-                timestamp: pollData.timestamp || new Date().toISOString(),
-              };
-              
-              dispatch(updateMetrics(updatedMetric));
-            } catch (pollError) {
-              console.error('Metrics polling failed:', pollError);
-            }
-          }, 5000); // Poll every 5 seconds
-          
-          // Store the interval ID in window for cleanup on unmount
-          // @ts-ignore - Adding custom property to window
-          window.metricsPollingInterval = pollInterval;
-          
-          // Add cleanup on page unload
-          window.addEventListener('beforeunload', () => {
-            // @ts-ignore - Accessing custom property from window
-            if (window.metricsPollingInterval) {
-              // @ts-ignore - Accessing custom property from window
-              clearInterval(window.metricsPollingInterval);
-            }
-          });
-          
-          // Return success status with REST API fallback
-          return { 
-            status: 'connected' 
-          } as WebSocketInitStatus;
-        } catch (apiError) {
-          console.error('REST API fallback failed:', apiError);
-          return {
-            status: 'failed',
-            error: apiError instanceof Error ? apiError.message : 'REST API fallback failed'
-          } as WebSocketInitStatus;
-        }
+    // Set up message handler
+    const messageHandler = (data: WebSocketMessage) => {
+      console.log('🎩 Sir Hawkington received WebSocket message:', data);
+      if (data.type === 'system_metrics' && data.data) {
+        console.log('🐹 The Hamsters are processing metrics data:', data.data);
+        dispatch(updateMetrics(data.data));
       }
-    } catch (error) {
-      return {
+    };
+    
+    websocketService.setMessageCallback(messageHandler);
+
+    try {
+      // Let the WebSocketService handle its own connection logic and retries
+      await websocketService.connect();
+      
+      // If we get here, connection was successful
+      if (isUsingFallback) {
+        stopFallbackPolling();
+      }
+      
+      return { 
+        status: 'connected' 
+      } as WebSocketInitStatus;
+    } catch (wsError) {
+      console.warn('WebSocket connection failed, falling back to REST API:', wsError);
+      
+      // Only start fallback if we're not already using it
+      if (!isUsingFallback) {
+        await startFallbackPolling(dispatch);
+      }
+      
+      return { 
         status: 'failed',
-        error: error instanceof Error ? error.message : 'Unknown WebSocket fuckup'
+        error: 'WebSocket connection failed, using REST API fallback'
       } as WebSocketInitStatus;
     }
   }
@@ -276,13 +213,38 @@ export const metricsSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchSystemMetrics.pending, (state) => {
+      .addCase(initializeWebSocket.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
+      .addCase(initializeWebSocket.fulfilled, (state, action) => {
+        state.loading = false;
+        state.error = null;
+        state.useWebSocket = action.payload.status === 'connected';
+        state.lastUpdate = Date.now();
+        
+        if (action.payload.status === 'connected') {
+          console.log('🔌 WebSocket connection established');
+        } else {
+          console.log('📡 Using REST API fallback for metrics');
+        }
+      })
+      .addCase(initializeWebSocket.rejected, (state, action) => {
+        state.loading = false;
+        state.useWebSocket = false;
+        state.error = action.error.message || 'Failed to initialize WebSocket, using REST API fallback';
+        console.error(state.error);
+      })
+      .addCase(fetchSystemMetrics.pending, (state) => {
+        if (!state.loading) {
+          state.loading = true;
+          state.error = null;
+        }
+      })
       .addCase(fetchSystemMetrics.fulfilled, (state, action) => {
         state.loading = false;
-        // Handle the response data properly
+        state.error = null;
+        state.lastUpdate = Date.now();
         if (action.payload && action.payload.data) {
           state.current = action.payload.data;
           state.historical = [
@@ -300,12 +262,6 @@ export const metricsSlice = createSlice({
       .addCase(createMetric.fulfilled, (state, action) => {
         state.historical.push(action.payload);
         state.metrics.push(action.payload);
-      })
-      .addCase(initializeWebSocket.fulfilled, (state, _action) => {
-        state.error = null;
-      })
-      .addCase(initializeWebSocket.rejected, (state, action) => {
-        state.error = 'Websocket fucked off again: ' + action.error.message;
       });
   }
 });

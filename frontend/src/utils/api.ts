@@ -1,8 +1,10 @@
 // api.ts
-import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
+import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import store from '../store/store';// Updated import path
 import { logout } from '../store/slices/authSlice';
 import { SystemMetric } from '../types/metrics';
+import api from '../services/authService';
+
 
 interface ApiError extends AxiosError {
   config: InternalAxiosRequestConfig & { _retry?: boolean };
@@ -111,16 +113,25 @@ export const getBackendAvailability = (): boolean => {
   return backendAvailable;
 };
 
-const api: AxiosInstance = axios.create({
+export const apiClient = axios.create({
   baseURL: API_BASE_URL,
+  withCredentials: true,
   headers: {
-    'Content-Type': 'application/json',
-  },
-  withCredentials: true, // Important for CSRF/cookies
+    'Content-Type': 'application/json'
+  }
+});
+
+// Debug endpoint
+export const debugApi = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: false,
+  headers: {
+    'Content-Type': 'application/json'
+  }
 });
 
 // Request interceptor
-api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = localStorage.getItem('token');
   if (token) {
     // Make sure token has Bearer prefix
@@ -144,7 +155,7 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 });
 
 // Response interceptor
-api.interceptors.response.use(
+apiClient.interceptors.response.use(
   (response) => response,
   async (error: ApiError) => {
     const originalRequest = error.config;
@@ -174,7 +185,7 @@ api.interceptors.response.use(
             localStorage.setItem('token', newToken);
             // Update the original request with the new token
             originalRequest.headers.Authorization = `Bearer ${newToken}`;
-            return api(originalRequest);
+            return apiClient(originalRequest);
           }
         } catch (refreshError) {
           console.error('Token refresh failed:', refreshError);
@@ -204,37 +215,37 @@ interface AutotunerData {
 export const apiMethods = {
   // Generic GET method with type parameter
   get: async <T>(url: string): Promise<T> => {
-    const response = await api.get<T>(url);
+    const response = await apiClient.get<T>(url);
     return response.data;
   },
   // Generic POST method with type parameters
   post: async <T, D>(url: string, data: D): Promise<T> => {
-    const response = await api.post<T>(url, data);
+    const response = await apiClient.post<T>(url, data);
     return response.data;
   },
   // Generic DELETE method with type parameter
   delete: async <T>(url: string): Promise<T> => {
-    const response = await api.delete<T>(url);
+    const response = await apiClient.delete<T>(url);
     return response.data;
   },
   // Generic PUT method with type parameters
   put: async <T, D>(url: string, data: D): Promise<T> => {
-    const response = await api.put<T>(url, data);
+    const response = await apiClient.put<T>(url, data);
     return response.data;
   },
   // Generic PATCH method for partial updates
   patch: async <T, D>(url: string, data: D): Promise<T> => {
-    const response = await api.patch<T>(url, data);
+    const response = await apiClient.patch<T>(url, data);
     return response.data;
   },
   // Generic HEAD method for retrieving headers only
   head: async <T>(url: string): Promise<T> => {
-    const response = await api.head<T>(url);
+    const response = await apiClient.head<T>(url);
     return response.data;
   },
   // Generic OPTIONS method
   options: async <T>(url: string): Promise<T> => {
-    const response = await api.options<T>(url);
+    const response = await apiClient.options<T>(url);
     return response.data;
   },
   // Add other methods as needed
@@ -363,7 +374,7 @@ export const apiMethods = {
       console.log("🐌 The Meth Snail is processing your login with quantum precision!");
       
       try {
-        const response = await api.post('/auth/token/', 
+        const response = await apiClient.post('/auth/token/', 
           new URLSearchParams({
             'username': credentials.username,
             'password': credentials.password
@@ -402,7 +413,7 @@ export const initializeCsrf = async (): Promise<boolean> => {
     }
     
     // Explicitly fetch the CSRF token from the dedicated endpoint
-    const response = await axios.get(`${API_BASE_URL}/csrf/csrf-token`, {
+    const response = await axios.get(`${API_BASE_URL}/csrf/csrf_token/csrf_token`, {
       withCredentials: true,
       timeout: 5000 // 5 second timeout
     });
