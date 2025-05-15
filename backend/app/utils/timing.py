@@ -3,6 +3,8 @@ Timing utilities for performance monitoring.
 """
 import time
 import logging
+import inspect
+import asyncio
 from functools import wraps
 from typing import Callable, Any, Optional, TypeVar, cast
 from typing_extensions import ParamSpec
@@ -21,7 +23,7 @@ def timeit(logger: Optional[logging.Logger] = None, level: int = logging.DEBUG,
         threshold_ms: Only log if execution time exceeds this threshold in milliseconds
     """
     def decorator(func: Callable[P, T]) -> Callable[P, T]:
-        if is_async_func(func):
+        if asyncio.iscoroutinefunction(func):
             @wraps(func)
             async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
                 start_time = time.monotonic()
@@ -52,7 +54,3 @@ def timeit(logger: Optional[logging.Logger] = None, level: int = logging.DEBUG,
                             print(log_msg)
             return sync_wrapper
     return decorator
-
-def is_async_func(func: Callable[..., Any]) -> bool:
-    """Check if a function is async."""
-    return str(type(func).__name__) == 'function' and str(func.__code__.co_flags & 0x80) != '0'

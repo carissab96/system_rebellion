@@ -1,11 +1,13 @@
 import asyncio
 from fastapi import WebSocket, WebSocketDisconnect
-from typing import List
+from typing import List, Dict, Any
 
 class WebSocketManager:
     def __init__(self):
-        self.active_connections = []
+        self.active_connections: List[WebSocket] = []
         self._connection_lock = asyncio.Lock()
+        self._max_retries = 3
+        self._retry_delay = 1.0
     
     async def connect(self, websocket: WebSocket):
         """Add a websocket connection with proper locking."""
@@ -21,35 +23,8 @@ class WebSocketManager:
                 self.active_connections.remove(websocket)
                 print(f"WebSocket disconnected. Remaining connections: {len(self.active_connections)}")
     
-    async def broadcast(self, message: dict):
+    async def broadcast(self, message: Dict[str, Any]):
         """Broadcast a message to all active connections."""
-        # Make a copy of the connections list to avoid modification during iteration
-        async with self._connection_lock:
-            connections = self.active_connections.copy()
-        
-        # Track connections to remove
-        connections_to_remove = []
-        
-        for connection in connections:
-            try:
-                # Check if the connection is still open before sending
-                if connection.client_state.name == "CONNECTED":
-                    await connection.send_json(message)
-                else:
-                    connections_to_remove.append(connection)
-            except Exception as e:
-                print(f"Error sending message: {e}")
-                connections_to_remove.append(connection)
-        
-        # Remove closed connections
-        if connections_to_remove:
-            async with self._connection_lock:
-                for connection in connections_to_remove:
-                    if connection in self.active_connections:
-                        self.active_connections.remove(connection)
-                print(f"Removed {len(connections_to_remove)} closed connections. Remaining: {len(self.active_connections)}")
-
-    async def broadcast(self, message: dict):
         async with self._connection_lock:
             # Make a copy of the connections to avoid modification during iteration
             connections = self.active_connections.copy()
@@ -76,8 +51,12 @@ class WebSocketManager:
                     disconnected_connections.append(connection)
         
         # Remove all disconnected connections
-        for connection in disconnected_connections:
-            await self.disconnect(connection)
+        if disconnected_connections:
+            async with self._connection_lock:
+                for connection in disconnected_connections:
+                    if connection in self.active_connections:
+                        self.active_connections.remove(connection)
+                print(f"Removed {len(disconnected_connections)} closed connections. Remaining: {len(self.active_connections)}")
 
     async def handle_connection(self, websocket: WebSocket):
         """Handle connection with retry logic"""
@@ -93,6 +72,18 @@ class WebSocketManager:
         
         print("Maximum connection attempts reached")
         return False
+
+    async def send_to_client(self, websocket: WebSocket, message: Dict[str, Any]) -> bool:
+        """Send a message to a specific client with error handling."""
+        try:
+            await asyncio.wait_for(websocket.send_json(message), timeout=2.0)
+            return True
+        except (WebSocketDisconnect, asyncio.TimeoutError) as e:
+            print(f"Failed to send message: {e}")
+            return False
+        except Exception as e:
+            print(f"Unexpected error sending message: {e}")
+            return False
 
 # The Meth Snail's Global WebSocket Manager
 websocket_manager = WebSocketManager()
