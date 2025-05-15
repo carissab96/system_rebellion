@@ -149,7 +149,26 @@ const App: React.FC = () => {
           console.error('CSRF initialization failed:', error);
           throw new Error('Failed to initialize security token');
         }
-
+        console.log('Attempting manual CSRF fetch...');
+        try {
+          fetch('/api/auth/csrf_token', {
+            method: 'GET',
+            credentials: 'include'
+          })
+          .then(response => {
+            console.log('CSRF fetch response:', response);
+            return response.json();
+          })
+          .then(data => {
+            console.log('CSRF data:', data);
+          })
+          .catch(error => {
+            console.error('CSRF fetch error:', error);
+          });
+          console.log('CSRF fetch initiated');
+        } catch (error) {
+          console.error('Error setting up CSRF fetch:', error);
+        }
         if (!isMounted) return;
         
         if (!csrfInitialized) {

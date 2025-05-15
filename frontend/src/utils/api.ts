@@ -413,7 +413,7 @@ export const initializeCsrf = async (): Promise<boolean> => {
     }
     
     // Explicitly fetch the CSRF token from the dedicated endpoint
-    const response = await axios.get(`${API_BASE_URL}/csrf/csrf_token/csrf_token`, {
+    const response = await axios.get(`${API_BASE_URL}/auth/csrf_token/`, {
       withCredentials: true,
       timeout: 5000 // 5 second timeout
     });

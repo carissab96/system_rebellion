@@ -3,7 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from app.core.database import async_engine as engine, Base, init_models, log_registered_models
 from app.core.middleware import setup_middleware
-from app.api.endpoints.csrf import router as csrf_router
 from app.api.endpoints import auth
 from app.api.endpoints import optimization
 from app.api.endpoints import configuration
@@ -114,11 +113,6 @@ def create_application() -> FastAPI:
     app.add_event_handler("startup", startup_event)
 
     # Include routers
-    app.include_router(
-        csrf_router, 
-        prefix="/api/csrf_token", 
-        tags=["CSRF"]
-    )
     app.include_router(
         auth.router, 
         prefix="/api/auth", 
