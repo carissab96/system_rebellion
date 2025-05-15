@@ -1,6 +1,5 @@
 // src/types/metrics.ts
 import { CPUData } from '../components/metrics/CPU/types';
-import { websocketService } from '../utils/websocketService';
 // Base metric type for individual readings
 export interface NetworkDetails {
   // Legacy properties for backward compatibility
@@ -125,11 +124,16 @@ export interface AdditionalMetrics {
 }
 
 // Type for optimization profile thresholds
+interface ThresholdLevels {
+  warning: number;
+  critical: number;
+}
+
 export interface MetricThresholds {
-  cpu: number;
-  memory: number;
-  disk: number;
-  network: number;
+  cpu: ThresholdLevels;
+  memory: ThresholdLevels;
+  disk: ThresholdLevels;
+  network: ThresholdLevels;
   timestamp?: string;
 }
 
@@ -209,7 +213,9 @@ export interface MetricsState {
   loading: boolean;
   error: string | null;
   lastUpdated: string | null;
-  websocketService: typeof websocketService | null;
+  useWebSocket: boolean;
+  connectionStatus: 'disconnected' | 'connecting' | 'connected';
+  lastUpdate: number | null;
 }
 
 // Type for historical data

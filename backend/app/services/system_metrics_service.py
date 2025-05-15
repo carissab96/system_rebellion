@@ -1,28 +1,22 @@
 """
-DEPRECATED: This module is deprecated and will be removed in a future version.
-Please use the new metrics service at `app.services.metrics`.
+System Metrics Service
 
 This service provides a single source of truth for system metrics
 across all parts of the application, ensuring consistent values
 are shown in the dashboard, auto-tuner, and system metrics pages.
-"""
 
-import warnings
-warnings.warn(
-    "The system_metrics_service module is deprecated and will be removed in a future version. "
-    "Please use the new metrics service at app.services.metrics.",
-    DeprecationWarning,
-    stacklevel=2
-)
+This is now a thin wrapper around the modular metrics services.
+"""
 
 import asyncio
 import logging
 import time
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Type
 from datetime import datetime
+from sqlalchemy.ext.asyncio import AsyncSession
 
-# Import the new metrics service
-from app.services.metrics.metrics_service import MetricsService
+# Import the modular metrics services
+from app.services.metrics.metrics_service import MetricsService as MetricsOrchestrator
 
 class SystemMetricsService:
     _instance = None
@@ -34,40 +28,121 @@ class SystemMetricsService:
             cls._instance._initialized = False
         return cls._instance
     
-    def __init__(self):
+    def __init__(self, metrics_service_class: Type[MetricsOrchestrator] = None):
+        """
+        Initialize the service with a metrics service class.
+        
+        Args:
+            metrics_service_class: The metrics service class to use. If None, will use MetricsOrchestrator.
+        """
         if self._initialized:
             return
             
         self.logger = logging.getLogger('SystemMetricsService')
+        self.metrics_service_class = metrics_service_class or MetricsOrchestrator
         self.last_metrics = None
         self.last_update_time = 0
-        self.cache_ttl = 2  # seconds - how long to cache metrics before refreshing
+        self.cache_ttl = 5  # Cache TTL in seconds
         
-        # Initialize the new metrics service
-        self.metrics_service = MetricsService()
+        # Initialize the metrics service
+        self.metrics_service = self.metrics_service_class()
         
         self._initialized = True
-        self.logger.info("SystemMetricsService initialized as singleton")
+        self.logger.info("SystemMetricsService initialized as singleton (using modular metrics services)")
     
-    async def get_metrics(self, force_refresh=False) -> Dict[str, Any]:
+    async def get_metrics(self, force_refresh=False, db: AsyncSession = None) -> Dict[str, Any]:
         """
         Get current system metrics, using cached values if they're recent enough.
+        This is now a thin wrapper around the modular metrics services.
         
         Args:
             force_refresh: If True, ignore the cache and collect fresh metrics
+            db: Optional database session (kept for backward compatibility, not used)
             
         Returns:
-            Dictionary containing system metrics
+            Dictionary containing system metrics with the following structure:
+            {
+                'timestamp': str,
+                'cpu': {
+                    'percent': float,
+                    'temperature': Optional[float],
+                    'cores': int,
+                    'physical_cores': int
+                },
+                'memory': {
+                    'percent': float,
+                    'total': int,
+                    'available': int,
+                    'used': int,
+                    'free': int
+                },
+                'disk': {
+                    'percent': float,
+                    'total': int,
+                    'used': int,
+                    'free': int
+                },
+                'network': {
+                    'bytes_sent': int,
+                    'bytes_recv': int,
+                    'packets_sent': int,
+                    'packets_recv': int,
+                    'interfaces': Dict[str, Any]
+                },
+                'process_count': int,
+                'additional': Dict[str, Any]
+            }
         """
+        current_time = time.time()
+        
+        # Use cached metrics if they're fresh enough and not forcing refresh
+        if (not force_refresh and 
+            self.last_metrics is not None and 
+            current_time - self.last_update_time < self.cache_ttl):
+            return self.last_metrics
+            
         try:
-            # Delegate to the new metrics service
+            # Get metrics from the modular service
             metrics = await self.metrics_service.get_metrics(force_refresh)
             
+            # Transform to match the expected format
+            transformed_metrics = {
+                'timestamp': metrics.get('timestamp', datetime.now().isoformat()),
+                'cpu': {
+                    'percent': metrics.get('cpu_usage', 0),
+                    'temperature': metrics.get('cpu', {}).get('temperature'),
+                    'cores': len(metrics.get('cpu', {}).get('per_core_percent', [])),
+                    'physical_cores': metrics.get('cpu', {}).get('cores', {}).get('physical', 0)
+                },
+                'memory': {
+                    'percent': metrics.get('memory_usage', 0),
+                    'total': metrics.get('memory', {}).get('total', 0),
+                    'available': metrics.get('memory', {}).get('available', 0),
+                    'used': metrics.get('memory', {}).get('used', 0),
+                    'free': metrics.get('memory', {}).get('free', 0)
+                },
+                'disk': {
+                    'percent': metrics.get('disk_usage', 0),
+                    'total': metrics.get('disk', {}).get('partitions', [{}])[0].get('total', 0) if metrics.get('disk', {}).get('partitions') else 0,
+                    'used': metrics.get('disk', {}).get('partitions', [{}])[0].get('used', 0) if metrics.get('disk', {}).get('partitions') else 0,
+                    'free': metrics.get('disk', {}).get('partitions', [{}])[0].get('free', 0) if metrics.get('disk', {}).get('partitions') else 0
+                },
+                'network': {
+                    'bytes_sent': metrics.get('network', {}).get('io_stats', {}).get('bytes_sent', 0),
+                    'bytes_recv': metrics.get('network', {}).get('io_stats', {}).get('bytes_recv', 0),
+                    'packets_sent': metrics.get('network', {}).get('io_stats', {}).get('packets_sent', 0),
+                    'packets_recv': metrics.get('network', {}).get('io_stats', {}).get('packets_recv', 0),
+                    'interfaces': {}
+                },
+                'process_count': metrics.get('process_count', 0),
+                'additional': metrics.get('additional', {})
+            }
+            
             # Store in our local cache for backward compatibility
-            self.last_metrics = metrics
+            self.last_metrics = transformed_metrics
             self.last_update_time = time.time()
             
-            return metrics
+            return transformed_metrics
         except Exception as e:
             self.logger.error(f"Error collecting system metrics: {str(e)}")
             
@@ -78,116 +153,85 @@ class SystemMetricsService:
             # Otherwise, return a minimal set of metrics
             return {
                 'timestamp': datetime.now().isoformat(),
-                'cpu_usage': 0,
-                'memory_usage': 0,
-                'disk_usage': 0,
-                'network_usage': 0,
+                'cpu': {
+                    'percent': 0,
+                    'temperature': None,
+                    'cores': 0,
+                    'physical_cores': 0
+                },
+                'memory': {
+                    'percent': 0,
+                    'total': 0,
+                    'available': 0,
+                    'used': 0,
+                    'free': 0
+                },
+                'disk': {
+                    'percent': 0,
+                    'total': 0,
+                    'used': 0,
+                    'free': 0
+                },
+                'network': {
+                    'bytes_sent': 0,
+                    'bytes_recv': 0,
+                    'packets_sent': 0,
+                    'packets_recv': 0,
+                    'interfaces': {}
+                },
                 'process_count': 0,
                 'additional': {
                     'error': str(e)
                 }
             }
     
-    def _get_detailed_cpu_metrics(self) -> Dict[str, Any]:
+    async def _get_detailed_cpu_metrics(self) -> Dict[str, Any]:
         """
         Get detailed CPU metrics including per-core usage, top processes, and temperature.
+        Now delegates to the CPU metrics service.
         
         Returns:
             Dictionary containing detailed CPU metrics
         """
-        # Get overall CPU usage with a consistent interval
-        total_percent = psutil.cpu_percent(interval=1)
-        
-        # Get per-core CPU usage
-        per_core_percent = psutil.cpu_percent(interval=0, percpu=True)
-        
-        # Get CPU frequency information
         try:
-            cpu_freq = psutil.cpu_freq()
-            current_freq = cpu_freq.current if cpu_freq else None
-            min_freq = cpu_freq.min if cpu_freq and hasattr(cpu_freq, 'min') else None
-            max_freq = cpu_freq.max if cpu_freq and hasattr(cpu_freq, 'max') else None
-        except Exception as e:
-            self.logger.error(f"Error getting CPU frequency: {str(e)}")
-            current_freq, min_freq, max_freq = None, None, None
-        
-        # Get CPU temperature if available
-        cpu_temp = None
-        try:
-            temps = psutil.sensors_temperatures()
-            if temps:
-                # Try different temperature sensors based on platform
-                for sensor_name in ['coretemp', 'k10temp', 'acpitz', 'cpu_thermal']:
-                    if sensor_name in temps:
-                        cpu_temp = temps[sensor_name][0].current
-                        break
-        except Exception as e:
-            self.logger.error(f"Error getting CPU temperature: {str(e)}")
-        
-        # Get top CPU-consuming processes
-        top_cpu_processes = []
-        try:
-            # Get all processes and sort by CPU usage
-            processes = []
-            for proc in psutil.process_iter(['pid', 'name', 'username', 'cpu_percent', 'memory_percent', 'create_time']):
-                try:
-                    # Update CPU usage value
-                    proc.cpu_percent(interval=0)
-                    processes.append(proc)
-                except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-                    pass
+            # Get CPU metrics from the service
+            cpu_metrics = await self.metrics_service.get_cpu_metrics(force_refresh=True)
             
-            # Sleep briefly to allow CPU percent to be measured
-            time.sleep(0.1)
-            
-            # Get CPU percent again and create process info
-            for proc in processes:
-                try:
-                    cpu_usage = proc.cpu_percent(interval=0)
-                    if cpu_usage > 0:  # Only include processes actually using CPU
-                        top_cpu_processes.append({
-                            'pid': proc.info['pid'],
-                            'name': proc.info['name'],
-                            'username': proc.info['username'],
-                            'cpu_percent': cpu_usage,
-                            'memory_percent': proc.info['memory_percent'],
-                            'create_time': datetime.fromtimestamp(proc.info['create_time']).isoformat() if proc.info['create_time'] else None
-                        })
-                except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-                    pass
-            
-            # Sort by CPU usage (descending) and take top 5
-            top_cpu_processes = sorted(top_cpu_processes, key=lambda x: x['cpu_percent'], reverse=True)[:5]
+            # Transform to match the expected format
+            return {
+                'percent': cpu_metrics.get('total_percent', 0),
+                'per_core_percent': cpu_metrics.get('per_core_percent', []),
+                'frequency': cpu_metrics.get('frequency', {}),
+                'temperature': cpu_metrics.get('temperature'),
+                'top_processes': cpu_metrics.get('top_processes', []),
+                'logical_cores': cpu_metrics.get('cores', {}).get('logical', 0),
+                'physical_cores': cpu_metrics.get('cores', {}).get('physical', 0)
+            }
         except Exception as e:
-            self.logger.error(f"Error getting top CPU processes: {str(e)}")
-        
-        # Get CPU count information
-        try:
-            logical_cores = psutil.cpu_count()
-            physical_cores = psutil.cpu_count(logical=False)
-        except Exception as e:
-            self.logger.error(f"Error getting CPU count: {str(e)}")
-            logical_cores, physical_cores = None, None
-        
-        return {
-            'total_percent': total_percent,
-            'per_core_percent': per_core_percent,
-            'temperature': cpu_temp,
-            'frequency': {
-                'current': current_freq,
-                'min': min_freq,
-                'max': max_freq
-            },
-            'cores': {
-                'logical': logical_cores,
-                'physical': physical_cores
-            },
-            'top_processes': top_cpu_processes
-        }
-        
+            self.logger.error(f"Error getting CPU metrics: {str(e)}")
+            return {
+                'percent': 0,
+                'per_core_percent': [],
+                'frequency': {'current': None, 'min': None, 'max': None},
+                'temperature': None,
+                'top_processes': [],
+                'logical_cores': 0,
+                'physical_cores': 0
+            }
+    
     @classmethod
-    async def get_instance(cls):
-        """Get the singleton instance of the service"""
+    async def get_instance(cls, db: AsyncSession = None) -> 'SystemMetricsService':
+        """
+        Get the singleton instance of the service
+        
+        Args:
+            db: Optional database session (kept for backward compatibility, not used)
+            
+        Returns:
+            SystemMetricsService: The singleton instance
+        """
         if cls._instance is None:
-            cls._instance = cls()
+            async with cls._lock:
+                if cls._instance is None:
+                    cls._instance = SystemMetricsService()
         return cls._instance

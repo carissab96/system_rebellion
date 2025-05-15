@@ -498,47 +498,97 @@ def get_detailed_network_metrics() -> Dict[str, Any]:
                 
         except Exception as e:
             print(f"Error collecting connection quality metrics: {e}")
-            # Fallback to reasonable defaults
+            # Initialize with empty metrics that will be populated with real data
             connection_quality = {
-                "average_latency": 30.0,  # ms
-                "packet_loss_percent": 0.0,  # %
-                "connection_stability": 95.0,  # 0-100 score
-                "jitter": 2.0,  # ms
-                "internet_latency": 30.0,  # ms
-                "overall_score": 90  # 0-100 score
+                "average_latency": 0.0,
+                "packet_loss_percent": 0.0,
+                "connection_stability": 0.0,
+                "jitter": 0.0,
+                "internet_latency": 0.0,
+                "overall_score": 0,
+                "samples_collected": 0,
+                "last_updated": datetime.now(timezone.utc).isoformat()
             }
         
-            # Real DNS metrics collection
-        dns_metrics = {}
+        # Collect real DNS metrics
+        dns_metrics = {
+            'success': False,
+            'query_time_ms': 0,
+            'servers': [],
+            'cache_info': {},
+            'last_updated': datetime.now(timezone.utc).isoformat()
+        }
+        
         try:
-            # Measure DNS query time
-            dns_start = time.time()
-            try:
-                socket.gethostbyname("google.com")
-                dns_success = True
-            except socket.gaierror:
-                dns_success = False
-            dns_end = time.time()
-            dns_query_time = (dns_end - dns_start) * 1000  # Convert to ms
+            # Test multiple common domains to get more accurate DNS metrics
+            test_domains = [
+                'google.com',
+                'github.com',
+                'microsoft.com',
+                'ubuntu.com'
+            ]
             
-            # Get DNS server info
-            dns_servers = []
-            if os.path.exists('/etc/resolv.conf'):
-                with open('/etc/resolv.conf', 'r') as f:
-                    for line in f:
-                        if line.startswith('nameserver'):
-                            dns_servers.append(line.split()[1])
+            query_times = []
+            successful_queries = 0
             
-            # Run dig command to get more detailed DNS info if available
-            dns_cache_info = {}
+            for domain in test_domains:
+                try:
+                    # Measure DNS query time
+                    dns_start = time.time()
+                    socket.gethostbyname(domain)
+                    dns_end = time.time()
+                    query_time = (dns_end - dns_start) * 1000  # Convert to ms
+                    query_times.append(query_time)
+                    successful_queries += 1
+                except (socket.gaierror, socket.timeout) as e:
+                    print(f"DNS query failed for {domain}: {e}")
+            
+            # Calculate average query time
+            if query_times:
+                dns_metrics.update({
+                    'success': True,
+                    'query_time_ms': sum(query_times) / len(query_times),
+                    'min_query_time_ms': min(query_times),
+                    'max_query_time_ms': max(query_times),
+                    'samples': len(query_times),
+                    'success_rate': (successful_queries / len(test_domains)) * 100
+                })
+            
+            # Get system DNS configuration
             try:
-                dig_output = subprocess.check_output(['dig', '+stats'], stderr=subprocess.STDOUT, text=True)
-                for line in dig_output.splitlines():
-                    if 'Query time:' in line:
-                        query_time = int(line.split(':')[1].strip().split()[0])
-                        dns_metrics['dig_query_time_ms'] = query_time
-                    if 'SERVER:' in line:
-                        dns_metrics['active_server'] = line.split(':')[1].strip()
+                # Try to get DNS servers from resolv.conf
+                if os.path.exists('/etc/resolv.conf'):
+                    with open('/etc/resolv.conf', 'r') as f:
+                        dns_metrics['servers'] = [
+                            line.split()[1] 
+                            for line in f 
+                            if line.startswith('nameserver')
+                        ]
+                
+                # Try to get DNS cache info if available
+                try:
+                    # This might require system-specific commands
+                    if os.path.exists('/var/run/nscd/socket'):
+                        nscd_stats = subprocess.check_output(['nscd', '-g'], stderr=subprocess.STDOUT, text=True)
+                        dns_metrics['cache_info']['type'] = 'nscd'
+                        dns_metrics['cache_info']['stats'] = nscd_stats
+                    
+                    # Try systemd-resolve if available
+                    sysd_resolve = subprocess.run(
+                        ['systemd-resolve', '--status'],
+                        capture_output=True,
+                        text=True
+                    )
+                    if sysd_resolve.returncode == 0:
+                        dns_metrics['cache_info']['type'] = 'systemd-resolved'
+                        dns_metrics['cache_info']['status'] = sysd_resolve.stdout
+                        
+                except (subprocess.SubprocessError, FileNotFoundError):
+                    pass
+                    
+            except Exception as e:
+                print(f"Error getting DNS configuration: {e}")
+                dns_metrics['error'] = str(e)
             except (subprocess.SubprocessError, FileNotFoundError):
                 pass  # dig not available
                 

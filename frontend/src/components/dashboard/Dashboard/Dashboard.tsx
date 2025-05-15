@@ -1,74 +1,43 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
+import { useToast } from '../../../components/common/Toast';
 import './Dashboard.css';
-import { initializeWebSocket } from '../../../store/slices/metricsSlice';
 import { fetchPatterns } from '../../../store/slices/autoTunerSlice';
 import { fetchSystemAlerts } from '../../../store/slices/systemAlertsSlice';
+import { initializeWebSocket } from '../../../store/slices/metricsSlice';
+import { RootState } from '../../../store/store';
 import SystemStatus from './SystemStatus/SystemStatus';
 import MetricsPanel from '../MetricsPanel/MetricsPanel';
 import SystemAlertsPanel from '../SystemAlertsPanel/SystemAlertsPanel';
 import SystemPatternsPanel from '../SystemPatternsPanel/SystemPatternsPanel';
 
-export const Dashboard: React.FC = () => {
+interface DashboardProps {}
+
+export const Dashboard: React.FC<DashboardProps> = () => {
   const dispatch = useAppDispatch();
-  const wsRef = useRef<AbortController | null>(null);
-  const error = useAppSelector((state) => state.metrics.error);
-  const isLoading = useAppSelector((state) => state.metrics.loading);
+  const toast = useToast();
   const { user } = useAppSelector((state) => state.auth);
-  const mountCountRef = useRef(0);
-
-
-
+  const { loading, error, useWebSocket, connectionStatus } = useAppSelector((state: RootState) => state.metrics);
+  
+  // Initialize WebSocket and fetch initial data
   useEffect(() => {
-    mountCountRef.current += 1;
-    console.log(`🎭 Dashboard mounting... (Mount #${mountCountRef.current})`);
+    console.log("🚀 Initializing Dashboard...");
     
-    if (mountCountRef.current === 2) {
-        console.log("⚠️ StrictMode second mount detected, proceeding with initialization");
-    }
-
-    wsRef.current = new AbortController();
-    const signal = wsRef.current.signal;
-
-    const initializeWS = async () => {
-        try {
-            if (!signal.aborted) {
-                console.log("🚀 Starting WebSocket initialization for live metrics...");
-                const result = await dispatch(initializeWebSocket()).unwrap();
-                
-                if (!signal.aborted && result.status === 'connected') {
-                    console.log("✨ WebSocket connected! Sir Hawkington is now receiving live metrics via WebSocket.");
-                    console.log("🐹 The Hamsters are monitoring the WebSocket tubes for metric data...");
-                    // No need to call fetchSystemMetrics() as we're getting live updates via WebSocket
-                }
-            }
-        } catch (error) {
-            if (!signal.aborted) {
-                console.error("💩 WebSocket initialization error:", error);
-                console.log("🐌 The Meth Snail is attempting emergency repairs on the WebSocket connection...");
-            }
-        }
-    };
-
-    initializeWS();
+    // Initialize WebSocket connection
+    dispatch(initializeWebSocket() as any);
     
-    // Fetch system patterns
-    dispatch(fetchPatterns());
+    // Fetch initial data
+    dispatch(fetchPatterns() as any);
+    dispatch(fetchSystemAlerts({ skip: 0, limit: 20 }));
     
-    // Fetch unread system alerts for the dashboard
-    dispatch(fetchSystemAlerts({ skip: 0, limit: 5, is_read: false }));
-
     return () => {
-        if (wsRef.current) {
-            console.log("🛑 Aborting WebSocket connection...");
-            wsRef.current.abort();
-        }
+      console.log("🧹 Cleaning up Dashboard resources...");
     };
   }, [dispatch]);
 
   // Display personalized welcome message if user is available
   const getWelcomeMessage = () => {
-    if (user) {
+    if (user?.username) {
       const hour = new Date().getHours();
       const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
       return `${greeting}, ${user.username}!`;
@@ -76,37 +45,69 @@ export const Dashboard: React.FC = () => {
     return "System Dashboard";
   };
 
-  if (isLoading) {
-      return <div>Loading your distinguished metrics...</div>;
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <p>Loading dashboard...</p>
+      </div>
+    );
   }
 
+  // Show error state
   if (error) {
-      return (
-          <div className="error-container">
-              <h3>Well, shit...</h3>
-              <p>{error}</p>
-              <button onClick={() => dispatch(initializeWebSocket())}>
-                  Try this shit again
-              </button>
-          </div>
-      );
+    return (
+      <div className="error-container">
+        <h2>⚠️ Connection Error</h2>
+        <p>{error}</p>
+        <button 
+          className="retry-button"
+          onClick={() => window.location.reload()}
+        >
+          Retry Connection
+        </button>
+      </div>
+    );
   }
+  
+  // Show connection status
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'connected':
+        return 'status-connected';
+      case 'connecting':
+        return 'status-connecting';
+      case 'disconnected':
+        return 'status-disconnected';
+      default:
+        return 'status-disconnected';
+    }
+  };
 
   return (
-    <div className="dashboard-container">
-      <header className="dashboard-header">
-        <h1>{getWelcomeMessage()}</h1>
-        <SystemStatus loading={isLoading} error={error} />
-      </header>
+    <div className="dashboard">
+      <div className="dashboard-header">
+        <div>
+          <h1>{getWelcomeMessage()}</h1>
+          <p className="connection-status">
+            Status: <span className={getStatusColor(connectionStatus)}>
+              {connectionStatus.toUpperCase()}
+            </span>
+            {useWebSocket ? ' (WebSocket)' : ' (REST API)'}
+          </p>
+        </div>
+        <div className="dashboard-actions">
+          <SystemStatus loading={loading} error={error} />
+        </div>
+      </div>
+      
       <div className="dashboard-content">
-        {/* Metrics Panel */}
-        <MetricsPanel />
-
-        <div className="controls-section">
-          {/* System Alerts Panel */}
+        <div className="dashboard-main">
+          <MetricsPanel />
+        </div>
+        <div className="dashboard-sidebar">
           <SystemAlertsPanel maxAlerts={5} showAllLink={true} />
-
-          {/* System Patterns Panel */}
           <SystemPatternsPanel maxPatterns={5} />
         </div>
       </div>
