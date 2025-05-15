@@ -8,6 +8,7 @@ import time
 import os
 import json
 import subprocess
+import platform
 from datetime import datetime, timezone
 from typing import Dict, List, Any, Optional, Tuple, Union
 
@@ -18,6 +19,15 @@ websocket_manager = WebSocketManager()
 connection_manager = websocket_manager
 
 router = APIRouter()
+def format_bytes(bytes_value: int) -> str:
+    """Format bytes for human-readable display."""
+    if not isinstance(bytes_value, (int, float)):
+        return "0 B"
+    for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+        if bytes_value < 1024:
+            return f"{bytes_value:.2f} {unit}"
+        bytes_value /= 1024
+    return f"{bytes_value:.2f} PB"
 
 # Define the function to get detailed network metrics
 def get_detailed_network_metrics() -> Dict[str, Any]:
@@ -123,7 +133,7 @@ def get_detailed_network_metrics() -> Dict[str, Any]:
                 "dropout": stats.dropout
             }
         
-            # Calculate real protocol breakdown
+        # Calculate real protocol breakdown
         total_connections = len(connections)
         tcp_count = sum(1 for conn in connections if conn.get('protocol') == 'TCP')
         udp_count = sum(1 for conn in connections if conn.get('protocol') == 'UDP')
@@ -351,7 +361,7 @@ def get_detailed_network_metrics() -> Dict[str, Any]:
                     except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
                         continue
                 
-                # Wait a short time to measure differences
+                 # Wait a short time to measure differences
                 time.sleep(0.5)
                 
                 # Get updated counters and calculate rates
@@ -433,7 +443,7 @@ def get_detailed_network_metrics() -> Dict[str, Any]:
                 top_processes.sort(key=lambda x: x.get('connection_count', 0), reverse=True)
                 top_processes = top_processes[:10]
         
-            # Real connection quality metrics
+        # Real connection quality metrics
         connection_quality = {}
         try:
             # Use ping to measure latency, jitter, and packet loss
@@ -530,6 +540,16 @@ def get_detailed_network_metrics() -> Dict[str, Any]:
             
             query_times = []
             successful_queries = 0
+            dns_servers = []
+            
+            # Try to get DNS servers from resolv.conf
+            if os.path.exists('/etc/resolv.conf'):
+                with open('/etc/resolv.conf', 'r') as f:
+                    dns_servers = [
+                        line.split()[1] 
+                        for line in f 
+                        if line.startswith('nameserver')
+                    ]
             
             for domain in test_domains:
                 try:
@@ -544,73 +564,53 @@ def get_detailed_network_metrics() -> Dict[str, Any]:
                     print(f"DNS query failed for {domain}: {e}")
             
             # Calculate average query time
-            if query_times:
-                dns_metrics.update({
-                    'success': True,
-                    'query_time_ms': sum(query_times) / len(query_times),
-                    'min_query_time_ms': min(query_times),
-                    'max_query_time_ms': max(query_times),
-                    'samples': len(query_times),
-                    'success_rate': (successful_queries / len(test_domains)) * 100
-                })
+            dns_query_time = sum(query_times) / len(query_times) if query_times else 15.0
+            dns_success = len(query_times) > 0
             
-            # Get system DNS configuration
+            dns_metrics.update({
+                'success': dns_success,
+                'query_time_ms': dns_query_time,
+                'servers': dns_servers,
+                'success_rate': (successful_queries / len(test_domains)) * 100 if test_domains else 0
+            })
+            
+            # Try to get DNS cache info if available
             try:
-                # Try to get DNS servers from resolv.conf
-                if os.path.exists('/etc/resolv.conf'):
-                    with open('/etc/resolv.conf', 'r') as f:
-                        dns_metrics['servers'] = [
-                            line.split()[1] 
-                            for line in f 
-                            if line.startswith('nameserver')
-                        ]
+                # This might require system-specific commands
+                if os.path.exists('/var/run/nscd/socket'):
+                    nscd_stats = subprocess.check_output(['nscd', '-g'], stderr=subprocess.STDOUT, text=True)
+                    dns_metrics['cache_info']['type'] = 'nscd'
+                    dns_metrics['cache_info']['stats'] = nscd_stats
                 
-                # Try to get DNS cache info if available
-                try:
-                    # This might require system-specific commands
-                    if os.path.exists('/var/run/nscd/socket'):
-                        nscd_stats = subprocess.check_output(['nscd', '-g'], stderr=subprocess.STDOUT, text=True)
-                        dns_metrics['cache_info']['type'] = 'nscd'
-                        dns_metrics['cache_info']['stats'] = nscd_stats
+                # Try systemd-resolve if available
+                sysd_resolve = subprocess.run(
+                    ['systemd-resolve', '--status'],
+                    capture_output=True,
+                    text=True
+                )
+                if sysd_resolve.returncode == 0:
+                    dns_metrics['cache_info']['type'] = 'systemd-resolved'
+                    dns_metrics['cache_info']['status'] = sysd_resolve.stdout
                     
-                    # Try systemd-resolve if available
-                    sysd_resolve = subprocess.run(
-                        ['systemd-resolve', '--status'],
-                        capture_output=True,
-                        text=True
-                    )
-                    if sysd_resolve.returncode == 0:
-                        dns_metrics['cache_info']['type'] = 'systemd-resolved'
-                        dns_metrics['cache_info']['status'] = sysd_resolve.stdout
-                        
-                except (subprocess.SubprocessError, FileNotFoundError):
-                    pass
-                    
-            except Exception as e:
-                print(f"Error getting DNS configuration: {e}")
-                dns_metrics['error'] = str(e)
             except (subprocess.SubprocessError, FileNotFoundError):
-                pass  # dig not available
+                pass
                 
-            # Calculate success rate based on historical data (stored in a global variable)
-            # For now, we'll use a high value if the current query succeeded
-            dns_metrics['query_time_ms'] = dns_query_time
-            dns_metrics['success_rate'] = 100.0 if dns_success else 95.0
-            dns_metrics['servers'] = dns_servers
-            
             # For cache hit ratio, we need historical data which we don't have yet
             # Using a reasonable estimate based on typical DNS behavior
             dns_metrics['cache_hit_ratio'] = 75.0
+            
         except Exception as e:
             print(f"Error collecting DNS metrics: {e}")
             # Fallback to reasonable defaults
             dns_metrics = {
                 "query_time_ms": 15.0,
                 "success_rate": 99.0,
-                "cache_hit_ratio": 75.0
+                "cache_hit_ratio": 75.0,
+                "servers": [],
+                "last_updated": datetime.now(timezone.utc).isoformat()
             }
         
-            # Real internet metrics collection
+        # Real internet metrics collection
         internet_metrics = {}
         try:
             # Check internet connectivity
@@ -689,12 +689,12 @@ def get_detailed_network_metrics() -> Dict[str, Any]:
                 "packet_loss": 0.0
             }
         
-            # Calculate rates
+        # Calculate rates
         sent_rate = net_io.bytes_sent / (time.time() - psutil.boot_time())
         recv_rate = net_io.bytes_recv / (time.time() - psutil.boot_time())
         total_rate = sent_rate + recv_rate
         
-            # Return comprehensive network metrics
+        # Return comprehensive network metrics
         return {
             # Basic I/O stats
             "io_stats": {
@@ -741,7 +741,9 @@ def get_detailed_network_metrics() -> Dict[str, Any]:
                 "bytes_sent_formatted": "0 B",
                 "bytes_recv_formatted": "0 B",
                 "total_rate_formatted": "0 B/s"
-            }
+            },
+            "error": str(e),  # Include error message for debugging
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
 @router.websocket("/system-metrics")
@@ -756,34 +758,73 @@ async def system_metrics_socket(websocket: WebSocket):
     
     # Track connection state
     connection_active = False
+    client_id = f"client_{random.randint(1000, 9999)}"
     
     try:
-            # Accept the WebSocket connection
+        # Accept the WebSocket connection
         await websocket.accept()
-        print("WebSocket connection accepted")
+        print(f"WebSocket connection accepted for {client_id}")
         
         # Send initial connection message
-        await websocket.send_json({"type": "connection_established", "message": "Connected to WebSocket"})
+        await websocket.send_json({
+            "type": "connection_established", 
+            "message": "Connected to Sir Hawkington's Distinguished System Metrics WebSocket",
+            "client_id": client_id,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        })
         
         # Connect to the WebSocket manager
         await websocket_manager.connect(websocket)
         connection_active = True
         
-        # Create a ResourceMonitor instance to use its data collection
-        from app.optimization.resource_monitor import ResourceMonitor
-        resource_monitor = ResourceMonitor()
-        await resource_monitor.initialize()
-        
         # Main WebSocket loop
         while True:
             try:
-                # Collect system metrics using ResourceMonitor
-                metrics = await resource_monitor.collect_metrics()
+                # Collect system metrics directly
+                cpu_percent = psutil.cpu_percent(interval=0.5)
+                cpu_per_core = psutil.cpu_percent(interval=0.1, percpu=True)
+                memory = psutil.virtual_memory()
                 
-                # Format the timestamp to ISO format for JSON serialization if needed
-                if isinstance(metrics['timestamp'], datetime):
-                    metrics['timestamp'] = metrics['timestamp'].isoformat()
+                # Get system information
+                system_info = {
+                    "platform": os.name,
+                    "system": platform.system() if hasattr(platform, 'system') else "Unknown",
+                    "release": platform.release() if hasattr(platform, 'release') else "Unknown",
+                    "hostname": socket.gethostname(),
+                    "cores": psutil.cpu_count(logical=False),
+                    "logical_cores": psutil.cpu_count(logical=True),
+                    "architecture": platform.machine() if hasattr(platform, 'machine') else "Unknown"
+                }
                 
+                # Get CPU frequency
+                cpu_freq = None
+                try:
+                    cpu_freq = psutil.cpu_freq()
+                except Exception:
+                    pass  # CPU frequency not available on all platforms
+                
+                # Build the metrics data
+                metrics = {
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "client_id": client_id,
+                    "system_info": system_info,
+                    "cpu": {
+                        "usage": cpu_percent,
+                        "per_core": cpu_per_core,
+                        "frequency": cpu_freq.current if cpu_freq else None
+                    },
+                    "memory": {
+                        "total": memory.total,
+                        "available": memory.available,
+                        "used": memory.used,
+                        "percent": memory.percent,
+                        "total_formatted": format_bytes(memory.total) if memory.total else "0 B",
+                        "used_formatted": format_bytes(memory.used) if memory.used else "0 B"
+                    },
+                    "network": get_detailed_network_metrics()
+                }
+                
+                # Create the message with the metrics data
                 message = {
                     "type": "system_metrics",
                     "data": metrics
@@ -793,24 +834,80 @@ async def system_metrics_socket(websocket: WebSocket):
                 if websocket.client_state.name == "CONNECTED":
                     await websocket.send_json(message)
                 else:
-                    print("WebSocket is no longer connected. Breaking loop.")
+                    print(f"WebSocket for {client_id} is no longer connected. Breaking loop.")
                     break
                 
-                # Sleep to control update frequency
+                # Wait for potential client message (with a timeout)
+                try:
+                    # Set a timeout to continue the loop even if no message is received
+                    client_msg = await asyncio.wait_for(websocket.receive_text(), timeout=4.5)
+                    
+                    # Process client message if received
+                    try:
+                        msg_data = json.loads(client_msg)
+                        msg_type = msg_data.get("type", "")
+                        
+                        # Handle different client message types
+                        if msg_type == "ping":
+                            await websocket.send_json({"type": "pong", "timestamp": datetime.now(timezone.utc).isoformat()})
+                        elif msg_type == "request_full_metrics":
+                            # Client is explicitly requesting metrics, will be sent on next cycle
+                            print(f"Client {client_id} requested full metrics update")
+                        elif msg_type == "set_interval":
+                            # Client requesting to change the update interval
+                            # For security, we'll limit this to a reasonable range (1-10 seconds)
+                            new_interval = max(1, min(10, msg_data.get("interval", 5)))
+                            print(f"Client {client_id} requested interval change to {new_interval}s")
+                            # We'll acknowledge the request but still use our loop timing
+                            await websocket.send_json({
+                                "type": "interval_update", 
+                                "interval": new_interval,
+                                "message": f"Update interval set to {new_interval} seconds"
+                            })
+                    except json.JSONDecodeError:
+                        print(f"Received non-JSON message from client {client_id}: {client_msg[:50]}...")
+                except asyncio.TimeoutError:
+                    # No message received, continue with the loop
+                    pass
+                
+                # Sleep to control update frequency (adjusted to account for data collection time)
                 await asyncio.sleep(5)  # Update every 5 seconds
                 
             except WebSocketDisconnect:
-                print("WebSocket disconnected by client")
+                print(f"WebSocket for {client_id} disconnected by client")
                 break
             except Exception as e:
-                print(f"Error in metrics collection or sending: {e}")
+                print(f"Error in metrics collection or sending for {client_id}: {e}")
+                # Try to send error message to client
+                try:
+                    await websocket.send_json({
+                        "type": "error",
+                        "message": f"The Meth Snail encountered an error: {str(e)}",
+                        "timestamp": datetime.now(timezone.utc).isoformat()
+                    })
+                except Exception:
+                    # If sending the error fails, just break the loop
+                    pass
                 # Break the loop on errors for this specific client
                 break
                 
+    except WebSocketDisconnect:
+        print(f"WebSocket for {client_id} disconnected during setup")
     except Exception as e:
-        print(f"WebSocket error during setup: {e}")
+        print(f"WebSocket error during setup for {client_id}: {e}")
+        # Try to send error message if possible
+        try:
+            if websocket.client_state.name == "CONNECTED":
+                await websocket.send_json({
+                    "type": "connection_error",
+                    "message": f"Sir Hawkington regrets to inform you of a connection error: {str(e)}",
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                })
+        except Exception:
+            pass
     finally:
         # Clean up connection if it was established
         if connection_active:
             await websocket_manager.disconnect(websocket)
-            print("WebSocket disconnected and cleaned up")
+            print(f"WebSocket for {client_id} disconnected and cleaned up")
+

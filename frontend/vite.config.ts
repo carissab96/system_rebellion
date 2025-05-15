@@ -29,13 +29,13 @@ export default defineConfig({
         ws: true,
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path.replace(/^\/ws/, '/api/ws'),
+        rewrite: (path) => path.replace(/^\/ws/, ''), // CORRECTED: Remove the entire /ws prefix
         configure: (proxy, _options) => {
           proxy.on('error', (err, req, _res) => {
             console.error('🐌 The Meth Snail reports a WebSocket error:', err);
             console.error('🐌 Request that caused the error:', req?.url);
           });
-          proxy.on('proxyReqWs', (proxyReq, req, socket, _options) => {
+          proxy.on('proxyReqWs', (_proxyReq, req, socket, _options) => {
             console.log('🔌 WebSocket connection established to:', req.url);
             socket.on('error', (err) => {
               console.error('🔌 WebSocket socket error:', err);
@@ -44,7 +44,7 @@ export default defineConfig({
           proxy.on('open', () => {
             console.log('🔌 WebSocket proxy connection opened');
           });
-          proxy.on('close', (req, socket) => {
+          proxy.on('close', (_req, socket) => {
             console.log('🔌 WebSocket proxy connection closed');
             if (socket) {
               socket.end();
