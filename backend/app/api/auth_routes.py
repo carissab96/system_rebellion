@@ -17,7 +17,7 @@ from pydantic import BaseModel
 from app.core.config import settings  # Add this import
 
 # Change this to include the prefix
-router = APIRouter(prefix="/api/auth")
+router = APIRouter()
 
 
 class TokenResponse(BaseModel):
@@ -244,9 +244,15 @@ async def update_user_profile(
 
 # CSRF token - updated to match frontend expectations
 @router.get("/csrf_token")
-async def get_csrf_token(response: Response):
-    """Generate a new CSRF token and set it as a cookie."""
+async def get_csrf_token(request: Request, response: Response):
+    """
+    Sir Hawkington's Distinguished CSRF Token Generator
+    Provides quantum-grade protection against shadow people!
+    """
     csrf_token = secrets.token_urlsafe(32)
+
+    #Store toekn in session for validation later
+    request.session['csrf_token'] = csrf_token
     
     # Update cookie name and settings
     response.set_cookie(
@@ -256,6 +262,8 @@ async def get_csrf_token(response: Response):
         secure=True,
         samesite='lax'
     )
+    # Log for debugging (can remove in production)
+    print(f"🦔 Sir Hawkington generated CSRF token: {csrf_token[:10]}...")
     
     return {"csrf_token": csrf_token}
 

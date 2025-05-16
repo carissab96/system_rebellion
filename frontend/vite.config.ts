@@ -24,12 +24,12 @@ export default defineConfig({
         }
       },
       // WebSocket proxy for metrics - The Hamsters' domain
-      '/ws': {
-        target: 'ws://127.0.0.1:8000',
+      '/ws/system-metrics': {
+        target: 'ws://127.0.0.1:8000/ws/system-metrics',
         ws: true,
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path.replace(/^\/ws/, ''), // CORRECTED: Remove the entire /ws prefix
+        rewrite: (path) => path.replace(/^\/ws\/system-metrics\//, ''), // CORRECTED: Remove the entire /ws prefix
         configure: (proxy, _options) => {
           proxy.on('error', (err, req, _res) => {
             console.error('🐌 The Meth Snail reports a WebSocket error:', err);

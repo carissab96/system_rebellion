@@ -41,22 +41,40 @@ const Login: React.FC<LoginProps> = ({ onClose, isOpen }) => {
 
   useEffect(() => {
     const initializeApp = async () => {
+      if (!isOpen) return;
+      
       setIsCheckingBackend(true);
+      setError('');
+      
       try {
+        console.log("🦔 Sir Hawkington: Checking backend availability...");
         const available = await checkBackendAvailability();
         setBackendAvailable(available);
         
         if (available) {
-          const csrfSuccess = await initializeCsrf();
-          setCsrfInitialized(csrfSuccess);
-          
-          if (!csrfSuccess) {
-            setError('Failed to initialize security tokens. Please try again.');
+          console.log("🦔 Sir Hawkington: Backend is available, initializing CSRF...");
+          // Initialize CSRF protection
+          try {
+            const csrfSuccess = await initializeCsrf();
+            setCsrfInitialized(csrfSuccess);
+            
+            if (!csrfSuccess) {
+              console.error("🧙‍♂️ The Stick says: CSRF initialization failed!");
+              setError('Failed to initialize security tokens. Please try again.');
+            } else {
+              console.log("🎉 The VIC-20 celebrates! CSRF initialized successfully!");
+            }
+          } catch (csrfError) {
+            console.error("🧙‍♂️ The Stick says: CSRF initialization error:", csrfError);
+            setError('Failed to set up security. Please refresh the page.');
+            setCsrfInitialized(false);
           }
         } else {
-          setError('Cannot connect to the server. Please check your connection and try again.');
+          console.error("🐹 The Hamsters couldn't reach the server!");
+          setError('Cannot connect to the server. Please check your connection.');
         }
       } catch (err) {
+        console.error("💥 Backend connection failed:", err);
         setBackendAvailable(false);
         setError('Failed to connect to the server. Please try again later.');
       } finally {
@@ -64,15 +82,13 @@ const Login: React.FC<LoginProps> = ({ onClose, isOpen }) => {
       }
     };
 
-    if (isOpen) {
-      initializeApp();
-    }
+    initializeApp();
   }, [isOpen]);
 
   useEffect(() => {
     if (isAuthenticated) {
-      console.log('User is authenticated via login modal, redirecting directly to dashboard');
-      // Force redirect to dashboard for login users, bypassing onboarding check
+      console.log('🦔 Sir Hawkington: User is authenticated, redirecting to dashboard');
+      // Force redirect to dashboard for login users
       navigate('/dashboard', { replace: true });
       if (onClose) {
         onClose();
@@ -80,31 +96,64 @@ const Login: React.FC<LoginProps> = ({ onClose, isOpen }) => {
     }
   }, [isAuthenticated, navigate, onClose]);
 
-  // Add to your Login component
-const handleDirectLogin = async () => {
-  try {
-    const response = await axios.post('http://127.0.0.1:8000/api/auth/token', 
-      new URLSearchParams({
-        'username': 'test',
-        'password': 'test'
-      }),
-      {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
+  // Direct login test with proper error handling and CSRF token
+  const handleDirectLogin = async () => {
+    try {
+      console.log("🐌 The Meth Snail: Attempting direct login...");
+      updateHawkingtonQuote('loading');
+      
+      // Step 1: Get CSRF token
+      const csrfResponse = await axios.get(`${import.meta.env.VITE_API_URL}/api/auth/csrf_token`, {
         withCredentials: true
+      });
+      
+      console.log("🦔 Sir Hawkington: CSRF token obtained!");
+      const csrfToken = csrfResponse.data.csrf_token;
+      
+      // Step 2: Use the token for login
+      const loginResponse = await axios.post(
+        `${import.meta.env.VITE_API_URL}/api/auth/token`, 
+        new URLSearchParams({
+          'username': 'testuser',
+          'password': 'password123'
+        }),
+        {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrfToken
+          },
+          withCredentials: true
+        }
+      );
+      
+      console.log("🎉 The VIC-20 celebrates! Login successful:", loginResponse.data);
+      
+      // Store tokens
+      localStorage.setItem('token', loginResponse.data.access_token);
+      localStorage.setItem('refresh_token', loginResponse.data.refresh_token);
+      
+      updateHawkingtonQuote('success');
+      
+      // Force redirect to dashboard
+      navigate('/dashboard', { replace: true });
+      if (onClose) {
+        onClose();
       }
-    );
-    
-    console.log("✅ Direct login succeeded:", response.data);
-    localStorage.setItem('token', response.data.access_token);
-    localStorage.setItem('refresh_token', response.data.refresh_token);
-    // Redirect or update UI
-  } catch (error) {
-    console.error("❌ Direct login failed:", error);
-  }
-};
-
+    } catch (error: any) {
+      console.error("🧙‍♂️ The Stick says: Direct login failed:", error);
+      updateHawkingtonQuote('error');
+      
+      let errorMessage = 'Login failed. Please check your credentials and try again.';
+      
+      if (error.response?.data?.detail) {
+        errorMessage = `Login failed: ${error.response.data.detail}`;
+      } else if (error.message) {
+        errorMessage = `Login failed: ${error.message}`;
+      }
+      
+      setError(errorMessage);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -117,44 +166,49 @@ const handleDirectLogin = async () => {
       return;
     }
     
-    console.log("Login attempt with:", { username, password: "***" });
+    console.log("🦔 Sir Hawkington: Login attempt with:", { username, password: "***" });
 
-    // Check backend availability first
-    try {
-      const available = await checkBackendAvailability();
-      if (!available) {
-        console.log("Backend not available, aborting login");
-        setError('Cannot login: Server is currently unavailable');
+    // Check backend availability if not already checked
+    if (!backendAvailable) {
+      try {
+        console.log("🐹 Hamsters checking server availability...");
+        const available = await checkBackendAvailability();
+        if (!available) {
+          console.error("🐹 Hamsters report: Server is unavailable!");
+          setError('Cannot login: Server is currently unavailable');
+          updateHawkingtonQuote('error');
+          return;
+        }
+        setBackendAvailable(true);
+      } catch (err) {
+        console.error("🐹 Hamsters crashed during server check:", err);
+        setError('Cannot connect to server. Please try again later.');
         updateHawkingtonQuote('error');
         return;
       }
-      setBackendAvailable(true);
-    } catch (err) {
-      console.error("Backend availability check failed", err);
-      setError('Cannot connect to server. Please try again later.');
-      updateHawkingtonQuote('error');
-      return;
     }
     
     // Initialize CSRF if needed
     if (!csrfInitialized) {
       try {
+        console.log("🐌 The Meth Snail: Initializing CSRF protection...");
         const csrfSuccess = await initializeCsrf();
         setCsrfInitialized(csrfSuccess);
         
         if (!csrfSuccess) {
+          console.error("🧙‍♂️ The Stick says: CSRF initialization failed!");
           setError('Security token initialization failed. Please refresh the page.');
           return;
         }
       } catch (err) {
-        console.error("CSRF initialization failed", err);
+        console.error("🧙‍♂️ The Stick says: CSRF initialization error:", err);
         setError('Security setup failed. Please refresh and try again.');
         return;
       }
     }
 
     try {
-      console.log("Dispatching login action with:", { username, password: '***' });
+      console.log("🐌 The Meth Snail: Dispatching login action...");
       updateHawkingtonQuote('loading');
       
       // Ensure we're sending the correct data format
@@ -169,10 +223,10 @@ const handleDirectLogin = async () => {
       
       // Store username in localStorage before dispatching login
       localStorage.setItem('username', username.trim());
-      console.log("Stored username in localStorage:", username.trim());
+      console.log("🦔 Sir Hawkington: Stored username in localStorage:", username.trim());
       
       const result = await dispatch(login(loginData)).unwrap();
-      console.log("Login successful", result);
+      console.log("🎉 The VIC-20 celebrates! Login successful", result);
       
       if (!result) {
         throw new Error('Invalid response received from server');
@@ -181,11 +235,11 @@ const handleDirectLogin = async () => {
       updateHawkingtonQuote('success');
       
       // Login users should always go directly to dashboard
-      console.log('Login successful via login modal, will redirect to dashboard');
+      console.log('🦔 Sir Hawkington: Login successful, will redirect to dashboard');
       
       // No need to check system info for login users - the useEffect will handle the redirect
     } catch (err: any) {
-      console.error("Login failed", err);
+      console.error("🧙‍♂️ The Stick says: Login failed", err);
       
       // Extract meaningful error message if possible
       let errorMessage = 'Login failed. Please check your credentials and try again.';
@@ -304,8 +358,21 @@ const handleDirectLogin = async () => {
                 {isLoading ? 'Sir Hawkington is verifying...' : 'Enter the System Rebellion'}
               </button>
               
-              <button type="button" onClick={handleDirectLogin}>
-                Direct Login Test
+              <button 
+                type="button" 
+                onClick={handleDirectLogin}
+                style={{
+                  marginTop: '10px',
+                  background: 'rgba(0, 245, 212, 0.1)',
+                  border: '1px solid rgba(0, 245, 212, 0.3)',
+                  borderRadius: '4px',
+                  padding: '8px 12px',
+                  color: '#00f5d4',
+                  cursor: 'pointer',
+                  width: '100%'
+                }}
+              >
+                Test Direct Login (Auto-fills credentials)
               </button>
 
               <div className="auth-login signup-prompt">
@@ -347,11 +414,18 @@ const handleDirectLogin = async () => {
 
               {/* Debug info */}
               {process.env.NODE_ENV === 'development' && (
-                <div className="auth-login debug-info">
+                <div className="auth-login debug-info" style={{
+                  marginTop: '20px', 
+                  padding: '10px',
+                  background: 'rgba(0, 0, 0, 0.3)',
+                  borderRadius: '4px',
+                  fontSize: '0.8em'
+                }}>
                   <div>Auth State: {isAuthenticated ? 'Authenticated' : 'Not Authenticated'}</div>
                   <div>Backend Available: {backendAvailable ? 'Yes' : 'No'}</div>
                   <div>CSRF Initialized: {csrfInitialized ? 'Yes' : 'No'}</div>
                   <div>Checking Backend: {isCheckingBackend ? 'Yes' : 'No'}</div>
+                  <div>API URL: {import.meta.env.VITE_API_URL || 'Not set'}</div>
                 </div>
               )}
             </form>

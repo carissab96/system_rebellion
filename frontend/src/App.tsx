@@ -179,7 +179,7 @@ const App: React.FC = () => {
         console.log('Checking authentication status...');
         withTimeout(
           dispatch(checkAuthStatus()),
-          5000,
+          15000,
           'Authentication check timed out'
         ).catch(error => {
           console.warn('Authentication check failed (continuing anyway):', error);
