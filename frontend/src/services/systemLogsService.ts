@@ -1,4 +1,4 @@
-import api from './api';
+import { apiClient } from '../utils/api';
 
 export interface SystemLog {
   message: string;
@@ -18,11 +18,11 @@ const systemLogsService = {
    * Get system logs with optional filtering
    */
   getLogs: async (limit = 100, source?: string, level?: string): Promise<SystemLogsResponse> => {
-    let url = `/api/system-logs?limit=${limit}`;
+    let url = `/system-logs?limit=${limit}`;
     if (source) url += `&source=${source}`;
     if (level) url += `&level=${level}`;
     
-    const response = await api.get<SystemLogsResponse>(url);
+    const response = await apiClient.get<SystemLogsResponse>(url);
     return response.data;
   },
   
@@ -30,7 +30,7 @@ const systemLogsService = {
    * Clear all system logs
    */
   clearLogs: async (): Promise<{ message: string }> => {
-    const response = await api.delete<{ message: string }>('/api/system-logs');
+    const response = await apiClient.delete<{ message: string }>('/system-logs');
     return response.data;
   }
 };
