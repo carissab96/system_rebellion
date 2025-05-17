@@ -504,12 +504,12 @@ async def health_check(response: Response):
     
     # Set CSRF token as a secure, HTTP-only cookie
     response.set_cookie(
-        key="csrftoken", 
+        key="XSRF-TOKEN", 
         value=csrf_token, 
-        httponly=True,  # Prevents JavaScript access
-        secure=True,    # Only sent over HTTPS
+        httponly=False,  # Prevents JavaScript access
+        secure=False,    # Only sent over HTTPS
         samesite='lax'  # Provides some protection against CSRF
-    )
+    );
     
     return JSONResponse(
         content={

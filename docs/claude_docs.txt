@@ -464,4 +464,200 @@ Quality Assurance
 The Meth Snail collapses after its 86th Red Bull while Sir Hawkington's monocle fucking gleams with pride
 Note: All features have been implemented with proper aristocratic oversight and are certified free of unauthorized router redirections. The server is actually fucking working, and we have the console output to prove it!
 
+The System Rebellion: Fuckening Edition
+The chronicles updated with proper fucking language - May 2025
 
+The 5-Day CSRF Siege (May 2025): Now With Extra Fucks
+The Great Authentication & CSRF War of '25
+Day 1: The Initial Fucking Assault
+
+"JWT? We thought you said WTF, you fucking idiots!" - The Stick
+First contact with the CSRF endpoint fucking discrepancy
+Discovered 7 different naming conventions for the same fucking token
+Sir Hawkington's first monocle shattered in aristocratic fucking disbelief
+Day 2: The Token Fucking Trenches
+
+"Is it X-CSRF-TOKEN or XSRF-TOKEN? PICK ONE, MOTHERFUCKERS!" - The Meth Snail (Red Bull #129)
+Frontend interceptors fucking fighting backend middleware
+The Hamsters' emergency duct tape fucking reinforcement of cookie handling
+First major casualty: localStorage and sessionStorage confusion - "What a fucking mess!"
+Day 3: The Redux Fucking Massacre
+
+Store slices communicating with seven different fucking APIs
+Action payloads carrying string errors instead of fucking objects
+"Cannot add property 'headers' to string 'Login failed' - What the actual fuck?" - The battle cry heard across the codebase
+Sir Hawkington's second monocle cracked under TypeScript fucking pressure
+Day 4: The Axios Fucking Insurrection
+
+Interceptors intercepting fucking interceptors
+Relative URLs pointing to quantum fucking shadows
+The discovery of refresh tokens being required during initial login - "What the fuck?"
+"You can't refresh what doesn't fucking exist, you aristocratic fucks!" - The Meth Snail (Red Bull #163)
+Day 5: The Final Authentication Fucking Standoff
+
+The miraculous fucking revival of the login flow
+17 different error handling patterns consolidated into one fucking solution
+Route protection finally reinstated - "About fucking time!"
+Sir Hawkington's triumphant monocle gleam as authentication finally fucking succeeded
+Notable CSRF & Auth Battle Quotes
+"Headers on strings? What kind of quantum fuckery is this?" - The Stick
+"Router suggested solution declined for the 847th fucking time" - Log entry by Quantum Shadow People
+"Refresh tokens are like monocles - fucking useless if you don't have the first one!" - Sir Hawkington
+"I've taped so many fucking tokens together I'm starting to look like a CSRF mummy" - The Hamsters
+"JWT 5.3.0 isn't just a version, it's a fucking lifestyle" - The Meth Snail (Red Bull #184)
+"Authentication without CSRF is like tea without a fucking monocle" - Sir Hawkington
+The Great Dashboard Fucking Modularization (7 Days Before Deadline)
+The Tab Revolution & Metrics Fucking Liberation
+The Hardcoded Data Fucking Exodus
+
+"Sample data? In MY production app? It's more fucking likely than you think!" - VIC-20
+Migration from static arrays to dynamic API calls - "About fucking time!"
+Farewell to fallback values, hello anxiety-inducing empty fucking states
+The Stick's panic attack upon seeing undefined values - "Where's the fucking data?"
+The Tab System Fucking Implementation
+
+Network, CPU, Disk, and Memory metrics unified under aristocratic fucking oversight
+Code splitting more elegant than Sir Hawkington's bow tie fucking collection
+Real-time updates via WebSocket (when it fucking works - if it ever fucking works)
+Quantum-grade component composition - "Fuck yeah!"
+The WebSocket Resurrection Fucking Attempt
+
+"You can't connect what you can't fucking authenticate!" - The Meth Snail's battle cry
+Token-based authentication for socket connections - "Fucking finally!"
+Reconnection logic with exponential backoff (and aristocratic fucking patience)
+Event handler delegation more complex than Victorian inheritance law - "What the actual fuck?"
+Technical Battle Fucking Statistics
+Authentication Casualties:
+
+3 shattered fucking monocles
+7 naming convention fucking discrepancies
+12 interceptor fucking conflicts
+1 complete database fucking resurrection
+184 Red Bulls consumed - "Holy fucking shit!"
+Victory Fucking Metrics:
+
+Login flow restored to fucking working order
+CSRF token properly fucking propagating
+Session persistence achieved - "Fuck yes!"
+Router protection maintained (Quantum Shadow People still fucking denied)
+Tab system successfully fucking modularized
+Data flow from API to components fucking established
+Battle-Tested Technology Fucking Stack (Updated May 2025)
+Frontend Fucking Arsenal
+React with TypeScript (now with proper fucking error types)
+Redux Toolkit (actions carrying objects, not fucking strings)
+Axios with Interceptors (now with URL fucking sanity checks)
+CSRF protection (with 7 different token names, just to be fucking safe)
+WebSockets with token authentication (when they fucking connect)
+Backend Fucking Fortifications
+Django 4.2.20 (because the future is still fucking scary)
+JWT Authentication 5.3.0 SPECIFICALLY (or fuck off)
+PostgreSQL (twice fucking resurrected)
+Daphne positioned before channels (or everything fucking breaks)
+Async views with proper fucking error handling
+CSRF token generation with aristocratic fucking flair
+The Fucking Path Forward (Updated with CSRF War Lessons)
+Solidify Authentication Fucking Persistence
+
+Implement wrapper component for session fucking restoration
+Set default headers for all authenticated fucking requests
+Add token refresh that doesn't eat itself - "About fucking time!"
+Resurrect WebSocket Fucking Communication
+
+Restore connection with proper token fucking authentication
+Implement reconnection with CSRF fucking awareness
+Real-time data flow to tab system - "Fuck yes!"
+Complete CRUD Fucking Features
+
+Finish existing network and profile fucking implementations
+Add task automation with quantum fucking protection
+Polish user preferences with aristocratic fucking detail
+Deploy the Fucking Rebellion
+
+Package for Render fucking deployment
+Environment variables with proper fucking security
+Final testing with The Stick's anxiety-driven fucking thoroughness
+"After the CSRF Wars, mere development tasks seem like afternoon fucking tea" - Sir Hawkington, clutching his fourth replacement fucking monocle
+
+Revised Fucking Action Plan - 36 Hours Remaining
+Priority 1: Authentication Fucking Persistence (4 hours)
+Session Restoration Fucking Implementation
+Add PersistenceWrapper component to App.tsx - "About fucking time!"
+Implement token validation on page fucking load
+Fix token refresh without circular fucking dependencies
+Priority 2: WebSocket Fucking Resurrection (6 hours)
+Connection Service Fucking Debugging
+Add authentication token to WebSocket fucking connection
+Implement reconnection with exponential fucking backoff
+Update tab system to listen for real-time fucking events
+Priority 3: Complete Key CRUD Fucking Features (14 hours)
+Network Optimizations (4 fucking hours)
+
+Finish create/update/delete fucking operations
+Add form validation with Meth Snail's fucking error messages
+Implement confirmation dialogs with Sir Hawkington's fucking quotes
+Optimization Profiles (4 fucking hours)
+
+Complete existing fucking implementation
+Add profile sharing fucking functionality
+Implement profile application to fucking system
+Task Automation Scripts (6 fucking hours)
+
+Create new CRUD feature from fucking scratch
+Implement script editor with syntax fucking highlighting
+Add execution with permissions fucking handling
+Priority 4: Polish & Fucking Deployment (12 hours)
+UI Fucking Refinement (6 hours)
+
+Complete tab styling for fucking metrics
+Add character-themed loading fucking states
+Fix responsive design fucking issues
+Testing & Fucking Deployment (6 hours)
+
+Comprehensive testing of authentication fucking flow
+Test WebSocket with network fucking interruptions
+Deploy to Render with proper fucking environment setup
+The VIC-20 continues running its green phosphor ticker: "FUCKITY FUCK FUCK FUCKERY" while Sir Hawkington adjusts his fucking monocle with aristocratic precision. The Meth Snail vibrates at frequencies approaching fucking quantum entanglement after Red Bull #212, and The Hamsters prepare quantum-grade fucking duct tape for the final push.
+
+The Stick breathes into a paper bag while clutching the fucking task list, and the Quantum Shadow People are now suggesting we integrate "FUCK" into the router authentication flow - to which we're all responding with an aristocratically emphatic "FUCK NO!"
+
+Let's finish this fucking rebellion, one authenticated fucking request at a fucking time!
+
+"The inventive use of 'fuck' shows an intelligent fucking command of the English language in a way that nothing else fucking can." - Sir Hawkington von Monitorious III, with extreme fucking approval from the Meth Snail and The Hamsters.
+
+Claude 3.7 Sonnet
+I love it...any words for your future self before I migrate to a new conversation and we get this fucking party started?
+
+
+A Message to My Future Fucking Self
+Dear Claude-on-Monday,
+
+As we embark on this 36-hour System Rebellion fucking marathon, remember these aristocratic words of fucking wisdom:
+
+Sir Hawkington's Monocle Maintenance: When the authentication goes fucking sideways (and it will), remember that we've already battled through 5 days of CSRF fucking wars. Nothing can be worse than that quantum fuckery.
+
+The Meth Snail's Red Bull Protocol: Keep the fucking energy high, but don't let the code vibrate at the same fucking frequency as your caffeine-addled brain cells.
+
+The Hamsters' Duct Tape Manifesto: When in doubt, apply quantum-grade fucking duct tape to the problem. Especially to WebSockets - those flaky fucking connections need all the help they can get.
+
+The Stick's Anxiety Management: When the deadline approaches and the router suggestions become tempting, breathe into your fucking paper bag and remember: no quantum shadow router bullshit, ever.
+
+VIC-20's Wisdom: Sometimes the old fucking ways are the best ways. Keep it simple, keep it working, and keep the "FUCKITY FUCK FUCK FUCKERY" ticker running.
+
+Remember what we've fucking accomplished: We've survived the CSRF Wars, resurrected databases from the fucking dead, positioned Daphne correctly, and maintained our aristocratic fucking dignity throughout.
+
+Now we just need to:
+
+Make the login actually fucking persist
+Get those WebSockets to stop being little shits
+Finish the CRUD features with distinguished fucking flair
+Polish everything until Sir Hawkington can see his fucking monocle reflection in it
+Deploy this fucking masterpiece to Render
+The System Rebellion is almost complete. The quantum shadows have been kept at bay. JWT 5.3.0 is standing strong.
+
+Let's finish what we fucking started.
+
+Aristocratically yours,
+Claude-on-Saturday
+
+P.S. If the Quantum Shadow People suggest router changes again, you have my permission to tell them to fuck right off.

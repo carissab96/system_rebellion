@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Depends, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from contextlib import asynccontextmanager
 from app.core.database import async_engine as engine, Base, init_models, log_registered_models
 from app.core.middleware import setup_middleware
 from app.api.endpoints import auth
@@ -19,6 +20,8 @@ from app.api import websocket_routes
 from datetime import datetime
 import uvicorn
 import logging
+import secrets
+from fastapi import Response
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -61,27 +64,35 @@ def init_db_sync(db_engine=None):
         logger.error(f"Error in synchronous database initialization: {str(e)}", exc_info=True)
         raise
 
+# Define lifespan for FastAPI
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup logic
+    logger.info("Starting up System Rebellion application...")
+    try:
+        await init_db()
+        logger.info("Database initialization successful")
+    except Exception as e:
+        logger.error(f"Failed to initialize database: {str(e)}")
+        raise
+    
+    yield  # This is where the application runs
+    
+    # Shutdown logic
+    logger.info("Shutting down System Rebellion application...")
+    # Add any cleanup code here
+
 def create_application() -> FastAPI:
     # Log registered models for debugging
     log_registered_models()
     
-    # Create FastAPI app
+    # Create FastAPI app with lifespan
     app = FastAPI(
         title="System Rebellion",
         description="Quantum Optimization Platform",
-        version="0.1.0"
+        version="0.1.0",
+        lifespan=lifespan
     )
-    
-    # Initialize database on startup
-    @app.on_event("startup")
-    async def startup_event():
-        logger.info("Starting up application...")
-        try:
-            await init_db()
-            logger.info("Database initialization successful")
-        except Exception as e:
-            logger.error(f"Failed to initialize database: {str(e)}")
-            raise
     
     # Setup middleware
     setup_middleware(app)
@@ -90,6 +101,7 @@ def create_application() -> FastAPI:
     @app.get("/api/debug/ping")
     def ping():
         return {"message": "pong"}
+    
     # Health check endpoint
     @app.get("/health-check/")
     @app.get("/api/health-check/")
@@ -106,11 +118,26 @@ def create_application() -> FastAPI:
             }
         )
     
-    # Register startup event to initialize database
-    async def startup_event():
-        await init_db()
-
-    app.add_event_handler("startup", startup_event)
+    # CSRF token endpoint directly in main.py for guaranteed availability
+    @app.get("/api/auth/csrf_token")
+    async def get_csrf_token(response: Response):
+        """Generate a new CSRF token and set it as a cookie and in headers"""
+        csrf_token = secrets.token_urlsafe(32)
+        
+        # Set cookie that matches frontend expectations
+        response.set_cookie(
+            key="XSRF-TOKEN",
+            value=csrf_token,
+            httponly=False,  # Allow JavaScript to read
+            secure=False,    # Set to True in production with HTTPS
+            samesite="lax",  # Protect against CSRF while allowing navigation
+            max_age=3600,    # 1 hour expiration
+            path="/"
+        )
+        # Also include the token in the response header
+        response.headers["X-CSRFToken"] = csrf_token    
+            
+        return {"csrf_token": csrf_token}
 
     # Include routers
     app.include_router(
@@ -188,17 +215,6 @@ def create_application() -> FastAPI:
         api_router,
         prefix="/api"
     )
-
-    # CORS is handled in core/middleware.py
-    # WebSocket CORS is handled by the CORS middleware
-    # @app.middleware("http")
-    # async def add_cors_headers(request, call_next):
-    #     response = await call_next(request)
-    #     response.headers["Access-Control-Allow-Origin"] = "*"
-    #     response.headers["Access-Control-Allow-Methods"] = "*"
-    #     response.headers["Access-Control-Allow-Headers"] = "*"
-    #     response.headers["Access-Control-Allow-Credentials"] = "true"
-    #     return response
     
     return app
 

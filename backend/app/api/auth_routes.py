@@ -259,7 +259,7 @@ async def get_csrf_token(request: Request, response: Response):
         key="XSRF-TOKEN",  # Changed from "csrftoken" to match frontend
         value=csrf_token, 
         httponly=False,    # Changed to allow JavaScript access
-        secure=True,
+        secure=False,
         samesite='lax'
     )
     # Log for debugging (can remove in production)
