@@ -24,7 +24,7 @@ export const runDiagnostics = async () => {
     }
     
     // First request to get the CSRF cookie
-    const response = await axios.get('http://127.0.0.1:8000/api/csrf_token/csrf_token', { 
+    const response = await axios.get('http://127.0.0.1:8000/api/auth/csrf_token', { 
       withCredentials: true 
     });
     

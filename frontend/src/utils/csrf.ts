@@ -18,33 +18,57 @@ export const getCsrfToken = async (forceRefresh = false): Promise<string | null>
     return csrfTokenCache;
   }
 
-  try {
-    console.log("🐌 The Meth Snail: Fetching fresh CSRF token...");
-    const response = await csrfAxios.get('/api/auth/csrf_token', {
-      headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
-      },
-      params: {
-        _t: Date.now() // Add timestamp to prevent caching
-      }
-    });
+  // Try different endpoint paths
+  const possibleEndpoints = [
+    '/api/auth/csrf_token',
+    '/api/csrf_token',
+    '/api/auth/csrf',
+    '/api/csrf',
+    '/csrf_token',
+    '/csrf'
+  ];
 
-    console.log("🦔 Sir Hawkington: CSRF response status:", response.status);
-    
-    if (response.data && response.data.csrf_token) {
-      csrfTokenCache = response.data.csrf_token;
-      console.log("🐌 The Meth Snail: CSRF token obtained successfully");
-      return csrfTokenCache;
-    } else {
-      console.warn("🦔 Sir Hawkington is concerned! No CSRF token in response");
-      return null;
+  for (const endpoint of possibleEndpoints) {
+    try {
+      console.log(`🐌 The Meth Snail: Trying endpoint ${endpoint}...`);
+      const response = await csrfAxios.get(endpoint, {
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        },
+        params: { _t: Date.now() }
+      });
+
+      console.log(`👍 Endpoint ${endpoint} responded with status:`, response.status);
+      
+      if (response.data && response.data.csrf_token) {
+        csrfTokenCache = response.data.csrf_token;
+        console.log(`🎉 CSRF token obtained from ${endpoint}`);
+        return csrfTokenCache;
+      } else {
+        console.log(`⚠️ No csrf_token field in response from ${endpoint}`);
+        
+        // Try to find token in alternative fields
+        if (response.data) {
+          const possibleFields = ['token', 'csrfToken', 'csrf'];
+          for (const field of possibleFields) {
+            if (response.data[field]) {
+              csrfTokenCache = response.data[field];
+              console.log(`🎉 Found token in '${field}' field from ${endpoint}`);
+              return csrfTokenCache;
+            }
+          }
+        }
+      }
+    } catch (error: any) {
+      // Just log the status code to keep it simple
+      const status = error.response?.status || 'unknown';
+      console.log(`❌ Endpoint ${endpoint} failed with status: ${status}`);
     }
-  } catch (error) {
-    console.error('🐌 The Meth Snail failed to fetch the CSRF token!', error);
-    return null;
   }
+
+  console.error('🐌 The Meth Snail failed to fetch the CSRF token from any endpoint!');
+  return null;
 };
 
 // Add CSRF token to all axios requests (but not to CSRF token requests)

@@ -50,11 +50,11 @@ export async function fetchWithCsrf(url: URL | RequestInfo, options: CustomOptio
   }
 }
 
-// Update the middleware type as well
 const xsrfMiddleware: Middleware = () => next => (action: any) => {
   if (action.type.startsWith('auth/')) {
     const csrfToken = Cookies.get('XSRF-TOKEN');
-    if (csrfToken && action.payload) {
+    // Check if action.payload exists and is an object before trying to add headers
+    if (csrfToken && action.payload && typeof action.payload === 'object') {
       action.payload.headers = {
         ...action.payload.headers,
         'X-CSRFToken': csrfToken
@@ -63,7 +63,6 @@ const xsrfMiddleware: Middleware = () => next => (action: any) => {
   }
   return next(action);
 };
-
 export async function restoreCSRF() {
   try {
     console.log('🧐 Sir Hawkington is attempting to restore the CSRF token...');
