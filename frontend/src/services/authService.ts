@@ -23,6 +23,11 @@ interface LoginResponse {
   user: User;
 }
 
+interface RefreshResponse {
+  access_token: string;
+  refresh_token?: string;
+}
+
 // Set up axios instance with authentication
 const authApi = axios.create({
   baseURL: 'http://127.0.0.1:8000/api/auth',
@@ -44,10 +49,15 @@ authApi.interceptors.request.use(
   error => Promise.reject(error)
 );
 
+// Add a response interceptor for token refresh
 authApi.interceptors.response.use(
   response => response,
   async error => {
     const originalRequest = error.config;
+    
+    if (!originalRequest) {
+      return Promise.reject(error);
+    }
     
     // Skip refresh token logic for login/token endpoint - this is critical!
     const isLoginRequest = originalRequest.url && 
@@ -67,10 +77,39 @@ authApi.interceptors.response.use(
           return Promise.reject(error);
         }
         
-        // Rest of refresh token logic stays the same...
-        // ...
+        // Call the refresh token endpoint
+        const refreshResponse = await axios.post<RefreshResponse>(
+          'http://127.0.0.1:8000/api/auth/refresh-token',
+          { refresh_token: refreshToken },
+          { withCredentials: true }
+        );
+        
+        if (refreshResponse.data && refreshResponse.data.access_token) {
+          // Update tokens in localStorage
+          localStorage.setItem('token', refreshResponse.data.access_token);
+          if (refreshResponse.data.refresh_token) {
+            localStorage.setItem('refresh_token', refreshResponse.data.refresh_token);
+          }
+          
+          // Update the Authorization header for the original request
+          originalRequest.headers['Authorization'] = `Bearer ${refreshResponse.data.access_token}`;
+          
+          // Retry the original request
+          return axios(originalRequest);
+        } else {
+          console.error('[ERROR] Token refresh failed', 'Invalid response');
+          // Logout if refresh failed
+          localStorage.removeItem('token');
+          localStorage.removeItem('refresh_token');
+          window.location.href = '/login';
+          return Promise.reject(error);
+        }
       } catch (refreshError) {
         console.error('[ERROR] Token refresh failed:', refreshError);
+        // Logout if refresh failed
+        localStorage.removeItem('token');
+        localStorage.removeItem('refresh_token');
+        window.location.href = '/login';
         return Promise.reject(error);
       }
     }
@@ -78,17 +117,18 @@ authApi.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
 // Auth service methods
-export const authService = {
+const authService = {
   // Check authentication status
   async checkStatus(): Promise<boolean> {
     try {
-      console.log('Checking authentication status...');
+      console.log('🦔 Sir Hawkington: Checking authentication status...');
       const response = await authApi.get('/status/');
-      console.log('Auth status check response:', response.data);
+      console.log('🦔 Auth status check response:', response.data);
       return response.data.is_authenticated;
     } catch (error) {
-      console.error('Auth status check failed:', error);
+      console.error('🚨 Auth status check failed:', error);
       return false;
     }
   },
@@ -96,14 +136,14 @@ export const authService = {
   // Login
   async login(username: string, password: string): Promise<User> {
     try {
-      console.log('Logging in with:', { username, password: '***' });
+      console.log('🦔 Sir Hawkington: Logging in with:', { username, password: '***' });
       
       // Check if backend is available first
       try {
         const healthCheck = await axios.get('http://127.0.0.1:8000/api/health-check/');
-        console.log('Health check response:', healthCheck.data);
+        console.log('🦔 Health check response:', healthCheck.data);
       } catch (healthError) {
-        console.error('Backend health check failed:', healthError);
+        console.error('🚨 Backend health check failed:', healthError);
         throw new Error('Backend server is not available. Please try again later.');
       }
       
@@ -111,19 +151,17 @@ export const authService = {
       const formData = new URLSearchParams();
       formData.append('username', username);
       formData.append('password', password);
-      // Removed grant_type as it's not handled in the backend
       
-      console.log('Sending login request with form data:', username);
+      console.log('🐌 The Meth Snail: Sending login request with form data:', username);
       
       // Make the login request with authApi
       const response = await authApi.post<LoginResponse>('/token', formData, {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
           'Accept': 'application/json'
-        },
-        _isLoginRequest: true
+        }
       });
-      console.log('Login response:', response.data);
+      console.log('✅ Login response:', response.data);
       
       if (!response.data.access_token || !response.data.refresh_token) {
         throw new Error('Invalid response from server: missing tokens');
@@ -139,43 +177,42 @@ export const authService = {
       
       return response.data.user;
     } catch (error: any) {
+      let errorMessage = 'Authentication failed. Please try again.';
+      
       // Enhanced error logging with improved error handling
       if (error.response) {
         // The request was made and the server responded with a status code
         // that falls out of the range of 2xx
-        console.error('[ERROR] Login failed - Server response:', {
+        console.error('🚨 Login failed - Server response:', {
           status: error.response.status,
-          data: error.response.data,
-          headers: error.response.headers
+          data: error.response.data
         });
         
         // Extract the proper error message
-        const errorMessage = 
-          error.response.data?.detail ||
-          'Authentication failed.  Please check your username and password.';
-        
-        throw new Error(errorMessage);
-      } else {
+        errorMessage = error.response.data?.detail || 
+                       'Authentication failed. Please check your username and password.';
+      } else if (error.request) {
         // The request was made but no response was received
-        console.error('[ERROR] Login failed - No response:', error.request);
-        throw new Error('The Quantum Shadow People blocked your request. Please try again later.');
+        console.error('🚨 Login failed - No response:', error.request);
+        errorMessage = 'The Quantum Shadow People blocked your request. Please try again later.';
+      } else {
+        console.error('🚨 Login setup failed:', error.message);
       }
       
-      // Ensure we always throw an Error object, not a string or response
-      throw new Error('Sir Hawkington regrets to inform you that authentication has failed. Please try again.');
+      throw new Error(errorMessage);
     }
   },
   
   // Register
   async register(username: string, email: string, password: string): Promise<User> {
     try {
-      console.log('Registering...');
+      console.log('🦔 Sir Hawkington: Registering...');
       const response = await authApi.post<LoginResponse>('/register', {
         username,
         email,
         password
       });
-      console.log('Registration response:', response.data);
+      console.log('✅ Registration response:', response.data);
       
       // Save tokens and user data
       localStorage.setItem('token', response.data.access_token);
@@ -183,26 +220,27 @@ export const authService = {
       localStorage.setItem('username', response.data.user.username);
       
       return response.data.user;
-    } catch (error) {
-      console.error('Registration failed:', error);
-      throw error;
+    } catch (error: any) {
+      console.error('🚨 Registration failed:', error);
+      const errorMessage = error.response?.data?.detail || 'Registration failed. Please try again.';
+      throw new Error(errorMessage);
     }
   },
   
   // Logout
-  async logout() {
+  async logout(): Promise<boolean> {
     try {
-      console.log('Logging out...');
+      console.log('🦔 Sir Hawkington: Logging out...');
       // No need to call a backend endpoint for logout
       // Just clear the local storage and redirect
       localStorage.removeItem('token');
       localStorage.removeItem('refresh_token');
       localStorage.removeItem('username');
-      console.log('Local storage cleared, redirecting to login page');
+      console.log('🐌 The Meth Snail: Local storage cleared, redirecting to login page');
       window.location.href = '/login';
       return true;
     } catch (error) {
-      console.error('Logout failed:', error);
+      console.error('🚨 Logout failed:', error);
       // Even if there's an error, try to clear local storage
       localStorage.removeItem('token');
       localStorage.removeItem('refresh_token');
@@ -215,7 +253,7 @@ export const authService = {
   // Update user profile
   async updateProfile(profileData: any): Promise<User> {
     try {
-      console.log('Updating profile with data:', profileData);
+      console.log('🦔 Sir Hawkington: Updating profile with data:', profileData);
       // Make sure token is in the headers
       const token = localStorage.getItem('token');
       if (!token) {
@@ -227,50 +265,47 @@ export const authService = {
           'Authorization': `Bearer ${token}`
         }
       });
-      console.log('Profile update response:', response.data);
+      console.log('✅ Profile update response:', response.data);
       return response.data.user;
     } catch (error: any) {
-      console.error('Profile update failed:', error);
-      if (error.response) {
-        console.error('Error response:', error.response.data);
-        console.error('Status code:', error.response.status);
-      }
-      throw error;
+      console.error('🚨 Profile update failed:', error);
+      const errorMessage = error.response?.data?.detail || 'Profile update failed. Please try again.';
+      throw new Error(errorMessage);
     }
   },
   
   // Get current user data
   async getCurrentUser(): Promise<User | null> {
     try {
-      console.log('Getting current user...');
+      console.log('🦔 Sir Hawkington: Getting current user...');
       const statusResponse = await authApi.get('/status/');
       if (!statusResponse.data.is_authenticated) {
-        console.log('Not authenticated, returning null');
+        console.log('🧙‍♂️ The Stick: Not authenticated, returning null');
         return null;
       }
       
       // Get the current user data from the status endpoint
       if (statusResponse.data.user) {
-        console.log('User data from status endpoint:', statusResponse.data.user);
+        console.log('✅ User data from status endpoint:', statusResponse.data.user);
         return statusResponse.data.user;
       }
       
       // If we don't have user data from status, try to fetch it
       try {
         const userResponse = await authApi.get('/me');
-        console.log('User data from /me endpoint:', userResponse.data);
+        console.log('✅ User data from /me endpoint:', userResponse.data);
         return userResponse.data;
       } catch (userError) {
-        console.error('Failed to fetch user data from /me endpoint:', userError);
+        console.error('🚨 Failed to fetch user data from /me endpoint:', userError);
         
         // Fallback to using just the username if we can't get full user data
         const username = localStorage.getItem('username');
         if (!username) {
-          console.log('No username saved, returning null');
+          console.log('🧙‍♂️ The Stick: No username saved, returning null');
           return null;
         }
         
-        console.warn('Using fallback user data with username only');
+        console.warn('⚠️ Using fallback user data with username only');
         return {
           id: '', 
           username,
@@ -283,7 +318,7 @@ export const authService = {
         };
       }
     } catch (error) {
-      console.error('Failed to get current user:', error);
+      console.error('🚨 Failed to get current user:', error);
       return null;
     }
   },
@@ -291,48 +326,13 @@ export const authService = {
   // Check if token is valid
   async validateToken(): Promise<boolean> {
     try {
-      console.log('Validating token...');
+      console.log('🦔 Sir Hawkington: Validating token...');
       const response = await authApi.get('/status/');
-      console.log('Token validation response:', response.data);
+      console.log('✅ Token validation response:', response.data);
       return response.data.is_authenticated;
     } catch (error) {
-      console.error('Token validation failed:', error);
+      console.error('🚨 Token validation failed:', error);
       return false;
-    }
-  },
-  
-  // Add a direct test login function for debugging
-  async testDirectLogin(username: string = 'testuser', password: string = 'password123'): Promise<any> {
-    try {
-      console.log('Sir Hawkington is testing the direct login process...');
-      
-      // Create form data exactly as expected
-      const formData = new URLSearchParams();
-      formData.append('username', username);
-      formData.append('password', password);
-      
-      console.log('Sending direct login request to the Quantum Shadow People');
-      
-      // Use axios directly to bypass interceptors
-      const response = await axios.post(
-        'http://127.0.0.1:8000/api/auth/token', 
-        formData,
-        {
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          }
-        }
-      );
-      
-      console.log('The Meth Snail reports login success:', response.data);
-      return response.data;
-    } catch (error: any) {
-      console.error('Sir Hawkington reports direct login test failed:', error);
-      if (error.response) {
-        console.error('Response data:', error.response.data);
-        console.error('Response status:', error.response.status);
-      }
-      throw error;
     }
   }
 };
