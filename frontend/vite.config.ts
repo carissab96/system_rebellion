@@ -1,10 +1,19 @@
 // vite.config.ts - Now with 100% more distinguished chaos!
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import path from 'path';
 
 // Sir Hawkington's Distinguished Proxy Configuration
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    alias: [
+      { find: '@', replacement: path.resolve(__dirname, 'src') },
+      { find: 'src', replacement: path.resolve(__dirname, 'src') },
+    ] 
+  },
+
+
   server: {
     // The Meth Snail insists on port 5173 for optimal performance
     port: 5173,

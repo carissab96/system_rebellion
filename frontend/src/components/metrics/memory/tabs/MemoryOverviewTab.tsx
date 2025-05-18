@@ -1,10 +1,9 @@
 import React from 'react';
 import { ProcessedMemoryData } from '../types';
 import { formatBytes } from '../utils/formatters';
-import { ProgressBar } from 'src/components/common/ProgressBar';
-import { Card } from 'src/components/common/Card';
-import { InfoTooltip } from 'src/components/common/InfoTooltip';
-import { TrendIndicator } from 'src/components/common/TrendIndicator';
+import { ProgressBar } from '@/design-system/components/ProgressBar/ProgressBar';
+import { Card } from '@/design-system/components/Card';
+import { InfoTooltip } from '@/design-system/components/InfoTooltip/InfoTooltip';
 
 interface MemoryOverviewTabProps {
   data: ProcessedMemoryData;

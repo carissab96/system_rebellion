@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { ProcessedMemoryData } from '../types';
 import { formatBytes } from '../utils/formatters';
-import { Card } from 'src/components/common/Card';
-import { PieChart } from 'src/components/common/PieChart';
-import { ProgressBar } from 'src/components/common/ProgressBar';
-import { InfoTooltip } from 'src/components/common/InfoTooltip';
-import { Badge } from 'src/components/common/Badge';
-import { Button } from 'src/components/common/Button';
+import { Card } from '@/design-system/components/Card';
+import { PieChart } from '@/design-system/components/PieChart/PieChart';
+import { ProgressBar } from '@/design-system/components/ProgressBar/ProgressBar';
+import { InfoTooltip } from '@/design-system/components/InfoTooltip/InfoTooltip';
+import { Badge } from '@/design-system/components/Badge';
+import { Button } from '@/design-system/components/Button';
 
 interface MemoryAllocationTabProps {
   data: ProcessedMemoryData;
