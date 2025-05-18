@@ -8,7 +8,7 @@ import DiskPartitionsTab from './tabs/DiskPartitionsTab';
 import { DiskDirectoryTab } from './tabs/DiskDirectoryTab';
 import { DiskPerformanceTab } from './tabs/DiskPerformanceTab';
 import { processDiskData } from './utils/diskDataProcessor';
-import { DiskMetricProps } from './types';
+import { DiskMetricProps, RawDiskMetrics } from './types';
 
 export const DiskMetric: React.FC<DiskMetricProps> = ({ 
   compact = false,
@@ -41,9 +41,39 @@ export const DiskMetric: React.FC<DiskMetricProps> = ({
       }} 
     />;
   }
-  
+
+  // Convert number to RawDiskMetrics structure if needed
+  const rawDiskMetrics: RawDiskMetrics = typeof diskMetrics === 'number' ? {
+    partitions: [],
+    physicalDisks: [],
+    directories: [],
+    performance: {
+      current: {
+        readSpeed: 0,
+        writeSpeed: 0,
+        readIOPS: 0,
+        writeIOPS: 0,
+        utilization: 0,
+        queueDepth: 0,
+        latency: {
+          read: 0,
+          write: 0
+        }
+      },
+      bottlenecks: {
+        detected: false,
+        type: null,
+        severity: null,
+        cause: null,
+        recommendations: []
+      },
+      topProcesses: []
+    },
+    history: []
+  } : diskMetrics;
+
   // Process disk data once for all tabs
-  const processedData = processDiskData(diskMetrics);
+  const processedData = processDiskData(rawDiskMetrics);
   
   // Render compact version for dashboard if requested
   if (compact) {
