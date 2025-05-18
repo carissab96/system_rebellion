@@ -1,3 +1,4 @@
+// src/store/slices/optimizationSlice.ts
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import axios from 'axios';
 import { API_BASE_URL } from '../../utils/api';
@@ -7,12 +8,27 @@ export interface OptimizationProfile {
   id: string;
   name: string;
   description: string;
+  usageType?: 'gaming' | 'creative' | 'development' | 'office' | 'browsing' | 'custom';
   settings: {
     cpuThreshold: number;
     memoryThreshold: number;
     diskThreshold: number;
     networkThreshold: number;
     enableAutoTuning: boolean;
+    // Advanced settings
+    cpuPriority?: 'high' | 'medium' | 'low';
+    backgroundProcessLimit?: number;
+    memoryAllocation?: {
+      applications: number; // percentage
+      systemCache: number; // percentage
+    };
+    diskPerformance?: 'speed' | 'balance' | 'powersave';
+    networkOptimization?: {
+      prioritizeStreaming: boolean;
+      prioritizeDownloads: boolean;
+      lowLatencyMode: boolean;
+    };
+    powerProfile?: 'performance' | 'balanced' | 'powersave';
   };
   is_active: boolean;
   created_at: string;
@@ -76,6 +92,9 @@ export const createOptimizationProfile = createAsyncThunk(
         return rejectWithValue("Authentication required. Please log in.");
       }
       
+      // Log the profile data being sent
+      console.log("🐌 Profile data being sent:", profileData);
+      
       const response = await axios.post(`${API_BASE_URL}/optimization-profiles/`, profileData, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -114,6 +133,8 @@ export const updateOptimizationProfile = createAsyncThunk(
         console.error(`🐌 The Meth Snail is confused! ID ${id} is not a valid UUID.`);
         return rejectWithValue(`Invalid profile ID format. Expected a UUID but got: ${id}`);
       }
+      
+      console.log("🐌 Profile data being updated:", data);
       
       const response = await axios.put(`${API_BASE_URL}/optimization-profiles/${id}`, data, {
         headers: {

@@ -2,7 +2,6 @@
 
 import React, { useMemo } from 'react';
 import { CPUCore } from '../types';
-import './CPUTabs.css';
 
 interface CPUCoresTabProps {
   cores: CPUCore[];
@@ -11,10 +10,7 @@ interface CPUCoresTabProps {
 }
 
 const CPUCoresTab: React.FC<CPUCoresTabProps> = ({ 
-  cores, 
-  physicalCores,
-  compact = false 
-}) => {
+  cores}) => {
   // Calculate statistics and detect imbalances
   const stats = useMemo(() => {
     if (!cores || cores.length === 0) return null;

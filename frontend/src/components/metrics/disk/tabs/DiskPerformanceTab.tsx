@@ -2,14 +2,32 @@ import React, { useState } from 'react';
 import { ProcessedDiskData } from '../types';
 import { formatBytes, formatNumber } from '../utils/formatters';
 import { Card } from '@/design-system/components/Card';
-import { LineChart } from '@/components/common/LineChart';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
+} from 'recharts';
 import { Badge } from '@/design-system/components/Badge';
-import { ProgressBar } from '@/components/common/ProgressBar';
-import { Table, TableColumn } from '@/components/common/Table';
-import { InfoTooltip } from '@/components/common/InfoTooltip';
+import { ProgressBar } from '@/design-system/components/ProgressBar/ProgressBar';
+import { Table, TableColumn } from '@/design-system/components/Table/Table';
+import { InfoTooltip } from '@/design-system/components/InfoTooltip/InfoTooltip';
 
 interface DiskPerformanceTabProps {
   data: ProcessedDiskData;
+}
+
+interface ProcessRow {
+  pid: number;
+  name: string;
+  readRate: number;
+  writeRate: number;
+  totalRate: number;
+  percentage: number;
 }
 
 export const DiskPerformanceTab: React.FC<DiskPerformanceTabProps> = ({ data }) => {
@@ -19,54 +37,35 @@ export const DiskPerformanceTab: React.FC<DiskPerformanceTabProps> = ({ data }) 
   const { performance } = data;
   
   // Process table columns
-  const processColumns: TableColumn<ProcessedDiskData['performance']['topProcesses'][0]>[] = [
+  const processColumns: TableColumn<ProcessRow>[] = [
     {
-      key: 'pid',
+      key: 'pid' as const,
       header: 'PID',
-      sortable: true,
-      width: '10%'
+      width: '10%',
+      align: 'right'
     },
     {
-      key: 'name',
+      key: 'name' as const,
       header: 'Process',
-      sortable: true,
-      width: '25%'
+      width: '30%'
     },
     {
-      key: 'readRate',
-      header: 'Read',
-      sortable: true,
-      width: '15%',
-      render: (process) => formatBytes(process.readRate) + '/s'
-    },
-    {
-      key: 'writeRate',
-      header: 'Write',
-      sortable: true,
-      width: '15%',
-      render: (process) => formatBytes(process.writeRate) + '/s'
-    },
-    {
-      key: 'totalRate',
-      header: 'Total I/O',
-      sortable: true,
-      width: '15%',
-      render: (process) => formatBytes(process.totalRate) + '/s'
-    },
-    {
-      key: 'percentage',
-      header: '% of I/O',
-      sortable: true,
+      key: 'readRate' as const,
+      header: 'Read Rate',
       width: '20%',
-      render: (process) => (
-        <ProgressBar 
-          value={process.percentage} 
-          severity={
-            process.percentage > 80 ? 'warning' : 'normal'
-          }
-          label={`${process.percentage.toFixed(1)}%`}
-        />
-      )
+      render: (row: ProcessRow) => formatBytes(row.readRate) + '/s'
+    },
+    {
+      key: 'writeRate' as const,
+      header: 'Write Rate',
+      width: '20%',
+      render: (row: ProcessRow) => formatBytes(row.writeRate) + '/s'
+    },
+    {
+      key: 'totalRate' as const,
+      header: 'Total Rate',
+      width: '20%',
+      render: (row: ProcessRow) => formatBytes(row.totalRate) + '/s'
     }
   ];
   
@@ -75,18 +74,6 @@ export const DiskPerformanceTab: React.FC<DiskPerformanceTabProps> = ({ data }) 
     if (latency > 20) return 'severity-critical';
     if (latency > 10) return 'severity-warning';
     return 'severity-normal';
-  };
-  
-  // Helper function to get color for bottleneck severity
-  const getBottleneckSeverityColor = (severity: 'low' | 'medium' | 'high' | null): string => {
-    if (!severity) return 'var(--color-text-secondary)';
-    
-    switch (severity) {
-      case 'high': return 'var(--color-danger)';
-      case 'medium': return 'var(--color-warning)';
-      case 'low': return 'var(--color-info)';
-      default: return 'var(--color-text-secondary)';
-    }
   };
   
   return (
@@ -138,79 +125,114 @@ export const DiskPerformanceTab: React.FC<DiskPerformanceTabProps> = ({ data }) 
           <div className="performance-charts">
             <div className="performance-chart">
               <h4>Throughput (Bytes/s)</h4>
-              <LineChart
-                data={[
-                  {
-                    name: 'Read',
-                    color: 'var(--color-primary)',
-                    values: performance.historical.timestamps.map((ts, idx) => ({
-                      x: ts,
-                      y: performance.historical.readSpeed[idx] / (1024 * 1024) // Convert to MB/s
-                    }))
-                  },
-                  {
-                    name: 'Write',
-                    color: 'var(--color-secondary)',
-                    values: performance.historical.timestamps.map((ts, idx) => ({
-                      x: ts,
-                      y: performance.historical.writeSpeed[idx] / (1024 * 1024) // Convert to MB/s
-                    }))
-                  }
-                ]}
-                yAxisLabel="MB/s"
-                height={200}
-                showLegend={true}
-              />
+              <ResponsiveContainer width="100%" height={200}>
+                <LineChart
+                  data={[
+                    {
+                      name: 'Read',
+                      color: 'var(--color-primary)',
+                      values: performance.historical.timestamps.map((ts, idx) => ({
+                        x: ts,
+                        y: performance.historical.readSpeed[idx] / (1024 * 1024) // Convert to MB/s
+                      }))
+                    },
+                    {
+                      name: 'Write',
+                      color: 'var(--color-secondary)',
+                      values: performance.historical.timestamps.map((ts, idx) => ({
+                        x: ts,
+                        y: performance.historical.writeSpeed[idx] / (1024 * 1024) // Convert to MB/s
+                      }))
+                    }
+                  ]}
+                  margin={{
+                    top: 5,
+                    right: 30,
+                    left: 20,
+                    bottom: 5,
+                  }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="x" />
+                  <YAxis yAxisId="left" orientation="left" stroke="#8884d8" />
+                  <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="y" stroke="#8884d8" activeDot={{ r: 8 }} />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
             
             <div className="performance-chart">
               <h4>IOPS (Operations/s)</h4>
-              <LineChart
-                data={[
-                  {
-                    name: 'Read IOPS',
-                    color: 'var(--color-info)',
-                    values: performance.historical.timestamps.map((ts, idx) => ({
-                      x: ts,
-                      y: performance.historical.readIOPS[idx]
-                    }))
-                  },
-                  {
-                    name: 'Write IOPS',
-                    color: 'var(--color-accent)',
-                    values: performance.historical.timestamps.map((ts, idx) => ({
-                      x: ts,
-                      y: performance.historical.writeIOPS[idx]
-                    }))
-                  }
-                ]}
-                yAxisLabel="Operations/s"
-                height={200}
-                showLegend={true}
-              />
+              <ResponsiveContainer width="100%" height={200}>
+                <LineChart
+                  data={[
+                    {
+                      name: 'Read IOPS',
+                      color: 'var(--color-info)',
+                      values: performance.historical.timestamps.map((ts, idx) => ({
+                        x: ts,
+                        y: performance.historical.readIOPS[idx]
+                      }))
+                    },
+                    {
+                      name: 'Write IOPS',
+                      color: 'var(--color-accent)',
+                      values: performance.historical.timestamps.map((ts, idx) => ({
+                        x: ts,
+                        y: performance.historical.writeIOPS[idx]
+                      }))
+                    }
+                  ]}
+                  margin={{
+                    top: 5,
+                    right: 30,
+                    left: 20,
+                    bottom: 5,
+                  }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="x" />
+                  <YAxis yAxisId="left" orientation="left" stroke="#8884d8" />
+                  <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="y" stroke="#8884d8" activeDot={{ r: 8 }} />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
             
             <div className="performance-chart">
               <h4>Disk Utilization</h4>
-              <LineChart
-                data={[
-                  {
-                    name: 'Utilization',
-                    color: 'var(--color-warning)',
-                    values: performance.historical.timestamps.map((ts, idx) => ({
-                      x: ts,
-                      y: performance.historical.utilization[idx]
-                    }))
-                  }
-                ]}
-                yAxisLabel="%"
-                height={150}
-                yMax={100}
-                thresholds={[
-                  { value: 90, label: 'Critical', color: 'var(--color-danger)' },
-                  { value: 70, label: 'Warning', color: 'var(--color-warning)' }
-                ]}
-              />
+              <ResponsiveContainer width="100%" height={150}>
+                <LineChart
+                  data={[
+                    {
+                      name: 'Utilization',
+                      color: 'var(--color-warning)',
+                      values: performance.historical.timestamps.map((ts, idx) => ({
+                        x: ts,
+                        y: performance.historical.utilization[idx]
+                      }))
+                    }
+                  ]}
+                  margin={{
+                    top: 5,
+                    right: 30,
+                    left: 20,
+                    bottom: 5,
+                  }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="x" />
+                  <YAxis yAxisId="left" orientation="left" stroke="#8884d8" />
+                  <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="y" stroke="#8884d8" activeDot={{ r: 8 }} />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
           </div>
         </Card>
@@ -362,12 +384,11 @@ export const DiskPerformanceTab: React.FC<DiskPerformanceTabProps> = ({ data }) 
         <Card className="disk-performance__processes">
           <h3>Top I/O Processes</h3>
           
-          <Table
-            columns={processColumns}
+          <Table 
+            columns={processColumns} 
             data={performance.topProcesses}
-            onRowClick={(process) => setSelectedProcess(process.pid === selectedProcess ? null : process.pid)}
-            highlightedRow={(row) => row.pid === selectedProcess}
-            emptyMessage="No I/O process data available."
+            onRowClick={(item) => setSelectedProcess(item.pid)}
+            selectedRow={performance.topProcesses.find(p => p.pid === selectedProcess)}
           />
           
           {selectedProcess && (

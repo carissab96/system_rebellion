@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
-import { RootState } from 'src/store';
-import { TabPanel, Tabs, Tab } from 'src/components/common/Tabs';
-import { ErrorDisplay } from 'src/components/common/ErrorDisplay';
-import { LoadingIndicator } from 'src/components/common/LoadingIndicator';
+import { RootState } from '@/store/store';
+import Tabs, { TabPanel, Tab } from '@/design-system/components/Tabs/Tabs';
+import ErrorDisplay from '@/components/common/ErrorDisplay';
+import LoadingIndicator from '@/components/common/LoadingIndicator';
 import { MemoryOverviewTab } from './tabs/MemoryOverviewTab';
 import { MemoryProcessesTab } from './tabs/MemoryProcessesTab';
 import { MemoryAllocationTab } from './tabs/MemoryAllocationTab';
@@ -47,24 +47,24 @@ export const MemoryMetric: React.FC<MemoryMetricProps> = ({
   
   // Render full tabbed version
   return (
-    <div className="memory-metric">
-      <Tabs value={activeTab} onChange={setActiveTab}>
-        <Tab value="overview" label="Overview" />
-        <Tab value="processes" label="Processes" />
-        <Tab value="allocation" label="Allocation" />
+    <div className={`memory-metric ${compact ? 'compact' : ''}`}>
+      <Tabs activeTab={activeTab} onChange={setActiveTab}>
+        <Tab id="overview" label="Overview">
+          <TabPanel active={activeTab === 'overview'}>
+            <MemoryOverviewTab data={processedData} />
+          </TabPanel>
+        </Tab>
+        <Tab id="processes" label="Processes">
+          <TabPanel active={activeTab === 'processes'}>
+            <MemoryProcessesTab data={processedData} />
+          </TabPanel>
+        </Tab>
+        <Tab id="allocation" label="Allocation">
+          <TabPanel active={activeTab === 'allocation'}>
+            <MemoryAllocationTab data={processedData} />
+          </TabPanel>
+        </Tab>
       </Tabs>
-      
-      <TabPanel value={activeTab} activeValue="overview">
-        <MemoryOverviewTab data={processedData} />
-      </TabPanel>
-      
-      <TabPanel value={activeTab} activeValue="processes">
-        <MemoryProcessesTab data={processedData} />
-      </TabPanel>
-      
-      <TabPanel value={activeTab} activeValue="allocation">
-        <MemoryAllocationTab data={processedData} />
-      </TabPanel>
     </div>
   );
 };

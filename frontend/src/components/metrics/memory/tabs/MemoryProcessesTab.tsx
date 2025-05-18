@@ -1,12 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { ProcessedMemoryData, MemoryProcess } from '../types';
 import { formatBytes } from '../utils/formatters';
-import { Table, TableColumn } from 'src/components/common/Table';
-import { Card } from 'src/components/common/Card';
-import { LineChart } from 'src/components/common/LineChart';
-import { Badge } from 'src/components/common/Badge';
-import { SearchInput } from 'src/components/common/SearchInput';
-import { Button } from 'src/components/common/Button';
+import { Table, TableColumn } from '@/design-system/components/Table/Table';
+import { Card } from '@/design-system/components/Card';
+import { LineChart } from 'recharts';
+import { Badge } from '@/design-system/components/Badge';
+import { SearchInput } from '@/components/common/SearchInput';
+import { Button } from '@/design-system/components/Button';
 
 interface MemoryProcessesTabProps {
   data: ProcessedMemoryData;

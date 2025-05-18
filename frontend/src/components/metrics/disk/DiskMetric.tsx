@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
-import Tabs, { Tab } from '@/design-system/components/Tabs/Tabs';
+import Tabs, { Tab } from '@/design-system/components/Tabs';
 import ErrorDisplay from '@/components/common/ErrorDisplay';
 import LoadingIndicator from '@/components/common/LoadingIndicator';
 import DiskPartitionsTab from './tabs/DiskPartitionsTab';
