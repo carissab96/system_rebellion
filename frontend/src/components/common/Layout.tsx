@@ -1,7 +1,6 @@
-import React, { useCallback } from 'react';
-import { useAppSelector, useAppDispatch } from '../../store/hooks';
-import { setConnectionStatus } from '../../store/slices/metricsSlice';
-import { useToast } from './Toast';
+// src/components/common/Layout.tsx
+import React, { useEffect } from 'react';
+import { useAppSelector } from '../../store/hooks';
 import Navbar from './Navbar';
 import './Layout.css';
 
@@ -11,47 +10,94 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const connectionStatus = useAppSelector((state) => state.metrics.connectionStatus);
-  const dispatch = useAppDispatch();
-  const toast = useToast();
 
-  const handleReconnect = useCallback(async () => {
-    try {
-      dispatch(setConnectionStatus('connecting'));
-      // Add any additional reconnection logic here
-      toast.success('Reconnecting...', 'Attempting to reestablish WebSocket connection');
-    } catch (error) {
-      console.error('Reconnection error:', error);
-      toast.error('Reconnection failed', 'Failed to reconnect to WebSocket');
-    }
-  }, [dispatch, toast]);
+  // Add effect to hide connection status globally
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.innerHTML = `
+      .connection-status {
+        display: none !important;
+        height: 0 !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        position: absolute !important;
+        pointer-events: none !important;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
 
-  const getStatusColor = () => {
-    switch (connectionStatus) {
-      case 'connected':
-        return 'status-connected';
-      case 'connecting':
-        return 'status-connecting';
-      case 'error':
-        return 'status-error';
-      default:
-        return 'status-disconnected';
-    }
+
+  // Create a minimal indicator
+  const renderMinimalIndicator = () => {
+    const getStatusClass = () => {
+      switch (connectionStatus) {
+        case 'connected': return 'connected';
+        case 'connecting': return 'connecting';
+        case 'error': return 'error';
+        default: return 'disconnected';
+      }
+    };
+    
+    return (
+      <div className="minimal-connection-indicator">
+        <span className={`indicator-dot ${getStatusClass()}`}></span>
+        <style>{`
+          .minimal-connection-indicator {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 4px;
+            border-radius: 50%;
+          }
+          .indicator-dot {
+            display: block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+          }
+          .indicator-dot.connected {
+            background: #38b000;
+            box-shadow: 0 0 5px #38b000;
+          }
+          .indicator-dot.connecting {
+            background: #ffbe0b;
+            box-shadow: 0 0 5px #ffbe0b;
+            animation: pulse 1s infinite;
+          }
+          .indicator-dot.disconnected, .indicator-dot.error {
+            background: #ff3838;
+            box-shadow: 0 0 5px #ff3838;
+          }
+          @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+          }
+        `}</style>
+      </div>
+    );
   };
+  
   return (
     <div className="layout">
       <Navbar />
-      <div className="connection-status">
-        <div className={`status-indicator ${getStatusColor()}`}></div>
-        <span className="status-text">WebSocket: {connectionStatus || 'disconnected'}</span>
-        {connectionStatus !== 'connected' && (
-          <button onClick={handleReconnect} className="reconnect-button">
-            Reconnect
-          </button>
-        )}
-      </div>
+      
+      {/* REMOVED: The problematic connection-status div */}
+      
       <main className="main-content">
         {children}
       </main>
+      
+      {/* Small indicator in corner that doesn't interfere with layout */}
+      {renderMinimalIndicator()}
+      
       <footer className="footer">
         <div className="footer-content">
           <p className="footer-text">

@@ -15,6 +15,7 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({
   showHeader = true
 }) => {
   const metrics = useAppSelector((state) => state.metrics.current);
+  const { connectionStatus } = useAppSelector((state) => state.metrics);
   const [isUpdating, setIsUpdating] = useState(false);
   const prevMetricsRef = React.useRef(metrics);
 
@@ -28,6 +29,21 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({
     prevMetricsRef.current = metrics;
   }, [metrics]);
 
+  // Get status color
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'connected':
+        return 'status-connected';
+      case 'connecting':
+        return 'status-connecting';
+      case 'disconnected':
+      case 'error':
+        return 'status-disconnected';
+      default:
+        return 'status-disconnected';
+    }
+  };
+
   return (
     <div className="metrics-panel">
       {showHeader && (
@@ -38,6 +54,12 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({
             <div className="character-tooltip">
               <p>"Sir Hawkington at your service! I'm monitoring your system metrics with aristocratic precision."</p>
             </div>
+          </div>
+          
+          {/* Small connection indicator */}
+          <div className="connection-indicator">
+            <span className={`connection-dot ${getStatusColor(connectionStatus)}`}></span>
+            <span className="connection-text">{connectionStatus}</span>
           </div>
         </div>
       )}

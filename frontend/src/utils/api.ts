@@ -1,10 +1,11 @@
 // api.ts
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
-import store from '../store/store';// Updated import path
+import store from '../store/store';
 import { logout } from '../store/slices/authSlice';
 import { SystemMetric } from '../types/metrics';
-import api from '../services/authService';
 
+// REMOVE THIS LINE - it creates a circular import
+// import api from '../services/authService';
 
 interface ApiError extends AxiosError {
   config: InternalAxiosRequestConfig & { _retry?: boolean };
@@ -426,33 +427,34 @@ export const initializeCsrf = async (): Promise<boolean> => {
       return true;
     }
     
-    // If we didn't get a token from the dedicated endpoint, try the health-check endpoint
-    const healthResponse = await axios.get(`${API_BASE_URL}/health-check/`, {
-      withCredentials: true,
-      timeout: 5000
-    });
-    
-    // If health check response has a csrf_token field, use that
-    if (healthResponse.data && healthResponse.data.csrf_token) {
-      localStorage.setItem('csrf_token', healthResponse.data.csrf_token);
-      console.log('🎩 Sir Hawkington has secured a CSRF token from health check!');
-      return true;
-    }
-    
-    // Verify that we got the CSRF token
-    const csrfToken = getCsrfToken();
-    if (!csrfToken) {
-      console.warn('🧐 Sir Hawkington is concerned: CSRF token not found after initialization');
-      throw new Error('Failed to get CSRF token after multiple attempts');
-    }
-    
-    console.log('✅ CSRF token successfully initialized');
-    return true;
-  } catch (error) {
-    console.error('Failed to initialize CSRF token:', 
-      error instanceof Error ? error.message : 'Unknown error');
-    return false;
-  }
+ // If we didn't get a token from the dedicated endpoint, try the health-check endpoint
+ const healthResponse = await axios.get(`${API_BASE_URL}/health-check/`, {
+  withCredentials: true,
+  timeout: 5000
+});
+
+// If health check response has a csrf_token field, use that
+if (healthResponse.data && healthResponse.data.csrf_token) {
+  localStorage.setItem('csrf_token', healthResponse.data.csrf_token);
+  console.log('🎩 Sir Hawkington has secured a CSRF token from health check!');
+  return true;
+}
+
+// Verify that we got the CSRF token
+const csrfToken = getCsrfToken();
+if (!csrfToken) {
+  console.warn('🧐 Sir Hawkington is concerned: CSRF token not found after initialization');
+  throw new Error('Failed to get CSRF token after multiple attempts');
+}
+
+console.log('✅ CSRF token successfully initialized');
+return true;
+} catch (error) {
+console.error('Failed to initialize CSRF token:', 
+  error instanceof Error ? error.message : 'Unknown error');
+return false;
+}
 };
 
-export default api;
+// Export the apiMethods as the default export
+export default apiMethods;

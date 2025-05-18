@@ -3,7 +3,7 @@ import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import './Dashboard.css';
 import { fetchPatterns } from '../../../store/slices/autoTunerSlice';
 import { fetchSystemAlerts } from '../../../store/slices/systemAlertsSlice';
-import useMetricsWebSocket from '../../../store/useMetricsWebSocket';
+import useMetricsWebSocket from '../../../store/useMetricsWebSocket'; // Restore this import
 import { RootState } from '../../../store/store';
 import SystemStatus from './SystemStatus/SystemStatus';
 import MetricsPanel from '../MetricsPanel/MetricsPanel';
@@ -15,11 +15,11 @@ interface DashboardProps {}
 export const Dashboard: React.FC<DashboardProps> = () => {
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
-  const { loading, error, useWebSocket, connectionStatus } = useAppSelector(
+  const { loading, error } = useAppSelector(
     (state: RootState) => state.metrics
   );
   
-  // Use the WebSocket hook - this replaces the initializeWebSocket call
+  // IMPORTANT: Restore this hook to ensure WebSocket connection is established
   useMetricsWebSocket();
   
   // Fetch initial data
@@ -70,34 +70,13 @@ export const Dashboard: React.FC<DashboardProps> = () => {
       </div>
     );
   }
-  
-  // Show connection status
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'connected':
-        return 'status-connected';
-      case 'connecting':
-        return 'status-connecting';
-      case 'disconnected':
-        return 'status-disconnected';
-      default:
-        return 'status-disconnected';
-    }
-  };
 
   return (
     <div className="dashboard">
       <div className="dashboard-header">
-        <div>
-          <h1>{getWelcomeMessage()}</h1>
-          <p className="connection-status">
-            Status: <span className={getStatusColor(connectionStatus)}>
-              {connectionStatus.toUpperCase()}
-            </span>
-            {useWebSocket ? ' (WebSocket)' : ' (REST API)'}
-          </p>
-        </div>
-        <div className="dashboard-actions">
+        <h1>{getWelcomeMessage()}</h1>
+        
+        <div className="ticker-container">
           <SystemStatus loading={loading} error={error} />
         </div>
       </div>

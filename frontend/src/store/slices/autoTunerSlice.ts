@@ -1,8 +1,9 @@
+// src/store/slices/autoTunerSlice.ts
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { PayloadAction } from '@reduxjs/toolkit';
 import { AutoTunerState } from '../../types/autoTuner';
 import { OptimizationProfile } from '../../types/metrics';
-import api from '../../utils/api';
+import apiMethods from '../../utils/api'; // Updated import to use apiMethods
 import alertUtils from '../../utils/alertUtils';
 import { createSystemAlert } from './systemAlertsSlice';
 
@@ -48,11 +49,12 @@ export const fetchCurrentMetrics = createAsyncThunk(
   'autoTuner/fetchCurrentMetrics',
   async () => {
     try {
-      console.log('Fetching current metrics with authentication...');
-      const response = await api.get(`/auto-tuner/metrics/current`);
-      return response.data;
+      console.log('🧐 Sir Hawkington: Fetching current metrics with authentication...');
+      // Modify the API call - get expects type parameters for response and query params
+      const response = await apiMethods.get<any>(`/auto-tuner/metrics/current`);
+      return response;
     } catch (error: any) {
-      console.error('Error fetching metrics:', error.response?.data || error.message);
+      console.error('🚨 Error fetching metrics:', error.response?.data || error.message);
       throw new Error(error.response?.data?.detail || 'Failed to fetch current metrics');
     }
   }
@@ -62,17 +64,18 @@ export const fetchRecommendations = createAsyncThunk(
   'autoTuner/fetchRecommendations',
   async (_, { dispatch }) => {
     try {
-      console.log('Fetching recommendations with authentication...');
-      const response = await api.get(`/auto-tuner/recommendations`);
+      console.log('🐌 The Meth Snail: Fetching recommendations with authentication...');
+      // Modify the API call - get expects type parameters for response and query params
+      const response = await apiMethods.get<any[]>(`/auto-tuner/recommendations`);
       
       // Create alerts from recommendations outside of the reducer
-      if (response.data && Array.isArray(response.data)) {
-        createAlertsFromRecommendations(response.data, dispatch);
+      if (response && Array.isArray(response)) {
+        createAlertsFromRecommendations(response, dispatch);
       }
       
-      return response.data;
+      return response;
     } catch (error: any) {
-      console.error('Error fetching recommendations:', error.response?.data || error.message);
+      console.error('🚨 Error fetching recommendations:', error.response?.data || error.message);
       throw new Error(error.response?.data?.detail || 'Failed to fetch recommendations');
     }
   }
@@ -82,31 +85,32 @@ export const fetchPatterns = createAsyncThunk(
   'autoTuner/fetchPatterns',
   async (_, { dispatch }) => {
     try {
-      console.log('Fetching patterns with authentication...');
-      const response = await api.get(`/auto-tuner/patterns`);
-      console.log('Patterns API response:', response.data);
+      console.log('🦔 Sir Hawkington: Fetching patterns with authentication...');
+      // Modify the API call - get expects type parameters for response
+      const response = await apiMethods.get<any>(`/auto-tuner/patterns`);
+      console.log('✅ Patterns API response:', response);
       
       // Ensure we're returning the expected format even if the API response structure changes
-      if (!response.data) {
-        console.error('Empty response from patterns API');
+      if (!response) {
+        console.error('🚨 Empty response from patterns API');
         return { detected_patterns: [] };
       }
       
       // Extract patterns from the response
       let patterns = [];
-      if (response.data.detected_patterns) {
-        patterns = response.data.detected_patterns;
-      } else if (Array.isArray(response.data)) {
-        patterns = response.data;
+      if (response.detected_patterns) {
+        patterns = response.detected_patterns;
+      } else if (Array.isArray(response)) {
+        patterns = response;
       }
       
       // Create alerts from patterns outside of the reducer
       createAlertsFromPatterns(patterns, dispatch);
       
-      return response.data;
+      return response;
     } catch (error: any) {
-      console.error('Error fetching patterns:', error.response?.data || error.message);
-      throw new Error(error.response?.data?.detail || 'Failed to fetch patterns');
+      console.error('🚨 Error fetching patterns:', error);
+      throw new Error(typeof error.message === 'string' ? error.message : 'Failed to fetch patterns');
     }
   }
 );
@@ -115,11 +119,12 @@ export const fetchTuningHistory = createAsyncThunk(
   'autoTuner/fetchTuningHistory',
   async () => {
     try {
-      console.log('Fetching tuning history with authentication...');
-      const response = await api.get(`/auto-tuner/history`);
-      return response.data;
+      console.log('🦔 Sir Hawkington: Fetching tuning history with authentication...');
+      // Modify the API call - get expects type parameters for response
+      const response = await apiMethods.get<{history: any[]}>(`/auto-tuner/history`);
+      return response;
     } catch (error: any) {
-      console.error('Error fetching tuning history:', error.response?.data || error.message);
+      console.error('🚨 Error fetching tuning history:', error.response?.data || error.message);
       throw new Error(error.response?.data?.detail || 'Failed to fetch tuning history');
     }
   }
@@ -129,11 +134,12 @@ export const applyOptimizationProfile = createAsyncThunk(
   'autoTuner/applyOptimizationProfile',
   async (profileId: string) => {
     try {
-      console.log(`Applying optimization profile ${profileId} with authentication...`);
-      const response = await api.post(`/auto-tuner/profiles/${profileId}/apply`);
-      return response.data;
+      console.log(`🐌 The Meth Snail: Applying optimization profile ${profileId} with authentication...`);
+      // Modify the API call - post expects type parameters for response and body
+      const response = await apiMethods.post<{applied_settings: any[]}, {}>(`/auto-tuner/profiles/${profileId}/apply`, {});
+      return response;
     } catch (error: any) {
-      console.error('Error applying optimization profile:', error.response?.data || error.message);
+      console.error('🚨 Error applying optimization profile:', error.response?.data || error.message);
       throw new Error(error.response?.data?.detail || 'Failed to apply optimization profile');
     }
   }
@@ -143,12 +149,13 @@ export const applyRecommendation = createAsyncThunk(
   'autoTuner/applyRecommendation',
   async (recommendationId: number) => {
     try {
-      console.log(`Applying recommendation ${recommendationId} with authentication...`);
+      console.log(`🦔 Sir Hawkington: Applying recommendation ${recommendationId} with authentication...`);
       // Pass the recommendation_id as a query parameter
-      const response = await api.post(`/auto-tuner/recommendations/apply?recommendation_id=${recommendationId}`);
-      return response.data;
+      // Modify the API call - post expects type parameters for response and body
+      const response = await apiMethods.post<{success: boolean; result: any}, {}>(`/auto-tuner/recommendations/apply?recommendation_id=${recommendationId}`, {});
+      return response;
     } catch (error: any) {
-      console.error('Error applying recommendation:', error.response?.data || error.message);
+      console.error('🚨 Error applying recommendation:', error.response?.data || error.message);
       throw new Error(error.response?.data?.detail || 'Failed to apply recommendation');
     }
   }
@@ -212,20 +219,20 @@ const autoTunerSlice = createSlice({
         state.status = 'succeeded';
         
         // Enhanced debug logging
-        console.log('Patterns payload:', action.payload);
+        console.log('✅ Patterns payload:', action.payload);
         
         // Handle the case where detected_patterns might be undefined
         if (action.payload && action.payload.detected_patterns) {
           // This is the expected format from the backend
           state.patterns = action.payload.detected_patterns;
-          console.log('Setting patterns in state from detected_patterns:', action.payload.detected_patterns);
+          console.log('🦔 Setting patterns in state from detected_patterns:', action.payload.detected_patterns);
         } else if (Array.isArray(action.payload)) {
           // Handle case where API might return an array directly
           state.patterns = action.payload;
-          console.log('Setting patterns array in state:', action.payload);
+          console.log('🦔 Setting patterns array in state:', action.payload);
         } else {
           // Fallback to empty array if no patterns found
-          console.warn('No patterns found in payload, setting empty array. Payload:', action.payload);
+          console.warn('⚠️ No patterns found in payload, setting empty array. Payload:', action.payload);
           state.patterns = [];
         }
         
@@ -242,7 +249,7 @@ const autoTunerSlice = createSlice({
           });
           
           if (validPatterns.length !== state.patterns.length) {
-            console.warn(`Filtered out ${state.patterns.length - validPatterns.length} invalid patterns`);
+            console.warn(`⚠️ Filtered out ${state.patterns.length - validPatterns.length} invalid patterns`);
             state.patterns = validPatterns;
           }
         }
@@ -255,7 +262,7 @@ const autoTunerSlice = createSlice({
       .addCase(fetchPatterns.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.error.message || 'Failed to fetch patterns';
-        console.error('Failed to fetch patterns:', action.error);
+        console.error('🚨 Failed to fetch patterns:', action.error);
       })
       
     // Tuning History
@@ -265,7 +272,11 @@ const autoTunerSlice = createSlice({
       })
       .addCase(fetchTuningHistory.fulfilled, (state, action) => {
         state.status = 'succeeded';
-        state.tuningHistory = action.payload.history;
+        if (action.payload && action.payload.history) {
+          state.tuningHistory = action.payload.history;
+        } else {
+          state.tuningHistory = [];
+        }
         state.lastUpdated = new Date().toISOString();
       })
       .addCase(fetchTuningHistory.rejected, (state, action) => {
@@ -281,7 +292,9 @@ const autoTunerSlice = createSlice({
       .addCase(applyOptimizationProfile.fulfilled, (state, action) => {
         state.status = 'succeeded';
         // Update tuning history with newly applied settings
-        state.tuningHistory = [...state.tuningHistory, ...action.payload.applied_settings];
+        if (action.payload && action.payload.applied_settings) {
+          state.tuningHistory = [...state.tuningHistory, ...action.payload.applied_settings];
+        }
         state.lastUpdated = new Date().toISOString();
       })
       .addCase(applyOptimizationProfile.rejected, (state, action) => {
@@ -296,7 +309,7 @@ const autoTunerSlice = createSlice({
       })
       .addCase(applyRecommendation.fulfilled, (state, action) => {
         state.status = 'succeeded';
-        if (action.payload.success && action.payload.result) {
+        if (action.payload && action.payload.success && action.payload.result) {
           state.tuningHistory = [...state.tuningHistory, action.payload.result];
         }
         state.lastUpdated = new Date().toISOString();

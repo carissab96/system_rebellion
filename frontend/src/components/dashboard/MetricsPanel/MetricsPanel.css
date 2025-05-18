@@ -123,7 +123,50 @@
   padding-bottom: 0.5rem;
   letter-spacing: 0.5px;
 }
+/* Add to MetricsPanel.css */
+.metrics-panel-header {
+  position: relative;
+}
 
+.connection-indicator {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(0, 0, 0, 0.1);
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+}
+
+.connection-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.connection-dot.status-connected {
+  background: var(--success);
+  box-shadow: 0 0 5px var(--success);
+}
+
+.connection-dot.status-connecting {
+  background: var(--warning);
+  box-shadow: 0 0 5px var(--warning);
+  animation: pulse 1s infinite;
+}
+
+.connection-dot.status-disconnected {
+  background: var(--danger);
+  box-shadow: 0 0 5px var(--danger);
+}
+
+.connection-text {
+  text-transform: capitalize;
+  color: var(--text-secondary);
+}
 /* Responsive styles */
 @media (max-width: 768px) {
   .metrics-row {

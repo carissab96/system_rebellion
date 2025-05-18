@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../../store/hooks';
 import { logout, checkAuthStatus } from '../../store/slices/authSlice';
 import { getCharacterById } from './CharacterIcons';
-import Modal from './Modal';
 import { UserProfile } from '../dashboard/UserProfile/UserProfile';
 import SignupModal from '../Auth/SignupModal/SignupModal';
 import Login from '../Auth/login/Login';
@@ -99,19 +98,19 @@ const Navbar: React.FC = () => {
               <Link to="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>Dashboard</Link>
             </li>
             <li>
-              <Link to="/auto-tuners" onClick={() => setIsMobileMenuOpen(false)}>Auto Tuners</Link>
+              <Link to="/auto-tuner" onClick={() => setIsMobileMenuOpen(false)}>Auto Tuner</Link>
             </li>
             <li>
-              <Link to="/system-metrics" onClick={() => setIsMobileMenuOpen(false)}>System Metrics</Link>
+              <Link to="/metrics" onClick={() => setIsMobileMenuOpen(false)}>System Metrics</Link>
             </li>
             <li>
-              <Link to="/optimizations" onClick={() => setIsMobileMenuOpen(false)}>Optimization Profiles</Link>
+              <Link to="/optimization" onClick={() => setIsMobileMenuOpen(false)}>Optimization Profiles</Link>
             </li>
             <li>
-              <Link to="/system-alerts" onClick={() => setIsMobileMenuOpen(false)}>System Alerts</Link>
+              <Link to="/alerts" onClick={() => setIsMobileMenuOpen(false)}>System Alerts</Link>
             </li>
             <li>
-              <Link to="/system-configuration" onClick={() => setIsMobileMenuOpen(false)}>System Configuration</Link>
+              <Link to="/configuration" onClick={() => setIsMobileMenuOpen(false)}>System Configuration</Link>
             </li>
           </ul>
         </div>
