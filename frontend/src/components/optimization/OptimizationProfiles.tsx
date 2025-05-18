@@ -446,7 +446,7 @@ export const OptimizationProfiles: React.FC = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={editingId ? "Edit Usage Profile" : "Create Usage Profile"}
-        size="large"
+        size="medium"
       >
         <div className="profile-form">
           {/* Basic Info Section */}
