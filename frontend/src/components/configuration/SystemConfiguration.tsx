@@ -103,6 +103,16 @@ export const SystemConfiguration: React.FC = () => {
     "Might I suggest optimizing your system with these refined configurations? Quite splendid!",
     "Ah, system configurations! The cornerstone of a dignified computing experience!"
   ];
+  useEffect(() => {
+    console.log('Dispatching fetchSystemConfigurations');
+    dispatch(fetchSystemConfigurations({}))
+      .then((result) => {
+        console.log('Success fetching configurations:', result);
+      })
+      .catch((error) => {
+        console.error('Error fetching configurations:', error);
+      });
+  }, [dispatch]);
 
   useEffect(() => {
     dispatch(fetchSystemConfigurations({}));
