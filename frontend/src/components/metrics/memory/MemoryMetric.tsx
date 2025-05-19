@@ -8,16 +8,47 @@ import { MemoryOverviewTab } from './tabs/MemoryOverviewTab';
 import { MemoryProcessesTab } from './tabs/MemoryProcessesTab';
 import { MemoryAllocationTab } from './tabs/MemoryAllocationTab';
 import { processMemoryData } from './utils/memoryDataProcessor';
-import { MemoryMetricProps } from './types';
+import { MemoryMetricProps, RawMemoryMetrics } from './types';
 
 export const MemoryMetric: React.FC<MemoryMetricProps> = ({ 
   compact = false,
   defaultTab = 'overview' 
 }) => {
-  const [activeTab, setActiveTab] = useState(defaultTab);
-  const memoryMetrics = useSelector((state: RootState) => state.metrics.memory);
-  const loading = useSelector((state: RootState) => state.metrics.loading.memory);
-  const error = useSelector((state: RootState) => state.metrics.errors.memory);
+  type TabType = 'overview' | 'processes' | 'allocation';
+  const [activeTab, setActiveTab] = useState<TabType>(defaultTab as TabType);
+  // Use the latest SystemMetric for memory data
+  const currentMetric = useSelector((state: RootState) => state.metrics.current);
+  const loading = useSelector((state: RootState) => state.metrics.loading);
+  const error = useSelector((state: RootState) => state.metrics.error);
+
+  // Extract memory metrics from SystemMetric type
+  // Map SystemMetric to RawMemoryMetrics shape expected by processMemoryData
+  const memoryMetrics: RawMemoryMetrics | null = currentMetric
+    ? {
+        total: currentMetric.memory_total,
+        used: currentMetric.memory_usage,
+        free: currentMetric.memory_free,
+        cached: currentMetric.memory_cache,
+        active: currentMetric.memory_buffer ?? 0, // fallback if not present
+        buffers: currentMetric.memory_buffer ?? 0,
+        swap: {
+          total: currentMetric.memory_swap_total,
+          used: currentMetric.memory_swap_used,
+          free: currentMetric.memory_swap_free,
+        },
+        pageIn: 0, // Not available from SystemMetric, fallback to 0
+        pageOut: 0, // Not available from SystemMetric, fallback to 0
+        pressureLevel: 'low', // Default/fallback, adjust if available
+        allocations: [], // Fill with real data if available
+        fragmentation: {
+          index: 0,
+          largestBlock: 0,
+          freeChunks: 0,
+        },
+        history: [], // Fill with real data if available
+        processes: [], // Fill with real data if available
+      }
+    : null;
   
   // Handle loading state
   if (loading) {
@@ -28,7 +59,7 @@ export const MemoryMetric: React.FC<MemoryMetricProps> = ({
   if (error || !memoryMetrics) {
     return <ErrorDisplay 
       message="Unable to load memory metrics" 
-      details={error?.message} 
+      details={typeof error === 'string' ? error : undefined}
       retry={() => {/* Dispatch refresh action */}} 
     />;
   }
@@ -48,19 +79,19 @@ export const MemoryMetric: React.FC<MemoryMetricProps> = ({
   // Render full tabbed version
   return (
     <div className={`memory-metric ${compact ? 'compact' : ''}`}>
-      <Tabs activeTab={activeTab} onChange={setActiveTab}>
+      <Tabs activeTab={activeTab} onChange={(tabId: string) => setActiveTab(tabId as TabType)}>
         <Tab id="overview" label="Overview">
-          <TabPanel active={activeTab === 'overview'}>
+          <TabPanel id="overview" active={activeTab === 'overview'}>
             <MemoryOverviewTab data={processedData} />
           </TabPanel>
         </Tab>
         <Tab id="processes" label="Processes">
-          <TabPanel active={activeTab === 'processes'}>
+          <TabPanel id="processes" active={activeTab === 'processes'}>
             <MemoryProcessesTab data={processedData} />
           </TabPanel>
         </Tab>
         <Tab id="allocation" label="Allocation">
-          <TabPanel active={activeTab === 'allocation'}>
+          <TabPanel id="allocation" active={activeTab === 'allocation'}>
             <MemoryAllocationTab data={processedData} />
           </TabPanel>
         </Tab>

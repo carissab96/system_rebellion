@@ -1,6 +1,6 @@
 import React from 'react';
 import './Alert.css';
-import { colors, effects } from '../../tokens';
+
 
 export type AlertVariant = 'info' | 'success' | 'warning' | 'danger' | 'cyber';
 export type AlertSize = 'sm' | 'md' | 'lg';

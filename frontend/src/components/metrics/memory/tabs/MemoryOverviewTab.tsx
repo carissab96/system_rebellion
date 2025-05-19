@@ -50,7 +50,7 @@ export const MemoryOverviewTab: React.FC<MemoryOverviewTabProps> = ({ data, comp
         
         <ProgressBar 
           value={overview.physicalMemory.percentUsed} 
-          severity={getPhysicalMemorySeverity()}
+          color={getPhysicalMemorySeverity() === 'critical' ? 'var(--color-danger)' : getPhysicalMemorySeverity() === 'warning' ? 'var(--color-warning)' : 'var(--color-success)'}
           label={`${formatBytes(overview.physicalMemory.used)} / ${formatBytes(overview.physicalMemory.total)}`}
         />
         
@@ -72,7 +72,7 @@ export const MemoryOverviewTab: React.FC<MemoryOverviewTabProps> = ({ data, comp
           <span>Memory Pressure:</span>
           <span className="memory-pressure-value" style={{ color: getPressureSeverityColor() }}>
             {overview.pressureLevel.toUpperCase()}
-            <InfoTooltip content="Memory pressure indicates how stressed your system's memory is. High pressure may lead to performance degradation." />
+            <InfoTooltip content="Memory pressure indicates how stressed your system's memory is. High pressure may lead to performance degradation."  />
           </span>
         </div>
       </div>
@@ -83,7 +83,7 @@ export const MemoryOverviewTab: React.FC<MemoryOverviewTabProps> = ({ data, comp
           <h3>Physical Memory</h3>
           <ProgressBar 
             value={overview.physicalMemory.percentUsed} 
-            severity={getPhysicalMemorySeverity()}
+            color={getPhysicalMemorySeverity() === 'critical' ? 'var(--color-danger)' : getPhysicalMemorySeverity() === 'warning' ? 'var(--color-warning)' : 'var(--color-success)'}
             label={`${overview.physicalMemory.percentUsed.toFixed(1)}%`}
           />
           
@@ -114,10 +114,9 @@ export const MemoryOverviewTab: React.FC<MemoryOverviewTabProps> = ({ data, comp
             <>
               <ProgressBar 
                 value={overview.swap.percentUsed} 
-                severity={getSwapSeverity()}
+                color={getSwapSeverity() === 'warning' ? 'var(--color-warning)' : getSwapSeverity() === 'caution' ? 'var(--color-accent)' : 'var(--color-success)'}
                 label={`${overview.swap.percentUsed.toFixed(1)}%`}
               />
-              
               <div className="memory-stats-grid">
                 <div className="memory-stat">
                   <span className="memory-stat-label">Total</span>
@@ -132,7 +131,6 @@ export const MemoryOverviewTab: React.FC<MemoryOverviewTabProps> = ({ data, comp
                   <span className="memory-stat-value">{formatBytes(overview.swap.free)}</span>
                 </div>
               </div>
-              
               <div className="memory-stat memory-swap-rate">
                 <span className="memory-stat-label">Page I/O</span>
                 <div className="memory-stat-value">
@@ -155,7 +153,7 @@ export const MemoryOverviewTab: React.FC<MemoryOverviewTabProps> = ({ data, comp
             <div className="memory-type-bar">
               <div className="memory-type-bar__label">
                 <span>Active</span>
-                <InfoTooltip content="Memory that has been used recently and is typically not reclaimed unless necessary" />
+                <InfoTooltip content="Memory that has been used recently and is typically not reclaimed unless necessary"  />
               </div>
               <ProgressBar 
                 value={(overview.active / overview.physicalMemory.total) * 100} 
@@ -167,7 +165,7 @@ export const MemoryOverviewTab: React.FC<MemoryOverviewTabProps> = ({ data, comp
             <div className="memory-type-bar">
               <div className="memory-type-bar__label">
                 <span>Cached</span>
-                <InfoTooltip content="Memory used for disk caching. Can be reclaimed when needed by applications" />
+                <InfoTooltip content="Memory used for disk caching. Can be reclaimed when needed by applications"  />
               </div>
               <ProgressBar 
                 value={(overview.cached / overview.physicalMemory.total) * 100} 
@@ -179,7 +177,7 @@ export const MemoryOverviewTab: React.FC<MemoryOverviewTabProps> = ({ data, comp
             <div className="memory-type-bar">
               <div className="memory-type-bar__label">
                 <span>Buffers</span>
-                <InfoTooltip content="Memory used for file system metadata and other kernel operations" />
+                <InfoTooltip content="Memory used for file system metadata and other kernel operations"  />
               </div>
               <ProgressBar 
                 value={(overview.buffers / overview.physicalMemory.total) * 100} 
@@ -198,46 +196,46 @@ export const MemoryOverviewTab: React.FC<MemoryOverviewTabProps> = ({ data, comp
             <div className="pressure-indicator">
               <span className="pressure-indicator__label">
                 Page-in Rate
-                <InfoTooltip content="Rate at which data is being read from disk into memory. High rates indicate memory shortage." />
+                <InfoTooltip content="Rate at which data is being read from disk into memory. High rates indicate memory shortage."  />
               </span>
               <span className="pressure-indicator__value">
                 {overview.pressureIndicators.pageInRate.toFixed(2)}/s
-                <TrendIndicator 
+                {/* <TrendIndicator 
                   value={overview.pressureIndicators.pageInRate} 
                   threshold={10}
                   higherIsBad={true}
-                />
+                 /> */}
               </span>
             </div>
             
             <div className="pressure-indicator">
               <span className="pressure-indicator__label">
                 Page-out Rate
-                <InfoTooltip content="Rate at which data is being written from memory to disk. High rates indicate memory pressure." />
+                <InfoTooltip content="Rate at which data is being written from memory to disk. High rates indicate memory pressure."  />
               </span>
               <span className="pressure-indicator__value">
                 {overview.pressureIndicators.pageOutRate.toFixed(2)}/s
-                <TrendIndicator 
+                {/* <TrendIndicator 
                   value={overview.pressureIndicators.pageOutRate} 
                   threshold={5}
                   higherIsBad={true}
-                />
+                 /> */}
               </span>
             </div>
             
             <div className="pressure-indicator">
               <span className="pressure-indicator__label">
                 Swap Usage Rate
-                <InfoTooltip content="Rate at which swap memory usage is changing. Positive values indicate increasing memory pressure." />
+                <InfoTooltip content="Rate at which swap memory usage is changing. Positive values indicate increasing memory pressure."  />
               </span>
               <span className="pressure-indicator__value">
                 {overview.pressureIndicators.swapUsageRate > 0 ? '+' : ''}
                 {overview.pressureIndicators.swapUsageRate.toFixed(2)} MB/s
-                <TrendIndicator 
+                {/* <TrendIndicator 
                   value={overview.pressureIndicators.swapUsageRate} 
                   threshold={1}
                   higherIsBad={true}
-                />
+                 /> */}
               </span>
             </div>
           </div>

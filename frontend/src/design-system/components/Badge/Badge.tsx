@@ -1,6 +1,6 @@
 import React from 'react';
 import './Badge.css';
-import { colors, effects } from '../../tokens';
+
 
 export type BadgeVariant = 'primary' | 'secondary' | 'accent' | 'success' | 'warning' | 'danger' | 'cyber' | 'info';
 export type BadgeSize = 'sm' | 'md' | 'lg';

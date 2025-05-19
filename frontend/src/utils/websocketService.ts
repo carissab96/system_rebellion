@@ -24,9 +24,16 @@ class WebSocketService {
     console.log("🔗 WebSocket URL set to:", this.url);
   }
 
+  private static get WS_URL(): string {
+    return process.env.NODE_ENV === 'production' 
+      ? `wss://${window.location.host}/api/ws` 
+      : 'ws://localhost:8000/api/ws';
+  }
+
   // Connect to the WebSocket server with authentication
   public connect(customUrl?: string): boolean {
     if (customUrl) this.url = customUrl;
+    else this.url = WebSocketService.WS_URL;
     
     if (this.socket) {
       if (this.socket.readyState === WebSocket.OPEN) {

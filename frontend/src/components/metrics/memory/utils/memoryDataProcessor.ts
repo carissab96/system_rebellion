@@ -48,8 +48,8 @@ const processOverviewMetrics = (rawData: RawMemoryMetrics) => {
     buffers: rawData.buffers,
     pressureLevel: rawData.pressureLevel,
     pressureIndicators: {
-      pageInRate: calculatePageRate(rawData.pageIn, rawData.history),
-      pageOutRate: calculatePageRate(rawData.pageOut, rawData.history),
+      pageInRate: calculatePageRate(rawData.history),
+      pageOutRate: calculatePageRate(rawData.history),
       swapUsageRate: calculateSwapUsageRate(rawData.history)
     }
   };
@@ -92,7 +92,7 @@ const processAllocationMetrics = (rawData: RawMemoryMetrics) => {
  * Calculate the rate of page operations based on history
  */
 const calculatePageRate = (
-  currentValue: number, 
+ 
   history: RawMemoryMetrics['history']
 ): number => {
   if (history.length < 2) return 0;

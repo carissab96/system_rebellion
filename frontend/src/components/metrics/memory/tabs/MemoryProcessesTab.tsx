@@ -129,15 +129,6 @@ export const MemoryProcessesTab: React.FC<MemoryProcessesTabProps> = ({ data }) 
     },
   ];
   
-  const handleSort = (field: keyof MemoryProcess) => {
-    if (field === sortField) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDirection('desc'); // Default to descending for new sort field
-    }
-  };
-  
   const handleRowClick = (process: MemoryProcess) => {
     setSelectedProcess(process.pid);
   };
@@ -146,8 +137,8 @@ export const MemoryProcessesTab: React.FC<MemoryProcessesTabProps> = ({ data }) 
     <div className="memory-processes">
       <div className="memory-processes__controls">
         <SearchInput
-          value={searchTerm}
-          onChange={setSearchTerm}
+          initialValue={searchTerm}
+          onSearch={setSearchTerm}
           placeholder="Search processes..."
         />
         
@@ -159,12 +150,14 @@ export const MemoryProcessesTab: React.FC<MemoryProcessesTabProps> = ({ data }) 
       <Table
         columns={columns}
         data={filteredProcesses}
-        onSort={handleSort}
-        sortField={sortField}
-        sortDirection={sortDirection}
+        onSort={(key: string, direction: 'asc' | 'desc') => {
+  setSortField(key as keyof MemoryProcess);
+  setSortDirection(direction);
+}}
+        
         onRowClick={handleRowClick}
-        highlightedRow={selectedProcess ? (row) => row.pid === selectedProcess : undefined}
-        emptyMessage="No processes found matching your search criteria."
+        
+        emptyState="No processes found matching your search criteria."
       />
       
       {/* Process Details Section */}
@@ -182,11 +175,8 @@ export const MemoryProcessesTab: React.FC<MemoryProcessesTabProps> = ({ data }) 
                     x: point.timestamp,
                     y: point.bytes / (1024 * 1024) // Convert to MB for readability
                   }))}
-                  xAxisLabel="Time"
-                  yAxisLabel="Memory (MB)"
                   height={200}
-                  trendline={selectedProcessTrend.trendline}
-                  trendlineLabel={`Trend: ${selectedProcessTrend.trendline.slope > 0 ? '+' : ''}${formatBytes(selectedProcessTrend.trendline.slope * 60)}/min`}
+                  
                 />
               ) : (
                 <div className="memory-process-details__no-data">
@@ -306,7 +296,7 @@ export const MemoryProcessesTab: React.FC<MemoryProcessesTabProps> = ({ data }) 
                   </div>
                 </div>
                 <Button 
-                  size="small" 
+                  size="md" 
                   variant="secondary" 
                   onClick={() => setSelectedProcess(leak.pid)}
                 >
