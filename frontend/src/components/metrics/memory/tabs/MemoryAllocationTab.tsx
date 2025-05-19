@@ -32,6 +32,7 @@ export const MemoryAllocationTab: React.FC<MemoryAllocationTabProps> = ({ data }
   
   // Prepare data for pie chart
   const pieChartData = allocation.byType.map(item => ({
+    name: item.type,
     label: item.type,
     value: item.bytes,
     percentage: item.percentage,
@@ -77,10 +78,6 @@ export const MemoryAllocationTab: React.FC<MemoryAllocationTabProps> = ({ data }
             <PieChart
               data={pieChartData}
               height={280}
-              showLegend={true}
-              showPercentages={true}
-              donut={true}
-              centerText={formatBytes(pieChartData.reduce((sum, item) => sum + item.value, 0))}
             />
           </div>
           
@@ -109,8 +106,7 @@ export const MemoryAllocationTab: React.FC<MemoryAllocationTabProps> = ({ data }
             <span className="fragmentation-index__label">Fragmentation Index:</span>
             <ProgressBar 
               value={allocation.fragmentation.index} 
-              severity={allocation.fragmentation.rating === 'poor' ? 'critical' : 
-                      (allocation.fragmentation.rating === 'moderate' ? 'warning' : 'normal')}
+              color={allocation.fragmentation.rating === 'poor' ? 'var(--color-danger)' : allocation.fragmentation.rating === 'moderate' ? 'var(--color-warning)' : 'var(--color-success)'}
               label={`${allocation.fragmentation.index}%`}
             />
           </div>

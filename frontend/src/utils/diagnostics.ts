@@ -8,7 +8,7 @@ export const runDiagnostics = async () => {
     // Check backend health
     console.log("🩺 Checking backend health...");
     try {
-      const healthResponse = ('http://127.0.0.1:8000/api/health-check');
+      const healthResponse = await axios.get('http://127.0.0.1:8000/api/health-check');
       console.log("✅ Backend health check succeeded:", healthResponse.data);
     } catch (error) {
       console.error("❌ Backend health check failed:", error);
@@ -33,12 +33,12 @@ export const runDiagnostics = async () => {
 
 
     /// Try to get token from response headers (case insensitive)
-const headers = response.headers as Record<string, any>;
+const headers = response.headers as Record<string, string>;
 const headerKeys = Object.keys(headers);
 const csrfHeaderKey = headerKeys.find(key => key.toLowerCase() === 'x-csrftoken');
 
 if (csrfHeaderKey) {
-  let csrfToken = headers[csrfHeaderKey];
+  const csrfToken = headers[csrfHeaderKey];
   console.log('🔑 Found CSRF token in headers:', csrfToken);
 } 
 // Fallback to checking cookies if running in browser
@@ -49,7 +49,7 @@ else if (typeof document !== 'undefined') {
       .find(row => row.startsWith(`${name}=`))
       ?.split('=')[1];
   };
-  let csrfToken = getCookie('XSRF-TOKEN');
+  const csrfToken = getCookie('XSRF-TOKEN');
   if (csrfToken) {
     console.log('🍪 Found CSRF token in cookies:', csrfToken);
     }

@@ -23,11 +23,11 @@ export default defineConfig({
         target: 'http://127.0.0.1:8000',
         changeOrigin: true,
         secure: false,
-        configure: (proxy, _options) => {
-          proxy.on('error', (err, _req, _res) => {
+        configure: (proxy) => {
+          proxy.on('error', (err) => {
             console.log('🧐 Sir Hawkington observes a proxy error:', err);
           });
-          proxy.on('proxyReq', (_proxyReq, req, _res) => {
+          proxy.on('proxyReq', (_proxyReq, req) => {
             console.log(`🎩 Distinguished request to ${req.url} being proxied with elegance`);
           });
         }
@@ -39,12 +39,12 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/ws\//, ''), // CORRECTED: Remove the entire /ws prefix
-        configure: (proxy, _options) => {
-          proxy.on('error', (err, req, _res) => {
+        configure: (proxy) => {
+          proxy.on('error', (err, req) => {
             console.error('🐌 The Meth Snail reports a WebSocket error:', err);
             console.error('🐌 Request that caused the error:', req?.url);
           });
-          proxy.on('proxyReqWs', (_proxyReq, req, socket, _options) => {
+          proxy.on('proxyReqWs', (_proxyReq, req, socket) => {
             console.log('🔌 WebSocket connection established to:', req.url);
             socket.on('error', (err) => {
               console.error('🔌 WebSocket socket error:', err);

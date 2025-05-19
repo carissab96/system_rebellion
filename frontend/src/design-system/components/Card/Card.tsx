@@ -1,6 +1,6 @@
 import React from 'react';
 import './Card.css';
-import { colors, effects, spacing } from '../../tokens';
+
 
 export type CardVariant = 'default' | 'primary' | 'secondary' | 'accent' | 'cyber';
 export type CardElevation = 'flat' | 'low' | 'medium' | 'high';

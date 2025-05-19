@@ -3,7 +3,7 @@ import './MetricsCard.css';
 import { Card } from '../Card';
 import { Badge } from '../Badge';
 // Using tokens for consistent styling
-import { colors, effects } from '../../tokens';
+
 
 export type MetricStatus = 'normal' | 'warning' | 'critical' | 'optimized';
 export type MetricTrend = 'up' | 'down' | 'stable';
