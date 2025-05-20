@@ -1,104 +1,104 @@
-// import React, { useState } from 'react';
-// import { XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Area, AreaChart, BarChart, Bar } from 'recharts';
-// import { useAppSelector } from '../../../../store/hooks';
-// import { RootState } from '../../../../store/store';
-// import { SystemMetric } from '../../../../types/metrics';
-// import { MetricsCard, MetricStatus } from '../../../../design-system/components/MetricsCard';
-// import { Tabs, Tab } from '../../../../design-system/components/Tabs/Tabs';
-// import { Card } from '../../../../design-system/components/Card/Card';
+import React, { useState } from 'react';
+import { XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Area, AreaChart, BarChart, Bar } from 'recharts';
+import { useAppSelector } from '../../../../store/hooks';
+import { RootState } from '../../../../store/store';
+import { SystemMetric } from '../../../../types/metrics';
+import { MetricsCard, MetricStatus } from '../../../../design-system/components/MetricsCard';
+import { Tabs, Tab } from '../../../../design-system/components/Tabs/Tabs';
+import { Card } from '../../../../design-system/components/Card/Card';
 
 // // Interface for CPU process
-// interface CPUProcess {
-//   name: string;
-//   pid: number;
-//   cpu_percent: number;
-//   memory_percent: number;
-// }
+interface CPUProcess {
+  name: string;
+  pid: number;
+  cpu_percent: number;
+  memory_percent: number;
+}
 
 // // Interface for CPU details
-// interface CPUDetails {
-//   cores: {
-//     logical: number;
-//     physical: number;
-//   };
-//   frequency: {
-//     current: number;
-//     min: number;
-//     max: number;
-//   };
-//   temperature: number;
-//   per_core_usage: number[];
-// }
+interface CPUDetails {
+  cores: {
+    logical: number;
+    physical: number;
+  };
+  frequency: {
+    current: number;
+    min: number;
+    max: number;
+  };
+  temperature: number;
+  per_core_usage: number[];
+}
 
-// export const CPUMetric: React.FC = () => {
+export const CPUMetric: React.FC = () => {
 //     // Redux state
-//     const currentMetric = useAppSelector((state: RootState) => state.metrics.current) as SystemMetric | null;
-//     const historicalMetrics = useAppSelector((state: RootState) => state.metrics.historical || []) as SystemMetric[];
-//     const isLoading = useAppSelector((state: RootState) => state.metrics.loading);
+    const currentMetric = useAppSelector((state: RootState) => state.metrics.current) as SystemMetric | null;
+    const historicalMetrics = useAppSelector((state: RootState) => state.metrics.historical || []) as SystemMetric[];
+    const isLoading = useAppSelector((state: RootState) => state.metrics.loading);
     
 //     // Tab state
-//     const [activeTab, setActiveTab] = useState<string>('overview');
+    const [activeTab, setActiveTab] = useState<string>('overview');
     
 //     // CPU metrics state
-//     const cpuUsage = currentMetric?.cpu_usage ?? 0;
-//     const cpuDetails = currentMetric?.cpu_usage as CPUDetails | undefined;
-//     const topProcesses = currentMetric?.cpu_usage as unknown as CPUProcess[] ?? [];
-//     const cpuTemp = cpuDetails?.temperature ?? null;
-//     const cpuFreq = {
-//         current: cpuDetails?.frequency?.current ?? null,
-//         min: cpuDetails?.frequency?.min ?? null,
-//         max: cpuDetails?.frequency?.max ?? null
-//     };
+    const cpuUsage = currentMetric?.cpu_usage ?? 0;
+    const cpuDetails = currentMetric?.cpu_usage as CPUDetails | undefined;
+    const topProcesses = currentMetric?.cpu_usage as unknown as CPUProcess[] ?? [];
+    const cpuTemp = cpuDetails?.temperature ?? null;
+    const cpuFreq = {
+        current: cpuDetails?.frequency?.current ?? null,
+        min: cpuDetails?.frequency?.min ?? null,
+        max: cpuDetails?.frequency?.max ?? null
+    };
     
 //     // Chart data
-//     const chartData = (historicalMetrics || []).map(metric => ({
-//         timestamp: metric.timestamp,
-//         usage: metric.cpu_usage ?? 0
-//     }));
+    const chartData = (historicalMetrics || []).map(metric => ({
+        timestamp: metric.timestamp,
+        usage: metric.cpu_usage ?? 0
+    }));
     
 //     // Generate core usage data for bar chart
-//     const coreData = cpuDetails?.per_core_usage?.map((usage: number, index: number) => ({
-//         name: `Core ${index + 1}`,
+    const coreData = cpuDetails?.per_core_usage?.map((usage: number, index: number) => ({
+        name: `Core ${index + 1}`,
 //         usage
-//     })) ?? [];
+    })) ?? [];
 
 //     // Calculate CPU status
-//     const getStatus = (usage: number): MetricStatus => {
-//         if (usage >= 90) return 'critical';
-//         if (usage >= 70) return 'warning';
-//         return 'normal';
-//     };
+    const getStatus = (usage: number): MetricStatus => {
+        if (usage >= 90) return 'critical';
+        if (usage >= 70) return 'warning';
+        return 'normal';
+    };
 
 //     // Calculate trend
-//     const getTrend = (current: number, previous: number): 'up' | 'down' | 'stable' => {
-//         if (current > previous + 5) return 'up';
-//         if (current < previous - 5) return 'down';
-//         return 'stable';
-//     };
+    const getTrend = (current: number, previous: number): 'up' | 'down' | 'stable' => {
+        if (current > previous + 5) return 'up';
+        if (current < previous - 5) return 'down';
+        return 'stable';
+    };
 
 //     // Get previous value from historical metrics
-//     const previousValue = historicalMetrics.length > 1 ? 
-//         historicalMetrics[historicalMetrics.length - 2].cpu_usage ?? cpuUsage : 
-//         cpuUsage;
+    const previousValue = historicalMetrics.length > 1 ? 
+        historicalMetrics[historicalMetrics.length - 2].cpu_usage ?? cpuUsage : 
+        cpuUsage;
 
 //     // Calculate change percentage (avoid division by zero)
-//     const changePercentage = previousValue !== 0 ? 
-//         ((cpuUsage - previousValue) / previousValue) * 100 : 
-//         0;
+    const changePercentage = previousValue !== 0 ? 
+        ((cpuUsage - previousValue) / previousValue) * 100 : 
+        0;
 
-//     if (isLoading) {
-//         return <MetricsCard title="CPU Usage" value="--" unit="%" updating={true} />;
+    if (isLoading) {
+        return <MetricsCard title="CPU Usage" value="--" unit="%" updating={true} />;
 //     }
 
 //     // Render the overview tab
-//     const renderOverviewTab = () => (
-//         <div className="overview-content">
-//             <div className="chart-container">
-//                 <ResponsiveContainer width="100%" height={250}>
-//                     <AreaChart data={chartData}>
-//                         <defs>
-//                             <linearGradient id="cpuGradient" x1="0" y1="0" x2="0" y2="1">
-//                                 <stop offset="5%" stopColor="#3a86ff" stopOpacity={0.8}/>
+    const renderOverviewTab = () => (
+        <div className="overview-content">
+            <div className="chart-container">
+                <ResponsiveContainer width="100%" height={250}>
+                    <AreaChart data={chartData}>
+                        <defs>
+                            <linearGradient id="cpuGradient" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#3a86ff" stopOpacity={0.8}/>
 //                                 <stop offset="95%" stopColor="#3a86ff" stopOpacity={0.2}/>
 //                             </linearGradient>
 //                         </defs>
@@ -292,6 +292,6 @@
 //             </MetricsCard>
 //         </div>
 //     );
-// };
+};
 
-// export default CPUMetric;
+export default CPUMetric;
