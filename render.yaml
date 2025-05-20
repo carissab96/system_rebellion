@@ -1,54 +1,27 @@
+# Exported from Render on 2025-05-20T04:04:36Z
+databases:
+- name: System Rebellion HQ
+  databaseName: system_rebellion_hq
+  user: system_rebellion_hq_user
+  plan: free
+  region: ohio
+  ipAllowList:
+  - source: 0.0.0.0/0
+    description: everywhere
+  postgresMajorVersion: "16"
 services:
-  # Backend API service
-  - type: web
-    name: system-rebellion-api
-    env: python
-    buildCommand: pip install -r requirements.txt && alembic upgrade head
-    startCommand: |
-      python app/optimization/system_permissions.py && \
-      python setup_permissions.py && \
-      python core/init_db.py && \
-      uvicorn main:app --host 0.0.0.0 --port $PORT
-    envVars:
-      - key: SUDO_PASSWORD
-        value: Garfield7734
-      - key: SUDO_USER
-        value: carissab
-      - key: DB_HOST
-        value: dpg-d0lnev0gjchc73f85arg-a
-      - key: DB_PORT
-        value: 5432
-      - key: DB_USER
-        value: system_rebellion_hq_user
-      - key: DB_PASSWORD
-        value: cyaT8Xek2mbxco23E2NojF7YYidpjQ90
-      - key: DATABASE_URL
-        fromDatabase: 
-          URL: postgresql://system_rebellion_hq_user:cyaT8Xek2mbxco23E2NojF7YYidpjQ90@dpg-d0lnev0gjchc73f85arg-a.ohio-postgres.render.com/system_rebellion_hq
-      - key: PYTHON_VERSION
-        value: 3.9.4
-      - key: SECRET_KEY
-        generateValue: true
-      - key: ENVIRONMENT
-        value: production
-      - key: ALLOW_ORIGINS
-        value: https://system-rebellion.onrender.com
-      - key: FIRST_SUPERUSER
-        value: admin@systemrebellion.com
-      - key: FIRST_SUPERUSER_PASSWORD
-        generateValue: true
-    healthCheckPath: /api/health-check
-    autoDeploy: true
-
-  # Frontend service
-  - type: web
-    name: system-rebellion
-    env: node
-    buildCommand: npm install && npm run build
-    startCommand: npm run start
-    envVars:
-      - key: NODE_VERSION
-        value: 18.x
-      - key: API_URL
-        value: https://system-rebellion-api.onrender.com
-    autoDeploy: true
+- type: web
+  name: System Rebellion HQ
+  runtime: python
+  repo: https://github.com/carissab96/system_rebellion
+  branch: Main
+  plan: free
+  region: ohio
+  buildCommand: pip install -r backend/requirements.txt && python -m alembic -c backend/alembic.ini
+    upgrade head && npm install --prefix frontend && npm run build --prefix frontend
+  startCommand: python backend/app/optimization/system_permissions.py && python backend/setup_permissions.py
+    && python backend/app/core/init_db.py && uvicorn backend/main:app --host 0.0.0.0
+    --port $PORT & npm run start --prefix frontend
+  healthCheckPath: /api/health-check
+  autoDeployTrigger: commit
+version: "1"
