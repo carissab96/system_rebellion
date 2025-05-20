@@ -45,7 +45,7 @@ services:
     name: system-rebellion
     env: node
     buildCommand: npm install && npm run build
-    startCommand: npm run start
+    startCommand: 
     envVars:
       - key: NODE_VERSION
         value: 18.x
