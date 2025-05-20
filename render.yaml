@@ -3,12 +3,11 @@ services:
   - type: web
     name: system-rebellion-api
     env: python
-    buildCommand: cd backend && pip install -r requirements.txt && alembic upgrade head
+    buildCommand: pip install -r requirements.txt && alembic upgrade head
     startCommand: |
-      cd backend && \
       python app/optimization/system_permissions.py && \
-      python backend/setup_permissions.py && \
-      python backend/core/init_db.py && \
+      python setup_permissions.py && \
+      python core/init_db.py && \
       uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: SUDO_PASSWORD
@@ -45,8 +44,8 @@ services:
   - type: web
     name: system-rebellion
     env: node
-    buildCommand: cd frontend && npm install && npm run build
-    startCommand: cd frontend && npm run start
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
     envVars:
       - key: NODE_VERSION
         value: 18.x
