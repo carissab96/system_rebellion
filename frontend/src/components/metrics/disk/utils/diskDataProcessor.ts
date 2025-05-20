@@ -33,7 +33,8 @@ export const processDiskData = (
  * Process partition-related data
  */
 const processPartitionsData = (rawData: RawDiskMetrics): ProcessedDiskData['partitions'] => {
-  const partitionItems = rawData.partitions.map((partition: { mountPoint: any; device: any; fsType: any; total: any; used: any; available: any; percentUsed: any; health: { status: any; issues: any; }; inodes: { percentUsed: any; }; readOnly: any; physicalDiskId: any; }) => ({
+  const partitionItems = rawData.partitions.map((partition: any) => ({
+    blockSize: partition.blockSize ?? 0,
     mountPoint: partition.mountPoint,
     device: partition.device,
     fsType: partition.fsType,
@@ -75,7 +76,7 @@ const processPartitionsData = (rawData: RawDiskMetrics): ProcessedDiskData['part
  */
 const processPhysicalDisksData = (rawData: RawDiskMetrics): ProcessedDiskData['physicalDisks'] => {
   // Process physical disk items with SMART analysis
-  const diskItems = rawData.physicalDisks.map((disk: { smart: { status: any; lifeRemaining: any; }; id: any; model: any; type: any; size: any; temperature: any; partitions: any; }) => {
+  const diskItems = rawData.physicalDisks.map((disk: any) => {
     // Analyze SMART data for health assessment
     const smartAnalysis = analyzeSmartData(disk.smart);
     
@@ -149,7 +150,7 @@ const processDirectoryData = (rawData: RawDiskMetrics): ProcessedDiskData['direc
     treemapData,
     cleanupRecommendations,
     totalAnalyzedSize
-  };
+  } as any;
 };
 
 /**
@@ -177,7 +178,7 @@ const buildTreemapNode = (
   allDirectories: RawDiskMetrics['directories']
 ) => {
   // Find direct children
-  const children = allDirectories.filter((dir: { path: { startsWith: (arg0: string) => any; split: (arg0: string) => { (): any; new(): any; length: any; }; }; }) => 
+  const children = allDirectories.filter((dir: { path: string; }) => 
     dir.path.startsWith(directory.path + '/') &&
     dir.path.split('/').length === directory.path.split('/').length + 1
   );

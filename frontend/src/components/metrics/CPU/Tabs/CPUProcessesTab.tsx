@@ -10,7 +10,7 @@ interface CPUProcessesTabProps {
   compact?: boolean;
 }
 
-const CPUProcessesTab: React.FC<CPUProcessesTabProps> = ({ processes, compact = false }) => {
+const CPUProcessesTab: React.FC<CPUProcessesTabProps> = ({ processes, compact: _compact = false }) => {
   const [isKilling, setIsKilling] = useState<{[key: number]: boolean}>({});
   const [killResult, setKillResult] = useState<{[key: number]: {success: boolean; message: string}}>({});
   

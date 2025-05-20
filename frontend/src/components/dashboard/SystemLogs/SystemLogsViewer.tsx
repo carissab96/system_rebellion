@@ -206,8 +206,8 @@ const SystemLogsViewer: React.FC<SystemLogsViewerProps> = ({
                     primary={
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         {React.cloneElement(levelConfig.icon as React.ReactElement, { 
-                          fontSize: 'small',
-                          color: levelConfig.color as any
+                          
+                          
                         })}
                         <Typography variant="body2" component="span" sx={{ fontWeight: 'medium' }}>
                           {log.message}

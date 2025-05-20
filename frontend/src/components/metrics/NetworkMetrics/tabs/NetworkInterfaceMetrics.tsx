@@ -1,7 +1,7 @@
 // frontend/src/components/metrics/NetworkMetrics/tabs/NetworkInterfaceMetrics.tsx
 
 import React from 'react';
-import { NetworkInterface } from '../types';
+import { NetworkInterface } from '/home/carissab/Documents/mod7/system_rebellion/frontend/src/components/metrics/NetworkMetrics/tabs/types';
 import { formatBytes } from '../utils/formatters';
 import './NetworkMetrics.css';
 
@@ -10,7 +10,7 @@ interface NetworkInterfaceMetricsProps {
   compact?: boolean;
 }
 
-const NetworkInterfaceMetrics: React.FC<NetworkInterfaceMetricsProps> = ({ interfaces, compact = false }) => {
+const NetworkInterfaceMetrics: React.FC<NetworkInterfaceMetricsProps> = ({ interfaces, compact: _compact = false }) => {
   // If no interface data available
   if (!interfaces || interfaces.length === 0) {
     return (

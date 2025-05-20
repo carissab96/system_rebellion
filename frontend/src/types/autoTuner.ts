@@ -1,5 +1,6 @@
 // src/types/autoTuner.ts
-import { SystemMetric, OptimizationProfile } from './metrics';
+import { OptimizationProfile } from './metrics';
+import { SystemMetric } from './metrics';
 
 export interface TuningParameter {
   name: string;
@@ -26,9 +27,12 @@ export interface SystemPattern {
 
 export interface TuningResult {
   parameter: string;
+  timestamp: string; // <-- Add this line
   success: boolean;
-  metrics_before?: Record<string, any>;
-  metrics_after?: Record<string, any>;
+  value_before: string;
+  value_after: string;
+  metrics_before: SystemMetric;
+  metrics_after: SystemMetric;
   error?: string;
 }
 

@@ -1,8 +1,8 @@
 // frontend/src/components/metrics/NetworkMetrics/tabs/NetworkConnectionsTable.tsx
 
 import React from 'react';
-import { NetworkProcess } from '../types'; // You'll need to create this type file
-import { formatBytes } from '../utils/formatters';
+import { NetworkProcess } from '@/components/metrics/NetworkMetrics/tabs/types'; // You'll need to create this type file
+import { formatBytes } from '@/components/metrics/NetworkMetrics/utils/formatters';
 import './NetworkMetrics.css';
 
 interface NetworkConnectionsTableProps {
@@ -10,7 +10,7 @@ interface NetworkConnectionsTableProps {
   compact?: boolean;
 }
 
-const NetworkConnectionsTable: React.FC<NetworkConnectionsTableProps> = ({ processes, compact = false }) => {
+const NetworkConnectionsTable: React.FC<NetworkConnectionsTableProps> = ({ processes, compact: _ = false }) => {
   // If no process data available
   if (!processes || processes.length === 0) {
     return (

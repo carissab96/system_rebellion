@@ -1,7 +1,7 @@
 // frontend/src/components/metrics/NetworkMetrics/tabs/TopBandwidthProcesses.tsx
 
 import React from 'react';
-import { NetworkProcess } from '../types';
+import { NetworkProcess } from './types';
 import { formatBytes } from '../utils/formatters';
 import './NetworkMetrics.css';
 
@@ -13,7 +13,7 @@ interface TopBandwidthProcessesProps {
 
 const TopBandwidthProcesses: React.FC<TopBandwidthProcessesProps> = ({ 
   processes, 
-  compact = false,
+  compact: _compact = false,
   limit = 5 
 }) => {
   // Sort processes by total bandwidth (read + write)

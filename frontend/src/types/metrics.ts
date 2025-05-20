@@ -127,6 +127,13 @@ export interface AdditionalMetrics {
 interface ThresholdLevels {
   warning: number;
   critical: number;
+  normal: number;
+  high: number;
+  low: number;
+  medium: number;
+  very_high: number;
+  very_low: number;
+  
 }
 
 export interface MetricThresholds {

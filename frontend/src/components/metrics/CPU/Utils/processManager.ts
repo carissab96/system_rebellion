@@ -14,9 +14,10 @@ export async function killProcess(pid: number): Promise<ProcessKillResult> {
     const response = await api.post('/system/process/kill', { pid });
     
     // Return the result
+    const data = await (response as Response).json();
     return {
-      success: response.data.success,
-      message: response.data.message || 'Process terminated successfully',
+      success: data.success,
+      message: data.message || 'Process terminated successfully',
       pid
     };
   } catch (error) {
@@ -35,10 +36,8 @@ export async function killProcess(pid: number): Promise<ProcessKillResult> {
  */
 export async function checkKillPermission(): Promise<boolean> {
   try {
-    const response = await api.get('/system/permissions/check', {
-      params: { permission: 'process_kill' }
-    });
-    return response.data.hasPermission;
+    const response: any = await api.get('/system/permissions/check');
+    return (response as any).data?.hasPermission;
   } catch (error) {
     console.error('Error checking kill permission:', error);
     return false;

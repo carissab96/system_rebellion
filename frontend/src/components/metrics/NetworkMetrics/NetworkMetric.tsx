@@ -40,6 +40,7 @@ const NetworkMetric: React.FC<NetworkMetricProps> = ({
   const [activeTab, setActiveTab] = useState<NetworkTabType>(initialTab);
   const [error, setError] = useState<string | null>(null);
   
+  
   // Use the network data processor utility
   const { networkData, error: dataError } = processNetworkData(currentMetric);
   
@@ -100,12 +101,29 @@ const NetworkMetric: React.FC<NetworkMetricProps> = ({
         return (
           <>
             <TopBandwidthProcesses 
-              processes={networkData.top_bandwidth_processes} 
+              processes={networkData.top_bandwidth_processes.map((p: any) => ({
+  ...p,
+  write_rate: p.write_rate ?? 0,
+  read_rate: p.read_rate ?? 0,
+  connection_count: p.connection_count ?? 0
+}))}
+ 
               compact={compact} 
               limit={compact ? 3 : 5} 
             />
             <NetworkConnectionsTable 
-              processes={networkData.top_bandwidth_processes} 
+              processes={networkData.top_bandwidth_processes.map((p: any) => ({
+  ...p,
+  write_rate: p.write_rate ?? 0,
+  read_rate: p.read_rate ?? 0,
+  connection_count: p.connection_count ?? 0
+})).map((p: any) => ({
+  ...p,
+  write_rate: p.write_rate ?? 0,
+  read_rate: p.read_rate ?? 0,
+  connection_count: p.connection_count ?? 0
+}))}
+ 
               compact={compact} 
             />
           </>

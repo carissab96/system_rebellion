@@ -134,6 +134,7 @@ export interface DiskHistoryPoint {
 export interface ProcessedDiskData {
   partitions: {
     items: {
+      blockSize: any;
       mountPoint: string;
       device: string;
       fsType: string;

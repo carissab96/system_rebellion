@@ -101,7 +101,7 @@ export function processNetworkData(currentMetric: SystemMetric | null): {
         other: 0
       },
       top_bandwidth_processes: rawNetworkData.top_bandwidth_processes || 
-                               rawNetworkData.processes || [],
+                               (rawNetworkData as any).processes || [],
 
       dns_metrics: rawNetworkData.dns_metrics,
       internet_metrics: rawNetworkData.internet_metrics
