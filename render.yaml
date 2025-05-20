@@ -24,4 +24,9 @@ services:
     --port $PORT & npm run start --prefix frontend
   healthCheckPath: /api/health-check
   autoDeployTrigger: commit
+  envVars:
+    - key: VITE_API_URL
+      value: https://system-rebellion-hq-api.onrender.com
+    - key: VITE_WS_URL
+      value: wss://system-rebellion-hq-api.onrender.com/ws
 version: "1"
