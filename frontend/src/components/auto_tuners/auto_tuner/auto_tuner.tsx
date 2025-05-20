@@ -420,34 +420,31 @@ const ProfilesPanel: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const activeProfile = useSelector((state: RootState) => state.autoTuner.activeProfile);
   const [profiles, setProfiles] = useState<OptimizationProfile[]>([]);
-  
-  // In a real implementation, we would fetch profiles from the API
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+
+  const fetchProfiles = () => {
+    setLoading(true);
+    setError(null);
+    // Replace with your actual API endpoint
+    fetch('/api/optimization-profiles')
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch profiles');
+        return res.json();
+      })
+      .then((data: OptimizationProfile[]) => {
+        setProfiles(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        setError(err.message);
+        setLoading(false);
+      });
+  };
+
   useEffect(() => {
-    // This is a placeholder. In a real app, you'd fetch from the API
-    const dummyProfiles: OptimizationProfile[] = [
-      {
-        id: '1',
-        name: 'Performance Mode',
-        description: 'Optimize for maximum performance',
-        thresholds: { cpu: 90, memory: 90, disk: 90, network: 90 },
-        actions: ['increase_cpu_priority', 'optimize_memory']
-      },
-      {
-        id: '2',
-        name: 'Power Saving Mode',
-        description: 'Optimize for battery life',
-        thresholds: { cpu: 60, memory: 70, disk: 80, network: 50 },
-        actions: ['reduce_cpu_usage', 'limit_background_processes']
-      },
-      {
-        id: '3',
-        name: 'Balanced Mode',
-        description: 'Balance between performance and power saving',
-        thresholds: { cpu: 75, memory: 80, disk: 85, network: 70 },
-        actions: ['moderate_cpu_usage', 'optimize_memory']
-      }
-    ];
-    setProfiles(dummyProfiles);
+    fetchProfiles();
   }, []);
 
   const handleApplyProfile = (profileId: string) => {
@@ -464,6 +461,8 @@ const ProfilesPanel: React.FC = () => {
   return (
     <div className="profiles-panel">
       <h2>Optimization Profiles</h2>
+      {loading && <div className="loading-message">Loading profiles...</div>}
+      {error && <div className="error-message">Error: {error}</div>}
       <div className="profiles-list">
         {profiles.map((profile) => (
           <div key={profile.id} className={`profile-card ${activeProfile?.id === profile.id ? 'active' : ''}`}>
@@ -477,10 +476,10 @@ const ProfilesPanel: React.FC = () => {
             <div className="profile-thresholds">
               <h4>Thresholds</h4>
               <div className="thresholds-grid">
-                <div>CPU: {profile.thresholds.cpu}%</div>
-                <div>Memory: {profile.thresholds.memory}%</div>
-                <div>Disk: {profile.thresholds.disk}%</div>
-                <div>Network: {profile.thresholds.network}%</div>
+                <div>CPU: {profile.thresholds.cpu.warning}%</div>
+                <div>Memory: {profile.thresholds.memory.warning}%</div>
+                <div>Disk: {profile.thresholds.disk.warning}%</div>
+                <div>Network: {profile.thresholds.network.warning}%</div>
               </div>
             </div>
             <div className="profile-actions">

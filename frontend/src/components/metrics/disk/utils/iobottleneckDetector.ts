@@ -149,7 +149,7 @@ const identifyBottleneckCause = (
 /**
  * Analyzes I/O patterns to detect if operations are primarily random
  */
-const isHighRandomIO = (history: DiskHistoryPoint[]): boolean => {
+const isHighRandomIO = (_history: DiskHistoryPoint[]): boolean => {
   // This would normally analyze actual random vs. sequential I/O metrics
   // For this implementation, we'll use a placeholder
   return false;
@@ -160,7 +160,7 @@ const isHighRandomIO = (history: DiskHistoryPoint[]): boolean => {
  */
 const generateIORecommendations = (
   result: BottleneckDetectionResult,
-  performance: DiskPerformance
+  _performance: DiskPerformance
 ): void => {
   const recommendations: string[] = [];
   

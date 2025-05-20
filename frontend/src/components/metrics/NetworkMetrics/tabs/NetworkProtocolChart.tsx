@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from 'recharts';
-import { ProtocolBreakdown, ProtocolStats } from '../types';
+
 import './NetworkMetrics.css';
 
 // Protocol colors for charts
@@ -16,8 +16,8 @@ const PROTOCOL_COLORS = {
 };
 
 interface NetworkProtocolChartProps {
-  data: ProtocolBreakdown;
-  stats: ProtocolStats;
+  data: any;
+  stats: any;
   compact?: boolean;
 }
 
@@ -28,7 +28,7 @@ const NetworkProtocolChart: React.FC<NetworkProtocolChartProps> = ({ data, stats
       name,
       value: value || 0
     }))
-    .filter(item => item.value > 0);
+    .filter(item => typeof item.value === 'number' && item.value > 0);
 
   // If no protocol data available
   if (!chartData || chartData.length === 0) {

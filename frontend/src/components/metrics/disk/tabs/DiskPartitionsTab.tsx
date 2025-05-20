@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
-import { ProcessedDiskData, PartitionData, PhysicalDiskData } from '@/components/metrics/disk/types';
+import React, { JSX, useState } from 'react';
+import { ProcessedDiskData } from '@/components/metrics/disk/types';
 import { formatBytes } from '@/components/metrics/disk/utils/formatters';
 import { Card } from '@/design-system/components/Card/Card';
 import { ProgressBar } from '@/design-system/components/ProgressBar/ProgressBar';
 import { Table, TableColumn } from '@/design-system/components/Table/Table';
 import { Badge } from '@/design-system/components/Badge/Badge';
-import { InfoTooltip } from '@/design-system/components/InfoTooltip/InfoTooltip';
 import { Tabs, Tab, TabPanel } from '@/design-system/components/Tabs/Tabs';
 import './DiskPartitionsTab.css';
 
@@ -50,7 +49,7 @@ const DiskPartitionsTab: React.FC<DiskPartitionsTabProps> = ({ data, compact = f
   };
 
   // Partition table columns
-  const partitionColumns: TableColumn<PartitionData>[] = [
+  const partitionColumns: TableColumn<any>[] = [
     {
       key: 'mountPoint',
       header: 'Mount Point',
@@ -63,10 +62,10 @@ const DiskPartitionsTab: React.FC<DiskPartitionsTabProps> = ({ data, compact = f
       )
     },
     {
-      key: 'fileSystem',
+      key: 'fsType',
       header: 'File System',
       sortable: true,
-      render: (partition) => partition.fileSystem.toUpperCase()
+      render: (partition) => partition.fsType ? partition.fsType.toUpperCase() : ''
     },
     {
       key: 'percentUsed',
@@ -76,10 +75,6 @@ const DiskPartitionsTab: React.FC<DiskPartitionsTabProps> = ({ data, compact = f
         <div className="partition-usage">
           <ProgressBar 
             value={partition.percentUsed} 
-            severity={
-              partition.percentUsed > 90 ? 'critical' :
-              partition.percentUsed > 75 ? 'warning' : 'normal'
-            }
             label={`${partition.percentUsed.toFixed(1)}%`}
           />
           <div className="partition-usage__stats">
@@ -119,7 +114,7 @@ const DiskPartitionsTab: React.FC<DiskPartitionsTabProps> = ({ data, compact = f
   ];
 
   // Physical disk table columns
-  const diskColumns: TableColumn<PhysicalDiskData>[] = [
+  const diskColumns: TableColumn<any>[] = [
     {
       key: 'model',
       header: 'Model',
@@ -172,15 +167,10 @@ const DiskPartitionsTab: React.FC<DiskPartitionsTabProps> = ({ data, compact = f
       render: (disk) => (
         <div className="disk-life">
           <ProgressBar 
-            value={disk.health.lifeRemaining} 
-            severity={
-              disk.health.lifeRemaining < 20 ? 'critical' :
-              disk.health.lifeRemaining < 50 ? 'warning' : 'normal'
-            }
-            label={`${disk.health.lifeRemaining}%`}
-            showLabel={false}
+            value={disk.health ? disk.health.lifeRemaining : 0} 
+            label={`${disk.health ? disk.health.lifeRemaining : 0}%`}
           />
-          <span className="disk-life__value">{disk.health.lifeRemaining}%</span>
+          <span className="disk-life__value">{disk.health ? disk.health.lifeRemaining : 0}%</span>
         </div>
       )
     },
@@ -199,9 +189,9 @@ const DiskPartitionsTab: React.FC<DiskPartitionsTabProps> = ({ data, compact = f
         <div className="disk-partitions__header">
           <h3>Disk Usage</h3>
           <div className="disk-partitions__tabs">
-            <Tabs value={activeTab} onChange={setActiveTab}>
-              <Tab value="partitions">Partitions</Tab>
-              <Tab value="physical">Physical Disks</Tab>
+            <Tabs activeTab={activeTab} onChange={(tabId: string) => setActiveTab(tabId as 'partitions' | 'physical')}>
+              <Tab id="partitions" label="Partitions" children={null} />
+              <Tab id="physical" label="Physical Disks" children={null} />
             </Tabs>
           </div>
         </div>
@@ -212,16 +202,12 @@ const DiskPartitionsTab: React.FC<DiskPartitionsTabProps> = ({ data, compact = f
               columns={partitionColumns}
               data={partitions.items}
               onRowClick={(partition) => setSelectedPartition(partition.mountPoint)}
-              className="compact-table"
-              compact
             />
           ) : (
             <Table
               columns={diskColumns}
               data={physicalDisks.items}
               onRowClick={(disk) => setSelectedDisk(disk.id)}
-              className="compact-table"
-              compact
             />
           )}
         </div>
@@ -247,15 +233,15 @@ const DiskPartitionsTab: React.FC<DiskPartitionsTabProps> = ({ data, compact = f
           </div>
         </div>
         <div className="disk-partitions__tabs">
-          <Tabs value={activeTab} onChange={setActiveTab}>
-            <Tab value="partitions">Partitions</Tab>
-            <Tab value="physical">Physical Disks</Tab>
+          <Tabs activeTab={activeTab} onChange={(tabId: string) => setActiveTab(tabId as 'partitions' | 'physical')}>
+            <Tab id="partitions" label="Partitions" children={null} />
+            <Tab id="physical" label="Physical Disks" children={null} />
           </Tabs>
         </div>
       </div>
 
       <div className="disk-partitions__content">
-        <TabPanel value={activeTab} activeValue="partitions">
+        <TabPanel id="partitions" active={activeTab === 'partitions'}>
           <div className="disk-partitions__table-container">
             <Table
               columns={partitionColumns}
@@ -280,10 +266,6 @@ const DiskPartitionsTab: React.FC<DiskPartitionsTabProps> = ({ data, compact = f
                         <div className="partition-usage__chart">
                           <ProgressBar 
                             value={partition.percentUsed} 
-                            severity={
-                              partition.percentUsed > 90 ? 'critical' :
-                              partition.percentUsed > 75 ? 'warning' : 'normal'
-                            }
                             label={`${partition.percentUsed.toFixed(1)}%`}
                           />
                           <div className="partition-usage__stats">
@@ -308,7 +290,7 @@ const DiskPartitionsTab: React.FC<DiskPartitionsTabProps> = ({ data, compact = f
                         <div className="partition-filesystem__details">
                           <div className="partition-detail">
                             <span className="partition-detail__label">Filesystem:</span>
-                            <span className="partition-detail__value">{partition.fileSystem}</span>
+                            <span className="partition-detail__value">{partition.fsType}</span>
                           </div>
                           <div className="partition-detail">
                             <span className="partition-detail__label">Type:</span>
@@ -316,12 +298,12 @@ const DiskPartitionsTab: React.FC<DiskPartitionsTabProps> = ({ data, compact = f
                           </div>
                           <div className="partition-detail">
                             <span className="partition-detail__label">Block Size:</span>
-                            <span className="partition-detail__value">{formatBytes(partition.blockSize)}</span>
+                            <span className="partition-detail__value">{typeof partition.blockSize === 'number' ? formatBytes(partition.blockSize) : ''}</span>
                           </div>
                           <div className="partition-detail">
                             <span className="partition-detail__label">Inodes:</span>
                             <span className="partition-detail__value">
-                              {partition.inodeUsage}% used ({partition.inodesUsed.toLocaleString()} of {partition.inodesTotal.toLocaleString()})
+                              {typeof partition.inodeUsage === 'number' ? `${partition.inodeUsage}% used` : ''}
                             </span>
                           </div>
                         </div>
@@ -341,8 +323,7 @@ const DiskPartitionsTab: React.FC<DiskPartitionsTabProps> = ({ data, compact = f
                                   <Badge type="info">{physicalDisk.type.toUpperCase()}</Badge>
                                   <Badge 
                                     type={
-                                      physicalDisk.health.status === 'healthy' ? 'success' :
-                                      physicalDisk.health.status === 'warning' ? 'warning' : 'error'
+                                      'success'
                                     }
                                   >
                                     {formatHealthStatus(physicalDisk.health.status)}
@@ -368,12 +349,8 @@ const DiskPartitionsTab: React.FC<DiskPartitionsTabProps> = ({ data, compact = f
                                   <span className="physical-disk-stat__label">Life Remaining:</span>
                                   <div className="physical-disk-stat__progress">
                                     <ProgressBar 
-                                      value={physicalDisk.health.lifeRemaining} 
-                                      severity={
-                                        physicalDisk.health.lifeRemaining < 20 ? 'critical' :
-                                        physicalDisk.health.lifeRemaining < 50 ? 'warning' : 'normal'
-                                      }
-                                      label={`${physicalDisk.health.lifeRemaining}%`}
+                                      value={physicalDisk.health ? physicalDisk.health.lifeRemaining : 0} 
+                                      label={`${physicalDisk.health ? physicalDisk.health.lifeRemaining : 0}%`}
                                     />
                                   </div>
                                 </div>
@@ -404,7 +381,7 @@ const DiskPartitionsTab: React.FC<DiskPartitionsTabProps> = ({ data, compact = f
           )}
         </TabPanel>
 
-        <TabPanel value={activeTab} activeValue="physical">
+        <TabPanel id="physical" active={activeTab === 'physical'}>
           <div className="disk-physical__table-container">
             <Table
               columns={diskColumns}
@@ -463,11 +440,7 @@ const DiskPartitionsTab: React.FC<DiskPartitionsTabProps> = ({ data, compact = f
                             <span className="disk-info__label">Life Remaining:</span>
                             <div className="disk-info__progress">
                               <ProgressBar 
-                                value={disk.health.lifeRemaining} 
-                                severity={
-                                  disk.health.lifeRemaining < 20 ? 'critical' :
-                                  disk.health.lifeRemaining < 50 ? 'warning' : 'normal'
-                                }
+                                value={disk.health.lifeRemaining}
                                 label={`${disk.health.lifeRemaining}%`}
                               />
                               <span className="disk-info__progress-value">{disk.health.lifeRemaining}%</span>
@@ -510,12 +483,7 @@ const DiskPartitionsTab: React.FC<DiskPartitionsTabProps> = ({ data, compact = f
                                     </span>
                                   </div>
                                   <ProgressBar 
-                                    value={partition.percentUsed} 
-                                    severity={
-                                      partition.percentUsed > 90 ? 'critical' :
-                                      partition.percentUsed > 75 ? 'warning' : 'normal'
-                                    }
-                                    showLabel={false}
+                                    value={partition.percentUsed}
                                   />
                                 </div>
                               </div>

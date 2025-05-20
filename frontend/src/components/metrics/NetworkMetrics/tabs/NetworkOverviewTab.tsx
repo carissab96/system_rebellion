@@ -10,14 +10,14 @@ import {
   Tooltip as RechartsTooltip, 
   ResponsiveContainer 
 } from 'recharts';
-import { NetworkData } from '../types';
-import { SystemMetric } from '../../../../types/metrics';
+// import { any } from '/home/carissab/Documents/mod7/system_rebellion/frontend/src/components/metrics/NetworkMetrics/tabs/types';
+// import { any } from '/home/carissab/Documents/mod7/system_rebellion/frontend/src/components/metrics/NetworkMetrics/tabs/types';
 import { formatBytes, formatLatency, getQualityClass } from '../utils/formatters';
 import './NetworkMetrics.css';
 
 interface NetworkOverviewTabProps {
-  data: NetworkData;
-  historicalMetrics: SystemMetric[];
+  data: any;
+  historicalMetrics: any[];
   compact?: boolean;
 }
 
@@ -33,7 +33,7 @@ const NetworkOverviewTab: React.FC<NetworkOverviewTabProps> = ({
   const chartData = useMemo(() => {
     if (!historicalMetrics || historicalMetrics.length === 0) return [];
 
-    return historicalMetrics.map(metric => {
+    return historicalMetrics.map((metric: any) => {
       let sentValue = 0;
       let receivedValue = 0;
       

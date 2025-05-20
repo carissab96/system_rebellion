@@ -5,8 +5,9 @@ import { ConnectionQuality } from './types';
 import { formatLatency, getQualityClass, getLatencyClass } from '../utils/formatters';
 import './NetworkMetrics.css';
 
-interface NetworkQualityMetricsProps {
+export interface NetworkQualityMetricsProps {
   data: ConnectionQuality;
+  compact: boolean;
 }
 
 const NetworkQualityMetrics: React.FC<NetworkQualityMetricsProps> = ({ data }) => {

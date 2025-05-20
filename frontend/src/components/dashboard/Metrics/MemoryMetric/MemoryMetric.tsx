@@ -1,6 +1,6 @@
 // src/components/dashboard/Metrics/MemoryMetric/MemoryMetric.tsx
 import React from 'react';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Area, AreaChart } from 'recharts';
+import { XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Area, AreaChart } from 'recharts';
 import { useAppSelector } from '../../../../store/hooks';
 import { RootState } from '../../../../store/store';
 import { MetricsCard } from '../../../../design-system/components/MetricsCard';

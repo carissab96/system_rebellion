@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAppSelector } from '../../../store/hooks';
-import { CPUMetric } from '../Metrics/CPUMetrics/CPUMetric';
+import CPUMetric from '../Metrics/CPUMetrics/CPUMetric';
 import { MemoryMetric } from '../Metrics/MemoryMetric/MemoryMetric';
 import { DiskMetric } from '../Metrics/DiskMetric/DiskMetric';
 import DashboardNetworkMetric from '../Metrics/NetworkMetric/NetworkMetric';

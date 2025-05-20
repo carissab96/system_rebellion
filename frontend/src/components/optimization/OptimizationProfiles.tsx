@@ -254,18 +254,34 @@ export const OptimizationProfiles: React.FC = () => {
     // Handle nested settings
     if (name.includes('.')) {
       const [category, setting] = name.split('.');
-      setFormData({
-        ...formData,
-        settings: {
-          ...formData.settings,
-          [category]: {
-            ...formData.settings[category as keyof typeof formData.settings],
-            [setting]: type === 'checkbox' ? checked : 
-                      type === 'number' || name.endsWith('Threshold') || name === 'backgroundProcessLimit' ? 
-                      Number(value) : value
+      const categoryValue = formData.settings[category as keyof typeof formData.settings];
+      if (categoryValue && typeof categoryValue === 'object' && !Array.isArray(categoryValue)) {
+        setFormData({
+          ...formData,
+          settings: {
+            ...formData.settings,
+            [category]: {
+              ...categoryValue,
+              [setting]: type === 'checkbox' ? checked :
+                        type === 'number' || name.endsWith('Threshold') || name === 'backgroundProcessLimit'
+                          ? Number(value)
+                          : value
+            }
           }
-        }
-      });
+        });
+      } else {
+        // Fallback: treat as flat key if not an object
+        setFormData({
+          ...formData,
+          settings: {
+            ...formData.settings,
+            [name]: type === 'checkbox' ? checked :
+                    type === 'number' || name.endsWith('Threshold') || name === 'backgroundProcessLimit'
+                      ? Number(value)
+                      : value
+          }
+        });
+      }
     } else {
       setFormData({
         ...formData,

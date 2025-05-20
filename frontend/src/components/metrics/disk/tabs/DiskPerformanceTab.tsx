@@ -311,10 +311,6 @@ export const DiskPerformanceTab: React.FC<DiskPerformanceTabProps> = ({ data }) 
                 <div className="metric-chart">
                   <ProgressBar 
                     value={performance.current.utilization} 
-                    severity={
-                      performance.current.utilization > 90 ? 'critical' :
-                      performance.current.utilization > 70 ? 'warning' : 'normal'
-                    }
                     label={`${performance.current.utilization.toFixed(1)}%`}
                   />
                 </div>
@@ -388,7 +384,6 @@ export const DiskPerformanceTab: React.FC<DiskPerformanceTabProps> = ({ data }) 
             columns={processColumns} 
             data={performance.topProcesses}
             onRowClick={(item) => setSelectedProcess(item.pid)}
-            selectedRow={performance.topProcesses.find(p => p.pid === selectedProcess)}
           />
           
           {selectedProcess && (

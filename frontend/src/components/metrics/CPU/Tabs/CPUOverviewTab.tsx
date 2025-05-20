@@ -1,6 +1,6 @@
 // frontend/src/components/metrics/CPU/tabs/CPUOverviewTab.tsx (continued)
 
-import React, { useMemo } from 'react';
+import React from 'react';
 import { CPUData } from '../types';
 import { formatTemperature, getTemperatureClass } from '../Utils/temperatureUtils';
 import './CPUTabs.css';
@@ -10,30 +10,12 @@ interface CPUOverviewTabProps {
   compact?: boolean;
 }
 
-const CPUOverviewTab: React.FC<CPUOverviewTabProps> = ({ 
-  data, 
-  compact = false 
-}) => {
-  // Identify top CPU consumer
-  const topConsumer = useMemo(() => {
-    if (!data.top_processes || data.top_processes.length === 0) return null;
-    return data.top_processes[0];
-  }, [data.top_processes]);
-  
-  // Check if temperature data is available
-  const hasTemperature = useMemo(() => {
-    return data.temperature && data.temperature.current > 0;
-  }, [data.temperature]);
-  
-  // Format core info
-  const coreInfo = useMemo(() => {
-    return `${data.physical_cores} Physical / ${data.logical_cores} Logical`;
-  }, [data.physical_cores, data.logical_cores]);
-
+const CPUOverviewTab: React.FC<CPUOverviewTabProps> = ({ data, compact = false }) => {
   return (
     <div className="cpu-overview-tab">
       <div className="cpu-usage-container">
         <div className="cpu-usage-gauge">
+          {/* Background arc */}
           <svg viewBox="0 0 200 100" className="gauge">
             {/* Background arc */}
             <path 
@@ -67,7 +49,7 @@ const CPUOverviewTab: React.FC<CPUOverviewTabProps> = ({
           </div>
           <div className="info-row">
             <div className="info-label">Cores:</div>
-            <div className="info-value">{coreInfo}</div>
+            <div className="info-value"></div>
           </div>
           <div className="info-row">
             <div className="info-label">Frequency:</div>
@@ -81,7 +63,7 @@ const CPUOverviewTab: React.FC<CPUOverviewTabProps> = ({
             <div className="info-label">Threads:</div>
             <div className="info-value">{data.thread_count}</div>
           </div>
-          {hasTemperature && (
+          {data.temperature && (
             <div className="info-row">
               <div className="info-label">Temperature:</div>
               <div className={`info-value ${getTemperatureClass(
@@ -134,7 +116,7 @@ const CPUOverviewTab: React.FC<CPUOverviewTabProps> = ({
       </div>
       
       {/* Temperature Overview */}
-      {hasTemperature && (
+      {data.temperature && (
         <div className="cpu-section">
           <div className="cpu-section-title">Temperature Status</div>
           

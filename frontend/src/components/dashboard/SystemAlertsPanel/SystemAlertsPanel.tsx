@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import { useNavigate } from 'react-router-dom';
 import { 
-  fetchSystemAlerts, 
+ 
   markAlertAsRead, 
   deleteSystemAlert,
   updateAlertActionStatus,

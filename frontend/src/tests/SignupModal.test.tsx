@@ -63,7 +63,8 @@ describe('SignupModal Component', () => {
     }));
 
     // Mock the registerUser action in the store
-    jest.spyOn(mockStore.dispatch, 'dispatch').mockImplementation(mockRegister);
+    (mockStore as any).dispatch = jest.fn();
+    jest.spyOn(mockStore, 'dispatch').mockImplementation(() => ({ type: 'MOCK_ACTION' }));
 
     renderComponent();
     
