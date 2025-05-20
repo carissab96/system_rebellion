@@ -4,8 +4,29 @@ services:
     name: system-rebellion-api
     env: python
     buildCommand: cd backend && pip install -r requirements.txt
-    startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
+    startCommand: |
+      cd backend && \
+      alembic upgrade head && \
+      python app/optimization/system_permissions.py && \
+      python backend/setup_permissions.py && \
+      python backend/core/init_db.py && \
+      uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
+      - key: SUDO_PASSWORD
+        value: Garfield7734
+      - key: SUDO_USER
+        value: carissab
+      - key: DB_HOST
+        value: dpg-d0lnev0gjchc73f85arg-a
+      - key: DB_PORT
+        value: 5432
+      - key: DB_USER
+        value: system_rebellion_hq_user
+      - key: DB_PASSWORD
+        value: cyaT8Xek2mbxco23E2NojF7YYidpjQ90
+      - key: DATABASE_URL
+        fromDatabase: 
+          URL: postgresql://system_rebellion_hq_user:cyaT8Xek2mbxco23E2NojF7YYidpjQ90@dpg-d0lnev0gjchc73f85arg-a.ohio-postgres.render.com/system_rebellion_hq
       - key: PYTHON_VERSION
         value: 3.9.4
       - key: SECRET_KEY
@@ -20,7 +41,7 @@ services:
         generateValue: true
     healthCheckPath: /api/health-check
     autoDeploy: true
-    
+
   # Frontend service
   - type: web
     name: system-rebellion

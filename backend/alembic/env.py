@@ -26,25 +26,17 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-config.set_main_option('sqlalchemy.url', 'sqlite:///./system_rebellion.db')
-
-# add your model's MetaData object here
-# for 'autogenerate' support
-# from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
+# Set target_metadata to Base.metadata from app.core.base
 target_metadata = Base.metadata
 
-# other values from the config, defined by the needs of env.py,
-# can be acquired:
-# my_important_option = config.get_main_option("my_important_option")
-# ... etc.
-
+# Set DATABASE_URL from environment if set, else default to sqlite
+database_url = os.getenv('DATABASE_URL', 'sqlite:///./system_rebellion.db')
+config.set_main_option('sqlalchemy.url', database_url)
 
 def run_migrations_offline():
     """Run migrations in 'offline' mode."""
-    url=config.set_main_option('sqlalchemy.url', 'sqlite:///./system_rebellion.db')
     context.configure(
-        url=url,
+        url=database_url,
         target_metadata=target_metadata,
         #literal_binds=True,
         dialect_opts={"paramstyle": "named"},
@@ -73,13 +65,6 @@ if context.is_offline_mode():
     run_migrations_offline()
 else:
     run_migrations_online()
-
-#This configures the context with just a URL
-    #and not an Engine, though an Engine is acceptable
-    #here as well.  By skipping the Engine creation
-    #we don't even need a DBAPI to be available.
-    #we don't even need a DBAPI to be available.
-
 #    Calls to context.execute() here emit the given string to the
 #   script output.
 '''
