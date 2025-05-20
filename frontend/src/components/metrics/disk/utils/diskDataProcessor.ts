@@ -1,4 +1,4 @@
-import { RawDiskMetrics, ProcessedDiskData } from '../types';
+import { RawDiskMetrics, ProcessedDiskData } from '../tabs/types';
 import { analyzeSmartData } from './smartDataAnalyzer';
 import { generateCleanupRecommendations } from './diskCleanupEngine';
 import { detectIOBottlenecks } from './iobottleneckDetector';

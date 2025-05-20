@@ -1,5 +1,5 @@
 import React from 'react';
-import { ProcessedMemoryData } from '../types';
+import { ProcessedMemoryData } from './types';
 import { formatBytes } from '../utils/formatters';
 import { ProgressBar } from '@/design-system/components/ProgressBar/ProgressBar';
 import { Card } from '@/design-system/components/Card';

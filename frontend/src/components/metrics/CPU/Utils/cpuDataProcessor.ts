@@ -1,7 +1,7 @@
 // frontend/src/components/metrics/CPU/utils/cpuDataProcessor.ts
 
 import { SystemMetric } from '../../../../types/metrics';
-import { CPUData, CPUCore, CPUProcess, CPUTemperature } from '../types';
+import { CPUData, CPUCore, CPUProcess, CPUTemperature } from '../Tabs/types';
 
 /**
  * Process CPU data from system metrics

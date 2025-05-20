@@ -10,7 +10,7 @@ import {
   ComposedChart,
   Area,
 } from 'recharts';
-import { CPUTemperature } from '../types';
+import { CPUTemperature } from './types';
 import { formatTemperature, getTemperatureClass, getThresholdDescription } from '@/components/metrics/CPU/Utils/temperatureUtils';
 
 

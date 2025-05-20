@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ProcessedMemoryData } from '../types';
+import { ProcessedMemoryData } from './types';
 import { formatBytes } from '../utils/formatters';
 import { Card } from '@/design-system/components/Card';
 import { PieChart } from '@/design-system/components/PieChart/PieChart';

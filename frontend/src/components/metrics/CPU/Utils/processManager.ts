@@ -1,6 +1,6 @@
 // frontend/src/components/metrics/CPU/utils/processManager.ts
 
-import { ProcessKillResult } from '../types';
+import { ProcessKillResult } from '../Tabs/types';
 import api from '../../../../utils/api';
 
 /**

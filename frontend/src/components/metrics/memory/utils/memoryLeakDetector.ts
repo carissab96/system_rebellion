@@ -1,4 +1,4 @@
-import { MemoryProcess, RawMemoryMetrics } from '../types';
+import { MemoryProcess, RawMemoryMetrics } from '../tabs/types';
 
 interface LeakDetectionResult {
   pid: number;

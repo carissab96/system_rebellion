@@ -1,4 +1,4 @@
-import { RawMemoryMetrics } from '../types';
+import { RawMemoryMetrics } from '../tabs/types';
 
 export interface OptimizationRecommendation {
   id: string;

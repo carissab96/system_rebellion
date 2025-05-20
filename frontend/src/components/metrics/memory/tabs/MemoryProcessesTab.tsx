@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ProcessedMemoryData, MemoryProcess } from '../types';
+import { ProcessedMemoryData, MemoryProcess } from './types';
 import { formatBytes } from '../utils/formatters';
 import { Table, TableColumn } from '@/design-system/components/Table/Table';
 import { Card } from '@/design-system/components/Card';

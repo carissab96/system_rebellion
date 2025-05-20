@@ -1,4 +1,4 @@
-import { DirectoryInfo } from '../types';
+import { DirectoryInfo } from '../tabs/types';
 
 interface CleanupRecommendation {
   id: string;
