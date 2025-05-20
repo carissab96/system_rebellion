@@ -94,8 +94,8 @@ System Rebellion is ready to be deployed to Render! Follow these steps to unleas
 2. Connect your GitHub repository
 3. Configure as follows:
    - **Environment**: Python
-   - **Build Command**: `cd backend && pip install -r requirements.txt`
-   - **Start Command**: `cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT`
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `uvicorn main:app --host 0.0.0.0 --port $PORT`
    - **Environment Variables**:
      - `PYTHON_VERSION`: 3.9.4
      - `SECRET_KEY`: (generate a secure random string)
@@ -108,8 +108,8 @@ System Rebellion is ready to be deployed to Render! Follow these steps to unleas
 2. Connect the same GitHub repository
 3. Configure as follows:
    - **Environment**: Node
-   - **Build Command**: `cd frontend && npm install && npm run build`
-   - **Start Command**: `cd frontend && npm run start`
+   - **Build Command**: `npm install && npm run build`
+   - **Start Command**: `npm run start`
    - **Environment Variables**:
      - `NODE_VERSION`: 18.x
      - `VITE_API_URL`: https://your-backend-url.onrender.com
