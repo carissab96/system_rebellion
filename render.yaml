@@ -3,10 +3,9 @@ services:
   - type: web
     name: system-rebellion-api
     env: python
-    buildCommand: cd backend && pip install -r requirements.txt
+    buildCommand: cd backend && pip install -r requirements.txt && alembic upgrade head
     startCommand: |
       cd backend && \
-      alembic upgrade head && \
       python app/optimization/system_permissions.py && \
       python backend/setup_permissions.py && \
       python backend/core/init_db.py && \
