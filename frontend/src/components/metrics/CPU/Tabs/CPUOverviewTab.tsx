@@ -1,7 +1,7 @@
 // frontend/src/components/metrics/CPU/tabs/CPUOverviewTab.tsx (continued)
 
 import React from 'react';
-import { CPUData } from '../types';
+import { CPUData } from './types';
 import { formatTemperature, getTemperatureClass } from '../Utils/temperatureUtils';
 import './CPUTabs.css';
 

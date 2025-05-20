@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ProcessedDiskData } from '../types';
+import { ProcessedDiskData } from './types';
 import { formatBytes } from '../utils/formatters';
 import { Card } from '@/design-system/components/Card/Card';
 import { Table, TableColumn } from '@/design-system/components/Table/Table';

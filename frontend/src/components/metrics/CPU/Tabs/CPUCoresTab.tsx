@@ -1,7 +1,7 @@
 // frontend/src/components/metrics/CPU/tabs/CPUCoresTab.tsx
 
 import React, { useMemo } from 'react';
-import { CPUCore } from '../types';
+import { CPUCore } from './types';
 
 interface CPUCoresTabProps {
   cores: CPUCore[];

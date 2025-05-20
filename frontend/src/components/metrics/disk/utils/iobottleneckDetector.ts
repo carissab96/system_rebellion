@@ -1,4 +1,4 @@
-import { DiskPerformance, DiskHistoryPoint } from '../types';
+import { DiskPerformance, DiskHistoryPoint } from '../tabs/types';
 
 interface BottleneckDetectionResult {
   detected: boolean;

@@ -1,5 +1,5 @@
 // src/types/metrics.ts
-import { CPUData } from '../components/metrics/CPU/types';
+import { CPUData } from '../components/metrics/CPU/Tabs/types';
 // Base metric type for individual readings
 export interface NetworkDetails {
   // Legacy properties for backward compatibility

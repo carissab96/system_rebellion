@@ -1,4 +1,4 @@
-import { RawMemoryMetrics, ProcessedMemoryData, MemoryProcess } from '../types';
+import { RawMemoryMetrics, ProcessedMemoryData, MemoryProcess } from '../tabs/types';
 import { detectMemoryLeaks } from './memoryLeakDetector';
 import { generateOptimizationRecommendations } from './optimizationEngine';
 

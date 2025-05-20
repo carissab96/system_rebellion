@@ -8,7 +8,7 @@ import { MemoryOverviewTab } from './tabs/MemoryOverviewTab';
 import { MemoryProcessesTab } from './tabs/MemoryProcessesTab';
 import { MemoryAllocationTab } from './tabs/MemoryAllocationTab';
 import { processMemoryData } from './utils/memoryDataProcessor';
-import { MemoryMetricProps, RawMemoryMetrics } from './types';
+import { MemoryMetricProps, RawMemoryMetrics } from './tabs/types';
 
 export const MemoryMetric: React.FC<MemoryMetricProps> = ({ 
   compact = false,

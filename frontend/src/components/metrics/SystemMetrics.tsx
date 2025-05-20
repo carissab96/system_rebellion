@@ -1,9 +1,9 @@
 // frontend/src/components/metrics/SystemMetrics.tsx
 import React, { useState } from 'react';
 import NetworkMetric from './NetworkMetrics/NetworkMetric';
-import CPUMetric from '/home/carissab/Documents/mod7/system_rebellion/frontend/src/components/metrics/CPU/CPUMetric.tsx';
-import { MemoryMetric } from '/home/carissab/Documents/mod7/system_rebellion/frontend/src/components/metrics/memory/MemoryMetric';
-import { DiskMetric } from '/home/carissab/Documents/mod7/system_rebellion/frontend/src/components/metrics/disk/DiskMetric';
+import CPUMetric from './CPU/CPUMetric';
+import { MemoryMetric } from './memory/MemoryMetric';
+import { DiskMetric } from './disk/DiskMetric';
 import { useAppSelector } from '../../store/hooks';
 import './SystemMetrics.css'; 
 

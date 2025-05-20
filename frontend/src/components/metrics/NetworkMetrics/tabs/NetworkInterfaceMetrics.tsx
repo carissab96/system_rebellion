@@ -1,7 +1,7 @@
 // frontend/src/components/metrics/NetworkMetrics/tabs/NetworkInterfaceMetrics.tsx
 
 import React from 'react';
-import { NetworkInterface } from '/home/carissab/Documents/mod7/system_rebellion/frontend/src/components/metrics/NetworkMetrics/tabs/types';
+import { NetworkInterface } from './types';
 import { formatBytes } from '../utils/formatters';
 import './NetworkMetrics.css';
 

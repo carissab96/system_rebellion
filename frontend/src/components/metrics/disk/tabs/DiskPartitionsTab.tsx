@@ -1,5 +1,5 @@
 import React, { JSX, useState } from 'react';
-import { ProcessedDiskData } from '@/components/metrics/disk/types';
+import { ProcessedDiskData } from '@/components/metrics/disk/tabs/types';
 import { formatBytes } from '@/components/metrics/disk/utils/formatters';
 import { Card } from '@/design-system/components/Card/Card';
 import { ProgressBar } from '@/design-system/components/ProgressBar/ProgressBar';

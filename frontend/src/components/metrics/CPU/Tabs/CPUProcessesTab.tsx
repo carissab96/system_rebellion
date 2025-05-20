@@ -1,7 +1,7 @@
 // frontend/src/components/metrics/CPU/tabs/CPUProcessesTab.tsx
 
 import React, { useState } from 'react';
-import { CPUProcess } from '../types';
+import { CPUProcess } from './types';
 import { killProcess } from '../Utils/processManager';
 import './CPUTabs.css';
 

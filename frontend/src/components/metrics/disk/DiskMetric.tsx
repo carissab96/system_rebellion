@@ -8,7 +8,7 @@ import DiskPartitionsTab from './tabs/DiskPartitionsTab';
 import { DiskDirectoryTab } from './tabs/DiskDirectoryTab';
 import { DiskPerformanceTab } from './tabs/DiskPerformanceTab';
 import { processDiskData } from './utils/diskDataProcessor';
-import { DiskMetricProps, RawDiskMetrics } from './types';
+import { DiskMetricProps, RawDiskMetrics } from './tabs/types';
 
 export const DiskMetric: React.FC<DiskMetricProps> = ({ 
   compact = false,

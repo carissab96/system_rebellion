@@ -1,4 +1,4 @@
-import { SmartData } from '../types';
+import { SmartData } from '../tabs/types';
 
 interface SmartAnalysisResult {
   issues: string[];
