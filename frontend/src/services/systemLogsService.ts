@@ -18,7 +18,7 @@ const systemLogsService = {
    * Get system logs with optional filtering
    */
   getLogs: async (limit = 100, source?: string, level?: string): Promise<SystemLogsResponse> => {
-    let url = `/system-logs?limit=${limit}`;
+    let url = `/api/system-logs?limit=${limit}`;
     if (source) url += `&source=${source}`;
     if (level) url += `&level=${level}`;
     
@@ -30,7 +30,7 @@ const systemLogsService = {
    * Clear all system logs
    */
   clearLogs: async (): Promise<{ message: string }> => {
-    const response = await apiClient.delete<{ message: string }>('/system-logs');
+    const response = await apiClient.delete<{ message: string }>('/api/system-logs');
     return response.data;
   }
 };
