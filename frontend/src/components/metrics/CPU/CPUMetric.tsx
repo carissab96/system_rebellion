@@ -1,10 +1,8 @@
-//Main Component
 // frontend/src/components/metrics/CPU/CPUMetric.tsx
 
 import React, { useState } from 'react';
 import { useAppSelector } from '../../../store/hooks';
-import { RootState } from '../../../store/store';
-import { processCPUData } from './Utils/cpuDataProcessor';
+import { selectCPUMetrics, selectCPULoading, selectCPUError } from '../../../store/slices/metrics/CPUSlice';
 import CPUOverviewTab from './Tabs/CPUOverviewTab';
 import CPUProcessesTab from './Tabs/CPUProcessesTab';
 import CPUCoresTab from './Tabs/CPUCoresTab';
@@ -27,24 +25,12 @@ const CPUMetric: React.FC<CPUMetricProps> = ({
   height,
 }) => {
   // Redux state
-  const currentMetric = useAppSelector((state: RootState) => state.metrics.current);
-  const isLoading = useAppSelector((state: RootState) => state.metrics.loading);
+  const cpuData = useAppSelector(selectCPUMetrics);
+  const isLoading = useAppSelector(selectCPULoading);
+  const error = useAppSelector(selectCPUError);
   
   // Local state
   const [activeTab, setActiveTab] = useState<CPUTabType>(initialTab);
-  const [error, setError] = useState<string | null>(null);
-  
-  // Process CPU data
-  const { cpuData, error: dataError } = processCPUData(currentMetric);
-  
-  // Handle errors
-  React.useEffect(() => {
-    if (dataError) {
-      setError(dataError);
-    } else {
-      setError(null);
-    }
-  }, [dataError]);
   
   // Loading state
   if (isLoading) {
@@ -73,15 +59,128 @@ const CPUMetric: React.FC<CPUMetricProps> = ({
   const renderTabContent = () => {
     switch (activeTab) {
       case 'overview':
-        return <CPUOverviewTab data={cpuData} compact={compact} />;
+        return <CPUOverviewTab data={{
+          name: 'CPU',
+          temp: {
+            current: cpuData.temperature || 0,
+            min: 0,
+            max: 100,
+            critical: 90,
+            throttle_threshold: 85,
+            unit: 'C'
+          },
+          processes: cpuData.top_processes.map(p => ({
+            ...p,
+            user: 'system',
+            command: p.name,
+            usage_percent: p.cpu_percent
+          })),
+          core_count: cpuData.physical_cores,
+          logical_cores: cpuData.logical_cores,
+          usage_percent: cpuData.usage_percent,
+          overall_usage: cpuData.usage_percent,
+          process_count: cpuData.top_processes.length,
+          thread_count: cpuData.logical_cores,
+          physical_cores: cpuData.physical_cores,
+          model_name: 'System CPU',
+          frequency: {
+            current: cpuData.frequency_mhz,
+            min: 0,
+            max: cpuData.frequency_mhz
+          },
+          frequency_mhz: cpuData.frequency_mhz,
+          temperature: {
+            current: cpuData.temperature || 0,
+            min: 0,
+            max: 100,
+            critical: 90,
+            throttle_threshold: 85,
+            unit: 'C'
+          },
+          top_processes: cpuData.top_processes.map(p => ({
+            ...p,
+            user: 'system',
+            command: p.name,
+          })),
+          cores: cpuData.cores.map(c => ({
+            id: c.id,
+            usage_percent: c.usage,
+            frequency_mhz: cpuData.frequency_mhz
+          })),
+          historical_temp: []
+        }} compact={compact} />;
       case 'processes':
-        return <CPUProcessesTab processes={cpuData.top_processes} compact={compact} />;
+        return <CPUProcessesTab processes={cpuData.top_processes.map(p => ({
+          ...p,
+          user: 'system',
+          command: p.name,
+          usage_percent: p.cpu_percent
+        }))} compact={compact} />;
       case 'cores':
-        return <CPUCoresTab cores={cpuData.cores} physicalCores={cpuData.physical_cores} compact={compact} />;
+        return <CPUCoresTab cores={cpuData.cores.map(c => ({
+          ...c,
+          usage_percent: c.usage
+        }))} physicalCores={cpuData.physical_cores} compact={compact} />;
       case 'thermal':
-        return <CPUThermalTab temperature={cpuData.temperature} historicalData={cpuData.historical_temp} compact={compact} />;
+        return <CPUThermalTab temperature={{
+          current: cpuData.temperature || 0,
+          min: 0,
+          max: 100,
+          critical: 90,
+          throttle_threshold: 85,
+          unit: 'C'
+        }} historicalData={[]} compact={compact} />;
       default:
-        return <CPUOverviewTab data={cpuData} compact={compact} />;
+        return <CPUOverviewTab data={{
+          name: 'CPU',
+          temp: {
+            current: cpuData.temperature || 0,
+            min: 0,
+            max: 100,
+            critical: 90,
+            throttle_threshold: 85,
+            unit: 'C'
+          },
+          processes: cpuData.top_processes.map(p => ({
+            ...p,
+            user: 'system',
+            command: p.name,
+            usage_percent: p.cpu_percent
+          })),
+          core_count: cpuData.physical_cores,
+          logical_cores: cpuData.logical_cores,
+          usage_percent: cpuData.usage_percent,
+          overall_usage: cpuData.usage_percent,
+          process_count: cpuData.top_processes.length,
+          thread_count: cpuData.logical_cores,
+          physical_cores: cpuData.physical_cores,
+          model_name: 'System CPU',
+          frequency: {
+            current: cpuData.frequency_mhz,
+            min: 0,
+            max: cpuData.frequency_mhz
+          },
+          frequency_mhz: cpuData.frequency_mhz,
+          temperature: {
+            current: cpuData.temperature || 0,
+            min: 0,
+            max: 100,
+            critical: 90,
+            throttle_threshold: 85,
+            unit: 'C'
+          },
+          top_processes: cpuData.top_processes.map(p => ({
+            ...p,
+            user: 'system',
+            command: p.name,
+          })),
+          cores: cpuData.cores.map(c => ({
+            id: c.id,
+            usage_percent: c.usage,
+            frequency_mhz: cpuData.frequency_mhz
+          })),
+          historical_temp: []
+        }} compact={compact} />;
     }
   };
 

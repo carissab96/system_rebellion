@@ -91,60 +91,25 @@ class NetworkMetricsService:
             }
         except Exception as e:
             self.logger.error(f"Error collecting network metrics: {str(e)}")
+            # Return empty dict on error
             return {
                 'interfaces': [],
-                'io_stats': {
-                    'bytes_sent': 0,
-                    'bytes_recv': 0,
-                    'packets_sent': 0,
-                    'packets_recv': 0,
-                    'sent_rate': 0,
-                    'recv_rate': 0,
-                    'errors_in': 0,
-                    'errors_out': 0,
-                    'drops_in': 0,
-                    'drops_out': 0
-                },
+                'io_stats': {},
                 'connections': [],
-                'protocol_stats': {
-                    'tcp': {'active': 0, 'listening': 0, 'established': 0, 'time_wait': 0},
-                    'udp': {'active': 0},
-                    'http': {'connections': 0},
-                    'https': {'connections': 0},
-                    'dns': {'queries': 0, 'responses': 0}
-                },
-                'connection_quality': {
-                    'average_latency': 0,
-                    'packet_loss_percent': 0,
-                    'connection_stability': 100,
-                    'jitter': 0,
-                    'gateway_latency': 0,
-                    'dns_latency': 0,
-                    'internet_latency': 0
-                },
+                'protocol_stats': {},
+                'connection_quality': {},
                 'top_bandwidth_processes': [],
                 'interface_stats': {},
-                'dns_metrics': {
-                    'query_time_ms': 0,
-                    'success_rate': 100,
-                    'cache_hit_ratio': 0
-                },
-                'internet_metrics': {
-                    'connected': True,
-                    'download_speed': 0,
-                    'upload_speed': 0,
-                    'isp_latency': 0
-                },
+                'dns_metrics': {},
+                'internet_metrics': {},
                 'protocol_breakdown': {
-                    'web': 0,
-                    'email': 0,
-                    'streaming': 0,
-                    'gaming': 0,
+                    'tcp': 0,
+                    'udp': 0,
+                    'http': 0,
                     'file_transfer': 0,
                     'other': 0
                 }
-            }
-    
+            }    
     def _get_network_interfaces(self) -> List[Dict[str, Any]]:
         """Get information about network interfaces"""
         interfaces_info = []
@@ -678,47 +643,60 @@ class NetworkMetricsService:
                     # Some platforms support per-process network stats
                     try:
                         net_io = process.io_counters()
-                        read_bytes = getattr(net_io, 'read_bytes', 0)
-                        write_bytes = getattr(net_io, 'write_bytes', 0)
+                        read_bytes = getattr(net_io, 'read_bytes', None)
+                        write_bytes = getattr(net_io, 'write_bytes', None)
                         
                         # Calculate rates if we have previous measurements
-                        read_rate = 0
-                        write_rate = 0
+                        read_rate = None
+                        write_rate = None
                         
                         if process_name in self._previous_connections_stats and 'time' in self._previous_connections_stats[process_name]:
                             prev_stats = self._previous_connections_stats[process_name]
                             time_diff = current_time - prev_stats['time']
                             
                             if time_diff > 0:
-                                read_diff = read_bytes - prev_stats.get('read_bytes', 0)
-                                write_diff = write_bytes - prev_stats.get('write_bytes', 0)
-                                
-                                if read_diff >= 0:
-                                    read_rate = read_diff / time_diff
-                                if write_diff >= 0:
-                                    write_rate = write_diff / time_diff
+                                if read_bytes is not None and 'read_bytes' in prev_stats:
+                                    read_diff = read_bytes - prev_stats['read_bytes']
+                                    if read_diff >= 0:
+                                        read_rate = read_diff / time_diff
+                                        
+                                if write_bytes is not None and 'write_bytes' in prev_stats:
+                                    write_diff = write_bytes - prev_stats['write_bytes']
+                                    if write_diff >= 0:
+                                        write_rate = write_diff / time_diff
                         
                         # Store current values for next calculation
                         if process_name not in self._previous_connections_stats:
                             self._previous_connections_stats[process_name] = {}
                         
-                        self._previous_connections_stats[process_name]['read_bytes'] = read_bytes
-                        self._previous_connections_stats[process_name]['write_bytes'] = write_bytes
+                        if read_bytes is not None:
+                            self._previous_connections_stats[process_name]['read_bytes'] = read_bytes
+                        if write_bytes is not None:
+                            self._previous_connections_stats[process_name]['write_bytes'] = write_bytes
+                            
                         self._previous_connections_stats[process_name]['time'] = current_time
                         
+                        # Build process stats with only available metrics
                         process_stats[process_name] = {
                             'pid': info['pid'],
                             'connection_count': info['connection_count'],
                             'established_count': info['established_count'],
                             'remote_addresses': list(info['remote_addresses']),
                             'local_ports': list(info['local_ports']),
-                            'protocols': info['protocols'],
-                            'read_bytes': read_bytes,
-                            'write_bytes': write_bytes,
-                            'read_rate': read_rate,
-                            'write_rate': write_rate,
-                            'total_rate': read_rate + write_rate
+                            'protocols': info['protocols']
                         }
+                        
+                        if read_bytes is not None:
+                            process_stats[process_name]['read_bytes'] = read_bytes
+                        if write_bytes is not None:
+                            process_stats[process_name]['write_bytes'] = write_bytes
+                        if read_rate is not None:
+                            process_stats[process_name]['read_rate'] = read_rate
+                        if write_rate is not None:
+                            process_stats[process_name]['write_rate'] = write_rate
+                        if read_rate is not None and write_rate is not None:
+                            process_stats[process_name]['total_rate'] = read_rate + write_rate
+                            
                     except (psutil.AccessDenied, AttributeError):
                         # Fall back to just connection counts if I/O stats aren't available
                         process_stats[process_name] = {

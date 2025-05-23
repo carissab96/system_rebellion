@@ -13,27 +13,44 @@ class WebSocketService {
   constructor() {
     // Initialize with default URL, but don't connect yet
     this.updateUrl();
-    console.log("🚀 WebSocketService initialized");
+    console.log("🚀 WebSocketService initialized with URL:", this.url);
   }
   
   // Update the WebSocket URL based on current location
   private updateUrl(): void {
+    // Primary strategy: Use the API proxy with the correct system-metrics path
+    // This works with the Vite proxy configuration
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host;
     this.url = `${protocol}//${host}/ws/system-metrics`;
-    console.log("🔗 WebSocket URL set to:", this.url);
+    console.log("🔗 Primary WebSocket URL set to:", this.url);
   }
 
+  // Fallback URL if the primary connection fails
   private static get WS_URL(): string {
+    // Direct connection to the backend (bypassing proxy)
     return process.env.NODE_ENV === 'production' 
-      ? `wss://${window.location.host}/api/ws` 
-      : 'ws://localhost:8000/api/ws';
+      ? `wss://${window.location.host}/system-metrics` 
+      : 'ws://localhost:8000/system-metrics';
+  }
+  
+  // Second fallback URL if both primary and fallback fail
+  private static get BACKUP_WS_URL(): string {
+    // Try a different endpoint format as last resort
+    return process.env.NODE_ENV === 'production' 
+      ? `wss://${window.location.host}/api/system-metrics` 
+      : 'ws://localhost:8000/api/system-metrics';
   }
 
   // Connect to the WebSocket server with authentication
   public connect(customUrl?: string): boolean {
-    if (customUrl) this.url = customUrl;
-    else this.url = WebSocketService.WS_URL;
+    // If a custom URL is provided, use it
+    // Otherwise use the URL from updateUrl() (primary) or fallback to WS_URL if needed
+    if (customUrl) {
+      this.url = customUrl;
+    } else if (!this.url) {
+      this.updateUrl();
+    }
     
     if (this.socket) {
       if (this.socket.readyState === WebSocket.OPEN) {
@@ -52,7 +69,10 @@ class WebSocketService {
     // Append token to WebSocket URL if present
     let wsUrl = this.url;
     if (hasAuth) {
+      // Format token properly - make sure we're using the right query parameter format
+      // The backend expects the token in the 'token' query parameter
       wsUrl += (wsUrl.includes('?') ? '&' : '?') + `token=${encodeURIComponent(token!)}`;
+      console.log("🔑 Adding authentication token to WebSocket URL");
       this.authenticated = true;
     } else {
       console.warn("🧙‍♂️ The Stick warns: Connecting to WebSocket without authentication");
@@ -102,6 +122,29 @@ class WebSocketService {
         // Only log the close, don't emit to avoid logout
         console.log(`WebSocket closed with code ${event.code}: ${event.reason || 'No reason'}`);
         
+        // If connection failed, try alternative URLs in sequence
+        if (this.reconnectAttempts === 0) {
+          if (this.url.includes('/ws/system-metrics')) {
+            // If primary URL failed, try direct backend connection
+            console.log("🔄 Primary WebSocket URL failed, trying direct backend connection");
+            this.url = WebSocketService.WS_URL;
+            console.log("🔗 Fallback WebSocket URL set to:", this.url);
+            // Reset reconnect attempts for the new URL
+            this.reconnectAttempts = 0;
+            this.connect();
+            return;
+          } else if (this.url === WebSocketService.WS_URL) {
+            // If direct backend connection failed, try backup URL
+            console.log("🔄 Direct backend connection failed, trying backup URL");
+            this.url = WebSocketService.BACKUP_WS_URL;
+            console.log("🔗 Backup WebSocket URL set to:", this.url);
+            // Reset reconnect attempts for the new URL
+            this.reconnectAttempts = 0;
+            this.connect();
+            return;
+          }
+        }
+        
         // Handle reconnect
         this.handleReconnect();
       };
@@ -109,11 +152,42 @@ class WebSocketService {
       this.socket.onerror = (event) => {
         console.error("❌ WebSocket error:", event);
         
+        // Check for specific error types
+        const errorStr = event.toString();
+        const isPipeError = errorStr.includes('EPIPE') || errorStr.includes('pipe');
+        
+        if (isPipeError) {
+          console.log('🚧 EPIPE error detected - connection broken by server');
+          // For EPIPE errors, we need to close and reopen the connection
+          if (this.socket) {
+            try {
+              this.socket.close();
+            } catch (e) {
+              // Ignore errors when closing an already broken socket
+            }
+          }
+          
+          // Reset the socket and try a different connection strategy
+          this.socket = null;
+          this.reconnectAttempts = 0;
+          
+          // Try a different URL next time
+          if (this.url.includes('/ws/system-metrics')) {
+            this.url = WebSocketService.WS_URL;
+          } else if (this.url === WebSocketService.WS_URL) {
+            this.url = WebSocketService.BACKUP_WS_URL;
+          }
+          
+          // Schedule reconnect
+          setTimeout(() => this.connect(), 1000);
+          return;
+        }
+        
         // FIXED: Don't emit error events that might cause logout
-        if (this.preventLogout) {
-          console.log("🛡️ WebSocket error suppressed to prevent logout");
-        } else {
+        if (!this.preventLogout) {
           this.emit('error', event);
+        } else {
+          console.log("🛡️ WebSocket error suppressed to prevent logout");
         }
       };
       
@@ -193,9 +267,24 @@ class WebSocketService {
   // Send a message through the WebSocket
   public sendMessage(message: any): void {
     if (this.socket?.readyState === WebSocket.OPEN) {
-      const messageStr = typeof message === 'string' ? message : JSON.stringify(message);
-      this.socket.send(messageStr);
-      console.log("📤 WebSocket message sent:", typeof message === 'object' ? {...message, token: '[REDACTED]'} : message);
+      try {
+        const messageStr = typeof message === 'string' ? message : JSON.stringify(message);
+        this.socket.send(messageStr);
+        console.log("📤 WebSocket message sent:", typeof message === 'object' ? {...message, token: '[REDACTED]'} : message);
+      } catch (error) {
+        // Handle send errors (like EPIPE)
+        console.error('❌ Error sending WebSocket message:', error);
+        
+        if (error instanceof Error && 
+            (error.message.includes('EPIPE') || 
+             error.message.includes('not open') || 
+             error.message.includes('ECONNRESET'))) {
+          
+          console.log('🚧 Connection error while sending, reconnecting...');
+          // Force reconnection
+          this.reconnect();
+        }
+      }
     } else {
       console.error("❌ Cannot send message: WebSocket not connected");
       // Auto-connect if possible
@@ -278,12 +367,23 @@ class WebSocketService {
         console.log("🛡️ Max retries error suppressed to prevent logout");
       }
       
+      // Try a completely different URL as last resort
+      if (this.url !== WebSocketService.BACKUP_WS_URL) {
+        console.log('🚧 Trying backup URL as last resort');
+        this.url = WebSocketService.BACKUP_WS_URL;
+        this.reconnectAttempts = 0;
+        
+        // Connect with a short delay
+        setTimeout(() => this.connect(), 1000);
+        return;
+      }
+      
       this.emit('max_retries');
       return;
     }
     
     this.reconnectAttempts++;
-    const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
+    const delay = Math.min(1000 * Math.pow(1.5, this.reconnectAttempts), 10000); // Reduced backoff
     
     console.log(`🔄 Attempting to reconnect in ${delay}ms (attempt ${this.reconnectAttempts}/${this.MAX_ATTEMPTS})...`);
     

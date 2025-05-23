@@ -3,7 +3,7 @@ import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import './Dashboard.css';
 import { fetchPatterns } from '../../../store/slices/autoTunerSlice';
 import { fetchSystemAlerts } from '../../../store/slices/systemAlertsSlice';
-import useMetricsWebSocket from '../../../store/useMetricsWebSocket'; // Restore this import
+import useMetricsWebSocket from '../../../services/websocket/useMetricsWebSocket'; // Restore this import
 import { RootState } from '../../../store/store';
 import SystemStatus from './SystemStatus/SystemStatus';
 import MetricsPanel from '../MetricsPanel/MetricsPanel';

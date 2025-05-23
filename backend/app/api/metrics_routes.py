@@ -8,17 +8,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from app.core.database import get_db
-from app.core import async_session
 from app.core.security import get_current_user
 from app.schemas.metrics import MetricCreate, MetricResponse, MetricUpdate
-from app.services.metrics.metrics_service import MetricsService as MetricsOrchestrator
-from app.services.metrics_service import MetricsService  # For database operations
-from app.services.system_metrics_service import SystemMetricsService
+from app.services.metrics_repository import MetricsRepository
 
 router = APIRouter(tags=["metrics"])
 
 @router.get("/system", response_model=dict)
-async def get_system_metrics(db: AsyncSession = Depends(get_db)):
+async def get_metrics(db: AsyncSession = Depends(get_db)):
     """
     Public endpoint for system metrics that doesn't require authentication
     """
@@ -115,7 +112,8 @@ async def create_metric(
         # Set the user ID from the current user
         metric_data = metric.model_dump()
         metric_data["user_id"] = current_user["id"]
-        return await MetricsService.create_metric(db, metric_data)
+        metrics_repo = MetricsRepository()
+        return await metrics_repo.create_metric(db, metric_data)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -129,7 +127,8 @@ async def read_user_metrics(
     """
     The Meth Snail's Metric Retrieval Endpoint
     """
-    return await MetricsService.get_user_metrics(
+    metrics_repo = MetricsRepository()
+    return await metrics_repo.get_user_metrics(
         db, current_user['id'], skip, limit
     )
 
@@ -142,7 +141,8 @@ async def read_metric(
     """
     Quantum Precision Metric Lookup
     """
-    metric = await MetricsService.get_metric_by_id(db, metric_id)
+    metrics_repo = MetricsRepository()
+    metric = await metrics_repo.get_metric_by_id(db, metric_id)
     if not metric:
         raise HTTPException(status_code=404, detail="Metric not found")
     
@@ -162,7 +162,8 @@ async def update_metric(
     """
     Sir Hawkington's Metric Update Endpoint
     """
-    db_metric = await MetricsService.get_metric_by_id(db, metric_id)
+    metrics_repo = MetricsRepository()
+    db_metric = await metrics_repo.get_metric_by_id(db, metric_id)
     if not db_metric:
         raise HTTPException(status_code=404, detail="Metric not found")
         
@@ -170,7 +171,7 @@ async def update_metric(
     if str(db_metric.user_id) != current_user["id"]:
         raise HTTPException(status_code=403, detail="Not authorized to update this metric")
         
-    return await MetricsService.update_metric(db, metric_id, metric)
+    return await metrics_repo.update_metric(db, metric_id, metric)
 
 @router.delete("/{metric_id}")
 async def delete_metric(
@@ -181,7 +182,8 @@ async def delete_metric(
     """
     The Meth Snail's Metric Deletion Endpoint
     """
-    db_metric = await MetricsService.get_metric_by_id(db, metric_id)
+    metrics_repo = MetricsRepository()
+    db_metric = await metrics_repo.get_metric_by_id(db, metric_id)
     if not db_metric:
         raise HTTPException(status_code=404, detail="Metric not found")
     
@@ -189,7 +191,7 @@ async def delete_metric(
     if str(db_metric.user_id) != current_user["id"]:
         raise HTTPException(status_code=403, detail="Not authorized to delete this metric")
     
-    deleted = await MetricsService.delete_metric(db, metric_id)
+    deleted = await metrics_repo.delete_metric(db, metric_id)
     if not deleted:
         raise HTTPException(status_code=500, detail="Failed to delete metric")
     return {"ok": True}

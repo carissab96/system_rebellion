@@ -3,7 +3,7 @@ from typing import Optional, List, Dict, Any
 
 from app.api.deps import get_current_user
 from app.models.user import User
-from app.services.system_log_service import SystemLogService
+from app.services.system_log_service import LogService
 
 router = APIRouter()
 
@@ -20,7 +20,7 @@ async def get_system_logs(
     Returns recent system logs, including authentication attempts, command outputs,
     and system tuning events.
     """
-    log_service = await SystemLogService.get_instance()
+    log_service = await LogService.get_instance()
     logs = log_service.get_logs(limit=limit, source=source, level=level)
     
     return {
@@ -42,7 +42,7 @@ async def clear_system_logs(
     # if not current_user.is_superuser:
     #     raise HTTPException(status_code=403, detail="Not authorized")
     
-    log_service = await SystemLogService.get_instance()
+    log_service = await LogService.get_instance()
     log_service.clear_logs()
     
     return {"message": "Logs cleared successfully"}

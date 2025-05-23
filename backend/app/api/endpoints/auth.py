@@ -17,7 +17,7 @@ from app.schemas.token import Token
 from app.core.security import hash_password, verify_password, create_access_token, create_refresh_token, decode_token, SECRET_KEY, ALGORITHM
 from app.core.security import ACCESS_TOKEN_EXPIRE_MINUTES
 from app.core.config import settings
-from app.services.system_log_service import SystemLogService
+from app.services.system_log_service import LogService
 
 # Define a simple UserProfileCreate if it doesn't exist in your schemas
 from pydantic import BaseModel
@@ -312,7 +312,7 @@ async def login_for_access_token(
     user = await find_user_by_username_or_email(db, username=form_data.username)
     
     # Get the system log service
-    log_service = await SystemLogService.get_instance()
+    log_service = await LogService.get_instance()
     
     if not user or not verify_password(form_data.password, user.hashed_password):
         print(f"❌ Invalid credentials for username: {form_data.username}")

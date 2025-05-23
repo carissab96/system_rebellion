@@ -37,46 +37,61 @@ class MemoryMetricsService:
             # Get top memory-consuming processes
             top_processes = self._get_top_memory_processes()
             
-            return {
-                'total': virtual_memory.total,
-                'available': virtual_memory.available,
-                'used': virtual_memory.used,
-                'free': virtual_memory.free,
-                'percent': virtual_memory.percent,
-                'cached': getattr(virtual_memory, 'cached', None),
-                'buffers': getattr(virtual_memory, 'buffers', None),
-                'shared': getattr(virtual_memory, 'shared', None),
-                'swap': {
+            # Only return metrics that were successfully collected
+            metrics = {}
+            
+            # Virtual memory metrics
+            if virtual_memory:
+                metrics.update({
+                    'total': virtual_memory.total,
+                    'available': virtual_memory.available,
+                    'used': virtual_memory.used,
+                    'free': virtual_memory.free,
+                    'percent': virtual_memory.percent
+                })
+                
+                # Optional virtual memory metrics
+                cached = getattr(virtual_memory, 'cached', None)
+                if cached is not None:
+                    metrics['cached'] = cached
+                    
+                buffers = getattr(virtual_memory, 'buffers', None)
+                if buffers is not None:
+                    metrics['buffers'] = buffers
+                    
+                shared = getattr(virtual_memory, 'shared', None)
+                if shared is not None:
+                    metrics['shared'] = shared
+            
+            # Swap memory metrics
+            if swap_memory:
+                swap_metrics = {
                     'total': swap_memory.total,
                     'used': swap_memory.used,
                     'free': swap_memory.free,
-                    'percent': swap_memory.percent,
-                    'sin': getattr(swap_memory, 'sin', None),  # Swap in (bytes)
-                    'sout': getattr(swap_memory, 'sout', None)  # Swap out (bytes)
-                },
-                'top_processes': top_processes
-            }
+                    'percent': swap_memory.percent
+                }
+                
+                # Optional swap metrics
+                sin = getattr(swap_memory, 'sin', None)
+                if sin is not None:
+                    swap_metrics['sin'] = sin
+                    
+                sout = getattr(swap_memory, 'sout', None)
+                if sout is not None:
+                    swap_metrics['sout'] = sout
+                    
+                metrics['swap'] = swap_metrics
+            
+            # Process metrics
+            if top_processes:
+                metrics['top_processes'] = top_processes
+                
+            return metrics
         except Exception as e:
             self.logger.error(f"Error collecting memory metrics: {str(e)}")
-            return {
-                'total': 0,
-                'available': 0,
-                'used': 0,
-                'free': 0,
-                'percent': 0,
-                'cached': None,
-                'buffers': None,
-                'shared': None,
-                'swap': {
-                    'total': 0,
-                    'used': 0,
-                    'free': 0,
-                    'percent': 0,
-                    'sin': None,
-                    'sout': None
-                },
-                'top_processes': []
-            }
+            # Return empty dict on error
+            return {}
     
     def _get_top_memory_processes(self, limit: int = 5) -> List[Dict[str, Any]]:
         """Get top memory-consuming processes"""

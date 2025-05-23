@@ -16,11 +16,17 @@ from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 
 # Import the modular metrics services
-from app.services.metrics.metrics_service import MetricsService as MetricsOrchestrator
+from app.services.metrics.metrics_service import MetricsService
+
 
 class SystemMetricsService:
+    """
+    System-wide metrics service that provides a unified interface
+    for accessing system metrics across the application.
+    """
+    
     _instance = None
-    _lock = asyncio.Lock()
+    _lock = None
     
     def __new__(cls):
         if cls._instance is None:
@@ -28,27 +34,29 @@ class SystemMetricsService:
             cls._instance._initialized = False
         return cls._instance
     
-    def __init__(self, metrics_service_class: Type[MetricsOrchestrator] = None):
+    def __init__(self):
         """
-        Initialize the service with a metrics service class.
-        
-        Args:
-            metrics_service_class: The metrics service class to use. If None, will use MetricsOrchestrator.
+        Initialize the service with metrics collection services.
         """
         if self._initialized:
             return
             
         self.logger = logging.getLogger('SystemMetricsService')
-        self.metrics_service_class = metrics_service_class or MetricsOrchestrator
         self.last_metrics = None
         self.last_update_time = 0
         self.cache_ttl = 5  # Cache TTL in seconds
         
         # Initialize the metrics service
-        self.metrics_service = self.metrics_service_class()
+        self.metrics_service = MetricsService()
         
         self._initialized = True
-        self.logger.info("SystemMetricsService initialized as singleton (using modular metrics services)")
+        self.logger.info("SystemMetricsService initialized as singleton")
+    
+    async def _get_lock(self):
+        """Get or create the async lock"""
+        if self._lock is None:
+            self._lock = asyncio.Lock()
+        return self._lock
     
     async def get_metrics(self, force_refresh=False, db: AsyncSession = None) -> Dict[str, Any]:
         """
@@ -105,6 +113,51 @@ class SystemMetricsService:
             # Get metrics from the modular service
             metrics = await self.metrics_service.get_metrics(force_refresh)
             
+            # Transform metrics to match frontend expectations
+            cpu_metrics = metrics.get('cpu', {})
+            memory_metrics = metrics.get('memory', {})
+            disk_metrics = metrics.get('disk', {})
+            network_metrics = metrics.get('network', {})
+            
+            transformed_metrics = {
+                'type': 'system_metrics',
+                'data': {
+                    'timestamp': metrics.get('timestamp'),
+                    'client_id': 'system',
+                    'cpu_usage': cpu_metrics.get('total_percent', 0),
+                    'cpu_frequency': cpu_metrics.get('frequency', {}).get('current', 0),
+                    'cpu_temp': cpu_metrics.get('temperature', {}).get('current', 0),
+                    'cpu_per_core': cpu_metrics.get('per_core_percent', []),
+                    'memory_total': memory_metrics.get('total', 0),
+                    'memory_available': memory_metrics.get('available', 0),
+                    'memory_used': memory_metrics.get('used', 0),
+                    'memory_free': memory_metrics.get('free', 0),
+                    'memory_percent': memory_metrics.get('percent', 0),
+                    'disk_total': disk_metrics.get('total', 0),
+                    'disk_used': disk_metrics.get('used', 0),
+                    'disk_free': disk_metrics.get('free', 0),
+                    'disk_percent': disk_metrics.get('percent', 0),
+                    'network_total': network_metrics.get('total_bytes', 0),
+                    'network_used': network_metrics.get('bytes_sent', 0) + network_metrics.get('bytes_recv', 0),
+                    'network_percent': network_metrics.get('utilization_percent', 0),
+                    'process_count': metrics.get('process_count', 0),
+                    'system_info': {
+                        'cpu_model': cpu_metrics.get('model_name', 'CPU'),
+                        'cores': cpu_metrics.get('cores', {}).get('physical', 0),
+                        'logical_cores': cpu_metrics.get('cores', {}).get('logical', 0),
+                        'hostname': metrics.get('hostname', ''),
+                        'os': metrics.get('os', ''),
+                        'architecture': metrics.get('architecture', '')
+                    }
+                }
+            }
+            
+            # Update cache
+            self.last_metrics = transformed_metrics
+            self.last_update_time = time.time()
+            
+            return transformed_metrics
+            
             # Transform to match the expected format
             transformed_metrics = {
                 'timestamp': metrics.get('timestamp', datetime.now().isoformat()),
@@ -123,16 +176,16 @@ class SystemMetricsService:
                 },
                 'disk': {
                     'percent': metrics.get('disk_usage', 0),
-                    'total': metrics.get('disk', {}).get('partitions', [{}])[0].get('total', 0) if metrics.get('disk', {}).get('partitions') else 0,
-                    'used': metrics.get('disk', {}).get('partitions', [{}])[0].get('used', 0) if metrics.get('disk', {}).get('partitions') else 0,
-                    'free': metrics.get('disk', {}).get('partitions', [{}])[0].get('free', 0) if metrics.get('disk', {}).get('partitions') else 0
+                    'total': self._safe_get_disk_value(metrics, 'total'),
+                    'used': self._safe_get_disk_value(metrics, 'used'),
+                    'free': self._safe_get_disk_value(metrics, 'free')
                 },
                 'network': {
                     'bytes_sent': metrics.get('network', {}).get('io_stats', {}).get('bytes_sent', 0),
                     'bytes_recv': metrics.get('network', {}).get('io_stats', {}).get('bytes_recv', 0),
                     'packets_sent': metrics.get('network', {}).get('io_stats', {}).get('packets_sent', 0),
                     'packets_recv': metrics.get('network', {}).get('io_stats', {}).get('packets_recv', 0),
-                    'interfaces': {}
+                    'interfaces': metrics.get('network', {}).get('interfaces', {})
                 },
                 'process_count': metrics.get('process_count', 0),
                 'additional': metrics.get('additional', {})
@@ -148,44 +201,62 @@ class SystemMetricsService:
             
             # If we have cached metrics, return those instead of failing
             if self.last_metrics is not None:
+                self.logger.warning("Returning cached metrics due to collection error")
                 return self.last_metrics
             
             # Otherwise, return a minimal set of metrics
-            return {
-                'timestamp': datetime.now().isoformat(),
-                'cpu': {
-                    'percent': 0,
-                    'temperature': None,
-                    'cores': 0,
-                    'physical_cores': 0
-                },
-                'memory': {
-                    'percent': 0,
-                    'total': 0,
-                    'available': 0,
-                    'used': 0,
-                    'free': 0
-                },
-                'disk': {
-                    'percent': 0,
-                    'total': 0,
-                    'used': 0,
-                    'free': 0
-                },
-                'network': {
-                    'bytes_sent': 0,
-                    'bytes_recv': 0,
-                    'packets_sent': 0,
-                    'packets_recv': 0,
-                    'interfaces': {}
-                },
-                'process_count': 0,
-                'additional': {
-                    'error': str(e)
-                }
-            }
+            return self._get_empty_metrics(str(e))
     
-    async def _get_detailed_cpu_metrics(self) -> Dict[str, Any]:
+    def _safe_get_disk_value(self, metrics: Dict[str, Any], key: str) -> int:
+        """Safely extract disk values from metrics"""
+        try:
+            partitions = metrics.get('disk', {}).get('partitions', [])
+            if partitions and len(partitions) > 0:
+                return partitions[0].get(key, 0)
+            return 0
+        except Exception:
+            return 0
+    
+    def _get_empty_metrics(self, error_msg: str = None) -> Dict[str, Any]:
+        """Return empty metrics structure with optional error"""
+        metrics = {
+            'timestamp': datetime.now().isoformat(),
+            'cpu': {
+                'percent': 0,
+                'temperature': None,
+                'cores': 0,
+                'physical_cores': 0
+            },
+            'memory': {
+                'percent': 0,
+                'total': 0,
+                'available': 0,
+                'used': 0,
+                'free': 0
+            },
+            'disk': {
+                'percent': 0,
+                'total': 0,
+                'used': 0,
+                'free': 0
+            },
+            'network': {
+                'bytes_sent': 0,
+                'bytes_recv': 0,
+                'packets_sent': 0,
+                'packets_recv': 0,
+                'interfaces': {}
+            },
+            'process_count': 0,
+            'additional': {}
+        }
+        
+        if error_msg:
+            metrics['additional']['error'] = error_msg
+            
+        return metrics
+    
+    async def get_detailed_cpu_metrics(self) -> Dict[str, Any]:
         """
         Get detailed CPU metrics including per-core usage, top processes, and temperature.
         Now delegates to the CPU metrics service.
@@ -219,6 +290,46 @@ class SystemMetricsService:
                 'physical_cores': 0
             }
     
+    async def get_detailed_memory_metrics(self) -> Dict[str, Any]:
+        """Get detailed memory metrics"""
+        try:
+            return await self.metrics_service.get_memory_metrics(force_refresh=True)
+        except Exception as e:
+            self.logger.error(f"Error getting memory metrics: {str(e)}")
+            return {}
+    
+    async def get_detailed_disk_metrics(self) -> Dict[str, Any]:
+        """Get detailed disk metrics"""
+        try:
+            return await self.metrics_service.get_disk_metrics(force_refresh=True)
+        except Exception as e:
+            self.logger.error(f"Error getting disk metrics: {str(e)}")
+            return {}
+    
+    async def get_detailed_network_metrics(self) -> Dict[str, Any]:
+        """Get detailed network metrics"""
+        try:
+            return await self.metrics_service.get_network_metrics(force_refresh=True)
+        except Exception as e:
+            self.logger.error(f"Error getting network metrics: {str(e)}")
+            return {}
+    
+    async def get_largest_directories(self, path='/', limit=10, max_depth=3) -> List[Dict[str, Any]]:
+        """Get largest directories (expensive operation)"""
+        try:
+            return await self.metrics_service.get_largest_directories(path, limit, max_depth)
+        except Exception as e:
+            self.logger.error(f"Error getting largest directories: {str(e)}")
+            return []
+    
+    async def get_connection_stats_by_process(self) -> Dict[str, Dict[str, Any]]:
+        """Get network statistics grouped by process (expensive operation)"""
+        try:
+            return await self.metrics_service.get_connection_stats_by_process()
+        except Exception as e:
+            self.logger.error(f"Error getting connection stats by process: {str(e)}")
+            return {}
+    
     @classmethod
     async def get_instance(cls, db: AsyncSession = None) -> 'SystemMetricsService':
         """
@@ -231,7 +342,10 @@ class SystemMetricsService:
             SystemMetricsService: The singleton instance
         """
         if cls._instance is None:
-            async with cls._lock:
+            # Create a temporary instance to get the lock
+            temp_instance = cls()
+            lock = await temp_instance._get_lock()
+            async with lock:
                 if cls._instance is None:
-                    cls._instance = SystemMetricsService()
+                    cls._instance = cls()
         return cls._instance

@@ -213,9 +213,9 @@ export const SystemAlertsPanel: React.FC<SystemAlertsPanelProps> = ({
                 <p>No unread alerts to display</p>
               </div>
             ) : (
-              alerts.filter(alert => !alert.is_read).slice(0, maxAlerts).map(alert => (
+              alerts.slice(0, maxAlerts).map((alert, index) => (
                 <div 
-                  key={alert.id} 
+                  key={`${alert.id}-${index}`}
                   className={`dashboard-alert-card ${alert.is_read ? 'read' : 'unread'} ${alert.selected ? 'selected' : ''} ${expandedAlertId === alert.id ? 'expanded' : ''}`}
                   onClick={() => handleAlertClick(alert.id)}
                 >

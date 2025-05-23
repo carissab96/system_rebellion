@@ -43,19 +43,8 @@ class DiskMetricsService:
             }
         except Exception as e:
             self.logger.error(f"Error collecting disk metrics: {str(e)}")
-            return {
-                'partitions': [],
-                'io_stats': {
-                    'read_bytes': 0,
-                    'write_bytes': 0,
-                    'read_count': 0,
-                    'write_count': 0,
-                    'read_time': 0,
-                    'write_time': 0,
-                    'read_speed': 0,
-                    'write_speed': 0
-                }
-            }
+            # Return empty dict on error
+            return {}
     
     def _get_disk_partitions(self) -> List[Dict[str, Any]]:
         """Get information about disk partitions"""
@@ -99,17 +88,30 @@ class DiskMetricsService:
             io_counters = psutil.disk_io_counters()
             current_time = datetime.now().timestamp()
             
-            # Initialize with default values
-            io_stats = {
-                'read_bytes': io_counters.read_bytes,
-                'write_bytes': io_counters.write_bytes,
-                'read_count': io_counters.read_count,
-                'write_count': io_counters.write_count,
-                'read_time': getattr(io_counters, 'read_time', 0),
-                'write_time': getattr(io_counters, 'write_time', 0),
-                'read_speed': 0,  # bytes per second
-                'write_speed': 0  # bytes per second
-            }
+            # Initialize with available values
+            io_stats = {}
+            
+            # Add core metrics if available
+            if io_counters:
+                io_stats.update({
+                    'read_bytes': io_counters.read_bytes,
+                    'write_bytes': io_counters.write_bytes,
+                    'read_count': io_counters.read_count,
+                    'write_count': io_counters.write_count
+                })
+                
+                # Add optional metrics if available
+                read_time = getattr(io_counters, 'read_time', None)
+                if read_time is not None:
+                    io_stats['read_time'] = read_time
+                    
+                write_time = getattr(io_counters, 'write_time', None)
+                if write_time is not None:
+                    io_stats['write_time'] = write_time
+                    
+                # Initialize speeds as None until calculated
+                io_stats['read_speed'] = None
+                io_stats['write_speed'] = None
             
             # Calculate read/write speeds if we have previous measurements
             if self._previous_io_counters and self._previous_io_time:
@@ -133,16 +135,8 @@ class DiskMetricsService:
             return io_stats
         except Exception as e:
             self.logger.error(f"Error getting disk I/O stats: {str(e)}")
-            return {
-                'read_bytes': 0,
-                'write_bytes': 0,
-                'read_count': 0,
-                'write_count': 0,
-                'read_time': 0,
-                'write_time': 0,
-                'read_speed': 0,
-                'write_speed': 0
-            }
+            # Return empty dict on error
+            return {}
     
     def get_largest_directories(self, path: str = '/', limit: int = 10, max_depth: int = 3) -> List[Dict[str, Any]]:
         """
