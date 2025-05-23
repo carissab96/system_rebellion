@@ -220,9 +220,20 @@ export const apiMethods = {
     return response.data;
   },
   // Generic POST method with type parameters
-  post: async <T, D>(url: string, data: D): Promise<T> => {
-    const response = await apiClient.post<T>(url, data);
-    return response.data;
+  post: async <T, D = any>(url: string, data: D): Promise<T> => {
+    try {
+      // Ensure CSRF token is initialized before making the request
+      const csrfToken = getCsrfToken();
+      if (!csrfToken) {
+        console.log('🎩 Sir Hawkington is fetching a fresh CSRF token...');
+        await initializeCsrf();
+      }
+      const response = await apiClient.post<T>(url, data);
+      return response.data;
+    } catch (error) {
+      console.error('🎩 Sir Hawkington encountered an error:', error);
+      throw error;
+    }
   },
   // Generic DELETE method with type parameter
   delete: async <T>(url: string): Promise<T> => {

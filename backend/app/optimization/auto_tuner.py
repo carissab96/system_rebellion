@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Dict, Optional, Any, Tuple
 from app.optimization.system_permissions import check_required_permissions, get_permission_summary
-from app.services.system_metrics_service import SystemMetricsService
+from app.services.metrics.metrics_service import MetricsService
 from app.models.tuning_history import TuningHistory
 from app.core.database import SessionLocal
 

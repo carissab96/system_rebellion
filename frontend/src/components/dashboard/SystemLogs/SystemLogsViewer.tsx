@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Box, 
   Typography, 
@@ -43,8 +43,8 @@ const sourceDisplayNames: Record<string, string> = {
   'system': 'System',
   'command': 'Command',
   'WebAutoTuner': 'Auto Tuner',
-  'SystemMetricsService': 'Metrics Service',
-  'SystemLogService': 'Log Service',
+  'MetricsService': 'Metrics Service',
+  'LogService': 'Log Service',
   'ResourceMonitor': 'Resource Monitor',
 };
 
@@ -73,7 +73,7 @@ const SystemLogsViewer: React.FC<SystemLogsViewerProps> = ({
   const [total, setTotal] = useState(0);
   const [limit, setLimit] = useState(100);
 
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     try {
       setLoading(true);
       const response = await systemLogsService.getLogs(limit, source, level);
@@ -85,16 +85,16 @@ const SystemLogsViewer: React.FC<SystemLogsViewerProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [limit, source, level]);
 
-  const handleClearLogs = async () => {
+  const handleClearLogs = useCallback(async () => {
     try {
       await systemLogsService.clearLogs();
       fetchLogs();
     } catch (error) {
       console.error('Error clearing logs:', error);
     }
-  };
+  }, [fetchLogs]);
 
   // Set up auto-refresh
   useEffect(() => {
@@ -104,7 +104,7 @@ const SystemLogsViewer: React.FC<SystemLogsViewerProps> = ({
       const interval = setInterval(fetchLogs, refreshInterval);
       return () => clearInterval(interval);
     }
-  }, [source, level, limit, autoRefresh, refreshInterval]);
+  }, [source, level, limit, autoRefresh, refreshInterval]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Format timestamp
   const formatTimestamp = (timestamp: string) => {

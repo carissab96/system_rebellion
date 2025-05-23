@@ -15,6 +15,7 @@ import psutil
 import logging
 from typing import Dict, Any, List
 from datetime import datetime
+from .transformers.cpu_metrics_transformer import transform_cpu_metrics
 
 class CPUMetricsService:
     """Service for collecting detailed CPU metrics"""
@@ -49,24 +50,27 @@ class CPUMetricsService:
             # Get CPU count information
             cpu_cores = self._get_cpu_cores()
             
-            return {
-                'total_percent': total_percent,
-                'per_core_percent': per_core_percent,
-                'temperature': cpu_temp,
-                'frequency': cpu_freq_info,
-                'cores': cpu_cores,
-                'top_processes': top_processes
-            }
+            # Collect raw metrics
+            metrics = {}
+            if total_percent is not None:
+                metrics['total_percent'] = total_percent
+            if per_core_percent:
+                metrics['per_core_percent'] = per_core_percent
+            if cpu_temp is not None:
+                metrics['temperature'] = cpu_temp
+            if cpu_freq_info:
+                metrics['frequency'] = cpu_freq_info
+            if cpu_cores:
+                metrics['cores'] = cpu_cores
+            if top_processes:
+                metrics['top_processes'] = top_processes
+                
+            # Transform metrics to frontend format
+            return transform_cpu_metrics(metrics)
         except Exception as e:
             self.logger.error(f"Error collecting CPU metrics: {str(e)}")
-            return {
-                'total_percent': 0,
-                'per_core_percent': [],
-                'temperature': None,
-                'frequency': {'current': None, 'min': None, 'max': None},
-                'cores': {'logical': None, 'physical': None},
-                'top_processes': []
-            }
+            # Return None for all metrics on error
+            return {}
     
     def _get_cpu_frequency(self) -> Dict[str, Any]:
         """Get CPU frequency information"""

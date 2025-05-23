@@ -74,9 +74,15 @@ export const createSystemAlert = createAsyncThunk<
   async (alertData: Omit<SystemAlert, 'id' | 'timestamp' | 'created_at' | 'updated_at'>, { rejectWithValue }) => {
     try {
       console.log("🦉 Sir Hawkington is creating a new system alert...");
-      const response = await apiMethods.post<SystemAlert, typeof alertData>(`${BASE_PATH}`, alertData);
+      // Ensure CSRF token is initialized
+      const response = await apiMethods.post<SystemAlert>(`${BASE_PATH}`, {
+        ...alertData,
+        timestamp: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
       console.log("🦉 Sir Hawkington created a new alert:", response);
-      return response as SystemAlert;
+      return response;
     } catch (error: any) {
       console.error("💥 Sir Hawkington crashed while creating an alert!", error);
       return rejectWithValue(

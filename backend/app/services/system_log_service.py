@@ -27,13 +27,13 @@ class LogEntry:
             "timestamp": self.timestamp.isoformat()
         }
 
-class SystemLogService:
+class LogService:
     _instance = None
     _lock = asyncio.Lock()
     
     def __new__(cls):
         if cls._instance is None:
-            cls._instance = super(SystemLogService, cls).__new__(cls)
+            cls._instance = super(LogService, cls).__new__(cls)
             cls._instance._initialized = False
         return cls._instance
     
@@ -41,7 +41,7 @@ class SystemLogService:
         if self._initialized:
             return
             
-        self.logger = logging.getLogger('SystemLogService')
+        self.logger = logging.getLogger('LogService')
         # Use a deque with a max length to prevent memory issues
         self.logs = deque(maxlen=1000)  # Store last 1000 log entries
         self._initialized = True
@@ -49,8 +49,8 @@ class SystemLogService:
         # Set up a handler to capture logs from other parts of the application
         self._setup_log_capture()
         
-        self.logger.info("SystemLogService initialized")
-        self.add_log("System Log Service initialized", "info", "system")
+        self.logger.info("LogService initialized")
+        self.add_log("Log Service initialized", "info", "system")
     
     def _setup_log_capture(self):
         """Set up handlers to capture logs from other loggers"""

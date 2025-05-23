@@ -33,11 +33,15 @@ export interface CPUProcess {
   
   export interface CPUData {
     name: string;
-    frequency: number;
+    frequency: {
+      current: number;
+      min: number;
+      max: number;
+    };
     temp: CPUTemperature;
     processes: CPUProcess[];
     core_count: number;
-    usage_percent: undefined;
+    usage_percent: number;
     overall_usage: number;
     process_count: number;
     thread_count: number;

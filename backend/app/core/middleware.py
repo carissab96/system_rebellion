@@ -1,5 +1,4 @@
 from fastapi import FastAPI
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 import secrets
@@ -37,3 +36,5 @@ def setup_middleware(app: FastAPI):
         expose_headers=["Content-Type", "X-CSRFToken", "Authorization"],
         max_age=600
     )
+
+    

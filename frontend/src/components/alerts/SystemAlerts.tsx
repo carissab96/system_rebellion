@@ -668,9 +668,9 @@ export const SystemAlerts: React.FC = () => {
         
         <div className="alerts-list">
           {getFilteredAlerts().length > 0 ? (
-            getFilteredAlerts().map(alert => (
+            getFilteredAlerts().map((alert, index) => (
               <div 
-                key={alert.id} 
+                key={`${alert.id}-${index}`} 
                 className={`alert-card ${!alert.is_read ? 'unread' : 'read'} ${alert.selected ? 'selected' : ''} ${expandedAlertId === alert.id ? 'expanded' : ''}`}
                 onClick={() => handleAlertClick(alert.id)}
               >

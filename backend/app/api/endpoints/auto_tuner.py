@@ -8,10 +8,8 @@ from app.api.deps import get_db, get_current_user
 from app.models.user import User
 from app.models.system import OptimizationProfile
 from app.optimization.auto_tuner import AutoTuner
-from app.optimization.resource_monitor import ResourceMonitor
-from app.optimization.pattern_analyzer import PatternAnalyzer
-from app.services.system_metrics_service import SystemMetricsService
-from app.services.system_log_service import SystemLogService
+from app.services.metrics.metrics_service import MetricsService
+from app.services.system_log_service import LogService
 from app.optimization.auto_tuner_db_helpers import save_tuning_history_to_db, get_tuning_history_from_db
 
 router = APIRouter()
@@ -27,7 +25,7 @@ async def get_current_metrics(
     Returns real-time metrics about CPU, memory, disk, and network usage.
     """
     # Use the centralized metrics service instead of creating a new ResourceMonitor
-    metrics_service = await SystemMetricsService.get_instance()
+    metrics_service = await MetricsService.get_instance()
     metrics = await metrics_service.get_metrics()
     return metrics
 
@@ -86,7 +84,7 @@ async def apply_optimization_profile(
     tuner = AutoTuner()
     
     # Get the log service
-    log_service = await SystemLogService.get_instance()
+    log_service = await LogService.get_instance()
     
     # Log the start of profile application
     log_service.add_log(
@@ -167,7 +165,7 @@ async def apply_recommendation(
     result = await tuner.apply_tuning(selected_recommendation, user_id=current_user.id)
     
     # Log the tuning action
-    log_service = await SystemLogService.get_instance()
+    log_service = await LogService.get_instance()
     success = True if result and result.get("success") else False
     log_service.add_tuner_log(
         action="Auto-tuner recommendation",
@@ -199,7 +197,7 @@ async def get_system_patterns(
     Analyzes historical metrics to identify patterns in system usage.
     """
     # Get the log service for detailed logging
-    log_service = await SystemLogService.get_instance()
+    log_service = await LogService.get_instance()
     log_service.add_log(
         message="Fetching system patterns",
         level="info",

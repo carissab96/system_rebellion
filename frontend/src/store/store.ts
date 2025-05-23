@@ -6,6 +6,7 @@ import systemAlertsReducer from './slices/systemAlertsSlice';
 import autoTunerReducer from './slices/autoTunerSlice';
 import optimizationReducer from './slices/optimizationSlice';
 import configurationReducer from './slices/configurationSlice';
+import cpuReducer from './slices/metrics/CPUSlice';
 import { MetricsState } from '../types/metrics';
 import xsrfMiddleware from './csrf';
 
@@ -18,7 +19,7 @@ export const store = configureStore({
     autoTuner: autoTunerReducer,
     optimization: optimizationReducer,
     configuration: configurationReducer,
-    //... other reducers
+    cpu: cpuReducer,
   },
   middleware: (getDefaultMiddleware) => 
     getDefaultMiddleware().concat(xsrfMiddleware)
