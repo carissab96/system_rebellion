@@ -7,11 +7,11 @@ class MockWebSocket {
   onclose: (() => void) | null = null;
   onerror: ((error: any) => void) | null = null;
   
-  constructor(url: string) {
+  constructor(_url: string) {
     setTimeout(() => this.onopen?.(), 0);
   }
   
-  send(data: string) {}
+  send(_data: string) {}
   close() {}
 }
 

@@ -47,7 +47,8 @@ const checkThresholds = (metrics: SystemMetric, thresholds: MetricThresholds): M
       threshold: thresholds.cpu.critical,
       current_value: metrics.cpu_usage,
       timestamp: now,
-      message: `CPU usage critical: ${metrics.cpu_usage}%`
+      message: `CPU usage critical: ${metrics.cpu_usage}%`,
+      type: 'usage'
     });
   } else if (metrics.cpu_usage >= thresholds.cpu.warning) {
     alerts.push({
@@ -57,7 +58,8 @@ const checkThresholds = (metrics: SystemMetric, thresholds: MetricThresholds): M
       threshold: thresholds.cpu.warning,
       current_value: metrics.cpu_usage,
       timestamp: now,
-      message: `CPU usage high: ${metrics.cpu_usage}%`
+      message: `CPU usage high: ${metrics.cpu_usage}%`,
+      type: 'usage'
     });
   }
   
