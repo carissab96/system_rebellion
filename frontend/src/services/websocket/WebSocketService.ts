@@ -44,7 +44,7 @@ export class WebSocketService {
       ? 'ws://localhost:8000'
       : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}`;
 
-    // Always use /ws/system-metrics endpoint
+    // Connect to /ws/system-metrics endpoint
     return `${baseUrl}/ws/system-metrics?token=${encodeURIComponent(token)}`;
   }
 
@@ -81,7 +81,7 @@ export class WebSocketService {
       }
 
       const url = this.getWebSocketUrl();
-      console.log('🦔 Sir Hawkington: Connecting to WebSocket...');
+      console.log('🦔 Sir Hawkington: Connecting to WebSocket...', url);
       
       this.socket = new WebSocket(url);
 
@@ -92,18 +92,37 @@ export class WebSocketService {
 
       this.socket.onmessage = (event) => {
         try {
+          console.log('🔍 Raw WebSocket message:', event.data);
           const message = JSON.parse(event.data);
+          console.log('📥 Parsed message type:', message.type);
+          
           if (message.type === 'error') {
-            console.error('🚨 WebSocket error:', message.message);
+            console.error('🚨 WebSocket error from server:', message.message);
             this.onError(new Error(message.message));
             return;
+          } 
+          
+          if (message.type === 'connection_established') {
+            console.log('🦔 Connection established:', message.message);
+            return;
           }
-          this.onMessage(message as CPUMetricsMessage);
+          
+          if (message.type === 'heartbeat') {
+            console.log('💓 Heartbeat received');
+            return;
+          }
+          
+          if (message.type === 'cpu') {
+            // Pass CPU metrics to handler
+            this.onMessage(message as CPUMetricsMessage);
+            return;
+          }
+          
+          console.log('⚠️ Unhandled message type:', message.type);
         } catch (error) {
-          console.error('🚨 Failed to parse WebSocket message:', error);
+          console.error('🚨 Failed to parse WebSocket message:', error, event.data);
         }
       };
-
       this.socket.onerror = (event) => {
         console.error('🚨 WebSocket error:', event);
         this.onError(new Error('WebSocket connection error'));
@@ -113,15 +132,13 @@ export class WebSocketService {
         console.log('🦔 Sir Hawkington: WebSocket closed:', event.code, event.reason);
         this.socket = null;
 
-        if (event.code === 1008) {
-          // Policy Violation (auth error) - don't retry
-          console.error('🚨 Authentication failed');
-          this.onError(new Error('Authentication failed'));
-          return;
-        }
+        // Always retry, even for auth errors - don't disconnect on 401s
+        // This prevents the WebSocket from permanently disconnecting due to API errors
+        console.log('🦔 Sir Hawkington: Will attempt to reconnect regardless of error code');
         
         if (this.retryCount < this.maxRetries) {
-          console.log(`🦔 Sir Hawkington: Attempting reconnect (${this.retryCount + 1}/${this.maxRetries})`);
+          this.retryCount++;
+          console.log(`🦔 Sir Hawkington: Attempting reconnect (${this.retryCount}/${this.maxRetries})`);
           this.scheduleReconnect();
         } else {
           console.error('🚨 Maximum retry attempts reached');

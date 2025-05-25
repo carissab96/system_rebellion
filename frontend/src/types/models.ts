@@ -46,6 +46,18 @@ export interface OptimizationProfile {
     is_active: boolean;
     created_at: string;
     updated_at: string;
+    thresholds: {
+        cpu_threshold: number;
+        memory_threshold: number;
+        disk_threshold: number;
+        network_threshold: number;
+    };
+    actions: {
+        cpu_action: 'reduce' | 'increase' | 'reduce_and_increase';
+        memory_action: 'reduce' | 'increase' | 'reduce_and_increase';
+        disk_action: 'reduce' | 'increase' | 'reduce_and_increase';
+        network_action: 'reduce' | 'increase' | 'reduce_and_increase';
+    };
 }
 
 // Match SystemAlert

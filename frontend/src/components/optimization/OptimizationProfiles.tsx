@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import './OptimizationProfiles.css';
+import './modal-fix.css'; // Import the modal fix CSS
 import { 
   fetchOptimizationProfiles, 
   createOptimizationProfile,
@@ -296,15 +297,36 @@ export const OptimizationProfiles: React.FC = () => {
   };
 
   const handleSubmit = () => {
-    if (editingId) {
-      dispatch(updateOptimizationProfile({ id: editingId, ...formData }));
-    } else {
-      dispatch(createOptimizationProfile(formData));
+    // Validate required fields
+    if (!formData.name.trim()) {
+      alert('Please enter a profile name');
+      return;
     }
-    setIsModalOpen(false);
-    setFormData(defaultFormData);
-    setEditingId(null);
-    setSnailQuote(snailQuotes[Math.floor(Math.random() * snailQuotes.length)]);
+
+    // Log the data being submitted
+    console.log(`🐌 The Meth Snail is ${editingId ? 'updating' : 'creating'} a profile with data:`, formData);
+    
+    try {
+      if (editingId) {
+        dispatch(updateOptimizationProfile({ id: editingId, ...formData }));
+      } else {
+        dispatch(createOptimizationProfile(formData));
+      }
+      
+      // Close modal and reset form
+      setIsModalOpen(false);
+      setFormData(defaultFormData);
+      setEditingId(null);
+      setSnailQuote(snailQuotes[Math.floor(Math.random() * snailQuotes.length)]);
+      
+      // Refresh profiles after a short delay to ensure the server has processed the request
+      setTimeout(() => {
+        dispatch(fetchOptimizationProfiles());
+      }, 1000);
+    } catch (error) {
+      console.error('🚨 Error submitting profile:', error);
+      alert(`The Meth Snail crashed! Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   };
 
   const handleEdit = (profile: any) => {
@@ -349,8 +371,23 @@ export const OptimizationProfiles: React.FC = () => {
   };
 
   const handleActivate = (id: string) => {
-    dispatch(activateOptimizationProfile(id));
-    setSnailQuote("The Meth Snail is PUMPED to apply this optimization profile! ZOOOOOM!");
+    const attemptActivation = async (retries = 3) => {
+      try {
+        await dispatch(activateOptimizationProfile(id)).unwrap();
+        setSnailQuote("The Meth Snail is PUMPED to apply this optimization profile! ZOOOOOM!");
+      } catch (error) {
+        console.error("Activation attempt failed:", error);
+        if (retries > 0) {
+          // Wait a bit and retry
+          console.log(`Retrying... ${retries} attempts left`);
+          setTimeout(() => attemptActivation(retries - 1), 1000);
+        } else {
+          alert("Could not activate profile after multiple attempts. The database might be busy.");
+        }
+      }
+    };
+    
+    attemptActivation();
   };
 
   const openCreateModal = () => {
@@ -358,6 +395,28 @@ export const OptimizationProfiles: React.FC = () => {
     setEditingId(null);
     setIsModalOpen(true);
     setActiveTab('basic');
+    
+    // Force modal to be visible after a short delay
+    // Using a longer delay to ensure DOM has updated
+    setTimeout(() => {
+      console.log('Forcing modal visibility after delay');
+      const modalOverlay = document.querySelector('.modal-overlay');
+      if (modalOverlay) {
+        (modalOverlay as HTMLElement).style.display = 'flex';
+        (modalOverlay as HTMLElement).style.zIndex = '9999999';
+        (modalOverlay as HTMLElement).style.opacity = '1';
+        
+        // Also ensure the modal content is visible
+        const modalContent = document.querySelector('.modal-content');
+        if (modalContent) {
+          (modalContent as HTMLElement).style.display = 'flex';
+          (modalContent as HTMLElement).style.zIndex = '10000000';
+          (modalContent as HTMLElement).style.opacity = '1';
+        }
+      } else {
+        console.warn('Modal overlay not found in DOM after opening');
+      }
+    }, 200);
   };
 
   if (loading) {
@@ -458,12 +517,18 @@ export const OptimizationProfiles: React.FC = () => {
         )}
       </div>
 
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title={editingId ? "Edit Usage Profile" : "Create Usage Profile"}
+      <Modal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        title={editingId ? "Edit Profile" : "Create Profile"}
         size="medium"
       >
+        {error && (
+          <div className="error-message">
+            <p>Error: {error}</p>
+            <button onClick={() => dispatch({ type: 'optimization/clearOptimizationError' })}>Dismiss</button>
+          </div>
+        )}
         <div className="profile-form">
           {/* Basic Info Section */}
           <div className="form-tabs">

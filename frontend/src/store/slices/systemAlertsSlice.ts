@@ -101,9 +101,9 @@ export const markAlertAsRead = createAsyncThunk<
   async (id: string, { rejectWithValue }) => {
     try {
       console.log(`🦉 Sir Hawkington is marking alert ${id} as read...`);
-      const response = await apiMethods.post<SystemAlert, {}>(`${BASE_PATH}${id}/mark-as-read`, {});
+      const response = await apiMethods.post<SystemAlert>(`${BASE_PATH}${id}/mark-as-read`, {});
       console.log("🦉 Sir Hawkington marked the alert as read:", response);
-      return response as SystemAlert;
+      return response;
     } catch (error: any) {
       console.error("💥 Sir Hawkington crashed while marking an alert as read!", error);
       return rejectWithValue(

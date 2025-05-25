@@ -1,6 +1,6 @@
 // src/types/autoTuner.ts
-import { OptimizationProfile } from './metrics';
 import { SystemMetric } from './metrics';
+import { OptimizationProfile } from '../store/slices/optimizationSlice';
 
 export interface TuningParameter {
   name: string;

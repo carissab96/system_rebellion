@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '../../../store/store';
+import { RootState, AppDispatch } from '../../../store/store';
 import {
   fetchCurrentMetrics,
   fetchRecommendations,
@@ -10,11 +10,11 @@ import {
   applyOptimizationProfile,
   setActiveProfile
 } from '../../../store/slices/autoTunerSlice';
-import { AppDispatch } from '../../../store/store';
-import { OptimizationProfile } from '../../../types/metrics';
+import { OptimizationProfile } from '../../../store/slices/optimizationSlice';
 import { ParameterDescription, AutoTunerHelp } from './parameter_descriptions';
 import SystemLogsViewer from '../../dashboard/SystemLogs/SystemLogsViewer';
 import './auto_tuner.css';
+import { fetchOptimizationProfiles } from '@/store/slices/optimizationSlice';
 
 // Helper function to format bytes with appropriate units
 const formatBytes = (bytes: number, decimals = 2) => {
@@ -419,34 +419,13 @@ const TuningHistoryPanel: React.FC = () => {
 const ProfilesPanel: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const activeProfile = useSelector((state: RootState) => state.autoTuner.activeProfile);
-  const [profiles, setProfiles] = useState<OptimizationProfile[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-
-  const fetchProfiles = () => {
-    setLoading(true);
-    setError(null);
-    // Replace with your actual API endpoint
-    fetch('/api/optimization-profiles')
-      .then(res => {
-        if (!res.ok) throw new Error('Failed to fetch profiles');
-        return res.json();
-      })
-      .then((data: OptimizationProfile[]) => {
-        setProfiles(data);
-        setLoading(false);
-      })
-      .catch(err => {
-        setError(err.message);
-        setLoading(false);
-      });
-  };
-
+  const { profiles, loading, error } = useSelector((state: RootState) => state.optimization as { profiles: OptimizationProfile[], loading: boolean, error: string | null });
+  
   useEffect(() => {
-    fetchProfiles();
-  }, []);
-
+    // Use the existing action from your optimization slice
+    dispatch(fetchOptimizationProfiles());
+  }, [dispatch]);
+  
   const handleApplyProfile = (profileId: string) => {
     // Find the profile to set as active
     const profileToApply = profiles.find(p => p.id === profileId);
@@ -457,42 +436,54 @@ const ProfilesPanel: React.FC = () => {
       dispatch(applyOptimizationProfile(profileId));
     }
   };
-
+  
   return (
     <div className="profiles-panel">
       <h2>Optimization Profiles</h2>
       {loading && <div className="loading-message">Loading profiles...</div>}
       {error && <div className="error-message">Error: {error}</div>}
       <div className="profiles-list">
-        {profiles.map((profile) => (
-          <div key={profile.id} className={`profile-card ${activeProfile?.id === profile.id ? 'active' : ''}`}>
-            <div className="profile-header">
-              <h3>{profile.name}</h3>
-              {activeProfile?.id === profile.id && (
-                <div className="active-badge">Active</div>
-              )}
-            </div>
-            <div className="profile-description">{profile.description}</div>
-            <div className="profile-thresholds">
-              <h4>Thresholds</h4>
-              <div className="thresholds-grid">
-                <div>CPU: {profile.thresholds.cpu.warning}%</div>
-                <div>Memory: {profile.thresholds.memory.warning}%</div>
-                <div>Disk: {profile.thresholds.disk.warning}%</div>
-                <div>Network: {profile.thresholds.network.warning}%</div>
+        {profiles && profiles.length > 0 ? (
+          profiles.map((profile: OptimizationProfile) => {
+            // Extract thresholds from profile settings structure
+            const cpuThreshold = profile.settings?.cpuThreshold || 0;
+            const memoryThreshold = profile.settings?.memoryThreshold || 0;
+            const diskThreshold = profile.settings?.diskThreshold || 0;
+            const networkThreshold = profile.settings?.networkThreshold || 0;
+            
+            return (
+              <div key={profile.id} className={`profile-card ${activeProfile?.id === profile.id ? 'active' : ''}`}>
+                <div className="profile-header">
+                  <h3>{profile.name}</h3>
+                  {activeProfile?.id === profile.id && (
+                    <div className="active-badge">Active</div>
+                  )}
+                </div>
+                <div className="profile-description">{profile.description}</div>
+                <div className="profile-thresholds">
+                  <h4>Thresholds</h4>
+                  <div className="thresholds-grid">
+                    <div>CPU: {cpuThreshold}%</div>
+                    <div>Memory: {memoryThreshold}%</div>
+                    <div>Disk: {diskThreshold}%</div>
+                    <div>Network: {networkThreshold}%</div>
+                  </div>
+                </div>
+                <div className="profile-actions">
+                  <button
+                    className="apply-button"
+                    onClick={() => handleApplyProfile(profile.id)}
+                    disabled={activeProfile?.id === profile.id}
+                  >
+                    {activeProfile?.id === profile.id ? 'Applied' : 'Apply'}
+                  </button>
+                </div>
               </div>
-            </div>
-            <div className="profile-actions">
-              <button 
-                className="apply-button" 
-                onClick={() => handleApplyProfile(profile.id)}
-                disabled={activeProfile?.id === profile.id}
-              >
-                {activeProfile?.id === profile.id ? 'Applied' : 'Apply'}
-              </button>
-            </div>
-          </div>
-        ))}
+            );
+          })
+        ) : (
+          <div className="no-profiles-message">No profiles available.</div>
+        )}
       </div>
     </div>
   );
@@ -531,16 +522,30 @@ export const AutoTuner: React.FC = () => {
   }, [lastUpdated]);
 
   useEffect(() => {
-    // Fetch initial data
-    dispatch(fetchCurrentMetrics());
-    dispatch(fetchRecommendations());
-    dispatch(fetchPatterns());
-    dispatch(fetchTuningHistory());
+    // Function to safely dispatch actions with error handling
+    const safeDispatch = async (action: any) => {
+      try {
+        await dispatch(action);
+      } catch (error) {
+        console.error(`Error dispatching ${action.type}:`, error);
+        // Don't rethrow - we want to continue even if one action fails
+      }
+    };
+
+    // Fetch initial data - one at a time to prevent overwhelming the API
+    const fetchInitialData = async () => {
+      await safeDispatch(fetchCurrentMetrics());
+      await safeDispatch(fetchRecommendations());
+      await safeDispatch(fetchPatterns());
+      await safeDispatch(fetchTuningHistory());
+    };
+    
+    fetchInitialData();
 
     // Set up polling for metrics and recommendations
     const pollingInterval = setInterval(() => {
-      dispatch(fetchCurrentMetrics());
-      dispatch(fetchRecommendations());
+      safeDispatch(fetchCurrentMetrics());
+      safeDispatch(fetchRecommendations());
     }, 30000); // Poll every 30 seconds
 
     return () => clearInterval(pollingInterval);
