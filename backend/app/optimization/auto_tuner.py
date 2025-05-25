@@ -89,11 +89,19 @@ class AutoTuner:
         """Get current system metrics from the centralized metrics service"""
         try:
             # Use the centralized metrics service
-            metrics_service = await SystemMetricsService.get_instance()
-            return await metrics_service.get_metrics()
+            from app.services.metrics.metrics_service import MetricsService
+            metrics_service = await MetricsService.get_instance()
+            metrics = await metrics_service.get_metrics()
+            self.logger.info(f"Retrieved metrics successfully")
+            return metrics
         except Exception as e:
             self.logger.error(f"Error getting system metrics: {str(e)}")
             return None
+
+    # This method is kept for backward compatibility
+    async def get_metrics(self) -> Dict:
+        """Get current system metrics from the centralized metrics service (deprecated, use get_current_metrics instead)"""
+        return await self.get_current_metrics()
 
     async def apply_tuning(self, data: Dict, user_id: str = None) -> Optional[Dict]:
         """Apply a tuning action
@@ -134,8 +142,8 @@ class AutoTuner:
                 }
                 
             # Get metrics before applying the change
-            metrics_service = await SystemMetricsService.get_instance()
-            metrics_before = await metrics_service.get_metrics(force_refresh=True)
+            metrics_service = await SystemMetricsService.get_metrics()
+            metrics_before = await metrics_service.get_metrics()
             tuning_data['metrics_before'] = metrics_before
             
             # Check if we have permission to modify this parameter
@@ -263,26 +271,41 @@ class AutoTuner:
                 from app.optimization.auto_tuner_db_helpers import save_tuning_history_to_db
                 await save_tuning_history_to_db(tuning_data, user_id)
             
-            return tuning_data
-
     async def get_tuning_recommendations(self):
         """Get tuning recommendations based on current metrics"""
         try:
-            # Initialize system state if this is the first call
-            await self._initialize_system_state()
-            
-            # Refresh permissions to ensure we have the latest status
-            self.permissions = check_required_permissions()
-            
+            # Initialize system state if not already done
+            if not self._initialized:
+                await self._initialize_system_state()
+                
+            # Get current metrics
             metrics = await self.get_current_metrics()
-            if not metrics:
-                return []
             
-            recommendations = []
+            if not metrics:
+                self.logger.error("Failed to get current metrics")
+                return []
+                
+            # Log the metrics we're using for recommendations
+            self.logger.info(f"Generating recommendations based on metrics")
+            
+            # Current time for all recommendations
             current_time = datetime.now()
-        
-            # CPU Usage Recommendations
-            if metrics['cpu_usage'] > 80:
+            
+            # List to store recommendations
+            recommendations = []
+            
+            # Extract metrics with default fallbacks
+            cpu_usage = metrics.get('cpu', {}).get('usage', 0)
+            memory_usage = metrics.get('memory', {}).get('percent', 0)
+            disk_usage = metrics.get('disk', {}).get('percent', 0)
+            network_usage = metrics.get('network', {}).get('usage_percent', 0)
+            process_count = len(metrics.get('processes', []))
+            
+            # Log the extracted metrics
+            self.logger.info(f"Using metrics - CPU: {cpu_usage}%, Memory: {memory_usage}%, Disk: {disk_usage}%, Network: {network_usage}%, Processes: {process_count}")
+            
+            # CPU Governor Recommendations
+            if cpu_usage > 80:
                 recommendations.append(TuningAction(
                     parameter=TuningParameter.CPU_GOVERNOR,
                     current_value='ondemand',
@@ -290,21 +313,21 @@ class AutoTuner:
                     confidence=0.85,
                     impact_score=0.7,
                     timestamp=current_time,
-                    reason="High CPU usage detected - switching to performance mode"
+                    reason="High CPU usage - switching to performance governor"
                 ))
-            elif metrics['cpu_usage'] < 20:
+            elif cpu_usage < 20:
                 recommendations.append(TuningAction(
                     parameter=TuningParameter.CPU_GOVERNOR,
-                    current_value='performance',
+                    current_value='ondemand',
                     new_value='powersave',
                     confidence=0.75,
                     impact_score=0.5,
                     timestamp=current_time,
-                    reason="Low CPU usage detected - enabling power saving"
+                    reason="Low CPU usage - switching to powersave governor"
                 ))
 
             # Memory Management
-            if metrics['memory_usage'] > 75:
+            if memory_usage > 75:
                 recommendations.append(TuningAction(
                     parameter=TuningParameter.MEMORY_PRESSURE,
                     current_value='normal',
@@ -325,7 +348,7 @@ class AutoTuner:
                 ))
 
             # I/O Scheduler Recommendations
-            if metrics['disk_usage'] > 70:
+            if metrics_service['disk_usage'] > 70:
                 recommendations.append(TuningAction(
                     parameter=TuningParameter.IO_SCHEDULER,
                     current_value='cfq',
@@ -346,7 +369,7 @@ class AutoTuner:
                 ))
 
             # Process Priority Adjustments
-            if metrics['cpu_usage'] > 60 and metrics['process_count'] > 100:
+            if cpu_usage > 60 and process_count > 100:
                 recommendations.append(TuningAction(
                     parameter=TuningParameter.PROCESS_PRIORITY,
                     current_value='0',
@@ -358,7 +381,7 @@ class AutoTuner:
                 ))
 
             # Cache Pressure
-            if metrics['memory_usage'] > 60 and metrics['disk_usage'] > 50:
+            if memory_usage > 60 and disk_usage > 50:
                 recommendations.append(TuningAction(
                     parameter=TuningParameter.CACHE_PRESSURE,
                     current_value='100',
@@ -370,7 +393,7 @@ class AutoTuner:
                 ))
 
             # Network Buffer Optimization
-            if metrics['network_usage'] > 70:
+            if network_usage > 70:
                 recommendations.append(TuningAction(
                     parameter=TuningParameter.NETWORK_BUFFER,
                     current_value='256',
@@ -382,9 +405,9 @@ class AutoTuner:
                 ))
 
             # Combined Conditions
-            if (metrics['cpu_usage'] > 70 and 
-                metrics['memory_usage'] > 70 and 
-                metrics['disk_usage'] > 70):
+            if (cpu_usage > 70 and 
+                memory_usage > 70 and 
+                disk_usage > 70):
                 # System under heavy load - aggressive optimization
                 recommendations.append(TuningAction(
                     parameter=TuningParameter.PROCESS_PRIORITY,

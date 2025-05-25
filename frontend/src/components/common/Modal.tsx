@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, ReactNode } from 'react';
 import ReactDOM from 'react-dom';
 import './Modal.css';
+import '../optimization/modal-fix.css';
 
 interface ModalProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ const Modal = ({
   size = 'medium',
   draggable = false
 }: ModalProps) => {
+  console.log('Modal render called with isOpen:', isOpen);
   const modalRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -59,8 +61,32 @@ const Modal = ({
     };
   }, [isDragging, dragOffset]);
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    console.log('Modal not rendering because isOpen is false');
+    return null;
+  }
+  
+  console.log('Modal will render with title:', title);
 
+  // Force any existing modal elements to be removed to prevent stacking
+  useEffect(() => {
+    if (isOpen) {
+      // Ensure the modal is visible by forcing styles after a small delay
+      setTimeout(() => {
+        const existingOverlay = document.querySelector('.modal-overlay');
+        if (existingOverlay) {
+          (existingOverlay as HTMLElement).style.display = 'flex';
+          (existingOverlay as HTMLElement).style.zIndex = '9999999';
+          console.log('Modal visibility enforced via useEffect');
+        }
+      }, 50);
+    }
+    
+    return () => {
+      console.log('Modal component unmounting');
+    };
+  }, [isOpen]);
+  
   // Using React Portal to render the modal outside the normal DOM hierarchy
   // This ensures it's not affected by parent component styles or z-index issues
   const modalContent = (

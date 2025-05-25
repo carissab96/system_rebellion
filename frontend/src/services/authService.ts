@@ -136,31 +136,24 @@ const authService = {
   // Login
   async login(username: string, password: string): Promise<User> {
     try {
-      console.log('🦔 Sir Hawkington: Logging in with:', { username, password: '***' });
+      console.log('🦔 Sir Hawkington: Logging in with username:', username);
       
-      // Check if backend is available first
-      try {
-        const healthCheck = await axios.get('http://127.0.0.1:8000/api/health-check/');
-        console.log('🦔 Health check response:', healthCheck.data);
-      } catch (healthError) {
-        console.error('🚨 Backend health check failed:', healthError);
-        throw new Error('Backend server is not available. Please try again later.');
-      }
-      
-      // Create form data for login - FastAPI OAuth2 expects x-www-form-urlencoded format
+      // Create form data for token endpoint
       const formData = new URLSearchParams();
       formData.append('username', username);
       formData.append('password', password);
       
-      console.log('🐌 The Meth Snail: Sending login request with form data:', username);
-      
-      // Make the login request with authApi
-      const response = await authApi.post<LoginResponse>('/token', formData, {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Accept': 'application/json'
+      // Call the token endpoint
+      const response = await axios.post<LoginResponse>(
+        'http://127.0.0.1:8000/api/auth/token',
+        formData,
+        {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          withCredentials: true
         }
-      });
+      );
       console.log('✅ Login response:', response.data);
       
       if (!response.data.access_token || !response.data.refresh_token) {

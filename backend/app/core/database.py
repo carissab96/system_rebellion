@@ -19,7 +19,7 @@ sync_engine = create_engine(
     echo=True,  # Logging for debugging
     future=True,
     pool_pre_ping=True,  # Ensure connections are valid
-    connect_args={"check_same_thread": False}  # Allow thread sharing
+    connect_args={"check_same_thread": False, "timeout": 30}  # Allow thread sharing
 )
 # Async session
 AsyncSessionLocal = sessionmaker(

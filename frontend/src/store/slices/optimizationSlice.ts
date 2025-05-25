@@ -1,7 +1,6 @@
 // src/store/slices/optimizationSlice.ts
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import axios from 'axios';
-import { API_BASE_URL } from '../../utils/api';
 
 // Types
 export interface OptimizationProfile {
@@ -56,20 +55,45 @@ export const fetchOptimizationProfiles = createAsyncThunk(
     try {
       console.log("🐌 The Meth Snail is fetching optimization profiles...");
       
-      // Get authentication token
+      // Get the token from localStorage
       const token = localStorage.getItem('token');
+      console.log("🐌 The Meth Snail checking auth token:", token ? 'Token exists' : 'No token');
+      
       if (!token) {
+        console.warn("🐌 The Meth Snail has no authentication token!");
         return rejectWithValue("Authentication required. Please log in.");
       }
       
-      const response = await axios.get(`${API_BASE_URL}/optimization-profiles/`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      // Clean the token to ensure it's properly formatted
+      const cleanToken = token.replace(/["']/g, '').trim();
+      const authHeader = cleanToken.startsWith('Bearer ') ? cleanToken : `Bearer ${cleanToken}`;
       
-      console.log("🐌 The Meth Snail returned with profiles:", response.data);
-      return response.data.profiles;
+      // Build the URL
+      const url = 'http://localhost:8000/api/optimization-profiles/';
+      console.log("🐌 The Meth Snail fetching profiles from URL:", url);
+      
+      // Make a direct axios call with explicit headers
+      try {
+        const response = await axios.get(url, {
+          headers: {
+            'Authorization': authHeader,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          }
+        });
+        
+        console.log("🐌 The Meth Snail returned with profiles:", response.data);
+        return response.data.profiles;
+      } catch (apiError: any) {
+        console.error("💥 API Error details:", {
+          status: apiError.response?.status,
+          statusText: apiError.response?.statusText,
+          data: apiError.response?.data,
+          headers: apiError.response?.headers,
+          url: apiError.config?.url
+        });
+        throw apiError;
+      }
     } catch (error: any) {
       console.error("💥 The Meth Snail crashed while fetching profiles!", error);
       return rejectWithValue(
@@ -86,24 +110,48 @@ export const createOptimizationProfile = createAsyncThunk(
     try {
       console.log("🐌 The Meth Snail is creating a new optimization profile...");
       
-      // Get authentication token
+      // Get the token from localStorage
       const token = localStorage.getItem('token');
+      console.log("🐌 The Meth Snail checking auth token for create:", token ? 'Token exists' : 'No token');
+      
       if (!token) {
+        console.warn("🐌 The Meth Snail has no authentication token for create!");
         return rejectWithValue("Authentication required. Please log in.");
       }
+      
+      // Clean the token to ensure it's properly formatted
+      const cleanToken = token.replace(/["']/g, '').trim();
+      const authHeader = cleanToken.startsWith('Bearer ') ? cleanToken : `Bearer ${cleanToken}`;
       
       // Log the profile data being sent
       console.log("🐌 Profile data being sent:", profileData);
       
-      const response = await axios.post(`${API_BASE_URL}/optimization-profiles/`, profileData, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      // Build the URL
+      const url = 'http://localhost:8000/api/optimization-profiles/';
+      console.log("🐌 The Meth Snail creating profile at URL:", url);
       
-      console.log("🐌 The Meth Snail created a new profile:", response.data);
-      return response.data;
+      // Make a direct axios call with explicit headers
+      try {
+        const response = await axios.post(url, profileData, {
+          headers: {
+            'Authorization': authHeader,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          }
+        });
+        
+        console.log("🐌 The Meth Snail created a new profile:", response.data);
+        return response.data;
+      } catch (apiError: any) {
+        console.error("💥 API Error details for create:", {
+          status: apiError.response?.status,
+          statusText: apiError.response?.statusText,
+          data: apiError.response?.data,
+          headers: apiError.response?.headers,
+          url: apiError.config?.url
+        });
+        throw apiError;
+      }
     } catch (error: any) {
       console.error("💥 The Meth Snail crashed while creating a profile!", error);
       return rejectWithValue(
@@ -123,9 +171,16 @@ export const updateOptimizationProfile = createAsyncThunk(
       
       // Get authentication token
       const token = localStorage.getItem('token');
+      console.log("🐌 The Meth Snail checking auth token for update:", token ? 'Token exists' : 'No token');
+      
       if (!token) {
+        console.warn("🐌 The Meth Snail has no authentication token for update!");
         return rejectWithValue("Authentication required. Please log in.");
       }
+      
+      // Clean the token to ensure it's properly formatted
+      const cleanToken = token.replace(/["']/g, '').trim();
+      const authHeader = cleanToken.startsWith('Bearer ') ? cleanToken : `Bearer ${cleanToken}`;
       
       // Validate if the ID is a valid UUID
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -136,15 +191,32 @@ export const updateOptimizationProfile = createAsyncThunk(
       
       console.log("🐌 Profile data being updated:", data);
       
-      const response = await axios.put(`${API_BASE_URL}/optimization-profiles/${id}`, data, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      // Build the URL
+      const url = `http://localhost:8000/api/optimization-profiles/${id}`;
+      console.log("🐌 The Meth Snail updating profile at URL:", url);
       
-      console.log("🐌 The Meth Snail updated the profile:", response.data);
-      return response.data;
+      // Make a direct axios call with explicit headers
+      try {
+        const response = await axios.put(url, data, {
+          headers: {
+            'Authorization': authHeader,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          }
+        });
+        
+        console.log("🐌 The Meth Snail updated the profile:", response.data);
+        return response.data;
+      } catch (apiError: any) {
+        console.error("💥 API Error details for update:", {
+          status: apiError.response?.status,
+          statusText: apiError.response?.statusText,
+          data: apiError.response?.data,
+          headers: apiError.response?.headers,
+          url: apiError.config?.url
+        });
+        throw apiError;
+      }
     } catch (error: any) {
       console.error("💥 The Meth Snail crashed while updating a profile!", error);
       return rejectWithValue(
@@ -163,25 +235,48 @@ export const deleteOptimizationProfile = createAsyncThunk(
       
       // Get authentication token
       const token = localStorage.getItem('token');
+      console.log("🐌 The Meth Snail checking auth token for delete:", token ? 'Token exists' : 'No token');
+      
       if (!token) {
+        console.warn("🐌 The Meth Snail has no authentication token for delete!");
         return rejectWithValue("Authentication required. Please log in.");
       }
       
-      // Validate if the ID is a valid UUID
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-      if (!uuidRegex.test(id)) {
-        console.error(`🐌 The Meth Snail is confused! ID ${id} is not a valid UUID.`);
+      // Clean the token to ensure it's properly formatted
+      const cleanToken = token.replace(/["']/g, '').trim();
+      const authHeader = cleanToken.startsWith('Bearer ') ? cleanToken : `Bearer ${cleanToken}`;
+      
+      // Validate UUID format
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
         return rejectWithValue(`Invalid profile ID format. Expected a UUID but got: ${id}`);
       }
       
-      await axios.delete(`${API_BASE_URL}/optimization-profiles/${id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      // Build the URL
+      const url = `http://localhost:8000/api/optimization-profiles/${id}`;
+      console.log("🐌 The Meth Snail deleting profile at URL:", url);
       
-      console.log("🐌 The Meth Snail deleted the profile successfully");
-      return id;
+      // Make a direct axios call with explicit headers
+      try {
+        await axios.delete(url, {
+          headers: {
+            'Authorization': authHeader,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          }
+        });
+        
+        console.log("🐌 The Meth Snail deleted the profile!");
+        return id; // Return the ID so we can filter it out from the state
+      } catch (apiError: any) {
+        console.error("💥 API Error details for delete:", {
+          status: apiError.response?.status,
+          statusText: apiError.response?.statusText,
+          data: apiError.response?.data,
+          headers: apiError.response?.headers,
+          url: apiError.config?.url
+        });
+        throw apiError;
+      }
     } catch (error: any) {
       console.error("💥 The Meth Snail crashed while deleting a profile!", error);
       return rejectWithValue(
@@ -200,26 +295,48 @@ export const activateOptimizationProfile = createAsyncThunk(
       
       // Get authentication token
       const token = localStorage.getItem('token');
+      console.log("🐌 The Meth Snail checking auth token for activate:", token ? 'Token exists' : 'No token');
+      
       if (!token) {
+        console.warn("🐌 The Meth Snail has no authentication token for activate!");
         return rejectWithValue("Authentication required. Please log in.");
       }
       
-      // Validate if the ID is a valid UUID
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-      if (!uuidRegex.test(id)) {
-        console.error(`🐌 The Meth Snail is confused! ID ${id} is not a valid UUID.`);
+      // Clean the token to ensure it's properly formatted
+      const cleanToken = token.replace(/["']/g, '').trim();
+      const authHeader = cleanToken.startsWith('Bearer ') ? cleanToken : `Bearer ${cleanToken}`;
+      
+      // Validate UUID format
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
         return rejectWithValue(`Invalid profile ID format. Expected a UUID but got: ${id}`);
       }
       
-      const response = await axios.post(`${API_BASE_URL}/optimization-profiles/${id}/activate`, {}, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      // Build the URL
+      const url = `http://localhost:8000/api/optimization-profiles/${id}/activate`;
+      console.log("🐌 The Meth Snail activating profile at URL:", url);
       
-      console.log("🐌 The Meth Snail activated the profile:", response.data);
-      return response.data;
+      // Make a direct axios call with explicit headers
+      try {
+        const response = await axios.post(url, {}, {
+          headers: {
+            'Authorization': authHeader,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          }
+        });
+        
+        console.log("🐌 The Meth Snail activated the profile:", response.data);
+        return response.data;
+      } catch (apiError: any) {
+        console.error("💥 API Error details for activate:", {
+          status: apiError.response?.status,
+          statusText: apiError.response?.statusText,
+          data: apiError.response?.data,
+          headers: apiError.response?.headers,
+          url: apiError.config?.url
+        });
+        throw apiError;
+      }
     } catch (error: any) {
       console.error("💥 The Meth Snail crashed while activating a profile!", error);
       return rejectWithValue(

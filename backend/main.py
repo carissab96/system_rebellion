@@ -96,7 +96,8 @@ def create_application() -> FastAPI:
     
     # Setup middleware
     setup_middleware(app)
-    
+
+
     # Debug endpoint
     @app.get("/api/debug/ping")
     def ping():
@@ -149,7 +150,6 @@ def create_application() -> FastAPI:
     if hasattr(websocket_routes, 'router'):
         app.include_router(
             websocket_routes.router,
-            prefix="/ws",
             tags=["WebSockets"]
         )
     # Add other routers...
@@ -215,7 +215,21 @@ def create_application() -> FastAPI:
         api_router,
         prefix="/api"
     )
-    
+    # Debug: Print all registered routes
+    async def startup_debug_routes():
+        app.add_event_handler("startup", startup_debug_routes)
+        routes = []
+        for route in app.routes:
+            route_info = {
+                "path": getattr(route, "path", "unknown"),
+                "name": getattr(route, "name", "unnamed"),
+                "methods": getattr(route, "methods", "unknown"),
+                "include_in_schema": getattr(route, "include_in_schema", True)
+            }
+            routes.append(route_info)
+        print("🔍 REGISTERED ROUTES:")
+        for route in routes:
+            print(f"  {route['path']} - {route['name']} - {', '.join(route['methods'])} - {'yes' if route['include_in_schema'] else 'no'}")
     return app
 
 # Create the app

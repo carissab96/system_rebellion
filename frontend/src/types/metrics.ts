@@ -258,12 +258,39 @@ export interface OptimizationResult {
   success: boolean;
 }
 
-export interface OptimizationProfile {
+export interface OptimizationProfiles {
   id: string;
   name: string;
   description: string;
-  thresholds: MetricThresholds;
-  actions: string[];
+  is_active: boolean;
+  usage_type: string;
+  thresholds:{
+    cpu_threshold: number;
+    memory_threshold: number;
+    disk_threshold: number;
+    network_threshold: number;
+    enable_auto_tuning: boolean;
+    // Advanced settings
+    cpu_priority?: 'high' | 'medium' | 'low';
+    background_process_limit?: number;
+    memory_allocation?: {
+      applications: number; // percentage
+      system_cache: number; // percentage
+    };
+    actions: {
+      cpu: string[];
+      memory: string[];
+      disk: string[];
+      network: string[];
+    };
+    disk_performance?: 'speed' | 'balance' | 'powersave';
+    network_optimization?: {
+      prioritize_streaming: boolean;
+      prioritize_downloads: boolean;
+      low_latency_mode: boolean;
+    };
+    power_profile?: 'performance' | 'balanced' | 'powersave';
+  };
 }
 
 export interface MetricsApiResponse {

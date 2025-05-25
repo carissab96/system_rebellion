@@ -4,9 +4,6 @@ import store from '../store/store';
 import { logout } from '../store/slices/authSlice';
 import { SystemMetric } from '../types/metrics';
 
-// REMOVE THIS LINE - it creates a circular import
-// import api from '../services/authService';
-
 interface ApiError extends AxiosError {
   config: InternalAxiosRequestConfig & { _retry?: boolean };
 }
@@ -135,11 +132,13 @@ export const debugApi = axios.create({
 apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = localStorage.getItem('token');
   if (token) {
-    // Make sure token has Bearer prefix
-    config.headers.Authorization = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
-    console.log('🧐 Sir Hawkington set Authorization header:', config.headers.Authorization.substring(0, 20) + '...');
+    // Make sure token has Bearer prefix and is properly formatted
+    // Remove any quotes or extra characters that might be causing issues
+    const cleanToken = token.replace(/["']/g, '').trim();
+    config.headers.Authorization = cleanToken.startsWith('Bearer ') ? cleanToken : `Bearer ${cleanToken}`;
+    console.log('🧠 Sir Hawkington set Authorization header:', config.headers.Authorization.substring(0, 20) + '...');
   } else {
-    console.warn('🧐 Sir Hawkington is concerned: No token found in localStorage!');
+    console.warn('🧠 Sir Hawkington is concerned: No token found in localStorage!');
   }
   
   // Add CSRF token to non-GET requests
@@ -161,28 +160,35 @@ apiClient.interceptors.response.use(
   async (error: ApiError) => {
     const originalRequest = error.config;
     
+    // Check if this is an auto-tuner request - we'll be more lenient with these
+    const isAutoTunerRequest = originalRequest.url?.includes('/auto-tuner/') || 
+                              originalRequest.url?.includes('/metrics/');
+    
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       const refreshTokenStr = localStorage.getItem('refresh_token');
       
       if (refreshTokenStr) {
         try {
+          console.log('🦔 Sir Hawkington: Attempting to refresh token...');
+          // Clean up the refresh token to ensure it's properly formatted
+          const cleanRefreshToken = refreshTokenStr.replace(/["']/g, '').trim();
+          
           // Manual refresh token request
           const refreshResponse = await axios.post(
-            `${API_BASE_URL}/auth/token/refresh/`,
-            { refresh: refreshTokenStr },
+            `${API_BASE_URL}/auth/refresh-token`,
+            { refresh_token: cleanRefreshToken },
             { 
-              withCredentials: true,
               headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCsrfToken() || ''
+                'Content-Type': 'application/json'
               }
             }
           );
           
-          if (refreshResponse.data && refreshResponse.data.access) {
-            const newToken = refreshResponse.data.access;
-            // Update token in localStorage
+          console.log('✅ Token refresh response:', refreshResponse.data);
+          
+          if (refreshResponse.data && refreshResponse.data.access_token) {
+            const newToken = refreshResponse.data.access_token;
             localStorage.setItem('token', newToken);
             // Update the original request with the new token
             originalRequest.headers.Authorization = `Bearer ${newToken}`;
@@ -190,7 +196,14 @@ apiClient.interceptors.response.use(
           }
         } catch (refreshError) {
           console.error('Token refresh failed:', refreshError);
-          // Clear auth data and redirect to login
+          
+          // For auto-tuner requests, don't log out - just return error
+          if (isAutoTunerRequest) {
+            console.log('🧐 Sir Hawkington: Auto-tuner request failed, but not logging out');
+            return Promise.reject(error);
+          }
+          
+          // For other requests, clear auth data and redirect to login
           localStorage.removeItem('token');
           localStorage.removeItem('refresh_token');
           store.dispatch(logout());
@@ -198,6 +211,10 @@ apiClient.interceptors.response.use(
         }
       } else {
         // No refresh token available
+        if (isAutoTunerRequest) {
+          console.log('🧐 Sir Hawkington: Auto-tuner request failed, but not logging out');
+          return Promise.reject(error);
+        }
         store.dispatch(logout());
       }
     }
@@ -424,11 +441,22 @@ export const initializeCsrf = async (): Promise<boolean> => {
       throw new Error('Backend is not available, cannot initialize CSRF token');
     }
     
-    // Explicitly fetch the CSRF token from the dedicated endpoint
-    const response = await axios.get(`${API_BASE_URL}/auth/csrf_token/`, {
-      withCredentials: true,
-      timeout: 5000 // 5 second timeout
-    });
+    // Try multiple endpoints for CSRF token
+    let response;
+    try {
+      // First try the dedicated endpoint
+      response = await axios.get(`${API_BASE_URL}/auth/csrf_token`, {
+        withCredentials: true,
+        timeout: 5000 // 5 second timeout
+      });
+    } catch (error) {
+      console.log('🧐 Sir Hawkington could not fetch CSRF token from primary endpoint, trying fallback...');
+      // If that fails, try direct connection to backend
+      response = await axios.get('http://localhost:8000/api/auth/csrf_token', {
+        withCredentials: true,
+        timeout: 5000
+      });
+    }
     
     // Check if we got a valid response with a CSRF token
     if (response.data && response.data.csrf_token) {
@@ -439,17 +467,24 @@ export const initializeCsrf = async (): Promise<boolean> => {
     }
     
  // If we didn't get a token from the dedicated endpoint, try the health-check endpoint
- const healthResponse = await axios.get(`${API_BASE_URL}/health-check/`, {
-  withCredentials: true,
-  timeout: 5000
-});
+ try {
+   const healthResponse = await axios.get(`${API_BASE_URL}/health-check`, {
+     withCredentials: true,
+     timeout: 5000
+   });
+   
+   // If health check response has a csrf_token field, use that
+   if (healthResponse.data && healthResponse.data.csrf_token) {
+     localStorage.setItem('csrf_token', healthResponse.data.csrf_token);
+     console.log('🎩 Sir Hawkington has secured a CSRF token from health check!');
+     return true;
+   }
+ } catch (error) {
+   console.log('🧐 Sir Hawkington could not fetch CSRF token from health check endpoint');
+   // Continue with the flow, we'll check if we have a token from cookies
+ }
 
-// If health check response has a csrf_token field, use that
-if (healthResponse.data && healthResponse.data.csrf_token) {
-  localStorage.setItem('csrf_token', healthResponse.data.csrf_token);
-  console.log('🎩 Sir Hawkington has secured a CSRF token from health check!');
-  return true;
-}
+// At this point we've tried both endpoints, check if we have a token
 
 // Verify that we got the CSRF token
 const csrfToken = getCsrfToken();

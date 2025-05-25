@@ -157,45 +157,6 @@ class SystemMetricsService:
             self.last_update_time = time.time()
             
             return transformed_metrics
-            
-            # Transform to match the expected format
-            transformed_metrics = {
-                'timestamp': metrics.get('timestamp', datetime.now().isoformat()),
-                'cpu': {
-                    'percent': metrics.get('cpu_usage', 0),
-                    'temperature': metrics.get('cpu', {}).get('temperature'),
-                    'cores': len(metrics.get('cpu', {}).get('per_core_percent', [])),
-                    'physical_cores': metrics.get('cpu', {}).get('cores', {}).get('physical', 0)
-                },
-                'memory': {
-                    'percent': metrics.get('memory_usage', 0),
-                    'total': metrics.get('memory', {}).get('total', 0),
-                    'available': metrics.get('memory', {}).get('available', 0),
-                    'used': metrics.get('memory', {}).get('used', 0),
-                    'free': metrics.get('memory', {}).get('free', 0)
-                },
-                'disk': {
-                    'percent': metrics.get('disk_usage', 0),
-                    'total': self._safe_get_disk_value(metrics, 'total'),
-                    'used': self._safe_get_disk_value(metrics, 'used'),
-                    'free': self._safe_get_disk_value(metrics, 'free')
-                },
-                'network': {
-                    'bytes_sent': metrics.get('network', {}).get('io_stats', {}).get('bytes_sent', 0),
-                    'bytes_recv': metrics.get('network', {}).get('io_stats', {}).get('bytes_recv', 0),
-                    'packets_sent': metrics.get('network', {}).get('io_stats', {}).get('packets_sent', 0),
-                    'packets_recv': metrics.get('network', {}).get('io_stats', {}).get('packets_recv', 0),
-                    'interfaces': metrics.get('network', {}).get('interfaces', {})
-                },
-                'process_count': metrics.get('process_count', 0),
-                'additional': metrics.get('additional', {})
-            }
-            
-            # Store in our local cache for backward compatibility
-            self.last_metrics = transformed_metrics
-            self.last_update_time = time.time()
-            
-            return transformed_metrics
         except Exception as e:
             self.logger.error(f"Error collecting system metrics: {str(e)}")
             

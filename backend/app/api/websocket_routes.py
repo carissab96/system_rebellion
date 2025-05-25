@@ -1,4 +1,4 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, status, Depends
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from app.websockets import WebSocketManager
 from app.api.websocket_auth import authenticate_websocket
 from app.services.metrics.metrics_service import MetricsService
@@ -6,390 +6,62 @@ from app.services.system_metrics_service import SystemMetricsService
 import psutil
 import asyncio
 import socket
-import random
-import time
 import os
 import json
-import subprocess
 import platform
 import logging
 from datetime import datetime, timezone
-from typing import Dict, List, Any, Optional, Tuple, Union
+from typing import List, Any, Optional, Tuple, Union
 
 logger = logging.getLogger(__name__)
 
-# The Meth Snail's Global WebSocket Manager
+# WebSocket Manager
 websocket_manager = WebSocketManager()
-
-# Export the connection manager for dependency injection
 connection_manager = websocket_manager
 
 router = APIRouter()
 
-# Handle all possible WebSocket paths
 @router.websocket("/ws/system-metrics")
-async def system_metrics_socket(websocket: WebSocket):
-    """Sir Hawkington's Distinguished System Metrics WebSocket"""
-    connection_active = False
-    try:
-        # Accept the connection first
-        await websocket.accept()
-        
-        # Authenticate the WebSocket connection
-        user = await authenticate_websocket(websocket)
-        if not user:
-            return
-        
-        client_id = str(user.id)  # Convert user ID to string for metrics
-        logger.info(f"WebSocket authenticated for user {client_id}")
-
-        # Initialize metrics service
-        metrics_service = await SystemMetricsService.get_instance()
-        
-        # Add to connection manager
-        await websocket_manager.connect(websocket)
-        connection_active = True
-        
-        while True:
-            try:
-                # Get metrics from service
-                metrics = await metrics_service.get_metrics(force_refresh=True)
-                
-                # Check if socket is still open before sending
-                if websocket.client_state.name != "CONNECTED":
-                    logger.warning(f"WebSocket for {client_id} is no longer connected")
-                    break
-                
-                # Only send if we have valid metrics
-                if metrics and not metrics.get('error'):
-                    await websocket.send_json({
-                        'type': 'system_metrics',
-                        'data': metrics
-                    })
-                else:
-                    await websocket.send_json({
-                        'type': 'metrics_error',
-                        'data': {
-                            'message': metrics.get('error', 'Failed to collect metrics'),
-                            'timestamp': datetime.now(timezone.utc).isoformat()
-                        }
-                    })
-                
-                # Update every 5 seconds
-                await asyncio.sleep(5)
-            except WebSocketDisconnect:
-                logger.info(f"WebSocket disconnected for user {client_id}")
-                break
-            except Exception as e:
-                logger.error(f"Error in metrics collection for {client_id}: {e}")
-                if websocket.client_state.name == "CONNECTED":
-                    try:
-                        await websocket.send_json({
-                            "type": "error",
-                            "message": f"Error collecting metrics: {str(e)}",
-                            "timestamp": datetime.now(timezone.utc).isoformat()
-                        })
-                    except:
-                        break
-                else:
-                    break
-    except WebSocketDisconnect:
-        logger.info(f"WebSocket disconnected during setup")
-    except Exception as e:
-        logger.error(f"WebSocket error: {e}")
-    finally:
-        if connection_active:
-            try:
-                await websocket_manager.disconnect(websocket)
-            except:
-                pass
-        logger.info(f"WebSocket connection cleaned up")
-
-def format_bytes(bytes_value: int) -> str:
-    """Format bytes for human-readable display."""
-    if not isinstance(bytes_value, (int, float)):
-        return "0 B"
-    for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
-        if bytes_value < 1024:
-            return f"{bytes_value:.2f} {unit}"
-        bytes_value /= 1024
-    return f"{bytes_value:.2f} PB"
-
-def get_detailed_network_metrics() -> Dict[str, Any]:
-    """Get detailed network metrics including connections, protocols, interfaces, etc."""
-    try:
-        # Get basic network I/O stats
-        net_io = psutil.net_io_counters()
-        
-        # Get network connections
-        connections = []
-        for conn in psutil.net_connections(kind='inet'):
-            try:
-                if conn.pid:
-                    try:
-                        process = psutil.Process(conn.pid)
-                        process_name = process.name()
-                    except (psutil.NoSuchProcess, psutil.AccessDenied):
-                        process_name = "Unknown"
-                else:
-                    process_name = "Unknown"
-                    
-                # Format addresses
-                if conn.laddr:
-                    laddr = f"{conn.laddr.ip}:{conn.laddr.port}"
-                else:
-                    laddr = "N/A"
-                    
-                if conn.raddr:
-                    raddr = f"{conn.raddr.ip}:{conn.raddr.port}"
-                else:
-                    raddr = "N/A"
-                    
-                # Determine protocol type
-                if conn.type == socket.SOCK_STREAM:
-                    protocol = "TCP"
-                elif conn.type == socket.SOCK_DGRAM:
-                    protocol = "UDP"
-                else:
-                    protocol = "Unknown"
-                    
-                # Add connection info
-                connection_info = {
-                    "type": protocol,
-                    "laddr": laddr,
-                    "raddr": raddr,
-                    "status": conn.status,
-                    "pid": conn.pid,
-                    "process_name": process_name,
-                    "protocol": protocol,
-                    # Simulate bytes sent/received for each connection
-                    "bytes_sent": random.randint(1000, 10000000),
-                    "bytes_recv": random.randint(1000, 10000000),
-                    "created": datetime.now().isoformat()
-                }
-                connections.append(connection_info)
-            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-                continue
-        
-        # Get network interfaces
-        interfaces = []
-        net_if_stats = psutil.net_if_stats()
-        net_if_addrs = psutil.net_if_addrs()
-        
-        for name, stats in net_if_stats.items():
-            try:
-                # Get addresses for this interface
-                addresses = net_if_addrs.get(name, [])
-                ip_address = None
-                mac_address = None
-                
-                for addr in addresses:
-                    if addr.family == socket.AF_INET:
-                        ip_address = addr.address
-                    elif hasattr(psutil, 'AF_LINK') and addr.family == psutil.AF_LINK:
-                        mac_address = addr.address
-                
-                interface_info = {
-                    "name": name,
-                    "address": ip_address,
-                    "mac_address": mac_address,
-                    "isup": stats.isup,
-                    "speed": stats.speed,
-                    "mtu": stats.mtu
-                }
-                interfaces.append(interface_info)
-            except Exception as e:
-                logger.warning(f"Error getting interface {name} info: {e}")
-                continue
-        
-        # Get interface stats
-        interface_stats = {}
-        try:
-            for name, stats in psutil.net_io_counters(pernic=True).items():
-                interface_stats[name] = {
-                    "bytes_sent": stats.bytes_sent,
-                    "bytes_recv": stats.bytes_recv,
-                    "packets_sent": stats.packets_sent,
-                    "packets_recv": stats.packets_recv,
-                    "errin": stats.errin,
-                    "errout": stats.errout,
-                    "dropin": stats.dropin,
-                    "dropout": stats.dropout
-                }
-        except Exception as e:
-            logger.warning(f"Error getting interface stats: {e}")
-            interface_stats = {}
-        
-        # Calculate protocol breakdown
-        total_connections = len(connections)
-        tcp_count = sum(1 for conn in connections if conn.get('protocol') == 'TCP')
-        udp_count = sum(1 for conn in connections if conn.get('protocol') == 'UDP')
-        
-        protocol_counts = {
-            "tcp": max(tcp_count, 1),  # Ensure minimum value for display
-            "udp": max(udp_count, 1),
-            "http": 1,
-            "https": 1,
-            "dns": 1,
-            "icmp": 1
-        }
-        
-        app_protocol_counts = {
-            "web": 1,
-            "email": 1,
-            "streaming": 1,
-            "gaming": 1,
-            "file_transfer": 1,
-            "other": 1
-        }
-        
-        # Get top bandwidth processes (simplified implementation)
-        top_processes = []
-        try:
-            for proc in psutil.process_iter(['pid', 'name']):
-                try:
-                    # Check if process has network connections
-                    proc_connections = proc.connections()
-                    if proc_connections:
-                        # Estimate bandwidth based on number of connections
-                        connection_count = len(proc_connections)
-                        estimated_bandwidth = max(connection_count * 0.5, 0.25)
-                        
-                        top_processes.append({
-                            'pid': proc.pid,
-                            'name': proc.name(),
-                            'upload': estimated_bandwidth / 2,
-                            'download': estimated_bandwidth / 2,
-                            'total': estimated_bandwidth,
-                            'connection_count': connection_count
-                        })
-                except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-                    continue
-            
-            # Sort by total bandwidth and take top 10
-            top_processes.sort(key=lambda x: x['total'], reverse=True)
-            top_processes = top_processes[:10]
-            
-        except Exception as e:
-            logger.warning(f"Error collecting process bandwidth data: {e}")
-            top_processes = []
-        
-        # Connection quality metrics (simplified)
-        connection_quality = {
-            "average_latency": 25.0,
-            "packet_loss_percent": 0.1,
-            "connection_stability": 95.0,
-            "jitter": 2.0,
-            "internet_latency": 25.0,
-            "overall_score": 95
-        }
-        
-        # DNS metrics (simplified)
-        dns_metrics = {
-            "query_time_ms": 15.0,
-            "success_rate": 99.0,
-            "cache_hit_ratio": 75.0,
-            "servers": ["8.8.8.8", "1.1.1.1"],
-            "last_updated": datetime.now(timezone.utc).isoformat()
-        }
-        
-        # Internet metrics (simplified)
-        internet_metrics = {
-            "connected": True,
-            "download_speed": 25.0,
-            "upload_speed": 5.0,
-            "isp_latency": 30.0,
-            "max_interface_speed": 1000.0,
-            "packet_loss": 0.0
-        }
-        
-        # Calculate rates
-        try:
-            boot_time = psutil.boot_time()
-            uptime = time.time() - boot_time
-            sent_rate = net_io.bytes_sent / uptime if uptime > 0 else 0
-            recv_rate = net_io.bytes_recv / uptime if uptime > 0 else 0
-            total_rate = sent_rate + recv_rate
-        except Exception as e:
-            logger.warning(f"Error calculating rates: {e}")
-            sent_rate = recv_rate = total_rate = 0
-        
-        # Return comprehensive network metrics
-        return {
-            "io_stats": {
-                "bytes_sent": net_io.bytes_sent,
-                "bytes_recv": net_io.bytes_recv,
-                "packets_sent": net_io.packets_sent,
-                "packets_recv": net_io.packets_recv,
-                "sent_rate": sent_rate,
-                "recv_rate": recv_rate,
-                "total_rate": total_rate,
-                "errors_in": net_io.errin,
-                "errors_out": net_io.errout,
-                "drops_in": net_io.dropin,
-                "drops_out": net_io.dropout,
-                "bytes_sent_formatted": format_bytes(net_io.bytes_sent),
-                "bytes_recv_formatted": format_bytes(net_io.bytes_recv),
-                "sent_rate_formatted": format_bytes(sent_rate) + "/s",
-                "recv_rate_formatted": format_bytes(recv_rate) + "/s",
-                "total_rate_formatted": format_bytes(total_rate) + "/s"
-            },
-            "connections": connections,
-            "interfaces": interfaces,
-            "interface_stats": interface_stats,
-            "protocol_breakdown": protocol_counts,
-            "app_protocol_breakdown": app_protocol_counts,
-            "top_bandwidth_processes": top_processes,
-            "connection_quality": connection_quality,
-            "dns_metrics": dns_metrics,
-            "internet_metrics": internet_metrics,
-            "timestamp": datetime.now(timezone.utc).isoformat()
-        }
-        
-    except Exception as e:
-        logger.error(f"Error getting detailed network metrics: {e}")
-        return {
-            "io_stats": {
-                "bytes_sent": 0,
-                "bytes_recv": 0,
-                "bytes_sent_formatted": "0 B",
-                "bytes_recv_formatted": "0 B",
-                "total_rate_formatted": "0 B/s"
-            },
-            "error": str(e),
-            "timestamp": datetime.now(timezone.utc).isoformat()
-        }
-
-@router.websocket("/system-metrics")
 async def system_metrics_socket(websocket: WebSocket):
     """
     Sir Hawkington's Distinguished System Metrics WebSocket
-    The Meth Snail monitors your system with quantum precision!
     """
-    connection_active = False
-    client_id = f"client_{random.randint(1000, 9999)}"
-    
     try:
-        # Accept the connection
+        logger.info("🔌 WebSocket connection attempt to /ws/system-metrics")
+        
+        # First accept the connection unconditionally
         await websocket.accept()
-        logger.info(f"WebSocket connection initially accepted for {client_id}")
+        logger.info("🔌 WebSocket connection initially accepted")
         
-        # Authenticate the WebSocket connection
-        user = await authenticate_websocket(websocket)
-        if not user:
-            logger.error(f"WebSocket authentication failed for {client_id}")
-            return
+        # Now try authentication
+        try:
+            logger.info("🔑 Attempting WebSocket authentication")
+            user = await authenticate_websocket(websocket)
+            if not user:
+                logger.error("❌ WebSocket authentication failed - no user returned")
+                await websocket.send_json({
+                    "type": "error", 
+                    "message": "Authentication failed"
+                })
+                await websocket.close(code=1008)
+                return
+                
+            logger.info(f"✅ WebSocket authenticated for user {user.username}")
             
-        logger.info(f"WebSocket authenticated for user {user.username} ({client_id})")
-        
-        # Send initial connection message
-        await websocket.send_json({
-            "type": "connection_established", 
-            "message": f"Connected to Sir Hawkington's Distinguished System Metrics WebSocket as {user.username}",
-            "client_id": client_id,
-            "user": user.username,
-            "timestamp": datetime.now(timezone.utc).isoformat()
-        })
+            # Send initial connection message
+            await websocket.send_json({
+                "type": "connection_established", 
+                "message": f"Connected successfully as {user.username}"
+            })
+            
+        except Exception as auth_error:
+            logger.error(f"❌ WebSocket authentication error: {str(auth_error)}")
+            await websocket.send_json({
+                "type": "error", 
+                "message": f"Authentication error: {str(auth_error)}"
+            })
+            await websocket.close(code=1008)
+            return
         
         # Connect to the WebSocket manager
         await websocket_manager.connect(websocket)
@@ -416,31 +88,26 @@ async def system_metrics_socket(websocket: WebSocket):
                 # Get CPU per-core data
                 cpu_per_core = psutil.cpu_percent(percpu=True, interval=0.1)
                 
-                # Format the metrics data
-                metrics = {
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                    "client_id": client_id,
-                    "system_info": system_info,
-                    "cpu_usage": system_metrics.get('cpu', {}).get('percent', psutil.cpu_percent(interval=0.1)),
-                    "cpu_per_core": cpu_per_core,
-                    "cpu_temp": system_metrics.get('cpu', {}).get('temperature'),
-                    "memory_total": system_metrics.get('memory', {}).get('total', psutil.virtual_memory().total),
-                    "memory_available": system_metrics.get('memory', {}).get('available', psutil.virtual_memory().available),
-                    "memory_used": system_metrics.get('memory', {}).get('used', psutil.virtual_memory().used),
-                    "memory_percent": system_metrics.get('memory', {}).get('percent', psutil.virtual_memory().percent),
-                    "disk_total": system_metrics.get('disk', {}).get('total', psutil.disk_usage('/').total),
-                    "disk_used": system_metrics.get('disk', {}).get('used', psutil.disk_usage('/').used),
-                    "disk_free": system_metrics.get('disk', {}).get('free', psutil.disk_usage('/').free),
-                    "disk_percent": system_metrics.get('disk', {}).get('percent', psutil.disk_usage('/').percent),
-                    "network_sent": system_metrics.get('network', {}).get('bytes_sent', psutil.net_io_counters().bytes_sent),
-                    "network_recv": system_metrics.get('network', {}).get('bytes_recv', psutil.net_io_counters().bytes_recv),
-                    "process_count": system_metrics.get('process_count', len(psutil.pids()))
-                }
-                
-                # Create the message
+                # Format message according to frontend expectations
                 message = {
-                    "type": "system_metrics",
-                    "data": metrics
+                    "type": "cpu",  # Changed to match frontend expectations
+                    "data": {
+                        "usage_percent": system_metrics.get('cpu', {}).get('percent', psutil.cpu_percent(interval=0.1)),
+                        "temperature": system_metrics.get('cpu', {}).get('temperature', 0),
+                        "cores": cpu_per_core,
+                        "frequency_mhz": system_metrics.get('cpu', {}).get('frequency', {}).get('current', 0),
+                        "physical_cores": system_info["cores"],
+                        "logical_cores": system_info["logical_cores"],
+                        "top_processes": [
+                            {
+                                "pid": proc.get("pid", 0),
+                                "name": proc.get("name", "Unknown"),
+                                "cpu_percent": proc.get("cpu_percent", 0),
+                                "memory_percent": proc.get("memory_percent", 0)
+                            }
+                            for proc in system_metrics.get('processes', [])[:10]
+                        ]
+                    }
                 }
                 
                 # Send metrics if connection is still open
@@ -484,10 +151,10 @@ async def system_metrics_socket(websocket: WebSocket):
                 await asyncio.sleep(5)
                 
             except WebSocketDisconnect:
-                logger.info(f"WebSocket for {client_id} disconnected by client")
+                logger.info("WebSocket disconnected by client")
                 break
             except Exception as e:
-                logger.error(f"Error in metrics collection for {client_id}: {e}")
+                logger.error(f"⚠️ Unhandled WebSocket error: {str(e)}")
                 try:
                     if websocket.client_state.name == "CONNECTED":
                         await websocket.send_json({
@@ -515,8 +182,7 @@ async def system_metrics_socket(websocket: WebSocket):
     finally:
         if connection_active:
             await websocket_manager.disconnect(websocket)
-            logger.info(f"WebSocket for {client_id} disconnected and cleaned")
-
+            logger.info(f"WebSocket disconnected and cleaned")
 
 
 
