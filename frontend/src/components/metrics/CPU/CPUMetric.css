@@ -1,1 +1,101 @@
-/*style*/
+/* CPU Metric Component Styling */
+
+.metric-card {
+  background-color: var(--bg-card, #1e1e1e);
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin-bottom: 1rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.metric-card.compact {
+  padding: 1rem;
+}
+
+.metric-card h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+  color: var(--text-primary, #f8f9fa);
+  border-bottom: 1px solid var(--border-color, #333);
+  padding-bottom: 0.5rem;
+}
+
+/* CPU Tabs Styling */
+.cpu-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border-color, #333);
+  margin-bottom: 1rem;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary) var(--bg-card);
+}
+
+.cpu-tabs::-webkit-scrollbar {
+  height: 4px;
+}
+
+.cpu-tabs::-webkit-scrollbar-track {
+  background: var(--bg-card);
+}
+
+.cpu-tabs::-webkit-scrollbar-thumb {
+  background-color: var(--primary);
+  border-radius: 2px;
+}
+
+.cpu-tab {
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--text-secondary, #adb5bd);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.cpu-tab:hover {
+  color: var(--primary, #3a86ff);
+}
+
+.cpu-tab.active {
+  color: var(--primary, #3a86ff);
+  border-bottom: 2px solid var(--primary, #3a86ff);
+}
+
+.cpu-content {
+  padding: 1rem 0;
+  min-height: 200px;
+}
+
+/* Loading and Error States */
+.loading-message,
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-secondary, #adb5bd);
+}
+
+.error-icon {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+.error-message {
+  color: var(--danger, #ff3838);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .cpu-tab {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9rem;
+  }
+}

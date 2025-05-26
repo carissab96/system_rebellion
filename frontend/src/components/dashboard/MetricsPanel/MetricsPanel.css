@@ -51,6 +51,29 @@
   padding-bottom: 8px;
   border-bottom: 3px solid;
   border-image: linear-gradient(90deg, var(--primary), var(--secondary)) 1;
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+.metrics-header-left {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.view-full-metrics-link {
+  font-size: 0.8rem;
+  color: var(--primary);
+  text-decoration: none;
+  margin-top: 0.25rem;
+  display: inline-flex;
+  align-items: center;
+  transition: color 0.2s ease;
+}
+
+.view-full-metrics-link:hover {
+  color: var(--primary-dark);
+  text-decoration: underline;
 }
 
 .metrics-panel-header h2 {

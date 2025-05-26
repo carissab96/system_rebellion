@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Dict, Optional, Any, Tuple
 from app.optimization.system_permissions import check_required_permissions, get_permission_summary
-from app.services.metrics.metrics_service import MetricsService
+from app.services.system_metrics_service import SystemMetricsService
 from app.models.tuning_history import TuningHistory
 from app.core.database import SessionLocal
 
@@ -88,11 +88,10 @@ class AutoTuner:
     async def get_current_metrics(self) -> Dict:
         """Get current system metrics from the centralized metrics service"""
         try:
-            # Use the centralized metrics service
-            from app.services.metrics.metrics_service import MetricsService
-            metrics_service = await MetricsService.get_instance()
+            # Use the SystemMetricsService which now uses ResourceMonitor
+            metrics_service = await SystemMetricsService.get_instance()
             metrics = await metrics_service.get_metrics()
-            self.logger.info(f"Retrieved metrics successfully")
+            self.logger.info(f"Retrieved metrics successfully from SystemMetricsService")
             return metrics
         except Exception as e:
             self.logger.error(f"Error getting system metrics: {str(e)}")
@@ -100,7 +99,6 @@ class AutoTuner:
 
     # This method is kept for backward compatibility
     async def get_metrics(self) -> Dict:
-        """Get current system metrics from the centralized metrics service (deprecated, use get_current_metrics instead)"""
         return await self.get_current_metrics()
 
     async def apply_tuning(self, data: Dict, user_id: str = None) -> Optional[Dict]:
