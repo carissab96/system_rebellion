@@ -5,7 +5,7 @@ This service provides a single source of truth for system metrics
 across all parts of the application, ensuring consistent values
 are shown in the dashboard, auto-tuner, and system metrics pages.
 
-This is now a thin wrapper around the modular metrics services.
+This now uses the ResourceMonitor for comprehensive metrics collection.
 """
 
 import asyncio
@@ -15,8 +15,8 @@ from typing import Dict, Any, Optional, List, Type
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 
-# Import the modular metrics services
-from app.services.metrics.metrics_service import MetricsService
+# Import the ResourceMonitor for comprehensive metrics collection
+from app.optimization.resource_monitor import ResourceMonitor
 
 
 class SystemMetricsService:
@@ -36,7 +36,7 @@ class SystemMetricsService:
     
     def __init__(self):
         """
-        Initialize the service with metrics collection services.
+        Initialize the service with the ResourceMonitor for comprehensive metrics collection.
         """
         if self._initialized:
             return
@@ -46,11 +46,11 @@ class SystemMetricsService:
         self.last_update_time = 0
         self.cache_ttl = 5  # Cache TTL in seconds
         
-        # Initialize the metrics service
-        self.metrics_service = MetricsService()
+        # Initialize the ResourceMonitor for comprehensive metrics
+        self.resource_monitor = ResourceMonitor()
         
         self._initialized = True
-        self.logger.info("SystemMetricsService initialized as singleton")
+        self.logger.info("SystemMetricsService initialized with ResourceMonitor as singleton")
     
     async def _get_lock(self):
         """Get or create the async lock"""
@@ -61,45 +61,14 @@ class SystemMetricsService:
     async def get_metrics(self, force_refresh=False, db: AsyncSession = None) -> Dict[str, Any]:
         """
         Get current system metrics, using cached values if they're recent enough.
-        This is now a thin wrapper around the modular metrics services.
+        This now uses the ResourceMonitor for comprehensive metrics collection.
         
         Args:
             force_refresh: If True, ignore the cache and collect fresh metrics
             db: Optional database session (kept for backward compatibility, not used)
             
         Returns:
-            Dictionary containing system metrics with the following structure:
-            {
-                'timestamp': str,
-                'cpu': {
-                    'percent': float,
-                    'temperature': Optional[float],
-                    'cores': int,
-                    'physical_cores': int
-                },
-                'memory': {
-                    'percent': float,
-                    'total': int,
-                    'available': int,
-                    'used': int,
-                    'free': int
-                },
-                'disk': {
-                    'percent': float,
-                    'total': int,
-                    'used': int,
-                    'free': int
-                },
-                'network': {
-                    'bytes_sent': int,
-                    'bytes_recv': int,
-                    'packets_sent': int,
-                    'packets_recv': int,
-                    'interfaces': Dict[str, Any]
-                },
-                'process_count': int,
-                'additional': Dict[str, Any]
-            }
+            Dictionary containing comprehensive system metrics
         """
         current_time = time.time()
         
@@ -110,53 +79,65 @@ class SystemMetricsService:
             return self.last_metrics
             
         try:
-            # Get metrics from the modular service
-            metrics = await self.metrics_service.get_metrics(force_refresh)
-            
-            # Transform metrics to match frontend expectations
-            cpu_metrics = metrics.get('cpu', {})
-            memory_metrics = metrics.get('memory', {})
-            disk_metrics = metrics.get('disk', {})
-            network_metrics = metrics.get('network', {})
-            
-            transformed_metrics = {
-                'type': 'system_metrics',
-                'data': {
-                    'timestamp': metrics.get('timestamp'),
-                    'client_id': 'system',
-                    'cpu_usage': cpu_metrics.get('total_percent', 0),
-                    'cpu_frequency': cpu_metrics.get('frequency', {}).get('current', 0),
-                    'cpu_temp': cpu_metrics.get('temperature', {}).get('current', 0),
-                    'cpu_per_core': cpu_metrics.get('per_core_percent', []),
-                    'memory_total': memory_metrics.get('total', 0),
-                    'memory_available': memory_metrics.get('available', 0),
-                    'memory_used': memory_metrics.get('used', 0),
-                    'memory_free': memory_metrics.get('free', 0),
-                    'memory_percent': memory_metrics.get('percent', 0),
-                    'disk_total': disk_metrics.get('total', 0),
-                    'disk_used': disk_metrics.get('used', 0),
-                    'disk_free': disk_metrics.get('free', 0),
-                    'disk_percent': disk_metrics.get('percent', 0),
-                    'network_total': network_metrics.get('total_bytes', 0),
-                    'network_used': network_metrics.get('bytes_sent', 0) + network_metrics.get('bytes_recv', 0),
-                    'network_percent': network_metrics.get('utilization_percent', 0),
-                    'process_count': metrics.get('process_count', 0),
-                    'system_info': {
-                        'cpu_model': cpu_metrics.get('model_name', 'CPU'),
-                        'cores': cpu_metrics.get('cores', {}).get('physical', 0),
-                        'logical_cores': cpu_metrics.get('cores', {}).get('logical', 0),
-                        'hostname': metrics.get('hostname', ''),
-                        'os': metrics.get('os', ''),
-                        'architecture': metrics.get('architecture', '')
-                    }
+            # Acquire lock to prevent multiple concurrent metric collections
+            lock = await self._get_lock()
+            async with lock:
+                # Double-check if another thread already updated metrics while we were waiting
+                current_time = time.time()  # Refresh time after waiting for lock
+                if (not force_refresh and 
+                    self.last_metrics is not None and 
+                    current_time - self.last_update_time < self.cache_ttl):
+                    return self.last_metrics
+                
+                # Get metrics from the ResourceMonitor
+                raw_metrics = await self.resource_monitor.collect_metrics()
+                
+                # Extract and format metrics for frontend
+                formatted_metrics = {
+                    'timestamp': raw_metrics.get('timestamp', datetime.now().isoformat()),
+                    'cpu_usage': raw_metrics.get('cpu_usage', 0),
+                    'memory_usage': raw_metrics.get('memory_usage', 0),
+                    'disk_usage': raw_metrics.get('disk_usage', 0),
+                    'cpu': {
+                        'percent': raw_metrics.get('cpu_usage', 0),
+                        'temperature': raw_metrics.get('cpu_temperature', None),
+                        'cores': raw_metrics.get('cpu_cores', {}).get('logical', 0),
+                        'physical_cores': raw_metrics.get('cpu_cores', {}).get('physical', 0),
+                        'frequency_mhz': raw_metrics.get('cpu_frequency', {}).get('current', 0)
+                    },
+                    'memory': {
+                        'percent': raw_metrics.get('memory_usage', 0),
+                        'total': raw_metrics.get('memory', {}).get('total', 0),
+                        'available': raw_metrics.get('memory', {}).get('available', 0),
+                        'used': raw_metrics.get('memory', {}).get('used', 0),
+                        'free': raw_metrics.get('memory', {}).get('free', 0)
+                    },
+                    'disk': {
+                        'percent': raw_metrics.get('disk_usage', 0),
+                        'total': raw_metrics.get('disk', {}).get('total', 0),
+                        'used': raw_metrics.get('disk', {}).get('used', 0),
+                        'free': raw_metrics.get('disk', {}).get('free', 0),
+                        'read_bytes': raw_metrics.get('disk', {}).get('read_bytes', 0),
+                        'write_bytes': raw_metrics.get('disk', {}).get('write_bytes', 0)
+                    },
+                    'network': raw_metrics.get('network', {
+                        'bytes_sent': 0,
+                        'bytes_recv': 0,
+                        'packets_sent': 0,
+                        'packets_recv': 0,
+                        'sent_rate': 0,
+                        'recv_rate': 0,
+                        'interfaces': {}
+                    }),
+                    'process_count': raw_metrics.get('process_count', 0),
+                    'additional': raw_metrics.get('additional', {})
                 }
-            }
-            
-            # Update cache
-            self.last_metrics = transformed_metrics
-            self.last_update_time = time.time()
-            
-            return transformed_metrics
+                
+                # Update cache
+                self.last_metrics = formatted_metrics
+                self.last_update_time = current_time
+                
+                return formatted_metrics
         except Exception as e:
             self.logger.error(f"Error collecting system metrics: {str(e)}")
             
@@ -165,8 +146,9 @@ class SystemMetricsService:
                 self.logger.warning("Returning cached metrics due to collection error")
                 return self.last_metrics
             
-            # Otherwise, return a minimal set of metrics
-            return self._get_empty_metrics(str(e))
+            # Otherwise, return empty metrics structure with error
+            error_msg = f"Failed to collect metrics: {str(e)}"
+            return self._get_empty_metrics(error_msg)
     
     def _safe_get_disk_value(self, metrics: Dict[str, Any], key: str) -> int:
         """Safely extract disk values from metrics"""
@@ -182,11 +164,15 @@ class SystemMetricsService:
         """Return empty metrics structure with optional error"""
         metrics = {
             'timestamp': datetime.now().isoformat(),
+            'cpu_usage': 0,
+            'memory_usage': 0,
+            'disk_usage': 0,
             'cpu': {
                 'percent': 0,
                 'temperature': None,
                 'cores': 0,
-                'physical_cores': 0
+                'physical_cores': 0,
+                'frequency_mhz': 0
             },
             'memory': {
                 'percent': 0,
@@ -199,94 +185,178 @@ class SystemMetricsService:
                 'percent': 0,
                 'total': 0,
                 'used': 0,
-                'free': 0
+                'free': 0,
+                'read_bytes': 0,
+                'write_bytes': 0
             },
             'network': {
                 'bytes_sent': 0,
                 'bytes_recv': 0,
                 'packets_sent': 0,
                 'packets_recv': 0,
+                'sent_rate': 0,
+                'recv_rate': 0,
                 'interfaces': {}
             },
             'process_count': 0,
-            'additional': {}
+            'additional': {
+                'error': error_msg if error_msg else 'Unknown error'
+            }
         }
         
-        if error_msg:
-            metrics['additional']['error'] = error_msg
-            
         return metrics
     
     async def get_detailed_cpu_metrics(self) -> Dict[str, Any]:
         """
         Get detailed CPU metrics including per-core usage, top processes, and temperature.
-        Now delegates to the CPU metrics service.
+        Now uses the ResourceMonitor for comprehensive metrics collection.
         
         Returns:
             Dictionary containing detailed CPU metrics
         """
         try:
-            # Get CPU metrics from the service
-            cpu_metrics = await self.metrics_service.get_cpu_metrics(force_refresh=True)
+            # Get metrics from the ResourceMonitor
+            raw_metrics = await self.resource_monitor.collect_metrics()
             
-            # Transform to match the expected format
+            # Extract CPU-specific metrics
             return {
-                'percent': cpu_metrics.get('total_percent', 0),
-                'per_core_percent': cpu_metrics.get('per_core_percent', []),
-                'frequency': cpu_metrics.get('frequency', {}),
-                'temperature': cpu_metrics.get('temperature'),
-                'top_processes': cpu_metrics.get('top_processes', []),
-                'logical_cores': cpu_metrics.get('cores', {}).get('logical', 0),
-                'physical_cores': cpu_metrics.get('cores', {}).get('physical', 0)
+                'percent': raw_metrics.get('cpu_usage', 0),
+                'per_core_percent': [core.get('usage', 0) for core in raw_metrics.get('cpu_cores_detailed', [])],
+                'frequency': raw_metrics.get('cpu_frequency', {'current': 0, 'min': 0, 'max': 0}),
+                'temperature': raw_metrics.get('cpu_temperature'),
+                'top_processes': raw_metrics.get('top_processes', []),
+                'logical_cores': raw_metrics.get('cpu_cores', {}).get('logical', 0),
+                'physical_cores': raw_metrics.get('cpu_cores', {}).get('physical', 0),
+                'cores': [{
+                    'id': core.get('id', i),
+                    'usage': core.get('usage', 0),
+                    'frequency_mhz': raw_metrics.get('cpu_frequency', {}).get('current', 0)
+                } for i, core in enumerate(raw_metrics.get('cpu_cores_detailed', []))]
             }
         except Exception as e:
             self.logger.error(f"Error getting CPU metrics: {str(e)}")
             return {
                 'percent': 0,
                 'per_core_percent': [],
-                'frequency': {'current': None, 'min': None, 'max': None},
+                'frequency': {'current': 0, 'min': 0, 'max': 0},
                 'temperature': None,
                 'top_processes': [],
                 'logical_cores': 0,
-                'physical_cores': 0
+                'physical_cores': 0,
+                'cores': []
             }
     
     async def get_detailed_memory_metrics(self) -> Dict[str, Any]:
-        """Get detailed memory metrics"""
+        """Get detailed memory metrics from the ResourceMonitor"""
         try:
-            return await self.metrics_service.get_memory_metrics(force_refresh=True)
+            # Get metrics from the ResourceMonitor
+            raw_metrics = await self.resource_monitor.collect_metrics()
+            
+            # Extract memory-specific metrics
+            return {
+                'percent': raw_metrics.get('memory_usage', 0),
+                'total': raw_metrics.get('memory', {}).get('total', 0),
+                'available': raw_metrics.get('memory', {}).get('available', 0),
+                'used': raw_metrics.get('memory', {}).get('used', 0),
+                'free': raw_metrics.get('memory', {}).get('free', 0),
+                'swap': raw_metrics.get('memory', {}).get('swap', {}),
+                'processes': raw_metrics.get('memory_processes', [])
+            }
         except Exception as e:
             self.logger.error(f"Error getting memory metrics: {str(e)}")
-            return {}
+            return {
+                'percent': 0,
+                'total': 0,
+                'available': 0,
+                'used': 0,
+                'free': 0,
+                'swap': {},
+                'processes': []
+            }
     
     async def get_detailed_disk_metrics(self) -> Dict[str, Any]:
-        """Get detailed disk metrics"""
+        """Get detailed disk metrics from the ResourceMonitor"""
         try:
-            return await self.metrics_service.get_disk_metrics(force_refresh=True)
+            # Get metrics from the ResourceMonitor
+            raw_metrics = await self.resource_monitor.collect_metrics()
+            
+            # Extract disk-specific metrics
+            return {
+                'percent': raw_metrics.get('disk_usage', 0),
+                'total': raw_metrics.get('disk', {}).get('total', 0),
+                'used': raw_metrics.get('disk', {}).get('used', 0),
+                'free': raw_metrics.get('disk', {}).get('free', 0),
+                'read_bytes': raw_metrics.get('disk', {}).get('read_bytes', 0),
+                'write_bytes': raw_metrics.get('disk', {}).get('write_bytes', 0),
+                'partitions': raw_metrics.get('disk_partitions', []),
+                'io_counters': raw_metrics.get('disk_io', {})
+            }
         except Exception as e:
             self.logger.error(f"Error getting disk metrics: {str(e)}")
-            return {}
+            return {
+                'percent': 0,
+                'total': 0,
+                'used': 0,
+                'free': 0,
+                'read_bytes': 0,
+                'write_bytes': 0,
+                'partitions': [],
+                'io_counters': {}
+            }
     
     async def get_detailed_network_metrics(self) -> Dict[str, Any]:
-        """Get detailed network metrics"""
+        """Get detailed network metrics from the ResourceMonitor"""
         try:
-            return await self.metrics_service.get_network_metrics(force_refresh=True)
+            # Get metrics from the ResourceMonitor
+            raw_metrics = await self.resource_monitor.collect_metrics()
+            
+            # Extract network-specific metrics
+            network_data = raw_metrics.get('network', {})
+            return {
+                'bytes_sent': network_data.get('bytes_sent', 0),
+                'bytes_recv': network_data.get('bytes_recv', 0),
+                'packets_sent': network_data.get('packets_sent', 0),
+                'packets_recv': network_data.get('packets_recv', 0),
+                'sent_rate': network_data.get('sent_rate', 0),
+                'recv_rate': network_data.get('recv_rate', 0),
+                'interfaces': network_data.get('interfaces', {}),
+                'connections': raw_metrics.get('network_connections', []),
+                'connection_stats': raw_metrics.get('connection_stats', {}),
+                'protocol_stats': raw_metrics.get('protocol_stats', {}),
+                'latency': raw_metrics.get('network_latency', {}),
+                'connection_quality': raw_metrics.get('connection_quality', {})
+            }
         except Exception as e:
             self.logger.error(f"Error getting network metrics: {str(e)}")
-            return {}
+            return {
+                'bytes_sent': 0,
+                'bytes_recv': 0,
+                'packets_sent': 0,
+                'packets_recv': 0,
+                'sent_rate': 0,
+                'recv_rate': 0,
+                'interfaces': {},
+                'connections': [],
+                'connection_stats': {},
+                'protocol_stats': {},
+                'latency': {},
+                'connection_quality': {}
+            }
     
     async def get_largest_directories(self, path='/', limit=10, max_depth=3) -> List[Dict[str, Any]]:
-        """Get largest directories (expensive operation)"""
+        """Get largest directories using the ResourceMonitor (expensive operation)"""
         try:
-            return await self.metrics_service.get_largest_directories(path, limit, max_depth)
+            # Get disk usage analysis from the ResourceMonitor
+            return await self.resource_monitor.get_directory_sizes(path, limit, max_depth)
         except Exception as e:
             self.logger.error(f"Error getting largest directories: {str(e)}")
             return []
     
     async def get_connection_stats_by_process(self) -> Dict[str, Dict[str, Any]]:
-        """Get network statistics grouped by process (expensive operation)"""
+        """Get network statistics grouped by process using ResourceMonitor (expensive operation)"""
         try:
-            return await self.metrics_service.get_connection_stats_by_process()
+            # Get network connection stats by process from the ResourceMonitor
+            return await self.resource_monitor.get_process_network_stats()
         except Exception as e:
             self.logger.error(f"Error getting connection stats by process: {str(e)}")
             return {}

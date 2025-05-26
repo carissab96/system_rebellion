@@ -22,10 +22,7 @@ import { QuantumShadowPerson } from '../common/CharacterIcons';
 import alertUtils from '../../utils/alertUtils';
 import { Button } from '../../design-system/components';
 
-// Direct backend URL instead of using the relative API_BASE_URL
-const BACKEND_URL = 'http://127.0.0.1:8000';
-// API path should match what's used in alertsSlice.ts (without /api prefix)
-const API_PATH = '/system-alerts';
+const API_PATH = '/api/system-alerts';
 
 interface SystemAlertFormData {
   title: string;
@@ -187,7 +184,7 @@ export const SystemAlerts: React.FC = () => {
         
         // Call the API to apply the recommendation
         const response = await axios.post(
-          `${BACKEND_URL}/api/auto-tuner/recommendations/apply`,
+          `${API_PATH}/api/auto-tuner/recommendations/apply`,
           { recommendation_id: recommendationIndex }
         );
         
@@ -231,7 +228,7 @@ export const SystemAlerts: React.FC = () => {
     const generateRealSystemAlerts = async () => {
       try {
         // Get current metrics
-        const metricsResponse = await axios.get(`${BACKEND_URL}/api/auto-tuner/metrics/current`);
+        const metricsResponse = await axios.get(`${API_PATH}/api/auto-tuner/metrics/current`);
         const metrics = metricsResponse.data;
         
         // Check for threshold violations and create alerts
@@ -244,7 +241,7 @@ export const SystemAlerts: React.FC = () => {
         }
         
         // Get auto-tuner recommendations
-        const recommendationsResponse = await axios.get(`${BACKEND_URL}/api/auto-tuner/recommendations`);
+        const recommendationsResponse = await axios.get(`${API_PATH}/api/auto-tuner/recommendations`);
         const recommendations = recommendationsResponse.data;
         
         // Create alerts for the top recommendations
@@ -253,7 +250,7 @@ export const SystemAlerts: React.FC = () => {
         }
         
         // Get system patterns
-        const patternsResponse = await axios.get(`${BACKEND_URL}/api/auto-tuner/patterns`);
+        const patternsResponse = await axios.get(`${API_PATH}/api/auto-tuner/patterns`);
         const patterns = patternsResponse.data;
         
         // Create alerts for detected patterns
@@ -410,7 +407,7 @@ export const SystemAlerts: React.FC = () => {
     // Test API connection for debugging
     const testApiConnection = async () => {
       try {
-        const response = await axios.get(`${BACKEND_URL}/api/health-check`);
+        const response = await axios.get(`${API_PATH}/api/health-check`);
         setDebugInfo(`API connection successful: ${JSON.stringify(response.data)}`);
       } catch (error: any) {
         setDebugInfo(`API connection failed: ${error.message}`);
@@ -420,7 +417,7 @@ export const SystemAlerts: React.FC = () => {
     // Login with test credentials for debugging
     const loginForFreshToken = async () => {
       try {
-        const response = await axios.post(`${BACKEND_URL}/api/auth/login`, {
+        const response = await axios.post(`${API_PATH}/api/auth/login`, {
           username: 'testuser',
           password: 'testpassword'
         });
@@ -462,9 +459,9 @@ export const SystemAlerts: React.FC = () => {
           <div className="debug-info">
             <p>Debug Info:</p>
             <p>Token exists: {localStorage.getItem('token') ? 'Yes' : 'No'}</p>
-            <p>Backend URL: {BACKEND_URL}</p>
+            <p>Backend URL: {API_PATH}</p>
             <p>API Path: {API_PATH}</p>
-            <p>Full Alerts Endpoint: {`${BACKEND_URL}/api${API_PATH}`}</p>
+            <p>Full Alerts Endpoint: {`${API_PATH}`}</p>
             <p>Redux API Call Path: {`/api${API_PATH}`}</p>
             <p>{debugInfo}</p>
             <Button variant="cyber" size="sm" onClick={testApiConnection}>Test API Connection</Button>

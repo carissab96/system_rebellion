@@ -5,6 +5,7 @@ import CPUMetric from './CPU/CPUMetric';
 import { MemoryMetric } from './memory/MemoryMetric';
 import { DiskMetric } from './disk/DiskMetric';
 import { useAppSelector } from '../../store/hooks';
+import { Tabs, Tab } from '../../design-system/components/Tabs/Tabs';
 import './SystemMetrics.css'; 
 
 const SystemMetrics: React.FC = () => {
@@ -120,40 +121,20 @@ const SystemMetrics: React.FC = () => {
       `}</style>
       
       {/* System Metrics Tabs */}
-      <div className="system-metrics-tabs">
-        <div 
-          className={`system-metrics-tab ${activeTab === 'cpu' ? 'active' : ''}`}
-          onClick={() => setActiveTab('cpu')}
-        >
-          <span className="tab-icon">💻</span> CPU
-        </div>
-        <div 
-          className={`system-metrics-tab ${activeTab === 'memory' ? 'active' : ''}`}
-          onClick={() => setActiveTab('memory')}
-        >
-          <span className="tab-icon">🧠</span> Memory
-        </div>
-        <div 
-          className={`system-metrics-tab ${activeTab === 'disk' ? 'active' : ''}`}
-          onClick={() => setActiveTab('disk')}
-        >
-          <span className="tab-icon">💽</span> Disk
-        </div>
-        <div 
-          className={`system-metrics-tab ${activeTab === 'network' ? 'active' : ''}`}
-          onClick={() => setActiveTab('network')}
-        >
-          <span className="tab-icon">🌐</span> Network
-        </div>
-      </div>
-      
-      {/* Tab Content */}
-      <div className="tab-content-area">
-        {activeTab === 'cpu' && <CPUMetric compact={false} />}
-        {activeTab === 'memory' && <MemoryMetric compact={false} />}
-        {activeTab === 'disk' && <DiskMetric compact={false} />}
-        {activeTab === 'network' && <NetworkMetric compact={false} showTabs={false} />}
-      </div>
+      <Tabs activeTab={activeTab} onChange={setActiveTab}>
+        <Tab id="cpu" label={<><span className="tab-icon">💻</span> CPU</>}>
+          <CPUMetric compact={false} />
+        </Tab>
+        <Tab id="memory" label={<><span className="tab-icon">🧠</span> Memory</>}>
+          <MemoryMetric compact={false} />
+        </Tab>
+        <Tab id="disk" label={<><span className="tab-icon">💽</span> Disk</>}>
+          <DiskMetric compact={false} />
+        </Tab>
+        <Tab id="network" label={<><span className="tab-icon">🌐</span> Network</>}>
+          <NetworkMetric compact={false} showTabs={false} />
+        </Tab>
+      </Tabs>
     </div>
   );
 };

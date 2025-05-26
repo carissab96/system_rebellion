@@ -121,12 +121,12 @@ const SystemLogsViewer: React.FC<SystemLogsViewerProps> = ({
   };
 
   return (
-    <Paper elevation={3} sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+    <Paper elevation={3} sx={{ component : "span", height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <Box component = "span" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h6" component="h2">
           {title} {total > 0 && `(${total})`}
         </Typography>
-        <Box sx={{ display: 'flex', gap: 1 }}>
+        <Box component = "span" sx={{ display: 'flex', gap: 1 }}>
           <Tooltip title="Refresh logs">
             <IconButton onClick={fetchLogs} size="small">
               <RefreshIcon />
@@ -140,7 +140,7 @@ const SystemLogsViewer: React.FC<SystemLogsViewerProps> = ({
         </Box>
       </Box>
 
-      <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+      <Box component = "span" sx={{ display: 'flex', gap: 2, mb: 2 }}>
         <FormControl size="small" sx={{ minWidth: 120 }}>
           <InputLabel>Source</InputLabel>
           <Select
@@ -174,14 +174,14 @@ const SystemLogsViewer: React.FC<SystemLogsViewerProps> = ({
 
       <Divider sx={{ mb: 2 }} />
 
-      <Box sx={{ flexGrow: 1, overflow: 'auto', maxHeight }}>
+      <Box component = "span" sx={{ flexGrow: 1, overflow: 'auto', maxHeight }}>
         {loading && logs.length === 0 ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+          <Box component = "span" sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
             <CircularProgress size={24} sx={{ mr: 1 }} />
             <Typography variant="body2">Loading logs...</Typography>
           </Box>
         ) : logs.length === 0 ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+          <Box component = "span" sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
             <Typography variant="body2" color="text.secondary">No logs found</Typography>
           </Box>
         ) : (
@@ -204,25 +204,24 @@ const SystemLogsViewer: React.FC<SystemLogsViewerProps> = ({
                 >
                   <ListItemText
                     primary={
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box component = "span" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         {React.cloneElement(levelConfig.icon as React.ReactElement, { 
-                          
-                          
+                          style: { color: `var(--${levelConfig.color}-main)`, fontSize: '1rem' } 
                         })}
-                        <Typography variant="body2" component="span" sx={{ fontWeight: 'medium' }}>
+                        <Typography variant="body1" component="div" sx={{ fontWeight: 'medium' }}>
                           {log.message}
                         </Typography>
                       </Box>
                     }
                     secondary={
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
+                      <Box component = "span" sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
                         <Chip
                           label={getSourceDisplayName(log.source)}
                           size="small"
                           variant="outlined"
                           sx={{ height: 20, fontSize: '0.7rem' }}
                         />
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="body2" color="textSecondary" component="div">
                           {formatTimestamp(log.timestamp)}
                         </Typography>
                       </Box>
@@ -236,7 +235,7 @@ const SystemLogsViewer: React.FC<SystemLogsViewerProps> = ({
       </Box>
 
       {hasMore && (
-        <Box sx={{ mt: 2, textAlign: 'center' }}>
+        <Box component = "span" sx={{ mt: 2, textAlign: 'center' }}>
           <Button
             variant="outlined"
             size="small"

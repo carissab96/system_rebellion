@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAppSelector } from '../../../store/hooks';
+import { Link } from 'react-router-dom';
 import CPUMetric from '../Metrics/CPUMetrics/CPUMetric';
 import { MemoryMetric } from '../Metrics/MemoryMetric/MemoryMetric';
 import { DiskMetric } from '../Metrics/DiskMetric/DiskMetric';
@@ -48,7 +49,12 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({
     <div className="metrics-panel">
       {showHeader && (
         <div className="metrics-panel-header">
-          <h2>System Metrics</h2>
+          <div className="metrics-header-left">
+            <h2>System Metrics</h2>
+            <Link to="/metrics" className="view-full-metrics-link">
+              View Full Metrics
+            </Link>
+          </div>
           <div className="sir-hawkington-icon">
             <SirHawkington className="hawk-icon" />
             <div className="character-tooltip">

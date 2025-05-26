@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { apiMethods } from '../../utils/api';
 
-const BASE_PATH =  `/system-alerts/`;
+const API_PATH = '/system-alerts/';
 // Types
 export interface SystemAlert {
   id: string;
@@ -48,7 +48,7 @@ export const fetchSystemAlerts = createAsyncThunk<
   async ({ skip = 0, limit = 20, is_read }: { skip?: number, limit?: number, is_read?: boolean } = {}, { rejectWithValue }) => {
     try {
       console.log("🦉 Sir Hawkington is fetching system alerts...");
-      let url = `${BASE_PATH}?skip=${skip}&limit=${limit}`;
+      let url = `${API_PATH}?skip=${skip}&limit=${limit}`;
       if (is_read !== undefined) {
         url += `&is_read=${is_read}`;
       }
@@ -75,7 +75,7 @@ export const createSystemAlert = createAsyncThunk<
     try {
       console.log("🦉 Sir Hawkington is creating a new system alert...");
       // Ensure CSRF token is initialized
-      const response = await apiMethods.post<SystemAlert>(`${BASE_PATH}`, {
+      const response = await apiMethods.post<SystemAlert>(`${API_PATH}`, {
         ...alertData,
         timestamp: new Date().toISOString(),
         created_at: new Date().toISOString(),
@@ -101,7 +101,7 @@ export const markAlertAsRead = createAsyncThunk<
   async (id: string, { rejectWithValue }) => {
     try {
       console.log(`🦉 Sir Hawkington is marking alert ${id} as read...`);
-      const response = await apiMethods.post<SystemAlert>(`${BASE_PATH}${id}/mark-as-read`, {});
+      const response = await apiMethods.post<SystemAlert>(`${API_PATH}${id}/mark-as-read`, {});
       console.log("🦉 Sir Hawkington marked the alert as read:", response);
       return response;
     } catch (error: any) {
@@ -122,7 +122,7 @@ export const markAllAlertsAsRead = createAsyncThunk<
   async (_, { rejectWithValue }) => {
     try {
       console.log("🦉 Sir Hawkington is marking all alerts as read...");
-      const response = await apiMethods.post<{success: boolean}, {}>(`${BASE_PATH}mark-all-as-read`, {});
+      const response = await apiMethods.post<{success: boolean}, {}>(`${API_PATH}mark-all-as-read`, {});
       console.log("🦉 Sir Hawkington marked all alerts as read");
       return response.success;
     } catch (error: any) {
@@ -143,7 +143,7 @@ export const deleteSystemAlert = createAsyncThunk<
   async (id: string, { rejectWithValue }) => {
     try {
       console.log(`🦉 Sir Hawkington is deleting alert ${id}...`);
-      await apiMethods.delete<{success: boolean}>(`${BASE_PATH}${id}`);
+      await apiMethods.delete<{success: boolean}>(`${API_PATH}${id}`);
       console.log(`🦉 Sir Hawkington deleted alert ${id}`);
       return id;
     } catch (error: any) {

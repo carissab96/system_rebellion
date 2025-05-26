@@ -32,7 +32,6 @@
   --accent-primary: #3a86ff;
   --accent-secondary: #ff006e;
 }
-/*
 .system-metrics-container {
   min-height: 100vh;
   padding: 2rem;
@@ -82,7 +81,7 @@
   100% { background-position: 200% 0; }
 }
 
-Tabs styling 
+/* Tabs styling */
 .metrics-tabs {
   display: flex;
   gap: 5px;
@@ -113,7 +112,7 @@ Tabs styling
   border-color: var(--accent-primary);
 }
 
-Coming soon section styling 
+/* Coming soon section styling */
 .metrics-coming-soon {
   background-color: var(--bg-card);
   border-radius: 8px;
@@ -210,8 +209,9 @@ Coming soon section styling
   line-height: 1.5;
 }
 
-Responsive adjustments
+/* Responsive adjustments */
 @media (max-width: 768px) {
+  /* Responsive adjustments for smaller screens */
   .metrics-tabs {
     flex-wrap: wrap;
   }
@@ -239,7 +239,7 @@ Responsive adjustments
   }
 }
 
-Character icon styling
+/* Character icon styling */
 .character-icon {
   width: 40px;
   height: 40px;
@@ -272,7 +272,7 @@ Character icon styling
   margin-top: 5px;
 }
 
-Tabs styling
+/* Tabs styling */
 .tabs-container {
   display: flex;
   flex-direction: column;
@@ -313,7 +313,7 @@ Tabs styling
   padding: 10px 0;
 }
 
-Header styling
+/* Header styling */
 .metrics-header-top {
   display: flex;
   justify-content: space-between;
@@ -333,7 +333,7 @@ Header styling
   margin-right: 15px;
 }
 
-Detailed metrics styling
+/* Detailed metrics styling */
 .metrics-detailed-content {
   padding: 20px 0;
 }
