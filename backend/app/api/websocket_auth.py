@@ -84,7 +84,15 @@ async def authenticate_websocket(websocket: WebSocket) -> User:
         
         if not token:
             logger.warning("No token provided for WebSocket connection")
-            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            try:
+                await websocket.send_json({
+                    "type": "error",
+                    "message": "No authentication token provided"
+                })
+            except Exception as e:
+                logger.error(f"Failed to send error message: {str(e)}")
+            finally:
+                await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
             return None
         
         logger.debug(f"Authenticating WebSocket with token: {token[:10]}...")
@@ -94,7 +102,15 @@ async def authenticate_websocket(websocket: WebSocket) -> User:
         
         if not user:
             logger.error("Invalid token for WebSocket connection")
-            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            try:
+                await websocket.send_json({
+                    "type": "error",
+                    "message": "Invalid or expired authentication token"
+                })
+            except Exception as e:
+                logger.error(f"Failed to send error message: {str(e)}")
+            finally:
+                await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
             return None
         
         logger.info(f"WebSocket authenticated for user: {user.username}")

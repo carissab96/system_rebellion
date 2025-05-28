@@ -1,8 +1,20 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, status
 from app.websockets import WebSocketManager
 from app.api.websocket_auth import authenticate_websocket
 from app.services.metrics.metrics_service import MetricsService
 from app.services.system_metrics_service import SystemMetricsService
+from app.core.resilience import (
+    WebSocketCircuitBreaker, 
+    get_circuit_breaker,
+    BackpressureHandler,
+    get_backpressure_handler,
+    RecoveryAction,
+    RecoveryStrategy,
+    ErrorSeverity,
+    with_error_recovery,
+    error_recovery,
+    get_metric_transformer
+)
 import psutil
 import asyncio
 import socket
@@ -10,8 +22,10 @@ import os
 import json
 import platform
 import logging
+import time
+import numpy as np
 from datetime import datetime, timezone
-from typing import List, Any, Optional, Tuple, Union
+from typing import List, Any, Optional, Tuple, Union, Dict
 
 logger = logging.getLogger(__name__)
 
@@ -19,108 +33,391 @@ logger = logging.getLogger(__name__)
 websocket_manager = WebSocketManager()
 connection_manager = websocket_manager
 
+# Initialize resilience components
+metrics_circuit_breaker = get_circuit_breaker(
+    name="metrics_websocket", 
+    max_failures=3,
+    reset_timeout=30,
+    exponential_backoff_factor=1.5
+)
+
+metrics_backpressure = get_backpressure_handler(
+    name="metrics_backpressure",
+    max_buffer_size=100,
+    sampling_strategy="latest"
+)
+
+# Initialize metric transformer
+metric_transformer = get_metric_transformer(
+    name="system_metrics",
+    history_size=120,  # 2 minutes of history at 1s intervals
+    smoothing_window=5
+)
+
+# Register recovery strategies
+error_recovery.register_strategy(
+    component="websocket",
+    error_type="WebSocketDisconnect",
+    recovery_action=RecoveryAction(
+        strategy=RecoveryStrategy.RETRY,
+        max_retries=3,
+        retry_delay=2.0,
+        exponential_backoff=True
+    )
+)
+
+error_recovery.register_strategy(
+    component="websocket",
+    error_type="ConnectionError",
+    recovery_action=RecoveryAction(
+        strategy=RecoveryStrategy.RETRY,
+        max_retries=5,
+        retry_delay=1.0,
+        exponential_backoff=True
+    )
+)
+
+error_recovery.register_strategy(
+    component="metrics",
+    error_type="*",  # Wildcard for any error in metrics collection
+    recovery_action=RecoveryAction(
+        strategy=RecoveryStrategy.FALLBACK,
+        fallback_function=lambda ctx, *args, **kwargs: {
+            "cpu": {"percent": 0.0, "cores": [0.0] * psutil.cpu_count()},
+            "memory": {"percent": 0.0, "used": 0, "total": 0},
+            "disk": {"percent": 0.0, "used": 0, "total": 0},
+            "network": {"bandwidth_mbps": 0.25, "sent": 0, "received": 0}
+        }
+    )
+)
+
 router = APIRouter()
 
 @router.websocket("/ws/system-metrics")
+@with_error_recovery(component="websocket", operation="system_metrics_socket", severity=ErrorSeverity.HIGH)
 async def system_metrics_socket(websocket: WebSocket):
     """
     Sir Hawkington's Distinguished System Metrics WebSocket
+    
+    Enhanced with circuit breaker, backpressure handling, and autonomous error recovery.
     """
+    connection_active = False
+    client_id = f"client_{id(websocket)}"
+    
     try:
-        logger.info("🔌 WebSocket connection attempt to /ws/system-metrics")
+        # Check if the circuit breaker allows this connection
+        if not metrics_circuit_breaker.can_attempt_connection():
+            wait_time = metrics_circuit_breaker.get_wait_time()
+            logger.warning(f"🛑 Circuit breaker is open, rejecting connection for {wait_time:.2f}s")
+            # Accept first to be able to send the error message
+            await websocket.accept()
+            await websocket.send_json({
+                "type": "error",
+                "message": f"System is experiencing high load. Please try again in {int(wait_time)} seconds.",
+                "code": "circuit_open"
+            })
+            await websocket.close(code=status.WS_1013_TRY_AGAIN_LATER)
+            return
+            
+        logger.info(f"🔌 WebSocket connection attempt to /ws/system-metrics from {client_id}")
         
         # First accept the connection unconditionally
         await websocket.accept()
-        logger.info("🔌 WebSocket connection initially accepted")
+        logger.info(f"🔌 WebSocket connection initially accepted for {client_id}")
         
         # Now try authentication
         try:
-            logger.info("🔑 Attempting WebSocket authentication")
-            user = await authenticate_websocket(websocket)
-            if not user:
-                logger.error("❌ WebSocket authentication failed - no user returned")
+            logger.info(f"🔑 Attempting WebSocket authentication for {client_id}")
+            
+            # Get token from query parameters
+            token = websocket.query_params.get("token")
+            if not token:
+                logger.error(f"❌ No token provided in WebSocket connection for {client_id}")
                 await websocket.send_json({
-                    "type": "error", 
-                    "message": "Authentication failed"
+                    "type": "error",
+                    "message": "No authentication token provided"
                 })
-                await websocket.close(code=1008)
+                await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
                 return
                 
-            logger.info(f"✅ WebSocket authenticated for user {user.username}")
+            try:
+                # Validate token and get user
+                payload = jwt.decode(
+                    token,
+                    settings.SECRET_KEY,
+                    algorithms=[settings.ALGORITHM]
+                )
+                username: str = payload.get("sub")
+                if username is None:
+                    raise HTTPException(status_code=401, detail="Invalid authentication credentials")
+                
+                # Get user from database
+                user = await User.get_by_username(username)
+                if user is None:
+                    raise HTTPException(status_code=401, detail="User not found")
+                    
+                logger.info(f"✅ WebSocket authenticated for user {user.username} ({client_id})")
+                
+            except JWTError as e:
+                logger.error(f"❌ JWT validation error: {str(e)}")
+                await websocket.send_json({
+                    "type": "error",
+                    "message": "Invalid or expired authentication token"
+                })
+                await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+                metrics_circuit_breaker.record_failure()
+                return
+                
+            logger.info(f"✅ WebSocket authenticated for user {user.username} ({client_id})")
             
             # Send initial connection message
             await websocket.send_json({
-                "type": "connection_established", 
-                "message": f"Connected successfully as {user.username}"
+                "type": "connection_established",
+                "message": f"Connected successfully as {user.username}",
+                "system_info": await get_system_info()
             })
-            
+                
+        except (HTTPException) as auth_error:
+            logger.error(f"❌ WebSocket authentication failed for {client_id}: {str(auth_error)}")
         except Exception as auth_error:
-            logger.error(f"❌ WebSocket authentication error: {str(auth_error)}")
+            logger.error(f"❌ WebSocket authentication error for {client_id}: {str(auth_error)}")
             await websocket.send_json({
                 "type": "error", 
                 "message": f"Authentication error: {str(auth_error)}"
             })
-            await websocket.close(code=1008)
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            metrics_circuit_breaker.record_failure()  # Record auth failure in circuit breaker
             return
         
         # Connect to the WebSocket manager
         await websocket_manager.connect(websocket)
         connection_active = True
+        metrics_circuit_breaker.record_success()  # Record successful connection
         
+        # Initialize last metrics time
+        last_metrics_time = time.time()
+        update_interval = 1.0  # 1 second default update interval
+        
+        #add rate limiting
+        rate_limiter = RateLimiter(
+            calls=100, #100 requests
+            period=60 #per minute
+        )
+
         # Main WebSocket loop
         while True:
             try:
-                # Get metrics from the metrics service
-                metrics_service = MetricsService()
-                system_metrics = await metrics_service.get_metrics()
+                loop_start_time = time.time()
+                 # Check rate limit
+                if not rate_limiter.allow_request():
+                    retry_after = rate_limiter.time_until_next_request()
+                    await websocket.send_json({
+                        "type": "rate_limit",
+                        "retry_after": retry_after,
+                        "message": f"Rate limit exceeded. Try again in {retry_after} seconds"
+                    })
+                    await asyncio.sleep(1)
+                    continue
+                # Get metrics from the metrics service with circuit breaker protection
+                try:
+                    logger.info(f"📡 Fetching metrics from metrics service for client {client_id}")
+                    metrics_service = MetricsService()
+                    
+                    # Log before executing the circuit breaker
+                    logger.debug(f"🔌 Circuit breaker state: {metrics_circuit_breaker.state.name}")
+                    logger.debug(f"🔌 Circuit breaker failure count: {metrics_circuit_breaker.failures}")
+                    logger.debug(f"🔌 Circuit breaker last failure: {metrics_circuit_breaker.last_failure}")
+                    
+                    # Execute the metrics retrieval with circuit breaker
+                    system_metrics = await metrics_circuit_breaker.execute(
+                        metrics_service.get_metrics
+                    )
+                    
+                    # Log the raw metrics received
+                    metrics_debug = {
+                        'cpu_percent': system_metrics.get('cpu_percent'),
+                        'memory_percent': system_metrics.get('memory_percent'),
+                        'disk_percent': system_metrics.get('disk_percent'),
+                        'network_io': system_metrics.get('network_io')
+                    }
+                    logger.debug(f"📦 Raw metrics data received: {json.dumps(metrics_debug, indent=2)}")
+                    
+                    # Transform metrics using our NumPy-powered transformer
+                    logger.info(f"🔄 Transforming metrics for client {client_id}")
+                    transformed_metrics = metric_transformer.transform_system_metrics(system_metrics)
+                    
+                    # Add to backpressure handler
+                    metrics_backpressure.add_item({
+                        "metrics": transformed_metrics,
+                        "timestamp": datetime.now().isoformat()
+                    })
                 
-                # Get system information
-                system_info = {
-                    "platform": os.name,
-                    "system": platform.system(),
-                    "release": platform.release(),
-                    "hostname": socket.gethostname(),
-                    "cores": system_metrics.get('cpu', {}).get('physical_cores', psutil.cpu_count(logical=False)),
-                    "logical_cores": system_metrics.get('cpu', {}).get('cores', psutil.cpu_count(logical=True)),
-                    "architecture": platform.machine()
-                }
-                
-                # Get CPU per-core data
-                cpu_per_core = psutil.cpu_percent(percpu=True, interval=0.1)
+                except Exception as metrics_error:
+                    logger.error(f"❌ Error getting metrics: {str(metrics_error)}", exc_info=True)
+                    
+                    # Log circuit breaker state when error occurs
+                    logger.warning(f"⚠️ Circuit breaker state during error: {metrics_circuit_breaker.state.name}")
+                    logger.warning(f"⚠️ Failure count: {metrics_circuit_breaker.failures}")
+                    logger.warning(f"⚠️ Last failure: {metrics_circuit_breaker.last_failure}")
+                    
+                    # Use error recovery to get fallback metrics
+                    logger.info("🔄 Attempting error recovery for metrics")
+                    try:
+                        transformed_metrics = await error_recovery.handle_error(
+                            error=metrics_error,
+                            component="metrics",
+                            operation="get_metrics",
+                            severity=ErrorSeverity.MEDIUM
+                        )
+                        
+                        if transformed_metrics:
+                            logger.info("✅ Error recovery successful, using recovered metrics")
+                            recovered_metrics = {
+                                'cpu_usage': transformed_metrics.get('cpu', {}).get('current'),
+                                'memory_usage': transformed_metrics.get('memory', {}).get('current'),
+                                'disk_usage': transformed_metrics.get('disk', {}).get('current'),
+                                'network_usage': transformed_metrics.get('network', {}).get('current')
+                            }
+                            logger.debug(f"✨ Recovered metrics: {json.dumps(recovered_metrics, indent=2)}")
+                        else:
+                            logger.warning("⚠️ Error recovery returned no metrics, using fallback")
+                            
+                    except Exception as recovery_error:
+                        logger.error(f"❌ Error during recovery attempt: {str(recovery_error)}", exc_info=True)
+                    
+                    if not transformed_metrics:
+                        # If error recovery failed, use basic fallback
+                        logger.warning("⚠️ Using hardcoded fallback metrics")
+                        transformed_metrics = {
+                            "cpu": {
+                                "current": 0.0,
+                                "smoothed": 0.0,
+                                "cores": [0.0] * psutil.cpu_count(logical=True)
+                            },
+                            "memory": {
+                                "current": 0.0,
+                                "smoothed": 0.0
+                            },
+                            "disk": {
+                                "current": 0.0,
+                                "smoothed": 0.0
+                            },
+                            "network": {
+                                "current": 0.25,  # Minimum 0.25 MB/s for display
+                                "smoothed": 0.25
+                            }
+                        }
+                        logger.debug(f"📋 Fallback metrics set: {json.dumps(transformed_metrics, indent=2)}")
                 
                 # Format message according to frontend expectations
                 message = {
-                    "type": "cpu",  # Changed to match frontend expectations
+                    "type": "metrics_update",
+                    "timestamp": datetime.now().isoformat(),
+                    "data": transformed_metrics
+                }
+                
+                # Log before sending the message
+                client_info = f"client {client_id}"
+                logger.info(f"📤 Sending metrics update to {client_info}")
+                message_details = {
+                    'type': 'metrics_update',
+                    'timestamp': message['timestamp'],
+                    'metrics_summary': {
+                        'cpu': transformed_metrics.get('cpu', {}).get('current'),
+                        'memory': transformed_metrics.get('memory', {}).get('current'),
+                        'disk': transformed_metrics.get('disk', {}).get('current'),
+                        'network': transformed_metrics.get('network', {}).get('current')
+                    }
+                }
+                logger.debug(f"📝 Message details for {client_info}: {json.dumps(message_details, indent=2)}")
+                
+                try:
+                    # Send the message to the client
+                    await websocket.send_json(message)
+                    logger.debug(f"✅ Successfully sent metrics update to {client_info}")
+                except Exception as send_error:
+                    logger.error(f"❌ Failed to send metrics to {client_info}: {str(send_error)}", exc_info=True)
+                    raise  # Re-raise to trigger disconnection handling
+                
+                # Reset for next iteration
+                message = {
+                    "type": "metrics_update",
+                    "timestamp": datetime.now().isoformat(),
                     "data": {
-                        "usage_percent": system_metrics.get('cpu', {}).get('percent', psutil.cpu_percent(interval=0.1)),
-                        "temperature": system_metrics.get('cpu', {}).get('temperature', 0),
-                        "cores": cpu_per_core,
-                        "frequency_mhz": system_metrics.get('cpu', {}).get('frequency', {}).get('current', 0),
-                        "physical_cores": system_info["cores"],
-                        "logical_cores": system_info["logical_cores"],
-                        "top_processes": [
-                            {
-                                "pid": proc.get("pid", 0),
-                                "name": proc.get("name", "Unknown"),
-                                "cpu_percent": proc.get("cpu_percent", 0),
-                                "memory_percent": proc.get("memory_percent", 0)
-                            }
-                            for proc in system_metrics.get('processes', [])[:10]
-                        ]
+                        "cpu": {
+                            "usage_percent": transformed_metrics.get('cpu', {}).get('current', 0.0),
+                            "smoothed_percent": transformed_metrics.get('cpu', {}).get('smoothed', 0.0),
+                            "temperature": transformed_metrics.get('cpu', {}).get('temperature', 0),
+                            "cores": transformed_metrics.get('cpu', {}).get('cores', [0.0] * psutil.cpu_count(logical=True)),
+                            "frequency_mhz": transformed_metrics.get('cpu', {}).get('frequency', {}).get('current', 0),
+                            "physical_cores": psutil.cpu_count(logical=False),
+                            "logical_cores": psutil.cpu_count(logical=True),
+                            "load_avg": transformed_metrics.get('cpu', {}).get('load_avg', [0, 0, 0]),
+                            "trend": transformed_metrics.get('cpu', {}).get('trend', 0.0),
+                            "is_anomaly": transformed_metrics.get('cpu', {}).get('is_anomaly', False)
+                        },
+                        "memory": {
+                            "usage_percent": transformed_metrics.get('memory', {}).get('current', 0.0),
+                            "smoothed_percent": transformed_metrics.get('memory', {}).get('smoothed', 0.0),
+                            "used_gb": transformed_metrics.get('memory', {}).get('used_gb', 0),
+                            "total_gb": transformed_metrics.get('memory', {}).get('total_gb', 0),
+                            "swap_percent": transformed_metrics.get('memory', {}).get('swap_percent', 0),
+                            "trend": transformed_metrics.get('memory', {}).get('trend', 0.0),
+                            "is_anomaly": transformed_metrics.get('memory', {}).get('is_anomaly', False)
+                        },
+                        "disk": {
+                            "usage_percent": transformed_metrics.get('disk', {}).get('current', 0.0),
+                            "smoothed_percent": transformed_metrics.get('disk', {}).get('smoothed', 0.0),
+                            "used_gb": transformed_metrics.get('disk', {}).get('used_gb', 0),
+                            "total_gb": transformed_metrics.get('disk', {}).get('total_gb', 0),
+                            "read_mb": transformed_metrics.get('disk', {}).get('read_mb', 0),
+                            "write_mb": transformed_metrics.get('disk', {}).get('write_mb', 0),
+                            "trend": transformed_metrics.get('disk', {}).get('trend', 0.0),
+                            "is_anomaly": transformed_metrics.get('disk', {}).get('is_anomaly', False)
+                        },
+                        "network": {
+                            "bandwidth_mbps": transformed_metrics.get('network', {}).get('current', 0.25),
+                            "smoothed_mbps": transformed_metrics.get('network', {}).get('smoothed', 0.25),
+                            "sent_mb": transformed_metrics.get('network', {}).get('sent_mb', 0),
+                            "received_mb": transformed_metrics.get('network', {}).get('received_mb', 0),
+                            "connections": transformed_metrics.get('network', {}).get('connections', 0),
+                            "trend": transformed_metrics.get('network', {}).get('trend', 0.0),
+                            "is_anomaly": transformed_metrics.get('network', {}).get('is_anomaly', False)
+                        },
+                        "system_analysis": transformed_metrics.get('system_analysis', {
+                            "overall_health": "good",
+                            "issues": [],
+                            "recommendations": []
+                        })
                     }
                 }
                 
-                # Send metrics if connection is still open
-                if websocket.client_state.name == "CONNECTED":
-                    await websocket.send_json(message)
-                else:
-                    logger.info(f"WebSocket for {client_id} is no longer connected. Breaking loop.")
-                    break
+                # Log the metrics data being sent
+                logger.info("📤 Sending metrics update to client %s", client_id)
+                metrics_data = {
+                    'timestamp': message.get('timestamp'),
+                    'cpu_usage': message.get('data', {}).get('cpu', {}).get('usage_percent'),
+                    'memory_usage': message.get('data', {}).get('memory', {}).get('usage_percent'),
+                    'disk_usage': message.get('data', {}).get('disk', {}).get('usage_percent'),
+                    'network_usage': message.get('data', {}).get('network', {}).get('usage_percent')
+                }
+                logger.debug("📊 Metrics data: %s", json.dumps(metrics_data, indent=2))
                 
-                # Handle potential client messages with timeout
+                # Send metrics update
                 try:
-                    client_msg = await asyncio.wait_for(websocket.receive_text(), timeout=4.5)
+                    await websocket.send_json(message)
+                    logger.debug("✅ Successfully sent metrics update to client %s", client_id)
+                except Exception as send_error:
+                    logger.error("❌ Failed to send metrics to client %s: %s", client_id, str(send_error))
+                    raise
+                
+                # Check for client messages with a short timeout
+                try:
+                    logger.debug("🔄 Waiting for client message from %s", client_id)
+                    client_msg = await asyncio.wait_for(websocket.receive_text(), timeout=0.1)
+                    logger.debug("📩 Received message from client %s: %s", client_id, client_msg[:100])  # Log first 100 chars
                     
+                    # Process client message
                     try:
                         msg_data = json.loads(client_msg)
                         msg_type = msg_data.get("type", "")
@@ -130,29 +427,39 @@ async def system_metrics_socket(websocket: WebSocket):
                                 "type": "pong", 
                                 "timestamp": datetime.now(timezone.utc).isoformat()
                             })
-                        elif msg_type == "request_full_metrics":
-                            logger.info(f"Client {client_id} requested full metrics update")
                         elif msg_type == "set_interval":
-                            new_interval = max(1, min(10, msg_data.get("interval", 5)))
-                            logger.info(f"Client {client_id} requested interval change to {new_interval}s")
+                            # Client requesting to change the update interval (1-10 seconds)
+                            new_interval = max(1.0, min(10.0, float(msg_data.get("interval", 1.0))))
+                            update_interval = new_interval
+                            logger.info(f"Client {client_id} set update interval to {update_interval}s")
+                            
                             await websocket.send_json({
                                 "type": "interval_update", 
-                                "interval": new_interval,
-                                "message": f"Update interval set to {new_interval} seconds"
+                                "interval": update_interval,
+                                "message": f"Update interval set to {update_interval} seconds"
+                            })
+                        elif msg_type == "request_system_info":
+                            # Send system info on demand
+                            system_info = await get_system_info()
+                            await websocket.send_json({
+                                "type": "system_info",
+                                "data": system_info
                             })
                     except json.JSONDecodeError:
-                        logger.warning(f"Received non-JSON message from client {client_id}: {client_msg[:50]}...")
-                        
+                        logger.warning(f"Received non-JSON message from client {client_id}")
                 except asyncio.TimeoutError:
                     # No message received, continue with the loop
                     pass
                 
-                # Sleep between updates
-                await asyncio.sleep(5)
+                # Calculate how long to sleep to maintain the desired update interval
+                elapsed = time.time() - loop_start_time
+                sleep_time = max(0.1, update_interval - elapsed)  # At least 0.1s to prevent CPU hogging
+                await asyncio.sleep(sleep_time)
                 
             except WebSocketDisconnect:
-                logger.info("WebSocket disconnected by client")
+                logger.info(f"WebSocket for {client_id} disconnected by client")
                 break
+                
             except Exception as e:
                 logger.error(f"⚠️ Unhandled WebSocket error: {str(e)}")
                 try:
@@ -162,24 +469,31 @@ async def system_metrics_socket(websocket: WebSocket):
                             "message": f"The Meth Snail encountered an error: {str(e)}",
                             "timestamp": datetime.now(timezone.utc).isoformat()
                         })
+                except asyncio.CancelledError:
+                    logger.info(f"WebSocket for {client_id} cancelled by client")
                 except Exception:
                     pass
                 break
                 
     except WebSocketDisconnect:
         logger.info(f"WebSocket for {client_id} disconnected during setup")
+        metrics_circuit_breaker.record_failure()
     except Exception as e:
-        logger.error(f"WebSocket error during setup for {client_id}: {e}")
+        logger.error(f"WebSocket error during setup for {client_id}: {str(e)}")
+        metrics_circuit_breaker.record_failure()
+        # Try to send error message if possible
         try:
-            if websocket.client_state.name == "CONNECTED":
+            if websocket.client_state == WebSocket.client_state.CONNECTED:
                 await websocket.send_json({
                     "type": "connection_error",
                     "message": f"Sir Hawkington regrets to inform you of a connection error: {str(e)}",
-                    "timestamp": datetime.now(timezone.utc).isoformat()
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "retry_after": metrics_circuit_breaker.get_wait_time()
                 })
         except Exception:
             pass
     finally:
+        # Clean up connection if it was established
         if connection_active:
             await websocket_manager.disconnect(websocket)
             logger.info(f"WebSocket disconnected and cleaned")
