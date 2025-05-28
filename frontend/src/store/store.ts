@@ -7,6 +7,9 @@ import autoTunerReducer from './slices/autoTunerSlice';
 import optimizationReducer from './slices/optimizationSlice';
 import configurationReducer from './slices/configurationSlice';
 import cpuReducer from './slices/metrics/CPUSlice';
+import memoryReducer from './slices/metrics/MemorySlice';
+import diskReducer from './slices/metrics/DiskSlice';
+import networkReducer from './slices/metrics/NetworkSlice';
 import { MetricsState } from '../types/metrics';
 import xsrfMiddleware from './csrf';
 
@@ -20,6 +23,9 @@ export const store = configureStore({
     optimization: optimizationReducer,
     configuration: configurationReducer,
     cpu: cpuReducer,
+    memory: memoryReducer,
+    disk: diskReducer,
+    network: networkReducer,  
   },
   middleware: (getDefaultMiddleware) => 
     getDefaultMiddleware({
