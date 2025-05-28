@@ -22,6 +22,7 @@ import { DesignSystemShowcase } from './design-system/docs';
 import PersistenceWrapper from './components/Auth/PersistenceWrapper';
 import MetricsProvider from './services/metrics/MetricsProvider';
 
+
 // Error Boundary State
 type ErrorBoundaryState = {
   hasError: boolean;
