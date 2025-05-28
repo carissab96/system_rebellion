@@ -149,6 +149,7 @@ export interface ProcessedDiskData {
       inodeUsage: number;
       readOnly: boolean;
       physicalDiskId: string;
+      uniqueId: string; // Added unique identifier field
     }[];
     totalDiskSpace: number;
     usedDiskSpace: number;

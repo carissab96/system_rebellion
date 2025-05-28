@@ -8,7 +8,7 @@ import {
   MetricsState
 } from '../../types/metrics';
 
-type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
+type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error' | 'fallback';
 
 interface ExtendedMetricsState extends Omit<MetricsState, 'connectionStatus' | 'metrics'> {
   metrics: SystemMetric[];

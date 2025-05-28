@@ -38,11 +38,15 @@ const processPartitionsData = (rawData: RawDiskMetrics): ProcessedDiskData['part
     const health = partition.health || { status: 'healthy', issues: [] };
     const inodes = partition.inodes || { percentUsed: 0 };
     
+    // Generate a unique ID for partitions with 'Unknown' mountPoint
+    const uniqueId = `partition-${Math.random().toString(36).substring(2, 9)}`;
+    
     return {
       blockSize: partition.blockSize ?? 0,
-      mountPoint: partition.mountPoint || 'Unknown',
+      mountPoint: partition.mountPoint || `Unknown-${uniqueId}`,
       device: partition.device || 'Unknown',
       fsType: partition.fsType || 'Unknown',
+      uniqueId: partition.mountPoint || uniqueId, // Add a guaranteed unique ID
       total: partition.total || 0,
       used: partition.used || 0,
       available: partition.available || 0,
@@ -89,8 +93,11 @@ const processPhysicalDisksData = (rawData: RawDiskMetrics): ProcessedDiskData['p
     // Analyze SMART data for health assessment with fallback
     const smartAnalysis = smart.attributes ? analyzeSmartData(smart) : { issues: [] };
     
+    // Ensure disk ID is always unique
+    const uniqueId = `disk-${Math.random().toString(36).substring(2, 9)}`;
+    
     return {
-      id: disk.id || `disk-${Math.random().toString(36).substring(2, 9)}`,
+      id: disk.id || uniqueId,
       model: disk.model || 'Unknown Disk',
       type: disk.type || 'other',
       size: disk.size || 0,

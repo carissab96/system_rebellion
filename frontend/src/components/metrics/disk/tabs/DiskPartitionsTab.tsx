@@ -21,7 +21,7 @@ const DiskPartitionsTab: React.FC<DiskPartitionsTabProps> = ({ data, compact = f
   const { partitions, physicalDisks } = data;
 
   // Format health status
-  const formatHealthStatus = (status: 'healthy' | 'warning' | 'error' | 'passed' | 'failed'): JSX.Element => {
+  const formatHealthStatus = (status: 'healthy' | 'warning' | 'error' | 'passed' | 'failed', id?: string): JSX.Element => {
     let color: string;
     let label: string;
     
@@ -45,7 +45,8 @@ const DiskPartitionsTab: React.FC<DiskPartitionsTabProps> = ({ data, compact = f
         label = 'Unknown';
     }
     
-    return <span className="health-status" style={{ color }}>{label}</span>;
+    // Using a key with the id ensures uniqueness even when the label is the same
+    return <span key={`health-${id || Math.random().toString(36).substr(2, 9)}`} className="health-status" style={{ color }}>{label}</span>;
   };
 
   // Partition table columns
@@ -99,7 +100,7 @@ const DiskPartitionsTab: React.FC<DiskPartitionsTabProps> = ({ data, compact = f
       key: 'health',
       header: 'Health',
       sortable: true,
-      render: (partition) => formatHealthStatus(partition.health.status)
+      render: (partition) => formatHealthStatus(partition.health.status, partition.mountPoint)
     },
     {
       key: 'readOnly',
@@ -153,7 +154,7 @@ const DiskPartitionsTab: React.FC<DiskPartitionsTabProps> = ({ data, compact = f
       sortable: true,
       render: (disk) => (
         <div className="disk-health">
-          {formatHealthStatus(disk.health.status)}
+          {formatHealthStatus(disk.health.status, disk.id)}
           {disk.health.issues.length > 0 && (
             <Badge type="warning" className="ml-1">{disk.health.issues.length}</Badge>
           )}
@@ -201,13 +202,15 @@ const DiskPartitionsTab: React.FC<DiskPartitionsTabProps> = ({ data, compact = f
             <Table
               columns={partitionColumns}
               data={partitions.items}
-              onRowClick={(partition) => setSelectedPartition(partition.mountPoint)}
+              onRowClick={(partition) => setSelectedPartition(partition.uniqueId)}
+              rowKey="uniqueId"
             />
           ) : (
             <Table
               columns={diskColumns}
               data={physicalDisks.items}
               onRowClick={(disk) => setSelectedDisk(disk.id)}
+              rowKey="id"
             />
           )}
         </div>
@@ -246,17 +249,17 @@ const DiskPartitionsTab: React.FC<DiskPartitionsTabProps> = ({ data, compact = f
             <Table
               columns={partitionColumns}
               data={partitions.items}
-              onRowClick={(partition) => setSelectedPartition(partition.mountPoint)}
-              rowKey="mountPoint"
+              onRowClick={(partition) => setSelectedPartition(partition.uniqueId)}
+              rowKey="uniqueId"
             />
           </div>
 
           {selectedPartition && (
             <div className="partition-details">
-              <h3>Partition Details: {selectedPartition}</h3>
+              <h3>Partition Details: {partitions.items.find(p => p.uniqueId === selectedPartition)?.mountPoint || selectedPartition}</h3>
               <div className="partition-details__content">
                 {(() => {
-                  const partition = partitions.items.find(p => p.mountPoint === selectedPartition);
+                  const partition = partitions.items.find(p => p.uniqueId === selectedPartition);
                   if (!partition) return <p>Partition not found</p>;
                   
                   return (
@@ -326,7 +329,7 @@ const DiskPartitionsTab: React.FC<DiskPartitionsTabProps> = ({ data, compact = f
                                       'success'
                                     }
                                   >
-                                    {formatHealthStatus(physicalDisk.health.status)}
+                                    {formatHealthStatus(physicalDisk.health.status, physicalDisk.id)}
                                   </Badge>
                                 </div>
                               </div>
@@ -430,7 +433,7 @@ const DiskPartitionsTab: React.FC<DiskPartitionsTabProps> = ({ data, compact = f
                           <div className="disk-info__item">
                             <span className="disk-info__label">Health:</span>
                             <span className="disk-info__value">
-                              {formatHealthStatus(disk.health.status)}
+                              {formatHealthStatus(disk.health.status, disk.id)}
                               {disk.health.issues.length > 0 && (
                                 <Badge type="warning" className="ml-1">{disk.health.issues.length}</Badge>
                               )}
