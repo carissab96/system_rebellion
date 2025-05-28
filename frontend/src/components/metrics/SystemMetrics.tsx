@@ -1,9 +1,9 @@
 // frontend/src/components/metrics/SystemMetrics.tsx
 import React, { useState } from 'react';
-import NetworkMetric from './NetworkMetrics/NetworkMetric';
+import NetworkMetric from './Network/NetworkMetric';
 import CPUMetric from './CPU/CPUMetric';
-import { MemoryMetric } from './memory/MemoryMetric';
-import { DiskMetric } from './disk/DiskMetric';
+import MemoryMetric from './memory/MemoryMetric';
+import DiskMetric from './disk/DiskMetric';
 import { useAppSelector } from '../../store/hooks';
 import { Tabs, Tab } from '../../design-system/components/Tabs/Tabs';
 import './SystemMetrics.css'; 
@@ -132,7 +132,7 @@ const SystemMetrics: React.FC = () => {
           <DiskMetric compact={false} />
         </Tab>
         <Tab id="network" label={<><span className="tab-icon">🌐</span> Network</>}>
-          <NetworkMetric compact={false} showTabs={false} />
+          <NetworkMetric compact={false} />
         </Tab>
       </Tabs>
     </div>

@@ -1,8 +1,8 @@
 // frontend/src/components/metrics/NetworkMetrics/tabs/NetworkConnectionsTable.tsx
 
 import React from 'react';
-import { NetworkProcess } from '@/components/metrics/NetworkMetrics/tabs/types'; // You'll need to create this type file
-import { formatBytes } from '@/components/metrics/NetworkMetrics/utils/formatters';
+import { NetworkProcess } from '@/components/metrics/Network/tabs/types'; // You'll need to create this type file
+import { formatBytes } from '@/components/metrics/Network/utils/formatters';
 import './NetworkMetrics.css';
 
 interface NetworkConnectionsTableProps {

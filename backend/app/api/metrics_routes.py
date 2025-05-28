@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from typing import Any, Dict
 import uuid
+import socket
 
 import psutil
 from fastapi import APIRouter, Depends, HTTPException
@@ -11,6 +12,7 @@ from app.core.database import get_db
 from app.core.security import get_current_user
 from app.schemas.metrics import MetricCreate, MetricResponse, MetricUpdate
 from app.services.metrics_repository import MetricsRepository
+from app.services.system_metrics_service import SystemMetricsService
 
 router = APIRouter(tags=["metrics"])
 
@@ -20,82 +22,154 @@ async def get_metrics(db: AsyncSession = Depends(get_db)):
     Public endpoint for system metrics that doesn't require authentication
     """
     try:
-        # Use the centralized metrics service with the database session
-        metrics_service = await SystemMetricsService.get_instance(db)
-        metrics = await metrics_service.get_metrics(force_refresh=True, db=db)
-        
-        # Get network details from the metrics
-        network = metrics.get('network', {})
-        network_sent = network.get('bytes_sent', 0)
-        network_recv = network.get('bytes_recv', 0)
-        
-        # If we couldn't get network details, try psutil directly
-        if not network_sent and not network_recv:
-            net_io = psutil.net_io_counters()
-            network_sent = net_io.bytes_sent
-            network_recv = net_io.bytes_recv
-        
-        # Format the response to match the existing API structure
-        return {
-            "cpu_usage": metrics.get("cpu", {}).get("percent", 0),
-            "memory_usage": metrics.get("memory", {}).get("percent", 0),
-            "disk_usage": metrics.get("disk", {}).get("percent", 0),
-            "network_io": {
-                "sent": network_sent,
-                "recv": network_recv
-            },
-            "process_count": metrics.get("process_count", 0),
-            "timestamp": metrics.get("timestamp", datetime.now(timezone.utc).isoformat()),
-            "details": metrics  # Include all the detailed metrics
-        }
-    except Exception as e:
-        print(f"Error getting system metrics: {e}")
-        # Return fallback metrics with the new structure
+        # Direct psutil implementation for all metrics
+        # Get basic system metrics
+        cpu_percent = psutil.cpu_percent(interval=0.1)
         memory = psutil.virtual_memory()
         disk = psutil.disk_usage('/')
         net_io = psutil.net_io_counters()
+        swap = psutil.swap_memory()
         
+        # Get CPU details
+        cpu_freq = psutil.cpu_freq()
+        cpu_count_logical = psutil.cpu_count()
+        cpu_count_physical = psutil.cpu_count(logical=False)
+        
+        # Get per-core CPU usage
+        per_cpu = psutil.cpu_percent(interval=0.1, percpu=True)
+        cpu_cores = [{'id': i, 'usage': usage} for i, usage in enumerate(per_cpu)]
+        
+        # Get top CPU and memory processes
+        top_processes = []
+        for proc in sorted(psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_percent']), 
+                          key=lambda p: p.info['cpu_percent'] or 0, reverse=True)[:5]:
+            try:
+                top_processes.append({
+                    'pid': proc.info['pid'],
+                    'name': proc.info['name'],
+                    'cpu_percent': proc.info['cpu_percent'] or 0,
+                    'memory_percent': proc.info['memory_percent'] or 0
+                })
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                pass
+        
+        # Get disk partitions
+        partitions = []
+        for part in psutil.disk_partitions():
+            try:
+                usage = psutil.disk_usage(part.mountpoint)
+                partitions.append({
+                    'device': part.device,
+                    'mountpoint': part.mountpoint,
+                    'fstype': part.fstype,
+                    'total': usage.total,
+                    'used': usage.used,
+                    'free': usage.free,
+                    'percent': usage.percent
+                })
+            except (PermissionError, OSError):
+                continue
+        
+        # Get network interfaces
+        interfaces = []
+        for name, stats in psutil.net_if_stats().items():
+            try:
+                addrs = psutil.net_if_addrs().get(name, [])
+                address = next((addr.address for addr in addrs if addr.family == socket.AF_INET), None)
+                interfaces.append({
+                    'name': name,
+                    'address': address,
+                    'isup': stats.isup,
+                    'speed': stats.speed,
+                    'mtu': stats.mtu
+                })
+            except (KeyError, StopIteration):
+                continue
+        
+        # Format the response with directly collected metrics
         return {
-            "cpu_usage": psutil.cpu_percent(),
+            "cpu_usage": cpu_percent,
             "memory_usage": memory.percent,
             "disk_usage": disk.percent,
             "network_io": {
                 "sent": net_io.bytes_sent,
-                "recv": net_io.bytes_recv
+                "recv": net_io.bytes_recv,
+                "sent_rate": 0,  # We don't have rate data without historical values
+                "recv_rate": 0   # We don't have rate data without historical values
             },
             "process_count": len(psutil.pids()),
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "details": {
-                "timestamp": datetime.now().isoformat(),
                 "cpu": {
-                    "percent": psutil.cpu_percent(),
-                    "cores": psutil.cpu_count(logical=True),
-                    "physical_cores": psutil.cpu_count(logical=False)
+                    "percent": cpu_percent,
+                    "cores": cpu_cores,
+                    "temperature": None,  # Would need platform-specific code
+                    "frequency": cpu_freq.current if cpu_freq else None,
+                    "core_count": cpu_count_physical,
+                    "thread_count": cpu_count_logical,
+                    "top_processes": top_processes,
+                    "model": "CPU",  # Would need platform-specific code
+                    "vendor": "Vendor"  # Would need platform-specific code
                 },
                 "memory": {
                     "percent": memory.percent,
                     "total": memory.total,
                     "available": memory.available,
                     "used": memory.used,
-                    "free": memory.free
+                    "free": memory.free,
+                    "buffer": getattr(memory, 'buffers', 0),
+                    "cache": getattr(memory, 'cached', 0),
+                    "swap_percent": swap.percent,
+                    "swap_total": swap.total,
+                    "swap_used": swap.used,
+                    "swap_free": swap.free,
+                    "top_processes": top_processes
                 },
                 "disk": {
                     "percent": disk.percent,
                     "total": disk.total,
                     "used": disk.used,
-                    "free": disk.free
+                    "free": disk.free,
+                    "available": disk.free,  # Same as free for compatibility
+                    "partitions": partitions,
+                    "read_rate": 0,  # Would need historical data
+                    "write_rate": 0   # Would need historical data
                 },
                 "network": {
                     "bytes_sent": net_io.bytes_sent,
                     "bytes_recv": net_io.bytes_recv,
                     "packets_sent": net_io.packets_sent,
                     "packets_recv": net_io.packets_recv,
-                    "interfaces": {}
-                },
-                "process_count": len(psutil.pids()),
-                "additional": {
-                    "error": str(e)
+                    "interfaces": interfaces,
+                    "rate_mbps": 0,  # Would need historical data
+                    "connection_quality": {
+                        "average_latency": 0,
+                        "packet_loss_percent": 0,
+                        "connection_stability": 0,
+                        "jitter": 0,
+                        "gateway_latency": 0,
+                        "dns_latency": 0,
+                        "internet_latency": 0
+                    }
                 }
+            }
+        }
+    except Exception as e:
+        # Log the error and return a minimal response
+        print(f"Error getting system metrics: {str(e)}")
+        return {
+            "cpu_usage": 0,
+            "memory_usage": 0,
+            "disk_usage": 0,
+            "network_io": {"sent": 0, "recv": 0},
+            "process_count": 0,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "error": str(e),
+            "details": {
+                "cpu": {"percent": 0, "cores": [], "temperature": None, "frequency": None},
+                "memory": {"percent": 0, "total": 0, "available": 0, "used": 0, "free": 0},
+                "disk": {"percent": 0, "total": 0, "used": 0, "free": 0, "available": 0},
+                "network": {"bytes_sent": 0, "bytes_recv": 0, "packets_sent": 0, "packets_recv": 0}
             }
         }
 
