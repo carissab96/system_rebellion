@@ -565,6 +565,108 @@ class NetworkMetricsService:
         except Exception as e:
             self.logger.error(f"Error getting top bandwidth processes: {str(e)}")
             return []
+            
+    def _get_per_interface_stats(self) -> Dict[str, Any]:
+        """
+        Get detailed statistics for each network interface
+        
+        Returns:
+            Dictionary mapping interface names to their statistics
+        """
+        try:
+            # Get network interfaces
+            interfaces = psutil.net_if_stats()
+            io_counters = psutil.net_io_counters(pernic=True)
+            addresses = psutil.net_if_addrs()
+            
+            result = {}
+            
+            for interface_name in interfaces.keys():
+                if interface_name not in io_counters:
+                    continue
+                    
+                interface_stats = interfaces[interface_name]
+                io_stats = io_counters[interface_name]
+                
+                # Calculate rates if we have previous measurements
+                recv_rate = 0
+                sent_rate = 0
+                
+                interface_key = f"interface_{interface_name}"
+                current_time = time.time()
+                
+                if interface_key in self._interface_stats_history and self._interface_stats_history[interface_key]:
+                    prev_stats = self._interface_stats_history[interface_key][-1]
+                    time_diff = current_time - prev_stats['time']
+                    
+                    if time_diff > 0:
+                        bytes_recv_diff = io_stats.bytes_recv - prev_stats['bytes_recv']
+                        bytes_sent_diff = io_stats.bytes_sent - prev_stats['bytes_sent']
+                        
+                        if bytes_recv_diff >= 0:
+                            recv_rate = bytes_recv_diff / time_diff
+                        if bytes_sent_diff >= 0:
+                            sent_rate = bytes_sent_diff / time_diff
+                
+                # Store current values for next calculation
+                self._interface_stats_history[interface_key].append({
+                    'time': current_time,
+                    'bytes_recv': io_stats.bytes_recv,
+                    'bytes_sent': io_stats.bytes_sent,
+                    'packets_recv': io_stats.packets_recv,
+                    'packets_sent': io_stats.packets_sent,
+                    'errin': io_stats.errin,
+                    'errout': io_stats.errout,
+                    'dropin': io_stats.dropin,
+                    'dropout': io_stats.dropout
+                })
+                
+                # Limit history size
+                if len(self._interface_stats_history[interface_key]) > 10:
+                    self._interface_stats_history[interface_key] = self._interface_stats_history[interface_key][-10:]
+                
+                # Get IP addresses for this interface
+                ip_addresses = []
+                if interface_name in addresses:
+                    for addr in addresses[interface_name]:
+                        if addr.family == socket.AF_INET:  # IPv4
+                            ip_addresses.append({
+                                'address': addr.address,
+                                'netmask': addr.netmask,
+                                'broadcast': addr.broadcast,
+                                'family': 'IPv4'
+                            })
+                        elif addr.family == socket.AF_INET6:  # IPv6
+                            ip_addresses.append({
+                                'address': addr.address,
+                                'netmask': addr.netmask,
+                                'broadcast': addr.broadcast,
+                                'family': 'IPv6'
+                            })
+                
+                # Compile interface statistics
+                result[interface_name] = {
+                    'isup': interface_stats.isup,
+                    'duplex': interface_stats.duplex,
+                    'speed': interface_stats.speed,
+                    'mtu': interface_stats.mtu,
+                    'bytes_sent': io_stats.bytes_sent,
+                    'bytes_recv': io_stats.bytes_recv,
+                    'packets_sent': io_stats.packets_sent,
+                    'packets_recv': io_stats.packets_recv,
+                    'errin': io_stats.errin,
+                    'errout': io_stats.errout,
+                    'dropin': io_stats.dropin,
+                    'dropout': io_stats.dropout,
+                    'sent_rate': sent_rate,
+                    'recv_rate': recv_rate,
+                    'addresses': ip_addresses
+                }
+            
+            return result
+        except Exception as e:
+            self.logger.error(f"Error getting per-interface stats: {str(e)}")
+            return {}
     
     async def get_connection_stats_by_process(self) -> Dict[str, Dict[str, Any]]:
         """

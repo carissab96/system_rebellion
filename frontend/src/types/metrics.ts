@@ -165,6 +165,7 @@ export interface SystemMetric {
   cpu_cache_line_associativity?: number;
   cpu: CPUData;
   memory_usage: number;
+  memory_allocation: number;
   memory_total: number;
   memory_available: number;
   memory_free: number;

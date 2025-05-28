@@ -10,9 +10,10 @@ import {
   Tooltip as RechartsTooltip, 
   ResponsiveContainer 
 } from 'recharts';
-// import { any } from '/home/carissab/Documents/mod7/system_rebellion/frontend/src/components/metrics/NetworkMetrics/tabs/types';
-// import { any } from '/home/carissab/Documents/mod7/system_rebellion/frontend/src/components/metrics/NetworkMetrics/tabs/types';
-import { formatBytes, formatLatency, getQualityClass } from '../utils/formatters';
+import NetworkProtocolChart from './NetworkProtocolChart';
+import NetworkQualityMetrics from './NetworkQualityMetrics';
+import TopBandwidthProcesses from './TopBandwidthProcesses';
+import { formatBytes } from '../utils/formatters';
 import './NetworkMetrics.css';
 
 interface NetworkOverviewTabProps {
@@ -134,25 +135,26 @@ const NetworkOverviewTab: React.FC<NetworkOverviewTabProps> = ({
         </div>
       )}
       
-      <div className="network-section">
-        <div className="network-section-title">Connection Quality</div>
-        <div className="connection-quality">
-          <div className="quality-score">
-            {connection_quality.connection_stability.toFixed(0)}/100
-          </div>
-          <div className="quality-meter">
-            <div 
-              className={`quality-meter-fill ${getQualityClass(connection_quality.connection_stability)}`}
-              style={{ width: `${connection_quality.connection_stability}%` }}
-            />
-          </div>
-          <div className="quality-details">
-            <span>Latency: {formatLatency(connection_quality.average_latency)}</span>
-            <span>Packet Loss: {connection_quality.packet_loss_percent.toFixed(1)}%</span>
-            <span>Jitter: {formatLatency(connection_quality.jitter)}</span>
-          </div>
-        </div>
-      </div>
+      {/* Use the NetworkQualityMetrics component instead */}
+      <NetworkQualityMetrics data={connection_quality} compact={compact} />
+      
+      {/* Add NetworkProtocolChart if protocol data is available */}
+      {data.protocol_breakdown && data.protocol_stats && (
+        <NetworkProtocolChart 
+          data={data.protocol_breakdown} 
+          stats={data.protocol_stats} 
+          compact={compact} 
+        />
+      )}
+      
+      {/* Add TopBandwidthProcesses if process data is available */}
+      {data.top_bandwidth_processes && data.top_bandwidth_processes.length > 0 && (
+        <TopBandwidthProcesses 
+          processes={data.top_bandwidth_processes} 
+          compact={compact} 
+          limit={5} 
+        />
+      )}
     </>
   );
 };

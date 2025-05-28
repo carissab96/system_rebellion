@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAppSelector } from '../../../store/hooks';
 import { Link } from 'react-router-dom';
-import CPUMetric from '../Metrics/CPUMetrics/CPUMetric';
-import { MemoryMetric } from '../Metrics/MemoryMetric/MemoryMetric';
-import { DiskMetric } from '../Metrics/DiskMetric/DiskMetric';
-import DashboardNetworkMetric from '../Metrics/NetworkMetric/NetworkMetric';
+import CPUMetric from '../../../components/metrics/CPU/CPUMetric';
+import MemoryMetric from '../../../components/metrics/memory/MemoryMetric';
+import DiskMetric from '../../../components/metrics/disk/DiskMetric';
+import DashboardNetworkMetric from '../../../components/metrics/Network/NetworkMetric';
 import { SirHawkington } from '../../common/CharacterIcons';
 import './MetricsPanel.css';
 

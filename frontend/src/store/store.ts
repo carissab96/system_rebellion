@@ -22,7 +22,10 @@ export const store = configureStore({
     cpu: cpuReducer,
   },
   middleware: (getDefaultMiddleware) => 
-    getDefaultMiddleware().concat(xsrfMiddleware)
+    getDefaultMiddleware({
+      // Disable SerializableStateInvariantMiddleware to prevent performance warnings
+      serializableCheck: false,
+    }).concat(xsrfMiddleware)
 });
 
 // Infer the `RootState` and `AppDispatch` types from the store itself

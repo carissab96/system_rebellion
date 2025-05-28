@@ -1,59 +1,84 @@
+// frontend/src/components/metrics/disk/DiskMetric.tsx
+
 import React, { useState } from 'react';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store/store';
-import Tabs, { Tab } from '@/design-system/components/Tabs';
-import ErrorDisplay from '@/components/common/ErrorDisplay';
-import LoadingIndicator from '@/components/common/LoadingIndicator';
+import { useAppSelector } from '../../../store/hooks';
+import { selectCurrentMetrics } from '../../../store/slices/metricsSlice';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { MetricsCard, MetricStatus } from '../../../design-system/components/MetricsCard';
+import Tabs, { Tab } from '../../../design-system/components/Tabs';
+import ErrorDisplay from '../../../components/common/ErrorDisplay';
+import LoadingIndicator from '../../../components/common/LoadingIndicator';
 import DiskPartitionsTab from './tabs/DiskPartitionsTab';
 import { DiskDirectoryTab } from './tabs/DiskDirectoryTab';
 import { DiskPerformanceTab } from './tabs/DiskPerformanceTab';
 import { processDiskData } from './utils/diskDataProcessor';
 import { DiskMetricProps, RawDiskMetrics } from './tabs/types';
+import './DiskMetric.css';
 
-export const DiskMetric: React.FC<DiskMetricProps> = ({ 
+// Extended props to support dashboard mode
+interface ConsolidatedDiskMetricProps extends DiskMetricProps {
+  dashboardMode?: boolean; // Whether this is being used in the dashboard
+  height?: number | string;
+}
+
+export const DiskMetric: React.FC<ConsolidatedDiskMetricProps> = ({ 
   compact = false,
-  defaultTab = 'partitions' 
+  defaultTab = 'partitions',
+  dashboardMode = false,
+  height
 }) => {
-  type TabType = 'partitions' | 'directory' | 'performance';
+  type TabType = 'partitions' | 'directory' | 'performance' | 'overview';
   const [activeTab, setActiveTab] = useState<TabType>(defaultTab as TabType);
   
   const handleTabChange = (tabId: string) => {
     setActiveTab(tabId as TabType);
   };
-  // Get disk metrics from the current system metrics
-  const diskMetrics = useSelector((state: RootState) => state.metrics.current?.disk_usage);
-  const loading = useSelector((state: RootState) => state.metrics.loading);
-  const error = useSelector((state: RootState) => state.metrics.error);
+
+  // Get disk metrics from the main metrics slice
+  const currentMetric = useAppSelector(selectCurrentMetrics);
+  const loading = !currentMetric;
+  const error = !currentMetric ? 'No metrics data available' : null;
+  const diskMetrics = currentMetric?.disk_percent;
   
   // Handle loading state
   if (loading) {
-    return <LoadingIndicator message="Fetching disk metrics..." />;
+    return dashboardMode ? (
+      <MetricsCard title="Disk Usage" value="--" unit="%" updating={true} />
+    ) : (
+      <LoadingIndicator message="Fetching disk metrics..." />
+    );
   }
   
   // Handle error state
   if (error || !diskMetrics) {
-    return <ErrorDisplay 
-      message="Unable to load disk metrics" 
-      details={typeof error === 'string' ? error : 'Unknown error occurred'} 
-      retry={() => {
-        // Dispatch refresh action here if needed
-        // dispatch(fetchMetrics());
-      }} 
-    />;
+    return dashboardMode ? (
+      <div className={`disk-metric ${compact ? 'compact' : ''}`} style={{ height }}>
+        <MetricsCard title="Disk Usage" value="--" unit="%" status="error" />
+      </div>
+    ) : (
+      <ErrorDisplay 
+        message="Unable to load disk metrics" 
+        details={typeof error === 'string' ? error : 'Unknown error occurred'} 
+        retry={() => {}} 
+      />
+    );
   }
 
-  // Convert number to RawDiskMetrics structure if needed
-  const rawDiskMetrics: RawDiskMetrics = typeof diskMetrics === 'number' ? {
-    partitions: [],
+  // Extract disk data from metrics
+  const diskUsage = typeof diskMetrics === 'number' ? diskMetrics : 0;
+  
+  // Create RawDiskMetrics structure from available metrics
+  const rawDiskMetrics: RawDiskMetrics = {
+    partitions: currentMetric?.additional?.disk_partitions || [],
     physicalDisks: [],
     directories: [],
     performance: {
       current: {
-        readSpeed: 0,
-        writeSpeed: 0,
+        readSpeed: currentMetric?.additional?.disk_read_rate || 0,
+        writeSpeed: currentMetric?.additional?.disk_write_rate || 0,
         readIOPS: 0,
         writeIOPS: 0,
-        utilization: 0,
+        utilization: diskUsage,
         queueDepth: 0,
         latency: {
           read: 0,
@@ -70,10 +95,122 @@ export const DiskMetric: React.FC<DiskMetricProps> = ({
       topProcesses: []
     },
     history: []
-  } : diskMetrics;
+  };
 
   // Process disk data once for all tabs
   const processedData = processDiskData(rawDiskMetrics);
+  
+  // Format bytes to human-readable format
+  const formatBytes = (bytes: number, decimals = 2) => {
+    if (bytes === 0) return '0 Bytes';
+    
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+    
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+  };
+
+  // Calculate disk status
+  const getStatus = (usage: number): MetricStatus => {
+    if (usage >= 90) return 'critical';
+    if (usage >= 70) return 'warning';
+    return 'normal';
+  };
+
+  // Colors for pie chart
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
+
+  // If using dashboard mode, render the dashboard style
+  if (dashboardMode) {
+    // Prepare partition data for pie chart
+    const partitionData = processedData.partitions.map(partition => ({
+      name: partition.mountpoint,
+      value: partition.used
+    }));
+
+    return (
+      <div className="disk-metric" style={{ height }}>
+        <MetricsCard
+          title="Disk Usage"
+          value={`${diskUsage.toFixed(1)}`}
+          unit="%"
+          status={getStatus(diskUsage)}
+        >
+          <Tabs activeTab={activeTab} onChange={handleTabChange}>
+            <Tab id="overview" label="Overview">
+              <div className="overview-content">
+                <div className="partitions-chart">
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={partitionData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        outerRadius={100}
+                        fill="#8884d8"
+                        dataKey="value"
+                        nameKey="name"
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      >
+                        {partitionData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value) => formatBytes(value as number)} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="disk-io-info">
+                  <div className="disk-io-rate">
+                    <span>I/O Rate:</span>
+                    <span>{formatBytes(processedData.performance.current.readSpeed + processedData.performance.current.writeSpeed)}/s</span>
+                  </div>
+                </div>
+              </div>
+            </Tab>
+            <Tab id="partitions" label="Partitions">
+              <div className="partitions-list">
+                {processedData.partitions.map((partition, index) => (
+                  <div key={index} className="partition-card">
+                    <div className="partition-name">{partition.mountpoint}</div>
+                    <div className="partition-usage">{partition.percent.toFixed(1)}%</div>
+                    <div className="partition-details">
+                      <span>Total: {formatBytes(partition.total)}</span>
+                      <span>Used: {formatBytes(partition.used)}</span>
+                      <span>Free: {formatBytes(partition.free)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Tab>
+            <Tab id="performance" label="Performance">
+              <div className="performance-content">
+                <h3>Disk Performance</h3>
+                <div className="performance-metrics">
+                  <div className="performance-metric">
+                    <span>I/O Rate:</span>
+                    <span>{formatBytes(processedData.performance.current.readSpeed + processedData.performance.current.writeSpeed)}/s</span>
+                  </div>
+                  <div className="performance-metric">
+                    <span>Read Rate:</span>
+                    <span>{formatBytes(processedData.performance.current.readSpeed)}/s</span>
+                  </div>
+                  <div className="performance-metric">
+                    <span>Write Rate:</span>
+                    <span>{formatBytes(processedData.performance.current.writeSpeed)}/s</span>
+                  </div>
+                </div>
+              </div>
+            </Tab>
+          </Tabs>
+        </MetricsCard>
+      </div>
+    );
+  }
   
   // Render compact version for dashboard if requested
   if (compact) {
@@ -84,7 +221,7 @@ export const DiskMetric: React.FC<DiskMetricProps> = ({
     );
   }
   
-  // Render full tabbed version
+  // Render full tabbed version for component mode
   return (
     <div className={`disk-metric ${compact ? 'compact' : ''}`}>
       <Tabs activeTab={activeTab} onChange={handleTabChange}>
@@ -101,3 +238,5 @@ export const DiskMetric: React.FC<DiskMetricProps> = ({
     </div>
   );
 };
+
+export default DiskMetric;

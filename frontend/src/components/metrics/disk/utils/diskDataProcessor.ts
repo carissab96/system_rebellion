@@ -33,23 +33,29 @@ export const processDiskData = (
  * Process partition-related data
  */
 const processPartitionsData = (rawData: RawDiskMetrics): ProcessedDiskData['partitions'] => {
-  const partitionItems = rawData.partitions.map((partition: any) => ({
-    blockSize: partition.blockSize ?? 0,
-    mountPoint: partition.mountPoint,
-    device: partition.device,
-    fsType: partition.fsType,
-    total: partition.total,
-    used: partition.used,
-    available: partition.available,
-    percentUsed: partition.percentUsed,
-    health: {
-      status: partition.health.status,
-      issues: partition.health.issues
-    },
-    inodeUsage: partition.inodes.percentUsed,
-    readOnly: partition.readOnly,
-    physicalDiskId: partition.physicalDiskId
-  }));
+  const partitionItems = rawData.partitions.map((partition: any) => {
+    // Create safe defaults for potentially missing properties
+    const health = partition.health || { status: 'healthy', issues: [] };
+    const inodes = partition.inodes || { percentUsed: 0 };
+    
+    return {
+      blockSize: partition.blockSize ?? 0,
+      mountPoint: partition.mountPoint || 'Unknown',
+      device: partition.device || 'Unknown',
+      fsType: partition.fsType || 'Unknown',
+      total: partition.total || 0,
+      used: partition.used || 0,
+      available: partition.available || 0,
+      percentUsed: partition.percentUsed || 0,
+      health: {
+        status: health.status || 'healthy',
+        issues: health.issues || []
+      },
+      inodeUsage: inodes.percentUsed || 0,
+      readOnly: partition.readOnly || false,
+      physicalDiskId: partition.physicalDiskId || ''
+    };
+  });
   
   // Calculate total and used disk space across all partitions
   const totalDiskSpace = partitionItems.reduce((total: any, partition: { total: any; }) => total + partition.total, 0);
@@ -77,21 +83,24 @@ const processPartitionsData = (rawData: RawDiskMetrics): ProcessedDiskData['part
 const processPhysicalDisksData = (rawData: RawDiskMetrics): ProcessedDiskData['physicalDisks'] => {
   // Process physical disk items with SMART analysis
   const diskItems = rawData.physicalDisks.map((disk: any) => {
-    // Analyze SMART data for health assessment
-    const smartAnalysis = analyzeSmartData(disk.smart);
+    // Create safe defaults for potentially missing properties
+    const smart = disk.smart || { status: 'passed', lifeRemaining: 100, attributes: [] };
+    
+    // Analyze SMART data for health assessment with fallback
+    const smartAnalysis = smart.attributes ? analyzeSmartData(smart) : { issues: [] };
     
     return {
-      id: disk.id,
-      model: disk.model,
-      type: disk.type,
-      size: disk.size,
-      temperature: disk.temperature,
+      id: disk.id || `disk-${Math.random().toString(36).substring(2, 9)}`,
+      model: disk.model || 'Unknown Disk',
+      type: disk.type || 'other',
+      size: disk.size || 0,
+      temperature: disk.temperature || 0,
       health: {
-        status: disk.smart.status,
-        lifeRemaining: disk.smart.lifeRemaining,
-        issues: smartAnalysis.issues
+        status: smart.status || 'passed',
+        lifeRemaining: smart.lifeRemaining || 100,
+        issues: smartAnalysis.issues || []
       },
-      partitions: disk.partitions
+      partitions: disk.partitions || []
     };
   });
   
@@ -202,35 +211,72 @@ const buildTreemapNode = (
  * Process I/O performance data
  */
 const processPerformanceData = (rawData: RawDiskMetrics): ProcessedDiskData['performance'] => {
-  // Get current performance metrics
+  // Create safe defaults for potentially missing properties
+  const performanceCurrent = rawData.performance?.current || {
+    readSpeed: 0,
+    writeSpeed: 0,
+    readIOPS: 0,
+    writeIOPS: 0,
+    utilization: 0,
+    latency: { read: 0, write: 0 }
+  };
+  
+  // Get current performance metrics with safe fallbacks
   const current = {
-    readSpeed: rawData.performance.current.readSpeed,
-    writeSpeed: rawData.performance.current.writeSpeed,
-    readIOPS: rawData.performance.current.readIOPS,
-    writeIOPS: rawData.performance.current.writeIOPS,
-    utilization: rawData.performance.current.utilization,
+    readSpeed: performanceCurrent.readSpeed || 0,
+    writeSpeed: performanceCurrent.writeSpeed || 0,
+    readIOPS: performanceCurrent.readIOPS || 0,
+    writeIOPS: performanceCurrent.writeIOPS || 0,
+    utilization: performanceCurrent.utilization || 0,
     latency: {
-      read: rawData.performance.current.latency.read,
-      write: rawData.performance.current.latency.write
+      read: performanceCurrent.latency?.read || 0,
+      write: performanceCurrent.latency?.write || 0
     }
   };
   
-  // Process historical data
-  const historical = processHistoricalData(rawData.history);
+  // Process historical data with safe fallback
+  const historical = Array.isArray(rawData.history) ? processHistoricalData(rawData.history) : {
+    timestamps: [],
+    readSpeed: [],
+    writeSpeed: [],
+    readIOPS: [],
+    writeIOPS: [],
+    utilization: []
+  };
   
-  // Process top I/O processes
-  const topProcesses = rawData.performance.topProcesses.map((process: { pid: any; name: any; readRate: any; writeRate: any; totalRate: number; }) => ({
-    pid: process.pid,
-    name: process.name,
-    readRate: process.readRate,
-    writeRate: process.writeRate,
-    totalRate: process.totalRate,
-    percentage: (process.totalRate / 
-      rawData.performance.topProcesses.reduce((sum: any, p: { totalRate: any; }) => sum + p.totalRate, 0)) * 100
-  }));
+  // Process top I/O processes with safe fallbacks
+  const topProcessesData = rawData.performance?.topProcesses || [];
+  const topProcesses = topProcessesData.map((process: any) => {
+    const pid = process?.pid || 0;
+    const name = process?.name || 'Unknown';
+    const readRate = process?.readRate || 0;
+    const writeRate = process?.writeRate || 0;
+    const totalRate = process?.totalRate || 0;
+    
+    // Calculate percentage safely
+    const totalIoRate = topProcessesData.reduce((sum: number, p: any) => sum + (p?.totalRate || 0), 0);
+    const percentage = totalIoRate > 0 ? (totalRate / totalIoRate) * 100 : 0;
+    
+    return {
+      pid,
+      name,
+      readRate,
+      writeRate,
+      totalRate,
+      percentage
+    };
+  });
   
-  // Detect I/O bottlenecks
-  const bottlenecks = detectIOBottlenecks(rawData.performance, rawData.history);
+  // Detect I/O bottlenecks with safe fallbacks
+  const bottlenecks = rawData.performance ? 
+    detectIOBottlenecks(rawData.performance, Array.isArray(rawData.history) ? rawData.history : []) : 
+    {
+      detected: false,
+      type: null,
+      severity: null,
+      cause: null,
+      recommendations: []
+    };
   
   return {
     current,

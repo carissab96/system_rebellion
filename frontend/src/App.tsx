@@ -20,6 +20,7 @@ import LandingPage from './pages/LandingPage';
 import ProtectedRoute from './utils/ProtectedRoute';
 import { DesignSystemShowcase } from './design-system/docs';
 import PersistenceWrapper from './components/Auth/PersistenceWrapper';
+import MetricsProvider from './services/metrics/MetricsProvider';
 
 // Error Boundary State
 type ErrorBoundaryState = {
@@ -69,9 +70,10 @@ const App: React.FC = () => {
       <ToastProvider>
         <ErrorBoundary>
           <PersistenceWrapper>
-            <BrowserRouter>
-              <Layout>
-                <Routes>
+            <MetricsProvider>
+              <BrowserRouter>
+                <Layout>
+                  <Routes>
                   <Route path="/" element={<LandingPage />} />
                   <Route path="/login" element={<Login {...loginProps} />} />
                   
@@ -94,6 +96,7 @@ const App: React.FC = () => {
                 </Routes>
               </Layout>
             </BrowserRouter>
+            </MetricsProvider>
           </PersistenceWrapper>
         </ErrorBoundary>
       </ToastProvider>

@@ -1,14 +1,14 @@
 // frontend/src/components/dashboard/Metrics/NetworkMetric/NetworkMetric.tsx
 
 import React from 'react';
-import NetworkMetric from '../../../metrics/NetworkMetrics/NetworkMetric';
+import NetworkMetric from '../../../metrics/Network/NetworkMetric';
 
 const DashboardNetworkMetric: React.FC = () => {
   return (
     <NetworkMetric 
       compact={true} 
-      showTabs={false} 
-      initialTab="overview"
+      dashboardMode={true}
+      defaultTab="overview"
     />
   );
 };
