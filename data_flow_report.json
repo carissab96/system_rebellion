@@ -1,0 +1,14 @@
+{
+  "analysis_timestamp": "/home/carissab/Documents/mod7/system_rebellion",
+  "system_metrics": {
+    "collection": {},
+    "services": {},
+    "api_routes": {},
+    "websocket": {},
+    "redux": {},
+    "components": {},
+    "field_mappings": {},
+    "inconsistencies": []
+  },
+  "mermaid_diagram": "```mermaid\ngraph TD\n    A[System CPU Data] -->|psutil| B[ResourceMonitor]\n    B -->|cpu_usage| C[CPUMetricsService]\n    C -->|total_percent| D[MetricTransformer]\n    D -->|current: 0.0| E[WebSocket Routes]\n    E -->|usage_percent| F[Frontend WebSocket]\n    F -->|updateCPUMetrics| G[Redux CPUSlice]\n    G -->|cpu_usage| H[CPUMetric Component]\n    \n    style A fill:#f9f,stroke:#333,stroke-width:2px\n    style H fill:#9f9,stroke:#333,stroke-width:2px\n```"
+}

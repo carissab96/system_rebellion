@@ -1,7 +1,6 @@
 import React from 'react';
 import { useAppSelector, useAppDispatch } from '../../../store/hooks';
 import { fetchPatterns } from '../../../store/slices/autoTunerSlice';
-import { MethSnail } from '../../common/CharacterIcons';
 import { Button } from '../../../design-system/components';
 import './SystemPatternsPanel.css';
 
@@ -52,7 +51,7 @@ export const SystemPatternsPanel: React.FC<SystemPatternsPanelProps> = ({
       <div className="patterns-card-header">
         <h2>Detected System Patterns</h2>
         <div className="meth-snail-icon">
-          <MethSnail className="snail-icon" />
+          <div className="character-icon meth-snail" />
           <div className="character-tooltip">
             <p>"The Meth Snail is analyzing your system patterns... slowly but thoroughly!"</p>
           </div>

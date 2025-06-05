@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Area, AreaChart, BarChart, Bar } from 'recharts';
 import { useAppSelector } from '../../../store/hooks';
-import { selectCurrentMetrics, selectHistoricalMetrics } from '../../../store/slices/metricsSlice';
+import { selectCPUMetrics, selectCPUHistorical } from '../../../store/slices/metrics/CPUSlice';
 import { MetricsCard, MetricStatus } from '../../../design-system/components/MetricsCard';
 import { Tabs, Tab } from '../../../design-system/components/Tabs/Tabs';
 import { Card } from '../../../design-system/components/Card/Card';
@@ -54,8 +54,8 @@ const CPUMetric: React.FC<CPUMetricProps> = ({
   dashboardMode = false,
 }) => {
   // Redux state - Get metrics from the central metrics slice
-  const currentMetric = useAppSelector(selectCurrentMetrics);
-  const historicalMetrics = useAppSelector(selectHistoricalMetrics) || [];
+  const currentMetric = useAppSelector(selectCPUMetrics);
+  const historicalMetrics = useAppSelector(selectCPUHistorical) || [];
   const isLoading = !currentMetric;
   
   // Local state

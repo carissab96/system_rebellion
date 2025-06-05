@@ -19,7 +19,12 @@ export interface UserPreferences {
     use_dark_mode?: boolean;
   };
 }
-
+export interface AuthService {
+  getCurrentToken(): Promise<string | null>;
+  isTokenExpired(token: string): boolean;
+  refreshToken(): Promise<void>;
+  accessToken: string;
+}
 export interface AuthState {
   user: null | {
     id: string;
@@ -39,3 +44,5 @@ export interface LoginCredentials {
   username: string;
   password: string;
 }
+
+export default AuthState;

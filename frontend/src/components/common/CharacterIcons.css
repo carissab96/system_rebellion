@@ -107,6 +107,19 @@
   100% { transform: translateY(0); }
 }
 
+/* Character Icons */
+.character-icon.meth-snail {
+  background: url('/public/assets/characters/meth-snail.svg') center/contain no-repeat;
+}
+
+.character-icon.sir-hawkington {
+  background: url('/public/assets/characters/sir-hawkington.svg') center/contain no-repeat;
+}
+
+.character-icon.quantum-shadow {
+  background: url('/public/assets/characters/quantum-shadow.svg') center/contain no-repeat;
+}
+
 /* Dropdown avatar styling */
 .dropdown-avatar {
   width: 50px;

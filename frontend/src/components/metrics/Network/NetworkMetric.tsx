@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useAppSelector } from '../../../store/hooks';
-import { selectCurrentMetrics, selectHistoricalMetrics } from '../../../store/slices/metricsSlice';
+import { selectNetworkMetrics, selectNetworkHistorical } from '../../../store/slices/metrics/NetworkSlice';
 import { NetworkDetails } from '../../../types/metrics';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { MetricsCard, MetricStatus } from '../../../design-system/components/MetricsCard';
@@ -35,8 +35,8 @@ export const NetworkMetric: React.FC<NetworkMetricProps> = ({
   };
 
   // Get network metrics from the main metrics slice
-  const currentMetric = useAppSelector(selectCurrentMetrics);
-  const historicalMetrics = useAppSelector(selectHistoricalMetrics);
+  const currentMetric = useAppSelector(selectNetworkMetrics);
+  const historicalMetrics = useAppSelector(selectNetworkHistorical);
   const loading = !currentMetric;
   const error = !currentMetric ? 'No metrics data available' : null;
   

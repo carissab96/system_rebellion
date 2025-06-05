@@ -1,10 +1,9 @@
-// src/App.tsx
-import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { Provider as ReduxProvider } from 'react-redux';
 import { store } from './store/store';
 import { ToastProvider } from './components/common/Toast';
 import './App.css';
+import { useMetricsWebSocket } from './services/websocket/useMetricsWebSocket'; // FIXED PATH AND NAME
 
 // Components
 import Login, { LoginProps } from './components/Auth/login/Login';
@@ -20,8 +19,7 @@ import LandingPage from './pages/LandingPage';
 import ProtectedRoute from './utils/ProtectedRoute';
 import { DesignSystemShowcase } from './design-system/docs';
 import PersistenceWrapper from './components/Auth/PersistenceWrapper';
-import MetricsProvider from './services/metrics/MetricsProvider';
-
+import React from 'react';
 
 // Error Boundary State
 type ErrorBoundaryState = {
@@ -58,46 +56,53 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode}, ErrorBo
   }
 }
 
-const App: React.FC = () => {
+// Create a component that uses the WebSocket hook
+const AppContent: React.FC = () => {
+  // USE THE HOOK PROPERLY HERE!
+  useMetricsWebSocket();
+
   // Default login props
   const loginProps: LoginProps = {
     isOpen: true,
     onClose: () => console.log('Login closed')
   };
 
-  // Main app content
+  return (
+    <BrowserRouter>
+      <Layout>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<Login {...loginProps} />} />
+          
+          <Route element={
+            <ProtectedRoute>
+              <Outlet />
+            </ProtectedRoute>
+          }>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/optimization" element={<OptimizationProfiles />} />
+            <Route path="/alerts" element={<SystemAlerts />} />
+            <Route path="/configuration" element={<SystemConfiguration />} />
+            <Route path="/metrics" element={<SystemMetrics />} />
+            <Route path="/auto-tuner" element={<AutoTunerComponent />} />
+            <Route path="/onboarding" element={<OnboardingPage />} />
+            <Route path="/design-system" element={<DesignSystemShowcase />} />
+          </Route>
+
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Layout>
+    </BrowserRouter>
+  );
+};
+
+const App: React.FC = () => {
   return (
     <ReduxProvider store={store}>
       <ToastProvider>
         <ErrorBoundary>
           <PersistenceWrapper>
-            <MetricsProvider>
-              <BrowserRouter>
-                <Layout>
-                  <Routes>
-                  <Route path="/" element={<LandingPage />} />
-                  <Route path="/login" element={<Login {...loginProps} />} />
-                  
-                  <Route element={
-                    <ProtectedRoute>
-                      <Outlet />
-                    </ProtectedRoute>
-                  }>
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/optimization" element={<OptimizationProfiles />} />
-                    <Route path="/alerts" element={<SystemAlerts />} />
-                    <Route path="/configuration" element={<SystemConfiguration />} />
-                    <Route path="/metrics" element={<SystemMetrics />} />
-                    <Route path="/auto-tuner" element={<AutoTunerComponent />} />
-                    <Route path="/onboarding" element={<OnboardingPage />} />
-                    <Route path="/design-system" element={<DesignSystemShowcase />} />
-                  </Route>
-
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-              </Layout>
-            </BrowserRouter>
-            </MetricsProvider>
+            <AppContent />
           </PersistenceWrapper>
         </ErrorBoundary>
       </ToastProvider>

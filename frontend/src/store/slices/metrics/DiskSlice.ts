@@ -3,6 +3,8 @@ import { MetricAlert, AlertSeverity } from '../../../types/metrics';
 
 
 export interface DiskMetric {
+  additional: any;
+  timestamp: string | number | Date;
   usage_percent: number;
   total_space: number;
   used_space: number;
@@ -11,6 +13,15 @@ export interface DiskMetric {
   file_system: string;
   type: string;
   alerts: MetricAlert[];
+  total: number;
+  used: number;
+  free: number;
+  read_bytes: number;
+  write_bytes: number;
+  read_count: number;
+  write_count: number;
+  read_time: number;
+  write_time: number;
 }
 
 export interface DiskThresholds {
@@ -25,8 +36,8 @@ export interface DiskState {
   historical: DiskMetric[];
   alerts: MetricAlert[];
   thresholds: DiskThresholds;
-  loading: boolean;
-  error: string | null;
+  diskLoading: boolean;
+  diskError: string | null;
   lastUpdated: string | null;
 }
 
@@ -40,8 +51,8 @@ const initialState: DiskState = {
             critical: 90
         }
     },
-    loading: false,
-    error: null,
+    diskLoading: false,
+    diskError: null,
     lastUpdated: null
 };
 const checkThresholds = (metrics: DiskMetric, thresholds: DiskThresholds): MetricAlert[] => {
@@ -80,14 +91,14 @@ const diskSlice = createSlice({
   name: 'disk',
   initialState,
   reducers: {
-    setLoading: (state, action: PayloadAction<boolean>) => {
-      state.loading = action.payload;
+    setDiskLoading: (state, action: PayloadAction<boolean>) => {
+      state.diskLoading = action.payload;
     },
-    setError: (state, action: PayloadAction<string | null>) => {
-      state.error = action.payload;
-      state.loading = false;
+    setDiskError: (state, action: PayloadAction<string | null>) => {
+      state.diskError = action.payload;
+      state.diskLoading = false;
     },
-    updateMetrics: (state, action: PayloadAction<DiskMetric>) => {
+    updateDiskMetrics: (state, action: PayloadAction<DiskMetric>) => {
       const newMetric = action.payload;
       state.current = newMetric;
       state.historical = [...state.historical, newMetric].slice(-1000); // Keep last 1000 readings
@@ -99,8 +110,8 @@ const diskSlice = createSlice({
         state.alerts = [...state.alerts, ...alerts].slice(-50); // Keep last 50 alerts
       }
       
-      state.loading = false;
-      state.error = null;
+      state.diskLoading = false;
+      state.diskError = null;
     },
     updateThresholds: (state, action: PayloadAction<Partial<DiskThresholds>>) => {
       state.thresholds = {
@@ -115,8 +126,8 @@ const diskSlice = createSlice({
       state.current = null;
       state.historical = [];
       state.alerts = [];
-      state.loading = false;
-      state.error = null;
+      state.diskLoading = false;
+      state.diskError = null;
       state.lastUpdated = null;
     }
   }
@@ -124,9 +135,9 @@ const diskSlice = createSlice({
 
 // Export actions
 export const {
-  setLoading,
-  setError,
-  updateMetrics,
+  setDiskLoading,
+  setDiskError,
+  updateDiskMetrics,
   updateThresholds,
   clearAlerts,
   reset
@@ -137,8 +148,8 @@ export const selectDiskMetrics = (state: { disk: DiskState }) => state.disk.curr
 export const selectDiskHistorical = (state: { disk: DiskState }) => state.disk.historical;
 export const selectDiskAlerts = (state: { disk: DiskState }) => state.disk.alerts;
 export const selectDiskThresholds = (state: { disk: DiskState }) => state.disk.thresholds;
-export const selectDiskLoading = (state: { disk: DiskState }) => state.disk.loading;
-export const selectDiskError = (state: { disk: DiskState }) => state.disk.error;
+export const selectDiskLoading = (state: { disk: DiskState }) => state.disk.diskLoading;
+export const selectDiskError = (state: { disk: DiskState }) => state.disk.diskError;
 export const selectDiskLastUpdated = (state: { disk: DiskState }) => state.disk.lastUpdated;
 
 export default diskSlice.reducer;

@@ -13,10 +13,9 @@ import {
   updateSelectedAlertsActionStatus,
   markSelectedAlertsAsRead
 } from '../../../store/slices/systemAlertsSlice';
-import { QuantumShadowPerson } from '../../common/CharacterIcons';
 import { Button } from '../../../design-system/components';
 import './SystemAlertsPanel.css';
-
+import '../../common/CharacterIcons.css';
 interface SystemAlertsPanelProps {
   maxAlerts?: number;
   showAllLink?: boolean;
@@ -127,7 +126,7 @@ export const SystemAlertsPanel: React.FC<SystemAlertsPanelProps> = ({
       <div className="alerts-card-header">
         <h2>System Alerts</h2>
         <div className="quantum-shadow-icon">
-          <QuantumShadowPerson className="shadow-icon" />
+          <div className="character-icon quantum-shadow shadow-icon" />
         </div>
       </div>
 

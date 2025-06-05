@@ -5,9 +5,8 @@ import CPUMetric from '../../../components/metrics/CPU/CPUMetric';
 import MemoryMetric from '../../../components/metrics/memory/MemoryMetric';
 import DiskMetric from '../../../components/metrics/disk/DiskMetric';
 import DashboardNetworkMetric from '../../../components/metrics/Network/NetworkMetric';
-import { SirHawkington } from '../../common/CharacterIcons';
 import './MetricsPanel.css';
-
+import '../../common/CharacterIcons.css'
 interface MetricsPanelProps {
   showHeader?: boolean;
 }
@@ -15,20 +14,19 @@ interface MetricsPanelProps {
 export const MetricsPanel: React.FC<MetricsPanelProps> = ({
   showHeader = true
 }) => {
-  const metrics = useAppSelector((state) => state.metrics.current);
-  const { connectionStatus } = useAppSelector((state) => state.metrics);
+  const status = useAppSelector((state) => state.metrics.status);
   const [isUpdating, setIsUpdating] = useState(false);
-  const prevMetricsRef = React.useRef(metrics);
+  const prevStatusRef = React.useRef(status);
 
-  // Effect for data update animations
+  // Effect for status changes
   useEffect(() => {
-    if (metrics && prevMetricsRef.current && JSON.stringify(metrics) !== JSON.stringify(prevMetricsRef.current)) {
+    if (status && prevStatusRef.current && status !== prevStatusRef.current) {
       setIsUpdating(true);
       const timer = setTimeout(() => setIsUpdating(false), 1000);
       return () => clearTimeout(timer);
     }
-    prevMetricsRef.current = metrics;
-  }, [metrics]);
+    prevStatusRef.current = status;
+  }, [status]);
 
   // Get status color
   const getStatusColor = (status: string) => {
@@ -56,7 +54,6 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({
             </Link>
           </div>
           <div className="sir-hawkington-icon">
-            <SirHawkington className="hawk-icon" />
             <div className="character-tooltip">
               <p>"Sir Hawkington at your service! I'm monitoring your system metrics with aristocratic precision."</p>
             </div>
@@ -64,8 +61,8 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({
           
           {/* Small connection indicator */}
           <div className="connection-indicator">
-            <span className={`connection-dot ${getStatusColor(connectionStatus)}`}></span>
-            <span className="connection-text">{connectionStatus}</span>
+            <span className={`connection-dot ${getStatusColor(status)}`}></span>
+            <span className="connection-text">{status}</span>
           </div>
         </div>
       )}

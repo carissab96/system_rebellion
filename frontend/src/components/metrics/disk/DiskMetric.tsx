@@ -2,8 +2,8 @@
 
 import React, { useState } from 'react';
 import { useAppSelector } from '../../../store/hooks';
-import { selectCurrentMetrics } from '../../../store/slices/metricsSlice';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { selectDiskMetrics } from '../../../store/slices/metrics/DiskSlice';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { MetricsCard, MetricStatus } from '../../../design-system/components/MetricsCard';
 import Tabs, { Tab } from '../../../design-system/components/Tabs';
 import ErrorDisplay from '../../../components/common/ErrorDisplay';
@@ -35,10 +35,10 @@ export const DiskMetric: React.FC<ConsolidatedDiskMetricProps> = ({
   };
 
   // Get disk metrics from the main metrics slice
-  const currentMetric = useAppSelector(selectCurrentMetrics);
+  const currentMetric = useAppSelector(selectDiskMetrics);
   const loading = !currentMetric;
   const error = !currentMetric ? 'No metrics data available' : null;
-  const diskMetrics = currentMetric?.disk_percent;
+  const diskMetrics = currentMetric;
   
   // Handle loading state
   if (loading) {
@@ -53,7 +53,7 @@ export const DiskMetric: React.FC<ConsolidatedDiskMetricProps> = ({
   if (error || !diskMetrics) {
     return dashboardMode ? (
       <div className={`disk-metric ${compact ? 'compact' : ''}`} style={{ height }}>
-        <MetricsCard title="Disk Usage" value="--" unit="%" status="error" />
+        <MetricsCard title="Disk Usage" value="--" unit="%" status="critical" />
       </div>
     ) : (
       <ErrorDisplay 
@@ -69,13 +69,13 @@ export const DiskMetric: React.FC<ConsolidatedDiskMetricProps> = ({
   
   // Create RawDiskMetrics structure from available metrics
   const rawDiskMetrics: RawDiskMetrics = {
-    partitions: currentMetric?.additional?.disk_partitions || [],
+    partitions: diskMetrics?.additional?.disk_partitions || [],
     physicalDisks: [],
     directories: [],
     performance: {
       current: {
-        readSpeed: currentMetric?.additional?.disk_read_rate || 0,
-        writeSpeed: currentMetric?.additional?.disk_write_rate || 0,
+        readSpeed: diskMetrics?.additional?.disk_read_rate || 0,
+        writeSpeed: diskMetrics?.additional?.disk_write_rate || 0,
         readIOPS: 0,
         writeIOPS: 0,
         utilization: diskUsage,
@@ -126,8 +126,8 @@ export const DiskMetric: React.FC<ConsolidatedDiskMetricProps> = ({
   // If using dashboard mode, render the dashboard style
   if (dashboardMode) {
     // Prepare partition data for pie chart
-    const partitionData = processedData.partitions.map(partition => ({
-      name: partition.mountpoint,
+    const partitionData = processedData.partitions.items.map((partition) => ({
+      name: partition.mountPoint,
       value: partition.used
     }));
 
@@ -156,7 +156,7 @@ export const DiskMetric: React.FC<ConsolidatedDiskMetricProps> = ({
                         nameKey="name"
                         label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                       >
-                        {partitionData.map((entry, index) => (
+                        {partitionData.map((_entry: any, index: number) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
@@ -174,7 +174,7 @@ export const DiskMetric: React.FC<ConsolidatedDiskMetricProps> = ({
             </Tab>
             <Tab id="partitions" label="Partitions">
               <div className="partitions-list">
-                {processedData.partitions.map((partition, index) => (
+                {processedData.partitions.map((partition: { mountpoint: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; percent: number; total: number; used: number; free: number; }, index: React.Key | null | undefined) => (
                   <div key={index} className="partition-card">
                     <div className="partition-name">{partition.mountpoint}</div>
                     <div className="partition-usage">{partition.percent.toFixed(1)}%</div>

@@ -18,7 +18,7 @@ import {
   markSelectedAlertsAsRead
 } from '../../store/slices/systemAlertsSlice';
 import Modal from '../common/Modal';
-import { QuantumShadowPerson } from '../common/CharacterIcons';
+import '../common/CharacterIcons.css'
 import alertUtils from '../../utils/alertUtils';
 import { Button } from '../../design-system/components';
 
@@ -499,7 +499,6 @@ export const SystemAlerts: React.FC = () => {
           <div className="alerts-header-top">
             <h2>System Alerts</h2>
             <div className="quantum-shadow-icon">
-              <QuantumShadowPerson className="shadow-icon" />
             </div>
           </div>
           <div className="shadow-quote">{shadowQuote}</div>
@@ -797,7 +796,6 @@ export const SystemAlerts: React.FC = () => {
           <div className="alert-form">
             <div className="modal-intro">
               <div className="modal-icon">
-                <QuantumShadowPerson className="shadow-icon-large" />
               </div>
               <p className="modal-description">
                 The Quantum Shadow People will broadcast this alert across all dimensions. Choose your words wisely.
@@ -881,7 +879,6 @@ export const SystemAlerts: React.FC = () => {
             <div className="action-modal-content">
               <div className="modal-intro">
                 <div className="modal-icon">
-                  <QuantumShadowPerson className="shadow-icon-large" />
                 </div>
                 <p className="modal-description">
                   The Quantum Shadow People will apply this system optimization. Proceed with caution.
@@ -961,7 +958,6 @@ export const SystemAlerts: React.FC = () => {
             <div className="pattern-modal-content">
               <div className="modal-intro">
                 <div className="modal-icon">
-                  <QuantumShadowPerson className="shadow-icon-large" />
                 </div>
                 <p className="modal-description">
                   The Quantum Shadow People have detected recurring patterns in your system behavior.

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../../store/hooks';
 import { logout, checkAuthStatus } from '../../store/slices/authSlice';
-import { getCharacterById } from './CharacterIcons';
+import './CharacterIcons.css';
 import { UserProfile } from '../dashboard/UserProfile/UserProfile';
 import SignupModal from '../Auth/SignupModal/SignupModal';
 import Login from '../Auth/login/Login';
@@ -41,11 +41,11 @@ const Navbar: React.FC = () => {
   }, []);
   
   const handleLogout = () => {
-    console.log("🧐 Sir Hawkington is preparing your formal departure...");
+    console.log(" Sir Hawkington is preparing your formal departure...");
     dispatch(logout());
     navigate('/login');
     setIsDropdownOpen(false);
-    console.log("👋 Sir Hawkington tips his hat as you leave. The Meth Snail waves a sad antenna.");
+    console.log(" Sir Hawkington tips his hat as you leave. The Meth Snail waves a sad antenna.");
   };
   
   const toggleDropdown = () => {
@@ -80,87 +80,89 @@ const Navbar: React.FC = () => {
   };
   
   return (
-    <nav className="navbar">
-      <div className="navbar-container">
-        <div className="navbar-logo">
-          <Link to="/dashboard">System Rebellion HQ</Link>
-        </div>
-        
-        <div className="navbar-links-container">
-          <button className="mobile-menu-button" onClick={toggleMobileMenu}>
-            <span></span>
-            <span></span>
-            <span></span>
-          </button>
-          
-          <ul className={`navbar-links ${isMobileMenuOpen ? 'active' : ''}`}>
-            <li>
-              <Link to="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>Dashboard</Link>
-            </li>
-            <li>
-              <Link to="/auto-tuner" onClick={() => setIsMobileMenuOpen(false)}>Auto Tuner</Link>
-            </li>
-            <li>
-              <Link to="/metrics" onClick={() => setIsMobileMenuOpen(false)}>System Metrics</Link>
-            </li>
-            <li>
-              <Link to="/optimization" onClick={() => setIsMobileMenuOpen(false)}>Optimization Profiles</Link>
-            </li>
-            <li>
-              <Link to="/alerts" onClick={() => setIsMobileMenuOpen(false)}>System Alerts</Link>
-            </li>
-            <li>
-              <Link to="/configuration" onClick={() => setIsMobileMenuOpen(false)}>System Configuration</Link>
-            </li>
-          </ul>
-        </div>
-        
-        <div className="navbar-profile" ref={dropdownRef}>
-          <div className="navbar-avatar" onClick={toggleDropdown}>
-            {getCharacterById(getUserAvatar())}
+    <>
+      <nav className="navbar">
+        <div className="navbar-container">
+          <div className="navbar-logo">
+            <Link to="/dashboard">System Rebellion HQ</Link>
           </div>
           
-          {isDropdownOpen && (
-            <div className="profile-dropdown">
-              {isAuthenticated ? (
-                <>
-                  <div className="dropdown-user-info">
-                    <div className="dropdown-avatar">
-                      {getCharacterById(getUserAvatar())}
+          <div className="navbar-links-container">
+            <button className="mobile-menu-button" onClick={toggleMobileMenu}>
+              <span></span>
+              <span></span>
+              <span></span>
+            </button>
+            
+            <ul className={`navbar-links ${isMobileMenuOpen ? 'active' : ''}`}>
+              <li>
+                <Link to="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>Dashboard</Link>
+              </li>
+              <li>
+                <Link to="/auto-tuner" onClick={() => setIsMobileMenuOpen(false)}>Auto Tuner</Link>
+              </li>
+              <li>
+                <Link to="/metrics" onClick={() => setIsMobileMenuOpen(false)}>System Metrics</Link>
+              </li>
+              <li>
+                <Link to="/optimization" onClick={() => setIsMobileMenuOpen(false)}>Optimization Profiles</Link>
+              </li>
+              <li>
+                <Link to="/alerts" onClick={() => setIsMobileMenuOpen(false)}>System Alerts</Link>
+              </li>
+              <li>
+                <Link to="/configuration" onClick={() => setIsMobileMenuOpen(false)}>System Configuration</Link>
+              </li>
+            </ul>
+          </div>
+          
+          <div className="navbar-profile" ref={dropdownRef}>
+            <div className="navbar-avatar" onClick={toggleDropdown}>
+              <div className={`character-icon ${getUserAvatar()}`} />
+            </div>
+            
+            {isDropdownOpen && (
+              <div className="profile-dropdown">
+                {isAuthenticated ? (
+                  <>
+                    <div className="dropdown-user-info">
+                      <div className="dropdown-avatar">
+                        <div className={`character-icon ${getUserAvatar()}`} />
+                      </div>
+                      <div className="dropdown-user-details">
+                        <span className="dropdown-username">{user?.username}</span>
+                        <span className="dropdown-role">System Optimizer</span>
+                      </div>
                     </div>
-                    <div className="dropdown-user-details">
-                      <span className="dropdown-username">{user?.username}</span>
-                      <span className="dropdown-role">System Optimizer</span>
-                    </div>
-                  </div>
-                  <div className="dropdown-divider"></div>
+                    <div className="dropdown-divider"></div>
+                    <ul className="dropdown-menu">
+                      <li onClick={openProfileModal}>
+                        <span className="dropdown-icon">👤</span>
+                        Profile Settings
+                      </li>
+                      <li onClick={handleLogout}>
+                        <span className="dropdown-icon">🚪</span>
+                        Logout
+                      </li>
+                    </ul>
+                  </>
+                ) : (
                   <ul className="dropdown-menu">
-                    <li onClick={openProfileModal}>
-                      <span className="dropdown-icon">👤</span>
-                      Profile Settings
+                    <li onClick={openLoginModal}>
+                      <span className="dropdown-icon">🔑</span>
+                      Login
                     </li>
-                    <li onClick={handleLogout}>
-                      <span className="dropdown-icon">🚪</span>
-                      Logout
+                    <li onClick={openSignupModal}>
+                      <span className="dropdown-icon">📝</span>
+                      Sign Up
                     </li>
                   </ul>
-                </>
-              ) : (
-                <ul className="dropdown-menu">
-                  <li onClick={openLoginModal}>
-                    <span className="dropdown-icon">🔑</span>
-                    Login
-                  </li>
-                  <li onClick={openSignupModal}>
-                    <span className="dropdown-icon">✨</span>
-                    Sign Up
-                  </li>
-                </ul>
-              )}
-            </div>
-          )}
+                )}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      </nav>
       
       {/* Modals */}
       {showProfileModal && (
@@ -180,7 +182,7 @@ const Navbar: React.FC = () => {
           onClose={() => setShowSignupModal(false)}
         />
       )}
-    </nav>
+    </>
   );
 };
 

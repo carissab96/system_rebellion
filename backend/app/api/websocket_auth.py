@@ -17,47 +17,48 @@ async def get_current_user_from_token(token: str) -> User:
     Validate JWT token and return the user
     """
     try:
-        # Decode the JWT token
+           # Decode the JWT token
         logger.info(f"Decoding WebSocket token: {token[:10]}...")
         payload = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
         )
-        
-        # Extract the subject (username)
+         # Extract the subject (username)
         username: str = payload.get("sub")
         if username is None:
             logger.error("Token missing 'sub' field")
             return None
-            
         logger.info(f"Token subject: {username}")
-        
-        # Get user from database
-        try:
-            async with AsyncSessionLocal() as db:
-                logger.info(f"Looking up user: {username}")
-                result = await db.execute(
-                    select(User).where(User.username == username)
-                )
-                user = result.scalars().first()
+
+    except Exception as e:
+        logger.error(f"Error decoding WebSocket token: {str(e)}")
+        return None
+    
+    try:
+        async with AsyncSessionLocal() as db:
+            logger.info(f"Looking up user: {username}")
+            result = await db.execute(
+                select(User).where(User.username == username)
+            )
+            user = result.scalars().first()
                 
-                if not user:
-                    logger.error(f"User not found: {username}")
-                    return None
-                
-                # Create a detached copy of the user object
-                detached_user = User(
-                    id=user.id,
-                    username=user.username,
-                    email=user.email,
-                    is_active=user.is_active
-                )
-                
-                logger.info(f"User authenticated successfully: {detached_user.username}")
-                return detached_user
-                
-        except Exception as db_error:
-            logger.error(f"Database error during authentication: {str(db_error)}")
+        if not user:
+            logger.error(f"User not found: {username}")
             return None
+                
+        # Create a detached copy of the user object
+        detached_user = User(
+            id=user.id,
+            username=user.username,
+            email=user.email,
+            is_active=user.is_active
+            )
+                
+        logger.info(f"User authenticated successfully: {detached_user.username}")
+        return detached_user
+                
+    except Exception as db_error:
+        logger.error(f"Database error during authentication: {str(db_error)}")
+        return None
             
     except JWTError as e:
         logger.error(f"JWT error in WebSocket: {str(e)}")

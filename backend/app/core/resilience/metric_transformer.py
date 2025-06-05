@@ -13,6 +13,8 @@ class MetricTransformer:
     
     Transforms raw system metrics into actionable intelligence using NumPy.
     Provides statistical analysis, anomaly detection, and data smoothing.
+    
+    NOW WITH PROPER FIELD MAPPING! 🎩
     """
     
     def __init__(
@@ -157,9 +159,18 @@ class MetricTransformer:
         return stats
     
     def transform_cpu_metrics(self, raw_metrics: Dict[str, Any]) -> Dict[str, Any]:
-        """Transform CPU metrics"""
-        # Extract CPU usage percentage
-        cpu_percent = raw_metrics.get('percent', 0.0)
+        """Transform CPU metrics - NOW WITH PROPER FIELD MAPPING!"""
+        # Handle the nested structure from cpu_metrics_transformer
+        if 'data' in raw_metrics and isinstance(raw_metrics['data'], dict):
+            # Nested structure: {'type': 'cpu', 'data': {'usage_percent': 45.2}}
+            cpu_percent = raw_metrics['data'].get('usage_percent', 0.0)
+        else:
+            # Direct structure: check for various field names
+            cpu_percent = raw_metrics.get('total_percent', 
+                                        raw_metrics.get('usage_percent',
+                                        raw_metrics.get('percent', 0.0)))
+        
+        logger.debug(f"Extracted CPU percent: {cpu_percent} from metrics: {raw_metrics}")
         
         # Add to history
         self._add_to_history("cpu", cpu_percent)
@@ -198,9 +209,17 @@ class MetricTransformer:
         return transformed
     
     def transform_memory_metrics(self, raw_metrics: Dict[str, Any]) -> Dict[str, Any]:
-        """Transform memory metrics"""
-        # Extract memory usage percentage
-        memory_percent = raw_metrics.get('percent', 0.0)
+        """Transform memory metrics - FIELD MAPPING FIXED!"""
+        # Handle the nested structure
+        if 'data' in raw_metrics and isinstance(raw_metrics['data'], dict):
+            memory_percent = raw_metrics['data'].get('usage_percent', 0.0)
+        else:
+            # Check various possible field names
+            memory_percent = raw_metrics.get('usage_percent', 
+                                           raw_metrics.get('percent',
+                                           raw_metrics.get('total_percent', 0.0)))
+        
+        logger.debug(f"Extracted memory percent: {memory_percent} from metrics: {raw_metrics}")
         
         # Add to history
         self._add_to_history("memory", memory_percent)
@@ -236,9 +255,26 @@ class MetricTransformer:
         return transformed
     
     def transform_disk_metrics(self, raw_metrics: Dict[str, Any]) -> Dict[str, Any]:
-        """Transform disk metrics"""
-        # Extract disk usage percentage
-        disk_percent = raw_metrics.get('percent', 0.0)
+        """Transform disk metrics - HANDLING PARTITIONS PROPERLY!"""
+        # Handle various structures
+        if 'data' in raw_metrics and isinstance(raw_metrics['data'], dict):
+            disk_percent = raw_metrics['data'].get('usage_percent', 0.0)
+        elif 'partitions' in raw_metrics and isinstance(raw_metrics['partitions'], list):
+            # If we have multiple partitions, use the first one or aggregate
+            if raw_metrics['partitions']:
+                # Use the first partition or calculate average
+                first_partition = raw_metrics['partitions'][0]
+                disk_percent = first_partition.get('usage_percent', 
+                                                 first_partition.get('percent', 0.0))
+            else:
+                disk_percent = 0.0
+        else:
+            # Direct structure
+            disk_percent = raw_metrics.get('usage_percent', 
+                                         raw_metrics.get('percent',
+                                         raw_metrics.get('total_percent', 0.0)))
+        
+        logger.debug(f"Extracted disk percent: {disk_percent} from metrics: {raw_metrics}")
         
         # Add to history
         self._add_to_history("disk", disk_percent)
@@ -274,9 +310,21 @@ class MetricTransformer:
         return transformed
     
     def transform_network_metrics(self, raw_metrics: Dict[str, Any]) -> Dict[str, Any]:
-        """Transform network metrics"""
-        # Extract network bandwidth (MB/s)
-        network_bandwidth = raw_metrics.get('bandwidth_mbps', 0.0)
+        """Transform network metrics - PROPER FIELD NAMES!"""
+        # Handle the nested structure and field name variations
+        if 'data' in raw_metrics and isinstance(raw_metrics['data'], dict):
+            network_bandwidth = raw_metrics['data'].get('rate_mbps', 
+                                                       raw_metrics['data'].get('bandwidth_mbps', 0.0))
+        elif 'io_stats' in raw_metrics and isinstance(raw_metrics['io_stats'], dict):
+            # Handle io_stats structure
+            network_bandwidth = raw_metrics['io_stats'].get('rate_mbps', 0.0)
+        else:
+            # Direct structure - check various field names
+            network_bandwidth = raw_metrics.get('rate_mbps', 
+                                              raw_metrics.get('bandwidth_mbps',
+                                              raw_metrics.get('network_bandwidth', 0.0)))
+        
+        logger.debug(f"Extracted network bandwidth: {network_bandwidth} from metrics: {raw_metrics}")
         
         # Add to history
         self._add_to_history("network", network_bandwidth)

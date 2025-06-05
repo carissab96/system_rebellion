@@ -8,6 +8,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+  token: string | null;
 }
 
 // Initial state
@@ -15,7 +16,8 @@ const initialState: AuthState = {
   user: null,
   isAuthenticated: false,
   isLoading: false,
-  error: null
+  error: null,
+  token: null
 };
 
 console.log('Auth Slice Initial State:', initialState);

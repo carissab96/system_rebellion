@@ -12,7 +12,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 # Import app and models after path is set
-from backend.app.models import user
+from app.models import user
 from main import app
 from app.core.database import Base, get_db
 from app.models import *  # Import all models to ensure they're registered with Base.metadata
