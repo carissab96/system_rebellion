@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useAppSelector } from '../../../store/hooks';
-import { selectCurrentMetrics, selectHistoricalMetrics } from '../../../store/slices/metricsSlice';
+import { selectMemoryMetrics, selectMemoryHistorical } from '../../../store/slices/metrics/MemorySlice';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { MetricsCard, MetricStatus } from '../../../design-system/components/MetricsCard';
 import Tabs, { Tab } from '../../../design-system/components/Tabs';
@@ -35,8 +35,8 @@ export const MemoryMetric: React.FC<MemoryMetricProps> = ({
   };
 
   // Get memory metrics from the main metrics slice
-  const currentMetric = useAppSelector(selectCurrentMetrics);
-  const historicalMetrics = useAppSelector(selectHistoricalMetrics);
+  const currentMetric = useAppSelector(selectMemoryMetrics);
+  const historicalMetrics = useAppSelector(selectMemoryHistorical);
   const loading = !currentMetric;
   const error = !currentMetric ? 'No metrics data available' : null;
   

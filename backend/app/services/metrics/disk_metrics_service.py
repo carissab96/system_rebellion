@@ -110,8 +110,8 @@ class DiskMetricsService:
                     io_stats['write_time'] = write_time
                     
                 # Initialize speeds as None until calculated
-                io_stats['read_speed'] = None
-                io_stats['write_speed'] = None
+                io_stats['read_speed'] = 0
+                io_stats['write_speed'] = 0
             
             # Calculate read/write speeds if we have previous measurements
             if self._previous_io_counters and self._previous_io_time:

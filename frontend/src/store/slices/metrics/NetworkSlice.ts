@@ -3,13 +3,19 @@ import { MetricAlert } from '../../../types/metrics';
 import { AlertSeverity } from '../../../types/metrics';
 
 export interface NetworkMetric {
+    timestamp: string | number | Date;
     usage_percent: number;
-    total_space: number;
-    used_space: number;
-    available_space: number;
-    mount_point: string;
-    file_system: string;
-    type: string;
+    network: { bytes_sent: number; bytes_recv: number; packets_sent: number; 
+        packets_recv: number; rate_mbps: number; sent_rate_bps: number; 
+        recv_rate_bps: number; 
+        io_stats: { sent_rate: number; recv_rate: number; err_in: number; 
+            err_out: number; drops_in: number; drops_out: number; }; 
+            interfaces: never[]
+             protocol_stats: { tcp: { active: number; established: number; 
+                listening: number; }; udp: { active: number; }; 
+                http: { connections: number; }; 
+                https: { connections: number; }; 
+                dns: { queries: number; }; }; };
     alerts: MetricAlert[];
 }
 
@@ -25,8 +31,8 @@ export interface NetworkState {
     historical: NetworkMetric[];
     alerts: MetricAlert[];
     thresholds: NetworkThresholds;
-    loading: boolean;
-    error: string | null;
+    networkLoading: boolean;
+    networkError: string | null;
     lastUpdated: string | null;
 }
 
@@ -40,8 +46,8 @@ const initialState: NetworkState = {
             critical: 90
         }
     },
-    loading: false,
-    error: null,
+    networkLoading: false,
+    networkError: null,
     lastUpdated: null
 };
 const checkThresholds = (metrics: NetworkMetric, thresholds: NetworkThresholds): MetricAlert[] => {
@@ -79,14 +85,14 @@ const networkSlice = createSlice({
     name: 'network',
     initialState,
     reducers: {
-        setLoading: (state, action: PayloadAction<boolean>) => {
-            state.loading = action.payload;
+        setNetworkLoading: (state, action: PayloadAction<boolean>) => {
+            state.networkLoading = action.payload;
         },
-        setError: (state, action: PayloadAction<string | null>) => {
-            state.error = action.payload;
-            state.loading = false;
+        setNetworkError: (state, action: PayloadAction<string | null>) => {
+            state.networkError = action.payload;
+            state.networkLoading = false;
         },
-        updateMetrics: (state, action: PayloadAction<NetworkMetric>) => {
+        updateNetworkMetrics: (state, action: PayloadAction<NetworkMetric>) => {
             const newMetric = action.payload;
             state.current = newMetric;
             state.historical = [...state.historical, newMetric].slice(-1000); // Keep last 1000 readings
@@ -98,8 +104,8 @@ const networkSlice = createSlice({
                 state.alerts = [...state.alerts, ...alerts].slice(-50); // Keep last 50 alerts
             }
             
-            state.loading = false;
-            state.error = null;
+            state.networkLoading = false;
+            state.networkError = null;
         },
         updateThresholds: (state, action: PayloadAction<Partial<NetworkThresholds>>) => {
             state.thresholds = {
@@ -114,23 +120,23 @@ const networkSlice = createSlice({
             state.current = null;
             state.historical = [];
             state.alerts = [];
-            state.loading = false;
-            state.error = null;
+            state.networkLoading = false;
+            state.networkError = null;
             state.lastUpdated = null;
         }
     }
 });
 
 // Export actions
-export const { setLoading, setError, updateMetrics, updateThresholds, clearAlerts, reset } = networkSlice.actions;
+export const { setNetworkLoading, setNetworkError, updateNetworkMetrics, updateThresholds, clearAlerts, reset } = networkSlice.actions;
 
 // Export selectors
 export const selectNetworkMetrics = (state: { network: NetworkState }) => state.network.current;
 export const selectNetworkHistorical = (state: { network: NetworkState }) => state.network.historical;
 export const selectNetworkAlerts = (state: { network: NetworkState }) => state.network.alerts;
 export const selectNetworkThresholds = (state: { network: NetworkState }) => state.network.thresholds;
-export const selectNetworkLoading = (state: { network: NetworkState }) => state.network.loading;
-export const selectNetworkError = (state: { network: NetworkState }) => state.network.error;
+export const selectNetworkLoading = (state: { network: NetworkState }) => state.network.networkLoading;
+export const selectNetworkError = (state: { network: NetworkState }) => state.network.networkError;
 export const selectNetworkLastUpdated = (state: { network: NetworkState }) => state.network.lastUpdated;
 
 export default networkSlice.reducer;

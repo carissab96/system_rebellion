@@ -2,6 +2,19 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { MetricAlert, AlertSeverity } from '../../../types/metrics';
 
 export interface MemoryMetric {
+    timestamp: string | number | Date;
+    additional: any;
+    memory_buffer: number;
+    memory_available: number;
+    memory_used: number;
+    memory_free: number;
+    memory_cache: number;
+    memory_swap_percent: number;
+    memory_swap_free: number;
+    memory_swap_used: any;
+    memory_swap_total: number;
+    memory_total: number;
+    memory_percent: any;
     usage_percent: number;
     total_space: number;
     used_space: number;
@@ -24,8 +37,8 @@ export interface MemoryState {
     historical: MemoryMetric[];
     alerts: MetricAlert[];
     thresholds: MemoryThresholds;
-    loading: boolean;
-    error: string | null;
+    memoryLoading: boolean;
+    memoryError: string | null;
     lastUpdated: string | null;
 }
 
@@ -39,8 +52,8 @@ const initialState: MemoryState = {
             critical: 90
         }
     },
-    loading: false,
-    error: null,
+    memoryLoading: false,
+    memoryError: null,
     lastUpdated: null
 };
 
@@ -80,14 +93,14 @@ const memorySlice = createSlice({
     name: 'memory',
     initialState,
     reducers: {
-        setLoading: (state, action: PayloadAction<boolean>) => {
-            state.loading = action.payload;
+        setMemoryLoading: (state, action: PayloadAction<boolean>) => {
+            state.memoryLoading = action.payload;
         },
-        setError: (state, action: PayloadAction<string | null>) => {
-            state.error = action.payload;
-            state.loading = false;
+        setMemoryError: (state, action: PayloadAction<string | null>) => {
+            state.memoryError = action.payload;
+            state.memoryLoading = false;
         },
-        updateMetrics: (state, action: PayloadAction<MemoryMetric>) => {
+        updateMemoryMetrics: (state, action: PayloadAction<MemoryMetric>) => {
             const newMetric = action.payload;
             state.current = newMetric;
             state.historical = [...state.historical, newMetric].slice(-1000); // Keep last 1000 readings
@@ -99,8 +112,8 @@ const memorySlice = createSlice({
                 state.alerts = [...state.alerts, ...alerts].slice(-50); // Keep last 50 alerts
             }
             
-            state.loading = false;
-            state.error = null;
+            state.memoryLoading = false;
+            state.memoryError = null;
         },
         updateThresholds: (state, action: PayloadAction<Partial<MemoryThresholds>>) => {
             state.thresholds = {
@@ -115,8 +128,8 @@ const memorySlice = createSlice({
             state.current = null;
             state.historical = [];
             state.alerts = [];
-            state.loading = false;
-            state.error = null;
+            state.memoryLoading = false;
+            state.memoryError = null;
             state.lastUpdated = null;
         }
     }
@@ -124,9 +137,9 @@ const memorySlice = createSlice({
 
 // Export actions
 export const {
-    setLoading,
-    setError,
-    updateMetrics,
+    setMemoryLoading,
+    setMemoryError,
+    updateMemoryMetrics,
     updateThresholds,
     clearAlerts,
     reset
@@ -137,8 +150,8 @@ export const selectMemoryMetrics = (state: { memory: MemoryState }) => state.mem
 export const selectMemoryHistorical = (state: { memory: MemoryState }) => state.memory.historical;
 export const selectMemoryAlerts = (state: { memory: MemoryState }) => state.memory.alerts;
 export const selectMemoryThresholds = (state: { memory: MemoryState }) => state.memory.thresholds;
-export const selectMemoryLoading = (state: { memory: MemoryState }) => state.memory.loading;
-export const selectMemoryError = (state: { memory: MemoryState }) => state.memory.error;
+export const selectMemoryLoading = (state: { memory: MemoryState }) => state.memory.memoryLoading;
+export const selectMemoryError = (state: { memory: MemoryState }) => state.memory.memoryError;
 export const selectMemoryLastUpdated = (state: { memory: MemoryState }) => state.memory.lastUpdated;    
 
 export default memorySlice.reducer;

@@ -1,0 +1,101 @@
+{
+  "timestamp": "2025-06-04T14:05:34.888256",
+  "summary": {
+    "CPU": {
+      "total_fields": 18,
+      "fields": [
+        "cores",
+        "cpu",
+        "cpu_core_count",
+        "cpu_frequency",
+        "cpu_model",
+        "cpu_percent",
+        "cpu_temperature",
+        "cpu_thread_count",
+        "cpu_usage",
+        "frequency_mhz",
+        "length",
+        "model_name",
+        "overall_usage",
+        "process_count",
+        "reduce",
+        "temperature",
+        "thread_count",
+        "top_processes"
+      ],
+      "main_component_fields": [
+        "cpu",
+        "cpu_core_count",
+        "cpu_frequency",
+        "cpu_model",
+        "cpu_percent",
+        "cpu_temperature",
+        "cpu_thread_count",
+        "cpu_usage"
+      ],
+      "subcomponent_count": 4
+    },
+    "Disk": {
+      "total_fields": 1,
+      "fields": [
+        "directories"
+      ],
+      "main_component_fields": [],
+      "subcomponent_count": 4
+    },
+    "Memory": {
+      "total_fields": 10,
+      "fields": [
+        "additional",
+        "memory_available",
+        "memory_buffer",
+        "memory_cache",
+        "memory_percent",
+        "memory_swap_free",
+        "memory_swap_percent",
+        "memory_swap_total",
+        "memory_swap_used",
+        "memory_total"
+      ],
+      "main_component_fields": [
+        "additional",
+        "memory_available",
+        "memory_buffer",
+        "memory_cache",
+        "memory_percent",
+        "memory_swap_free",
+        "memory_swap_percent",
+        "memory_swap_total",
+        "memory_swap_used",
+        "memory_total"
+      ],
+      "subcomponent_count": 3
+    },
+    "Network": {
+      "total_fields": 11,
+      "fields": [
+        "average_latency",
+        "connection_stability",
+        "dns_latency",
+        "gateway_latency",
+        "internet_latency",
+        "jitter",
+        "network",
+        "packet_loss_percent",
+        "protocol_breakdown",
+        "protocol_stats",
+        "top_bandwidth_processes"
+      ],
+      "main_component_fields": [
+        "network"
+      ],
+      "subcomponent_count": 8
+    }
+  },
+  "transformer_code": {
+    "CPU": "\n    # Transform CPU metrics\n    if \"cpu\" in metrics:\n        cpu_data = metrics[\"cpu\"]\n        \n        # Component expects these exact fields\n        transformed[\"cores\"] = (\n            cpu_data.get(\"cores\") or\n            cpu_data.get(\"cores\") or\n            cpu_data.get(\"cores\", 0)\n        )\n        transformed[\"cpu\"] = (\n            cpu_data.get(\"cpu\") or\n            cpu_data.get(\"cpu\") or\n            cpu_data.get(\"cpu\", 0)\n        )\n        transformed[\"cpu_core_count\"] = (\n            cpu_data.get(\"cpu_core_count\") or\n            cpu_data.get(\"core_count\") or\n            cpu_data.get(\"cpucorecount\", 0)\n        )\n        transformed[\"cpu_frequency\"] = (\n            cpu_data.get(\"cpu_frequency\") or\n            cpu_data.get(\"frequency\") or\n            cpu_data.get(\"cpufrequency\", 0)\n        )\n        transformed[\"cpu_model\"] = (\n            cpu_data.get(\"cpu_model\") or\n            cpu_data.get(\"model\") or\n            cpu_data.get(\"cpumodel\", 0)\n        )\n        transformed[\"cpu_percent\"] = (\n            cpu_data.get(\"cpu_percent\") or\n            cpu_data.get(\"percent\") or\n            cpu_data.get(\"cpupercent\", 0)\n        )\n        transformed[\"cpu_temperature\"] = (\n            cpu_data.get(\"cpu_temperature\") or\n            cpu_data.get(\"temperature\") or\n            cpu_data.get(\"cputemperature\", 0)\n        )\n        transformed[\"cpu_thread_count\"] = (\n            cpu_data.get(\"cpu_thread_count\") or\n            cpu_data.get(\"thread_count\") or\n            cpu_data.get(\"cputhreadcount\", 0)\n        )\n        transformed[\"cpu_usage\"] = (\n            cpu_data.get(\"cpu_usage\") or\n            cpu_data.get(\"usage\") or\n            cpu_data.get(\"cpuusage\", 0)\n        )\n        transformed[\"frequency_mhz\"] = (\n            cpu_data.get(\"frequency_mhz\") or\n            cpu_data.get(\"frequency_mhz\") or\n            cpu_data.get(\"frequencymhz\", 0)\n        )\n        transformed[\"length\"] = (\n            cpu_data.get(\"length\") or\n            cpu_data.get(\"length\") or\n            cpu_data.get(\"length\", 0)\n        )\n        transformed[\"model_name\"] = (\n            cpu_data.get(\"model_name\") or\n            cpu_data.get(\"model_name\") or\n            cpu_data.get(\"modelname\", 0)\n        )\n        transformed[\"overall_usage\"] = (\n            cpu_data.get(\"overall_usage\") or\n            cpu_data.get(\"overall_usage\") or\n            cpu_data.get(\"overallusage\", 0)\n        )\n        transformed[\"process_count\"] = (\n            cpu_data.get(\"process_count\") or\n            cpu_data.get(\"process_count\") or\n            cpu_data.get(\"processcount\", 0)\n        )\n        transformed[\"reduce\"] = (\n            cpu_data.get(\"reduce\") or\n            cpu_data.get(\"reduce\") or\n            cpu_data.get(\"reduce\", 0)\n        )\n        transformed[\"temperature\"] = (\n            cpu_data.get(\"temperature\") or\n            cpu_data.get(\"temperature\") or\n            cpu_data.get(\"temperature\", 0)\n        )\n        transformed[\"thread_count\"] = (\n            cpu_data.get(\"thread_count\") or\n            cpu_data.get(\"thread_count\") or\n            cpu_data.get(\"threadcount\", 0)\n        )\n        transformed[\"top_processes\"] = (\n            cpu_data.get(\"top_processes\") or\n            cpu_data.get(\"top_processes\") or\n            cpu_data.get(\"topprocesses\", 0)\n        )",
+    "Disk": "\n    # Transform Disk metrics\n    if \"disk\" in metrics:\n        disk_data = metrics[\"disk\"]\n        \n        # Component expects these exact fields\n        transformed[\"directories\"] = (\n            disk_data.get(\"directories\") or\n            disk_data.get(\"directories\") or\n            disk_data.get(\"directories\", 0)\n        )",
+    "Memory": "\n    # Transform Memory metrics\n    if \"memory\" in metrics:\n        memory_data = metrics[\"memory\"]\n        \n        # Component expects these exact fields\n        transformed[\"additional\"] = (\n            memory_data.get(\"additional\") or\n            memory_data.get(\"additional\") or\n            memory_data.get(\"additional\", 0)\n        )\n        transformed[\"memory_available\"] = (\n            memory_data.get(\"memory_available\") or\n            memory_data.get(\"available\") or\n            memory_data.get(\"memoryavailable\", 0)\n        )\n        transformed[\"memory_buffer\"] = (\n            memory_data.get(\"memory_buffer\") or\n            memory_data.get(\"buffer\") or\n            memory_data.get(\"memorybuffer\", 0)\n        )\n        transformed[\"memory_cache\"] = (\n            memory_data.get(\"memory_cache\") or\n            memory_data.get(\"cache\") or\n            memory_data.get(\"memorycache\", 0)\n        )\n        transformed[\"memory_percent\"] = (\n            memory_data.get(\"memory_percent\") or\n            memory_data.get(\"percent\") or\n            memory_data.get(\"memorypercent\", 0)\n        )\n        transformed[\"memory_swap_free\"] = (\n            memory_data.get(\"memory_swap_free\") or\n            memory_data.get(\"swap_free\") or\n            memory_data.get(\"memoryswapfree\", 0)\n        )\n        transformed[\"memory_swap_percent\"] = (\n            memory_data.get(\"memory_swap_percent\") or\n            memory_data.get(\"swap_percent\") or\n            memory_data.get(\"memoryswappercent\", 0)\n        )\n        transformed[\"memory_swap_total\"] = (\n            memory_data.get(\"memory_swap_total\") or\n            memory_data.get(\"swap_total\") or\n            memory_data.get(\"memoryswaptotal\", 0)\n        )\n        transformed[\"memory_swap_used\"] = (\n            memory_data.get(\"memory_swap_used\") or\n            memory_data.get(\"swap_used\") or\n            memory_data.get(\"memoryswapused\", 0)\n        )\n        transformed[\"memory_total\"] = (\n            memory_data.get(\"memory_total\") or\n            memory_data.get(\"total\") or\n            memory_data.get(\"memorytotal\", 0)\n        )",
+    "Network": "\n    # Transform Network metrics\n    if \"network\" in metrics:\n        network_data = metrics[\"network\"]\n        \n        # Component expects these exact fields\n        transformed[\"average_latency\"] = (\n            network_data.get(\"average_latency\") or\n            network_data.get(\"average_latency\") or\n            network_data.get(\"averagelatency\", 0)\n        )\n        transformed[\"connection_stability\"] = (\n            network_data.get(\"connection_stability\") or\n            network_data.get(\"connection_stability\") or\n            network_data.get(\"connectionstability\", 0)\n        )\n        transformed[\"dns_latency\"] = (\n            network_data.get(\"dns_latency\") or\n            network_data.get(\"dns_latency\") or\n            network_data.get(\"dnslatency\", 0)\n        )\n        transformed[\"gateway_latency\"] = (\n            network_data.get(\"gateway_latency\") or\n            network_data.get(\"gateway_latency\") or\n            network_data.get(\"gatewaylatency\", 0)\n        )\n        transformed[\"internet_latency\"] = (\n            network_data.get(\"internet_latency\") or\n            network_data.get(\"internet_latency\") or\n            network_data.get(\"internetlatency\", 0)\n        )\n        transformed[\"jitter\"] = (\n            network_data.get(\"jitter\") or\n            network_data.get(\"jitter\") or\n            network_data.get(\"jitter\", 0)\n        )\n        transformed[\"network\"] = (\n            network_data.get(\"network\") or\n            network_data.get(\"network\") or\n            network_data.get(\"network\", 0)\n        )\n        transformed[\"packet_loss_percent\"] = (\n            network_data.get(\"packet_loss_percent\") or\n            network_data.get(\"packet_loss_percent\") or\n            network_data.get(\"packetlosspercent\", 0)\n        )\n        transformed[\"protocol_breakdown\"] = (\n            network_data.get(\"protocol_breakdown\") or\n            network_data.get(\"protocol_breakdown\") or\n            network_data.get(\"protocolbreakdown\", 0)\n        )\n        transformed[\"protocol_stats\"] = (\n            network_data.get(\"protocol_stats\") or\n            network_data.get(\"protocol_stats\") or\n            network_data.get(\"protocolstats\", 0)\n        )\n        transformed[\"top_bandwidth_processes\"] = (\n            network_data.get(\"top_bandwidth_processes\") or\n            network_data.get(\"top_bandwidth_processes\") or\n            network_data.get(\"topbandwidthprocesses\", 0)\n        )"
+  }
+}

@@ -2,6 +2,14 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { MetricAlert, AlertSeverity } from '../../../types/metrics';
 
 export interface CPUMetric {
+  cpu_usage: number;
+  cpu_thread_count: number;
+  cpu_core_count: number;
+  cpu_frequency: number;
+  cpu_temperature: number;
+  cpu: any;
+  timestamp: any;
+  cpu_model: string;
   usage_percent: number;
   cores: {
     id: number;
@@ -35,8 +43,8 @@ interface CPUState {
   historical: CPUMetric[];
   alerts: MetricAlert[];
   thresholds: CPUThresholds;
-  loading: boolean;
-  error: string | null;
+  cpuLoading: boolean;
+  cpuError: string | null;
   lastUpdated: string | null;
 }
 
@@ -54,8 +62,8 @@ const initialState: CPUState = {
       critical: 85
     }
   },
-  loading: false,
-  error: null,
+  cpuLoading: false,
+  cpuError: null,
   lastUpdated: null
 };
 
@@ -123,14 +131,14 @@ const cpuSlice = createSlice({
   name: 'cpu',
   initialState,
   reducers: {
-    setLoading: (state, action: PayloadAction<boolean>) => {
-      state.loading = action.payload;
+    setCPULoading: (state, action: PayloadAction<boolean>) => {
+      state.cpuLoading = action.payload;
     },
-    setError: (state, action: PayloadAction<string | null>) => {
-      state.error = action.payload;
-      state.loading = false;
+    setCPUError: (state, action: PayloadAction<string | null>) => {
+      state.cpuError = action.payload;
+      state.cpuLoading = false;
     },
-    updateMetrics: (state, action: PayloadAction<CPUMetric>) => {
+    updateCPUMetrics: (state, action: PayloadAction<CPUMetric>) => {
       const newMetric = action.payload;
       state.current = newMetric;
       state.historical = [...state.historical, newMetric].slice(-1000); // Keep last 1000 readings
@@ -142,8 +150,8 @@ const cpuSlice = createSlice({
         state.alerts = [...state.alerts, ...alerts].slice(-50); // Keep last 50 alerts
       }
       
-      state.loading = false;
-      state.error = null;
+      state.cpuLoading = false;
+      state.cpuError = null;
     },
     updateThresholds: (state, action: PayloadAction<Partial<CPUThresholds>>) => {
       state.thresholds = {
@@ -158,8 +166,8 @@ const cpuSlice = createSlice({
       state.current = null;
       state.historical = [];
       state.alerts = [];
-      state.loading = false;
-      state.error = null;
+      state.cpuLoading = false;
+      state.cpuError = null;
       state.lastUpdated = null;
     }
   }
@@ -167,9 +175,9 @@ const cpuSlice = createSlice({
 
 // Export actions
 export const {
-  setLoading,
-  setError,
-  updateMetrics,
+  setCPULoading,
+  setCPUError,
+  updateCPUMetrics,
   updateThresholds,
   clearAlerts,
   reset
@@ -180,8 +188,8 @@ export const selectCPUMetrics = (state: { cpu: CPUState }) => state.cpu.current;
 export const selectCPUHistorical = (state: { cpu: CPUState }) => state.cpu.historical;
 export const selectCPUAlerts = (state: { cpu: CPUState }) => state.cpu.alerts;
 export const selectCPUThresholds = (state: { cpu: CPUState }) => state.cpu.thresholds;
-export const selectCPULoading = (state: { cpu: CPUState }) => state.cpu.loading;
-export const selectCPUError = (state: { cpu: CPUState }) => state.cpu.error;
+export const selectCPULoading = (state: { cpu: CPUState }) => state.cpuLoading;
+export const selectCPUError = (state: { cpu: CPUState }) => state.cpuError;
 export const selectCPULastUpdated = (state: { cpu: CPUState }) => state.cpu.lastUpdated;
 
 export default cpuSlice.reducer;

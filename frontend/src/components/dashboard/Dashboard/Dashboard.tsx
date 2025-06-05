@@ -15,10 +15,11 @@ interface DashboardProps {}
 export const Dashboard: React.FC<DashboardProps> = () => {
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
-  const { loading, error } = useAppSelector(
+  const { status, error } = useAppSelector(
     (state: RootState) => state.metrics
   );
-  
+  const loading = status ==='connecting';
+
   // IMPORTANT: Restore this hook to ensure WebSocket connection is established
   useMetricsWebSocket();
   
@@ -46,7 +47,7 @@ export const Dashboard: React.FC<DashboardProps> = () => {
   };
 
   // Show loading state
-  if (loading) {
+  if (status === 'connecting' || status === 'disconnected') {
     return (
       <div className="loading-container">
         <div className="loading-spinner"></div>

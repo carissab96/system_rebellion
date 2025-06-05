@@ -79,14 +79,13 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
 };
 
 // Export the hook as a named export
-const useToast = (message: string, p0: string) => {
+const useToast = () => {
   const context = useContext(ToastContext);
   if (!context) {
     throw new Error('useToast must be used within a ToastProvider');
   }
   return context;
 };
-
 // Export the ToastProvider as default and include useToast in the exports
 export { useToast };
 export default ToastProvider;
