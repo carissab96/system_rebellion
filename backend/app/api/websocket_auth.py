@@ -1,65 +1,61 @@
 """
 WebSocket authentication utilities for System Rebellion
 """
-from fastapi import WebSocket, WebSocketDisconnect, status
+from fastapi import WebSocket, status
 from jose import jwt, JWTError
 from app.core.config import settings
 from app.models.user import User
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from app.core.database import AsyncSessionLocal
+from sqlalchemy import select # type: ignore
+from sqlalchemy.ext.asyncio import AsyncSession # type: ignore
+from sqlalchemy.engine.result import ScalarResult # type: ignore
+from app.core.database import AsyncSessionLocal # type: ignore
 import logging
+from typing import Optional, cast, TypeVar, Union
 
 logger = logging.getLogger(__name__)
 
-async def get_current_user_from_token(token: str) -> User:
+T = TypeVar('T')
+
+async def get_current_user_from_token(token: str) -> Optional[User]:
     """
     Validate JWT token and return the user
     """
     try:
-           # Decode the JWT token
+        # Decode the JWT token
         logger.info(f"Decoding WebSocket token: {token[:10]}...")
         payload = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
         )
-         # Extract the subject (username)
-        username: str = payload.get("sub")
-        if username is None:
+        # Extract the subject (username)
+        username = cast(str, payload.get("sub"))
+        if not username:
             logger.error("Token missing 'sub' field")
             return None
         logger.info(f"Token subject: {username}")
 
-    except Exception as e:
-        logger.error(f"Error decoding WebSocket token: {str(e)}")
-        return None
-    
-    try:
-        async with AsyncSessionLocal() as db:
+        # Get user from database
+        async with AsyncSessionLocal() as db:  # type: ignore
+            db_session: AsyncSession = db
             logger.info(f"Looking up user: {username}")
-            result = await db.execute(
-                select(User).where(User.username == username)
-            )
-            user = result.scalars().first()
+            stmt = select(User).where(User.username == username)  # type: ignore
+            result = (await db_session.execute(stmt)).scalars()  # type: ignore
+            user = result.first()  # type: ignore
                 
-        if not user:
-            logger.error(f"User not found: {username}")
-            return None
+            if not user:
+                logger.error(f"User not found: {username}")
+                return None
                 
         # Create a detached copy of the user object
         detached_user = User(
-            id=user.id,
-            username=user.username,
-            email=user.email,
-            is_active=user.is_active
-            )
-                
+            id=int(user.id),  # Ensure integer type
+            username=cast(str, user.username),  # Use type.cast to ensure proper typing
+            email=str(user.email),
+            is_active=bool(user.is_active)
+        )
+        
         logger.info(f"User authenticated successfully: {detached_user.username}")
         return detached_user
                 
-    except Exception as db_error:
-        logger.error(f"Database error during authentication: {str(db_error)}")
-        return None
-            
     except JWTError as e:
         logger.error(f"JWT error in WebSocket: {str(e)}")
         return None
@@ -67,19 +63,17 @@ async def get_current_user_from_token(token: str) -> User:
         logger.error(f"Error authenticating WebSocket: {str(e)}")
         return None
 
-async def authenticate_websocket(websocket: WebSocket) -> User:
+async def authenticate_websocket(websocket: WebSocket) -> Optional[User]:
     """
     Authenticate a WebSocket connection using JWT token
     """
     try:
         # First try to get token from query parameters
-        query_params = dict(websocket.query_params)
-        token = query_params.get("token")
+        token: Optional[str] = websocket.query_params.get("token")
         
         # If no token in query params, try headers
         if not token:
-            headers = dict(websocket.headers)
-            auth_header = headers.get("authorization")
+            auth_header = websocket.headers.get("authorization")
             if auth_header and auth_header.startswith("Bearer "):
                 token = auth_header.split(" ")[1]
         
@@ -114,7 +108,7 @@ async def authenticate_websocket(websocket: WebSocket) -> User:
                 await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
             return None
         
-        logger.info(f"WebSocket authenticated for user: {user.username}")
+        logger.info(f"WebSocket authenticated for user: {getattr(user, 'username')}")  # type: ignore
         return user
         
     except Exception as e:
