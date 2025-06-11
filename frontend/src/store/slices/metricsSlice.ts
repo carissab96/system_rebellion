@@ -2,6 +2,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export interface MetricsState {
+  historical: any;
   status: 'disconnected' | 'connecting' | 'connected' | 'error';
   lastUpdated: string | null;
   error: string | null;

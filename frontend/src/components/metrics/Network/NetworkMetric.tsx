@@ -65,8 +65,12 @@ export const NetworkMetric: React.FC<NetworkMetricProps> = ({
   }
 
   // Extract network data from metrics
-  const networkDetails: NetworkDetails = currentMetric.network || {
-    bytes_sent: 0,
+  console.log('Current network metric data:', currentMetric);
+  
+  // Handle the new data structure from the backend
+  // The network metrics are now directly in the currentMetric object, not nested under 'network'
+  const networkDetails: NetworkDetails = {
+    bytes_sent: 0, // These fields might not be directly available in the new structure
     bytes_recv: 0,
     packets_sent: 0,
     packets_recv: 0,
@@ -86,7 +90,7 @@ export const NetworkMetric: React.FC<NetworkMetricProps> = ({
       drops_out: 0
     },
     interfaces: [],
-    protocol_stats: {
+    protocol_stats: currentMetric.protocol_stats || {
       tcp: {
         active: 0,
         established: 0,
@@ -104,7 +108,19 @@ export const NetworkMetric: React.FC<NetworkMetricProps> = ({
       dns: {
         queries: 0
       }
-    }
+    },
+    // Add new fields from the updated structure
+    connection_quality: {
+      average_latency: currentMetric.latency_ms || 0,
+      packet_loss_percent: currentMetric.packet_loss_percent || 0,
+      connection_stability: currentMetric.stability || 100,
+      jitter: currentMetric.jitter_ms || 0,
+      gateway_latency: currentMetric.gateway_latency || 0,
+      dns_latency: currentMetric.dns_latency || 0,
+      internet_latency: currentMetric.internet_latency || 0
+    },
+    protocol_breakdown: currentMetric.protocol_breakdown || {},
+    top_bandwidth_processes: currentMetric.top_processes || []
   };
   const networkReceiveRate = networkDetails.recv_rate_bps || 0;
   const networkTransmitRate = networkDetails.sent_rate_bps || 0;

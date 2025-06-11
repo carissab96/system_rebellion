@@ -7,7 +7,7 @@ import { useMetricsWebSocket } from './services/websocket/useMetricsWebSocket'; 
 
 // Components
 import Login, { LoginProps } from './components/Auth/login/Login';
-import Dashboard from './components/dashboard/Dashboard/Dashboard';
+import DashboardNew from './components/dashboard/Dashboard/DashboardNew';
 import Layout from './components/common/Layout';
 import OptimizationProfiles from './components/optimization/OptimizationProfiles';
 import SystemAlerts from './components/alerts/SystemAlerts';
@@ -79,7 +79,7 @@ const AppContent: React.FC = () => {
               <Outlet />
             </ProtectedRoute>
           }>
-            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/dashboard" element={<DashboardNew />} />
             <Route path="/optimization" element={<OptimizationProfiles />} />
             <Route path="/alerts" element={<SystemAlerts />} />
             <Route path="/configuration" element={<SystemConfiguration />} />

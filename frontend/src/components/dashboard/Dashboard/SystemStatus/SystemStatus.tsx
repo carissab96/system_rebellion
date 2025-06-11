@@ -1,4 +1,4 @@
-// components/dashboard/Dashboard/SystemStatus/SystemStatus.tsx
+// components/dashboard/Dashboard/SystemStatus/SystemStatusNew.tsx
 import React, { useState, useEffect } from 'react';
 import './SystemStatus.css';
 
@@ -67,16 +67,16 @@ export const SystemStatus: React.FC<SystemStatusProps> = ({ loading, error }) =>
     const getStatusMessage = () => {
         if (loading) {
             return (
-                <span className="status-message loading">
+                <div className="status-message loading">
                     <i className="fas fa-sync-alt"></i> Optimizing your shit...
-                </span>
+                </div>
             );
         }
         if (error) {
             return (
-                <span className="status-message error">
+                <div className="status-message error">
                     <i className="fas fa-exclamation-triangle"></i> {error}
-                </span>
+                </div>
             );
         }
         
@@ -86,23 +86,26 @@ export const SystemStatus: React.FC<SystemStatusProps> = ({ loading, error }) =>
         const messageWithoutEmoji = emojiMatch ? currentMessage.substring(emojiMatch[0].length) : currentMessage;
         
         return (
-            <span className="status-message active ticker-message">
-                <i className="fas fa-check-circle"></i> 
+            <div className="status-message active">
+                <i className="fas fa-check-circle"></i>
                 {emojiMatch && <span className="character-emoji">{emojiMatch[0]}</span>}
-                {messageWithoutEmoji}
-            </span>
+                <div className="ticker-wrapper">
+                    <div className="ticker">{messageWithoutEmoji}</div>
+                </div>
+            </div>
         );
     };
 
     return (
         <div className="system-status">
-            <span className="status-indicator">
-                <span className={`status-dot ${getStatusClass()}`} />
-                <span className="status-text">
-                    {getStatusMessage()}
-                </span>
-            </span>
+            <div className="status-dot-container">
+                <div className={`status-dot ${getStatusClass()}`}></div>
+            </div>
+            <div className="status-content">
+                {getStatusMessage()}
+            </div>
         </div>
     );
 };
+
 export default SystemStatus;

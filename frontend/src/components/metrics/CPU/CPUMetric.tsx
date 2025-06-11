@@ -72,28 +72,31 @@ const CPUMetric: React.FC<CPUMetricProps> = ({
   }
   
   // Extract CPU data from metrics
-  const cpuUsage = currentMetric.cpu_usage || 0;
+  console.log('Current CPU metric data:', currentMetric);
+  
+  // Handle the new data structure from the backend
+  const cpuUsage = currentMetric.usage_percent || 0;
   
   // Extract CPU details
   const cpuDetails: CPUDetails = {
     cores: {
-      logical: currentMetric.cpu_thread_count || 1,
-      physical: currentMetric.cpu_core_count || 1
+      logical: currentMetric.logical_cores || 0,
+      physical: currentMetric.physical_cores || 0
     },
     frequency: {
-      current: currentMetric.cpu_frequency || 0,
-      min: 0,
-      max: currentMetric.cpu_frequency || 3000
+      current: currentMetric.frequency_mhz || 0,
+      min: 0, // We don't have min frequency data from backend
+      max: 0  // We don't have max frequency data from backend
     },
-    temperature: currentMetric.cpu_temperature || 0,
-    per_core_usage: Array.isArray(currentMetric.cpu?.cores) 
-      ? currentMetric.cpu.cores.map((c: any) => c.usage_percent || c.usage || 0)
+    temperature: currentMetric.temperature || 0,
+    per_core_usage: Array.isArray(currentMetric.cores) 
+      ? currentMetric.cores.map((c: any) => c.usage_percent || c.usage || 0)
       : []
   };
   
   // Extract CPU processes
-  const topProcesses: CPUProcess[] = Array.isArray(currentMetric.cpu?.top_processes)
-    ? currentMetric.cpu.top_processes.map((p: any) => ({
+  const topProcesses: CPUProcess[] = Array.isArray(currentMetric.top_processes)
+    ? currentMetric.top_processes.map((p: any) => ({
         name: p.name || 'Unknown',
         pid: p.pid || 0,
         cpu_percent: p.cpu_percent || p.usage_percent || 0,

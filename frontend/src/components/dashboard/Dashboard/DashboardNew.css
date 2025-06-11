@@ -1,0 +1,264 @@
+/* DashboardNew.css - Clean cyberpunk implementation */
+
+/* Main Dashboard Container */
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 1800px;
+  margin: 0 auto;
+  padding: 1rem;
+  color: #1111d452;
+}
+
+/* Dashboard Header */
+.dashboard-header {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin-bottom: 1.5rem;
+}
+
+.dashboard-header h1 {
+  font-size: 1.8rem;
+  margin-bottom: 1rem;
+  color: #c346ec;
+  text-shadow: 0 0 8px rgba(0, 229, 255, 0.4);
+  text-align: center;
+}
+
+/* Ticker Container - No margin to prevent double layer */
+.ticker-container {
+  width: 100%;
+  margin: 0;
+  z-index: 2;
+  box-shadow: none;
+  background: transparent;
+  border: none;
+}
+
+/* Dashboard Content Layout - Stacked */
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+/* Metrics Section */
+.dashboard-metrics {
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, rgb(239, 235, 252), rgb(189, 175, 252));
+  border-radius: 12px;
+  border: 1px solid rgba(65, 5, 245, 0.3);
+  box-shadow: 0 0 15px rgb(209, 186, 252);
+  padding: 1.5rem;
+  overflow: hidden;
+}
+
+.metrics-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(77, 22, 114, 0.8);
+}
+
+.metrics-header h2 {
+  font-size: 1.4rem;
+  color: #3e0450;
+  text-shadow: 0 0 5px rgb(128, 28, 158);
+  margin: 0;
+}
+
+.section-link {
+  color: #410450;
+  text-decoration: none;
+  font-size: 0.9rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  background: rgba(199, 139, 238, 0.904);
+  border: 1px solid rgba(127, 8, 206, 0.4);
+  transition: all 0.2s ease;
+  text-shadow: 0 0 5px rgba(159, 130, 247, 0.747);
+}
+
+.section-link:hover {
+  background: rgba(0, 229, 255, 0.15);
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.5);
+  border-color: #00e5ff;
+  text-shadow: 0 0 8px rgba(161, 129, 255, 0.6);
+}
+
+/* Metrics Grid */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+
+/* Metric Cards */
+.metric-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(245, 240, 255, 0.9));
+  border-radius: 8px;
+  border: 1px solid rgba(161, 129, 255, 0.25);
+  padding: 1rem;
+  box-shadow: 0 0 10px rgba(127, 8, 206, 0.1);
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.metric-card:hover {
+  box-shadow: 0 0 15px rgba(127, 8, 206, 0.4);
+  transform: translateY(-2px);
+  border-color: #00e5ff;
+}
+
+.metric-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.8rem;
+}
+
+.metric-card-header h3 {
+  font-size: 1.1rem;
+  color: #0a0330;
+  margin: 0;
+  text-shadow: 0 0 5px rgba(36, 4, 29, 0.4);
+}
+
+.metric-link {
+  color: #4a2063;
+  font-size: 0.8rem;
+  text-decoration: none;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  background: rgba(77, 22, 114, 0.3);
+  border: 1px solid rgba(127, 8, 206, 0.3);
+  transition: all 0.2s ease;
+}
+
+.metric-link:hover {
+  background: rgba(0, 229, 255, 0.15);
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.5);
+  border-color: #00e5ff;
+}
+
+/* Sidebar */
+.dashboard-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.sidebar-panel {
+  background: linear-gradient(135deg, rgba(240, 240, 255, 0.9), rgba(230, 230, 250, 0.9));
+  border-radius: 12px;
+  border: 1px solid rgba(161, 129, 255, 0.3);
+  box-shadow: 0 0 15px rgba(127, 8, 206, 0.2);
+  padding: 1.5rem;
+  overflow: hidden;
+  width: 100%;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(77, 22, 114, 0.8);
+}
+
+.panel-header h2 {
+  font-size: 1.2rem;
+  color: #c006a7c2;
+  text-shadow: 0 0 5px rgba(68, 9, 48, 0.4);
+  margin: 0;
+}
+
+/* Loading and Error States */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 50vh;
+  width: 100%;
+  color: #34103b;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid rgba(0, 229, 255, 0.3);
+  border-top: 4px solid #00e5ff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+  box-shadow: 0 0 15px rgba(0, 229, 255, 0.4);
+}
+
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 50vh;
+  width: 100%;
+  color: #ff5252;
+  text-shadow: 0 0 5px rgba(255, 82, 82, 0.4);
+}
+
+.retry-button {
+  background: rgba(77, 22, 114, 0.5);
+  color: #e0e0ff;
+  border: 1px solid rgba(127, 8, 206, 0.6);
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  margin-top: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-shadow: 0 0 5px rgba(224, 224, 255, 0.4);
+}
+
+.retry-button:hover {
+  background: rgba(77, 22, 114, 0.7);
+  box-shadow: 0 0 10px rgba(127, 8, 206, 0.5);
+}
+
+/* Animations */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .dashboard-content {
+    grid-template-columns: 1fr;
+  }
+  
+  .dashboard-sidebar {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  
+  .sidebar-panel {
+    flex: 1;
+    min-width: 300px;
+  }
+}
+
+@media (max-width: 768px) {
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .dashboard-sidebar {
+    flex-direction: column;
+  }
+}
