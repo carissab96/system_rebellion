@@ -3,6 +3,7 @@ import { MetricAlert, AlertSeverity } from '../../../types/metrics';
 
 
 export interface DiskMetric {
+  directories: never[];
   additional: any;
   timestamp: string | number | Date;
   usage_percent: number;

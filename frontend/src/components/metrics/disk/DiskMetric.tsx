@@ -65,17 +65,20 @@ export const DiskMetric: React.FC<ConsolidatedDiskMetricProps> = ({
   }
 
   // Extract disk data from metrics
-  const diskUsage = typeof diskMetrics === 'number' ? diskMetrics : 0;
+  console.log('Current disk metric data:', diskMetrics);
+  
+  // Handle the new data structure from the backend
+  const diskUsage = diskMetrics?.usage_percent || 0;
   
   // Create RawDiskMetrics structure from available metrics
   const rawDiskMetrics: RawDiskMetrics = {
-    partitions: diskMetrics?.additional?.disk_partitions || [],
+    partitions: diskMetrics?.directories || [],
     physicalDisks: [],
-    directories: [],
+    directories: diskMetrics?.directories || [],
     performance: {
       current: {
-        readSpeed: diskMetrics?.additional?.disk_read_rate || 0,
-        writeSpeed: diskMetrics?.additional?.disk_write_rate || 0,
+        readSpeed: 0, // Not provided in current metrics
+        writeSpeed: 0, // Not provided in current metrics
         readIOPS: 0,
         writeIOPS: 0,
         utilization: diskUsage,

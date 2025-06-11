@@ -10,7 +10,7 @@ import os
 # Add the backend directory to Python path
 sys.path.append(os.path.join(os.path.dirname(__file__), '../backend'))
 
-from app.core.config import settings
+from app.core.config import settings # type: ignore
 from app.api.websocket_auth import get_current_user_from_token
 
 logging.basicConfig(level=logging.DEBUG)

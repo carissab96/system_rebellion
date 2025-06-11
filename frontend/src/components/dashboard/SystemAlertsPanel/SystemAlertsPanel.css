@@ -29,7 +29,7 @@
 .system-alerts {
   padding: 1.5rem;
   border-radius: 12px;
-  background: linear-gradient(135deg, rgba(255, 0, 110, 0.05), rgba(58, 134, 255, 0.05));
+  background: linear-gradient(135deg, rgba(243, 99, 161, 0.05), rgba(58, 134, 255, 0.05));
   border: 1px solid rgba(255, 0, 110, 0.2);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   height: 100%;
@@ -88,12 +88,13 @@
   background: rgba(255, 255, 255, 0.05);
   border-radius: 8px;
   padding: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: --gradient-cosmic;
   transition: all 0.2s ease;
   display: flex;
   align-items: flex-start;
   gap: 10px;
   cursor: pointer;
+  border-image: linear-gradient(90deg, var(--accent), var(--primary)) 1
 }
 
 .dashboard-alert-card:hover {
@@ -364,7 +365,8 @@
   display: flex;
   justify-content: space-between;
   margin-top: auto;
-  padding-top: 15px;
+  padding: 15px 0;
+  margin-bottom: 10px;
 }
 
 .select-all-button, .view-all-button {
@@ -378,7 +380,7 @@
 }
 
 .select-all-button {
-  background: linear-gradient(90deg, var(--primary), var(--secondary));
+  background: linear-gradient(90deg, var(--accent), var(--secondary));
   color: white;
 }
 
@@ -388,7 +390,6 @@
 }
 
 .view-all-button {
-  background: linear-gradient(90deg, var(--accent), var(--secondary));
   color: white;
 }
 

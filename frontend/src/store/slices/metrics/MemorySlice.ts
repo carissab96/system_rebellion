@@ -2,6 +2,11 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { MetricAlert, AlertSeverity } from '../../../types/metrics';
 
 export interface MemoryMetric {
+    total: number;
+    available: number;
+    swap: any;
+    cached: number;
+    buffers: number;
     timestamp: string | number | Date;
     additional: any;
     memory_buffer: number;

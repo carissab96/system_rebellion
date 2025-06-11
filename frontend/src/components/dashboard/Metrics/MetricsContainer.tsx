@@ -11,7 +11,6 @@ export const MetricsContainer: React.FC = () => {
     
     useEffect(() => {
         console.log("🎨 METRICS CONTAINER UPDATED:", {
-            current: metrics.current,
             lastUpdated: metrics.lastUpdated,
             historicalLength: metrics.historical.length
         });

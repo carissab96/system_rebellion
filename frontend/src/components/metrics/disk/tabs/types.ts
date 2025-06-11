@@ -1,3 +1,5 @@
+import { JSX } from "react/jsx-runtime";
+
 export interface DiskMetricProps {
   compact?: boolean;
   defaultTab?: 'partitions' | 'directory' | 'performance';
@@ -133,6 +135,7 @@ export interface DiskHistoryPoint {
 // Processed data structure for components
 export interface ProcessedDiskData {
   partitions: {
+    map(arg0: (partition: { mountpoint: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; percent: number; total: number; used: number; free: number; }, index: React.Key | null | undefined) => JSX.Element): import("react").ReactNode;
     items: {
       blockSize: any;
       mountPoint: string;
