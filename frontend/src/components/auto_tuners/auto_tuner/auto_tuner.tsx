@@ -15,6 +15,7 @@ import { ParameterDescription, AutoTunerHelp } from './parameter_descriptions';
 import SystemLogsViewer from '../../dashboard/SystemLogs/SystemLogsViewer';
 import './auto_tuner.css';
 import { fetchOptimizationProfiles } from '@/store/slices/optimizationSlice';
+import { useAppSelector } from '@/store/hooks';
 
 // Helper function to format bytes with appropriate units
 const formatBytes = (bytes: number, decimals = 2) => {
@@ -31,8 +32,8 @@ const formatBytes = (bytes: number, decimals = 2) => {
 
 // Current Metrics Component
 const CurrentMetricsPanel: React.FC = () => {
-  const metrics = useSelector((state: RootState) => state.autoTuner.currentMetrics);
-  const status = useSelector((state: RootState) => state.autoTuner.status);
+  const metrics = useAppSelector((state: RootState) => state.autoTuner.currentMetrics);
+  const status = useAppSelector((state: RootState) => state.autoTuner.status);
   const [isUpdating, setIsUpdating] = useState(false);
   const prevMetricsRef = useRef(metrics);
   

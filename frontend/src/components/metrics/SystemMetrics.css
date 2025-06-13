@@ -22,9 +22,9 @@
   --gradient-cosmic: linear-gradient(90deg, #3a86ff, #ff006e, #8338ec, #00f5d4);
   
   /* Additional variables for our metrics page */
-  --bg-dark: #121212;
-  --bg-card: #1e1e1e;
-  --bg-card-hover: #2a2a2a;
+  --bg-dark: #0b035a;
+  --bg-card: #a799f8;
+  --bg-card-hover: #0e0324;
   --text-highlight: #f8f9fa;
   --text-on-accent: #ffffff;
   --border-primary: #333333;

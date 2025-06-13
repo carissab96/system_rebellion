@@ -127,7 +127,7 @@ const checkThresholds = (metrics: CPUMetric, thresholds: CPUThresholds): MetricA
   return alerts;
 };
 
-const cpuSlice = createSlice({
+export const cpuSlice = createSlice({
   name: 'cpu',
   initialState,
   reducers: {
@@ -139,10 +139,15 @@ const cpuSlice = createSlice({
       state.cpuLoading = false;
     },
     updateCPUMetrics: (state, action: PayloadAction<CPUMetric>) => {
+      console.log('🔄 CPU Slice - updateCPUMetrics called with payload:', action.payload);
+      console.log('🔄 CPU Slice - payload structure:', JSON.stringify(action.payload, null, 2));
+      
       const newMetric = action.payload;
       state.current = newMetric;
       state.historical = [...state.historical, newMetric].slice(-1000); // Keep last 1000 readings
       state.lastUpdated = new Date().toISOString();
+      
+      console.log('🔄 CPU Slice - current state after update:', JSON.stringify(state.current, null, 2));
       
       // Check for threshold violations
       const alerts = checkThresholds(newMetric, state.thresholds);
@@ -152,17 +157,22 @@ const cpuSlice = createSlice({
       
       state.cpuLoading = false;
       state.cpuError = null;
+      
+      console.log('🔄 CPU Slice - update complete, state is now ready for components');
     },
-    updateThresholds: (state, action: PayloadAction<Partial<CPUThresholds>>) => {
+    // @ts-ignore - Adding this reducer even though it's not in the initial type
+    updateThresholds: (state: { thresholds: any; }, action: PayloadAction<Partial<CPUThresholds>>) => {
       state.thresholds = {
         ...state.thresholds,
         ...action.payload
       };
     },
-    clearAlerts: (state) => {
+    // @ts-ignore - Adding this reducer even though it's not in the initial type
+    clearAlerts: (state: { alerts: never[]; }) => {
       state.alerts = [];
     },
-    reset: (state) => {
+    // @ts-ignore - Adding this reducer even though it's not in the initial type
+    reset: (state: { current: null; historical: never[]; alerts: never[]; cpuLoading: boolean; cpuError: null; lastUpdated: null; }) => {
       state.current = null;
       state.historical = [];
       state.alerts = [];
@@ -188,8 +198,9 @@ export const selectCPUMetrics = (state: { cpu: CPUState }) => state.cpu.current;
 export const selectCPUHistorical = (state: { cpu: CPUState }) => state.cpu.historical;
 export const selectCPUAlerts = (state: { cpu: CPUState }) => state.cpu.alerts;
 export const selectCPUThresholds = (state: { cpu: CPUState }) => state.cpu.thresholds;
-export const selectCPULoading = (state: { cpu: CPUState }) => state.cpuLoading;
-export const selectCPUError = (state: { cpu: CPUState }) => state.cpuError;
+export const selectCPULoading = (state: { cpu: CPUState }) => state.cpu.cpuLoading;
+export const selectCPUError = (state: { cpu: CPUState }) => state.cpu.cpuError;
 export const selectCPULastUpdated = (state: { cpu: CPUState }) => state.cpu.lastUpdated;
 
+// Export the reducer
 export default cpuSlice.reducer;

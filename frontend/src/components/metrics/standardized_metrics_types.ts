@@ -5,10 +5,10 @@
  * "By Jove, these types shall bring order to chaos!" - Sir Hawkington
  */
 
-import { CPUMetrics, CPUHistoricalData } from './CPU/Tabs/types';
-import { MemoryMetrics, MemoryHistoricalData } from './memory/tabs/types';
-import { DiskMetrics, DiskHistoricalData } from './disk/tabs/types';
-import { NetworkMetrics, NetworkHistoricalData } from './Network/tabs/types';
+import { RawCPUMetrics, CPUHistoricalData } from './CPU/Tabs/types';
+import { RawMemoryMetrics, RawMemoryHistoricalData } from './memory/tabs/types';
+import { RawDiskMetrics, RawDiskHistoricalData } from './disk/tabs/types';
+import { RawNetworkMetrics, RawNetworkHistoricalData } from './Network/tabs/types';
 
 // Re-export all individual metric types
 export * from './CPU/Tabs/types';
@@ -53,10 +53,10 @@ export interface ErrorMessage extends WebSocketMessage {
  * Main System Metrics Interface
  */
 export interface SystemMetrics {
-  cpu?: CPUMetrics;
-  memory?: MemoryMetrics;
-  disk?: DiskMetrics;
-  network?: NetworkMetrics;
+  cpu?: RawCPUMetrics;
+  memory?: RawMemoryMetrics;
+  disk?: RawDiskMetrics;
+  network?: RawNetworkMetrics;
   system_analysis?: SystemAnalysis;
 }
 
@@ -89,10 +89,10 @@ export interface SystemInfo {
  * Historical Data Collection
  */
 export interface MetricsHistory {
-  cpu: CPUHistoricalData[];
-  memory: MemoryHistoricalData[];
-  disk: DiskHistoricalData[];
-  network: NetworkHistoricalData[];
+  cpu: RawCPUHistoricalData[];
+  memory: RawMemoryHistoricalData[];
+  disk: RawDiskHistoricalData[];
+  network: RawNetworkHistoricalData[];
   timeRange: {
     start: string;              // ISO 8601
     end: string;                // ISO 8601
