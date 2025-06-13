@@ -1,0 +1,101 @@
+.metric-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    border: 1px solid rgba(131, 56, 236, 0.2);
+    margin-bottom: 1rem;
+    position: relative;
+    z-index: 1;
+  }
+  
+  .metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(180deg, #8338ec, #ff006e);
+    border-radius: 4px 0 0 4px;
+  }
+  
+  .metric-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15), 0 0 10px rgba(131, 56, 236, 0.3);
+  }
+  
+  .metric-card h3 {
+    color: #121212;
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+  }
+  
+  .metric-value {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin: 0.5rem 0;
+    background: linear-gradient(90deg, #8338ec, #ff006e);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    transition: all 0.3s ease;
+  }
+  
+  .chart-container {
+    margin-top: 1rem;
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    background: rgba(10, 1, 48, 0.8);
+    padding: 1rem;
+    border: 2px solid rgba(131, 56, 236, 0.8);
+    box-shadow: 0 0 20px rgba(131, 56, 236, 0.6);
+    transition: all 0.3s ease;
+  }
+  
+  /* Enhanced Chart Styling */
+  .recharts-cartesian-grid-horizontal line,
+  .recharts-cartesian-grid-vertical line {
+    stroke: rgba(131, 56, 236, 0.5);
+    stroke-width: 1px;
+  }
+  
+  .recharts-tooltip-wrapper .recharts-default-tooltip {
+    background: rgba(10, 1, 48, 0.95) !important;
+    border: 2px solid rgba(131, 56, 236, 0.8) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 0 20px rgba(131, 56, 236, 0.6) !important;
+    color: white !important;
+    font-weight: bold !important;
+    padding: 10px !important;
+  }
+  
+  /* The Hamsters' Psychedelic Glow */
+  .recharts-area-curve {
+    filter: drop-shadow(0 0 20px rgba(131, 56, 236, 1));
+    stroke-width: 4px;
+    stroke: rgb(131, 56, 236);
+  }
+  
+  .recharts-area-area {
+    /* No filters to ensure maximum visibility */
+    opacity: 1;
+  }
+  
+  /* Additional chart enhancements */
+  .recharts-surface {
+    overflow: visible;
+  }
+  
+  .recharts-layer {
+    /* Removing blend mode to ensure visibility */
+    mix-blend-mode: normal;
+  }
+  
+  /* The Hamsters' Memory Glow */
+  .recharts-line-curve {
+    filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.6));
+  }

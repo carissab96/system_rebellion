@@ -3,7 +3,13 @@
 import React, { useState } from 'react';
 import { XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Area, AreaChart, BarChart, Bar } from 'recharts';
 import { useAppSelector } from '../../../store/hooks';
-import { selectCPUMetrics, selectCPUHistorical } from '../../../store/slices/metrics/CPUSlice';
+import { 
+  selectCPUMetrics, 
+  selectCPUHistorical, 
+  selectCPULoading,
+  selectCPUError,
+  type CPUMetric 
+} from '../../../store/slices/metrics/CPUSlice';
 import { MetricsCard, MetricStatus } from '../../../design-system/components/MetricsCard';
 import { Tabs, Tab } from '../../../design-system/components/Tabs/Tabs';
 import { Card } from '../../../design-system/components/Card/Card';
@@ -11,7 +17,7 @@ import CPUOverviewTab from './Tabs/CPUOverviewTab';
 import CPUProcessesTab from './Tabs/CPUProcessesTab';
 import CPUCoresTab from './Tabs/CPUCoresTab';
 import CPUThermalTab from './Tabs/CPUThermalTab';
-import './CPUMetric.css';
+import './CPUMetric.css'
 
 // Interface for CPU process
 interface CPUProcess {
@@ -34,6 +40,7 @@ interface CPUDetails {
   };
   temperature: number;
   per_core_usage: number[];
+  physical_cores?: number; // Added to match the expected property
 }
 
 type CPUTabType = 'overview' | 'processes' | 'cores' | 'thermal';
@@ -54,15 +61,23 @@ const CPUMetric: React.FC<CPUMetricProps> = ({
   dashboardMode = false,
 }) => {
   // Redux state - Get metrics from the central metrics slice
-  const currentMetric = useAppSelector(selectCPUMetrics);
+  const currentMetric = useAppSelector(selectCPUMetrics) || {} as any;
   const historicalMetrics = useAppSelector(selectCPUHistorical) || [];
-  const isLoading = !currentMetric;
-  
+  const isLoading = useAppSelector(selectCPULoading);
+  const error = useAppSelector(selectCPUError);
+
+  console.log(' CPUMetric Component - Redux state received:');
+  console.log(' currentMetric:', currentMetric);
+  console.log(' historicalMetrics length:', historicalMetrics.length);
+  console.log(' isLoading:', isLoading);
+  console.log(' error:', error);
+
   // Local state
   const [activeTab, setActiveTab] = useState<CPUTabType>(initialTab);
-  
-  // If loading or no data available, show loading state
-  if (isLoading || !currentMetric) {
+
+  // If loading or error, show appropriate message
+  if (isLoading) {
+    console.log(' CPUMetric Component - Showing loading state');
     return (
       <div className={`metric-card ${compact ? 'compact' : ''}`} style={{ height }}>
         <h3>CPU Activity</h3>
@@ -70,13 +85,43 @@ const CPUMetric: React.FC<CPUMetricProps> = ({
       </div>
     );
   }
-  
-  // Extract CPU data from metrics
-  console.log('Current CPU metric data:', currentMetric);
-  
-  // Handle the new data structure from the backend
-  const cpuUsage = currentMetric.usage_percent || 0;
-  
+
+  // Extract CPU usage from the metric - handle multiple possible field names
+  // The backend might send data with different field names
+  const cpuUsage = 
+    currentMetric?.usage_percent || // Original field name
+    currentMetric?.cpu_usage || // Transformed field name
+    currentMetric?.overall_usage || // Another possible field name
+    currentMetric?.cpu_percent || // Another possible field name
+    (currentMetric?.cpu && currentMetric.cpu.usage_percent) || // Nested structure
+    0; // Default to 0 if no data
+
+  // Extract CPU cores data with fallbacks
+  const cpuCores = 
+    (currentMetric?.cores) || 
+    (currentMetric?.cpu && currentMetric.cpu.cores) || 
+    [];
+    
+  // Extract top processes data for logging
+  const processesForLogging = 
+    currentMetric?.top_processes || 
+    (currentMetric?.cpu && currentMetric.cpu.top_processes) || 
+    [];
+
+  // Debug logging for detailed data inspection
+  console.log('🧪 DETAILED CPU DATA INSPECTION:');
+  console.log('🧪 Current CPU metric data (full object):', currentMetric);
+  console.log('🧪 Object keys:', Object.keys(currentMetric || {}));
+  console.log('🧪 usage_percent:', currentMetric?.usage_percent);
+  console.log('🧪 cpu_usage:', currentMetric?.cpu_usage);
+  console.log('🧪 overall_usage:', currentMetric?.overall_usage);
+  console.log('🧪 cpu_percent:', currentMetric?.cpu_percent);
+  console.log('🧪 cores:', cpuCores);
+  console.log('🧪 top_processes:', processesForLogging);
+  console.log('🧪 cpu property:', currentMetric?.cpu);
+
+  console.log('🧪 Final cpuUsage value used:', cpuUsage);
+
   // Extract CPU details
   const cpuDetails: CPUDetails = {
     cores: {
@@ -96,7 +141,7 @@ const CPUMetric: React.FC<CPUMetricProps> = ({
   
   // Extract CPU processes
   const topProcesses: CPUProcess[] = Array.isArray(currentMetric.top_processes)
-    ? currentMetric.top_processes.map((p: any) => ({
+    ? currentMetric.top_processes.map((p: { name: any; pid: any; cpu_percent: any; usage_percent: any; memory_percent: any; }) => ({
         name: p.name || 'Unknown',
         pid: p.pid || 0,
         cpu_percent: p.cpu_percent || p.usage_percent || 0,
@@ -105,13 +150,13 @@ const CPUMetric: React.FC<CPUMetricProps> = ({
     : [];
   
   // Chart data
-  const chartData = historicalMetrics.map(metric => ({
+  const chartData = historicalMetrics.map((metric: any) => ({
     timestamp: metric.timestamp,
     usage: metric.cpu_usage || 0
   }));
   
   // Generate core usage data for bar chart
-  const coreData = cpuDetails.per_core_usage.map((usage, index) => ({
+  const coreData = cpuDetails.per_core_usage.map((usage: number, index: number) => ({
     name: `Core ${index + 1}`,
     usage
   }));
@@ -238,7 +283,7 @@ const CPUMetric: React.FC<CPUMetricProps> = ({
         physical_cores: cpuDetails.cores.physical,
         model_name: currentMetric.cpu_model || 'System CPU',
         frequency_mhz: cpuDetails.frequency.current,
-        cores: cpuDetails.per_core_usage.map((usage, id) => ({
+        cores: cpuDetails.per_core_usage.map((usage: number, id: number) => ({
           id,
           usage_percent: usage,
           frequency_mhz: cpuDetails.frequency.current
@@ -254,16 +299,18 @@ const CPUMetric: React.FC<CPUMetricProps> = ({
     if (dashboardMode) {
       return (
         <div className="cores-content">
-          <h3>Core Usage</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={coreData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis dataKey="name" stroke="var(--text-secondary)" />
-              <YAxis domain={[0, 100]} tickFormatter={(value: number) => `${value}%`} stroke="var(--text-secondary)" />
-              <Tooltip />
-              <Bar dataKey="usage" fill="var(--primary)" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          <h3>CPU Cores</h3>
+          <div className="cores-chart">
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={coreData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="usage" fill="#8884d8" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       );
     }
@@ -271,15 +318,17 @@ const CPUMetric: React.FC<CPUMetricProps> = ({
     // Otherwise use the component style cores tab
     return (
       <CPUCoresTab 
-        cores={cpuDetails.per_core_usage.map((usage, id) => ({
+        cores={cpuDetails.per_core_usage.map((usage: number, id: number) => ({
           id,
           usage_percent: usage
         }))}
-        physicalCores={cpuDetails.cores.physical}
+        physicalCores={cpuDetails.physical_cores || cpuDetails.per_core_usage.length}
         compact={compact}
       />
     );
   };
+  
+  // Removed unused renderCoreItem function
 
   // Render the processes tab
   const renderProcessesTab = () => {
@@ -290,7 +339,7 @@ const CPUMetric: React.FC<CPUMetricProps> = ({
           <h3>Top CPU Processes</h3>
           <div className="process-list">
             {topProcesses.length > 0 ? (
-              topProcesses.map((process, index) => (
+              topProcesses.map((process: CPUProcess, index: number) => (
                 <Card key={index} className="process-card">
                   <div className="process-name">{process.name}</div>
                   <div className="process-usage">{process.cpu_percent.toFixed(1)}%</div>

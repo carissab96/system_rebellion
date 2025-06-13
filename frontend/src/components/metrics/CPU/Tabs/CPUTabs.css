@@ -1,0 +1,568 @@
+/* CPU Tabs Styling */
+
+/* Overview Tab */
+.cpu-overview-tab {
+  padding: 1rem 0;
+}
+
+.cpu-usage-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.cpu-usage-gauge {
+  flex: 1;
+  min-width: 200px;
+  max-width: 300px;
+}
+
+.gauge {
+  width: 100%;
+  height: auto;
+}
+
+.gauge-background {
+  fill: none;
+  stroke: rgba(58, 134, 255, 0.2);
+  stroke-width: 12;
+}
+
+.gauge-value {
+  fill: none;
+  stroke-width: 12;
+  stroke-linecap: round;
+  transition: all 0.3s ease;
+}
+
+.gauge-value.low {
+  stroke: #3a86ff;
+  filter: drop-shadow(0 0 5px rgba(58, 134, 255, 0.7));
+}
+
+.gauge-value.medium {
+  stroke: #8338ec;
+  filter: drop-shadow(0 0 5px rgba(131, 56, 236, 0.7));
+}
+
+.gauge-value.high {
+  stroke: #ffbe0b;
+  filter: drop-shadow(0 0 5px rgba(255, 190, 11, 0.7));
+}
+
+.gauge-value.critical {
+  stroke: #ff006e;
+  filter: drop-shadow(0 0 5px rgba(255, 0, 110, 0.7));
+  animation: pulse 1s infinite;
+}
+
+.gauge-percentage {
+  font-size: 2rem;
+  font-weight: bold;
+  text-anchor: middle;
+  fill: #3a86ff;
+}
+
+.gauge-label {
+  font-size: 1rem;
+  text-anchor: middle;
+  fill: #555;
+}
+
+.cpu-info-panel {
+  flex: 2;
+  min-width: 250px;
+}
+
+.info-row {
+  display: flex;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 8px;
+  background: rgba(58, 134, 255, 0.05);
+  transition: all 0.3s ease;
+}
+
+.info-row:hover {
+  background: rgba(58, 134, 255, 0.1);
+}
+
+.info-label {
+  flex: 1;
+  font-weight: 600;
+  color: #555;
+}
+
+.info-value {
+  flex: 2;
+  color: #333;
+}
+
+/* Temperature classes */
+.temp-normal {
+  color: #3a86ff;
+}
+
+.temp-warm {
+  color: #8338ec;
+}
+
+.temp-hot {
+  color: #ffbe0b;
+}
+
+.temp-critical {
+  color: #ff006e;
+  animation: pulse 1s infinite;
+}
+
+/* CPU Section styling */
+.cpu-section {
+  margin-bottom: 2rem;
+  padding: 1rem;
+  border-radius: 12px;
+  background: rgba(58, 134, 255, 0.05);
+  border: 1px solid rgba(58, 134, 255, 0.2);
+}
+
+.cpu-section-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #3a86ff;
+  border-bottom: 2px solid rgba(58, 134, 255, 0.2);
+  padding-bottom: 0.5rem;
+}
+
+/* Top Processes */
+.top-processes-overview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.top-process-item {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.7);
+  transition: all 0.2s ease;
+}
+
+.top-process-item:hover {
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.process-rank {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #3a86ff;
+  color: white;
+  border-radius: 50%;
+  font-weight: bold;
+  margin-right: 1rem;
+}
+
+.process-details {
+  flex: 1;
+}
+
+.process-name {
+  font-weight: 600;
+}
+
+.process-info {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.process-usage {
+  width: 120px;
+}
+
+.usage-bar-container {
+  height: 8px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.usage-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3a86ff, #8338ec);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.usage-percentage {
+  text-align: right;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #3a86ff;
+}
+
+/* Temperature Display */
+.temperature-display {
+  margin-top: 1rem;
+}
+
+.temp-gauge {
+  height: 20px;
+  background: linear-gradient(90deg, #3a86ff, #8338ec, #ffbe0b, #ff006e);
+  border-radius: 10px;
+  position: relative;
+  margin: 0.5rem 0;
+}
+
+.temp-marker {
+  position: absolute;
+  top: -10px;
+  width: 4px;
+  height: 40px;
+  background: rgba(0, 0, 0, 0.7);
+  transform: translateX(-50%);
+}
+
+.temp-scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.temp-alert {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding: 0.5rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.temp-alert.notice {
+  background: rgba(58, 134, 255, 0.2);
+  color: #3a86ff;
+}
+
+.temp-alert.warning {
+  background: rgba(255, 190, 11, 0.2);
+  color: #ffbe0b;
+}
+
+.temp-alert.critical {
+  background: rgba(255, 0, 110, 0.2);
+  color: #ff006e;
+  animation: pulse 1s infinite;
+}
+
+.view-thermal-link {
+  margin-top: 1rem;
+  text-align: right;
+}
+
+.view-thermal-link button {
+  background: rgba(58, 134, 255, 0.1);
+  color: #3a86ff;
+  border: 1px solid rgba(58, 134, 255, 0.3);
+  border-radius: 20px;
+  padding: 0.3rem 1rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.view-thermal-link button:hover {
+  background: rgba(58, 134, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+/* Core Balance */
+.core-balance-overview {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.core-usage-bars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: space-around;
+}
+
+.core-mini-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 60px;
+}
+
+.core-mini-label {
+  font-size: 0.8rem;
+  color: #666;
+  margin-bottom: 0.3rem;
+}
+
+.core-mini-bar-container {
+  width: 20px;
+  height: 100px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 10px;
+  position: relative;
+  overflow: hidden;
+}
+
+.core-mini-bar-fill {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  border-radius: 10px;
+  transition: height 0.3s ease;
+}
+
+.core-mini-bar-fill.low {
+  background: linear-gradient(0deg, #3a86ff, rgba(58, 134, 255, 0.5));
+}
+
+.core-mini-bar-fill.medium {
+  background: linear-gradient(0deg, #8338ec, rgba(131, 56, 236, 0.5));
+}
+
+.core-mini-bar-fill.high {
+  background: linear-gradient(0deg, #ffbe0b, rgba(255, 190, 11, 0.5));
+}
+
+.core-mini-bar-fill.critical {
+  background: linear-gradient(0deg, #ff006e, rgba(255, 0, 110, 0.5));
+}
+
+.core-mini-value {
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-top: 0.3rem;
+}
+
+.core-mini-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.core-balance-analysis {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.imbalance-warning {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #ffbe0b;
+}
+
+.balance-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #3a86ff;
+}
+
+.view-cores-button {
+  margin-left: auto;
+  background: rgba(58, 134, 255, 0.1);
+  color: #3a86ff;
+  border: 1px solid rgba(58, 134, 255, 0.3);
+  border-radius: 20px;
+  padding: 0.3rem 1rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.view-cores-button:hover {
+  background: rgba(58, 134, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+/* Processes Tab */
+.cpu-processes-tab {
+  padding: 1rem 0;
+}
+
+.processes-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.processes-table th {
+  text-align: left;
+  padding: 0.75rem;
+  background: rgba(58, 134, 255, 0.1);
+  color: #3a86ff;
+  font-weight: 600;
+  border-bottom: 2px solid rgba(58, 134, 255, 0.3);
+}
+
+.processes-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.processes-table tr:hover {
+  background: rgba(58, 134, 255, 0.05);
+}
+
+.process-usage-bar {
+  height: 8px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.process-usage-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3a86ff, #8338ec);
+  border-radius: 4px;
+}
+
+/* Cores Tab */
+.cpu-cores-tab {
+  padding: 1rem 0;
+}
+
+.cores-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.core-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  border: 1px solid rgba(58, 134, 255, 0.2);
+}
+
+.core-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+}
+
+.core-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.core-title {
+  font-weight: 600;
+  color: #3a86ff;
+}
+
+.core-usage {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #333;
+}
+
+.core-usage-bar {
+  height: 10px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 5px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.core-usage-fill {
+  height: 100%;
+  border-radius: 5px;
+  transition: width 0.3s ease;
+}
+
+.core-usage-fill.low {
+  background: linear-gradient(90deg, #3a86ff, rgba(58, 134, 255, 0.5));
+}
+
+.core-usage-fill.medium {
+  background: linear-gradient(90deg, #8338ec, rgba(131, 56, 236, 0.5));
+}
+
+.core-usage-fill.high {
+  background: linear-gradient(90deg, #ffbe0b, rgba(255, 190, 11, 0.5));
+}
+
+.core-usage-fill.critical {
+  background: linear-gradient(90deg, #ff006e, rgba(255, 0, 110, 0.5));
+}
+
+.core-details {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.core-detail-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.3rem;
+}
+
+/* Thermal Tab */
+.cpu-thermal-tab {
+  padding: 1rem 0;
+}
+
+.thermal-overview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.thermal-gauge {
+  flex: 1;
+  min-width: 200px;
+  max-width: 300px;
+}
+
+.thermal-info {
+  flex: 2;
+  min-width: 250px;
+}
+
+.thermal-chart {
+  margin-top: 2rem;
+  height: 300px;
+  background: rgba(10, 1, 48, 0.8);
+  padding: 1rem;
+  border-radius: 12px;
+  border: 2px solid rgba(58, 134, 255, 0.8);
+  box-shadow: 0 0 20px rgba(58, 134, 255, 0.6);
+}
+
+/* Animation */
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}

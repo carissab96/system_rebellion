@@ -1,0 +1,121 @@
+/* MetricsCharts.css */
+
+.metrics-chart {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+/* Line and Area Chart Styling */
+.line-chart,
+.area-chart {
+  background: rgba(10, 1, 48, 0.8);
+  padding: 1rem;
+  border-radius: 12px;
+  border: 2px solid rgba(58, 134, 255, 0.8);
+  box-shadow: 0 0 20px rgba(58, 134, 255, 0.6);
+}
+
+/* Bar Chart Styling */
+.bar-chart {
+  background: rgba(10, 1, 48, 0.8);
+  padding: 1rem;
+  border-radius: 12px;
+  border: 2px solid rgba(131, 56, 236, 0.8);
+  box-shadow: 0 0 20px rgba(131, 56, 236, 0.6);
+}
+
+/* Pie Chart Styling */
+.pie-chart {
+  background: rgba(10, 1, 48, 0.8);
+  padding: 1rem;
+  border-radius: 12px;
+  border: 2px solid rgba(255, 0, 110, 0.8);
+  box-shadow: 0 0 20px rgba(255, 0, 110, 0.6);
+}
+
+/* Gauge Chart Styling */
+.gauge-chart {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.gauge-chart svg {
+  filter: drop-shadow(0 0 10px rgba(58, 134, 255, 0.3));
+}
+
+/* Sparkline Chart Styling */
+.sparkline-chart {
+  background: transparent;
+  margin: 0;
+  padding: 0;
+}
+
+/* Recharts Component Styling */
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+  stroke: rgba(131, 56, 236, 0.5);
+  stroke-width: 1px;
+}
+
+.recharts-tooltip-wrapper .recharts-default-tooltip {
+  background: rgba(10, 1, 48, 0.95) !important;
+  border: 2px solid rgba(131, 56, 236, 0.8) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 0 20px rgba(131, 56, 236, 0.6) !important;
+  color: white !important;
+  font-weight: bold !important;
+  padding: 10px !important;
+}
+
+/* Line and Area Curve Styling */
+.recharts-line-curve {
+  filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.6));
+}
+
+.recharts-area-curve {
+  filter: drop-shadow(0 0 20px rgba(131, 56, 236, 1));
+  stroke-width: 4px;
+}
+
+.recharts-area-area {
+  opacity: 1;
+}
+
+/* Bar Styling */
+.recharts-bar-rectangle {
+  filter: drop-shadow(0 0 5px rgba(131, 56, 236, 0.7));
+}
+
+/* Pie Chart Styling */
+.recharts-pie-sector {
+  filter: drop-shadow(0 0 5px rgba(255, 0, 110, 0.7));
+}
+
+/* Legend Styling */
+.recharts-legend-item-text {
+  color: #f8f9fa !important;
+}
+
+/* Additional chart enhancements */
+.recharts-surface {
+  overflow: visible;
+}
+
+.recharts-layer {
+  mix-blend-mode: normal;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .metrics-chart {
+    height: 250px !important;
+  }
+  
+  .gauge-chart {
+    height: 180px !important;
+    width: 180px !important;
+  }
+}

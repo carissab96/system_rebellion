@@ -13,7 +13,7 @@ const SystemMetrics: React.FC = () => {
   const [activeTab, setActiveTab] = useState('cpu');
   
   // Get current connection status for minimal indicator
-  const { connectionStatus } = useAppSelector(state => state.metrics);
+  const connectionStatus = useAppSelector(state => state.metrics.status);
   
   return (
     <div className="system-metrics">
