@@ -51,7 +51,7 @@ authApi.interceptors.request.use(
 
 // Create the AuthService class
 class AuthService {
-  register(username: any, email: any, password: any) {
+  register(_username: any, _email: any, _password: any) {
     throw new Error('Method not implemented.');
   }
   getCurrentUser() {

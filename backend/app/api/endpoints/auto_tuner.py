@@ -8,7 +8,7 @@ from app.api.deps import get_db, get_current_user
 from app.models.user import User
 from app.models.system import OptimizationProfile
 from app.optimization.auto_tuner import AutoTuner
-from app.services.metrics.metrics_service import MetricsService
+from app.services.metrics.simplified_metrics_service import SimplifiedMetricsService
 from app.services.system_log_service import LogService
 from app.optimization.auto_tuner_db_helpers import save_tuning_history_to_db, get_tuning_history_from_db
 

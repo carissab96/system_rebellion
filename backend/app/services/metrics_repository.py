@@ -378,7 +378,7 @@ class MetricsRepository:
             # Get live metrics
             # Get metrics from the metrics service
             from app.services.metrics.metrics_service import MetricsService
-            metrics_service = MetricsService()
+            metrics_service = await MetricsService.get_instance()
             metrics_data = await metrics_service.get_metrics(force_refresh=True)
             
             # Create metric record
