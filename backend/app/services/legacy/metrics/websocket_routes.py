@@ -1,7 +1,11 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, status
-# from app.websockets import WebSocketManager
+from app.websockets import WebSocketManager, websocket_manager
+from jose import jwt, JWTError
 from app.api.websocket_auth import authenticate_websocket
 from app.services.metrics.metrics_service import MetricsService
+from app.core.config import settings
+from app.models.user import User
+from app.core.database import get_db
 from app.services.system_metrics_service import SystemMetricsService
 from app.core.resilience import (
     WebSocketCircuitBreaker, 
@@ -30,9 +34,7 @@ from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 
-# WebSocket Manager
-websocket_manager = WebSocketManager()
-connection_manager = websocket_manager
+# WebSocket Manager is imported from app.websockets
 
 # Initialize resilience components
 metrics_circuit_breaker = get_circuit_breaker(
@@ -180,6 +182,32 @@ def transform_metrics_for_frontend(metrics: Dict[str, Any]) -> Dict[str, Any]:
     
     return transformed
 
+async def get_system_info() -> Dict[str, Any]:
+    """
+    Get basic system information for the client
+    """
+    try:
+        system_info = {
+            "hostname": socket.gethostname(),
+            "platform": platform.system(),
+            "platform_release": platform.release(),
+            "platform_version": platform.version(),
+            "architecture": platform.machine(),
+            "processor": platform.processor(),
+            "cpu_cores": psutil.cpu_count(logical=False),
+            "cpu_threads": psutil.cpu_count(logical=True),
+            "memory_total": psutil.virtual_memory().total,
+            "boot_time": datetime.fromtimestamp(psutil.boot_time()).isoformat(),
+            "python_version": platform.python_version()
+        }
+        return system_info
+    except Exception as e:
+        logger.error(f"Error getting system info: {str(e)}")
+        return {
+            "error": True,
+            "message": "Failed to retrieve system information"
+        }
+
 router = APIRouter()
 
 @router.websocket("/ws/system-metrics")
@@ -232,7 +260,7 @@ async def system_metrics_socket(websocket: WebSocket):
                 await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
                 return
             
-            # Extract and validate token
+            # Extract token from auth message
             token = auth_message.get("token", "")
             if not token:
                 logger.error(f"❌ No token provided in auth message from {client_id}")
@@ -247,30 +275,20 @@ async def system_metrics_socket(websocket: WebSocket):
             # Remove Bearer prefix if present
             token = token.replace("Bearer ", "").strip()
             
+            # Store token in query params for authenticate_websocket function
+            websocket.query_params = {"token": token}
+            
             try:
-                # Validate JWT token
-                payload = jwt.decode(
-                    token,
-                    settings.SECRET_KEY,
-                    algorithms=[settings.ALGORITHM]
-                )
-                username: str = payload.get("sub")
-                if username is None:
-                    raise JWTError("No username in token")
+                # Use the authenticate_websocket function instead of duplicating JWT validation logic
+                user = await authenticate_websocket(websocket)
                 
-                # Get database session and fetch user
-                db = next(get_db())
-                user = User.get_current_user(db, username)
-                
-                if user is None:
-                    logger.error(f"❌ User not found: {username}")
-                    await websocket.send_json({
-                        "type": "auth_failed",
-                        "message": "User not found",
-                        "code": "user_not_found"
-                    })
-                    await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+                if not user:
+                    # authenticate_websocket already sent error and closed connection
+                    metrics_circuit_breaker.record_failure()
                     return
+                
+                # Get database for later use
+                db = next(get_db())
                 
                 authenticated = True
                 logger.info(f"✅ WebSocket authenticated for user {user.username} ({client_id})")
@@ -283,12 +301,12 @@ async def system_metrics_socket(websocket: WebSocket):
                     "system_info": await get_system_info()
                 })
                 
-            except JWTError as e:
-                logger.error(f"❌ JWT validation error for {client_id}: {str(e)}")
+            except Exception as e:
+                logger.error(f"❌ Authentication error for {client_id}: {str(e)}")
                 await websocket.send_json({
                     "type": "auth_failed",
-                    "message": "Invalid or expired token",
-                    "code": "invalid_token"
+                    "message": "Authentication failed",
+                    "code": "auth_error"
                 })
                 await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
                 metrics_circuit_breaker.record_failure()
@@ -339,16 +357,29 @@ async def system_metrics_socket(websocket: WebSocket):
                     # Get metrics from the metrics service with circuit breaker protection
                     try:
                         logger.info(f"📡 Fetching metrics from metrics service for client {client_id}")
-                        metrics_service = MetricsService()
+                        metrics_service = await MetricsService.get_instance()
+                        logger.debug(f"Got metrics_service instance: {metrics_service}")
                         
                         # Execute the metrics retrieval with circuit breaker
+                        logger.debug(f"Executing metrics_service.get_metrics with circuit breaker")
                         system_metrics = await metrics_circuit_breaker.execute(
                             metrics_service.get_metrics
                         )
+                        logger.debug(f"Received system_metrics: {system_metrics is not None}")
+                        if system_metrics is None:
+                            logger.error("system_metrics is None! This will cause the transformer to fail")
+                        elif not isinstance(system_metrics, dict):
+                            logger.error(f"system_metrics is not a dict! Type: {type(system_metrics)}")
                         
                         # Transform metrics using our NumPy-powered transformer
                         logger.info(f"🔄 Transforming metrics for client {client_id}")
-                        transformed_metrics = metric_transformer.transform_system_metrics(system_metrics)
+                        logger.debug(f"Metric transformer: {metric_transformer}")
+                        try:
+                            transformed_metrics = metric_transformer.transform_system_metrics(system_metrics)
+                            logger.debug(f"Transformed metrics successfully: {transformed_metrics is not None}")
+                        except Exception as transform_error:
+                            logger.error(f"Error transforming metrics: {str(transform_error)}", exc_info=True)
+                            raise
                         
                         # Add to backpressure handler
                         metrics_backpressure.add_item({
@@ -381,6 +412,13 @@ async def system_metrics_socket(websocket: WebSocket):
                         continue                  
                     # Send metrics update
                     try:
+                        # Create message with transformed metrics
+                        message = {
+                            "type": "metrics_update",
+                            "timestamp": datetime.now().isoformat(),
+                            "data": transformed_metrics
+                        }
+                        logger.debug(f"Sending metrics message: {message['type']} with data keys: {list(transformed_metrics.keys()) if transformed_metrics else 'None'}")
                         await websocket.send_json(message)
                         logger.debug(f"✅ Successfully sent metrics update to client {client_id}")
                     except Exception as send_error:

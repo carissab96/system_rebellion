@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Dict, Optional, Any, Tuple
 from app.optimization.system_permissions import check_required_permissions, get_permission_summary
-from app.services.system_metrics_service import SystemMetricsService
+from app.services.metrics.simplified_metrics_service import SimplifiedMetricsService
 from app.models.tuning_history import TuningHistory
 from app.core.database import SessionLocal
 
@@ -88,10 +88,10 @@ class AutoTuner:
     async def get_current_metrics(self) -> Dict:
         """Get current system metrics from the centralized metrics service"""
         try:
-            # Use the SystemMetricsService which now uses ResourceMonitor
-            metrics_service = await SystemMetricsService.get_instance()
+            # Use the SimplifiedMetricsService which now uses ResourceMonitor
+            metrics_service = await SimplifiedMetricsService.get_instance()
             metrics = await metrics_service.get_metrics()
-            self.logger.info(f"Retrieved metrics successfully from SystemMetricsService")
+            self.logger.info(f"Retrieved metrics successfully from SimplifiedMetricsService")
             return metrics
         except Exception as e:
             self.logger.error(f"Error getting system metrics: {str(e)}")
@@ -140,7 +140,7 @@ class AutoTuner:
                 }
                 
             # Get metrics before applying the change
-            metrics_service = await SystemMetricsService.get_metrics()
+            metrics_service = await SimplifiedMetricsService.get_instance()
             metrics_before = await metrics_service.get_metrics()
             tuning_data['metrics_before'] = metrics_before
             
@@ -346,7 +346,7 @@ class AutoTuner:
                 ))
 
             # I/O Scheduler Recommendations
-            if metrics_service['disk_usage'] > 70:
+            if metrics.get('disk_usage', 0) > 70:
                 recommendations.append(TuningAction(
                     parameter=TuningParameter.IO_SCHEDULER,
                     current_value='cfq',

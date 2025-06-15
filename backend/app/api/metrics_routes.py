@@ -12,7 +12,7 @@ from app.core.database import get_db
 from app.core.security import get_current_user
 from app.schemas.metrics import MetricCreate, MetricResponse, MetricUpdate
 from app.services.metrics_repository import MetricsRepository
-from app.services.system_metrics_service import SystemMetricsService
+from app.services.metrics.simplified_metrics_service import SimplifiedMetricsService
 
 router = APIRouter(tags=["metrics"])
 

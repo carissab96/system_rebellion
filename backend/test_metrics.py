@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from app.services.system_metrics_service import SystemMetricsService
+from app.services.metrics.simplified_metrics_service import SimplifiedMetricsService
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 async def test_metrics():
     try:
         logger.info("Getting metrics service instance...")
-        metrics_service = await SystemMetricsService.get_instance()
+        metrics_service = await SimplifiedMetricsService.get_instance()
         
         logger.info("Fetching metrics...")
         metrics = await metrics_service.get_metrics(force_refresh=True)
@@ -16,9 +16,9 @@ async def test_metrics():
         logger.info("Metrics received:")
         print(metrics)
         
-        # Test detailed CPU metrics
-        logger.info("Fetching detailed CPU metrics...")
-        cpu_metrics = await metrics_service._get_detailed_cpu_metrics()
+        # Test individual metrics
+        logger.info("Fetching CPU metrics...")
+        cpu_metrics = await metrics_service.get_cpu_metrics()
         logger.info("CPU metrics received:")
         print(cpu_metrics)
         

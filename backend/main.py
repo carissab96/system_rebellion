@@ -16,7 +16,7 @@ from app.api import router as api_router
 from app.api import router as metrics_router
 from app.api import router as debug_router
 # Import websocket routes
-from app.api import websocket_routes
+from app.api import simplified_websocket_routes
 from datetime import datetime
 import uvicorn
 import logging
@@ -147,9 +147,9 @@ def create_application() -> FastAPI:
         tags=["Authentication"]
     )   
     # Include websocket routes if they exist
-    if hasattr(websocket_routes, 'router'):
+    if hasattr(simplified_websocket_routes, 'router'):
         app.include_router(
-            websocket_routes.router,
+            simplified_websocket_routes.router,
             tags=["WebSockets"]
         )
     # Add other routers...

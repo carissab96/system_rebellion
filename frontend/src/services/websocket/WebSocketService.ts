@@ -522,4 +522,4 @@ export const initWebSocket = (_dispatch: unknown): WebSocketService => {
 export const getWebSocketInstance = (): WebSocketService | null => {
   return wsInstance;
 };
-        //
+        
