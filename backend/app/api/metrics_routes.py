@@ -16,162 +16,42 @@ from app.services.metrics.simplified_metrics_service import SimplifiedMetricsSer
 
 router = APIRouter(tags=["metrics"])
 
-@router.get("/system", response_model=dict)
-async def get_metrics(db: AsyncSession = Depends(get_db)):
+@router.get("/system", response_model=Dict[str, Any])
+async def get_metrics(db: AsyncSession = Depends(get_db)) -> Dict[str, Any]:
     """
-    Public endpoint for system metrics that doesn't require authentication
+    Get real-time system metrics using direct psutil implementation.
+    No fallbacks, no sample data, pure metrics from the actual system.
     """
-    try:
-        # Direct psutil implementation for all metrics
-        # Get basic system metrics
-        cpu_percent = psutil.cpu_percent(interval=0.1)
-        memory = psutil.virtual_memory()
-        disk = psutil.disk_usage('/')
-        net_io = psutil.net_io_counters()
-        swap = psutil.swap_memory()
-        
-        # Get CPU details
-        cpu_freq = psutil.cpu_freq()
-        cpu_count_logical = psutil.cpu_count()
-        cpu_count_physical = psutil.cpu_count(logical=False)
-        
-        # Get per-core CPU usage
-        per_cpu = psutil.cpu_percent(interval=0.1, percpu=True)
-        cpu_cores = [{'id': i, 'usage': usage} for i, usage in enumerate(per_cpu)]
-        
-        # Get top CPU and memory processes
-        top_processes = []
-        for proc in sorted(psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_percent']), 
-                          key=lambda p: p.info['cpu_percent'] or 0, reverse=True)[:5]:
-            try:
-                top_processes.append({
-                    'pid': proc.info['pid'],
-                    'name': proc.info['name'],
-                    'cpu_percent': proc.info['cpu_percent'] or 0,
-                    'memory_percent': proc.info['memory_percent'] or 0
-                })
-            except (psutil.NoSuchProcess, psutil.AccessDenied):
-                pass
-        
-        # Get disk partitions
-        partitions = []
-        for part in psutil.disk_partitions():
-            try:
-                usage = psutil.disk_usage(part.mountpoint)
-                partitions.append({
-                    'device': part.device,
-                    'mountpoint': part.mountpoint,
-                    'fstype': part.fstype,
-                    'total': usage.total,
-                    'used': usage.used,
-                    'free': usage.free,
-                    'percent': usage.percent
-                })
-            except (PermissionError, OSError):
-                continue
-        
-        # Get network interfaces
-        interfaces = []
-        for name, stats in psutil.net_if_stats().items():
-            try:
-                addrs = psutil.net_if_addrs().get(name, [])
-                address = next((addr.address for addr in addrs if addr.family == socket.AF_INET), None)
-                interfaces.append({
-                    'name': name,
-                    'address': address,
-                    'isup': stats.isup,
-                    'speed': stats.speed,
-                    'mtu': stats.mtu
-                })
-            except (KeyError, StopIteration):
-                continue
-        
-        # Format the response with directly collected metrics
-        return {
-            "cpu_usage": cpu_percent,
-            "memory_usage": memory.percent,
-            "disk_usage": disk.percent,
-            "network_io": {
-                "sent": net_io.bytes_sent,
-                "recv": net_io.bytes_recv,
-                "sent_rate": 0,  # We don't have rate data without historical values
-                "recv_rate": 0   # We don't have rate data without historical values
-            },
-            "process_count": len(psutil.pids()),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "details": {
-                "cpu": {
-                    "percent": cpu_percent,
-                    "cores": cpu_cores,
-                    "temperature": None,  # Would need platform-specific code
-                    "frequency": cpu_freq.current if cpu_freq else None,
-                    "core_count": cpu_count_physical,
-                    "thread_count": cpu_count_logical,
-                    "top_processes": top_processes,
-                    "model": "CPU",  # Would need platform-specific code
-                    "vendor": "Vendor"  # Would need platform-specific code
-                },
-                "memory": {
-                    "percent": memory.percent,
-                    "total": memory.total,
-                    "available": memory.available,
-                    "used": memory.used,
-                    "free": memory.free,
-                    "buffer": getattr(memory, 'buffers', 0),
-                    "cache": getattr(memory, 'cached', 0),
-                    "swap_percent": swap.percent,
-                    "swap_total": swap.total,
-                    "swap_used": swap.used,
-                    "swap_free": swap.free,
-                    "top_processes": top_processes
-                },
-                "disk": {
-                    "percent": disk.percent,
-                    "total": disk.total,
-                    "used": disk.used,
-                    "free": disk.free,
-                    "available": disk.free,  # Same as free for compatibility
-                    "partitions": partitions,
-                    "read_rate": 0,  # Would need historical data
-                    "write_rate": 0   # Would need historical data
-                },
-                "network": {
-                    "bytes_sent": net_io.bytes_sent,
-                    "bytes_recv": net_io.bytes_recv,
-                    "packets_sent": net_io.packets_sent,
-                    "packets_recv": net_io.packets_recv,
-                    "interfaces": interfaces,
-                    "rate_mbps": 0,  # Would need historical data
-                    "connection_quality": {
-                        "average_latency": 0,
-                        "packet_loss_percent": 0,
-                        "connection_stability": 0,
-                        "jitter": 0,
-                        "gateway_latency": 0,
-                        "dns_latency": 0,
-                        "internet_latency": 0
-                    }
-                }
-            }
+    metrics = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "hostname": socket.gethostname(),
+        "cpu": {
+            "percent": psutil.cpu_percent(interval=0.1),
+            "cores": psutil.cpu_count(logical=True),
+            "physical_cores": psutil.cpu_count(logical=False),
+            "frequency": psutil.cpu_freq().current if psutil.cpu_freq() else None,
+            "per_core": psutil.cpu_percent(interval=0.1, percpu=True)
+        },
+        "memory": {
+            "total": psutil.virtual_memory().total,
+            "available": psutil.virtual_memory().available,
+            "used": psutil.virtual_memory().used,
+            "percent": psutil.virtual_memory().percent
+        },
+        "disk": {
+            "total": psutil.disk_usage('/').total,
+            "used": psutil.disk_usage('/').used,
+            "free": psutil.disk_usage('/').free,
+            "percent": psutil.disk_usage('/').percent
+        },
+        "network": {
+            "bytes_sent": psutil.net_io_counters().bytes_sent,
+            "bytes_recv": psutil.net_io_counters().bytes_recv,
+            "packets_sent": psutil.net_io_counters().packets_sent,
+            "packets_recv": psutil.net_io_counters().packets_recv
         }
-    except Exception as e:
-        # Log the error and return a minimal response
-        print(f"Error getting system metrics: {str(e)}")
-        return {
-            "cpu_usage": 0,
-            "memory_usage": 0,
-            "disk_usage": 0,
-            "network_io": {"sent": 0, "recv": 0},
-            "process_count": 0,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "error": str(e),
-            "details": {
-                "cpu": {"percent": 0, "cores": [], "temperature": None, "frequency": None},
-                "memory": {"percent": 0, "total": 0, "available": 0, "used": 0, "free": 0},
-                "disk": {"percent": 0, "total": 0, "used": 0, "free": 0, "available": 0},
-                "network": {"bytes_sent": 0, "bytes_recv": 0, "packets_sent": 0, "packets_recv": 0}
-            }
-        }
+    }
+# return metrics;
 
 @router.post("/", response_model=MetricResponse)
 async def create_metric(
@@ -182,14 +62,65 @@ async def create_metric(
     """
     Sir Hawkington's Metric Creation Endpoint
     """
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    
     try:
-        # Set the user ID from the current user
+        # Prepare metric data with user ID
         metric_data = metric.model_dump()
         metric_data["user_id"] = current_user["id"]
+        
+        # Create metric using repository pattern
         metrics_repo = MetricsRepository()
-        return await metrics_repo.create_metric(db, metric_data)
+        result = await metrics_repo.create_metric(db, metric_data)
+        
+        # Ensure creation was successful
+        if not result:
+            raise HTTPException(status_code=500, detail="Failed to create metric")
+            
+        return result
+    except ValueError as ve:
+        # Handle validation errors
+        raise HTTPException(status_code=422, detail=str(ve))
     except Exception as e:
+        # Handle other errors
+        await db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
+    
+@router.post("/", response_model=MetricResponse)
+async def create_metric(
+    metric: MetricCreate,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Sir Hawkington's Metric endpoint for creating new metrics
+    
+    Creates a new system metric record associated with the current user.
+    """
+    if not current_user:
+        # Ensure user is authenticated before proceeding
+        raise HTTPException(status_code=401, detail="Authentication required")
+    
+    try:
+        # Convert Pydantic model to dict and add user ID from authenticated user
+        metric_data = MetricCreate(**metric.model_dump(), user_id=current_user["id"])
+            
+        # Use repository pattern to handle database operations
+        metrics_repo = MetricsRepository()
+        result = await metrics_repo.create_metric(db, metric_data)
+        
+        # Return the created metric with status code 201 (Created)
+        return result
+    except ValueError as ve:
+        # Handle validation errors with appropriate status code
+        raise HTTPException(status_code=422, detail=str(ve))
+    except Exception as e:
+        # Ensure transaction is rolled back on error
+        await db.rollback()
+        # Log the error for debugging
+        logger.error(f"Error creating metric: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to create metric")
 
 @router.get("/", response_model=list[MetricResponse])
 async def read_user_metrics(
@@ -200,11 +131,27 @@ async def read_user_metrics(
 ):
     """
     The Meth Snail's Metric Retrieval Endpoint
+    
+    Retrieves a paginated list of metrics for the current user.
+    Parameters:
+    - skip: Number of records to skip (pagination offset)
+    - limit: Maximum number of records to return
     """
-    metrics_repo = MetricsRepository()
-    return await metrics_repo.get_user_metrics(
-        db, current_user['id'], skip, limit
-    )
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+        
+    try:
+        # Initialize repository and fetch metrics for current user
+        metrics_repo = MetricsRepository()
+        metrics = await metrics_repo.get_user_metrics(
+            db, uuid.UUID(current_user['id']), skip, limit
+        )
+        
+        # Return empty list instead of None if no metrics found
+        return metrics or []
+    except Exception as e:
+        logger.error(f"Error retrieving metrics: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve metrics")
 
 @router.get("/{metric_id}", response_model=MetricResponse)
 async def read_metric(
@@ -214,17 +161,33 @@ async def read_metric(
 ):
     """
     Quantum Precision Metric Lookup
-    """
-    metrics_repo = MetricsRepository()
-    metric = await metrics_repo.get_metric_by_id(db, metric_id)
-    if not metric:
-        raise HTTPException(status_code=404, detail="Metric not found")
     
-    # Verify the current user owns this metric
-    if str(metric.user_id) != current_user["id"]:
-        raise HTTPException(status_code=403, detail="Not authorized to access this metric")
+    Retrieves a specific metric by ID, with authorization check.
+    """
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Authentication required")
         
-    return metric
+    try:
+        # Fetch the requested metric
+        metrics_repo = MetricsRepository()
+        metric = await metrics_repo.get_metric_by_id(db, metric_id)
+        
+        # Check if metric exists
+        if not metric:
+            raise HTTPException(status_code=404, detail="Metric not found")
+        
+        # Security check: verify the current user owns this metric
+        if str(metric.user_id) != current_user["id"]:
+            logger.warning(f"Unauthorized access attempt to metric {metric_id} by user {current_user['id']}")
+            raise HTTPException(status_code=403, detail="Not authorized to access this metric")
+            
+        return metric
+    except HTTPException:
+        # Re-raise HTTP exceptions without modification
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving metric {metric_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve metric")
 
 @router.put("/{metric_id}", response_model=MetricResponse)
 async def update_metric(
@@ -235,19 +198,41 @@ async def update_metric(
 ):
     """
     Sir Hawkington's Metric Update Endpoint
+    
+    Updates an existing metric after performing authorization checks.
     """
-    metrics_repo = MetricsRepository()
-    db_metric = await metrics_repo.get_metric_by_id(db, metric_id)
-    if not db_metric:
-        raise HTTPException(status_code=404, detail="Metric not found")
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Authentication required")
         
-    # Verify the current user owns this metric
-    if str(db_metric.user_id) != current_user["id"]:
-        raise HTTPException(status_code=403, detail="Not authorized to update this metric")
+    try:
+        metrics_repo = MetricsRepository()
         
-    return await metrics_repo.update_metric(db, metric_id, metric)
+        # First check if metric exists and user has permission
+        db_metric = await metrics_repo.get_metric_by_id(db, metric_id)
+        if not db_metric:
+            raise HTTPException(status_code=404, detail="Metric not found")
+            
+        # Security check: verify the current user owns this metric
+        if str(db_metric.user_id) != current_user["id"]:
+            logger.warning(f"Unauthorized update attempt to metric {metric_id} by user {current_user['id']}")
+            raise HTTPException(status_code=403, detail="Not authorized to update this metric")
+        
+        # Perform the update operation
+        updated_metric = await metrics_repo.update_metric(db, metric_id, metric)
+        if not updated_metric:
+            raise HTTPException(status_code=500, detail="Failed to update metric")
+            
+        return updated_metric
+    except HTTPException:
+        # Re-raise HTTP exceptions without modification
+        raise
+    except Exception as e:
+        # Ensure transaction is rolled back on error
+        await db.rollback()
+        logger.error(f"Error updating metric {metric_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to update metric")
 
-@router.delete("/{metric_id}")
+@router.delete("/{metric_id}", status_code=204)
 async def delete_metric(
     metric_id: uuid.UUID,
     current_user: dict = Depends(get_current_user),
@@ -255,17 +240,38 @@ async def delete_metric(
 ):
     """
     The Meth Snail's Metric Deletion Endpoint
+    
+    Deletes a specific metric after performing authorization checks.
+    Returns 204 No Content on success.
     """
-    metrics_repo = MetricsRepository()
-    db_metric = await metrics_repo.get_metric_by_id(db, metric_id)
-    if not db_metric:
-        raise HTTPException(status_code=404, detail="Metric not found")
-    
-    # Verify the current user owns this metric
-    if str(db_metric.user_id) != current_user["id"]:
-        raise HTTPException(status_code=403, detail="Not authorized to delete this metric")
-    
-    deleted = await metrics_repo.delete_metric(db, metric_id)
-    if not deleted:
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+        
+    try:
+        metrics_repo = MetricsRepository()
+        
+        # First check if metric exists and user has permission
+        db_metric = await metrics_repo.get_metric_by_id(db, metric_id)
+        if not db_metric:
+            raise HTTPException(status_code=404, detail="Metric not found")
+        
+        # Security check: verify the current user owns this metric
+        if str(db_metric.user_id) != current_user["id"]:
+            logger.warning(f"Unauthorized deletion attempt of metric {metric_id} by user {current_user['id']}")
+            raise HTTPException(status_code=403, detail="Not authorized to delete this metric")
+        
+        # Perform the deletion
+        deleted = await metrics_repo.delete_metric(db, metric_id)
+        if not deleted:
+            raise HTTPException(status_code=500, detail="Failed to delete metric")
+            
+        # Return no content on successful deletion
+        return None
+    except HTTPException:
+        # Re-raise HTTP exceptions without modification
+        raise
+    except Exception as e:
+        # Ensure transaction is rolled back on error
+        await db.rollback()
+        logger.error(f"Error deleting metric {metric_id}: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to delete metric")
-    return {"ok": True}

@@ -189,9 +189,7 @@ export class WebSocketService {
   // Get the WebSocket URL (NO TOKEN!)
   private getWebSocketUrl(): string {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = process.env.NODE_ENV === 'development' 
-      ? 'localhost:8000' 
-      : window.location.host;
+    const host = window.location.host; // Use current host to leverage Vite proxy
     
     return `${protocol}//${host}/ws/system-metrics`;
   }

@@ -40,6 +40,39 @@ export const useMetricsWebSocket = () => {
     console.log('🔄 [useMetricsWebSocket] Message data:', JSON.stringify(message.data, null, 2));
     
     switch (message.type) {
+      case 'metrics_update':
+        // Backend sends all metrics in one message
+        console.log('📊 [useMetricsWebSocket] Processing metrics_update');
+        
+        if (message.data?.cpu) {
+          console.log('🚀 [useMetricsWebSocket] Dispatching CPU metrics:', message.data.cpu);
+          dispatch(updateCPUMetrics(message.data.cpu));
+          dispatch(setCPULoading(false));
+          dispatch(setCPUError(null));
+        }
+        
+        if (message.data?.memory) {
+          console.log('🚀 [useMetricsWebSocket] Dispatching Memory metrics:', message.data.memory);
+          dispatch(updateMemoryMetrics(message.data.memory));
+          dispatch(setMemoryLoading(false));
+          dispatch(setMemoryError(null));
+        }
+        
+        if (message.data?.disk) {
+          console.log('🚀 [useMetricsWebSocket] Dispatching Disk metrics:', message.data.disk);
+          dispatch(updateDiskMetrics(message.data.disk));
+          dispatch(setDiskLoading(false));
+          dispatch(setDiskError(null));
+        }
+        
+        if (message.data?.network) {
+          console.log('🚀 [useMetricsWebSocket] Dispatching Network metrics:', message.data.network);
+          dispatch(updateNetworkMetrics(message.data.network));
+          dispatch(setNetworkLoading(false));
+          dispatch(setNetworkError(null));
+        }
+        break;
+        
       case 'cpu_metrics':
         console.log('🚀 [useMetricsWebSocket] Dispatching updateCPUMetrics');
         dispatch(updateCPUMetrics(message.data));
@@ -118,7 +151,12 @@ export const useMetricsWebSocket = () => {
             
             console.log('🎯 [useMetricsWebSocket] Attempting to connect WebSocket...');
             // Connect the WebSocket
-            wsRef.current.connect();
+            try {
+              wsRef.current.connect();
+            } catch (error) {
+              console.warn('⚠️ [useMetricsWebSocket] Initial connection failed:', error);
+              // Don't throw - the circuit breaker might be open
+            }
           } else {
             console.error('🚨 [useMetricsWebSocket] Failed to create WebSocket service');
           }
@@ -127,7 +165,12 @@ export const useMetricsWebSocket = () => {
           // If WebSocket already exists, ensure it's connected
           if (wsRef.current.getConnectionState() !== 'connected') {
             console.log('🎯 [useMetricsWebSocket] WebSocket not connected, attempting to connect...');
-            wsRef.current.connect();
+            try {
+              wsRef.current.connect();
+            } catch (error) {
+              console.warn('⚠️ [useMetricsWebSocket] Reconnection failed:', error);
+              // Don't throw - the circuit breaker might be open
+            }
           } else {
             console.log('🎯 [useMetricsWebSocket] WebSocket already connected');
           }
@@ -151,7 +194,12 @@ export const useMetricsWebSocket = () => {
   return {
     reconnect: () => {
       console.log('🔄 [useMetricsWebSocket] Reconnecting WebSocket...');
-      wsRef.current?.connect();
+      try {
+        wsRef.current?.connect();
+      } catch (error) {
+        console.error('❌ [useMetricsWebSocket] Reconnect failed:', error);
+        throw error; // Re-throw so the UI can handle it
+      }
     },
     disconnect: () => {
       console.log('🔌 [useMetricsWebSocket] Disconnecting WebSocket...');
