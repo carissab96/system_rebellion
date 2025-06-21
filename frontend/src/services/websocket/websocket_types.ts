@@ -3,7 +3,7 @@
 export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
 
 export interface WebSocketMessage {
-  type: 'cpu_metrics' | 'memory_metrics' | 'disk_metrics' | 'network_metrics' | 'error' | 'connection_established';
+  type: 'cpu_metrics' | 'memory_metrics' | 'disk_metrics' | 'network_metrics' | 'error' | 'connection_established' | 'metrics_update';
   data?: any;
   timestamp?: string;
   message?: string;
