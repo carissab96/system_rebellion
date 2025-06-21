@@ -320,7 +320,7 @@ export const UsageGauge: React.FC<UsageChartProps> = ({
           fontWeight="bold"
           fill="#f8f9fa"
         >
-          {usagePercent.toFixed(1)}%
+          {(usagePercent || 0).toFixed(1)}%
         </text>
         
         {/* Label text */}
@@ -447,7 +447,7 @@ export const MetricsPieChart: React.FC<PieChartProps> = ({
             fill="#8884d8"
             dataKey={dataKey}
             nameKey={nameKey}
-            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+            label={({ name, percent }) => `${name}: ${((percent || 0) * 100).toFixed(0)}%`}
           >
             {data.map((_, index) => (
               <Cell key={`cell-${index}`} fill={chartColors[index % chartColors.length]} />

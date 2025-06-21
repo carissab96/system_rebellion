@@ -13,6 +13,7 @@ import DiskMetric from '../../../components/metrics/disk/DiskMetric';
 import NetworkMetric from '../../../components/metrics/Network/NetworkMetric';
 import SystemAlertsPanel from '../SystemAlertsPanel/SystemAlertsPanel';
 import SystemPatternsPanel from '../SystemPatternsPanel/SystemPatternsPanel';
+import WebSocketTest from '../../WebSocketTest';
 
 interface DashboardProps {}
 
@@ -225,6 +226,7 @@ export const DashboardNew: React.FC<DashboardProps> = () => {
         </div>
         <SystemPatternsPanel maxPatterns={5} />
       </div>
+      <WebSocketTest />
     </div>
   );
 };

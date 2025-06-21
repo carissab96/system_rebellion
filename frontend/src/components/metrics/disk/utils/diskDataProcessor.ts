@@ -175,7 +175,7 @@ const processDirectoryData = (rawData: RawDiskMetrics): ProcessedDiskData['direc
 const createDirectoryTreemap = (directories: RawDiskMetrics['directories']) => {
   // Find root directory
   const rootDirectory = directories.find((dir: { path: string; }) => 
-    !directories.some((parent: { path: string; }) => dir.path.startsWith(parent.path + '/') && parent.path !== dir.path)
+    !directories.some((parent: { path: string; }) => (dir.path || '').startsWith((parent.path || '') + '/') && parent.path !== dir.path)
   );
   
   if (!rootDirectory) {
@@ -195,13 +195,13 @@ const buildTreemapNode = (
 ) => {
   // Find direct children
   const children = allDirectories.filter((dir: { path: string; }) => 
-    dir.path.startsWith(directory.path + '/') &&
-    dir.path.split('/').length === directory.path.split('/').length + 1
+    (dir.path || '').startsWith((directory.path || '') + '/') &&
+    (dir.path || '').split('/').length === (directory.path || '').split('/').length + 1
   );
   
   // Create node
   const node: any = {
-    name: directory.path.split('/').pop() || directory.path,
+    name: (directory.path || '').split('/').pop() || directory.path,
     path: directory.path,
     value: directory.size
   };

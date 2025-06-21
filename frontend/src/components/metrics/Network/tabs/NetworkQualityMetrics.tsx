@@ -16,7 +16,7 @@ const NetworkQualityMetrics: React.FC<NetworkQualityMetricsProps> = ({ data }) =
       <div className="network-section-title">Connection Quality Score</div>
       <div className="connection-quality">
         <div className="quality-score">
-          {data.connection_stability.toFixed(0)}/100
+          {(data.connection_stability || 0).toFixed(0)}/100
         </div>
         <div className="quality-meter">
           <div 
@@ -57,7 +57,7 @@ const NetworkQualityMetrics: React.FC<NetworkQualityMetricsProps> = ({ data }) =
         </div>
         <div className="quality-detail">
           <div className="detail-label">Packet Loss:</div>
-          <div className="detail-value">{data.packet_loss_percent.toFixed(1)}%</div>
+          <div className="detail-value">{(data.packet_loss_percent || 0).toFixed(1)}%</div>
         </div>
         <div className="quality-detail">
           <div className="detail-label">Jitter:</div>

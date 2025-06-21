@@ -7,7 +7,7 @@
  * @returns Formatted temperature string
  */
 export function formatTemperature(value: number, unit: 'C' | 'F' = 'C'): string {
-    return `${value.toFixed(1)}°${unit}`;
+    return `${(value || 0).toFixed(1)}°${unit}`;
   }
   
   /**

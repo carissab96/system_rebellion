@@ -55,7 +55,7 @@ const NetworkProtocolChart: React.FC<NetworkProtocolChartProps> = ({ data, stats
                 outerRadius={compact ? 70 : 90}
                 fill="#8884d8"
                 dataKey="value"
-                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                label={({ name, percent }) => `${name}: ${((percent || 0) * 100).toFixed(0)}%`}
               >
                 {chartData.map((entry, index) => (
                   <Cell 

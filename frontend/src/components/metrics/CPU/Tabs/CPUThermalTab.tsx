@@ -149,7 +149,7 @@ const CPUThermalTab: React.FC<CPUThermalTabProps> = ({
                     if (name === 'usage_percent') return [`${value}%`, 'CPU Usage'];
                     return [value, name];
                   }}
-                  labelFormatter={(label) => new Date(label).toLocaleString()}
+                  labelFormatter={(label) => new Date(label || 0).toLocaleString()}
                   contentStyle={{ background: 'rgba(0, 0, 0, 0.8)', border: 'none', borderRadius: '8px' }}
                   itemStyle={{ color: 'white' }}
                   labelStyle={{ color: 'white' }}
@@ -319,7 +319,7 @@ function analyzeTemperatureUsageCorrelation(
     insights.push(
       <p key="throttle" className="warning-text">
         <strong>Throttling risk detected:</strong> CPU reached throttling temperatures during 
-        approximately {percentTime.toFixed(1)}% of the monitored period. Performance may be affected.
+        approximately {(percentTime || 0).toFixed(1)}% of the monitored period. Performance may be affected.
       </p>
     );
   }

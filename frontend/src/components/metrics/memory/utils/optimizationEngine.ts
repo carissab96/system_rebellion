@@ -38,7 +38,7 @@ export const generateOptimizationRecommendations = (
       id: 'high-memory-usage',
       title: 'High Memory Usage Detected',
       description: 
-        `Your system is using ${physicalMemoryUsagePercent.toFixed(1)}% of available physical memory. ` +
+        `Your system is using ${(physicalMemoryUsagePercent || 0).toFixed(1)}% of available physical memory. ` +
         `This may lead to performance degradation and increased swap usage. Consider closing unused applications ` +
         `or upgrading system memory.`,
       impact: 'high',
@@ -53,7 +53,7 @@ export const generateOptimizationRecommendations = (
       id: 'high-swap-usage',
       title: 'Excessive Swap Usage',
       description: 
-        `Your system is using ${swapUsagePercent.toFixed(1)}% of available swap space. ` +
+        `Your system is using ${(swapUsagePercent || 0).toFixed(1)}% of available swap space. ` +
         `Heavy swap usage significantly slows down system performance as disk access is much slower than RAM. ` +
         `Consider closing memory-intensive applications or adding more physical memory.`,
       impact: 'high',
@@ -71,7 +71,7 @@ export const generateOptimizationRecommendations = (
         id: `memory-hog-${process.pid}`,
         title: `High Memory Usage: ${process.name}`,
         description: 
-          `Process "${process.name}" (PID: ${process.pid}) is using ${process.percentMemory.toFixed(1)}% of your system memory. ` +
+          `Process "${process.name}" (PID: ${process.pid}) is using ${(process.percentMemory || 0).toFixed(1)}% of your system memory. ` +
           `Consider restarting this application or investigating why it requires so much memory.`,
         impact: 'medium',
         actionable: true,
@@ -131,7 +131,7 @@ export const generateOptimizationRecommendations = (
       id: 'high-cache-usage',
       title: 'Excessive Memory Caching',
       description: 
-        `${cachedMemoryPercent.toFixed(1)}% of your memory is used for disk caching while the system is under memory pressure. ` +
+        `${(cachedMemoryPercent || 0).toFixed(1)}% of your memory is used for disk caching while the system is under memory pressure. ` +
         `While caching improves disk performance, it may be consuming memory needed by applications. ` +
         `Consider adjusting your system's cache pressure settings.`,
       impact: 'low',

@@ -91,7 +91,7 @@ const CPUProcessesTab: React.FC<CPUProcessesTabProps> = ({ processes, compact: _
                     className="usage-bar-fill" 
                     style={{ width: `${Math.min(process.cpu_percent, 100)}%` }}
                   />
-                  <span className="usage-text">{process.cpu_percent.toFixed(1)}%</span>
+                  <span className="usage-text">{(process.cpu_percent || 0).toFixed(1)}%</span>
                 </div>
               </td>
               <td>
@@ -101,7 +101,7 @@ const CPUProcessesTab: React.FC<CPUProcessesTabProps> = ({ processes, compact: _
                       className="usage-bar-fill memory" 
                       style={{ width: `${Math.min(process.memory_percent, 100)}%` }}
                     />
-                    <span className="usage-text">{process.memory_percent.toFixed(1)}%</span>
+                    <span className="usage-text">{(process.memory_percent || 0).toFixed(1)}%</span>
                   </div>
                 )}
               </td>

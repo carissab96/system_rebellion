@@ -76,7 +76,7 @@ const DiskPartitionsTab: React.FC<DiskPartitionsTabProps> = ({ data, compact = f
         <div className="partition-usage">
           <ProgressBar 
             value={partition.percentUsed} 
-            label={`${partition.percentUsed.toFixed(1)}%`}
+            label={`${(partition.percentUsed || 0).toFixed(1)}%`}
           />
           <div className="partition-usage__stats">
             <span>{formatBytes(partition.used)} of {formatBytes(partition.total)}</span>
@@ -269,7 +269,7 @@ const DiskPartitionsTab: React.FC<DiskPartitionsTabProps> = ({ data, compact = f
                         <div className="partition-usage__chart">
                           <ProgressBar 
                             value={partition.percentUsed} 
-                            label={`${partition.percentUsed.toFixed(1)}%`}
+                            label={`${(partition.percentUsed || 0).toFixed(1)}%`}
                           />
                           <div className="partition-usage__stats">
                             <div className="partition-stat">
@@ -479,7 +479,7 @@ const DiskPartitionsTab: React.FC<DiskPartitionsTabProps> = ({ data, compact = f
                                 <div className="disk-partition__usage">
                                   <div className="disk-partition__usage-info">
                                     <span className="disk-partition__usage-percent">
-                                      {partition.percentUsed.toFixed(1)}%
+                                      {(partition.percentUsed || 0).toFixed(1)}%
                                     </span>
                                     <span className="disk-partition__usage-stats">
                                       {formatBytes(partition.used)} of {formatBytes(partition.total)}

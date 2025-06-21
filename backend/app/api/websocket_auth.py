@@ -48,7 +48,7 @@ async def get_current_user_from_token(token: str) -> Optional[User]:
                 
         # Create a detached copy of the user object
         detached_user = User(
-            id=int(user.id),  # Ensure integer type
+            id=str(user.id),  # Keep as string since it's a UUID
             username=cast(str, user.username),  # Use type.cast to ensure proper typing
             email=str(user.email),
             is_active=bool(user.is_active)

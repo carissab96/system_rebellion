@@ -197,7 +197,7 @@ export const MemoryMetric: React.FC<MemoryMetricProps> = ({
       <div className="memory-metric" style={{ height }}>
         <MetricsCard
           title="Memory Usage"
-          value={`${memoryUsage.toFixed(1)}`}
+          value={`${(memoryUsage || 0).toFixed(1)}`}
           unit="%"
           status={getStatus(memoryUsage)}
         >
@@ -216,7 +216,7 @@ export const MemoryMetric: React.FC<MemoryMetricProps> = ({
                         fill="#8884d8"
                         dataKey="value"
                         nameKey="name"
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
                       >
                         {memoryPieData.map((_, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -256,7 +256,7 @@ export const MemoryMetric: React.FC<MemoryMetricProps> = ({
                     />
                     <YAxis domain={[0, 100]} />
                     <Tooltip 
-                      labelFormatter={(timestamp) => new Date(timestamp as number).toLocaleString()}
+                      labelFormatter={(timestamp) => new Date(timestamp as number || 0).toLocaleString()}
                       formatter={(value) => [`${value}%`, 'Memory Usage']} 
                     />
                     <Area type="monotone" dataKey="usage" stroke="#8884d8" fill="#8884d8" />

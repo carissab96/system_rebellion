@@ -59,9 +59,9 @@ export const generateCleanupRecommendations = (
   // Look for log directories that might need rotation
   const largeLogDirs = directories
     .filter(dir => 
-      dir.path.includes('/log') || 
-      dir.path.includes('/logs') || 
-      (dir.usage?.type === 'system' && dir.path.toLowerCase().includes('log'))
+      (dir.path || '').includes('/log') || 
+      (dir.path || '').includes('/logs') || 
+      (dir.usage?.type === 'system' && (dir.path || '').toLowerCase().includes('log'))
     )
     .filter(dir => dir.size > 200 * 1024 * 1024) // > 200MB
     .sort((a, b) => b.size - a.size);
@@ -80,10 +80,10 @@ export const generateCleanupRecommendations = (
   // Check for duplicate/backup directories
   const potentialBackups = directories
     .filter(dir => 
-      dir.path.includes('backup') || 
-      dir.path.includes('old') || 
-      dir.path.includes('.bak') ||
-      dir.path.endsWith('_old')
+      (dir.path || '').includes('backup') || 
+      (dir.path || '').includes('old') || 
+      (dir.path || '').includes('.bak') ||
+      (dir.path || '').endsWith('_old')
     )
     .filter(dir => dir.size > 100 * 1024 * 1024) // > 100MB
     .sort((a, b) => b.size - a.size);
@@ -129,7 +129,7 @@ const formatBytes = (bytes: number): string => {
   const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  return parseFloat(((bytes || 0) / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
 export default generateCleanupRecommendations;

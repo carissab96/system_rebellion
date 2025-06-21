@@ -2,6 +2,7 @@
 from fastapi import APIRouter
 from app.api.metrics_routes import router as metrics_router
 from app.api.simplified_websocket_routes import router as websocket_router
+from app.api.minimal_websocket_routes import router as minimal_websocket_router
 
 # Create a main router
 router = APIRouter()

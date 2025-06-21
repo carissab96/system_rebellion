@@ -36,7 +36,7 @@ export const NetworkInterfacesTab: React.FC<NetworkInterfacesTabProps> = ({ inte
             <div key={index} className="interface-card">
               <div className="interface-header">
                 <div className="interface-name">{iface.name}</div>
-                <div className={`interface-status ${iface.status.toLowerCase() === 'up' ? 'status-up' : 'status-down'}`}>
+                <div className={`interface-status ${(iface.status || '').toLowerCase() === 'up' ? 'status-up' : 'status-down'}`}>
                   {iface.status}
                 </div>
               </div>
@@ -76,7 +76,7 @@ const formatBytes = (bytes: number, decimals = 2) => {
   
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+  return parseFloat(((bytes || 0) / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 };
 
 export default NetworkInterfacesTab;

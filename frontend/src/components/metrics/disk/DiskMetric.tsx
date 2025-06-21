@@ -153,7 +153,7 @@ export const DiskMetric: React.FC<ConsolidatedDiskMetricProps> = ({
       <div className="disk-metric" style={{ height }}>
         <MetricsCard
           title="Disk Usage"
-          value={`${diskUsage.toFixed(1)}`}
+          value={`${(diskUsage || 0).toFixed(1)}`}
           unit="%"
           status={getStatus(diskUsage)}
         >
@@ -172,7 +172,7 @@ export const DiskMetric: React.FC<ConsolidatedDiskMetricProps> = ({
                         fill="#8884d8"
                         dataKey="value"
                         nameKey="name"
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
                       >
                         {partitionData.map((_entry: any, index: number) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -192,14 +192,14 @@ export const DiskMetric: React.FC<ConsolidatedDiskMetricProps> = ({
             </Tab>
             <Tab id="partitions" label="Partitions">
               <div className="partitions-list">
-                {processedData.partitions.map((partition: { mountpoint: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; percent: number; total: number; used: number; free: number; }, index: React.Key | null | undefined) => (
+                {processedData.partitions.items.map((partition, index) => (
                   <div key={index} className="partition-card">
-                    <div className="partition-name">{partition.mountpoint}</div>
-                    <div className="partition-usage">{partition.percent.toFixed(1)}%</div>
+                    <div className="partition-name">{partition.mountPoint}</div>
+                    <div className="partition-usage">{(partition.percentUsed || 0).toFixed(1)}%</div>
                     <div className="partition-details">
                       <span>Total: {formatBytes(partition.total)}</span>
                       <span>Used: {formatBytes(partition.used)}</span>
-                      <span>Free: {formatBytes(partition.free)}</span>
+                      <span>Free: {formatBytes(partition.available)}</span>
                     </div>
                   </div>
                 ))}

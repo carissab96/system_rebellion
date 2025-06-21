@@ -13,7 +13,7 @@ export const formatBytes = (bytes: number, decimals = 2): string => {
     
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     
-    const formattedValue = parseFloat((bytes / Math.pow(k, i)).toFixed(decimals));
+    const formattedValue = parseFloat(((bytes || 0) / Math.pow(k, i)).toFixed(decimals));
     return `${isNegative ? '-' : ''}${formattedValue} ${sizes[i]}`;
   };
   
@@ -60,7 +60,7 @@ export const formatBytes = (bytes: number, decimals = 2): string => {
    * Formats a percentage value with appropriate sign for growth
    */
   export const formatPercentage = (value: number, showSign = false): string => {
-    const formattedValue = Math.abs(value).toFixed(1);
+    const formattedValue = Math.abs(value || 0).toFixed(1);
     
     if (showSign && value !== 0) {
       const sign = value > 0 ? '+' : '-';
@@ -74,7 +74,7 @@ export const formatBytes = (bytes: number, decimals = 2): string => {
    * Formats a leak probability into a human-readable string
    */
   export const formatLeakProbability = (probability: number): string => {
-    const percentage = (probability * 100).toFixed(0);
+    const percentage = ((probability || 0) * 100).toFixed(0);
     
     if (probability > 0.7) return `${percentage}% (High)`;
     if (probability > 0.4) return `${percentage}% (Medium)`;
