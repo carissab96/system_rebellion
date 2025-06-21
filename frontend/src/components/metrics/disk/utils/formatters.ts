@@ -13,7 +13,7 @@ export const formatBytes = (bytes: number, decimals = 2): string => {
     
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     
-    const formattedValue = parseFloat((bytes / Math.pow(k, i)).toFixed(decimals));
+    const formattedValue = parseFloat(((bytes || 0) / Math.pow(k, i)).toFixed(decimals));
     return `${isNegative ? '-' : ''}${formattedValue} ${sizes[i]}`;
   };
   
@@ -22,14 +22,14 @@ export const formatBytes = (bytes: number, decimals = 2): string => {
    */
   export const formatNumber = (num: number): string => {
     if (isNaN(num)) return 'N/A';
-    return num.toLocaleString();
+    return (num || 0).toLocaleString();
   };
   
   /**
    * Formats a percentage value with appropriate sign
    */
   export const formatPercentage = (value: number, showSign = false): string => {
-    const formattedValue = Math.abs(value).toFixed(1);
+    const formattedValue = Math.abs(value || 0).toFixed(1);
     
     if (showSign && value !== 0) {
       const sign = value > 0 ? '+' : '-';
@@ -44,7 +44,7 @@ export const formatBytes = (bytes: number, decimals = 2): string => {
    */
   export const formatTimestamp = (timestamp: number): string => {
     const date = new Date(timestamp);
-    return date.toLocaleString();
+    return (date || new Date()).toLocaleString();
   };
   
   /**

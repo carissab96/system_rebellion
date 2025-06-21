@@ -56,7 +56,7 @@ export const MemoryOverviewTab: React.FC<MemoryOverviewTabProps> = ({ data, comp
         
         {overview.swap.total > 0 && (
           <div className="memory-overview__swap-indicator">
-            <small>Swap: {overview.swap.percentUsed.toFixed(1)}%</small>
+            <small>Swap: {(overview.swap.percentUsed || 0).toFixed(1)}%</small>
           </div>
         )}
       </Card>
@@ -84,7 +84,7 @@ export const MemoryOverviewTab: React.FC<MemoryOverviewTabProps> = ({ data, comp
           <ProgressBar 
             value={overview.physicalMemory.percentUsed} 
             color={getPhysicalMemorySeverity() === 'critical' ? 'var(--color-danger)' : getPhysicalMemorySeverity() === 'warning' ? 'var(--color-warning)' : 'var(--color-success)'}
-            label={`${overview.physicalMemory.percentUsed.toFixed(1)}%`}
+            label={`${(overview.physicalMemory.percentUsed || 0).toFixed(1)}%`}
           />
           
           <div className="memory-stats-grid">
@@ -115,7 +115,7 @@ export const MemoryOverviewTab: React.FC<MemoryOverviewTabProps> = ({ data, comp
               <ProgressBar 
                 value={overview.swap.percentUsed} 
                 color={getSwapSeverity() === 'warning' ? 'var(--color-warning)' : getSwapSeverity() === 'caution' ? 'var(--color-accent)' : 'var(--color-success)'}
-                label={`${overview.swap.percentUsed.toFixed(1)}%`}
+                label={`${(overview.swap.percentUsed || 0).toFixed(1)}%`}
               />
               <div className="memory-stats-grid">
                 <div className="memory-stat">
@@ -135,10 +135,10 @@ export const MemoryOverviewTab: React.FC<MemoryOverviewTabProps> = ({ data, comp
                 <span className="memory-stat-label">Page I/O</span>
                 <div className="memory-stat-value">
                   <span className="page-in">
-                    In: {overview.pressureIndicators.pageInRate.toFixed(1)}/s
+                    In: {(overview.pressureIndicators.pageInRate || 0).toFixed(1)}/s
                   </span>
                   <span className="page-out">
-                    Out: {overview.pressureIndicators.pageOutRate.toFixed(1)}/s
+                    Out: {(overview.pressureIndicators.pageOutRate || 0).toFixed(1)}/s
                   </span>
                 </div>
               </div>
@@ -199,7 +199,7 @@ export const MemoryOverviewTab: React.FC<MemoryOverviewTabProps> = ({ data, comp
                 <InfoTooltip content="Rate at which data is being read from disk into memory. High rates indicate memory shortage."  />
               </span>
               <span className="pressure-indicator__value">
-                {overview.pressureIndicators.pageInRate.toFixed(2)}/s
+                {(overview.pressureIndicators.pageInRate || 0).toFixed(2)}/s
                 {/* <TrendIndicator 
                   value={overview.pressureIndicators.pageInRate} 
                   threshold={10}
@@ -214,7 +214,7 @@ export const MemoryOverviewTab: React.FC<MemoryOverviewTabProps> = ({ data, comp
                 <InfoTooltip content="Rate at which data is being written from memory to disk. High rates indicate memory pressure."  />
               </span>
               <span className="pressure-indicator__value">
-                {overview.pressureIndicators.pageOutRate.toFixed(2)}/s
+                {(overview.pressureIndicators.pageOutRate || 0).toFixed(2)}/s
                 {/* <TrendIndicator 
                   value={overview.pressureIndicators.pageOutRate} 
                   threshold={5}
@@ -229,8 +229,7 @@ export const MemoryOverviewTab: React.FC<MemoryOverviewTabProps> = ({ data, comp
                 <InfoTooltip content="Rate at which swap memory usage is changing. Positive values indicate increasing memory pressure."  />
               </span>
               <span className="pressure-indicator__value">
-                {overview.pressureIndicators.swapUsageRate > 0 ? '+' : ''}
-                {overview.pressureIndicators.swapUsageRate.toFixed(2)} MB/s
+                {(overview.pressureIndicators.swapUsageRate || 0).toFixed(2)} MB/s
                 {/* <TrendIndicator 
                   value={overview.pressureIndicators.swapUsageRate} 
                   threshold={1}

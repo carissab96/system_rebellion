@@ -87,7 +87,7 @@ export const MemoryAllocationTab: React.FC<MemoryAllocationTabProps> = ({ data }
                 <div className="memory-allocation-type-item__header">
                   <div className="memory-allocation-type-color" style={{ backgroundColor: getTypeColor(type.type) }} />
                   <span className="memory-allocation-type-name">{type.type}</span>
-                  <span className="memory-allocation-type-percentage">{type.percentage.toFixed(1)}%</span>
+                  <span className="memory-allocation-type-percentage">{(type.percentage || 0).toFixed(1)}%</span>
                 </div>
                 <span className="memory-allocation-type-bytes">{formatBytes(type.bytes)}</span>
               </div>

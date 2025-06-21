@@ -103,7 +103,7 @@ const NetworkOverviewTab: React.FC<NetworkOverviewTabProps> = ({
                   if (name === 'bytes_recv') return [formatBytes(value), 'Received'];
                   return [formatBytes(value), name];
                 }}
-                labelFormatter={(label: string) => new Date(label).toLocaleString()}
+                labelFormatter={(label: string) => new Date(label || 0).toLocaleString()}
                 contentStyle={{ background: 'rgba(0, 0, 0, 0.8)', border: 'none', borderRadius: '8px' }}
                 itemStyle={{ color: 'white' }}
                 labelStyle={{ color: 'white' }}

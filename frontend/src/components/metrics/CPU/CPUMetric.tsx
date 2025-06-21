@@ -118,8 +118,15 @@ const CPUMetric: React.FC<CPUMetricProps> = ({
   console.log('🔧 logical_cores:', currentMetric?.logical_cores);
   console.log('🔧 frequency_mhz:', currentMetric?.frequency_mhz);
   console.log('🔧 temperature:', currentMetric?.temperature);
-  console.log('🔧 cores array length:', cpuCores.length);
-  console.log('🔧 top_processes length:', topProcesses.length);
+  console.log('🔧 cores array length:', cpuCores?.length);
+  console.log('🔧 top_processes length:', topProcesses?.length);
+
+  // Safely handle historical data for charts
+  const chartData = historicalMetrics.slice(-20).map((metric, index) => ({
+    time: index,
+    usage: (metric?.usage_percent || 0),
+    timestamp: metric?.timestamp || new Date().toISOString()
+  }));
 
   // Extract CPU processes
   const cpuProcesses: CPUProcess[] = topProcesses.map((p: any) => ({
@@ -129,12 +136,16 @@ const CPUMetric: React.FC<CPUMetricProps> = ({
     memory_percent: p.memory_percent || 0
   }));
 
-  // Chart data
-  const chartData = historicalMetrics.map((metric: any) => ({
-    timestamp: metric.timestamp,
-    usage: metric.cpu_usage || 0
-  }));
+  // Calculate previous value safely for trend calculation
+  const previousValue = historicalMetrics.length > 1 
+    ? (historicalMetrics[historicalMetrics.length - 2]?.usage_percent || 0)
+    : cpuUsage;
   
+  // Calculate change percentage safely
+  const changePercentage = previousValue > 0 
+    ? (((cpuUsage - previousValue) / previousValue) * 100)
+    : 0;
+
   // Generate core usage data for bar chart
   const coreData = cpuDetails.per_core_usage.map((usage: number, index: number) => ({
     name: `Core ${index + 1}`,
@@ -154,16 +165,6 @@ const CPUMetric: React.FC<CPUMetricProps> = ({
     if (current < previous - 5) return 'down';
     return 'stable';
   };
-
-  // Get previous value from historical metrics
-  const previousValue = historicalMetrics.length > 1 ? 
-    historicalMetrics[historicalMetrics.length - 2].cpu_usage || cpuUsage : 
-    cpuUsage;
-
-  // Calculate change percentage (avoid division by zero)
-  const changePercentage = previousValue !== 0 ? 
-    ((cpuUsage - previousValue) / previousValue) * 100 : 
-    0;
 
   // Render the overview tab
   const renderOverviewTab = () => {
@@ -191,7 +192,7 @@ const CPUMetric: React.FC<CPUMetricProps> = ({
                   stroke="var(--text-secondary)"
                 />
                 <Tooltip 
-                  formatter={(value: number) => [`${value.toFixed(1)}%`, 'CPU Usage']}
+                  formatter={(value: number) => [`${(value || 0).toFixed(1)}%`, 'CPU Usage']}
                   labelFormatter={(label: string) => new Date(label).toLocaleTimeString()}
                   contentStyle={{ 
                     backgroundColor: 'var(--card-bg)', 
@@ -325,10 +326,10 @@ const CPUMetric: React.FC<CPUMetricProps> = ({
               cpuProcesses.map((process: CPUProcess, index: number) => (
                 <Card key={index} className="process-card">
                   <div className="process-name">{process.name}</div>
-                  <div className="process-usage">{process.cpu_percent.toFixed(1)}%</div>
+                  <div className="process-usage">{(process.cpu_percent || 0).toFixed(1)}%</div>
                   <div className="process-details">
                     <span>PID: {process.pid}</span>
-                    <span>Memory: {process.memory_percent.toFixed(1)}%</span>
+                    <span>Memory: {(process.memory_percent || 0).toFixed(1)}%</span>
                   </div>
                 </Card>
               ))
@@ -362,8 +363,8 @@ const CPUMetric: React.FC<CPUMetricProps> = ({
         <div className="details-content">
           <h3>CPU Details</h3>
           <div>
-            <div>Temperature: {cpuDetails.temperature ? `${cpuDetails.temperature.toFixed(1)}°C` : 'N/A'}</div>
-            <div>Frequency: {cpuDetails.frequency.current ? `${(cpuDetails.frequency.current / 1000).toFixed(2)} GHz` : 'N/A'}</div>
+            <div>Temperature: {cpuDetails.temperature ? `${(cpuDetails.temperature || 0).toFixed(1)}°C` : 'N/A'}</div>
+            <div>Frequency: {cpuDetails.frequency.current ? `${((cpuDetails.frequency.current || 0) / 1000).toFixed(2)} GHz` : 'N/A'}</div>
             <div>Cores: {cpuDetails.cores.physical || 'N/A'} physical, {cpuDetails.cores.logical || 'N/A'} logical</div>
             <div>Model: {currentMetric.cpu_model || 'N/A'}</div>
           </div>
@@ -410,7 +411,7 @@ const CPUMetric: React.FC<CPUMetricProps> = ({
       <div className="cpu-metric" style={{ height }}>
         <MetricsCard
           title="CPU Usage"
-          value={`${cpuUsage.toFixed(1)}`}
+          value={`${(cpuUsage || 0).toFixed(1)}`}
           unit="%"
           status={getStatus(cpuUsage)}
           trend={getTrend(cpuUsage, previousValue)}

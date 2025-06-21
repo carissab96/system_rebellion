@@ -91,7 +91,7 @@ export const DiskPerformanceTab: React.FC<DiskPerformanceTabProps> = ({ data }) 
           </div>
           <div className="performance-metric">
             <span className="performance-metric__label">Utilization:</span>
-            <span className="performance-metric__value">{performance.current.utilization.toFixed(1)}%</span>
+            <span className="performance-metric__value">{(performance.current.utilization || 0).toFixed(1)}%</span>
           </div>
         </div>
       </div>
@@ -289,13 +289,13 @@ export const DiskPerformanceTab: React.FC<DiskPerformanceTabProps> = ({ data }) 
                   <div className="metric-value">
                     <span className="metric-label">Read:</span>
                     <span className={`metric-value ${getLatencySeverityClass(performance.current.latency.read)}`}>
-                      {performance.current.latency.read.toFixed(2)} ms
+                      {(performance.current.latency.read || 0).toFixed(2)} ms
                     </span>
                   </div>
                   <div className="metric-value">
                     <span className="metric-label">Write:</span>
                     <span className={`metric-value ${getLatencySeverityClass(performance.current.latency.write)}`}>
-                      {performance.current.latency.write.toFixed(2)} ms
+                      {(performance.current.latency.write || 0).toFixed(2)} ms
                     </span>
                   </div>
                 </div>
@@ -314,7 +314,7 @@ export const DiskPerformanceTab: React.FC<DiskPerformanceTabProps> = ({ data }) 
                     max={20}
                     className={getLatencySeverityClass(performance.current.queueDepth * 2)}
                   />
-                  <span className="metric-value">{performance.current.queueDepth.toFixed(1)}</span>
+                  <span className="metric-value">{(performance.current.queueDepth || 0).toFixed(1)}</span>
                 </div>
               </div>
             </div>
@@ -405,7 +405,7 @@ export const DiskPerformanceTab: React.FC<DiskPerformanceTabProps> = ({ data }) 
                       </div>
                       <div className="io-stat">
                         <span className="io-stat__label">% of System I/O:</span>
-                        <span className="io-stat__value">{process.percentage.toFixed(1)}%</span>
+                        <span className="io-stat__value">{(process.percentage || 0).toFixed(1)}%</span>
                       </div>
                     </div>
                     

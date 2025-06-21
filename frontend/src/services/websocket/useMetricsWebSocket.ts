@@ -43,33 +43,48 @@ export const useMetricsWebSocket = () => {
       case 'metrics_update':
         // Backend sends all metrics in one message
         console.log('📊 [useMetricsWebSocket] Processing metrics_update');
+        console.log('📊 [useMetricsWebSocket] Full message.data:', JSON.stringify(message.data, null, 2));
         
         if (message.data?.cpu) {
           console.log('🚀 [useMetricsWebSocket] Dispatching CPU metrics:', message.data.cpu);
+          console.log('🚀 [useMetricsWebSocket] CPU data keys:', Object.keys(message.data.cpu));
+          console.log('🚀 [useMetricsWebSocket] CPU usage_percent:', message.data.cpu.usage_percent);
           dispatch(updateCPUMetrics(message.data.cpu));
           dispatch(setCPULoading(false));
           dispatch(setCPUError(null));
+        } else {
+          console.log('❌ [useMetricsWebSocket] No CPU data found in message.data');
+          console.log('❌ [useMetricsWebSocket] message.data keys:', Object.keys(message.data || {}));
         }
         
         if (message.data?.memory) {
           console.log('🚀 [useMetricsWebSocket] Dispatching Memory metrics:', message.data.memory);
+          console.log('🚀 [useMetricsWebSocket] Memory data keys:', Object.keys(message.data.memory));
           dispatch(updateMemoryMetrics(message.data.memory));
           dispatch(setMemoryLoading(false));
           dispatch(setMemoryError(null));
+        } else {
+          console.log('❌ [useMetricsWebSocket] No Memory data found in message.data');
         }
         
         if (message.data?.disk) {
           console.log('🚀 [useMetricsWebSocket] Dispatching Disk metrics:', message.data.disk);
+          console.log('🚀 [useMetricsWebSocket] Disk data keys:', Object.keys(message.data.disk));
           dispatch(updateDiskMetrics(message.data.disk));
           dispatch(setDiskLoading(false));
           dispatch(setDiskError(null));
+        } else {
+          console.log('❌ [useMetricsWebSocket] No Disk data found in message.data');
         }
         
         if (message.data?.network) {
           console.log('🚀 [useMetricsWebSocket] Dispatching Network metrics:', message.data.network);
+          console.log('🚀 [useMetricsWebSocket] Network data keys:', Object.keys(message.data.network));
           dispatch(updateNetworkMetrics(message.data.network));
           dispatch(setNetworkLoading(false));
           dispatch(setNetworkError(null));
+        } else {
+          console.log('❌ [useMetricsWebSocket] No Network data found in message.data');
         }
         break;
         

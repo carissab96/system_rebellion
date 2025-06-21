@@ -42,7 +42,7 @@ export const DiskDirectoryTab: React.FC<DiskDirectoryTabProps> = ({ data }) => {
 
   // Filter directories based on search term
   const filteredDirectories = directories.filter((dir: DirectoryItem) =>
-    dir.path.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+    (dir.path || '').toLowerCase().includes(debouncedSearchTerm.toLowerCase())
   );
   
   // Transform directory data for Treemap
@@ -50,7 +50,7 @@ export const DiskDirectoryTab: React.FC<DiskDirectoryTabProps> = ({ data }) => {
     name: 'Root',
     value: directories.reduce((sum: number, dir: DirectoryItem) => sum + dir.size, 0),
     children: directories.map((dir: DirectoryItem) => ({
-      name: dir.path.split('/').pop() || dir.path,
+      name: (dir.path || '').split('/').pop() || dir.path,
       path: dir.path,
       value: dir.size,
       fileCount: dir.fileCount,
@@ -72,7 +72,7 @@ export const DiskDirectoryTab: React.FC<DiskDirectoryTabProps> = ({ data }) => {
       header: 'Path',
       sortable: true,
       render: (item: DirectoryItem) => {
-        const name = item.path.split('/').pop() || item.path;
+        const name = (item.path || '').split('/').pop() || item.path;
         return (
           <div className="directory-path">
             <span className="directory-path__name">{name}</span>
@@ -93,13 +93,13 @@ export const DiskDirectoryTab: React.FC<DiskDirectoryTabProps> = ({ data }) => {
       key: 'fileCount',
       header: 'Files',
       sortable: true,
-      render: (item: DirectoryItem) => item.fileCount.toLocaleString()
+      render: (item: DirectoryItem) => (item.fileCount || 0).toLocaleString()
     },
     {
       key: 'lastModified',
       header: 'Last Modified',
       sortable: true,
-      render: (item: DirectoryItem) => new Date(item.lastModified).toLocaleString()
+      render: (item: DirectoryItem) => new Date(item.lastModified || 0).toLocaleString()
     },
     {
       key: 'actions',
@@ -168,7 +168,7 @@ export const DiskDirectoryTab: React.FC<DiskDirectoryTabProps> = ({ data }) => {
         <div className="directory-details-modal">
           <div className="directory-details-modal__content">
             <div className="directory-details__header">
-              <h3>{selectedDirectory.path.split('/').pop() || selectedDirectory.path}</h3>
+              <h3>{(selectedDirectory.path || '').split('/').pop() || selectedDirectory.path}</h3>
               <Button 
                 variant="secondary"
                 circle
@@ -191,12 +191,12 @@ export const DiskDirectoryTab: React.FC<DiskDirectoryTabProps> = ({ data }) => {
                 </div>
                 <div className="info-row">
                   <span className="info-label">Files:</span>
-                  <span className="info-value">{selectedDirectory.fileCount.toLocaleString()}</span>
+                  <span className="info-value">{(selectedDirectory.fileCount || 0).toLocaleString()}</span>
                 </div>
                 <div className="info-row">
                   <span className="info-label">Last Modified:</span>
                   <span className="info-value">
-                    {new Date(selectedDirectory.lastModified).toLocaleString()}
+                    {new Date(selectedDirectory.lastModified || 0).toLocaleString()}
                   </span>
                 </div>
               </div>
@@ -206,7 +206,7 @@ export const DiskDirectoryTab: React.FC<DiskDirectoryTabProps> = ({ data }) => {
                 <p>Type: {selectedDirectory.type}</p>
                 <p>Path: {selectedDirectory.path}</p>
                 <p>Cleanable: {selectedDirectory.cleanable ? 'Yes' : 'No'}</p>
-                <p>Files: {selectedDirectory.fileCount.toLocaleString()}</p>
+                <p>Files: {(selectedDirectory.fileCount || 0).toLocaleString()}</p>
                 <p>Size: {formatBytes(selectedDirectory.size)}</p>
               </div>
 

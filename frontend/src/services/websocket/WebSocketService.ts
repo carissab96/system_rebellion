@@ -191,7 +191,7 @@ export class WebSocketService {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host; // Use current host to leverage Vite proxy
     
-    return `${protocol}//${host}/ws/system-metrics`;
+    return `${protocol}//${host}/api/ws/system-metrics`;
   }
   
   // Main connection method

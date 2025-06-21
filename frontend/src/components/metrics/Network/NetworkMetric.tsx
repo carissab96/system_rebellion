@@ -198,7 +198,7 @@ export const NetworkMetric: React.FC<NetworkMetricProps> = ({
     
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+    return parseFloat(((bytes || 0) / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
   };
 
   // Format bytes per second
@@ -270,8 +270,8 @@ export const NetworkMetric: React.FC<NetworkMetricProps> = ({
       <div className="network-metric" style={{ height }}>
         <MetricsCard
           title="Network Traffic"
-          value={formatBytes(totalNetworkRate / 1024).split(' ')[0]}
-          unit={formatBytes(totalNetworkRate / 1024).split(' ')[1] + '/s'}
+          value={(formatBytes(totalNetworkRate / 1024) || '').split(' ')[0]}
+          unit={(formatBytes(totalNetworkRate / 1024) || '').split(' ')[1] + '/s'}
           status={getStatus(totalNetworkRate)}
         >
           <Tabs activeTab={activeTab} onChange={handleTabChange}>
@@ -303,11 +303,15 @@ export const NetworkMetric: React.FC<NetworkMetricProps> = ({
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis 
                       dataKey="timestamp" 
-                      tickFormatter={(timestamp) => new Date(timestamp).toLocaleTimeString()} 
+                      tickFormatter={(timestamp) => new Date(timestamp as number || 0).toLocaleTimeString()} 
                     />
-                    <YAxis tickFormatter={(value) => formatBytes(value).split(' ')[0] + ' ' + formatBytes(value).split(' ')[1]} />
+                    <YAxis tickFormatter={(value) => {
+                      const formatted = formatBytes(value) || '';
+                      const parts = formatted.split(' ');
+                      return parts[0] + ' ' + (parts[1] || '');
+                    }} />
                     <Tooltip 
-                      labelFormatter={(timestamp) => new Date(timestamp as number).toLocaleString()}
+                      labelFormatter={(timestamp) => new Date(timestamp as number || 0).toLocaleString()}
                       formatter={(value, name) => [
                         formatBytesPerSecond(value as number), 
                         name === 'receive' ? 'Download' : name === 'transmit' ? 'Upload' : 'Total'
@@ -384,11 +388,15 @@ export const NetworkMetric: React.FC<NetworkMetricProps> = ({
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 
                   dataKey="timestamp" 
-                  tickFormatter={(timestamp) => new Date(timestamp).toLocaleTimeString()} 
+                  tickFormatter={(timestamp) => new Date(timestamp as number || 0).toLocaleTimeString()} 
                 />
-                <YAxis tickFormatter={(value) => formatBytes(value).split(' ')[0] + ' ' + formatBytes(value).split(' ')[1]} />
+                <YAxis tickFormatter={(value) => {
+                  const formatted = formatBytes(value) || '';
+                  const parts = formatted.split(' ');
+                  return parts[0] + ' ' + (parts[1] || '');
+                }} />
                 <Tooltip 
-                  labelFormatter={(timestamp) => new Date(timestamp as number).toLocaleString()}
+                  labelFormatter={(timestamp) => new Date(timestamp as number || 0).toLocaleString()}
                   formatter={(value, name) => [
                     formatBytesPerSecond(value as number), 
                     name === 'receive' ? 'Download' : name === 'transmit' ? 'Upload' : 'Total'

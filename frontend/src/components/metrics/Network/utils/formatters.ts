@@ -27,10 +27,10 @@ export function formatBytes(bytes: number, decimals = 2): string {
     if (ms < 1) return '<1 ms';
     
     if (ms >= 1000) {
-      return (ms / 1000).toFixed(2) + ' s';
+      return ((ms || 0) / 1000).toFixed(2) + ' s';
     }
     
-    return ms.toFixed(1) + ' ms';
+    return (ms || 0).toFixed(1) + ' ms';
   }
   
   /**
@@ -65,7 +65,7 @@ export function formatBytes(bytes: number, decimals = 2): string {
    */
   export function formatTime(timestamp: string | number): string {
     const date = new Date(timestamp);
-    return date.toLocaleTimeString();
+    return (date || new Date()).toLocaleTimeString();
   }
   
   /**
@@ -75,7 +75,7 @@ export function formatBytes(bytes: number, decimals = 2): string {
    */
   export function formatDateTime(timestamp: string | number): string {
     const date = new Date(timestamp);
-    return date.toLocaleString();
+    return (date || new Date()).toLocaleString();
   }
   
   /**
@@ -88,7 +88,7 @@ export function formatBytes(bytes: number, decimals = 2): string {
     if (normalize && value <= 1) {
       value = value * 100;
     }
-    return value.toFixed(1) + '%';
+    return (value || 0).toFixed(1) + '%';
   }
   
   /**

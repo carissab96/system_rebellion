@@ -27,8 +27,8 @@ export const MemoryProcessesTab: React.FC<MemoryProcessesTabProps> = ({ data }) 
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(
-        p => p.name.toLowerCase().includes(term) || 
-             p.command.toLowerCase().includes(term) || 
+        p => (p.name || '').toLowerCase().includes(term) || 
+             (p.command || '').toLowerCase().includes(term) || 
              p.pid.toString().includes(term)
       );
     }
@@ -100,7 +100,7 @@ export const MemoryProcessesTab: React.FC<MemoryProcessesTabProps> = ({ data }) 
       header: '% of Total',
       sortable: true,
       width: '15%',
-      render: (process) => `${process.percentMemory.toFixed(1)}%`
+      render: (process) => `${(process.percentMemory !== undefined ? process.percentMemory : 0).toFixed(1)}%`
     },
     {
       key: 'vms',
@@ -196,13 +196,13 @@ export const MemoryProcessesTab: React.FC<MemoryProcessesTabProps> = ({ data }) 
                       <div 
                         className="leak-probability__fill" 
                         style={{ 
-                          width: `${selectedProcessLeak.leakProbability * 100}%`,
-                          backgroundColor: selectedProcessLeak.leakProbability > 0.7 ? 'var(--color-danger)' : 'var(--color-warning)'
+                          width: `${(selectedProcessLeak.leakProbability !== undefined ? selectedProcessLeak.leakProbability : 0) * 100}%`,
+                          backgroundColor: (selectedProcessLeak.leakProbability !== undefined ? selectedProcessLeak.leakProbability : 0) > 0.7 ? 'var(--color-danger)' : 'var(--color-warning)'
                         }} 
                       />
                     </div>
                     <span className="leak-probability__value">
-                      {(selectedProcessLeak.leakProbability * 100).toFixed(0)}%
+                      {((selectedProcessLeak.leakProbability !== undefined ? selectedProcessLeak.leakProbability : 0) * 100).toFixed(0)}%
                     </span>
                   </div>
                   
@@ -284,13 +284,13 @@ export const MemoryProcessesTab: React.FC<MemoryProcessesTabProps> = ({ data }) 
                   </span>
                 </div>
                 <div className="memory-leak-item__probability">
-                  <span>Leak Probability: {(leak.leakProbability * 100).toFixed(0)}%</span>
+                  <span>Leak Probability: {((leak.leakProbability !== undefined ? leak.leakProbability : 0) * 100).toFixed(0)}%</span>
                   <div className="memory-leak-probability-bar">
                     <div 
                       className="memory-leak-probability-bar__fill"
                       style={{ 
-                        width: `${leak.leakProbability * 100}%`,
-                        backgroundColor: leak.leakProbability > 0.7 ? 'var(--color-danger)' : 'var(--color-warning)'
+                        width: `${(leak.leakProbability !== undefined ? leak.leakProbability : 0) * 100}%`,
+                        backgroundColor: (leak.leakProbability !== undefined ? leak.leakProbability : 0) > 0.7 ? 'var(--color-danger)' : 'var(--color-warning)'
                       }}
                     />
                   </div>

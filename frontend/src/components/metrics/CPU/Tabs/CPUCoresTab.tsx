@@ -90,25 +90,25 @@ const CPUCoresTab: React.FC<CPUCoresTabProps> = ({
           <div className="stat-card">
             <div className="stat-title">Average Load</div>
             <div className={`stat-value ${getUsageClass(stats.avgUsage)}`}>
-              {stats.avgUsage.toFixed(1)}%
+              {(stats.avgUsage || 0).toFixed(1)}%
             </div>
           </div>
           <div className="stat-card">
             <div className="stat-title">Core Imbalance</div>
             <div className={`stat-value ${getImbalanceClass(stats.imbalancePercent)}`}>
-              {stats.imbalancePercent.toFixed(1)}%
+              {(stats.imbalancePercent || 0).toFixed(1)}%
             </div>
           </div>
           <div className="stat-card">
             <div className="stat-title">Most Loaded Core</div>
             <div className={`stat-value ${getUsageClass(stats.mostLoaded.usage_percent)}`}>
-              Core {stats.mostLoaded.id}: {stats.mostLoaded.usage_percent.toFixed(1)}%
+              Core {stats.mostLoaded.id}: {(stats.mostLoaded.usage_percent || 0).toFixed(1)}%
             </div>
           </div>
           <div className="stat-card">
             <div className="stat-title">Most Idle Core</div>
             <div className={`stat-value ${getUsageClass(stats.leastLoaded.usage_percent)}`}>
-              Core {stats.leastLoaded.id}: {stats.leastLoaded.usage_percent.toFixed(1)}%
+              Core {stats.leastLoaded.id}: {(stats.leastLoaded.usage_percent || 0).toFixed(1)}%
             </div>
           </div>
         </div>
@@ -126,7 +126,7 @@ const CPUCoresTab: React.FC<CPUCoresTabProps> = ({
               <div key={core.id} className={`core-card ${coreClass}`}>
                 <div className="core-header">
                   <div className="core-id">Core {core.id}</div>
-                  <div className="core-usage">{core.usage_percent.toFixed(1)}%</div>
+                  <div className="core-usage">{(core.usage_percent || 0).toFixed(1)}%</div>
                 </div>
                 
                 <div className="core-usage-bar">
@@ -138,7 +138,7 @@ const CPUCoresTab: React.FC<CPUCoresTabProps> = ({
                 
                 {core.frequency_mhz && (
                   <div className="core-frequency">
-                    {(core.frequency_mhz / 1000).toFixed(2)} GHz
+                    {((core.frequency_mhz || 0) / 1000).toFixed(2)} GHz
                   </div>
                 )}
                 
@@ -158,7 +158,7 @@ const CPUCoresTab: React.FC<CPUCoresTabProps> = ({
                             style={{ width: `${thread.usage_percent}%` }}
                           ></div>
                           <span className="thread-usage-text">
-                            {thread.usage_percent.toFixed(1)}%
+                            {(thread.usage_percent || 0).toFixed(1)}%
                           </span>
                         </div>
                       </div>
@@ -177,7 +177,7 @@ const CPUCoresTab: React.FC<CPUCoresTabProps> = ({
           <div className="imbalance-analysis">
             <div className="imbalance-description">
               <p>
-                <strong>Significant core imbalance detected ({stats.imbalancePercent.toFixed(1)}% difference)</strong>
+                <strong>Significant core imbalance detected ({(stats.imbalancePercent || 0).toFixed(1)}% difference)</strong>
               </p>
               <p>
                 Some CPU cores are significantly more loaded than others, which may indicate:
@@ -239,7 +239,7 @@ const CPUCoresTab: React.FC<CPUCoresTabProps> = ({
                     <div className="logical-core-header">
                       <span className="logical-core-id">Logical Core {core.id}</span>
                       <span className={`logical-core-usage ${getUsageClass(core.usage_percent)}`}>
-                        {core.usage_percent.toFixed(1)}%
+                        {(core.usage_percent || 0).toFixed(1)}%
                       </span>
                     </div>
                     <div className="logical-core-bar">
@@ -256,7 +256,7 @@ const CPUCoresTab: React.FC<CPUCoresTabProps> = ({
                 <div className="physical-core-usage">
                   <div className="stat-label">Average Usage:</div>
                   <div className="stat-value">
-                    {(logicalCores.reduce((sum, core) => sum + core.usage_percent, 0) / logicalCores.length).toFixed(1)}%
+                    {((logicalCores.reduce((sum, core) => sum + core.usage_percent, 0) / logicalCores.length) || 0).toFixed(1)}%
                   </div>
                 </div>
                 
@@ -264,7 +264,7 @@ const CPUCoresTab: React.FC<CPUCoresTabProps> = ({
                   <div className="stat-label">Core Balance:</div>
                   <div className="stat-value">
                     {logicalCores.length > 1 ? 
-                      Math.abs(logicalCores[0].usage_percent - logicalCores[1].usage_percent).toFixed(1) + '% diff' : 
+                      Math.abs((logicalCores[0].usage_percent || 0) - (logicalCores[1].usage_percent || 0)).toFixed(1) + '% diff' : 
                       'N/A'}
                   </div>
                 </div>
@@ -287,9 +287,9 @@ const CPUCoresTab: React.FC<CPUCoresTabProps> = ({
                   style={{ 
                     height: '30px', 
                     width: `${100 / cores.length}%`,
-                    opacity: 0.3 + (core.usage_percent / 100) * 0.7 
+                    opacity: 0.3 + ((core.usage_percent || 0) / 100) * 0.7 
                   }}
-                  title={`Core ${core.id}: ${core.usage_percent.toFixed(1)}%`}
+                  title={`Core ${core.id}: ${(core.usage_percent || 0).toFixed(1)}%`}
                 />
               ))}
             </div>
@@ -302,14 +302,14 @@ const CPUCoresTab: React.FC<CPUCoresTabProps> = ({
                 {stats.stdDev < 10 ? 'Excellent' : 
                   stats.stdDev < 20 ? 'Good' : 
                   stats.stdDev < 30 ? 'Fair' : 'Poor'} 
-                (σ = {stats.stdDev.toFixed(1)})
+                (σ = {(stats.stdDev || 0).toFixed(1)})
               </div>
             </div>
             
             <div className="distribution-stat">
               <div className="stat-label">Threads per Core:</div>
               <div className="stat-value">
-                {(cores.reduce((sum, core) => sum + (core.threads?.length || 0), 0) / cores.length).toFixed(1)} avg
+                {((cores.reduce((sum, core) => sum + (core.threads?.length || 0), 0) / cores.length) || 0).toFixed(1)} avg
               </div>
             </div>
           </div>

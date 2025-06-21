@@ -35,7 +35,7 @@ const CPUOverviewTab: React.FC<CPUOverviewTabProps> = ({ data, compact = false }
             
             {/* Usage percentage text */}
             <text x="100" y="85" className="gauge-percentage">
-              {data.overall_usage.toFixed(1)}%
+              {(data.overall_usage || 0).toFixed(1)}%
             </text>
             
             <text x="100" y="15" className="gauge-label">CPU Usage</text>
@@ -53,7 +53,7 @@ const CPUOverviewTab: React.FC<CPUOverviewTabProps> = ({ data, compact = false }
           </div>
           <div className="info-row">
             <div className="info-label">Frequency:</div>
-            <div className="info-value">{(data.frequency_mhz / 1000).toFixed(2)} GHz</div>
+            <div className="info-value">{((data.frequency_mhz || 0) / 1000).toFixed(2)} GHz</div>
           </div>
           <div className="info-row">
             <div className="info-label">Processes:</div>
@@ -100,7 +100,7 @@ const CPUOverviewTab: React.FC<CPUOverviewTabProps> = ({ data, compact = false }
                       className="usage-bar-fill" 
                       style={{ width: `${Math.min(process.cpu_percent, 100)}%` }}
                     />
-                    <span className="usage-text">{process.cpu_percent.toFixed(1)}%</span>
+                    <span className="usage-text">{(process.cpu_percent || 0).toFixed(1)}%</span>
                   </div>
                 </div>
               </div>
@@ -196,7 +196,7 @@ const CPUOverviewTab: React.FC<CPUOverviewTabProps> = ({ data, compact = false }
                       style={{ height: `${core.usage_percent}%` }}
                     ></div>
                   </div>
-                  <div className="core-mini-value">{core.usage_percent.toFixed(0)}%</div>
+                  <div className="core-mini-value">{(core.usage_percent || 0).toFixed(0)}%</div>
                 </div>
               ))}
               
@@ -218,7 +218,7 @@ const CPUOverviewTab: React.FC<CPUOverviewTabProps> = ({ data, compact = false }
                     <div className="imbalance-warning">
                       <span className="warning-icon">⚠️</span>
                       <span className="warning-text">
-                        Significant core imbalance detected ({imbalance.toFixed(0)}% difference)
+                        Significant core imbalance detected ({(imbalance || 0).toFixed(0)}% difference)
                       </span>
                       <button className="view-cores-button">View Core Details</button>
                     </div>
@@ -229,7 +229,7 @@ const CPUOverviewTab: React.FC<CPUOverviewTabProps> = ({ data, compact = false }
                   <div className="balance-status">
                     <span className="status-icon">✓</span>
                     <span className="status-text">
-                      Core workload is relatively balanced ({imbalance.toFixed(0)}% max difference)
+                      Core workload is relatively balanced ({(imbalance || 0).toFixed(0)}% max difference)
                     </span>
                   </div>
                 );
