@@ -245,16 +245,18 @@ const CPUMetric: React.FC<CPUMetricProps> = ({
           max: cpuDetails.frequency.max
         },
         processes: cpuProcesses.map((p: CPUProcess) => ({
+          name: p.name,
           user: 'system',
           command: p.name,
-          usage_percent: p.cpu_percent,
+          cpu_percent: p.cpu_percent,
           pid: p.pid,
           memory_percent: p.memory_percent
         })),
         top_processes: cpuProcesses.map((p: CPUProcess) => ({
+          name: p.name,
           user: 'system',
           command: p.name,
-          usage_percent: p.cpu_percent,
+          cpu_percent: p.cpu_percent,
           pid: p.pid,
           memory_percent: p.memory_percent
         })),

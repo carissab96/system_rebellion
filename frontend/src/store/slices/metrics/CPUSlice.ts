@@ -3,6 +3,7 @@ import { MetricAlert, AlertSeverity } from '../../../types/metrics';
 
 // Updated to match simplified backend CPU data structure
 export interface CPUMetric {
+  [x: string]: string;
   cpu_usage: any;
   usage_percent: number;
   physical_cores: number;
