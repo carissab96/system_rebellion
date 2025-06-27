@@ -408,4 +408,76 @@
     flex-direction: column;
     gap: 10px;
   }
+
+.dashboard .alerts-panel .system-alerts {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 0; /* Remove padding as the container already has it */
 }
+
+/* Adjust the alerts list for dashboard */
+.dashboard .alerts-panel .dashboard-alerts-list {
+  max-height: 350px; /* Fixed height for dashboard */
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 0, 110, 0.3) transparent;
+}
+
+/* Custom scrollbar for webkit browsers */
+.dashboard .alerts-panel .dashboard-alerts-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dashboard .alerts-panel .dashboard-alerts-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dashboard .alerts-panel .dashboard-alerts-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 0, 110, 0.3);
+  border-radius: 3px;
+}
+
+.dashboard .alerts-panel .dashboard-alerts-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 0, 110, 0.5);
+}
+
+/* Compact alert cards for dashboard */
+.dashboard .alerts-panel .dashboard-alert-card {
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Hide bulk actions in dashboard view */
+.dashboard .alerts-panel .bulk-actions {
+  display: none;
+}
+
+/* Simplify footer for dashboard */
+.dashboard .alerts-panel .alerts-card-footer {
+  padding: 0.75rem 0;
+  margin-top: auto;
+  border-top: 1px solid rgba(255, 0, 110, 0.2);
+}
+
+/* Hide select all button in dashboard */
+.dashboard .alerts-panel .alerts-card-footer .select-all-button {
+  display: none;
+}
+
+/* Make the character icon smaller in dashboard */
+.dashboard .alerts-panel .quantum-shadow-icon {
+  transform: scale(0.8);
+}
+
+/* Responsive adjustments for grid layout */
+@media (max-width: 1400px) {
+  .dashboard .main-grid-container {
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(4, auto);
+  }
+  
+  .dashboard .alerts-panel .dashboard-alerts-list {
+    max-height: 250px;
+  }
+} }

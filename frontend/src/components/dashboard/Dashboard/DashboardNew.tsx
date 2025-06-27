@@ -1,119 +1,98 @@
 import React, { useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
-import { Link } from 'react-router-dom';
-import './DashboardNew.css';
+import { Link, useNavigate } from 'react-router-dom';
 import { fetchPatterns } from '../../../store/slices/autoTunerSlice';
 import { fetchSystemAlerts } from '../../../store/slices/systemAlertsSlice';
 import useMetricsWebSocket from '../../../services/websocket/useMetricsWebSocket';
 import { RootState } from '../../../store/store';
 import SystemStatus from './SystemStatus/SystemStatus';
-import CPUMetric from '../../../components/metrics/CPU/CPUMetric';
-import MemoryMetric from '../../../components/metrics/memory/MemoryMetric';
-import DiskMetric from '../../../components/metrics/disk/DiskMetric';
-import NetworkMetric from '../../../components/metrics/Network/NetworkMetric';
 import SystemAlertsPanel from '../SystemAlertsPanel/SystemAlertsPanel';
 import SystemPatternsPanel from '../SystemPatternsPanel/SystemPatternsPanel';
 import WebSocketTest from '../../WebSocketTest';
+import { DashboardMetricWrapper } from './DashboardMetricWrapper';
+
+// Import our beautiful new styles
+import '../../../styles/index.css';
 
 interface DashboardProps {}
 
 export const DashboardNew: React.FC<DashboardProps> = () => {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const { user } = useAppSelector((state) => state.auth);
-  const { status, error } = useAppSelector(
-    (state: RootState) => state.metrics
-  );
+  const { status, error } = useAppSelector((state: RootState) => state.metrics);
   const loading = status === 'connecting';
-
-  // Establish WebSocket connection and get controls
   const webSocketControls = useMetricsWebSocket();
-  
+
   // Fetch initial data
   useEffect(() => {
-    console.log("🚀 Initializing Dashboard...");
-    
+    console.log("🚀 Initializing Dashboard with new architecture...");
     dispatch(fetchPatterns() as any);
     dispatch(fetchSystemAlerts({ skip: 0, limit: 5 }));
-    
+
     return () => {
       console.log("🧹 Cleaning up Dashboard resources...");
     };
   }, [dispatch]);
 
-  // Display personalized welcome message if user is available
   const getWelcomeMessage = () => {
     if (user?.username) {
       const hour = new Date().getHours();
       const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
       return `${greeting}, ${user.username}!`;
     }
-    return "System Dashboard";
+    return "System Rebellion Dashboard";
   };
-  
-  // Handle refresh button click
+
   const handleRefresh = () => {
-    console.log('Manual refresh requested');
+    console.log('🔄 Manual refresh requested');
     webSocketControls.requestSystemInfo();
   };
-  
-  // Handle circuit breaker reset
+
   const handleResetCircuitBreaker = () => {
-    console.log('Resetting circuit breaker and reconnecting...');
+    console.log('⚡ Resetting circuit breaker and reconnecting...');
     webSocketControls.resetCircuitBreaker();
   };
 
-  // Get metrics data to check if we have any metrics loaded
-  const cpuMetrics = useAppSelector(state => state.cpu.current);
-  const memoryMetrics = useAppSelector(state => state.memory.current);
-  const diskMetrics = useAppSelector(state => state.disk.current);
-  const networkMetrics = useAppSelector(state => state.network.current);
-  
-  // Check if we have any metrics data
-  const hasMetricsData = cpuMetrics || memoryMetrics || diskMetrics || networkMetrics;
-  
-  // Log metrics state for debugging
-  useEffect(() => {
-    console.log('Dashboard metrics state:', { 
-      status, 
-      hasMetricsData,
-      cpuMetrics, 
-      memoryMetrics, 
-      diskMetrics, 
-      networkMetrics 
-    });
-  }, [status, cpuMetrics, memoryMetrics, diskMetrics, networkMetrics]);
-  
-  // Only show loading state if we're connecting AND have no metrics data
+  // Get metrics data
+  const CPUMetrics = useAppSelector(state => state.cpu.current);
+  const MemoryMetrics = useAppSelector(state => state.memory.current);
+  const DiskMetrics = useAppSelector(state => state.disk.current);
+  const NetworkMetrics = useAppSelector(state => state.network.current);
+  const hasMetricsData = CPUMetrics || MemoryMetrics || DiskMetrics || NetworkMetrics;
+
+  // Loading state
   if ((status === 'connecting' || status === 'disconnected') && !hasMetricsData) {
     return (
-      <div className="loading-container">
-        <div className="loading-spinner"></div>
-        <p>Loading dashboard metrics...</p>
+      <div className="sr-loading">
+        <div className="sr-loading__spinner"></div>
+        <p>Initializing System Rebellion Dashboard...</p>
+        <small>The hamsters are preparing the quantum duct tape...</small>
       </div>
     );
   }
 
-  // Show error state
+  // Error state
   if (error) {
     return (
-      <div className="error-container">
-        <div className="dashboard-header">
-          <h1>System Dashboard</h1>
-          <div className="connection-controls">
-            <div className={`connection-status ${status}`}>
-              {status === 'connected' ? '🟢 Connected' : 
-               status === 'error' ? '🔴 Disconnected' : 
-               '🟡 Connecting...'}
+      <div className="sr-dashboard">
+        <div className="sr-dashboard__header">
+          <h1>System Rebellion Dashboard</h1>
+          <div className="sr-dashboard__controls">
+            <div className={`sr-connection-status sr-connection-status--${status}`}>
+              {status === 'connected' ? '✅ Connected' : 
+               status === 'error' ? '❌ Disconnected' : 
+               '🔄 Connecting...'}
             </div>
             <button 
-              className="circuit-reset-button"
+              className="sr-button sr-button--danger"
               onClick={handleResetCircuitBreaker}
               title="Reset the circuit breaker and reconnect"
             >
-              🔄 Reset Connection
+              ⚡ Reset Circuit Breaker
             </button>
             <button 
-              className="refresh-button" 
+              className="sr-button sr-button--secondary" 
               onClick={handleRefresh}
               title="Refresh metrics data"
             >
@@ -121,46 +100,52 @@ export const DashboardNew: React.FC<DashboardProps> = () => {
             </button>
           </div>
         </div>
-        <h2>⚠️ Connection Error</h2>
-        <p>{error}</p>
-        <div className="error-actions">
-          <button 
-            className="retry-button"
-            onClick={handleResetCircuitBreaker}
-          >
-            Reset Circuit Breaker & Reconnect
-          </button>
-          <button 
-            className="retry-button secondary"
-            onClick={() => window.location.reload()}
-          >
-            Reload Page
-          </button>
+        
+        <div className="sr-card sr-card--cyber">
+          <div className="sr-card__header">
+            <h2>🚨 Connection Error</h2>
+          </div>
+          <p>{error}</p>
+          <div className="sr-dashboard__controls">
+            <button 
+              className="sr-button sr-button--cyber"
+              onClick={handleResetCircuitBreaker}
+            >
+              ⚡ Reset Circuit Breaker & Reconnect
+            </button>
+            <button 
+              className="sr-button sr-button--outline"
+              onClick={() => window.location.reload()}
+            >
+              🔄 Reload Page
+            </button>
+          </div>
+          <p><small>The Stick's anxiety levels are through the roof. Try resetting the circuit breaker first.</small></p>
         </div>
-        <p className="error-help-text">If the circuit breaker is open, try resetting it first.</p>
       </div>
     );
   }
 
   return (
-    <div className="dashboard">
-      <div className="dashboard-header">
+    <div className="sr-dashboard">
+      {/* Header */}
+      <div className="sr-dashboard__header">
         <h1>{getWelcomeMessage()}</h1>
-        <div className="connection-controls">
-          <div className={`connection-status ${status}`}>
-            {status === 'connected' ? '🟢 Connected' : 
-             status === 'error' ? '🔴 Disconnected' : 
-             '🟡 Connecting...'}
+        <div className="sr-dashboard__controls">
+          <div className={`sr-connection-status sr-connection-status--${status}`}>
+            {status === 'connected' ? '✅ Connected' : 
+             status === 'error' ? '❌ Disconnected' : 
+             '🔄 Connecting...'}
           </div>
           <button 
-            className="circuit-reset-button"
+            className="sr-button sr-button--danger"
             onClick={handleResetCircuitBreaker}
             title="Reset the circuit breaker and reconnect"
           >
-            🔄 Reset Connection
+            ⚡ Reset Circuit Breaker
           </button>
           <button 
-            className="refresh-button" 
+            className="sr-button sr-button--secondary" 
             onClick={handleRefresh}
             title="Refresh metrics data"
           >
@@ -169,64 +154,84 @@ export const DashboardNew: React.FC<DashboardProps> = () => {
         </div>
         <SystemStatus loading={loading} error={error} />
       </div>
-      
-      <div className="dashboard-metrics">
-        <div className="metrics-header">
-          <h2>System Metrics</h2>
-          <Link to="/metrics" className="section-link" replace>View All Metrics</Link>
-        </div>
-        
-        <div className="metrics-grid">
-          <div className="metric-card">
-            <div className="metric-card-header">
-              <h3>CPU Usage</h3>
-              <Link to="/metrics" state={{ section: 'cpu' }} className="metric-link" replace>Details</Link>
-            </div>
-            <CPUMetric />
+
+      {/* Main Grid */}
+      <div className="sr-grid sr-grid--2x2">
+        {/* Metrics Panel */}
+        <div className="sr-card sr-card--panel">
+          <div className="sr-card__header">
+            <h2>📊 System Metrics</h2>
+            <Link to="/metrics" className="sr-card__action">
+              View All Metrics
+            </Link>
           </div>
           
-          <div className="metric-card">
-            <div className="metric-card-header">
-              <h3>Memory Usage</h3>
-              <Link to="/metrics" state={{ section: 'memory' }} className="metric-link" replace>Details</Link>
-            </div>
-            <MemoryMetric />
-          </div>
-          
-          <div className="metric-card">
-            <div className="metric-card-header">
-              <h3>Disk Usage</h3>
-              <Link to="/metrics" state={{ section: 'disk' }} className="metric-link" replace>Details</Link>
-            </div>
-            <DiskMetric />
-          </div>
-          
-          <div className="metric-card">
-            <div className="metric-card-header">
-              <h3>Network Traffic</h3>
-              <Link to="/metrics" state={{ section: 'network' }} className="metric-link" replace>Details</Link>
-            </div>
-            <NetworkMetric />
+          <div className="sr-grid sr-grid--metrics">
+            <DashboardMetricWrapper
+              title="CPU Usage"
+              value={CPUMetrics?.usage_percent || 0}
+              unit="%"
+              linkTo="/metrics"
+              linkState={{ section: 'cpu' }}
+              status={(CPUMetrics?.usage_percent || 0) > 90 ? 'critical' : (CPUMetrics?.usage_percent || 0) > 70 ? 'warning' : 'normal'}
+            />
+            <DashboardMetricWrapper
+              title="Memory Usage"
+              value={MemoryMetrics?.percent || 0}
+              unit="%"
+              linkTo="/metrics"
+              linkState={{ section: 'memory' }}
+              status={(MemoryMetrics?.percent || 0) > 90 ? 'critical' : (MemoryMetrics?.percent || 0) > 75 ? 'warning' : 'normal'}
+            />
+            <DashboardMetricWrapper
+              title="Disk Usage"
+              value={DiskMetrics?.percent || 0}
+              unit="%"
+              linkTo="/metrics"
+              linkState={{ section: 'disk' }}
+              status={(DiskMetrics?.percent || 0) > 90 ? 'critical' : (DiskMetrics?.percent || 0) > 75 ? 'warning' : 'normal'}
+            />
+            <DashboardMetricWrapper
+              title="Network Traffic"
+              value={(((NetworkMetrics?.recv_rate || 0) + (NetworkMetrics?.sent_rate || 0)) / 1024 / 1024)}
+              unit="MB/s"
+              linkTo="/metrics"
+              linkState={{ section: 'network' }}
+              status={((((NetworkMetrics?.recv_rate || 0) + (NetworkMetrics?.sent_rate || 0)) / 1024 / 1024) > 50) ? 'critical' : ((((NetworkMetrics?.recv_rate || 0) + (NetworkMetrics?.sent_rate || 0)) / 1024 / 1024) > 10) ? 'warning' : 'normal'}
+            />
           </div>
         </div>
-      </div>
-      
-      <div className="sidebar-panel alerts-panel">
-        <div className="panel-header">
-          <h2>System Alerts</h2>
-          <Link to="/alerts" className="section-link" replace>View All Alerts</Link>
+
+        {/* Alerts Panel */}
+        <div className="sr-card sr-card--panel">
+          <div className="sr-card__header">
+            <h2>🚨 System Alerts</h2>
+            <Link to="/alerts" className="sr-card__action">
+              View All Alerts
+            </Link>
+          </div>
+          <SystemAlertsPanel maxAlerts={5} showAllLink={false} onNavigateToAlerts={() => navigate('/alerts')} />
         </div>
-        <SystemAlertsPanel maxAlerts={5} showAllLink={false} />
-      </div>
-      
-      <div className="sidebar-panel patterns-panel">
-        <div className="panel-header">
-          <h2>System Patterns</h2>
-          <Link to="/auto-tuner" className="section-link" replace>View All Patterns</Link>
+
+        {/* Patterns Panel */}
+        <div className="sr-card sr-card--panel">
+          <div className="sr-card__header">
+            <h2>🧠 System Patterns</h2>
+            <Link to="/auto-tuner" className="sr-card__action">
+              View All Patterns
+            </Link>
+          </div>
+          <SystemPatternsPanel maxPatterns={5} />
         </div>
-        <SystemPatternsPanel maxPatterns={5} />
+
+        {/* WebSocket Test */}
+        <div className="sr-card sr-card--cyber">
+          <div className="sr-card__header">
+            <h2>🔌 WebSocket Manager</h2>
+          </div>
+          <WebSocketTest />
+        </div>
       </div>
-      <WebSocketTest />
     </div>
   );
 };
