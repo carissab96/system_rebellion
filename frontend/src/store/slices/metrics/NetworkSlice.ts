@@ -3,6 +3,9 @@ import { MetricAlert, AlertSeverity } from '../../../types/metrics';
 
 // Updated to match simplified backend network data structure
 export interface NetworkMetric {
+    protocol_breakdown: {};
+    top_processes: never[];
+    timestamp: string | number | Date;
     bytes_sent: number;
     bytes_recv: number;
     packets_sent: number;
@@ -41,6 +44,7 @@ export interface NetworkMetric {
     };
     latency: number | null;
     connection_quality: {
+        latency: number;
         packet_loss: number | null;
         jitter: number | null;
         bandwidth: number;

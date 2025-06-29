@@ -1,7 +1,7 @@
 // src/components/configuration/SystemConfiguration.tsx
 import React, { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import './SystemConfiguration.css';
+import './system-configuration.css';
 import { 
   fetchSystemConfigurations, 
   createSystemConfiguration,

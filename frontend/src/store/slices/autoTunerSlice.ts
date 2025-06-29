@@ -1,8 +1,7 @@
-// src/store/slices/autoTunerSlice.ts
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { PayloadAction } from '@reduxjs/toolkit';
 import { AutoTunerState } from '../../types/autoTuner';
-import apiMethods from '../../utils/api'; // Updated import to use apiMethods
+import { apiMethods } from '../../utils/api'; // Updated import to use apiMethods
 import alertUtils from '../../utils/alertUtils';
 import { createSystemAlert } from './systemAlertsSlice';
 import { OptimizationProfile } from './optimizationSlice';

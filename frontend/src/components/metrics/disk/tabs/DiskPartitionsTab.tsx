@@ -6,7 +6,7 @@ import { ProgressBar } from '@/design-system/components/ProgressBar/ProgressBar'
 import { Table, TableColumn } from '@/design-system/components/Table/Table';
 import { Badge } from '@/design-system/components/Badge/Badge';
 import { Tabs, Tab, TabPanel } from '@/design-system/components/Tabs/Tabs';
-import './DiskPartitionsTab.css';
+import './disk-partitions-tab.css';
 
 interface DiskPartitionsTabProps {
   data: ProcessedDiskData;

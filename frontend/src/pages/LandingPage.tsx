@@ -1,8 +1,8 @@
 // src/pages/LandingPage.tsx
 import { useState, useEffect } from 'react';
-import SignupModal from '../components/Auth/SignupModal/SignupModal';
-import Login from '../components/Auth/login/Login';
-import './LandingPage.css';
+import SignupModal from '../components/auth/signup-modal/SignupModal';
+import Login from '../components/auth/login/Login';
+import './landing-page.css';
 
 // Import character data
 import { teamMembers, projectTimeline } from '../data/systemRebellionData';

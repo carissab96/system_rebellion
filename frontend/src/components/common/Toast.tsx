@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
-import './Toast.css';
+import './toast.css';
 
 type ToastType = 'success' | 'error' | 'warning' | 'info';
 

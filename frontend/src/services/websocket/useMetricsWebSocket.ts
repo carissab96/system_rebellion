@@ -2,8 +2,8 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
-import { ConnectionStatus, WebSocketMessage } from './websocket_types';
-import { initWebSocket } from './WebSocketService';
+import { ConnectionStatus, WebSocketMessage } from './websocketTypes';
+import { initWebSocket } from './webSocketService';
 import { 
   setConnectionStatus, 
   setError as setMetricsError

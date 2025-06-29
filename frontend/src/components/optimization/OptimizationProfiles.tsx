@@ -1,7 +1,7 @@
 // src/components/optimization/OptimizationProfiles.tsx
 import React, { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import './OptimizationProfiles.css';
+import './optimization-profiles.css';
 import './modal-fix.css'; // Import the modal fix CSS
 import { 
   fetchOptimizationProfiles, 

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import './SystemAlerts.css';
+import './system-alerts.css';
 import { 
   fetchSystemAlerts, 
   markAlertAsRead,
@@ -18,7 +18,7 @@ import {
   markSelectedAlertsAsRead
 } from '../../store/slices/systemAlertsSlice';
 import Modal from '../common/Modal';
-import '../common/CharacterIcons.css'
+import '../common/character-icons.css'
 import alertUtils from '../../utils/alertUtils';
 import { Button } from '../../design-system/components';
 

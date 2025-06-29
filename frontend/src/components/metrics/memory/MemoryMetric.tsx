@@ -12,7 +12,7 @@ import { MemoryAllocationTab } from './tabs/MemoryAllocationTab';
 import { MemoryProcessesTab } from './tabs/MemoryProcessesTab';
 import { MemoryOverviewTab } from './tabs/MemoryOverviewTab';
 import { ProcessedMemoryData, MemoryProcess } from './tabs/types';
-import './MemoryMetric.css';
+import './memory-metric.css';
 
 interface MemoryMetricProps {
   compact?: boolean;
