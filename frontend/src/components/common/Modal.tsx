@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, ReactNode } from 'react';
 import ReactDOM from 'react-dom';
-import './Modal.css';
+import './modal.css';
 import '../optimization/modal-fix.css';
 
 interface ModalProps {

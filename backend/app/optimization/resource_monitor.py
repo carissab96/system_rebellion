@@ -15,7 +15,7 @@ import os
 
 class ResourceMonitor:
     """
-    tSystem Resource Monitor
+    System Resource Monitor
     
     Watches your system resources like a hawk... 
     if hawks were interested in CPU usage and had a thing for metrics.

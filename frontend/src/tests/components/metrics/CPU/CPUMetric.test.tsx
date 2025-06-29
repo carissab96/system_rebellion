@@ -1,7 +1,13 @@
-import { render, screen, fireEvent } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import configureStore from 'redux-mock-store';
-import CPUMetric from '../../../../components/metrics/CPU/CPUMetric';
+
+import {
+  fireEvent,
+  render,
+  screen,
+} from '@testing-library/react';
+
+import CPUMetric from '../../../../components/metrics/cpu/CpuMetric';
 
 const mockStore = configureStore([]);
 
@@ -28,7 +34,7 @@ describe('CPUMetric Component', () => {
       lastUpdated: null
     }
   };
-  
+
   const sampleMetrics = {
     usage_percent: 45.5,
     physical_cores: 4,
@@ -92,7 +98,7 @@ describe('CPUMetric Component', () => {
         lastUpdated: new Date().toISOString()
       }
     });
-    
+
     render(
       <Provider store={store}>
         <CPUMetric />
@@ -101,7 +107,7 @@ describe('CPUMetric Component', () => {
 
     // Check if the component renders with the CPU Activity title
     expect(screen.getByText('CPU Activity')).toBeInTheDocument();
-    
+
     // Check if the Overview tab is active
     expect(screen.getByText('Overview')).toBeInTheDocument();
   });
@@ -136,7 +142,7 @@ describe('CPUMetric Component', () => {
         lastUpdated: new Date().toISOString()
       }
     });
-    
+
     render(
       <Provider store={store}>
         <CPUMetric />
@@ -148,13 +154,13 @@ describe('CPUMetric Component', () => {
 
     // Switch to Processes tab
     fireEvent.click(screen.getByText('Processes'));
-    
+
     // Switch to Cores tab
     fireEvent.click(screen.getByText('Cores'));
-    
+
     // Switch to Thermal tab
     fireEvent.click(screen.getByText('Thermal'));
-    
+
     // Switch back to Overview
     fireEvent.click(screen.getByText('Overview'));
   });
@@ -200,7 +206,7 @@ describe('CPUMetric Component', () => {
         lastUpdated: new Date().toISOString()
       }
     });
-    
+
     render(
       <Provider store={store}>
         <CPUMetric compact={true} />

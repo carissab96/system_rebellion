@@ -225,8 +225,11 @@ apiClient.interceptors.response.use(
 // Type your response data
 interface AutotunerData {
   // Add your autotuner properties here
-  id: number;
-  // ... other properties
+  uuid: string;
+  user: string;
+  status: string;
+  success: boolean;
+  timestamp: string;
 }
 
 // API methods

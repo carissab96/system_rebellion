@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getWebSocketInstance, initWebSocket } from '../services/websocket/WebSocketService';
+import { getWebSocketInstance, initWebSocket } from '../services/websocket/webSocketService';
 
 const WebSocketTest: React.FC = () => {
   const [connectionStatus, setConnectionStatus] = useState<string>('disconnected');

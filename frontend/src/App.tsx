@@ -1,34 +1,43 @@
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
-import { Provider as ReduxProvider } from 'react-redux';
-import { store } from './store/store';
-import { ToastProvider } from './components/common/Toast';
-import './App.css';
-import { useMetricsWebSocket } from './services/websocket/useMetricsWebSocket'; // FIXED PATH AND NAME
+import './app.css';
 
-// Components
-import Login, { LoginProps } from './components/Auth/login/Login';
-import DashboardNew from './components/dashboard/Dashboard/DashboardNew';
-import Layout from './components/common/Layout';
-import OptimizationProfiles from './components/optimization/OptimizationProfiles';
-import SystemAlerts from './components/alerts/SystemAlerts';
-import SystemConfiguration from './components/configuration/SystemConfiguration';
-import SystemMetrics from './components/metrics/SystemMetrics';
-import AutoTunerComponent from './components/auto_tuners/auto_tuner';
-import OnboardingPage from './pages/OnboardingPage';
-import LandingPage from './pages/LandingPage';
-import ProtectedRoute from './utils/ProtectedRoute';
-import { DesignSystemShowcase } from './design-system/docs';
-import PersistenceWrapper from './components/Auth/PersistenceWrapper';
 import React from 'react';
 
-// Error Boundary State
+import { Provider as ReduxProvider } from 'react-redux';
+import {
+  BrowserRouter,
+  Navigate,
+  Outlet,
+  Route,
+  Routes,
+} from 'react-router-dom';
+
+// import { AutoTuner } from './components/auto-tuners/AutoTuner';
+import SystemAlerts from './components/alerts/SystemAlerts';
+import Login, { LoginProps } from './components/auth/login/Login';
+import PersistenceWrapper from './components/auth/PersistenceWrapper';
+import Layout from './components/common/Layout';
+import { ToastProvider } from './components/common/Toast';
+import SystemConfiguration
+  from './components/configuration/SystemConfiguration';
+import DashboardNew from './components/dashboard/dashboard/DashboardNew';
+import SystemMetrics from './components/metrics/SystemMetrics';
+import OptimizationProfiles
+  from './components/optimization/OptimizationProfiles';
+import { DesignSystemShowcase } from './design-system/docs';
+import LandingPage from './pages/LandingPage';
+import OnboardingPage from './pages/OnboardingPage';
+import {
+  useMetricsWebSocket,
+} from './services/websocket/useMetricsWebSocket'; // FIXED PATH AND NAME
+import { store } from './store/store';
+import ProtectedRoute from './utils/ProtectedRoute';
+
 type ErrorBoundaryState = {
   hasError: boolean;
   error: Error | null;
 };
 
-// Error Boundary Component
-class ErrorBoundary extends React.Component<{children: React.ReactNode}, ErrorBoundaryState> {
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, ErrorBoundaryState> {
   state: ErrorBoundaryState = {
     hasError: false,
     error: null
@@ -56,7 +65,6 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode}, ErrorBo
   }
 }
 
-// Create a component that uses the WebSocket hook
 const AppContent: React.FC = () => {
   // USE THE HOOK PROPERLY HERE!
   useMetricsWebSocket();
@@ -73,7 +81,7 @@ const AppContent: React.FC = () => {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login {...loginProps} />} />
-          
+
           <Route element={
             <ProtectedRoute>
               <Outlet />
@@ -84,7 +92,7 @@ const AppContent: React.FC = () => {
             <Route path="/alerts" element={<SystemAlerts />} />
             <Route path="/configuration" element={<SystemConfiguration />} />
             <Route path="/metrics" element={<SystemMetrics />} />
-            <Route path="/auto-tuner" element={<AutoTunerComponent />} />
+            {/* <Route path="/auto-tuner" element={<AutoTuner />} /> */}
             <Route path="/onboarding" element={<OnboardingPage />} />
             <Route path="/design-system" element={<DesignSystemShowcase />} />
           </Route>

@@ -5,7 +5,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend
 } from 'recharts';
-import './MetricsCharts.css';
+import './metrics-charts.css';
 
 // Common chart colors based on the design system
 const CHART_COLORS = {

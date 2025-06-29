@@ -1,10 +1,13 @@
+import './styles/index.css';
+
 import React from 'react';
+
 import { createRoot } from 'react-dom/client';
 import { Provider } from 'react-redux';
+
+import App from './App.tsx';
+import { initWebSocket } from './services/websocket/webSocketService';
 import store from './store/store.ts';
-import App from './App';
-import './styles/index.css';
-import { initWebSocket } from './services/websocket/WebSocketService';
 
 // Initialize WebSocket connection when the app loads
 initWebSocket(store.dispatch);

@@ -1,32 +1,37 @@
+import './system-metrics.css';
+
 // frontend/src/components/metrics/SystemMetrics.tsx
 import React, { useState } from 'react';
-import NetworkMetric from './Network/NetworkMetric';
-import CPUMetric from './CPU/CPUMetric';
-import MemoryMetric from './memory/MemoryMetric';
-import DiskMetric from './disk/DiskMetric';
+
+import {
+  Tab,
+  Tabs,
+} from '../../design-system/components/Tabs/Tabs';
 import { useAppSelector } from '../../store/hooks';
-import { Tabs, Tab } from '../../design-system/components/Tabs/Tabs';
-import './SystemMetrics.css'; 
+import CPUMetric from './cpu/CpuMetric';
+import DiskMetric from './disk/DiskMetric';
+import MemoryMetric from './memory/MemoryMetric';
+import NetworkMetric from './network/NetworkMetric';
 
 const SystemMetrics: React.FC = () => {
   // State for active tab
   const [activeTab, setActiveTab] = useState('cpu');
-  
+
   // Get current connection status for minimal indicator
   const connectionStatus = useAppSelector(state => state.metrics.status);
-  
+
   return (
     <div className="system-metrics">
       {/* Add a small, styled connection indicator */}
       <div className="metrics-connection-status">
-        <span 
-          className={`connection-dot ${connectionStatus === 'connected' ? 'connected' : 
-                                      connectionStatus === 'connecting' ? 'connecting' : 
-                                      'disconnected'}`}
+        <span
+          className={`connection-dot ${connectionStatus === 'connected' ? 'connected' :
+            connectionStatus === 'connecting' ? 'connecting' :
+              'disconnected'}`}
         ></span>
         <span className="connection-text">{connectionStatus}</span>
       </div>
-      
+
       {/* Hide any other connection status components */}
       <style>{`
         .connection-status:not(.metrics-connection-status) {
@@ -119,7 +124,7 @@ const SystemMetrics: React.FC = () => {
           font-size: 1.2rem;
         }
       `}</style>
-      
+
       {/* System Metrics Tabs */}
       <Tabs activeTab={activeTab} onChange={setActiveTab}>
         <Tab id="cpu" label={<><span className="tab-icon">💻</span> CPU</>}>

@@ -2,7 +2,7 @@
 import React, { useEffect } from 'react';
 import { useAppSelector } from '../../store/hooks';
 import Navbar from './Navbar';
-import './Layout.css';
+import './layout.css';
 
 interface LayoutProps {
   children: React.ReactNode;

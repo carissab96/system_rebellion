@@ -1,9 +1,9 @@
 import { configureStore } from '@reduxjs/toolkit';
 import authReducer from './slices/authSlice';
+// import autoTunerReducer from './slices/autoTunerSlice';
 import metricsReducer from './slices/metricsSlice';
 import userProfileReducer from './slices/userProfileSlice';
-import systemAlertsReducer from './slices/systemAlertsSlice';
-import autoTunerReducer from './slices/autoTunerSlice';
+// import systemAlertsReducer from './slices/systemAlertsSlice';
 import optimizationReducer from './slices/optimizationSlice';
 import configurationReducer from './slices/configurationSlice';
 import cpuReducer from './slices/metrics/CPUSlice';
@@ -18,14 +18,15 @@ export const store = configureStore({
     auth: authReducer,
     metrics: metricsReducer,
     userProfile: userProfileReducer,
-    systemAlerts: systemAlertsReducer,
-    autoTuner: autoTunerReducer,
+    // systemAlerts: systemAlertsReducer,
+    // autoTuner: autoTunerReducer,
     optimization: optimizationReducer,
     configuration: configurationReducer,
     cpu: cpuReducer,
     memory: memoryReducer,
     disk: diskReducer,
     network: networkReducer,  
+  
   },
   middleware: (getDefaultMiddleware) => 
     getDefaultMiddleware({

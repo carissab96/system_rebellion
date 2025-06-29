@@ -13,7 +13,7 @@ import { DiskDirectoryTab } from './tabs/DiskDirectoryTab';
 import { DiskPerformanceTab } from './tabs/DiskPerformanceTab';
 import { processDiskData } from './utils/diskDataProcessor';
 import { DiskMetricProps, RawDiskMetrics } from './tabs/types';
-import './DiskMetric.css';
+import './disk-metric.css';
 
 // Extended props to support dashboard mode
 interface ConsolidatedDiskMetricProps extends DiskMetricProps {
