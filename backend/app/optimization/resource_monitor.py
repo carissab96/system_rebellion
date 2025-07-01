@@ -1,4 +1,4 @@
-#REFACTORED CODE AS AT 9 MAY 2025
+# REFACTORED CODE AS AT 9 MAY 2025
 # core/optimization/resource_monitor.py
 
 import psutil
@@ -9,6 +9,7 @@ import logging
 import socket
 import time
 import subprocess
+import shutil
 from functools import lru_cache
 from collections import Counter
 import os
@@ -21,6 +22,7 @@ class ResourceMonitor:
     if hawks were interested in CPU usage and had a thing for metrics.
     
     Warning: May cause sudden urges to optimize everything in sight.
+    NO FAKE DATA - REAL METRICS ONLY!
     """
 
     def __init__(self):
@@ -237,16 +239,32 @@ class ResourceMonitor:
         except Exception as e:
             self.logger.warning(f"Command failed: {' '.join(command)}: {str(e)}")
             return 1, "", str(e)
+
     async def _command_exists(self, command: str) -> bool:
-        """Check if a command exists on the system with The Hamsters' diligence"""
+        """Check if a command exists using multiple methods - NO FAKE RESULTS"""
+        # Method 1: Use shutil.which (synchronous but reliable)
+        if shutil.which(command):
+            return True
+        
+        # Method 2: Try whereis command
         try:
-            code, _, _ = await self._run_command(["which", command], timeout=1)
-            return code == 0
-        except Exception:
-            return False
+            code, stdout, _ = await self._run_command(["whereis", command], timeout=1)
+            if code == 0 and command in stdout:
+                return True
+        except:
+            pass
+        
+        # Method 3: Try the command directly with --help
+        try:
+            code, _, _ = await self._run_command([command, "--help"], timeout=1)
+            return code in [0, 1]  # Many commands return 1 for --help but still exist
+        except:
+            pass
+        
+        return False
 
     async def _get_throttled_network_metrics(self) -> Dict[str, Any]:
-        """Get enhanced network metrics with throttling"""
+        """Get enhanced network metrics with throttling - REAL DATA ONLY"""
         result = {}
         
         # Check for cached connection quality
@@ -255,15 +273,47 @@ class ResourceMonitor:
             result["connection_quality"] = data
         else:
             try:
-                # Short timeout for connection quality
+                # Increased timeout for connection quality (ping operations need more time)
                 connection_quality = await asyncio.wait_for(
                     self._get_connection_quality(),
-                    timeout=2.0
+                    timeout=5.0
                 )
                 result["connection_quality"] = connection_quality
                 self._update_cache('connection_quality', connection_quality)
-            except (asyncio.TimeoutError, Exception) as e:
-                self.logger.info(f"Skipping connection quality metrics: {str(e)}")
+            except asyncio.TimeoutError as e:
+                self.logger.warning(f"Connection quality metrics timed out: {str(e)}")
+                # Provide default values when timeout occurs
+                result["connection_quality"] = {
+                    "average_latency": None,
+                    "min_latency": None,
+                    "max_latency": None,
+                    "jitter": None,
+                    "packet_loss_percent": None,
+                    "connection_stability": None,
+                    "overall_score": None,
+                    "gateway_latency": None,
+                    "dns_latency": None,
+                    "internet_latency": None,
+                    "data_available": False,
+                    "error": "Timeout during collection"
+                }
+            except Exception as e:
+                self.logger.error(f"Connection quality metrics failed: {str(e)}")
+                # Provide default values when error occurs
+                result["connection_quality"] = {
+                    "average_latency": None,
+                    "min_latency": None,
+                    "max_latency": None,
+                    "jitter": None,
+                    "packet_loss_percent": None,
+                    "connection_stability": None,
+                    "overall_score": None,
+                    "gateway_latency": None,
+                    "dns_latency": None,
+                    "internet_latency": None,
+                    "data_available": False,
+                    "error": str(e)
+                }
         
         # Check for cached DNS metrics
         cached, data = self._check_cache('dns_metrics')
@@ -327,6 +377,16 @@ class ResourceMonitor:
                 self._update_cache('interfaces', interfaces_data)
             except (asyncio.TimeoutError, Exception) as e:
                 self.logger.info(f"Skipping network interfaces: {str(e)}")
+        
+        # Protocol breakdown - REAL DATA ONLY
+        try:
+            protocol_breakdown = await asyncio.wait_for(
+                asyncio.to_thread(self._get_protocol_breakdown),
+                timeout=1.0
+            )
+            result["protocol_breakdown"] = protocol_breakdown
+        except (asyncio.TimeoutError, Exception) as e:
+            self.logger.info(f"Skipping protocol breakdown: {str(e)}")
         
         return result
 
@@ -393,7 +453,8 @@ class ResourceMonitor:
                     "bytes_recv_formatted": "0 B",
                     "total_rate_formatted": "0 B/s"
                 },
-                "total_usage_mb": 0.0
+                "total_usage_mb": 0.0,
+                "error": str(e)
             }
 
     def _get_network_connections(self) -> List[Dict[str, Any]]:
@@ -499,8 +560,8 @@ class ResourceMonitor:
             self.logger.error(f"Error collecting interface info: {str(e)}")
             return [], {}
 
-    def _get_protocol_breakdown(self) -> Dict[str, int]:
-        """Get protocol breakdown from connections - The Meth Snail's specialty"""
+    def _get_protocol_breakdown(self) -> Dict[str, Any]:
+        """Get protocol breakdown from connections - REAL DATA ONLY"""
         protocol_counts = {"tcp": 0, "udp": 0, "http": 0, "https": 0, "dns": 0}
         
         try:
@@ -526,318 +587,360 @@ class ResourceMonitor:
                         if (hasattr(conn, 'raddr') and conn.raddr and conn.raddr.port == 53) or \
                            (hasattr(conn, 'laddr') and conn.laddr and conn.laddr.port == 53):
                             protocol_counts["dns"] += 1
-                except (AttributeError, Exception) as e:
+                except (AttributeError, Exception):
                     continue
             
-            # Calculate percentages
+            # Return ACTUAL counts - NO FAKE PADDING
             total_connections = sum(protocol_counts.values())
             if total_connections > 0:
-                return {k: int((v / total_connections) * 100) for k, v in protocol_counts.items()}
-            
-            # Ensure at least 1% for visualization
-            for protocol in protocol_counts:
-                protocol_counts[protocol] = max(1, protocol_counts[protocol])
+                percentages = {k: int((v / total_connections) * 100) for k, v in protocol_counts.items()}
+                return {
+                    "counts": protocol_counts,
+                    "percentages": percentages,
+                    "total_connections": total_connections,
+                    "data_available": True
+                }
+            else:
+                # If no connections, return actual zeros
+                return {
+                    "counts": protocol_counts,
+                    "percentages": protocol_counts,
+                    "total_connections": 0,
+                    "data_available": False,
+                    "message": "No network connections detected"
+                }
                 
-            return protocol_counts
-            
         except Exception as e:
             self.logger.error(f"Error collecting protocol breakdown: {str(e)}")
-            return {"tcp": 0, "udp": 0, "http": 0, "https": 0, "dns": 0}
+            return {
+                "counts": {"tcp": 0, "udp": 0, "http": 0, "https": 0, "dns": 0},
+                "percentages": {"tcp": 0, "udp": 0, "http": 0, "https": 0, "dns": 0},
+                "total_connections": 0,
+                "data_available": False,
+                "error": str(e)
+            }
  
     async def _get_connection_quality(self) -> Dict[str, Any]:
-        """Get connection quality metrics - The Stick's domain of precise measurements"""
-        # Default values for connection quality (more realistic defaults)
+        """Get connection quality metrics - REAL DATA ONLY"""
+        
+        # Start with null values - NO FAKE DATA
         quality_data = {
-            "average_latency": 25.5,  # 25.5ms average latency
-            "min_latency": 20.0,     # 20ms minimum latency
-            "max_latency": 35.0,     # 35ms maximum latency
-            "jitter": 2.5,           # 2.5ms jitter
-            "packet_loss_percent": 0.5,  # 0.5% packet loss
-            "connection_stability": 95.0,  # 95% stability score
-            "overall_score": 90.0,    # 90/100 overall score
-            "gateway_latency": 1.2,   # 1.2ms gateway latency
-            "dns_latency": 10.5,      # 10.5ms DNS latency
-            "internet_latency": 25.5  # 25.5ms internet latency
+            "average_latency": None,
+            "min_latency": None,
+            "max_latency": None,
+            "jitter": None,
+            "packet_loss_percent": None,
+            "connection_stability": None,
+            "overall_score": None,
+            "gateway_latency": None,
+            "dns_latency": None,
+            "internet_latency": None,
+            "data_available": False,
+            "error": None
         }
         
-        # The Stick only proceeds with ping if it's available
-        if not await self._command_exists('ping'):
-            self.logger.warning("The Stick is dismayed: ping command not found for connection quality assessment")
+        # Check if ping command exists with multiple methods
+        ping_available = False
+        try:
+            # Try shutil.which first
+            if shutil.which('ping'):
+                ping_available = True
+            else:
+                # Try alternative paths
+                for ping_path in ['/bin/ping', '/usr/bin/ping', '/sbin/ping']:
+                    if os.path.exists(ping_path):
+                        ping_available = True
+                        break
+        except Exception as e:
+            self.logger.debug(f"Error checking ping availability: {str(e)}")
+        
+        if not ping_available:
+            quality_data["error"] = "ping command not available"
+            self.logger.warning("Connection quality metrics unavailable: ping command not found")
             return quality_data
             
         try:
-            # The Stick selects distinguished targets for quality assessment
-            targets = ["8.8.8.8", "1.1.1.1"]  # Reduced target list for efficiency
+            targets = ["8.8.8.8", "1.1.1.1"]
             latencies = []
             packet_loss = 0
-            ping_count = 2  # Reduced ping count
+            ping_count = 2
             
-            # The Stick methodically tests each target
             for target in targets:
                 try:
                     code, stdout, _ = await self._run_command(
-                        ["ping", "-c", str(ping_count), "-W", "1", target],
-                        timeout=2  # Reduced timeout
+                        ["ping", "-c", str(ping_count), "-W", "2", target],
+                        timeout=4
                     )
                     
-                    # Extract latency from ping output
                     if code == 0:
-                        # Parse ping output to get min/avg/max/mdev
+                        # Parse REAL data only
                         stats_line = stdout.strip().split("\n")[-1]
                         if "min/avg/max" in stats_line:
-                            # Extract values from line like: rtt min/avg/max/mdev = 20.442/22.129/25.427/1.987 ms
                             values = stats_line.split("=")[1].strip().split("/")
                             latencies.append({
                                 "min": float(values[0]),
                                 "avg": float(values[1]),
                                 "max": float(values[2]),
-                                "mdev": float(values[3].split()[0])  # Remove 'ms' suffix
+                                "mdev": float(values[3].split()[0])
                             })
                         
-                        # Check for packet loss with The Stick's unparalleled attention to detail
+                        # Parse packet loss
                         for line in stdout.strip().split("\n"):
                             if "packet loss" in line:
                                 loss_pct = float(line.split("%")[0].split()[-1])
                                 packet_loss += loss_pct / len(targets)
                                 break
                 except Exception as e:
-                    self.logger.debug(f"The Stick is disappointed: Ping to {target} failed: {str(e)}")
-                    packet_loss += 100 / len(targets)  # Count as 100% loss for this target
+                    self.logger.debug(f"Ping to {target} failed: {str(e)}")
+                    packet_loss += 100 / len(targets)
             
-            # The Stick calculates aggregate metrics with mathematical precision
+            # ONLY set values if we have REAL data
             if latencies:
-                min_latency = min(l["min"] for l in latencies)
-                max_latency = max(l["max"] for l in latencies)
-                avg_latency = sum(l["avg"] for l in latencies) / len(latencies)
-                jitter = sum(l["mdev"] for l in latencies) / len(latencies)
+                quality_data["min_latency"] = min(l["min"] for l in latencies)
+                quality_data["max_latency"] = max(l["max"] for l in latencies)
+                quality_data["average_latency"] = sum(l["avg"] for l in latencies) / len(latencies)
+                quality_data["jitter"] = sum(l["mdev"] for l in latencies) / len(latencies)
+                quality_data["packet_loss_percent"] = packet_loss
                 
-                # The Stick's proprietary stability algorithm
-                stability = max(0, 100 - (packet_loss * 0.8) - (jitter * 2))
+                # Calculate derived metrics ONLY from real data
+                stability = max(0, 100 - (packet_loss * 0.8) - (quality_data["jitter"] * 2))
+                overall_score = max(0, 100 - (quality_data["average_latency"] * 0.5) - (packet_loss * 0.8) - (quality_data["jitter"] * 2))
                 
-                # The Stick's holistic quality assessment
-                overall_score = max(0, 100 - (avg_latency * 0.5) - (packet_loss * 0.8) - (jitter * 2))
+                quality_data["connection_stability"] = stability
+                quality_data["overall_score"] = overall_score
+                quality_data["data_available"] = True
+            else:
+                quality_data["error"] = "No successful ping responses"
                 
-                quality_data = {
-                    "average_latency": round(avg_latency, 1),
-                    "min_latency": round(min_latency, 1),
-                    "max_latency": round(max_latency, 1),
-                    "jitter": round(jitter, 1),
-                    "packet_loss_percent": round(packet_loss, 2),
-                    "connection_stability": round(stability, 1),
-                    "overall_score": round(overall_score, 1)
-                }
-            
         except Exception as e:
-            self.logger.error(f"The Stick has encountered a regulatory violation: {str(e)}")
+            quality_data["error"] = str(e)
+            self.logger.error(f"Connection quality collection failed: {str(e)}")
             
         return quality_data
 
     async def _get_dns_metrics(self) -> Dict[str, Any]:
-        """Get DNS metrics - The Quantum Shadow People's reconnaissance mission"""
-        # Default DNS metrics for The Quantum Shadow People's baseline
+        """Get DNS metrics - REAL DATA ONLY"""
+        
+        # Start with null values - NO FAKE DATA
         dns_data = {
-            "query_time_ms": 0,
-            "success_rate": 0,
-            "cache_hit_ratio": 0,
-            "last_failures": 0
+            "query_time_ms": None,
+            "success_rate": None,
+            "cache_hit_ratio": None,
+            "last_failures": None,
+            "data_available": False,
+            "error": None
         }
         
-        # The Quantum Shadow People only proceed if dig is available
-        if not await self._command_exists('dig'):
-            self.logger.warning("The Quantum Shadow People cannot find 'dig' tool for DNS metrics")
+        # Only proceed if dig exists
+        if not shutil.which('dig'):
+            dns_data["error"] = "dig command not available"
+            self.logger.warning("DNS metrics unavailable: dig command not found")
             return dns_data
             
         try:
-            # The Quantum Shadow People's target DNS infrastructure - reduced for efficiency
             dns_servers = ["8.8.8.8"]
             domains = ["google.com", "github.com"]
             query_times = []
             success_count = 0
             total_queries = len(dns_servers) * len(domains)
             
-            # The Quantum Shadow People perform interdimensional DNS queries
             for server in dns_servers:
                 for domain in domains:
                     try:
                         code, stdout, stderr = await self._run_command(
                             ["dig", "@"+server, domain, "+stats", "+noall", "+answer"],
-                            timeout=2  # Reduced timeout
+                            timeout=2
                         )
                         
-                        # The Quantum Shadow People validate query success
                         if code == 0 and stdout.strip():
                             success_count += 1
                             
-                            # Extract query time with quantum precision
-                            output = stdout + stderr  # Combine outputs to check both
+                            # Extract REAL query time only
+                            output = stdout + stderr
                             for line in output.strip().split("\n"):
                                 if "Query time:" in line:
-                                    time_ms = float(line.split(":")[1].strip().split()[0])
-                                    query_times.append(time_ms)
-                                    break
+                                    try:
+                                        time_ms = float(line.split(":")[1].strip().split()[0])
+                                        query_times.append(time_ms)
+                                        break
+                                    except (ValueError, IndexError):
+                                        pass
                     except Exception as e:
-                        self.logger.debug(f"The Quantum Shadow People's DNS query to {server} for {domain} failed: {str(e)}")
+                        self.logger.debug(f"DNS query to {server} for {domain} failed: {str(e)}")
             
-            # The Quantum Shadow People calculate metrics with probabilistic uncertainty
-            if query_times:
-                avg_query_time = sum(query_times) / len(query_times)
-            else:
-                avg_query_time = 0
+            # ONLY calculate metrics if we have REAL data
+            if total_queries > 0:
+                success_rate = success_count / total_queries
+                failures = total_queries - success_count
                 
-            success_rate = success_count / total_queries if total_queries > 0 else 0
-            
-            # The Quantum Shadow People's cache hit ratio estimation
-            cache_hit_ratio = 0.5  # Quantum default state
-            if len(query_times) >= 2:
-                # Sort query times and compare first half vs second half
-                sorted_times = sorted(query_times)
-                half = len(sorted_times) // 2
-                if half > 0:
-                    first_half_avg = sum(sorted_times[:half]) / half
-                    second_half_avg = sum(sorted_times[half:]) / (len(sorted_times) - half)
-                    if first_half_avg > 0:
-                        # Quantum entanglement formula for cache ratio
-                        time_ratio = second_half_avg / first_half_avg
-                        cache_hit_ratio = max(0, min(1, 1 - time_ratio))
-            
-            dns_data = {
-                "query_time_ms": round(avg_query_time, 1),
-                "success_rate": round(success_rate, 2),
-                "cache_hit_ratio": round(cache_hit_ratio, 2),
-                "last_failures": total_queries - success_count
-            }
-            
+                # Only set values if we have actual data
+                dns_data["success_rate"] = round(success_rate, 2)
+                dns_data["last_failures"] = failures
+                
+                if query_times:
+                    avg_query_time = sum(query_times) / len(query_times)
+                    dns_data["query_time_ms"] = round(avg_query_time, 1)
+                    
+                    # Calculate cache hit ratio ONLY if we have enough data points
+                    if len(query_times) >= 2:
+                        sorted_times = sorted(query_times)
+                        half = len(sorted_times) // 2
+                        if half > 0:
+                            first_half_avg = sum(sorted_times[:half]) / half
+                            second_half_avg = sum(sorted_times[half:]) / (len(sorted_times) - half)
+                            if first_half_avg > 0:
+                                time_ratio = second_half_avg / first_half_avg
+                                cache_hit_ratio = max(0, min(1, 1 - time_ratio))
+                                dns_data["cache_hit_ratio"] = round(cache_hit_ratio, 2)
+                
+                dns_data["data_available"] = True
+            else:
+                dns_data["error"] = "No DNS queries attempted"
+                
         except Exception as e:
-            self.logger.error(f"The Quantum Shadow People's dimensional rift encountered an anomaly: {str(e)}")
+            dns_data["error"] = str(e)
+            self.logger.error(f"DNS metrics collection failed: {str(e)}")
             
         return dns_data
 
     async def _get_internet_metrics(self) -> Dict[str, Any]:
-        """Get internet connectivity metrics - The Meth Snail's cosmic journey"""
-        # The Meth Snail's baseline internet metrics
+        """Get internet connectivity metrics - REAL DATA ONLY"""
+        
+        # Start with null values - NO FAKE DATA
         internet_data = {
-            "gateway_latency_ms": 0,
-            "internet_latency_ms": 0,
-            "hop_count": 0,
-            "isp_performance_score": 0
-        }    
+            "gateway_latency_ms": None,
+            "internet_latency_ms": None,
+            "hop_count": None,
+            "isp_performance_score": None,
+            "data_available": False,
+            "error": None
+        }
+        
+        # Only proceed if ping exists
+        if not shutil.which('ping'):
+            internet_data["error"] = "ping command not available"
+            self.logger.warning("Internet metrics unavailable: ping command not found")
+            return internet_data
+            
         try:
-            # The Meth Snail searches for the network gateway
+            # Get gateway IP
             gateway_ip = await self._get_default_gateway()
             
-            # The Meth Snail measures gateway latency with cosmic precision
-            gateway_latency = 0
+            # Measure gateway latency ONLY if we have a gateway
+            gateway_latency = None
             if gateway_ip:
-                code, stdout, _ = await self._run_command(
-                    ["ping", "-c", "2", "-W", "1", gateway_ip],  # Reduced ping count
-                    timeout=2 
-                )
-                if code == 0:
-                    # Extract average latency from the cosmic ping
-                    for line in stdout.strip().split("\n"):
-                        if "min/avg/max" in line:
-                            try:
-                                gateway_latency = float(line.split("/")[1])
-                                break
-                            except (ValueError, IndexError):
-                                pass
+                try:
+                    code, stdout, _ = await self._run_command(
+                        ["ping", "-c", "2", "-W", "1", gateway_ip],
+                        timeout=2 
+                    )
+                    if code == 0:
+                        for line in stdout.strip().split("\n"):
+                            if "min/avg/max" in line:
+                                try:
+                                    gateway_latency = float(line.split("/")[1])
+                                    break
+                                except (ValueError, IndexError):
+                                    pass
+                except Exception as e:
+                    self.logger.debug(f"Gateway ping failed: {str(e)}")
             
-            # The Meth Snail travels the cosmic internet - reduced number of targets
+            # Measure internet latency
             internet_targets = ["google.com"]
             internet_latencies = []
             
             for target in internet_targets:
-                code, stdout, _ = await self._run_command(
-                    ["ping", "-c", "2", "-W", "1", target],  # Reduced ping count
-                    timeout=3  # Reduced timeout
-                )
-                if code == 0:
-                    for line in stdout.strip().split("\n"):
-                        if "min/avg/max" in line:
-                            try:
-                                avg_latency = float(line.split("/")[1])
-                                internet_latencies.append(avg_latency)
-                                break
-                            except (ValueError, IndexError):
-                                pass
+                try:
+                    code, stdout, _ = await self._run_command(
+                        ["ping", "-c", "2", "-W", "1", target],
+                        timeout=3
+                    )
+                    if code == 0:
+                        for line in stdout.strip().split("\n"):
+                            if "min/avg/max" in line:
+                                try:
+                                    avg_latency = float(line.split("/")[1])
+                                    internet_latencies.append(avg_latency)
+                                    break
+                                except (ValueError, IndexError):
+                                    pass
+                except Exception as e:
+                    self.logger.debug(f"Internet ping to {target} failed: {str(e)}")
             
-            # The Meth Snail calculates average internet latency
-            internet_latency = sum(internet_latencies) / len(internet_latencies) if internet_latencies else 0
+            # ONLY set values if we have REAL data
+            if gateway_latency is not None:
+                internet_data["gateway_latency_ms"] = round(gateway_latency, 1)
             
-            # The Meth Snail counts hops in the cosmic traceroute - only if we have time
-            hop_count = 0
-            # Skip traceroute as it's too slow - we'll estimate hop count instead
-            # based on latency difference between gateway and internet
-            if gateway_latency > 0 and internet_latency > 0:
-                # Rough estimate: 1 hop per 10ms latency difference plus a base of 3
-                latency_diff = max(0, internet_latency - gateway_latency)
-                hop_count = 3 + int(latency_diff / 10)
+            if internet_latencies:
+                internet_latency = sum(internet_latencies) / len(internet_latencies)
+                internet_data["internet_latency_ms"] = round(internet_latency, 1)
+                
+                # Calculate hop count ONLY if we have both gateway and internet latency
+                if gateway_latency is not None and internet_latency > gateway_latency:
+                    latency_diff = internet_latency - gateway_latency
+                    hop_count = 3 + int(latency_diff / 10)  # Rough estimate
+                    internet_data["hop_count"] = hop_count
             
-            # The Meth Snail's cosmic ISP performance formula
-            isp_score = 100  # Start at cosmic perfection
-            if gateway_latency > 0:
-                # The Meth Snail's gateway latency penalty
-                isp_score -= min(30, gateway_latency * 3)
+            # Calculate ISP score ONLY if we have real data
+            if gateway_latency is not None or internet_latencies:
+                isp_score = 100  # Start at perfect
+                
+                if gateway_latency is not None:
+                    isp_score -= min(30, gateway_latency * 3)
+                
+                if internet_latencies:
+                    avg_internet_latency = sum(internet_latencies) / len(internet_latencies)
+                    isp_score -= min(40, max(0, avg_internet_latency - 20) / 2)
+                
+                if internet_data["hop_count"] is not None:
+                    isp_score -= min(20, max(0, internet_data["hop_count"] - 8) * 2)
+                
+                internet_data["isp_performance_score"] = round(max(0, min(100, isp_score)))
             
-            if internet_latency > 0:
-                # The Meth Snail's internet latency penalty
-                isp_score -= min(40, (internet_latency - 20) / 2)
-            
-            if hop_count > 0:
-                # The Meth Snail's hop count penalty
-                isp_score -= min(20, max(0, hop_count - 8) * 2)
-            
-            # The Meth Snail ensures the score stays within the cosmic range
-            isp_score = max(0, min(100, isp_score))
-            
-            internet_data = {
-                "gateway_latency_ms": round(gateway_latency, 1),
-                "internet_latency_ms": round(internet_latency, 1),
-                "hop_count": hop_count,
-                "isp_performance_score": round(isp_score)
-            }
-            
+            # Mark as available if we got ANY real data
+            if any(v is not None for k, v in internet_data.items() if k not in ["data_available", "error"]):
+                internet_data["data_available"] = True
+            else:
+                internet_data["error"] = "No internet connectivity data available"
+                
         except Exception as e:
-            self.logger.error(f"The Meth Snail's cosmic journey was interrupted: {str(e)}")
+            internet_data["error"] = str(e)
+            self.logger.error(f"Internet metrics collection failed: {str(e)}")
             
         return internet_data
 
     async def _get_default_gateway(self) -> Optional[str]:
-        """Get the default gateway IP - The Meth Snail's router discovery"""
-        gateway_ip = None
+        """Get the default gateway IP - REAL DATA ONLY"""
+        
         try:
-            # The Meth Snail uses standard commands for router discovery
-            if await self._command_exists('ip'):
+            # Try ip command first
+            if shutil.which('ip'):
                 code, stdout, _ = await self._run_command(
                     ["ip", "route", "show", "default"],
-                    timeout=1  # Reduced timeout
+                    timeout=1
                 )
-                if code == 0:
-                    route_output = stdout.strip()
-                    if route_output:
-                        # Parse output like: default via 192.168.1.1 dev wlp2s0 proto dhcp metric 600
-                        parts = route_output.split()
-                        if len(parts) > 2 and parts[0] == "default" and parts[1] == "via":
-                            gateway_ip = parts[2]
+                if code == 0 and stdout.strip():
+                    parts = stdout.strip().split()
+                    if len(parts) > 2 and parts[0] == "default" and parts[1] == "via":
+                        return parts[2]
             
-            # The Meth Snail has alternative methods for router discovery
-            if not gateway_ip and await self._command_exists('route'):
+            # Try route command as fallback
+            if shutil.which('route'):
                 code, stdout, _ = await self._run_command(
                     ["route", "-n"],
-                    timeout=1  # Reduced timeout
+                    timeout=1
                 )
                 if code == 0:
                     for line in stdout.strip().split('\n'):
                         if line.startswith('0.0.0.0'):
                             parts = line.split()
                             if len(parts) >= 2:
-                                gateway_ip = parts[1]
-                                break
-                    
+                                return parts[1]
+                        
         except Exception as e:
-            self.logger.warning(f"The Meth Snail couldn't find the default gateway: {str(e)}")
+            self.logger.debug(f"Gateway discovery failed: {str(e)}")
             
-        return gateway_ip
+        return None  # Return None if we can't find it - NO FAKE DATA
 
     async def _get_additional_metrics(self) -> Dict:
         """Get additional system metrics - The Hamsters' supplementary research"""

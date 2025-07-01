@@ -11,7 +11,7 @@ import {
   Routes,
 } from 'react-router-dom';
 
-// import { AutoTuner } from './components/auto-tuners/AutoTuner';
+import { AutoTuner } from './components/auto-tuners/AutoTuner';
 import SystemAlerts from './components/alerts/SystemAlerts';
 import Login, { LoginProps } from './components/auth/login/Login';
 import PersistenceWrapper from './components/auth/PersistenceWrapper';
@@ -92,7 +92,7 @@ const AppContent: React.FC = () => {
             <Route path="/alerts" element={<SystemAlerts />} />
             <Route path="/configuration" element={<SystemConfiguration />} />
             <Route path="/metrics" element={<SystemMetrics />} />
-            {/* <Route path="/auto-tuner" element={<AutoTuner />} /> */}
+            <Route path="/auto-tuner" element={<AutoTuner />} />
             <Route path="/onboarding" element={<OnboardingPage />} />
             <Route path="/design-system" element={<DesignSystemShowcase />} />
           </Route>
