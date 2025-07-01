@@ -79,7 +79,7 @@ async def create_system_alert(
         severity=alert_data.severity,
         additional_data=alert_data.additional_data,
         is_read=alert_data.is_read,
-        timestamp=datetime.utcnow()
+        timestamp=datetime.now()
     )
     
     db.add(alert)

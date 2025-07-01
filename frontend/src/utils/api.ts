@@ -1,7 +1,7 @@
 // api.ts
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
-import store from '../store/store';
-import { logout } from '../store/slices/authSlice';
+// import store from '../store/store';
+// import { logout } from '../store/slices/authSlice';
 import { SystemMetric } from '../types/metrics';
 
 interface ApiError extends AxiosError {
@@ -206,7 +206,7 @@ apiClient.interceptors.response.use(
           // For other requests, clear auth data and redirect to login
           localStorage.removeItem('token');
           localStorage.removeItem('refresh_token');
-          store.dispatch(logout());
+          // store.dispatch(logout());
           return Promise.reject(refreshError);
         }
       } else {
@@ -215,7 +215,7 @@ apiClient.interceptors.response.use(
           console.log('🧐 Sir Hawkington: Auto-tuner request failed, but not logging out');
           return Promise.reject(error);
         }
-        store.dispatch(logout());
+        // store.dispatch(logout());
       }
     }
     return Promise.reject(error);
