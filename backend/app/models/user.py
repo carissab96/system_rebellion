@@ -72,6 +72,11 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan"
     )
+    metrics = relationship(
+        "SystemMetrics",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
 class UserProfile(Base):
     __tablename__ = "user_profiles"
     
