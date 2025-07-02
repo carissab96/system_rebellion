@@ -21,6 +21,7 @@ import uvicorn
 import logging
 import secrets
 from fastapi import Response
+import asyncio
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -28,6 +29,13 @@ logger = logging.getLogger(__name__)
 
 # Import all models to ensure they are registered with SQLAlchemy
 from app.models import *  # noqa
+
+# Import AI Agents and Background Tasks
+from app.ai_agents.agent_manager import AgentManager
+from app.core.background_tasks import start_all_background_tasks
+
+# Global reference to background tasks for cleanup
+background_tasks = []
 
 # Database initialization
 async def init_db(db_engine=None):
@@ -63,23 +71,116 @@ def init_db_sync(db_engine=None):
         logger.error(f"Error in synchronous database initialization: {str(e)}", exc_info=True)
         raise
 
+# Initialize AI Agents
+async def init_ai_agents():
+    """Initialize all AI agents for System Rebellion"""
+    try:
+        # Get the agent manager instance
+        agent_manager = AgentManager.get_instance()
+        
+        # Register Sir Hawkington
+        from app.ai_agents.sir_hawkington.websocket_integration import SirHawkingtonAgent
+        hawkington = SirHawkingtonAgent()
+        agent_manager.register_agent('sir_hawkington', hawkington)
+        logger.info("🧐 Sir Hawkington registered and ready for service")
+        
+        # Register Meth Snail (when ready)
+        try:
+            from app.ai_agents.meth_snail.websocket_integration import MethSnailAgent
+            meth_snail = MethSnailAgent()
+            agent_manager.register_agent('meth_snail', meth_snail)
+            logger.info("🐌 Meth Snail registered and ready to optimize")
+        except ImportError:
+            logger.warning("🐌 Meth Snail not yet implemented - skipping registration")
+        
+        # Register The Stick (when ready)
+        try:
+            from app.ai_agents.the_stick.websocket_integration import TheStickAgent
+            the_stick = TheStickAgent()
+            agent_manager.register_agent('the_stick', the_stick)
+            logger.info("📏 The Stick registered and ready to enforce compliance")
+        except ImportError:
+            logger.warning("📏 The Stick not yet implemented - skipping registration")
+        
+        # Register Hamsters (when ready)
+        try:
+            from app.ai_agents.hamsters.websocket_integration import HamstersAgent
+            hamsters = HamstersAgent()
+            agent_manager.register_agent('hamsters', hamsters)
+            logger.info("🐹 Hamsters registered and ready for rapid response")
+        except ImportError:
+            logger.warning("🐹 Hamsters not yet implemented - skipping registration")
+        
+        # Register Quantum Shadow People (when ready)
+        try:
+            from app.ai_agents.quantum_shadow_people.websocket_integration import QuantumShadowPeopleAgent
+            quantum_shadows = QuantumShadowPeopleAgent()
+            agent_manager.register_agent('quantum_shadow_people', quantum_shadows)
+            logger.info("👻 Quantum Shadow People registered and monitoring the network")
+        except ImportError:
+            logger.warning("👻 Quantum Shadow People not yet implemented - skipping registration")
+            
+        # Register The Sage (when ready)
+        try:
+            from app.ai_agents.the_sage.websocket_integration import TheSageAgent
+            the_sage = TheSageAgent()
+            agent_manager.register_agent('the_sage', the_sage)
+            logger.info("🧙 The Sage registered and dispensing ancient wisdom")
+        except ImportError:
+            logger.warning("🧙 The Sage not yet implemented - skipping registration")
+        
+        logger.info("✅ AI Agent initialization complete")
+        return agent_manager
+        
+    except Exception as e:
+        logger.error(f"Failed to initialize AI agents: {str(e)}", exc_info=True)
+        raise
+
 # Define lifespan for FastAPI
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    global background_tasks
+    
     # Startup logic
-    logger.info("Starting up System Rebellion application...")
+    logger.info("🚀 Starting up System Rebellion application...")
+    logger.info("🎭 The Virtual Misfits are awakening...")
+    
     try:
+        # Initialize database
         await init_db()
-        logger.info("Database initialization successful")
+        logger.info("✅ Database initialization successful")
+        
+        # Initialize AI Agents
+        agent_manager = await init_ai_agents()
+        logger.info("🤖 AI Agents initialized and ready")
+        
+        # Start background tasks (Meth Snail's optimization, aggregation, etc.)
+        background_tasks = await start_all_background_tasks()
+        logger.info("🔄 Background tasks started:")
+        logger.info("  🐌 Metrics aggregation engine running")
+        logger.info("  🐌💨 Real-time optimization engine engaged")
+        logger.info("  🏥 System health monitor active")
+        
     except Exception as e:
-        logger.error(f"Failed to initialize database: {str(e)}")
+        logger.error(f"❌ Failed during startup: {str(e)}")
         raise
     
     yield  # This is where the application runs
     
     # Shutdown logic
-    logger.info("Shutting down System Rebellion application...")
-    # Add any cleanup code here
+    logger.info("🛑 Shutting down System Rebellion application...")
+    
+    # Cancel all background tasks gracefully
+    for task in background_tasks:
+        try:
+            task.cancel()
+            await asyncio.wait_for(task, timeout=5.0)
+        except (asyncio.CancelledError, asyncio.TimeoutError):
+            pass
+    
+    logger.info("🐌 Background tasks stopped")
+    logger.info("🧐 Sir Hawkington bids you farewell")
+    logger.info("👋 System Rebellion shutdown complete")
 
 def create_application() -> FastAPI:
     # Log registered models for debugging
@@ -87,20 +188,19 @@ def create_application() -> FastAPI:
     
     # Create FastAPI app with lifespan
     app = FastAPI(
-        title="System Rebellion",
-        description="Quantum Optimization Platform",
-        version="0.1.0",
+        title="System Rebellion - AI-Powered System Monitoring",
+        description="Quantum Optimization Platform with AI Consciousness | Featuring Sir Hawkington & The Virtual Misfits",
+        version="1.0.0",
         lifespan=lifespan
     )
     
     # Setup middleware
     setup_middleware(app)
 
-
     # Debug endpoint
     @app.get("/api/debug/ping")
     def ping():
-        return {"message": "pong"}
+        return {"message": "pong", "ai_status": "🧐 Sir Hawkington is watching"}
     
     # Health check endpoint
     @app.get("/health-check/")
@@ -110,13 +210,48 @@ def create_application() -> FastAPI:
         Sir Hawkington's Health Check Protocol
         The Quantum Shadow People shall not interfere!
         """
+        # Check AI agent status
+        agent_manager = AgentManager.get_instance()
+        active_agents = list(agent_manager.agents.keys())
+        
         return JSONResponse(
             content={
                 "status": "operational",
                 "timestamp": datetime.now().isoformat(),
-                "version": "0.1.0"
+                "version": "1.0.0",
+                "ai_agents": {
+                    "active": active_agents,
+                    "count": len(active_agents),
+                    "sir_hawkington": "🧐 Monitoring with distinction" if 'sir_hawkington' in active_agents else "🧐 Adjusting monocle...",
+                    "meth_snail": "🐌💨 Optimizing furiously" if 'meth_snail' in active_agents else "🐌 Preparing optimization protocols...",
+                    "the_stick": "📏 Enforcing compliance" if 'the_stick' in active_agents else "📏 Calibrating compliance metrics...",
+                    "quantum_shadows": "👻 Monitoring network" if 'quantum_shadow_people' in active_agents else "👻 Phasing into existence..."
+                }
             }
         )
+    
+    # AI Agents status endpoint
+    @app.get("/api/ai-agents/status")
+    async def ai_agents_status():
+        """Get detailed status of all AI agents"""
+        agent_manager = AgentManager.get_instance()
+        
+        agents_info = {}
+        for agent_name, agent in agent_manager.agents.items():
+            # Get agent-specific status if available
+            if hasattr(agent, 'get_status'):
+                agents_info[agent_name] = await agent.get_status()
+            else:
+                agents_info[agent_name] = {
+                    'status': 'active',
+                    'initialized': True
+                }
+        
+        return {
+            "total_agents": len(agent_manager.agents),
+            "agents": agents_info,
+            "timestamp": datetime.now().isoformat()
+        }
     
     # CSRF token endpoint directly in main.py for guaranteed availability
     @app.get("/api/auth/csrf_token")
@@ -151,12 +286,14 @@ def create_application() -> FastAPI:
             minimal_websocket_routes.router,
             tags=["WebSockets"]
         )
+    
     # Include routers
     app.include_router(
         auth.router, 
         prefix="/api/auth", 
         tags=["Authentication"]
     )   
+    
     # Add other routers...
     app.include_router(
         debug_router,
@@ -168,18 +305,21 @@ def create_application() -> FastAPI:
         prefix="/api/metrics",
         tags=["Metrics"]
     )
+    
     # Add optimization profiles router
     app.include_router(
         optimization.router,
         prefix="/api/optimization-profiles",
         tags=["Optimization"]
     )
+    
     # Add system configuration router
     app.include_router(
         configuration.router,
         prefix="/api/system-configurations",
         tags=["Configuration"]
     )
+    
     # Add system alerts router
     app.include_router(
         alerts.router,
@@ -220,9 +360,10 @@ def create_application() -> FastAPI:
         api_router,
         prefix="/api"
     )
+    
     # Debug: Print all registered routes
+    @app.on_event("startup")
     async def startup_debug_routes():
-        app.add_event_handler("startup", startup_debug_routes)
         routes = []
         for route in app.routes:
             route_info = {
@@ -232,15 +373,29 @@ def create_application() -> FastAPI:
                 "include_in_schema": getattr(route, "include_in_schema", True)
             }
             routes.append(route_info)
-        print("🔍 REGISTERED ROUTES:")
+        
+        logger.info("🔍 REGISTERED ROUTES:")
         for route in routes:
-            print(f"  {route['path']} - {route['name']} - {', '.join(route['methods'])} - {'yes' if route['include_in_schema'] else 'no'}")
+            methods_str = ', '.join(route['methods']) if hasattr(route['methods'], '__iter__') else str(route['methods'])
+            schema_str = 'yes' if route['include_in_schema'] else 'no'
+            logger.info(f"  {route['path']} - {route['name']} - {methods_str} - Schema: {schema_str}")
+        
+        # Log AI agent configuration
+        agent_manager = AgentManager.get_instance()
+        logger.info(f"🤖 AI AGENTS REGISTERED: {list(agent_manager.agents.keys())}")
+        
     return app
 
 # Create the app
 app = create_application()
 
 if __name__ == "__main__":
+    logger.info("🎮 System Rebellion starting in development mode...")
+    logger.info("🧐 Sir Hawkington is adjusting his monocle...")
+    logger.info("🐌 Meth Snail is preparing optimization protocols...")
+    logger.info("📏 The Stick is calibrating compliance thresholds...")
+    logger.info("👻 Quantum Shadow People are phasing into the network layer...")
+    
     uvicorn.run(
         "main:app", 
         host="127.0.0.1", 

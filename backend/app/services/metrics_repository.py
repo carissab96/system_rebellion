@@ -39,7 +39,6 @@ class MetricsRepository:
         """
         try:
             db_metric = SystemMetrics(
-                id=str(uuid.uuid4()),
                 **metric_data.model_dump()
             )
             
@@ -183,7 +182,7 @@ class MetricsRepository:
     @staticmethod
     async def get_latest_metrics_for_user(
         db: AsyncSession,
-        user_id: uuid.UUID,
+        user_id: str,
         limit: int = 10
     ) -> List[SystemMetrics]:
         """
@@ -336,13 +335,13 @@ class MetricsRepository:
                     continue
                     
                 interfaces[interface] = {
-                    'addresses': [addr.address for addr in addrs if addr.address and addr.address != '::1' and addr.address != '127.0.0.1'],
-                    'is_up': net_if_stats[interface].isup,
-                    'mtu': net_if_stats[interface].mtu,
-                    'speed': net_if_stats[interface].speed
+                    'addresses': [str(addr.address) for addr in addrs if addr.address and addr.address != '::1' and addr.address != '127.0.0.1'],
+                    'is_up': bool(net_if_stats[interface].isup),
+                    'mtu': int(net_if_stats[interface].mtu) if net_if_stats[interface].mtu else 0,
+                    'speed': int(net_if_stats[interface].speed) if net_if_stats[interface].speed else 0
                 }
             
-            return interfaces
+                return interfaces
             
         except Exception as e:
             logger.warning(f"Could not get network interfaces: {str(e)}")
@@ -367,7 +366,7 @@ class MetricsRepository:
     @staticmethod
     async def store_current_metrics(
         db: AsyncSession,
-        user_id: Optional[uuid.UUID] = None,
+        user_id: str,
         metric_type: str = "system_snapshot"
     ) -> SystemMetrics:
         """
@@ -383,7 +382,7 @@ class MetricsRepository:
             
             # Create metric record
             metric_create = MetricCreate(
-                user_id=str(user_id) if user_id else None,
+                user_id=user_id,
                 metric_type=metric_type,
                 name="system_metrics",
                 value=metrics_data.get('cpu', {}).get('percent', 0),

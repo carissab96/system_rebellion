@@ -1,10 +1,11 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, status
 from app.websockets import websocket_manager
+from app.ai_agents.agent_manager import get_agent_manager
 from app.api.websocket_auth import get_current_user_from_token
 from app.services.metrics.simplified_metrics_service import SimplifiedMetricsService
 from app.services.metrics_repository import MetricsRepository
 from app.schemas.metrics import MetricCreate
-from app.core.database import get_db
+from app.core.database import get_async_db
 from app.core.resilience import get_circuit_breaker
 from app.core.resilience.backpressure import BackpressureHandler
 import asyncio
@@ -65,12 +66,13 @@ metrics_backpressure = BackpressureHandler(
 @router.websocket("/system-metrics")
 async def system_metrics_socket(websocket: WebSocket):
     """
-    Sir Hawkington's Simplified System Metrics WebSocket with Database Persistence
+    Sir Hawkington's Simplified System Metrics WebSocket with Database Persistence and AI Integration
     """
     client_id = f"client_{id(websocket)}"
     connection_active = False
     db = None
     user = None
+    agent_manager = None
     
     try:
         # Accept the connection FIRST
@@ -148,8 +150,18 @@ async def system_metrics_socket(websocket: WebSocket):
         
         logger.info(f"WebSocket authenticated for user {user.username} ({client_id})")
         
-        # Get database session
-        db = next(get_db())
+        # Get async database session
+        db_gen = get_async_db()
+        db = await db_gen.__anext__()
+
+        # Initialize AI Agent Manager
+        try:
+            agent_manager = await get_agent_manager()
+            logger.info(f"🤖 AI Agent Manager initialized for user {user.username} - Active agents: {agent_manager.get_active_agents()}")
+        except Exception as e:
+            logger.error(f"Failed to initialize AI Agent Manager: {str(e)}")
+            agent_manager = None
+            # Continue without AI agents - don't break the WebSocket
         
         # Send initial system info
         system_info = await get_system_info()
@@ -183,24 +195,64 @@ async def system_metrics_socket(websocket: WebSocket):
                 # Get metrics from service
                 metrics = await metrics_service.get_metrics()
                 
-                # 🔥 DATABASE PERSISTENCE - Save metrics to database
+                # 🤖 AI AGENT PROCESSING - Let all agents analyze the metrics
+                if agent_manager:
+                    try:
+                        # Create user context for personalized analysis
+                        user_context = {
+                            'user_id': str(user.id),
+                            'username': user.username,
+                            'client_id': client_id
+                        }
+                        
+                        # Process metrics through all AI agents
+                        enhanced_metrics = await agent_manager.process_metrics_through_agents(
+                            metrics, 
+                            user_context
+                        )
+                        
+                        # Log AI agent processing results
+                        if 'agent_processing' in enhanced_metrics:
+                            successful_agents = enhanced_metrics['agent_processing']['successful_agents']
+                            failed_agents = enhanced_metrics['agent_processing']['failed_agents']
+                            
+                            if successful_agents:
+                                agent_names = [agent['agent_name'] for agent in successful_agents]
+                                logger.info(f"🤖 AI Agents processed metrics: {', '.join(agent_names)}")
+                            
+                            if failed_agents:
+                                failed_names = [agent['agent_name'] for agent in failed_agents]
+                                logger.warning(f"🤖 AI Agents failed: {', '.join(failed_names)}")
+                        
+                        # Use enhanced metrics for further processing
+                        metrics = enhanced_metrics
+                        
+                    except Exception as ai_error:
+                        logger.error(f"AI Agent processing failed (non-critical): {str(ai_error)}")
+                        # Continue with original metrics if AI processing fails
+                        # This ensures the WebSocket keeps working even if AI fails
+                
+                # 🔥 DATABASE PERSISTENCE - Save enhanced metrics to database
                 if user and db:
                     try:
                         # Create metric record for database
                         metric_create = MetricCreate(
-                            user_id=user.id,  # Add required user_id field
-                            cpu_usage=metrics.get('cpu', {}).get('percent', 0),
-                            memory_usage=metrics.get('memory', {}).get('percent', 0),
-                            disk_usage=metrics.get('disk', {}).get('percent', 0),
-                            network=metrics.get('network', {}),  # Fix field name: network not network_usage
+                            user_id=str(user.id),
+                            cpu_usage=metrics.get('cpu_usage', 0),
+                            memory_usage=metrics.get('memory_usage', 0),
+                            disk_usage=metrics.get('disk_usage', 0),
+                            network=metrics.get('network', {}),
                             process_count=metrics.get('process_count', 0),
-                            additional_metrics=metrics,  # Store full metrics as JSON
+                            additional_metrics=metrics,  # Store full metrics as JSON (now includes AI analysis!)
                             timestamp=datetime.now(timezone.utc)
                         )
                         
                         # Save to database using repository
                         await MetricsRepository.create_metric(db, metric_create)
-                        logger.debug(f"💾 Metrics saved to database for user {user.username}")
+                        
+                        # Enhanced logging to show what we're saving
+                        ai_info = " + AI analysis" if 'sir_hawkington' in metrics else ""
+                        logger.debug(f"💾 Metrics{ai_info} saved to database for user {user.username}")
                         
                     except Exception as db_error:
                         logger.error(f"Database save failed (non-critical): {db_error}")
@@ -219,11 +271,19 @@ async def system_metrics_socket(websocket: WebSocket):
                         message_to_send = {
                             "type": "metrics_update",
                             "timestamp": datetime.now(timezone.utc).isoformat(),
-                            "data": metric_data
+                            "data": metric_data  # Now includes AI agent analysis!
                         }
                         
-                        # Debug logging
-                        logger.info(f"📤 Sending metrics to {client_id}: keys={list(metric_data.keys()) if isinstance(metric_data, dict) else 'not_dict'}")
+                        # Enhanced debug logging to show AI integration
+                        ai_agents = []
+                        if 'sir_hawkington' in metric_data:
+                            decision_type = metric_data['sir_hawkington'].get('decision_type', 'unknown')
+                            ai_agents.append(f"🧐 Hawkington({decision_type})")
+                        
+                        base_keys = list(metric_data.keys()) if isinstance(metric_data, dict) else 'not_dict'
+                        ai_info = f" + AI: {', '.join(ai_agents)}" if ai_agents else ""
+                        
+                        logger.info(f"📤 Sending metrics{ai_info} to {client_id}: keys={base_keys}")
                         logger.debug(f"📤 Full metrics data structure: {json.dumps(metric_data, indent=2, default=str)[:500]}...")
                         
                         await websocket.send_json(message_to_send)
@@ -320,4 +380,4 @@ async def system_metrics_socket(websocket: WebSocket):
             logger.info(f"WebSocket disconnected for {client_id}")
         
         if db:
-            db.close()
+            await db.close()
