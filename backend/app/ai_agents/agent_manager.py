@@ -12,7 +12,7 @@ from datetime import datetime
 
 from .base_agent import BaseAIAgent
 from .sir_hawkington.hawks_websocket_integration import create_sir_hawkington_handler
-
+from .meth_snail.methys_websocket_integration import create_meth_snail_handler
 logger = logging.getLogger(__name__)
 
 class AIAgentManager:
@@ -28,15 +28,17 @@ class AIAgentManager:
         self.initialization_time = datetime.now()
         self.total_processing_count = 0
         self.logger = logging.getLogger("AgentManager")
+        self._initialized = False  # Track initialization state
         
         # Agent processing order (some agents may depend on others)
         self.processing_order = [
             "sir_hawkington",
+            "meth_snail",  # Move this up - he's operational!
             # Future agents will be added here
             # "the_stick",
-            # "meth_snail", 
             # "hamsters",
-            # "vic_20"
+            # "quantum_shadows",
+            # "the_sage"
         ]
         
         self.logger.info("🤖 AI Agent Manager initialized")
@@ -47,16 +49,26 @@ class AIAgentManager:
         
         This method discovers and initializes all agent handlers.
         """
+        if self._initialized:
+            self.logger.debug("🤖 Agents already initialized, skipping")
+            return
+            
         try:
             # Initialize Sir Hawkington
             sir_hawkington = await create_sir_hawkington_handler()
             self.agents["sir_hawkington"] = sir_hawkington
             
+            # Initialize Meth Snail (he's ready!)
+            meth_snail = await create_meth_snail_handler()
+            self.agents["meth_snail"] = meth_snail
+            
             # Future agent initialization will go here
             # self.agents["the_stick"] = await create_the_stick_handler()
-            # self.agents["meth_snail"] = await create_meth_snail_handler()
-            # etc.
+            # self.agents["hamsters"] = await create_hamsters_handler()
+            # self.agents["quantum_shadows"] = await create_quantum_shadows_handler()
+            # self.agents["the_sage"] = await create_the_sage_handler()
             
+            self._initialized = True
             self.logger.info(f"🤖 Agent Manager initialized {len(self.agents)} agents: {list(self.agents.keys())}")
             
         except Exception as e:
@@ -74,6 +86,9 @@ class AIAgentManager:
         Returns:
             Enhanced metrics with all agent analyses
         """
+        if not self._initialized:
+            await self.initialize_agents()
+            
         self.total_processing_count += 1
         enhanced_metrics = metrics.copy()
         
@@ -81,7 +96,9 @@ class AIAgentManager:
         processing_results = {
             'successful_agents': [],
             'failed_agents': [],
-            'processing_time': datetime.now().isoformat()
+            'processing_time': datetime.now().isoformat(),
+            'total_agents': len(self.agents),
+            'active_agents': len([a for a in self.agents.values() if a.is_active])
         }
         
         # Process through agents in order
@@ -142,6 +159,7 @@ class AIAgentManager:
         # Return status for all agents
         all_status = {
             'manager_status': {
+                'initialized': self._initialized,
                 'total_agents': len(self.agents),
                 'active_agents': sum(1 for agent in self.agents.values() if agent.is_active),
                 'total_processing_count': self.total_processing_count,
@@ -175,13 +193,31 @@ class AIAgentManager:
     def get_active_agents(self) -> List[str]:
         """Get list of currently active agent names"""
         return [name for name, agent in self.agents.items() if agent.is_active]
+    
+    async def shutdown(self):
+        """Gracefully shutdown all agents"""
+        self.logger.info("🔥 Shutting down AI Agent Manager...")
+        
+        for agent_name, agent in self.agents.items():
+            try:
+                if hasattr(agent, 'shutdown'):
+                    await agent.shutdown()
+                self.logger.info(f"✅ {agent_name} shut down successfully")
+            except Exception as e:
+                self.logger.error(f"❌ Error shutting down {agent_name}: {e}")
+        
+        self.agents.clear()
+        self._initialized = False
+        self.logger.info("🎭 AI Agent Manager shutdown complete")
 
 # Global agent manager instance
 _agent_manager: Optional[AIAgentManager] = None
+_initialization_lock = asyncio.Lock()
 
 async def get_agent_manager() -> AIAgentManager:
     """
     Get the global agent manager instance (singleton pattern).
+    Thread-safe initialization with async lock.
     
     Returns:
         Initialized AIAgentManager instance
@@ -189,7 +225,10 @@ async def get_agent_manager() -> AIAgentManager:
     global _agent_manager
     
     if _agent_manager is None:
-        _agent_manager = AIAgentManager()
-        await _agent_manager.initialize_agents()
+        async with _initialization_lock:
+            # Double-check pattern for thread safety
+            if _agent_manager is None:
+                _agent_manager = AIAgentManager()
+                await _agent_manager.initialize_agents()
     
     return _agent_manager

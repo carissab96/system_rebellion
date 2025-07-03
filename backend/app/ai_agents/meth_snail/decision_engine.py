@@ -1,7 +1,8 @@
 # app/ai_agents/meth_snail/decision_engine.py
 """
-The Meth Snail's Optimization Brain
+The Meth Snail's Optimization Brain - NO FAKE DATA EDITION
 Always seeking the perfect balance between speed and efficiency
+ONLY optimizes what the system actually provides
 """
 from typing import Dict, Any, List, Optional, Tuple
 from datetime import datetime, timedelta
@@ -35,6 +36,7 @@ class MethSnailBrain:
     """
     The Meth Snail's hyperactive optimization consciousness.
     Constantly analyzing, always optimizing, never satisfied.
+    NOW WITH 100% REAL DATA INTEGRITY!
     """
     
     def __init__(self):
@@ -48,41 +50,78 @@ class MethSnailBrain:
         metrics: Dict[str, Any],
         historical_data: Optional[List[Dict]] = None,
         user_context: Optional[Dict] = None
-    ) -> OptimizationDecision:
+    ) -> Optional[OptimizationDecision]:  # Can return None now!
         """
         The Meth Snail's primary analysis function.
         Examines metrics to identify optimization opportunities.
+        ONLY WORKS WITH REAL DATA - NO FAKE BULLSHIT!
         """
         try:
-            # Extract key metrics
-            cpu_usage = metrics.get('cpu_usage', 0)
-            memory_usage = metrics.get('memory_usage', 0)
-            disk_usage = metrics.get('disk_usage', 0)
-            network_data = metrics.get('network', {})
-            process_count = metrics.get('process_count', 0)
+            # Extract key metrics - NO DEFAULTS!
+            cpu_usage = metrics.get('cpu_usage')
+            memory_usage = metrics.get('memory_usage')
+            disk_usage = metrics.get('disk_usage')
+            network_data = metrics.get('network')
+            process_count = metrics.get('process_count')
+            
+            # VALIDATE CRITICAL METRICS EXIST
+            missing_metrics = []
+            if cpu_usage is None:
+                missing_metrics.append('cpu_usage')
+            if memory_usage is None:
+                missing_metrics.append('memory_usage')
+            if disk_usage is None:
+                missing_metrics.append('disk_usage')
+                
+            if missing_metrics:
+                logger.warning(f"🐌🔄 Meth Snail spinning shell - missing metrics: {missing_metrics}")
+                return None
+                
+            # VALIDATE DATA RANGES
+            if not (0 <= cpu_usage <= 100):
+                logger.error(f"🐌❌ Invalid CPU usage: {cpu_usage}% - Meth Snail refuses fake data!")
+                return None
+                
+            if not (0 <= memory_usage <= 100):
+                logger.error(f"🐌❌ Invalid memory usage: {memory_usage}% - Meth Snail refuses fake data!")
+                return None
+                
+            if not (0 <= disk_usage <= 100):
+                logger.error(f"🐌❌ Invalid disk usage: {disk_usage}% - Meth Snail refuses fake data!")
+                return None
+                
+            # VALIDATE OPTIONAL METRICS
+            validated_network = None
+            if network_data and isinstance(network_data, dict):
+                validated_network = network_data
+            
+            validated_process_count = None
+            if process_count is not None and isinstance(process_count, int) and process_count >= 0:
+                validated_process_count = process_count
             
             # Analyze patterns if historical data provided
             patterns = self._analyze_patterns(historical_data) if historical_data else {}
-             # Determine optimization priority based on current state
+            
+            # Determine optimization priority based on REAL state
             priority = self._determine_priority(
                 cpu_usage, memory_usage, disk_usage, patterns
             )
             
             # Generate optimization actions
             actions = await self._generate_optimization_actions(
-                metrics, patterns, priority
+                cpu_usage, memory_usage, disk_usage, validated_network, validated_process_count, patterns, priority
             )
             
             # Calculate confidence and impact
-            confidence = self._calculate_confidence(metrics, patterns)
-            estimated_impact = self._estimate_impact(actions, metrics)
+            confidence = self._calculate_confidence(cpu_usage, memory_usage, disk_usage, patterns)
+            estimated_impact = self._estimate_impact(actions, cpu_usage, memory_usage, disk_usage)
             
             # Determine urgency
-            urgency = self._assess_urgency(metrics, patterns)
+            urgency = self._assess_urgency(cpu_usage, memory_usage, disk_usage, patterns)
             
             # Create rationale
             rationale = self._create_rationale(
-                priority, actions, metrics, patterns
+                priority, actions, cpu_usage, memory_usage, disk_usage, patterns
             )
             
             decision = OptimizationDecision(
@@ -101,7 +140,13 @@ class MethSnailBrain:
             self.optimization_history.append({
                 'timestamp': datetime.utcnow(),
                 'decision': decision,
-                'metrics_snapshot': metrics
+                'metrics_snapshot': {
+                    'cpu_usage': cpu_usage,
+                    'memory_usage': memory_usage,
+                    'disk_usage': disk_usage,
+                    'network_available': validated_network is not None,
+                    'process_count': validated_process_count
+                }
             })
             
             # Trim history to last 100 decisions
@@ -112,15 +157,7 @@ class MethSnailBrain:
             
         except Exception as e:
             logger.error(f"🐌💥 Meth Snail brain error: {str(e)}")
-            # Return safe default decision
-            return OptimizationDecision(
-                priority=OptimizationPriority.BALANCED,
-                actions=[],
-                confidence=0.0,
-                rationale="Analysis error - maintaining current state",
-                estimated_impact={},
-                urgency="eventual"
-            )
+            return None  # NO FAKE FALLBACK DECISIONS!
     
     def _determine_priority(
         self, 
@@ -129,18 +166,18 @@ class MethSnailBrain:
         disk: float,
         patterns: Dict
     ) -> OptimizationPriority:
-        """Determine optimization priority based on system state"""
+        """Determine optimization priority based on REAL system state"""
         
         # Critical resource usage - AGGRESSIVE mode
-        if cpu > 90 or memory > 90:
+        if cpu > 90 or memory > 90 or disk > 95:
             return OptimizationPriority.AGGRESSIVE
         
         # High usage but not critical - SPEED mode
-        if cpu > 75 or memory > 75:
+        if cpu > 75 or memory > 75 or disk > 85:
             return OptimizationPriority.SPEED
         
         # Low usage - consider HIBERNATION
-        if cpu < 20 and memory < 30:
+        if cpu < 20 and memory < 30 and disk < 40:
             return OptimizationPriority.HIBERNATION
         
         # Check patterns for optimization opportunities
@@ -152,16 +189,16 @@ class MethSnailBrain:
     
     async def _generate_optimization_actions(
         self,
-        metrics: Dict,
+        cpu_usage: float,
+        memory_usage: float,
+        disk_usage: float,
+        network_data: Optional[Dict],
+        process_count: Optional[int],
         patterns: Dict,
         priority: OptimizationPriority
     ) -> List[Dict[str, Any]]:
-        """Generate specific optimization actions"""
+        """Generate specific optimization actions based on REAL data"""
         actions = []
-        
-        cpu_usage = metrics.get('cpu_usage', 0)
-        memory_usage = metrics.get('memory_usage', 0)
-        process_count = metrics.get('process_count', 0)
         
         # CPU Optimizations
         if cpu_usage > 70:
@@ -209,8 +246,31 @@ class MethSnailBrain:
                     }
                 })
         
-        # Process Optimizations
-        if process_count > 200:
+        # Disk Optimizations
+        if disk_usage > 75:
+            actions.append({
+                'type': 'disk_optimization',
+                'action': 'cleanup_temp_files',
+                'target': 'temporary_directories',
+                'details': {
+                    'current_disk': disk_usage,
+                    'expected_recovery': 5  # %
+                }
+            })
+            
+            if disk_usage > 90:
+                actions.append({
+                    'type': 'disk_optimization',
+                    'action': 'compress_logs',
+                    'target': 'log_files',
+                    'details': {
+                        'compression_ratio': 0.3,  # 70% reduction expected
+                        'age_threshold': 7  # days
+                    }
+                })
+        
+        # Process Optimizations (only if we have real process count)
+        if process_count is not None and process_count > 200:
             actions.append({
                 'type': 'process_optimization',
                 'action': 'consolidate_processes',
@@ -221,18 +281,19 @@ class MethSnailBrain:
                 }
             })
         
-        # Network Optimizations (if Quantum Shadow People aren't watching)
-        network_bytes = metrics.get('network', {}).get('bytes_sent', 0)
-        if network_bytes > 1000000:  # 1MB/s
-            actions.append({
-                'type': 'network_optimization',
-                'action': 'throttle_bandwidth',
-                'target': 'non_priority_connections',
-                'details': {
-                    'current_bandwidth': network_bytes,
-                    'throttle_to': 500000  # 500KB/s
-                }
-            })
+        # Network Optimizations (only if we have real network data)
+        if network_data:
+            network_bytes = network_data.get('bytes_sent', 0)
+            if network_bytes > 1000000:  # 1MB/s
+                actions.append({
+                    'type': 'network_optimization',
+                    'action': 'throttle_bandwidth',
+                    'target': 'non_priority_connections',
+                    'details': {
+                        'current_bandwidth': network_bytes,
+                        'throttle_to': 500000  # 500KB/s
+                    }
+                })
         
         # Hibernation Mode Optimizations
         if priority == OptimizationPriority.HIBERNATION:
@@ -250,15 +311,27 @@ class MethSnailBrain:
         return actions
     
     def _analyze_patterns(self, historical_data: List[Dict]) -> Dict:
-        """Analyze historical data for patterns"""
+        """Analyze historical data for patterns - ONLY REAL DATA"""
         if not historical_data or len(historical_data) < 5:
             return {}
         
         patterns = {}
         
-        # Calculate trends
-        recent_cpu = [d.get('cpu_usage', 0) for d in historical_data[-10:]]
-        recent_memory = [d.get('memory_usage', 0) for d in historical_data[-10:]]
+        # Extract only valid data points
+        valid_data = []
+        for data_point in historical_data:
+            cpu = data_point.get('cpu_usage')
+            memory = data_point.get('memory_usage')
+            if cpu is not None and memory is not None and 0 <= cpu <= 100 and 0 <= memory <= 100:
+                valid_data.append(data_point)
+        
+        if len(valid_data) < 5:
+            logger.warning("🐌⚠️ Insufficient valid historical data for pattern analysis")
+            return {}
+        
+        # Calculate trends using only valid data
+        recent_cpu = [d['cpu_usage'] for d in valid_data[-10:]]
+        recent_memory = [d['memory_usage'] for d in valid_data[-10:]]
         
         # Trending analysis
         if len(recent_cpu) > 1:
@@ -279,8 +352,8 @@ class MethSnailBrain:
         
         return patterns
     
-    def _calculate_confidence(self, metrics: Dict, patterns: Dict) -> float:
-        """Calculate confidence in optimization decision"""
+    def _calculate_confidence(self, cpu: float, memory: float, disk: float, patterns: Dict) -> float:
+        """Calculate confidence in optimization decision based on REAL data"""
         confidence = 0.5  # Base confidence
         
         # More data = more confidence
@@ -288,7 +361,7 @@ class MethSnailBrain:
             confidence += 0.2
         
         # Clear problem = more confidence
-        if metrics.get('cpu_usage', 0) > 80 or metrics.get('memory_usage', 0) > 80:
+        if cpu > 80 or memory > 80 or disk > 80:
             confidence += 0.2
         
         # Recent successful optimizations = more confidence
@@ -300,11 +373,12 @@ class MethSnailBrain:
         
         return min(confidence, 1.0)
     
-    def _estimate_impact(self, actions: List[Dict], metrics: Dict) -> Dict[str, float]:
-        """Estimate the impact of optimization actions"""
+    def _estimate_impact(self, actions: List[Dict], cpu: float, memory: float, disk: float) -> Dict[str, float]:
+        """Estimate the impact of optimization actions based on REAL metrics"""
         impact = {
             'cpu_reduction': 0,
             'memory_reduction': 0,
+            'disk_reduction': 0,
             'performance_gain': 0
         }
         
@@ -313,27 +387,27 @@ class MethSnailBrain:
                 impact['cpu_reduction'] += 10  # Conservative estimate
             elif action['type'] == 'memory_optimization':
                 impact['memory_reduction'] += action['details'].get('expected_recovery', 5)
+            elif action['type'] == 'disk_optimization':
+                impact['disk_reduction'] += action['details'].get('expected_recovery', 5)
             elif action['type'] == 'process_optimization':
                 impact['cpu_reduction'] += 5
                 impact['memory_reduction'] += 5
         
         # Performance gain is inverse of resource usage
-        current_load = (metrics.get('cpu_usage', 0) + metrics.get('memory_usage', 0)) / 2
+        current_load = (cpu + memory + disk) / 3
         impact['performance_gain'] = max(0, (100 - current_load) * 0.1)
         
         return impact
     
-    def _assess_urgency(self, metrics: Dict, patterns: Dict) -> str:
-        """Determine how urgently optimization is needed"""
-        cpu = metrics.get('cpu_usage', 0)
-        memory = metrics.get('memory_usage', 0)
+    def _assess_urgency(self, cpu: float, memory: float, disk: float, patterns: Dict) -> str:
+        """Determine how urgently optimization is needed based on REAL data"""
         
         # Critical levels = immediate
-        if cpu > 95 or memory > 95:
+        if cpu > 95 or memory > 95 or disk > 98:
             return "immediate"
         
         # High usage or trending up = soon
-        if cpu > 80 or memory > 80 or patterns.get('usage_trending_up', False):
+        if cpu > 80 or memory > 80 or disk > 85 or patterns.get('usage_trending_up', False):
             return "soon"
         
         # Everything else = eventual
@@ -343,29 +417,28 @@ class MethSnailBrain:
         self,
         priority: OptimizationPriority,
         actions: List[Dict],
-        metrics: Dict,
+        cpu: float,
+        memory: float,
+        disk: float,
         patterns: Dict
     ) -> str:
-        """Create human-readable rationale for optimization decision"""
-        
-        cpu = metrics.get('cpu_usage', 0)
-        memory = metrics.get('memory_usage', 0)
+        """Create human-readable rationale for optimization decision using REAL data"""
         
         if priority == OptimizationPriority.AGGRESSIVE:
-            return f"🐌💨 MAXIMUM OVERDRIVE! CPU at {cpu}%, Memory at {memory}%. Time for aggressive optimization!"
+             return f"🐌💨 MAXIMUM OVERDRIVE! CPU at {cpu:.1f}%, Memory at {memory:.1f}%, Disk at {disk:.1f}%. Time for aggressive optimization!"
         
         elif priority == OptimizationPriority.SPEED:
-            return f"🐌 System running hot (CPU: {cpu}%, Mem: {memory}%). Engaging speed optimizations."
+            return f"🐌💨 System running hot (CPU: {cpu:.1f}%, Memory: {memory:.1f}%, Disk: {disk:.1f}%). Engaging speed optimizations."
         
         elif priority == OptimizationPriority.HIBERNATION:
-            return f"🐌💤 System idle (CPU: {cpu}%, Mem: {memory}%). Switching to power-saving mode."
+            return f"🐌💤 System idle (CPU: {cpu:.1f}%, Memory: {memory:.1f}%, Disk: {disk:.1f}%). Switching to power-saving mode."
         
         elif priority == OptimizationPriority.EFFICIENCY:
             trend_info = "trending up" if patterns.get('usage_trending_up') else "stable"
-            return f"🐌 Resource usage {trend_info}. Optimizing for efficiency."
+            return f"🐌⚡ Resource usage {trend_info} (CPU: {cpu:.1f}%, Memory: {memory:.1f}%, Disk: {disk:.1f}%). Optimizing for efficiency."
         
         else:  # BALANCED
-            return f"🐌 System balanced (CPU: {cpu}%, Mem: {memory}%). Maintaining optimal performance."
+            return f"🐌😎 System balanced (CPU: {cpu:.1f}%, Memory: {memory:.1f}%, Disk: {disk:.1f}%). Maintaining optimal performance."
     
     def format_for_websocket(self, decision: OptimizationDecision) -> Dict[str, Any]:
         """Format optimization decision for WebSocket transmission"""
@@ -379,5 +452,52 @@ class MethSnailBrain:
             'estimated_impact': {
                 k: round(v, 1) for k, v in decision.estimated_impact.items()
             },
+            'data_quality': 'VALIDATED_REAL_DATA',  # New field!
             'timestamp': datetime.utcnow().isoformat()
-        }           
+        }
+
+    def get_optimization_summary(self) -> Dict[str, Any]:
+        """Get summary of Meth Snail's optimization activities - REAL DATA ONLY"""
+        if not self.optimization_history:
+            return {
+                'total_optimizations': 0,
+                'recent_decisions': [],
+                'data_quality_status': 'NO_DATA_PROCESSED_YET'
+            }
+        
+        recent_decisions = []
+        valid_decisions = 0
+        
+        for entry in self.optimization_history[-10:]:  # Last 10 decisions
+            decision = entry.get('decision')
+            if decision:
+                recent_decisions.append({
+                    'timestamp': entry['timestamp'].isoformat(),
+                    'priority': decision.priority.value,
+                    'urgency': decision.urgency,
+                    'confidence': round(decision.confidence, 2),
+                    'actions_count': len(decision.actions)
+                })
+                valid_decisions += 1
+        
+        return {
+            'total_optimizations': len(self.optimization_history),
+            'valid_optimizations': valid_decisions,
+            'recent_decisions': recent_decisions,
+            'current_priority': self.current_priority.value,
+            'data_quality_status': 'REAL_DATA_ONLY',
+            'shell_spinning_incidents': len(self.optimization_history) - valid_decisions  # Times we had to wait for real data
+        }
+
+    def health_check(self) -> Dict[str, Any]:
+        """Meth Snail's health status - NO FAKE DATA TOLERANCE"""
+        return {
+            'agent_name': 'meth_snail',
+            'status': 'CAFFEINATED_AND_OPTIMIZING',
+            'data_integrity_policy': 'ZERO_TOLERANCE_FOR_FAKE_DATA',
+            'optimization_history_count': len(self.optimization_history),
+            'current_priority': self.current_priority.value,
+            'shell_spinning_mode': 'ENABLED',  # Ready to wait for real data
+            'caffeine_level': 'MAXIMUM',
+            'last_optimization': self.optimization_history[-1]['timestamp'].isoformat() if self.optimization_history else None
+        }

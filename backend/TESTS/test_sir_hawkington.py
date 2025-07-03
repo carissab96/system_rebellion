@@ -91,7 +91,7 @@ async def test_sir_hawkington():
     recent = hawk.get_recent_decisions(4)
     for i, decision in enumerate(recent, 1):
         msg_preview = decision.message[:50] + "..." if decision.message else "No message (staying quiet)"
-    print(f"{i}. {decision.decision_type.upper()}: {msg_preview}")
+    print(f"{i}. {str(decision.decision_type).upper()}: {msg_preview}")
     
     print(f"\n🧐 Sir Hawkington has made {len(recent)} decisions and remembers them all.")
     print("*adjusts monocle with satisfaction*")

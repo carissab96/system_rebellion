@@ -60,7 +60,7 @@ class SirHawkingtonWebSocketHandler(BaseAIAgent):
             # Enhance the metrics with Sir Hawkington's insights
             enhanced_metrics = metrics.copy()
             enhanced_metrics['sir_hawkington'] = {
-                'decision_type': decision.decision_type,
+                'decision_type': str(decision.decision_type),
                 'message': decision.message,
                 'confidence': decision.confidence,
                 'reasoning': decision.reasoning,
@@ -76,11 +76,11 @@ class SirHawkingtonWebSocketHandler(BaseAIAgent):
             }
             
             # Log significant decisions
-            if decision.message and decision.decision_type != "normal":
-                self.logger.info(f"🧐 {decision.decision_type.upper()}: {decision.message}")
+            if decision.message and str(decision.decision_type) != "normal":
+                self.logger.info(f"🧐 {str(decision.decision_type).upper()}: {decision.message}")
             
             # Debug logging for development
-            self.logger.debug(f"🧐 Analysis complete - Decision: {decision.decision_type}, Confidence: {decision.confidence:.2f}")
+            self.logger.debug(f"🧐 Analysis complete - Decision: {str(decision.decision_type).upper()}, Confidence: {decision.confidence:.2f}")
             
             return enhanced_metrics
             
@@ -105,7 +105,7 @@ class SirHawkingtonWebSocketHandler(BaseAIAgent):
     
     def _update_decision_tracking(self, decision):
         """Track decision patterns for Sir Hawkington's behavior analysis"""
-        if decision.decision_type == "alert":
+        if str(decision.decision_type) == "alert":
             if self.last_decision_type == "alert":
                 self.consecutive_alerts += 1
             else:
@@ -113,7 +113,7 @@ class SirHawkingtonWebSocketHandler(BaseAIAgent):
         else:
             self.consecutive_alerts = 0
         
-        self.last_decision_type = decision.decision_type
+        self.last_decision_type = str(decision.decision_type) 
         
         # Log if Sir Hawkington is getting too alarmed
         if self.consecutive_alerts >= self.max_consecutive_alerts:

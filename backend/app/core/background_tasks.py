@@ -10,7 +10,7 @@ from app.models.user import User
 from app.models.metrics import SystemMetrics
 from app.models.metrics_aggregates import MetricsHourly, MetricsDaily
 from app.services.metrics_aggregation_service import MetricsAggregationService
-from app.ai_agents.agent_manager import AgentManager
+from app.ai_agents.agent_manager import AIAgentManager
 import logging
 
 logger = logging.getLogger("MethSnail.Background")
@@ -99,7 +99,7 @@ async def run_realtime_optimization():
     logger.info("🐌💨 Meth Snail real-time optimization engine ENGAGED!")
     
     # Get the agent manager instance
-    agent_manager = AgentManager.get_instance()
+    agent_manager = await AIAgentManager.get_instance()
     
     # Main optimization loop
     optimization_interval = 30  # Check every 30 seconds

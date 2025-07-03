@@ -8,7 +8,7 @@ import MemoryMetric from '../../metrics/memory/MemoryMetric';
 import NetworkMetric from '../../metrics/network/NetworkMetric';
 
 export const MetricsContainer: React.FC = () => {
-    const metrics = useAppSelector((state) => state.metrics);
+    const metrics = useAppSelector((state) => state.metrics.current);
 
     useEffect(() => {
         console.log("🎨 METRICS CONTAINER UPDATED:", {
