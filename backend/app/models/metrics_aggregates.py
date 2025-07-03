@@ -1,6 +1,7 @@
 # app/models/metrics_aggregates.py
 from sqlalchemy import Column, Integer, Float, DateTime, String, JSON, Index
 from app.core.base import Base
+from datetime import datetime
 
 class MetricsHourly(Base):
     """Hourly aggregated metrics - The Meth Snail's first optimization layer"""

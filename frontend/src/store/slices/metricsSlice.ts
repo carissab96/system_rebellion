@@ -2,6 +2,8 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export interface MetricsState {
+  connectionStatus: any;
+  current: any;
   historical: any;
   status: 'disconnected' | 'connecting' | 'connected' | 'error';
   lastUpdated: string | null;
@@ -14,7 +16,9 @@ const initialState: MetricsState = {
   lastUpdated: null,
   error: null,
   useWebSocket: true,
-  historical: undefined
+  historical: undefined,
+  connectionStatus: null,
+  current: null,
 };
 
 const metricsSlice = createSlice({

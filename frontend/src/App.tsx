@@ -24,7 +24,7 @@ import SystemMetrics from './components/metrics/SystemMetrics';
 import OptimizationProfiles
   from './components/optimization/OptimizationProfiles';
 import { DesignSystemShowcase } from './design-system/docs';
-import LandingPage from './pages/LandingPage';
+import LandingPage from './pages/LandingPage/LandingPage';
 import OnboardingPage from './pages/OnboardingPage';
 import {
   useMetricsWebSocket,

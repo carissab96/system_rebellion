@@ -25,6 +25,126 @@ import SystemStatus from './system-status/SystemStatus';
 
 interface DashboardProps { }
 
+// Sir Hawkington Dashboard Widget Component
+const SirHawkingtonDashboardWidget: React.FC = () => {
+  const metricsData = useAppSelector((state: RootState) => state.metrics.current);
+  const hawkingtonData = metricsData?.sir_hawkington;
+  const agentProcessing = metricsData?.agent_processing;
+  
+  const getMonocleStatus = () => {
+    if (!hawkingtonData) return 'adjusting';
+    if (hawkingtonData.error) return 'fogged';
+    if (hawkingtonData.decision_type === 'alert') return 'popped';
+    if (hawkingtonData.decision_type === 'concern') return 'adjusted';
+    return 'polished';
+  };
+
+  const getDecisionColor = () => {
+    if (!hawkingtonData) return 'normal';
+    if (hawkingtonData.error) return 'critical';
+    if (hawkingtonData.decision_type === 'alert') return 'critical';
+    if (hawkingtonData.decision_type === 'concern') return 'warning';
+    return 'normal';
+  };
+
+  const getMonocleEmoji = () => {
+    const status = getMonocleStatus();
+    switch (status) {
+      case 'polished': return '✨';
+      case 'adjusted': return '🔧';
+      case 'popped': return '💥';
+      case 'fogged': return '😵';
+      default: return '🔧';
+    }
+  };
+
+  const getStatusText = () => {
+    const status = getMonocleStatus();
+    switch (status) {
+      case 'polished': return 'Polished & Ready';
+      case 'adjusted': return 'Adjusted with Concern';
+      case 'popped': return 'Popped from Alert!';
+      case 'fogged': return 'Fogged with Error';
+      default: return 'Adjusting...';
+    }
+  };
+
+  const wasSuccessful = agentProcessing?.successful_agents?.some((agent: { agent_name: string; }) => agent.agent_name === 'sir_hawkington');
+  const processingTime = agentProcessing?.successful_agents?.find((agent: { agent_name: string; }) => agent.agent_name === 'sir_hawkington')?.processing_time_seconds;
+
+  return (
+    <div className="sr-card sr-card--cyber">
+      <div className="sr-card__header">
+        <h2>🧐 Sir Hawkington's Analysis</h2>
+        <Link to="/metrics" className="sr-card__action">
+          Full Analysis
+        </Link>
+      </div>
+      
+      <div className="sr-agent-status">
+        <div className="sr-agent-status__header">
+          <div className="sr-agent-status__avatar">
+            🧐
+          </div>
+          <div className="sr-agent-status__info">
+            <h3>Sir Hawkington</h3>
+            <p>System Analyst & Gentleman</p>
+          </div>
+          <div className={`sr-agent-status__badge sr-agent-status__badge--${getMonocleStatus()}`}>
+            {getMonocleEmoji()} {getStatusText()}
+          </div>
+        </div>
+        
+        {hawkingtonData ? (
+          <div className="sr-agent-analysis">
+            <div className={`sr-agent-analysis__decision sr-agent-analysis__decision--${getDecisionColor()}`}>
+              {hawkingtonData.error ? 'ERROR' : (hawkingtonData.decision_type?.toUpperCase() || 'ANALYZING')}
+            </div>
+            <p className="sr-agent-analysis__message">
+              {hawkingtonData.message || 'Adjusting monocle for optimal analysis...'}
+            </p>
+            {!hawkingtonData.error && (
+              <div className="sr-agent-analysis__confidence">
+                <span>Confidence: {((hawkingtonData.confidence || 0) * 100).toFixed(1)}%</span>
+                <div className="sr-progress-bar">
+                  <div 
+                    className="sr-progress-bar__fill" 
+                    style={{ width: `${(hawkingtonData.confidence || 0) * 100}%` }}
+                  />
+                </div>
+              </div>
+            )}
+            <div className="sr-agent-analysis__meta">
+              <small>
+                {wasSuccessful ? 
+                  `✅ Analyzed in ${(processingTime * 1000).toFixed(1)}ms` : 
+                  '❌ Analysis failed'
+                }
+                {hawkingtonData.agent_version && ` • v${hawkingtonData.agent_version}`}
+              </small>
+            </div>
+          </div>
+        ) : (
+          <div className="sr-agent-analysis">
+            <div className="sr-agent-analysis__decision sr-agent-analysis__decision--normal">
+              INITIALIZING
+            </div>
+            <p className="sr-agent-analysis__message">
+              🧐 Sir Hawkington is polishing his monocle and preparing for analysis...
+            </p>
+            <div className="sr-agent-analysis__confidence">
+              <span>Confidence: Pending...</span>
+              <div className="sr-progress-bar">
+                <div className="sr-progress-bar__fill sr-progress-bar__fill--pulse" style={{ width: '50%' }} />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export const DashboardNew: React.FC<DashboardProps> = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -164,8 +284,8 @@ export const DashboardNew: React.FC<DashboardProps> = () => {
         <SystemStatus loading={loading} error={error} />
       </div>
 
-      {/* Main Grid */}
-      <div className="sr-grid sr-grid--2x2">
+      {/* Main Grid - Now with 6 panels (3x2) */}
+      <div className="sr-grid sr-grid--3x2">
         {/* Metrics Panel */}
         <div className="sr-card sr-card--panel">
           <div className="sr-card__header">
@@ -222,6 +342,9 @@ export const DashboardNew: React.FC<DashboardProps> = () => {
           <SystemAlertsPanel maxAlerts={5} showAllLink={false} onNavigateToAlerts={() => navigate('/alerts')} />
         </div>
 
+        {/* Sir Hawkington's Analysis Widget */}
+        <SirHawkingtonDashboardWidget />
+
         {/* Patterns Panel */}
         <div className="sr-card sr-card--panel">
           <div className="sr-card__header">
@@ -233,16 +356,30 @@ export const DashboardNew: React.FC<DashboardProps> = () => {
           <SystemPatternsPanel maxPatterns={5} />
         </div>
 
-        {/* WebSocket Test */}
+        {/* WebSocket Control Panel */}
         <div className="sr-card sr-card--cyber">
           <div className="sr-card__header">
             <h2>🔌 WebSocket Manager</h2>
           </div>
           <WebSocketTest />
         </div>
+
+        {/* Future: Could add Meth Snail widget here */}
+        <div className="sr-card sr-card--panel">
+          <div className="sr-card__header">
+            <h2>🚀 System Status</h2>
+          </div>
+          <div className="sr-system-overview">
+            <p>System Rebellion Dashboard</p>
+            <p>🧐 Sir Hawkington: Active</p>
+            <p>🐌 Meth Snail: Optimizing</p>
+            <p>📏 The Stick: Pending</p>
+            <p>🤖 VIC-20: Pending</p>
+          </div>
+        </div>
       </div>
     </div>
   );
 };
 
-export default DashboardNew;
+export default DashboardNew
