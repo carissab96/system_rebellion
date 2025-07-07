@@ -20,7 +20,7 @@ interface TableProps {
   sortable?: boolean;
 }
 
-export const Table: React.FC<TableProps> = ({
+export const Table: React.FC<TableProps> = ({ 
   columns,
   data,
   onRowClick,

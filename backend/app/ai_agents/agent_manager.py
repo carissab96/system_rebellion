@@ -11,8 +11,9 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime
 
 from .base_agent import BaseAIAgent
-from .sir_hawkington.hawks_websocket_integration import create_sir_hawkington_handler
-from .meth_snail.methys_websocket_integration import create_meth_snail_handler
+from .sir_hawkington.decision_engine import SirHawkingtonBrainV2
+from .meth_snail.decision_engine import MethSnailBrainV2
+from .hamsters.decision_engine import HamstersBrainV2
 logger = logging.getLogger(__name__)
 
 class AIAgentManager:
@@ -36,7 +37,7 @@ class AIAgentManager:
             "meth_snail",  # Move this up - he's operational!
             # Future agents will be added here
             # "the_stick",
-            # "hamsters",
+            "hamsters",
             # "quantum_shadows",
             # "the_sage"
         ]
@@ -55,16 +56,20 @@ class AIAgentManager:
             
         try:
             # Initialize Sir Hawkington
-            sir_hawkington = await create_sir_hawkington_handler()
+            sir_hawkington = SirHawkingtonBrainV2()
             self.agents["sir_hawkington"] = sir_hawkington
             
             # Initialize Meth Snail (he's ready!)
-            meth_snail = await create_meth_snail_handler()
+            meth_snail = MethSnailBrainV2()
             self.agents["meth_snail"] = meth_snail
+
+            # Initialize Hamsters
+            hamsters = HamstersBrainV2()
+            self.agents["hamsters"] = hamsters
             
             # Future agent initialization will go here
             # self.agents["the_stick"] = await create_the_stick_handler()
-            # self.agents["hamsters"] = await create_hamsters_handler()
+
             # self.agents["quantum_shadows"] = await create_quantum_shadows_handler()
             # self.agents["the_sage"] = await create_the_sage_handler()
             

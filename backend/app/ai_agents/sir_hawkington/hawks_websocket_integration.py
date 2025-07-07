@@ -1,241 +1,133 @@
 """
-Sir Hawkington's WebSocket Integration
-
-Handles Sir Hawkington's integration with the WebSocket data flow.
-Implements the BaseAIAgent interface for consistent behavior.
+Sir Hawkington WebSocket Handler V2
+Aristocratic WebSocket communication with proper monocle-yeeting support
 """
 
 import logging
 from typing import Dict, Any, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
-from ..base_agent import BaseAIAgent
-from .decision_engine import SirHawkingtonDecisionEngine
+from .decision_engine import (
+    sir_hawkington_brain,
+    analyze_for_websocket as hawkington_analyze
+)
 
-class SirHawkingtonWebSocketHandler(BaseAIAgent):
+logger = logging.getLogger("SirHawkington.WebSocket")
+
+class SirHawkingtonWebSocketHandler:
     """
-    Sir Hawkington's WebSocket integration handler.
+    Dedicated WebSocket handler for Sir Hawkington
     
-    Analyzes system metrics and provides architectural insights
-    without disrupting the core WebSocket service.
+    Handles aristocratic communication with proper monocle etiquette
     """
     
     def __init__(self):
-        super().__init__("Sir Hawkington", "1.0")
+        self.logger = logging.getLogger("SirHawkington.WebSocket")
+        self.processing_count = 0
+        self.error_count = 0
+        self.monocle_yeet_count = 0
+        self.successful_analyses = 0
         
-        self.decision_engine = SirHawkingtonDecisionEngine()
-        self.last_decision_type = "normal"
-        self.consecutive_alerts = 0
-        
-        # Sir Hawkington's specific settings
-        self.max_consecutive_alerts = 5  # Prevent alert spam
-        self.decision_history_limit = 50
-        
-        self.logger.info("🧐 Sir Hawkington's WebSocket handler initialized and monocle polished")
+        self.logger.info("🧐 Sir Hawkington WebSocket Handler V2 initialized with aristocratic precision")
     
-    async def process_metrics(self, metrics: Dict[str, Any], user_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    async def process_metrics(
+        self, 
+        metrics_data: Dict[str, Any], 
+        user_id: Optional[str] = None
+    ) -> Dict[str, Any]:
         """
-        Sir Hawkington processes metrics and provides architectural analysis.
+        Process metrics through Sir Hawkington's aristocratic analysis
         
         Args:
-            metrics: System metrics to analyze
-            user_context: User information for context
+            metrics_data: Raw system metrics
+            user_id: User ID for tracking
             
         Returns:
-            Enhanced metrics with Sir Hawkington's analysis
+            Sir Hawkington's analysis formatted for WebSocket
         """
-        if not self.is_active:
-            self.logger.debug("🧐 Sir Hawkington is inactive, passing through metrics unchanged")
-            return metrics
+        self.processing_count += 1
         
         try:
-            self.increment_processing_count()
+            decision = await hawkington_analyze(metrics_data, user_id)
             
-            # Sir Hawkington's analysis
-            decision = self.decision_engine.analyze_system_health(metrics)
-            
-            # Track decision patterns
-            self._update_decision_tracking(decision)
-            
-            # Enhance the metrics with Sir Hawkington's insights
-            enhanced_metrics = metrics.copy()
-            enhanced_metrics['sir_hawkington'] = {
-                'decision_type': str(decision.decision_type),
-                'message': decision.message,
-                'confidence': decision.confidence,
-                'reasoning': decision.reasoning,
-                'timestamp': decision.timestamp.isoformat(),
-                'agent_version': self.version,
-                'consecutive_alerts': self.consecutive_alerts,
-                'analysis_metadata': {
-                    'stress_calculation_method': 'weighted_average',
-                    'memory_weight': 0.4,  # Sir Hawkington's bias toward memory issues
-                    'cpu_weight': 0.3,
-                    'disk_weight': 0.3
+            if decision is None:
+                # MONOCLE YEETED
+                self.monocle_yeet_count += 1
+                self.logger.warning(f"🧐💥 Sir Hawkington has yeeted his monocle - insufficient data quality")
+                
+                return {
+                    'agent_name': 'sir_hawkington',
+                    'decision_type': 'monocle_yeeted',
+                    'message': '🧐💥 I say! The data quality is most unsatisfactory. *yeets monocle*',
+                    'confidence': 0.0,
+                    'monocle_state': 'yeeted',
+                    'data_quality_issue': True,
+                    'stress_score': 0.0,
+                    'urgency': 'IMMEDIATE',
+                    'reasoning': 'Insufficient data quality for aristocratic analysis',
+                    'timestamp': datetime.now(timezone.utc).isoformat(),
+                    'aristocratic_seal': False
                 }
-            }
             
-            # Log significant decisions
-            if decision.message and str(decision.decision_type) != "normal":
-                self.logger.info(f"🧐 {str(decision.decision_type).upper()}: {decision.message}")
-            
-            # Debug logging for development
-            self.logger.debug(f"🧐 Analysis complete - Decision: {str(decision.decision_type).upper()}, Confidence: {decision.confidence:.2f}")
-            
-            return enhanced_metrics
+            self.successful_analyses += 1
+            return self._format_hawkington_decision(decision)
             
         except Exception as e:
-            self.increment_error_count()
-            self.logger.error(f"🧐 Sir Hawkington's analysis failed: {str(e)}", exc_info=True)
+            self.error_count += 1
+            self.logger.error(f"🧐❌ Sir Hawkington processing failed: {str(e)}")
             
-            # Return original metrics with error information
-            # This ensures the system continues working even if Sir Hawkington fails
-            error_enhanced_metrics = metrics.copy()
-            error_enhanced_metrics['sir_hawkington'] = {
+            return {
+                'agent_name': 'sir_hawkington',
                 'decision_type': 'error',
-                'message': f"Sir Hawkington's monocle has fogged up: {str(e)}",
+                'message': f'🧐💥 Most regrettable! An error has occurred: {str(e)}',
                 'confidence': 0.0,
-                'reasoning': 'Agent processing error',
-                'timestamp': datetime.now().isoformat(),
-                'agent_version': self.version,
-                'error': True
+                'error': True,
+                'monocle_state': 'cracked',
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'aristocratic_seal': False
             }
-            
-            return error_enhanced_metrics
     
-    def _update_decision_tracking(self, decision):
-        """Track decision patterns for Sir Hawkington's behavior analysis"""
-        if str(decision.decision_type) == "alert":
-            if self.last_decision_type == "alert":
-                self.consecutive_alerts += 1
-            else:
-                self.consecutive_alerts = 1
-        else:
-            self.consecutive_alerts = 0
-        
-        self.last_decision_type = str(decision.decision_type) 
-        
-        # Log if Sir Hawkington is getting too alarmed
-        if self.consecutive_alerts >= self.max_consecutive_alerts:
-            self.logger.warning(f"🧐 Sir Hawkington has been alerting for {self.consecutive_alerts} consecutive cycles - system may need attention")
-    
-    def get_agent_status(self) -> Dict[str, Any]:
-        """Get Sir Hawkington's detailed status information"""
-        base_status = self.get_base_status()
-        
-        # Add Sir Hawkington specific status
-        hawkington_status = {
-            'decision_engine_status': 'operational',
-            'last_decision_type': self.last_decision_type,
-            'consecutive_alerts': self.consecutive_alerts,
-            'recent_decisions_count': len(self.decision_engine.recent_decisions),
-            'monocle_condition': 'polished' if self.error_count == 0 else 'slightly_fogged',
-            'concern_threshold': self.decision_engine.concern_threshold,
-            'alert_threshold': self.decision_engine.alert_threshold,
-            'personality_traits': {
-                'architectural_focus': True,
-                'memory_sensitivity': 'high',
-                'alert_temperament': 'measured',
-                'monocle_pop_frequency': self.consecutive_alerts
-            }
-        }
-        
-        # Merge base status with agent-specific status
-        return {**base_status, **hawkington_status}
-    
-    def adjust_sensitivity(self, concern_threshold: float = None, alert_threshold: float = None):
-        """
-        Adjust Sir Hawkington's sensitivity thresholds.
-        
-        Args:
-            concern_threshold: New concern threshold (0.0 to 1.0)
-            alert_threshold: New alert threshold (0.0 to 1.0)
-        """
-        if concern_threshold is not None:
-            self.decision_engine.concern_threshold = max(0.0, min(1.0, concern_threshold))
-            self.logger.info(f"🧐 Sir Hawkington's concern threshold adjusted to {concern_threshold}")
-        
-        if alert_threshold is not None:
-            self.decision_engine.alert_threshold = max(0.0, min(1.0, alert_threshold))
-            self.logger.info(f"🧐 Sir Hawkington's alert threshold adjusted to {alert_threshold}")
-        
-        # Ensure alert threshold is always higher than concern threshold
-        if self.decision_engine.alert_threshold <= self.decision_engine.concern_threshold:
-            self.decision_engine.alert_threshold = self.decision_engine.concern_threshold + 0.1
-            self.logger.warning(f"🧐 Sir Hawkington adjusted alert threshold to {self.decision_engine.alert_threshold} to maintain proper hierarchy")
-    
-    def get_recent_decisions(self, limit: int = 10) -> list:
-        """
-        Get Sir Hawkington's recent decisions for analysis.
-        
-        Args:
-            limit: Maximum number of recent decisions to return
-            
-        Returns:
-            List of recent decisions with analysis metadata
-        """
-        recent = self.decision_engine.get_recent_decisions(limit)
-        
-        return [
-            {
-                'decision_type': decision.decision_type,
-                'message': decision.message,
-                'confidence': decision.confidence,
-                'timestamp': decision.timestamp.isoformat(),
-                'reasoning': decision.reasoning
-            }
-            for decision in recent
-        ]
-    
-    def reset_decision_history(self):
-        """Reset Sir Hawkington's decision history (useful for testing)"""
-        self.decision_engine.recent_decisions.clear()
-        self.consecutive_alerts = 0
-        self.last_decision_type = "normal"
-        self.logger.info("🧐 Sir Hawkington's decision history has been cleared - fresh slate!")
-    
-    def get_monocle_status(self) -> Dict[str, Any]:
-        """
-        Get the current status of Sir Hawkington's monocle (a fun status indicator).
-        
-        Returns:
-            Dictionary describing the monocle's condition and recent activity
-        """
-        if self.error_count > 5:
-            condition = "cracked"
-            description = "Too many errors have stressed the monocle"
-        elif self.consecutive_alerts > 3:
-            condition = "popped_out"
-            description = "Repeated alerts have caused monocle displacement"
-        elif self.processing_count > 1000:
-            condition = "well_used"
-            description = "Extensive use has given the monocle character"
-        elif self.processing_count > 100:
-            condition = "polished"
-            description = "Regular use keeps the monocle in fine condition"
-        else:
-            condition = "pristine"
-            description = "Newly polished and ready for analysis"
-        
+    def _format_hawkington_decision(self, decision) -> Dict[str, Any]:
+        """Format Sir Hawkington's decision with aristocratic precision"""
         return {
-            'condition': condition,
-            'description': description,
-            'pop_count': self.consecutive_alerts,
-            'total_adjustments': self.processing_count,
-            'clarity_rating': max(0.0, 1.0 - (self.error_count / max(self.processing_count, 1)))
+            'agent_name': 'sir_hawkington',
+            'decision_type': decision.decision_type.value,
+            'message': decision.message,
+            'confidence': round(decision.confidence, 3),
+            'stress_score': round(decision.stress_score, 3),
+            'monocle_state': decision.monocle_state.value,
+            'urgency': decision.urgency,
+            'reasoning': decision.reasoning,
+            'estimated_impact': decision.estimated_impact,
+            'analysis_depth': decision.analysis_depth.value,
+            'data_quality_score': round(decision.data_quality_score, 3),
+            'monocle_yeet_count': decision.monocle_yeet_count,
+            'timestamp': decision.timestamp.isoformat(),
+            'aristocratic_seal': True,
+            'recommendations': getattr(decision, 'recommendations', [])
+        }
+    
+    def get_handler_stats(self) -> Dict[str, Any]:
+        """Get Sir Hawkington's WebSocket handler statistics"""
+        return {
+            'agent_name': 'sir_hawkington',
+            'handler_version': '2.0.0',
+            'total_processing_count': self.processing_count,
+            'successful_analyses': self.successful_analyses,
+            'error_count': self.error_count,
+            'monocle_yeet_count': self.monocle_yeet_count,
+            'success_rate': self.successful_analyses / max(self.processing_count, 1),
+            'monocle_yeet_rate': self.monocle_yeet_count / max(self.processing_count, 1),
+            'current_monocle_state': sir_hawkington_brain.current_monocle_state.value,
+            'status': 'OPERATIONAL',
+            'aristocratic_status': 'DISTINGUISHED'
         }
 
-# Factory function for easy instantiation
-async def create_sir_hawkington_handler() -> SirHawkingtonWebSocketHandler:
-    """
-    Factory function to create and initialize Sir Hawkington's WebSocket handler.
-    
-    Returns:
-        Initialized SirHawkingtonWebSocketHandler instance
-    """
-    handler = SirHawkingtonWebSocketHandler()
-    
-    # Any async initialization can go here
-    handler.logger.info("🧐 Sir Hawkington's WebSocket handler created and ready for duty")
-    
-    return handler
+# Global handler instance
+_hawkington_handler = None
+
+async def get_hawkington_websocket_handler():
+    global _hawkington_handler
+    if _hawkington_handler is None:
+        _hawkington_handler = SirHawkingtonWebSocketHandler()
+    return _hawkington_handler

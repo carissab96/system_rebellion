@@ -62,7 +62,6 @@ metrics_backpressure = BackpressureHandler(
     sampling_strategy="latest"
 )
 
-
 @router.websocket("/system-metrics")
 async def system_metrics_socket(websocket: WebSocket):
     """

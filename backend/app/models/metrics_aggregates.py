@@ -10,6 +10,21 @@ class MetricsHourly(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(String, nullable=False, index=True)
     hour_start = Column(DateTime, nullable=False, index=True)
+
+    #AI Agent Incident Tracking
+    meth_snail_shell_spins = Column(Integer, default=0)
+    hawkington_monocle_yeets = Column(Integer, default=0)
+    stick_hyperventilations = Column(Integer, default=0)
+    quantum_shadow_phasings = Column(Integer, default=0)
+    vic20_wisdom_dispensed = Column(Integer, default=0)
+    
+    #overall AI Health
+    ai_agent_incident_count = Column(Integer, default=0)
+    ai_agent_incident_type = Column(String)
+    ai_agent_incident_reason = Column(String)
+    ai_agent_incident_data_quality_score = Column(Float)
+    ai_agent_incident_summary = Column(JSON)
+
     
     # Aggregated values
     cpu_avg = Column(Float)
@@ -43,6 +58,20 @@ class MetricsDaily(Base):
     user_id = Column(String, nullable=False, index=True)
     date = Column(DateTime, nullable=False, index=True)
     
+    #meth snail shell spins
+    daily_meth_snail_shell_spins = Column(Integer, default=0)
+    daily_hawkington_monocle_yeets = Column(Integer, default=0)
+    daily_stick_hyperventilations = Column(Integer, default=0)
+    daily_quantum_shadow_phasings = Column(Integer, default=0)
+    daily_vic20_wisdom_dispensed = Column(Integer, default=0)
+    
+    # Daily AI health
+    daily_ai_incident_count = Column(Integer, default=0)
+    daily_ai_incident_type = Column(String)
+    daily_ai_incident_reason = Column(String)
+    daily_ai_incident_data_quality_score = Column(Float)
+    daily_ai_incident_summary = Column(JSON)
+    
     # Daily aggregates
     cpu_avg = Column(Float)
     cpu_peak_time = Column(DateTime)
@@ -55,14 +84,10 @@ class MetricsDaily(Base):
     disk_avg = Column(Float)
     network_bytes_total = Column(Float)
     
-    # AI Summary for the day
-    ai_summary = Column(JSON)  # Sir Hawkington's daily report
-    total_concerns = Column(Integer, default=0)
-    total_alerts = Column(Integer, default=0)
-    
     # Pattern detection
     usage_pattern = Column(JSON)  # Peak hours, quiet periods, etc.
     
     __table_args__ = (
         Index('idx_user_date', 'user_id', 'date'),
+        Index('idx_ai_incident_count', 'daily_ai_incident_count, ai_agent_incident_type, ai_agent_incident_reason')
     )

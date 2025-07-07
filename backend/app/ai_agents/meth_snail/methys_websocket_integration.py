@@ -1,101 +1,129 @@
-# app/ai_agents/meth_snail/snails_websocket_integration.py
 """
-Meth Snail WebSocket Integration
-
-Handles the WebSocket integration for Meth Snail's optimization engine.
-Real-time performance analysis and optimization recommendations.
+Meth Snail WebSocket Handler V2
+High-energy optimization WebSocket communication with shell-spinning support
 """
 
 import logging
-import asyncio
 from typing import Dict, Any, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
-from ..base_agent import BaseAIAgent
-from .decision_engine import MethSnailBrain
+from .decision_engine import (
+    meth_snail_brain,
+    analyze_for_websocket as analyze_metrics
+)
 
-logger = logging.getLogger("Agent.Meth Snail")
+logger = logging.getLogger("MethSnail.WebSocket")
 
-class MethSnailWebSocketHandler(BaseAIAgent):
+class MethSnailWebSocketHandler:
     """
-    Meth Snail's WebSocket handler for real-time optimization analysis
+    Dedicated WebSocket handler for Meth Snail
+    
+    Handles high-energy optimization communication with proper shell-spinning
     """
     
     def __init__(self):
-        super().__init__("meth_snail")
-        self.brain = MethSnailBrain()
-        self.optimization_count = 0
-        self.last_optimization_time = None
+        self.logger = logging.getLogger("MethSnail.WebSocket")
+        self.processing_count = 0
+        self.error_count = 0
+        self.shell_spin_count = 0
+        self.successful_analyses = 0
+        self.caffeine_level = "MAXIMUM"
         
-        logger.info("🐌 Meth Snail's WebSocket handler initialized and caffeinated")
+        self.logger.info("🐌💨 Meth Snail WebSocket Handler V2 initialized - CAFFEINE LEVELS: MAXIMUM")
     
-    async def process_metrics(self, metrics: Dict[str, Any], user_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    async def process_metrics(
+        self, 
+        metrics_data: Dict[str, Any], 
+        user_id: Optional[str] = None
+    ) -> Dict[str, Any]:
         """
-        Process metrics through Meth Snail's optimization engine
-        
-        Args:
-            metrics: System metrics to analyze
-            user_context: Optional user context
-            
-        Returns:
-            Enhanced metrics with Meth Snail's optimization analysis
+        Process metrics through Meth Snail's optimization analysis
         """
-        if not self.is_active:
-            return metrics
+        self.processing_count += 1
         
         try:
-            # Get optimization analysis from decision engine
-            optimization_analysis = await self.brain.analyze_metrics(metrics)
+            decision = await analyze_metrics(metrics_data, user_id)
             
-            if optimization_analysis:
-                # Add Meth Snail's analysis to the metrics
-                if 'ai_analysis' not in metrics:
-                    metrics['ai_analysis'] = {}
+            if decision is None:
+                # SHELL SPINNING
+                self.shell_spin_count += 1
+                self.logger.warning(f"🐌🔄 Meth Snail is spinning shell - insufficient data for optimization")
                 
-                metrics['ai_analysis']['meth_snail'] = optimization_analysis
-                
-                # Update processing stats
-                self.optimization_count += 1
-                self.last_optimization_time = datetime.now()
-                
-                logger.info(f"🐌💨 Meth Snail optimized metrics: {optimization_analysis.get('optimization_mode', 'unknown')}")
+                return {
+                    'agent_name': 'meth_snail',
+                    'decision_type': 'shell_spinning',
+                    'message': '🐌🔄 *shell spinning intensifies* - Need more data for optimization!',
+                    'confidence': 0.0,
+                    'shell_state': 'spinning',
+                    'data_quality_issue': True,
+                    'urgency': 'MODERATE',
+                    'rationale': 'Insufficient data quality for optimization analysis',
+                    'caffeine_level': self.caffeine_level,
+                    'timestamp': datetime.now(timezone.utc).isoformat(),
+                    'optimization_possible': False
+                }
             
-            return metrics
+            self.successful_analyses += 1
+            return self._format_meth_snail_decision(decision)
             
         except Exception as e:
-            logger.error(f"🐌❌ Meth Snail optimization failed: {e}")
-            return metrics
+            self.error_count += 1
+            self.logger.error(f"🐌❌ Meth Snail processing failed: {str(e)}")
+            
+            return {
+                'agent_name': 'meth_snail',
+                'decision_type': 'error',
+                'message': f'🐌💥 Optimization circuits overloaded! Error: {str(e)}',
+                'confidence': 0.0,
+                'error': True,
+                'shell_state': 'cracked',
+                'caffeine_level': 'DEPLETED',
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'optimization_possible': False
+            }
     
-    def get_agent_status(self) -> Dict[str, Any]:
-        """Get Meth Snail's current status"""
+    def _format_meth_snail_decision(self, decision) -> Dict[str, Any]:
+        """Format Meth Snail's decision with high-energy precision"""
         return {
-            'agent_name': self.agent_name,
-            'agent_version': '1.0',
-            'is_active': self.is_active,
-            'optimization_count': self.optimization_count,
-            'last_optimization_time': self.last_optimization_time.isoformat() if self.last_optimization_time else None,
-            'caffeine_level': 'MAXIMUM',
-            'status': 'OPTIMIZING' if self.is_active else 'HIBERNATING'
+            'agent_name': 'meth_snail',
+            'decision_type': decision.priority.value,
+            'message': decision.rationale,
+            'confidence': round(decision.confidence, 3),
+            'urgency': decision.urgency,
+            'actions_count': len(decision.actions),
+            'estimated_impact': decision.estimated_impact,
+            'analysis_depth': decision.analysis_depth.value,
+            'data_quality_score': round(decision.data_quality_score, 3),
+            'shell_spin_count': decision.shell_spin_count,
+            'shell_state': 'optimized',
+            'timestamp': decision.timestamp.isoformat(),
+            'optimization_actions': decision.actions[:5],
+            'caffeine_level': self.caffeine_level,
+            'optimization_possible': True,
+            'energy_level': 'MAXIMUM'
         }
     
-    async def shutdown(self):
-        """Gracefully shutdown Meth Snail"""
-        logger.info("🐌 Meth Snail entering deep hibernation...")
-        await self.brain.shutdown()
-        self.deactivate()
+    def get_handler_stats(self) -> Dict[str, Any]:
+        """Get Meth Snail's WebSocket handler statistics"""
+        return {
+            'agent_name': 'meth_snail',
+            'handler_version': '2.0.0',
+            'total_processing_count': self.processing_count,
+            'successful_analyses': self.successful_analyses,
+            'error_count': self.error_count,
+            'shell_spin_count': self.shell_spin_count,
+            'success_rate': self.successful_analyses / max(self.processing_count, 1),
+            'shell_spin_rate': self.shell_spin_count / max(self.processing_count, 1),
+            'caffeine_level': self.caffeine_level,
+            'status': 'OPERATIONAL',
+            'optimization_status': 'READY'
+        }
 
-async def create_meth_snail_handler() -> MethSnailWebSocketHandler:
-    """
-    Create and initialize Meth Snail's WebSocket handler
-    
-    Returns:
-        Initialized MethSnailWebSocketHandler instance
-    """
-    handler = MethSnailWebSocketHandler()
-    
-    # Activate by default
-    handler.activate()
-    
-    logger.info("🐌💨 Meth Snail's WebSocket handler created and ready for optimization")
-    
-    return handler
+# Global handler instance
+_meth_snail_handler = None
+
+async def get_meth_snail_websocket_handler():
+    global _meth_snail_handler
+    if _meth_snail_handler is None:
+        _meth_snail_handler = MethSnailWebSocketHandler()
+    return _meth_snail_handler

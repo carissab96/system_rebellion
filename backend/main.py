@@ -8,7 +8,6 @@ from app.api.endpoints import auth
 from app.api.endpoints import optimization
 from app.api.endpoints import configuration
 from app.api.endpoints import alerts
-from app.api.endpoints import auto_tuner
 from app.api.endpoints import users
 from app.api.endpoints import system_logs
 from app.api.endpoints import health
@@ -33,6 +32,7 @@ from app.models import *  # noqa
 # Import AI Agents and Background Tasks
 from app.ai_agents.agent_manager import get_agent_manager
 from app.core.background_tasks import start_all_background_tasks
+from app.ai_agents.hamsters.hamsters_api_routes import router as hamsters_router
 
 # Global reference to background tasks for cleanup
 background_tasks = []
@@ -214,7 +214,13 @@ def create_application() -> FastAPI:
             minimal_websocket_routes.router,
             tags=["WebSockets"]
         )
-    
+
+    # if hasattr(master_websocket_router_v2, 'router'):
+    #     app.include_router(
+    #         master_websocket_router_v2.router,
+    #         tags=["WebSockets"]
+    #     )
+
     # Include routers
     app.include_router(
         auth.router, 
@@ -255,11 +261,11 @@ def create_application() -> FastAPI:
         tags=["Alerts"]
     )
     
-    # Add auto-tuner router
+    # Add Hamsters API Router   
     app.include_router(
-        auto_tuner.router,
-        prefix="/api/auto-tuner",
-        tags=["Auto-Tuner"]
+        hamsters_router,
+        prefix="/api/hamsters",
+        tags=["Hamsters"]
     )
     
     # Add users router
@@ -298,6 +304,10 @@ if __name__ == "__main__":
     logger.info("🎮 System Rebellion starting in development mode...")
     logger.info("🧐 Sir Hawkington is adjusting his monocle...")
     logger.info("🐌 Meth Snail is preparing optimization protocols...")
+    logger.info("🐹 The Hamsters are ready to serve...")
+    logger.info("📏 The Stick is enforcing compliance...")
+    logger.info("👻 Quantum Shadows are monitoring...")
+    logger.info("VIC20 Are you ready to optimize your system?...")
     
     uvicorn.run(
         "main:app", 

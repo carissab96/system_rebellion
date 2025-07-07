@@ -21,12 +21,11 @@ import WebSocketTest from '../../WebSocketTest';
 import SystemAlertsPanel from '../system-alerts-panel/SystemAlertsPanel';
 import SystemPatternsPanel from '../system-patterns-panel/SystemPatternsPanel';
 import { DashboardMetricWrapper } from './DashboardMetricWrapper';
-import SystemStatus from './system-status/SystemStatus';
 
 interface DashboardProps { }
 
-// Sir Hawkington Dashboard Widget Component
-const SirHawkingtonDashboardWidget: React.FC = () => {
+// Sir Hawkington's Full Analysis Widget - The Main Character!
+const SirHawkingtonMainWidget: React.FC = () => {
   const metricsData = useAppSelector((state: RootState) => state.metrics.current);
   const hawkingtonData = metricsData?.sir_hawkington;
   const agentProcessing = metricsData?.agent_processing;
@@ -73,7 +72,7 @@ const SirHawkingtonDashboardWidget: React.FC = () => {
   const processingTime = agentProcessing?.successful_agents?.find((agent: { agent_name: string; }) => agent.agent_name === 'sir_hawkington')?.processing_time_seconds;
 
   return (
-    <div className="sr-card sr-card--cyber">
+    <div className="sr-card sr-card--cyber sr-card--hawkington-main">
       <div className="sr-card__header">
         <h2>🧐 Sir Hawkington's Analysis</h2>
         <Link to="/metrics" className="sr-card__action">
@@ -150,7 +149,6 @@ export const DashboardNew: React.FC<DashboardProps> = () => {
   const navigate = useNavigate();
   const { user } = useAppSelector((state) => state.auth);
   const { status, error } = useAppSelector((state: RootState) => state.metrics);
-  const loading = status === 'connecting';
   const webSocketControls = useMetricsWebSocket();
 
   // Fetch initial data
@@ -281,11 +279,13 @@ export const DashboardNew: React.FC<DashboardProps> = () => {
             🔄 Refresh
           </button>
         </div>
-        <SystemStatus loading={loading} error={error} />
       </div>
 
-      {/* Main Grid - Now with 6 panels (3x2) */}
-      <div className="sr-grid sr-grid--3x2">
+      {/* Sir Hawkington's Main Analysis Widget - The Star of the Show! */}
+      <SirHawkingtonMainWidget />
+
+      {/* Main Grid - Clean 2x2 layout for supporting cast */}
+      <div className="sr-grid sr-grid--2x2">
         {/* Metrics Panel */}
         <div className="sr-card sr-card--panel">
           <div className="sr-card__header">
@@ -342,9 +342,6 @@ export const DashboardNew: React.FC<DashboardProps> = () => {
           <SystemAlertsPanel maxAlerts={5} showAllLink={false} onNavigateToAlerts={() => navigate('/alerts')} />
         </div>
 
-        {/* Sir Hawkington's Analysis Widget */}
-        <SirHawkingtonDashboardWidget />
-
         {/* Patterns Panel */}
         <div className="sr-card sr-card--panel">
           <div className="sr-card__header">
@@ -363,23 +360,9 @@ export const DashboardNew: React.FC<DashboardProps> = () => {
           </div>
           <WebSocketTest />
         </div>
-
-        {/* Future: Could add Meth Snail widget here */}
-        <div className="sr-card sr-card--panel">
-          <div className="sr-card__header">
-            <h2>🚀 System Status</h2>
-          </div>
-          <div className="sr-system-overview">
-            <p>System Rebellion Dashboard</p>
-            <p>🧐 Sir Hawkington: Active</p>
-            <p>🐌 Meth Snail: Optimizing</p>
-            <p>📏 The Stick: Pending</p>
-            <p>🤖 VIC-20: Pending</p>
-          </div>
-        </div>
       </div>
     </div>
   );
 };
 
-export default DashboardNew
+export default DashboardNew;

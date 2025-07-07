@@ -55,6 +55,9 @@ async def init_models():
 async def get_async_db():
     async with AsyncSessionLocal() as session:
         yield session
+async def get_async_session():
+    async with async_engine.connect() as conn:
+        yield conn
 
 # Sync database getter
 def get_db():
