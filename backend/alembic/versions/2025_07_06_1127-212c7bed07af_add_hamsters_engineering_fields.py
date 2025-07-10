@@ -1,8 +1,8 @@
 """add_hamsters_engineering_fields
 
-Revision ID: [auto_generated_id]
+Revision ID: 212c7bed07af
 Revises: 45a4ef80f0b6
-Create Date: [auto_generated_date]
+Create Date: 2025-07-06 11:27:43.247944
 """
 
 from typing import Sequence, Union
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import sqlite
 
 # revision identifiers, used by Alembic.
-revision: str = '[keep_auto_generated]'
+revision: str = '212c7bed07af'
 down_revision: Union[str, None] = '45a4ef80f0b6'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None

@@ -14,6 +14,7 @@ from .base_agent import BaseAIAgent
 from .sir_hawkington.decision_engine import SirHawkingtonBrainV2
 from .meth_snail.decision_engine import MethSnailBrainV2
 from .hamsters.decision_engine import HamstersBrainV2
+from .quantum_shadow_people.qsp_websocket_integration import QSPWebSocketHandler
 logger = logging.getLogger(__name__)
 
 class AIAgentManager:
@@ -38,7 +39,7 @@ class AIAgentManager:
             # Future agents will be added here
             # "the_stick",
             "hamsters",
-            # "quantum_shadows",
+            "quantum_shadow_people",
             # "the_sage"
         ]
         
@@ -66,11 +67,14 @@ class AIAgentManager:
             # Initialize Hamsters
             hamsters = HamstersBrainV2()
             self.agents["hamsters"] = hamsters
+
+            # Initialize Quantum Shadows
+            quantum_shadow_people = QSPWebSocketHandler()
+            self.agents["quantum_shadow_people"] = quantum_shadow_people
             
             # Future agent initialization will go here
             # self.agents["the_stick"] = await create_the_stick_handler()
 
-            # self.agents["quantum_shadows"] = await create_quantum_shadows_handler()
             # self.agents["the_sage"] = await create_the_sage_handler()
             
             self._initialized = True

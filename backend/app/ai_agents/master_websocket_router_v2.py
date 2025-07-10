@@ -13,7 +13,7 @@ from .meth_snail.methys_websocket_integration import get_meth_snail_websocket_ha
 from .hamsters.hamsters_websocket_integration import get_hamsters_websocket_handler
 # from .stick.stick_websocket_integration import get_stick_websocket_handler
 # from .vic20_sage.vic_20_websocket_integration import get_vic20_websocket_handler
-# from .quantum_shadow_people.qsp_websocket_integration import get_qsp_websocket_handler
+from .quantum_shadow_people.qsp_websocket_integration import get_qsp_websocket_handler
 
 logger = logging.getLogger("SystemRebellion.WebSocketRouter")
 
