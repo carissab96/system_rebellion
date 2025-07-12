@@ -11,8 +11,8 @@ from typing import Dict, Any, Optional, List
 from .sir_hawkington.hawks_websocket_integration import get_hawkington_websocket_handler
 from .meth_snail.methys_websocket_integration import get_meth_snail_websocket_handler
 from .hamsters.hamsters_websocket_integration import get_hamsters_websocket_handler
-# from .stick.stick_websocket_integration import get_stick_websocket_handler
-# from .vic20_sage.vic_20_websocket_integration import get_vic20_websocket_handler
+from .stick.stick_websocket_integration import get_stick_websocket_handler
+from .VIC_20_sage.vic20_websocket_integration import getVIC20SageWebSocketHandler
 from .quantum_shadow_people.qsp_websocket_integration import get_qsp_websocket_handler
 
 logger = logging.getLogger("SystemRebellion.WebSocketRouter")
@@ -49,8 +49,8 @@ class SystemRebellionWebSocketRouter:
             'meth_snail': await get_meth_snail_websocket_handler(),
             'hamsters': await get_hamsters_websocket_handler(),
             'stick': await get_stick_websocket_handler(),
-            'vic20_sage': await get_vic20_websocket_handler(),
-            'quantum_shadow_people': await get_qsp_websocket_handler()
+            'quantum_shadow_people': await get_qsp_websocket_handler(),
+            'vic_20_the_sage': await getVIC20SageWebSocketHandler()
         }
         
         # Process through all agents in parallel with isolation
@@ -59,8 +59,8 @@ class SystemRebellionWebSocketRouter:
             handlers['meth_snail'].process_metrics(metrics_data, user_id),
             handlers['hamsters'].process_metrics(metrics_data, user_id),
             handlers['stick'].process_metrics(metrics_data, user_id),
-            handlers['vic20_sage'].process_metrics(metrics_data, user_id),
             handlers['quantum_shadow_people'].process_metrics(metrics_data, user_id),
+            handlers['VIC_20_the_sage'].process_metrics(metrics_data, user_id),
             return_exceptions=True
         )
         
@@ -74,7 +74,7 @@ class SystemRebellionWebSocketRouter:
             'failed_agents': []
         }
         
-        agent_names = ['sir_hawkington', 'meth_snail', 'hamsters', 'stick', 'vic20_sage', 'quantum_shadow_people']
+        agent_names = ['sir_hawkington', 'meth_snail', 'hamsters', 'stick', 'quantum_shadow_people', 'VIC_20_the_sage']
         
         for i, result in enumerate(results):
             agent_name = agent_names[i]
@@ -104,8 +104,8 @@ class SystemRebellionWebSocketRouter:
             'meth_snail': await get_meth_snail_websocket_handler(),
             'hamsters': await get_hamsters_websocket_handler(),
             'stick': await get_stick_websocket_handler(),
-            'vic20_sage': await get_vic20_websocket_handler(),
-            'quantum_shadow_people': await get_qsp_websocket_handler()
+            'quantum_shadow_people': await get_qsp_websocket_handler(),
+            'VIC_20_the_sage': await getVIC20SageWebSocketHandler()
         }
         
         all_stats = {}

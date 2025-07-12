@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Simplified Metrics Service
 
@@ -10,10 +9,10 @@ issues, just pure data.
 import asyncio
 import logging
 from datetime import datetime
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 
 
-from app.core.resilience import get_circuit_breaker, reset_circuit_breaker
+from app.core.resilience import get_circuit_breaker
 
 from app.services.metrics.simplified_cpu_service import SimplifiedCPUService
 from app.services.metrics.simplified_memory_service import SimplifiedMemoryService
@@ -37,42 +36,54 @@ class SimplifiedMetricsService:
         return cls._instance
     
     def __init__(self):
-        if self._initialized:
-            return
-            
-        self.logger = logging.getLogger('SimplifiedMetricsService')
-        self._initialized = True
-        
+        if not self._initialized:
+            self._initialized = True
+            self.logger = logging.getLogger('SimplifiedMetricsService')
+            self.logger.info("SimplifiedMetricsService initialized as singleton")
+            self.agent_manager = None
+    
         self.cpu_circuit_breaker = get_circuit_breaker(
-        name="simplified_cpu_metrics", 
-        max_failures=3,
-        reset_timeout=15,
-        exponential_backoff_factor=1.5
-    )
-    
+            name="simplified_cpu_metrics", 
+            max_failures=3,
+            reset_timeout=15,
+            exponential_backoff_factor=1.5
+        )
         self.memory_circuit_breaker = get_circuit_breaker(
-        name="simplified_memory_metrics", 
-        max_failures=3,
-        reset_timeout=15,
-        exponential_backoff_factor=1.5
-    )
-    
+            name="simplified_memory_metrics", 
+            max_failures=3,
+            reset_timeout=15,
+            exponential_backoff_factor=1.5
+        )
         self.disk_circuit_breaker = get_circuit_breaker(
-        name="simplified_disk_metrics", 
-        max_failures=3,
-        reset_timeout=15,
-        exponential_backoff_factor=1.5
-    )
-    
+            name="simplified_disk_metrics", 
+            max_failures=3,
+            reset_timeout=15,
+            exponential_backoff_factor=1.5
+        )
         self.network_circuit_breaker = get_circuit_breaker(
-        name="simplified_network_metrics", 
-        max_failures=3,
-        reset_timeout=15,
-        exponential_backoff_factor=1.5
-    )
-    
-        self.logger.info("SimplifiedMetricsService initialized as singleton with circuit breakers")
-    
+            name="simplified_network_metrics", 
+            max_failures=3,
+            reset_timeout=15,
+            exponential_backoff_factor=1.5
+        )   
+
+    def reset_circuit_breakers(self):
+        """Reset all circuit breakers"""
+        self.cpu_circuit_breaker.reset()
+        self.memory_circuit_breaker.reset()
+        self.disk_circuit_breaker.reset()
+        self.network_circuit_breaker.reset()
+        self.logger.info("All circuit breakers reset")
+
+    async def get_agent_manager(self):
+        if self.agent_manager is None:
+            try:
+                from app.ai_agents.agent_manager import get_agent_manager
+                self.agent_manager = await get_agent_manager()
+                self.logger.info("Agent manager connect to metrics service")
+            except Exception as e:
+                self.logger.error(f"Failed to connect agent manager to metrics service: {str(e)}")
+
     @classmethod
     async def get_instance(cls):
         """Get the singleton instance of the service"""
@@ -87,7 +98,7 @@ class SimplifiedMetricsService:
         return self._lock
     
     async def _safe_get_metrics(self, service, circuit_breaker, service_name):
-        """
+        """ 
         Safely get metrics from a service with circuit breaker protection
         
         Args:
@@ -180,22 +191,22 @@ class SimplifiedMetricsService:
             # Combine all metrics into a single response
             result = {
                 'timestamp': datetime.now().isoformat(),
-                'cpu_usage': cpu_data.get('usage_percent', 0),
-                'memory_usage': memory_data.get('percent', 0),
-                'disk_usage': disk_data.get('percent', 0),
-                'network_sent_rate': network_data.get('sent_rate', 0),
-                'network_recv_rate': network_data.get('recv_rate', 0),
+                'cpu_usage': cpu_data.get('usage_percent'),
+                'memory_usage': memory_data.get('percent'),
+                'disk_usage': disk_data.get('percent'),
+                'network_sent_rate': network_data.get('sent_rate'),
+                'network_recv_rate': network_data.get('recv_rate'),
                 'cpu': cpu_data,
                 'memory': memory_data,
                 'disk': disk_data,
                 'network': network_data,
                 'process_count': len(cpu_data.get('top_processes', [])),
                 'system_info': {
-                    'hostname': network_data.get('interfaces', [{}])[0].get('name', 'unknown') if network_data.get('interfaces') else 'unknown',
-                    'physical_cores': cpu_data.get('physical_cores', 0),
-                    'logical_cores': cpu_data.get('logical_cores', 0),
-                    'total_memory': memory_data.get('total', 0),
-                    'total_disk': disk_data.get('total', 0)
+                    'hostname': network_data.get('hostname') if network_data.get('hostname') else None,
+                    'physical_cores': cpu_data.get('physical_cores') if cpu_data.get('physical_cores') else None,
+                    'logical_cores': cpu_data.get('logical_cores') if cpu_data.get('logical_cores') else None,
+                    'total_memory': memory_data.get('total') if memory_data.get('total') else None,
+                    'total_disk': disk_data.get('total') if disk_data.get('total') else None
                 }
             }
             

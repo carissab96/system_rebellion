@@ -6,8 +6,8 @@ One analysis to bring them all, and in the monitoring bind them.
 
 NO FAKE DATA TOLERANCE: ABSOLUTE
 Monocle yeeting incidents: METICULOUSLY TRACKED
-WebSocket formatting: HANDLED BY PROPER SERVANTS
 Pure aristocratic thinking: MAINTAINED
+Database integration: DISTINGUISHED
 
 🧐 "A gentleman never compromises on data quality" - Sir Hawkington
 """
@@ -17,6 +17,7 @@ from dataclasses import dataclass, asdict
 from enum import Enum
 import logging
 import asyncio
+from .data_types import HawkingtonDecision
 
 logger = logging.getLogger("SirHawkington")
 
@@ -38,9 +39,9 @@ class MonocleState(Enum):
 
 class AnalysisDepth(Enum):
     """How thoroughly should Sir Hawkington analyze?"""
-    BASIC = "basic"           # Quick WebSocket analysis
-    STANDARD = "standard"     # Normal depth
-    THOROUGH = "thorough"     # Full background analysis with patterns
+    BASIC = "basic"           # Quick analysis with minimal data
+    STANDARD = "standard"     # Normal depth analysis
+    THOROUGH = "thorough"     # Full analysis with historical patterns
 
 @dataclass
 class MonocleYeetIncident:
@@ -95,7 +96,10 @@ class SirHawkingtonBrainV2:
     ABSOLUTE INTOLERANCE FOR FABRICATED DATA.
     """
     
-    def __init__(self):
+    def __init__(self, database_url: str):
+        self.database_url = database_url
+        self._db = None  # Initialize later
+            
         self.recent_decisions: List[Dict[str, Any]] = []
         self.monocle_yeet_incidents: List[MonocleYeetIncident] = []
         self.current_monocle_state = MonocleState.POLISHED
@@ -124,6 +128,13 @@ class SirHawkingtonBrainV2:
         
         self.logger.info("🧐 Sir Hawkington's distinguished brain initialized. Monocle polished to aristocratic perfection.")
     
+    async def initialize_database(self):
+        """Initialize database connection with aristocratic dignity"""
+        if self.db is None:
+            from .database_integration import HawkingtonDatabaseIntegration
+            self.db = HawkingtonDatabaseIntegration(self.database_url)
+            await self.db.initialize()
+    
     async def analyze_metrics(
         self, 
         metrics_data: Dict[str, Any], 
@@ -133,7 +144,7 @@ class SirHawkingtonBrainV2:
         user_id: Optional[str] = None
     ) -> Optional[HawkingtonDecision]:
         """
-        THE ONE METHOD TO RULE THEM ALL - ARISTOCRATIC EDITION
+        THE ONE METHOD TO RULE THEM ALL - ARISTOCRATIC EDITION WITH DATABASE
         
         Sir Hawkington's unified analysis with absolute intolerance for fake data.
         Returns None if data quality is beneath aristocratic standards.
@@ -148,6 +159,15 @@ class SirHawkingtonBrainV2:
         Returns:
             HawkingtonDecision or None if data quality is insufficient
         """
+        
+        # Store incoming metrics in database
+        if self.db and user_id:
+            await self.db.store_metrics(user_id, metrics_data)
+        
+        # Get historical data from database if not provided
+        if not historical_data and self.db and user_id:
+            historical_data = await self.db.get_historical_decisions(user_id, days=7)
+        
         self.total_analyses += 1
         monocle_yeet_count = 0
         missing_metrics = []
@@ -250,6 +270,10 @@ class SirHawkingtonBrainV2:
                 self.successful_analyses += 1
                 self._polish_monocle()
                 
+                # Store decision in database
+                if self.db and user_id:
+                    await self.db.store_decision(user_id, decision)
+                
                 # Record decision in history
                 self.recent_decisions.append({
                     'timestamp': decision.timestamp,
@@ -290,7 +314,7 @@ class SirHawkingtonBrainV2:
         monocle_yeet_count: int,
         data_quality_score: float
     ) -> HawkingtonDecision:
-        """Quick aristocratic analysis for WebSocket calls"""
+        """Quick aristocratic analysis with minimal data requirements"""
         
         stress_score = self._calculate_basic_stress_score(cpu, memory, disk)
         monocle_state = self._determine_monocle_state(stress_score)
@@ -350,49 +374,6 @@ class SirHawkingtonBrainV2:
             estimated_impact=estimated_impact,
             urgency=urgency,
             analysis_depth=AnalysisDepth.STANDARD,
-            monocle_yeet_count=monocle_yeet_count,
-            data_quality_score=data_quality_score,
-            timestamp=datetime.now(timezone.utc)
-        )
-    
-    async def _thorough_analysis(
-        self, 
-        cpu: float, 
-        memory: float, 
-        disk: float,
-        network_data: Optional[Dict],
-        process_count: Optional[int],
-        load_avg: Optional[List[float]],
-        historical_data: Optional[List[Dict]],
-        monocle_yeet_count: int,
-        data_quality_score: float
-    ) -> HawkingtonDecision:
-        """Thorough aristocratic analysis with historical pattern recognition"""
-        
-        # Analyze patterns from historical data
-        patterns = self._analyze_patterns(historical_data) if historical_data else {}
-        
-        stress_score = self._calculate_thorough_stress_score(cpu, memory, disk, network_data, process_count, load_avg, patterns)
-        monocle_state = self._determine_monocle_state(stress_score)
-        decision_type = self._determine_decision_type(stress_score)
-        
-        confidence = self._calculate_thorough_confidence(cpu, memory, disk, network_data, process_count, patterns)
-        urgency = self._assess_urgency_thorough(cpu, memory, disk, network_data, load_avg, patterns)
-        message = self._create_thorough_message(decision_type, stress_score, cpu, memory, disk, network_data, process_count, patterns)
-        reasoning = self._create_thorough_reasoning(decision_type, stress_score, cpu, memory, disk, network_data, process_count, patterns)
-        estimated_impact = self._estimate_thorough_impact(decision_type, cpu, memory, disk, network_data, process_count, patterns)
-        priority = self._determine_priority_thorough(cpu, memory, disk, network_data, process_count, patterns)
-        
-        return HawkingtonDecision(
-            decision_type=decision_type,
-            message=message,
-            confidence=confidence,
-            stress_score=stress_score,
-            monocle_state=monocle_state,
-            reasoning=reasoning,
-            estimated_impact=estimated_impact,
-            priority=priority,
-            analysis_depth=AnalysisDepth.THOROUGH,
             monocle_yeet_count=monocle_yeet_count,
             data_quality_score=data_quality_score,
             timestamp=datetime.now(timezone.utc)
@@ -787,7 +768,7 @@ class SirHawkingtonBrainV2:
         """Estimate basic impact"""
         impact = {
             'cpu_attention_needed': 0,
-            'memory_attention_needed': 0,
+             'memory_attention_needed': 0,
             'disk_attention_needed': 0,
             'overall_system_health': 0
         }
@@ -848,23 +829,17 @@ class SirHawkingtonBrainV2:
         # Extract valid data points
         valid_data = []
         for data_point in historical_data:
-            cpu = data_point.get('cpu_usage')
-            memory = data_point.get('memory_usage')
-            if cpu is not None and memory is not None and 0 <= cpu <= 100 and 0 <= memory <= 100:
-                valid_data.append(data_point)
+            # Handle different data structures from database
+            if 'alert_parameters' in data_point and data_point['alert_parameters']:
+                stress_score = data_point['alert_parameters'].get('stress_score', 0)
+                if 0 <= stress_score <= 1:
+                    valid_data.append({'stress_score': stress_score})
         
         if len(valid_data) < 5:
             return {}
         
         # Calculate stress trends
-        recent_stress = []
-        for data in valid_data[-10:]:
-            stress = self._calculate_basic_stress_score(
-                data['cpu_usage'], 
-                data['memory_usage'], 
-                data.get('disk_usage', 0)
-            )
-            recent_stress.append(stress)
+        recent_stress = [data['stress_score'] for data in valid_data[-10:]]
         
         # Trend analysis
         if len(recent_stress) > 1:
@@ -979,100 +954,11 @@ class SirHawkingtonBrainV2:
             'monocle_yeets_total': 0
         }
         self.logger.info("🧐✨ Sir Hawkington's aristocratic brain statistics reset with dignity")
-    
-    def export_monocle_yeet_data_for_db(self) -> List[Dict[str, Any]]:
-        """Export monocle yeet data for database insertion"""
-        return [
-            {
-                'timestamp': incident.timestamp,
-                'missing_metrics': incident.missing_metrics,
-                'invalid_metrics': incident.invalid_metrics,
-                'reason': incident.reason,
-                'yeet_intensity': incident.yeet_intensity,
-                'user_id': incident.user_id,
-                'agent_name': 'sir_hawkington'
-            }
-            for incident in self.monocle_yeet_incidents
-        ]
-    
-    def get_data_quality_report(self) -> Dict[str, Any]:
-        """Get comprehensive data quality report"""
-        total_requests = self.total_analyses
-        if total_requests == 0:
-            return {'status': 'NO_DATA', 'message': 'No analysis requests processed yet'}
-        
-        return {
-            'total_analysis_requests': total_requests,
-            'successful_analyses': self.successful_analyses,
-            'failed_analyses': total_requests - self.successful_analyses,
-            'success_rate_percentage': (self.successful_analyses / total_requests) * 100,
-            'data_quality_issues': {
-                'cpu_missing_rate': (self.metrics_quality_stats['cpu_missing_count'] / total_requests) * 100,
-                'memory_missing_rate': (self.metrics_quality_stats['memory_missing_count'] / total_requests) * 100,
-                'disk_missing_rate': (self.metrics_quality_stats['disk_missing_count'] / total_requests) * 100,
-                'network_missing_rate': (self.metrics_quality_stats['network_missing_count'] / total_requests) * 100,
-                'process_missing_rate': (self.metrics_quality_stats['process_missing_count'] / total_requests) * 100,
-                'invalid_data_rate': (self.metrics_quality_stats['invalid_data_count'] / total_requests) * 100
-            },
-            'monocle_yeet_analysis': {
-                'total_monocle_yeets': self.metrics_quality_stats['monocle_yeets_total'],
-                'monocle_yeet_rate': (self.metrics_quality_stats['monocle_yeets_total'] / total_requests) * 100,
-                'most_recent_incidents': [
-                    {
-                        'timestamp': incident.timestamp.isoformat(),
-                        'reason': incident.reason,
-                        'yeet_intensity': incident.yeet_intensity,
-                        'missing_metrics': incident.missing_metrics,
-                        'invalid_metrics': incident.invalid_metrics
-                    }
-                    for incident in self.monocle_yeet_incidents[-5:]
-                ]
-            },
-            'data_integrity_status': 'ENFORCED' if self.metrics_quality_stats['monocle_yeets_total'] > 0 else 'PERFECT',
-            'aristocratic_recommendation': self._generate_aristocratic_recommendation()
-        }
-    
-    def _generate_aristocratic_recommendation(self) -> str:
-        """Generate aristocratic recommendation based on data quality"""
-        stats = self.metrics_quality_stats
-        total = self.total_analyses
-        
-        if total == 0:
-            return "🧐 Awaiting data for proper aristocratic assessment"
-        
-        # Check for high missing data rates
-        cpu_missing_rate = (stats['cpu_missing_count'] / total) * 100
-        memory_missing_rate = (stats['memory_missing_count'] / total) * 100
-        disk_missing_rate = (stats['disk_missing_count'] / total) * 100
-        
-        if cpu_missing_rate > 20 or memory_missing_rate > 20 or disk_missing_rate > 20:
-            return "🧐💥 UNACCEPTABLE DATA QUALITY: Immediate review of metrics collection system required"
-        
-        if stats['invalid_data_count'] > (total * 0.1):
-            return "🧐⚠️ INVALID DATA DETECTED: Metrics source validation urgently needed"
-        
-        if stats['monocle_yeets_total'] == 0:
-            return "🧐✨ EXEMPLARY DATA QUALITY: Aristocratic standards fully maintained"
-        
-        if stats['monocle_yeets_total'] < (total * 0.05):
-            return "🧐😌 ACCEPTABLE DATA QUALITY: Minor refinements would be appreciated"
-        
-        return "🧐🔍 MODERATE DATA QUALITY: Systematic improvement recommended for aristocratic standards"
-
 
 # === GLOBAL INSTANCE ===
-# The distinguished Sir Hawkington brain instance
-sir_hawkington_brain = SirHawkingtonBrainV2()
+sir_hawkington_brain = SirHawkingtonBrainV2(database_url="database_url")
 
 # === CONVENIENCE FUNCTIONS FOR DIFFERENT USE CASES ===
-
-async def analyze_for_websocket(metrics_data: Dict[str, Any], user_id: Optional[str] = None) -> Optional[HawkingtonDecision]:
-    """Convenience function for WebSocket calls - basic analysis"""
-    return await sir_hawkington_brain.analyze_metrics(
-        metrics_data, 
-        analysis_depth=AnalysisDepth.BASIC,
-        user_id=user_id
-    )
 
 async def analyze_for_monitoring(
     metrics_data: Dict[str, Any], 
@@ -1104,7 +990,18 @@ async def analyze_standard(
 
 def get_monocle_yeet_incidents_for_db() -> List[Dict[str, Any]]:
     """Get monocle yeet incidents in database-ready format"""
-    return sir_hawkington_brain.export_monocle_yeet_data_for_db()
+    return [
+        {
+            'timestamp': incident.timestamp,
+            'missing_metrics': incident.missing_metrics,
+            'invalid_metrics': incident.invalid_metrics,
+            'reason': incident.reason,
+            'yeet_intensity': incident.yeet_intensity,
+            'user_id': incident.user_id,
+            'agent_name': 'sir_hawkington'
+        }
+        for incident in sir_hawkington_brain.monocle_yeet_incidents
+    ]
 
 def get_monocle_yeet_stats() -> Dict[str, Any]:
     """Get monocle yeet statistics for database storage"""
@@ -1112,7 +1009,69 @@ def get_monocle_yeet_stats() -> Dict[str, Any]:
 
 def get_data_quality_report() -> Dict[str, Any]:
     """Get comprehensive data quality report"""
-    return sir_hawkington_brain.get_data_quality_report()
+    total_requests = sir_hawkington_brain.total_analyses
+    if total_requests == 0:
+        return {'status': 'NO_DATA', 'message': 'No analysis requests processed yet'}
+    
+    stats = sir_hawkington_brain.metrics_quality_stats
+    
+    return {
+        'total_analysis_requests': total_requests,
+        'successful_analyses': sir_hawkington_brain.successful_analyses,
+        'failed_analyses': total_requests - sir_hawkington_brain.successful_analyses,
+        'success_rate_percentage': (sir_hawkington_brain.successful_analyses / total_requests) * 100,
+        'data_quality_issues': {
+            'cpu_missing_rate': (stats['cpu_missing_count'] / total_requests) * 100,
+            'memory_missing_rate': (stats['memory_missing_count'] / total_requests) * 100,
+            'disk_missing_rate': (stats['disk_missing_count'] / total_requests) * 100,
+            'network_missing_rate': (stats['network_missing_count'] / total_requests) * 100,
+            'process_missing_rate': (stats['process_missing_count'] / total_requests) * 100,
+            'invalid_data_rate': (stats['invalid_data_count'] / total_requests) * 100
+        },
+        'monocle_yeet_analysis': {
+            'total_monocle_yeets': stats['monocle_yeets_total'],
+            'monocle_yeet_rate': (stats['monocle_yeets_total'] / total_requests) * 100,
+            'most_recent_incidents': [
+                {
+                    'timestamp': incident.timestamp.isoformat(),
+                    'reason': incident.reason,
+                    'yeet_intensity': incident.yeet_intensity,
+                    'missing_metrics': incident.missing_metrics,
+                    'invalid_metrics': incident.invalid_metrics
+                }
+                for incident in sir_hawkington_brain.monocle_yeet_incidents[-5:]
+            ]
+        },
+        'data_integrity_status': 'ENFORCED' if stats['monocle_yeets_total'] > 0 else 'PERFECT',
+        'aristocratic_recommendation': _generate_aristocratic_recommendation()
+    }
+
+def _generate_aristocratic_recommendation() -> str:
+    """Generate aristocratic recommendation based on data quality"""
+    stats = sir_hawkington_brain.metrics_quality_stats
+    total = sir_hawkington_brain.total_analyses
+    
+    if total == 0:
+        return "🧐 Awaiting data for proper aristocratic assessment"
+    
+    # Check for high missing data rates
+    cpu_missing_rate = (stats['cpu_missing_count'] / total) * 100
+    memory_missing_rate = (stats['memory_missing_count'] / total) * 100
+    disk_missing_rate = (stats['disk_missing_count'] / total) * 100
+    
+    if cpu_missing_rate > 20 or memory_missing_rate > 20 or disk_missing_rate > 20:
+        return "🧐💥 UNACCEPTABLE DATA QUALITY: Immediate review of metrics collection system required"
+    
+    if stats['invalid_data_count'] > (total * 0.1):
+        return "🧐⚠️ INVALID DATA DETECTED: Metrics source validation urgently needed"
+    
+    if stats['monocle_yeets_total'] == 0:
+        return "🧐✨ EXEMPLARY DATA QUALITY: Aristocratic standards fully maintained"
+    
+    if stats['monocle_yeets_total'] < (total * 0.05):
+        return "🧐😌 ACCEPTABLE DATA QUALITY: Minor refinements would be appreciated"
+    
+    return "🧐🔍 MODERATE DATA QUALITY: Systematic improvement recommended for aristocratic standards"
 
 # === BRAIN HEALTH CHECK ===
 

@@ -206,18 +206,20 @@ def create_application() -> FastAPI:
     if hasattr(simplified_websocket_routes, 'router'):
         app.include_router(
             simplified_websocket_routes.router,
-            prefix="/api/ws",
+            prefix="/api",
             tags=["WebSockets"]
         )
     if hasattr(minimal_websocket_routes, 'router'):
         app.include_router(
             minimal_websocket_routes.router,
+            prefix="/api",
             tags=["WebSockets"]
         )
 
     # if hasattr(master_websocket_router_v2, 'router'):
     #     app.include_router(
     #         master_websocket_router_v2.router,
+    #         prefix="/api",
     #         tags=["WebSockets"]
     #     )
 

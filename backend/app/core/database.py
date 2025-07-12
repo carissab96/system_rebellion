@@ -12,6 +12,7 @@ async_engine = create_async_engine(
     ASYNC_DATABASE_URL, 
     echo=True,  # Logging for debugging
     future=True,
+    connect_args={"timeout": 30, "isolation_level": "DEFERRED"},
     pool_pre_ping=True  # Ensure connections are valid
 )
 sync_engine = create_engine(
@@ -19,7 +20,8 @@ sync_engine = create_engine(
     echo=True,  # Logging for debugging
     future=True,
     pool_pre_ping=True,  # Ensure connections are valid
-    connect_args={"check_same_thread": False, "timeout": 30}  # Allow thread sharing
+    connect_args={"check_same_thread": False, "timeout": 30, "isolation_level": "DEFERRED"}, # Allow thread sharing
+    
 )
 # Async session
 AsyncSessionLocal = sessionmaker(

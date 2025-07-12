@@ -3,7 +3,7 @@ import asyncio
 import json
 from typing import Dict, Any, Optional
 from datetime import datetime
-from ..qsp.decision_engine import QuantumShadowPeopleBrainV2, QSPDecision, QuantumPhaseState
+from .decision_engine import QuantumShadowPeopleBrainV2, QSPDecision, QuantumPhaseState
 
 class QSPWebSocketHandler:
     """
@@ -11,8 +11,8 @@ class QSPWebSocketHandler:
     Network optimization with mysterious tequila jello shots
     """
     
-    def __init__(self):
-        self.qsp_brain = QuantumShadowPeopleBrainV2()
+    def __init__(self, database_url: str):
+        self.qsp_brain = QuantumShadowPeopleBrainV2(database_url)
         self.active_connections = {}
         self.quantum_fixes_in_progress = {}
         
@@ -204,7 +204,7 @@ class QSPWebSocketHandler:
             del self.quantum_fixes_in_progress[user_id]
 
 # Global QSP handler instance
-qsp_websocket_handler = QSPWebSocketHandler()
+qsp_websocket_handler = QSPWebSocketHandler(database_url="")
 
 def get_qsp_websocket_handler():
     """Get the global QSP WebSocket handler"""

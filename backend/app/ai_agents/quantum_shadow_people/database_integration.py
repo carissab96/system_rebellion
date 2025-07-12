@@ -5,8 +5,8 @@ from datetime import datetime, timedelta
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy import select, func, desc
-from models.qsp_models import QSPNetworkMetrics, QSPDecisionLog, QSPQuantumStats, QSPNetworkPatterns
-from .decision_engine import QSPDecision
+from models.qsp_model import QSPNetworkMetrics, QSPDecisionLog, QSPQuantumStats, QSPNetworkPatterns
+from .data_types import QSPDecision
 
 class QSPDatabaseIntegration:
     """Database integration for QSP quantum network optimization"""

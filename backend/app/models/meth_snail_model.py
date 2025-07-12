@@ -1,4 +1,4 @@
-# /models/meth_snail_models.py
+# /models/meth_snail_model.py
 from sqlalchemy import Column, Integer, String, DateTime, Float, JSON, Boolean, Text, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime

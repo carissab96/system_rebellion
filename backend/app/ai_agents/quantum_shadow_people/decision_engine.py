@@ -4,8 +4,9 @@ from typing import Dict, Any, Optional, List
 from enum import Enum
 import asyncio
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
 import statistics
+from .data_types import QSPDecision, QuantumPhaseState, QSPDecisionType
 
 class QuantumPhaseState(Enum):
     CORPOREAL = "corporeal"
@@ -40,7 +41,9 @@ class QuantumShadowPeopleBrainV2:
     Mysteriously phases routers upside down in tequila jello shots
     """
     
-    def __init__(self):
+    def __init__(self, database_url: str):
+        self.database_url = database_url
+        self._db=None
         self.quantum_state = QuantumPhaseState.PHASED
         self.network_patterns = {}
         self.router_configurations = {}
@@ -58,6 +61,12 @@ class QuantumShadowPeopleBrainV2:
         
         self.bandwidth_patterns = {}
         self.packet_loss_history = {}
+
+    async def initialize_database(self):
+        if self._db is None:
+            from .database_integration import QSPDatabaseIntegration
+            self._db = QSPDatabaseIntegration(self.database_url)
+            await self._db.initialize()
         
     async def analyze_network_metrics(
         self, 

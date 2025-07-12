@@ -59,7 +59,9 @@ class HamstersBrainV2:
     duct tape and fix whatever's broken with pure ingenuity.
     """
     
-    def __init__(self):
+    def __init__(self, database_url: str):
+        self.database_url = database_url
+        self.db = None
         self.logger = logging.getLogger("Hamsters.Brain")
         self.total_analyses = 0
         self.successful_analyses = 0
@@ -85,6 +87,11 @@ class HamstersBrainV2:
         }
         
         self.logger.info("🐹🍺 The Hamsters Brain V2 initialized - BEER LEVEL: FULL, DUCT TAPE: READY")
+    async def get_database(self):
+        if self._db is None:
+            from .hamsters_database_integration import get_database
+            self._db = await get_database()
+        return self._db
     
     async def analyze_metrics(
         self, 
@@ -568,7 +575,7 @@ class HamstersBrainV2:
         return min(1.0, base_ingenuity + creative_bonus)
 
 # Global brain instance
-hamsters_brain = HamstersBrainV2()
+hamsters_brain = HamstersBrainV2(database_url="")
 
 # Convenience functions for WebSocket integration
 async def analyze_for_websocket(
