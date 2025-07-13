@@ -16,7 +16,7 @@ from .meth_snail.decision_engine import MethSnailBrainV2
 from .hamsters.decision_engine import HamstersBrainV2
 from .quantum_shadow_people.qsp_websocket_integration import QSPWebSocketHandler
 from .the_stick.sticks_websocket_integration import StickWebSocketHandler
-from .vic_20_sage.vic20_websocket_integration import VIC20SageWebSocketHandler
+from .vic_20_sage.vic20_websocket_handler import VIC20SageWebSocketHandler
 from .vic_20_sage.decision_engine import VIC20SageBrainV2
 logger = logging.getLogger(__name__)
 

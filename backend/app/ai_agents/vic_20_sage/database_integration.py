@@ -4,11 +4,7 @@ from datetime import datetime, timedelta
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy import select, func, desc, and_
-from app.models.vic20_sage_v2 import (
-    VIC20CoordinationLog, VIC20SystemSynthesis, VIC20AgentHarmony,
-    VIC20PartnershipMetrics, VIC20DecisionOrchestration, VIC20CoordinationStatistics
-)
-from .data_types import VIC20Decision, SystemSynthesisData, AgentHarmonyMetrics, PartnershipMetrics, DecisionOrchestrationLog
+from .data_types import *
 
 class VIC20DatabaseIntegration:
     """
@@ -99,7 +95,7 @@ class VIC20DatabaseIntegration:
                 await session.rollback()
                 raise Exception(f"VIC-20 Sage failed to store system synthesis: {str(e)}")
 
-    async def store_agent_harmony_metrics(self, user_id: str, harmony_metrics: List[AgentHarmonyMetrics]):
+    async def store_agent_harmony_metrics(self, user_id: str, harmony_metrics: List[AgentHarmonySnapshot]):
         """
         Store agent harmony and coordination metrics
         Like monitoring how well your subroutines work together
@@ -134,7 +130,7 @@ class VIC20DatabaseIntegration:
                 await session.rollback()
                 raise Exception(f"VIC-20 Sage failed to store harmony metrics: {str(e)}")
 
-    async def store_partnership_metrics(self, user_id: str, partnership_data: PartnershipMetrics):
+    async def store_partnership_metrics(self, user_id: str, partnership_data: PartnershipMetricsSnapshot):
         """
         Store human-AI partnership coordination metrics
         The evolution of human-AI coordination mastery
