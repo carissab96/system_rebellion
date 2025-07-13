@@ -44,3 +44,8 @@ ENV/
 .DS_Store
 Thumbs.db
 backend/system_rebellion.db
+
+node_modules
+typings/
+docs/
+
