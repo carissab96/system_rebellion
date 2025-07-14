@@ -21,7 +21,7 @@ class WebSocketCircuitBreaker:
     """
     
     def __init__(
-        self, 
+        self,
         name: str = "default",
         max_failures: int = 5, 
         reset_timeout: int = 60,

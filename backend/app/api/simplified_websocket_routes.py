@@ -41,7 +41,7 @@ async def get_system_info() -> Dict[str, Any]:
         }
         return system_info
     except Exception as e:
-        logger.error(f"Error getting system info: {str(e)}")
+        Logger.error(f"Error getting system info: {str(e)}")
         return {
             "error": True,
             "message": "Failed to retrieve system information"
@@ -62,8 +62,7 @@ metrics_backpressure = BackpressureHandler(
     sampling_strategy="latest"
 )
 
-
-@router.websocket("/system-metrics")
+@router.websocket("/ws/system-metrics")
 async def system_metrics_socket(websocket: WebSocket):
     """
     Sir Hawkington's Simplified System Metrics WebSocket with Database Persistence and AI Integration

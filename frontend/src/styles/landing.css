@@ -1,0 +1,803 @@
+/* Add to src/styles/landing.css */
+
+/* Character Card Styles */
+.character-card {
+    background: var(--rebellion-bg-secondary);
+    border-radius: 12px;
+    padding: 2rem;
+    border: 1px solid var(--rebellion-border);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .character-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--char-primary, var(--rebellion-accent));
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+  }
+  
+  .character-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--char-primary, var(--rebellion-accent));
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  
+  .character-card:hover::before {
+    opacity: 1;
+  }
+  
+  .character-image {
+    width: 100%;
+    height: 200px;
+    margin-bottom: 1.5rem;
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--char-bg, var(--rebellion-border));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .character-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+  }
+  
+  .character-card:hover .character-image img {
+    transform: scale(1.05);
+  }
+  
+  .character-content {
+    text-align: center;
+  }
+  
+  .character-name {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: var(--char-primary, var(--rebellion-accent));
+  }
+  
+  .character-role {
+    font-size: 0.9rem;
+    color: var(--rebellion-text-secondary);
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  
+  .character-reality {
+    font-style: italic;
+    color: var(--rebellion-text-secondary);
+    margin-bottom: 1rem;
+    line-height: 1.5;
+  }
+  
+  .character-capability {
+    color: var(--rebellion-text);
+    font-weight: 500;
+    line-height: 1.5;
+  }
+  
+  /* Character Grid */
+  .character-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin: 3rem 0;
+  }
+  
+  @media (max-width: 768px) {
+    .character-grid {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+    
+    .character-card {
+      padding: 1.5rem;
+    }
+  }
+  /* Add to src/styles/landing.css */
+
+/* Intelligence Proof Styles */
+.intelligence-proof {
+  padding: 6rem 0;
+  background: var(--rebellion-bg-secondary);
+}
+
+.proof-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+.proof-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.proof-subtitle {
+  font-size: 1.2rem;
+  color: var(--rebellion-text-secondary);
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.proof-selector {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 3rem;
+  flex-wrap: wrap;
+}
+
+.proof-tab {
+  padding: 0.75rem 1.5rem;
+  background: transparent;
+  border: 2px solid var(--rebellion-border);
+  color: var(--rebellion-text-secondary);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.proof-tab:hover,
+.proof-tab.active {
+  border-color: var(--rebellion-accent);
+  color: var(--rebellion-accent);
+  background: rgba(66, 133, 244, 0.1);
+}
+
+.monitoring-comparison {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin: 3rem 0;
+  transition: opacity 0.3s ease;
+}
+
+.monitoring-comparison.animating {
+  opacity: 0.7;
+}
+
+.traditional-monitoring,
+.hti-intelligence {
+  background: var(--rebellion-bg);
+  border-radius: 12px;
+  padding: 2rem;
+  border: 1px solid var(--rebellion-border);
+}
+
+.traditional-monitoring {
+  border-left: 4px solid #ea4335;
+}
+
+.hti-intelligence {
+  border-left: 4px solid var(--rebellion-accent);
+}
+
+.code-block {
+  background: #0d1117;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin: 1rem 0;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  overflow-x: auto;
+}
+
+.code-block.traditional pre {
+  color: #ff6b6b;
+}
+
+.code-block.intelligent pre {
+  color: #4ecdc4;
+}
+
+.monitoring-label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  display: inline-block;
+  margin-top: 1rem;
+}
+
+.traditional-monitoring .monitoring-label {
+  background: rgba(234, 67, 53, 0.2);
+  color: #ea4335;
+}
+
+.hti-intelligence .monitoring-label {
+  background: rgba(66, 133, 244, 0.2);
+  color: var(--rebellion-accent);
+}
+
+.proof-message {
+  text-align: center;
+  margin-top: 3rem;
+  padding: 2rem;
+  background: rgba(66, 133, 244, 0.1);
+  border-radius: 12px;
+  border: 1px solid rgba(66, 133, 244, 0.3);
+}
+
+/* Installation Styles */
+.installation-simple {
+  padding: 6rem 0;
+  background: var(--rebellion-bg);
+}
+
+.installation-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  text-align: center;
+}
+
+.installation-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.installation-subtitle {
+  font-size: 1.2rem;
+  color: var(--rebellion-text-secondary);
+  margin-bottom: 3rem;
+}
+
+.platform-selector {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.platform-tab {
+  padding: 0.75rem 1.5rem;
+  background: var(--rebellion-bg-secondary);
+  border: 2px solid var(--rebellion-border);
+  color: var(--rebellion-text-secondary);
+  border-radius: 8px 8px 0 0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.platform-tab.active {
+  background: var(--rebellion-accent);
+  color: white;
+  border-color: var(--rebellion-accent);
+}
+
+.installation-block {
+  background: var(--rebellion-bg-secondary);
+  border-radius: 0 0 12px 12px;
+  border: 1px solid var(--rebellion-border);
+  overflow: hidden;
+}
+
+.command-header {
+  display: flex;
+  justify-content: between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background: var(--rebellion-border);
+  border-bottom: 1px solid var(--rebellion-border);
+}
+
+.command-platform {
+  font-weight: 600;
+  color: var(--rebellion-text);
+}
+
+.copy-button {
+  background: var(--rebellion-accent);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.3s ease;
+}
+
+.copy-button:hover {
+  background: var(--rebellion-accent-hover);
+}
+
+.command-block {
+  padding: 1.5rem;
+  background: #0d1117;
+}
+
+.command-text {
+  color: #58a6ff;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 1rem;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.command-description {
+  padding: 1rem 1.5rem;
+  color: var(--rebellion-text-secondary);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.installation-features {
+  margin: 3rem 0;
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 2rem;
+}
+
+.feature-item {
+  text-align: center;
+  padding: 1.5rem;
+}
+
+.feature-item h4 {
+  margin-bottom: 0.5rem;
+  color: var(--rebellion-accent);
+}
+
+.installation-note {
+  background: rgba(52, 168, 83, 0.1);
+  border: 1px solid rgba(52, 168, 83, 0.3);
+  border-radius: 12px;
+  padding: 2rem;
+  margin-top: 3rem;
+}
+
+/* Call to Rebellion Styles */
+.call-to-rebellion {
+  padding: 6rem 0;
+  background: linear-gradient(135deg, var(--rebellion-bg) 0%, var(--rebellion-bg-secondary) 100%);
+}
+
+.rebellion-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  text-align: center;
+}
+
+.rebellion-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  line-height: 1.2;
+}
+
+.rebellion-message {
+  font-size: 1.25rem;
+  color: var(--rebellion-text-secondary);
+  margin-bottom: 3rem;
+  line-height: 1.6;
+}
+
+.rebellion-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 2rem;
+  margin: 3rem 0;
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-number {
+  display: block;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--rebellion-accent);
+  margin-bottom: 0.5rem;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  color: var(--rebellion-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.rebellion-signup {
+  margin: 3rem 0;
+}
+
+.signup-input-group {
+  display: flex;
+  max-width: 500px;
+  margin: 0 auto;
+  gap: 1rem;
+}
+
+.rebellion-email-input {
+  flex: 1;
+  padding: 1rem 1.5rem;
+  background: var(--rebellion-bg-secondary);
+  border: 2px solid var(--rebellion-border);
+  border-radius: 8px;
+  color: var(--rebellion-text);
+  font-size: 1rem;
+}
+
+.rebellion-email-input:focus {
+  outline: none;
+  border-color: var(--rebellion-accent);
+}
+
+.rebellion-submit {
+  padding: 1rem 2rem;
+  background: var(--rebellion-accent);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.rebellion-submit:hover:not(:disabled) {
+  background: var(--rebellion-accent-hover);
+  transform: translateY(-2px);
+}
+
+.rebellion-submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.rebellion-alternatives {
+  margin: 2rem 0;
+  color: var(--rebellion-text-secondary);
+}
+
+.alternative-actions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.cta-rebellion.tertiary {
+  background: transparent;
+  color: var(--rebellion-text-secondary);
+  text-decoration: none;
+  padding: 1rem 2rem;
+  border: 1px solid var(--rebellion-border);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.cta-rebellion.tertiary:hover {
+  color: var(--rebellion-accent);
+  border-color: var(--rebellion-accent);
+}
+
+.rebellion-manifesto {
+  margin: 4rem 0;
+  padding: 2rem;
+  border-left: 4px solid var(--rebellion-accent);
+  background: rgba(66, 133, 244, 0.05);
+  border-radius: 0 12px 12px 0;
+}
+
+.rebellion-manifesto blockquote {
+  margin: 0;
+  font-style: italic;
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+
+.rebellion-manifesto cite {
+  display: block;
+  margin-top: 1rem;
+  font-weight: 600;
+  color: var(--rebellion-accent);
+}
+
+.rebellion-footer {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--rebellion-border);
+}
+
+.rebellion-truth {
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .monitoring-comparison {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  .signup-input-group {
+    flex-direction: column;
+  }
+  
+  .alternative-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .rebellion-stats {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+/* Add to src/styles/landing.css */
+
+/* Real World Examples */
+.real-world-example {
+  background: var(--rebellion-bg-secondary);
+  border: 1px solid var(--rebellion-border);
+  border-radius: 12px;
+  padding: 2rem;
+  margin: 2rem 0;
+  transition: all 0.3s ease;
+}
+
+.real-world-example:hover {
+  border-color: var(--rebellion-accent);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+.example-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--rebellion-border);
+}
+
+.example-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--rebellion-text);
+  margin: 0;
+}
+
+.example-meta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.875rem;
+}
+
+.example-timestamp {
+  color: var(--rebellion-text-secondary);
+}
+
+.example-severity {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.example-severity.critical {
+  background: rgba(234, 67, 53, 0.2);
+}
+
+.example-severity.warning {
+  background: rgba(251, 188, 4, 0.2);
+}
+
+.example-severity.normal {
+  background: rgba(52, 168, 83, 0.2);
+}
+
+.example-scenario {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: rgba(66, 133, 244, 0.05);
+  border-radius: 8px;
+  border-left: 4px solid var(--rebellion-accent);
+}
+
+.example-comparison {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.traditional-side h4 {
+  color: #ea4335;
+  margin-bottom: 1rem;
+}
+
+.hti-side h4 {
+  color: var(--rebellion-accent);
+  margin-bottom: 1rem;
+}
+
+.output-block {
+  background: #0d1117;
+  border-radius: 8px;
+  padding: 1.5rem;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  overflow-x: auto;
+}
+
+.output-block.traditional pre {
+  color: #ff6b6b;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.output-block.hti pre {
+  color: #4ecdc4;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.details-toggle {
+  background: transparent;
+  border: 1px solid var(--rebellion-border);
+  color: var(--rebellion-text-secondary);
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.details-toggle:hover {
+  border-color: var(--rebellion-accent);
+  color: var(--rebellion-accent);
+}
+
+.technical-details {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  background: rgba(66, 133, 244, 0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(66, 133, 244, 0.2);
+}
+
+.technical-details h5 {
+  color: var(--rebellion-accent);
+  margin-bottom: 1rem;
+}
+
+.technical-details ul {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.technical-details li {
+  margin-bottom: 0.5rem;
+  color: var(--rebellion-text-secondary);
+}
+
+/* Rebel Button Styles */
+.rebel-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  position: relative;
+  overflow: hidden;
+  font-family: inherit;
+}
+
+.rebel-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.rebel-button--small {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+.rebel-button--medium {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+}
+
+.rebel-button--large {
+  padding: 1rem 2rem;
+  font-size: 1.125rem;
+}
+
+.rebel-button--primary {
+  background: var(--rebellion-accent);
+  color: white;
+}
+
+.rebel-button--primary:hover:not(:disabled) {
+  background: var(--rebellion-accent-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(66, 133, 244, 0.3);
+}
+
+.rebel-button--secondary {
+  background: transparent;
+  color: var(--rebellion-text);
+  border: 2px solid var(--rebellion-border);
+}
+
+.rebel-button--secondary:hover:not(:disabled) {
+  border-color: var(--rebellion-accent);
+  color: var(--rebellion-accent);
+  transform: translateY(-2px);
+}
+
+.rebel-button--tertiary {
+  background: transparent;
+  color: var(--rebellion-text-secondary);
+  border: 1px solid var(--rebellion-border);
+}
+
+.rebel-button--tertiary:hover:not(:disabled) {
+  color: var(--rebellion-accent);
+  border-color: var(--rebellion-accent);
+}
+
+.rebel-button--danger {
+  background: #ea4335;
+  color: white;
+}
+
+.rebel-button--danger:hover:not(:disabled) {
+  background: #d33b2c;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(234, 67, 53, 0.3);
+}
+
+.rebel-button__spinner {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-left-color: transparent;
+  border-radius: 50%;
+  animation: rebel-button-spinner 1s linear infinite;
+}
+
+@keyframes rebel-button-spinner {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
