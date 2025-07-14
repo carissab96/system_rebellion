@@ -1,0 +1,190 @@
+/**
+ * System Rebellion UI - Badge Component Styles
+ * 
+ * Proprietary badge styling for the System Rebellion design system.
+ * These styles implement our cyberpunk aesthetic for status indicators and labels.
+ */
+
+.sr-badge {
+  /* Base badge styles */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+/* Badge variants */
+.sr-badge-primary {
+  background-color: #3a86ff;
+  color: white;
+}
+
+.sr-badge-secondary {
+  background-color: #8338ec;
+  color: white;
+}
+
+.sr-badge-accent {
+  background-color: #ff006e;
+  color: white;
+}
+
+.sr-badge-success {
+  background-color: #38b000;
+  color: white;
+}
+
+.sr-badge-warning {
+  background-color: #ffbe0b;
+  color: #121212;
+}
+
+.sr-badge-danger {
+  background-color: #ff3838;
+  color: white;
+}
+
+.sr-badge-cyber {
+  background-color: #00f5d4;
+  color: #121212;
+}
+
+.sr-badge-info {
+  background-color: #02b5fc;
+  color: white;
+}
+
+/* Badge sizes */
+.sr-badge-sm {
+  padding: 2px 6px;
+  font-size: 0.7rem;
+  line-height: 1.2;
+}
+
+.sr-badge-md {
+  padding: 3px 8px;
+  font-size: 0.75rem;
+  line-height: 1.2;
+}
+
+.sr-badge-lg {
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  line-height: 1.2;
+}
+
+/* Outlined badges */
+.sr-badge-outlined {
+  background-color: transparent;
+  border: 1px solid;
+}
+
+.sr-badge-primary.sr-badge-outlined {
+  color: #3a86ff;
+  border-color: #3a86ff;
+}
+
+.sr-badge-secondary.sr-badge-outlined {
+  color: #8338ec;
+  border-color: #8338ec;
+}
+
+.sr-badge-accent.sr-badge-outlined {
+  color: #ff006e;
+  border-color: #ff006e;
+}
+
+.sr-badge-success.sr-badge-outlined {
+  color: #38b000;
+  border-color: #38b000;
+}
+
+.sr-badge-warning.sr-badge-outlined {
+  color: #ffbe0b;
+  border-color: #ffbe0b;
+}
+
+.sr-badge-danger.sr-badge-outlined {
+  color: #ff3838;
+  border-color: #ff3838;
+}
+
+.sr-badge-cyber.sr-badge-outlined {
+  color: #00f5d4;
+  border-color: #00f5d4;
+}
+
+.sr-badge-info.sr-badge-outlined {
+  color: #02b5fc;
+  border-color: #02b5fc;
+}
+
+/* Rounded badges */
+.sr-badge-rounded {
+  border-radius: 999px;
+}
+
+/* Glow effect */
+.sr-badge-glow {
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
+}
+
+.sr-badge-primary.sr-badge-glow {
+  box-shadow: 0 0 8px rgba(58, 134, 255, 0.5);
+}
+
+.sr-badge-secondary.sr-badge-glow {
+  box-shadow: 0 0 8px rgba(131, 56, 236, 0.5);
+}
+
+.sr-badge-accent.sr-badge-glow {
+  box-shadow: 0 0 8px rgba(255, 0, 110, 0.5);
+}
+
+.sr-badge-success.sr-badge-glow {
+  box-shadow: 0 0 8px rgba(56, 176, 0, 0.5);
+}
+
+.sr-badge-warning.sr-badge-glow {
+  box-shadow: 0 0 8px rgba(255, 190, 11, 0.5);
+}
+
+.sr-badge-danger.sr-badge-glow {
+  box-shadow: 0 0 8px rgba(255, 56, 56, 0.5);
+}
+
+.sr-badge-cyber.sr-badge-glow {
+  box-shadow: 0 0 8px rgba(0, 245, 212, 0.7);
+}
+
+.sr-badge-info.sr-badge-glow {
+  box-shadow: 0 0 8px rgba(2, 181, 252, 0.5);
+}
+
+/* Pulse animation */
+.sr-badge-pulse {
+  animation: badge-pulse 2s infinite;
+}
+
+@keyframes badge-pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Dark mode overrides */
+@media (prefers-color-scheme: dark) {
+  .sr-badge-outlined {
+    background-color: rgba(0, 0, 0, 0.2);
+  }
+}

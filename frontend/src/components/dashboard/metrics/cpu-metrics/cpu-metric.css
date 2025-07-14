@@ -1,0 +1,353 @@
+.metric-card {
+  background: linear-gradient(135deg, rgba(16, 20, 30, 0.9), rgba(10, 10, 20, 0.95));
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+  border: 1px solid rgba(58, 134, 255, 0.3);
+  margin-bottom: 1rem;
+  position: relative;
+  z-index: 1;
+}
+
+.metric-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(180deg, #3a86ff, #8338ec);
+  border-radius: 4px 0 0 4px;
+}
+
+.metric-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15), 0 0 10px rgba(58, 134, 255, 0.3);
+}
+
+.metric-card h3 {
+  color: #3a86ff;
+  font-size: 1.4rem;
+  margin-bottom: 0.8rem;
+  font-weight: 700;
+  text-shadow: 0 0 15px rgba(58, 134, 255, 0.8);
+  border-bottom: 2px solid rgba(58, 134, 255, 0.5);
+  padding-bottom: 0.5rem;
+  letter-spacing: 0.5px;
+}
+
+.metric-value {
+  font-size: 2.8rem;
+  font-weight: bold;
+  margin: 0.5rem 0;
+  color: #3a86ff;
+  text-shadow: 0 0 15px rgba(58, 134, 255, 0.8);
+  transition: all 0.3s ease;
+}
+
+.chart-container {
+  margin-top: 1rem;
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(10, 1, 48, 0.8);
+  padding: 1rem;
+  border: 2px solid rgba(58, 134, 255, 0.4);
+  box-shadow: 0 0 20px rgba(58, 134, 255, 0.4);
+  transition: all 0.3s ease;
+}
+
+/* Chart Styles */
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+  stroke: rgba(58, 134, 255, 0.5);
+  stroke-width: 1px;
+}
+
+.recharts-tooltip-wrapper .recharts-default-tooltip {
+  background: rgba(10, 1, 48, 0.95) !important;
+  border: 2px solid rgba(58, 134, 255, 0.8) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 0 20px rgba(58, 134, 255, 0.6) !important;
+  color: white !important;
+  font-weight: bold !important;
+  padding: 10px !important;
+}
+
+.recharts-area-curve {
+  filter: drop-shadow(0 0 20px rgba(58, 134, 255, 1));
+  stroke-width: 4px;
+  stroke: rgb(58, 134, 255);
+}
+
+.recharts-area-area {
+  /* No filters to ensure maximum visibility */
+  opacity: 1;
+}
+
+/* Additional chart enhancements */
+.recharts-surface {
+  overflow: visible;
+}
+
+.recharts-layer {
+  /* Removing blend mode to ensure visibility */
+  mix-blend-mode: normal;
+}
+
+/* Tab Navigation */
+.metric-tabs {
+  display: flex;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid rgba(58, 134, 255, 0.3);
+}
+
+.tab-button {
+  background: none;
+  border: none;
+  color: #ffffff;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  position: relative;
+  opacity: 0.7;
+}
+
+.tab-button:hover {
+  opacity: 1;
+}
+
+.tab-button.active {
+  color: #3a86ff;
+  opacity: 1;
+  text-shadow: 0 0 10px rgba(58, 134, 255, 0.6);
+}
+
+.tab-button.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: #3a86ff;
+  box-shadow: 0 0 10px rgba(58, 134, 255, 0.8);
+}
+
+/* Tab Content */
+.tab-content {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* CPU Stats */
+.cpu-stats {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 1rem;
+}
+
+.cpu-stat-item {
+  text-align: center;
+  padding: 0.5rem 1rem;
+  background: rgba(10, 1, 48, 0.6);
+  border-radius: 8px;
+  border: 1px solid rgba(58, 134, 255, 0.3);
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  color: #ffffff;
+  margin-bottom: 0.25rem;
+}
+
+.stat-value {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #3a86ff;
+  text-shadow: 0 0 10px rgba(58, 134, 255, 0.6);
+}
+
+/* Cores Tab */
+.cores-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.cores-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #3a86ff;
+  text-shadow: 0 0 10px rgba(58, 134, 255, 0.6);
+}
+
+.cores-count {
+  font-size: 0.9rem;
+  color: #ffffff;
+  background: rgba(58, 134, 255, 0.2);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+/* Processes Tab */
+.processes-header {
+  margin-bottom: 1rem;
+}
+
+.processes-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #3a86ff;
+  text-shadow: 0 0 10px rgba(58, 134, 255, 0.6);
+}
+
+.processes-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.process-item {
+  padding: 0.75rem;
+  border-bottom: 1px solid rgba(58, 134, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.process-item:hover {
+  background: rgba(58, 134, 255, 0.1);
+}
+
+.process-name {
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 0.25rem;
+}
+
+.process-usage {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.25rem;
+}
+
+.process-bar-container {
+  flex-grow: 1;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  margin-right: 0.5rem;
+  overflow: hidden;
+}
+
+.process-bar {
+  height: 100%;
+  background: #3a86ff;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.process-percent {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #3a86ff;
+  width: 50px;
+  text-align: right;
+}
+
+.process-details {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Details Tab */
+.cpu-details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.detail-card {
+  padding: 1rem;
+}
+
+.detail-card h4 {
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.detail-item:last-child {
+  border-bottom: none;
+}
+
+.detail-label {
+  color: var(--text-secondary);
+}
+
+.detail-value {
+  color: var(--text-primary);
+  font-family: monospace;
+}
+
+.processes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.process-item {
+  padding: 1rem;
+}
+
+.process-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.process-bar-container {
+  height: 8px;
+  background-color: var(--background);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.process-bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.process-details {
+  display: flex;
+  gap: 1rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.no-data {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}

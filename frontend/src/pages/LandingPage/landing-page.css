@@ -1,0 +1,172 @@
+/* src/styles/landing.css */
+.landing-page {
+  --rebellion-bg: #1a1d23;
+  --rebellion-bg-secondary: #252933;
+  --rebellion-text: #e8eaed;
+  --rebellion-text-secondary: #9aa0a6;
+  --rebellion-text-muted: #5f6368;
+  --rebellion-accent: #4285f4;
+  --rebellion-accent-hover: #34a853;
+  --rebellion-border: #2f3441;
+  
+  background: var(--rebellion-bg);
+  color: var(--rebellion-text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  line-height: 1.6;
+}
+
+/* Hero Section */
+.hero-rebellion {
+  background: linear-gradient(135deg, var(--rebellion-bg) 0%, var(--rebellion-bg-secondary) 100%);
+  padding: 6rem 0;
+  min-height: 80vh;
+  display: flex;
+  align-items: center;
+}
+
+.hero-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: center;
+}
+
+.hero-brand {
+  text-align: left;
+}
+
+.rebellion-logo {
+  max-width: 200px;
+  height: auto;
+  margin-bottom: 2rem;
+}
+
+.logo-placeholder {
+  width: 200px;
+  height: 80px;
+  background: var(--rebellion-border);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2rem;
+  border: 2px dashed var(--rebellion-text-muted);
+}
+
+.hero-title {
+  font-size: 3rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  line-height: 1.2;
+}
+
+.hero-emphasis {
+  color: var(--rebellion-accent);
+  display: block;
+}
+
+.hero-truth {
+  font-size: 1.25rem;
+  color: var(--rebellion-text-secondary);
+  margin-bottom: 3rem;
+  line-height: 1.8;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.cta-rebellion {
+  padding: 1rem 2rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.cta-rebellion.primary {
+  background: var(--rebellion-accent);
+  color: white;
+}
+
+.cta-rebellion.primary:hover {
+  background: var(--rebellion-accent-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(66, 133, 244, 0.3);
+}
+
+.cta-rebellion.secondary {
+  background: transparent;
+  color: var(--rebellion-text);
+  border: 2px solid var(--rebellion-border);
+}
+
+.cta-rebellion.secondary:hover {
+  border-color: var(--rebellion-accent);
+  color: var(--rebellion-accent);
+  transform: translateY(-2px);
+}
+
+.hero-visual {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hero-image-placeholder {
+  width: 100%;
+  height: 400px;
+  background: var(--rebellion-bg-secondary);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed var(--rebellion-border);
+  color: var(--rebellion-text-muted);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .hero-container {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    text-align: center;
+  }
+  
+  .hero-brand {
+    text-align: center;
+  }
+  
+  .hero-title {
+    font-size: 2.5rem;
+  }
+  
+  .hero-actions {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-title {
+    font-size: 2rem;
+  }
+  
+  .hero-truth {
+    font-size: 1.1rem;
+  }
+  
+  .cta-rebellion {
+    padding: 0.875rem 1.5rem;
+    font-size: 1rem;
+  }
+}

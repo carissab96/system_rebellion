@@ -1,0 +1,68 @@
+/*
+ * System Rebellion Global Styles
+ * The foundation that makes everything not look like ass
+ */
+
+ * {
+    box-sizing: border-box;
+  }
+  
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    background: var(--sr-bg-primary);
+    color: var(--sr-text-primary);
+    margin: 0;
+    padding: 0;
+    line-height: 1.6;
+  }
+  
+  /* Typography */
+  h1, h2, h3, h4, h5, h6 {
+    margin: 0 0 var(--sr-space-md) 0;
+    line-height: 1.2;
+  }
+  
+  h1 {
+    font-size: 2rem;
+    color: var(--sr-secondary-base);
+    text-shadow: var(--sr-secondary-glow);
+  }
+  
+  h2 {
+    font-size: 1.5rem;
+    color: var(--sr-text-primary);
+  }
+  
+  h3 {
+    font-size: 1.2rem;
+    color: var(--sr-text-primary);
+  }
+  
+  /* Links */
+  a {
+    color: var(--sr-primary-base);
+    transition: var(--sr-transition-fast);
+  }
+  
+  a:hover {
+    color: var(--sr-cyber-electric);
+  }
+  
+  /* Scrollbars (because we're fancy) */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: var(--sr-bg-panel);
+    border-radius: var(--sr-radius-sm);
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: var(--sr-secondary-alpha-50);
+    border-radius: var(--sr-radius-sm);
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--sr-secondary-base);
+  }

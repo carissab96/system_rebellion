@@ -1,0 +1,67 @@
+/*
+ * System Rebellion Button Components
+ * Buttons that don't look like they're from 1995
+ */
+
+ .sr-button {
+    background: var(--sr-primary-base);
+    color: white;
+    border: none;
+    border-radius: var(--sr-radius-sm);
+    padding: var(--sr-space-sm) var(--sr-space-md);
+    cursor: pointer;
+    transition: var(--sr-transition-fast);
+    font-size: 0.9rem;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sr-space-sm);
+    text-decoration: none;
+    box-shadow: var(--sr-shadow-sm);
+  }
+  
+  .sr-button:hover {
+    background: var(--sr-primary-dark);
+    transform: translateY(-1px);
+    box-shadow: var(--sr-primary-glow);
+  }
+  
+  /* Button Variants */
+  .sr-button--secondary {
+    background: var(--sr-secondary-base);
+  }
+  
+  .sr-button--secondary:hover {
+    background: var(--sr-secondary-dark);
+    box-shadow: var(--sr-secondary-glow);
+  }
+  
+  .sr-button--danger {
+    background: var(--sr-danger-base);
+  }
+  
+  .sr-button--danger:hover {
+    background: var(--sr-danger-base);
+    box-shadow: var(--sr-danger-glow);
+  }
+  
+  .sr-button--cyber {
+    background: var(--sr-cyber-electric);
+    border: 1px solid var(--sr-cyber-neon);
+  }
+  
+  .sr-button--cyber:hover {
+    background: var(--sr-cyber-neon);
+    box-shadow: var(--sr-cyber-glow);
+  }
+  
+  .sr-button--outline {
+    background: transparent;
+    border: 1px solid var(--sr-primary-base);
+    color: var(--sr-primary-base);
+  }
+  
+  .sr-button--outline:hover {
+    background: var(--sr-primary-base);
+    color: white;
+  }

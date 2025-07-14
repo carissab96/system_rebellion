@@ -1,0 +1,285 @@
+/**
+ * System Rebellion UI - Button Component Styles
+ * 
+ * Proprietary button styling for the System Rebellion design system.
+ * These styles implement our cyberpunk aesthetic while maintaining accessibility.
+ */
+
+.sr-button {
+  /* Base button styles */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-family-primary, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  text-decoration: none;
+  gap: 8px;
+}
+
+/* Button sizes */
+.sr-button-sm {
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  border-radius: 6px;
+  height: 32px;
+}
+
+.sr-button-md {
+  padding: 8px 16px;
+  font-size: 0.875rem;
+  border-radius: 8px;
+  height: 40px;
+}
+
+.sr-button-lg {
+  padding: 12px 24px;
+  font-size: 1rem;
+  border-radius: 10px;
+  height: 48px;
+}
+
+/* Button variants */
+.sr-button-primary {
+  background: linear-gradient(45deg, #3a86ff, #61a0ff);
+  color: white;
+  box-shadow: 0 2px 4px rgba(58, 134, 255, 0.3);
+}
+
+.sr-button-secondary {
+  background: linear-gradient(45deg, #8338ec, #9a5ff7);
+  color: white;
+  box-shadow: 0 2px 4px rgba(131, 56, 236, 0.3);
+}
+
+.sr-button-accent {
+  background: linear-gradient(45deg, #ff006e, #ff4d94);
+  color: white;
+  box-shadow: 0 2px 4px rgba(255, 0, 110, 0.3);
+}
+
+.sr-button-success {
+  background: linear-gradient(45deg, #38b000, #4cd62a);
+  color: white;
+  box-shadow: 0 2px 4px rgba(56, 176, 0, 0.3);
+}
+
+.sr-button-warning {
+  background: linear-gradient(45deg, #ffbe0b, #ffce4d);
+  color: #121212;
+  box-shadow: 0 2px 4px rgba(255, 190, 11, 0.3);
+}
+
+.sr-button-danger {
+  background: linear-gradient(45deg, #ff3838, #ff6b6b);
+  color: white;
+  box-shadow: 0 2px 4px rgba(255, 56, 56, 0.3);
+}
+
+.sr-button-cyber {
+  background: linear-gradient(45deg, #00f5d4, #02b5fc);
+  color: #121212;
+  box-shadow: 0 2px 4px rgba(0, 245, 212, 0.3);
+}
+
+/* Outlined variants */
+.sr-button-outlined {
+  background: transparent;
+  border: 2px solid;
+}
+
+.sr-button-primary.sr-button-outlined {
+  border-color: #3a86ff;
+  color: #3a86ff;
+}
+
+.sr-button-secondary.sr-button-outlined {
+  border-color: #8338ec;
+  color: #8338ec;
+}
+
+.sr-button-accent.sr-button-outlined {
+  border-color: #ff006e;
+  color: #ff006e;
+}
+
+.sr-button-success.sr-button-outlined {
+  border-color: #38b000;
+  color: #38b000;
+}
+
+.sr-button-warning.sr-button-outlined {
+  border-color: #ffbe0b;
+  color: #ffbe0b;
+}
+
+.sr-button-danger.sr-button-outlined {
+  border-color: #ff3838;
+  color: #ff3838;
+}
+
+.sr-button-cyber.sr-button-outlined {
+  border-color: #00f5d4;
+  color: #00f5d4;
+}
+
+/* Circle buttons */
+.sr-button-circle {
+  border-radius: 50%;
+  padding: 0;
+  width: 40px;
+  height: 40px;
+}
+
+.sr-button-circle.sr-button-sm {
+  width: 32px;
+  height: 32px;
+}
+
+.sr-button-circle.sr-button-lg {
+  width: 48px;
+  height: 48px;
+}
+
+/* Glow effect */
+.sr-button-glow {
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+}
+
+.sr-button-primary.sr-button-glow {
+  box-shadow: 0 0 15px rgba(58, 134, 255, 0.5);
+}
+
+.sr-button-secondary.sr-button-glow {
+  box-shadow: 0 0 15px rgba(131, 56, 236, 0.5);
+}
+
+.sr-button-accent.sr-button-glow {
+  box-shadow: 0 0 15px rgba(255, 0, 110, 0.5);
+}
+
+.sr-button-success.sr-button-glow {
+  box-shadow: 0 0 15px rgba(56, 176, 0, 0.5);
+}
+
+.sr-button-warning.sr-button-glow {
+  box-shadow: 0 0 15px rgba(255, 190, 11, 0.5);
+}
+
+.sr-button-danger.sr-button-glow {
+  box-shadow: 0 0 15px rgba(255, 56, 56, 0.5);
+}
+
+.sr-button-cyber.sr-button-glow {
+  box-shadow: 0 0 15px rgba(0, 245, 212, 0.7);
+}
+
+/* Full width */
+.sr-button-full-width {
+  width: 100%;
+}
+
+/* Hover effects */
+.sr-button:hover:not(.sr-button-disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.sr-button-primary:hover:not(.sr-button-disabled) {
+  background: linear-gradient(45deg, #2667cc, #3a86ff);
+  box-shadow: 0 4px 12px rgba(58, 134, 255, 0.4);
+}
+
+.sr-button-secondary:hover:not(.sr-button-disabled) {
+  background: linear-gradient(45deg, #6c1fd6, #8338ec);
+  box-shadow: 0 4px 12px rgba(131, 56, 236, 0.4);
+}
+
+.sr-button-accent:hover:not(.sr-button-disabled) {
+  background: linear-gradient(45deg, #cc0058, #ff006e);
+  box-shadow: 0 4px 12px rgba(255, 0, 110, 0.4);
+}
+
+.sr-button-success:hover:not(.sr-button-disabled) {
+  background: linear-gradient(45deg, #2a8c00, #38b000);
+  box-shadow: 0 4px 12px rgba(56, 176, 0, 0.4);
+}
+
+.sr-button-warning:hover:not(.sr-button-disabled) {
+  background: linear-gradient(45deg, #cc9800, #ffbe0b);
+  box-shadow: 0 4px 12px rgba(255, 190, 11, 0.4);
+}
+
+.sr-button-danger:hover:not(.sr-button-disabled) {
+  background: linear-gradient(45deg, #cc2d2d, #ff3838);
+  box-shadow: 0 4px 12px rgba(255, 56, 56, 0.4);
+}
+
+.sr-button-cyber:hover:not(.sr-button-disabled) {
+  background: linear-gradient(45deg, #00d6b9, #02a2e3);
+  box-shadow: 0 4px 12px rgba(0, 245, 212, 0.4);
+}
+
+/* Outlined hover */
+.sr-button-outlined:hover:not(.sr-button-disabled) {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+/* Active state */
+.sr-button:active:not(.sr-button-disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Disabled state */
+.sr-button-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Loading state */
+.sr-button-loading {
+  cursor: wait;
+}
+
+.sr-button-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s ease-in-out infinite;
+  margin-right: 8px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Icon positioning */
+.sr-button-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sr-button-icon-left {
+  margin-right: 4px;
+}
+
+.sr-button-icon-right {
+  margin-left: 4px;
+}
+
+/* Button text */
+.sr-button-text {
+  display: inline-block;
+}

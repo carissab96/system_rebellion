@@ -1,0 +1,251 @@
+/* Disk Partitions Tab Styles */
+.disk-partitions {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Header Styles */
+.disk-partitions__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.disk-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.disk-summary__metrics {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.disk-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.disk-metric__label {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.disk-metric__value {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+/* Tabs Navigation */
+.tabs-navigation {
+  display: flex;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 1.5rem;
+}
+
+.tab {
+  padding: 0.75rem 1.5rem;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tab:hover {
+  color: var(--color-text);
+}
+
+.tab--active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+/* Table Container */
+.disk-partitions__table-container {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Partition Details */
+.partition-details,
+.disk-details {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  background-color: var(--color-bg-subtle);
+  border-radius: 4px;
+}
+
+.partition-details__grid,
+.disk-details__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+/* Card Styles */
+.partition-usage,
+.partition-io,
+.partition-health,
+.partition-physical-disk,
+.disk-info-card,
+.disk-partitions-card {
+  padding: 1.25rem;
+  background-color: var(--color-bg-elevated);
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.partition-usage h4,
+.partition-io h4,
+.partition-health h4,
+.partition-physical-disk h4,
+.disk-info-card h4,
+.disk-partitions-card h4 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: var(--color-text);
+  font-size: 1rem;
+}
+
+/* Progress Bar Styles */
+.partition-usage__chart {
+  margin-top: 1rem;
+}
+
+/* Health Status */
+.health-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+}
+
+.health-status::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: currentColor;
+}
+
+/* Compact View */
+.disk-partitions--compact {
+  padding: 1rem;
+}
+
+.disk-partitions--compact .disk-partitions__header {
+  margin-bottom: 0.75rem;
+}
+
+.disk-partitions--compact .disk-summary {
+  flex-direction: row;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.disk-partitions--compact .disk-summary__metrics {
+  gap: 1rem;
+}
+
+.disk-partitions--compact .disk-metric {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.disk-partitions--compact .disk-metric__label {
+  margin-bottom: 0;
+  font-size: 0.75rem;
+}
+
+.disk-partitions--compact .disk-metric__value {
+  font-size: 1rem;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .disk-partitions__header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .disk-summary__metrics {
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  
+  .partition-details__grid,
+  .disk-details__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Dark Mode Adjustments */
+[data-theme="dark"] .partition-usage,
+[data-theme="dark"] .partition-io,
+[data-theme="dark"] .partition-health,
+[data-theme="dark"] .partition-physical-disk,
+[data-theme="dark"] .disk-info-card,
+[data-theme="dark"] .disk-partitions-card {
+  background-color: var(--color-bg-elevated);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .partition-details,
+[data-theme="dark"] .disk-details {
+  background-color: var(--color-bg-subtle);
+}
+
+/* Animation for tab switching */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.tab-panel {
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* Scrollable content */
+.scrollable-content {
+  overflow-y: auto;
+  max-height: calc(100vh - 200px);
+  padding-right: 0.5rem;
+}
+
+/* Custom scrollbar */
+.scrollable-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollable-content::-webkit-scrollbar-track {
+  background: var(--color-bg-subtle);
+  border-radius: 3px;
+}
+
+.scrollable-content::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+
+.scrollable-content::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-secondary);
+}

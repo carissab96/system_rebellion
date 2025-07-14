@@ -1,0 +1,39 @@
+.progress-bar-container {
+  width: 100%;
+  margin: 0.5rem 0;
+}
+
+.progress-bar-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.25rem;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+.progress-bar-background {
+  width: 100%;
+  background-color: var(--color-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  background-color: var(--color-primary);
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+/* Color variants */
+.progress-bar--success .progress-bar-fill {
+  background-color: var(--color-success);
+}
+
+.progress-bar--warning .progress-bar-fill {
+  background-color: var(--color-warning);
+}
+
+.progress-bar--error .progress-bar-fill {
+  background-color: var(--color-error);
+}

@@ -1,0 +1,62 @@
+{
+  "timestamp": "2025-06-10T00:52:22.769102",
+  "summary": {
+    "total_events": 10,
+    "messages_received": 0,
+    "auth_token_present": false,
+    "websocket_connected": false
+  },
+  "events": [
+    {
+      "timestamp": "2025-06-10T00:52:22.744497",
+      "type": "AUTH_START",
+      "details": "Attempting authentication with username: carissab"
+    },
+    {
+      "timestamp": "2025-06-10T00:52:22.744991",
+      "type": "AUTH_ATTEMPT",
+      "details": "Trying /auth/login with json format"
+    },
+    {
+      "timestamp": "2025-06-10T00:52:22.755570",
+      "type": "AUTH_ERROR",
+      "details": "/auth/login: HTTPConnectionPool(host='127.0.0.1', port=80): Max retries exceeded with url: /auth/login (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7f01a0043220>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    },
+    {
+      "timestamp": "2025-06-10T00:52:22.755713",
+      "type": "AUTH_ATTEMPT",
+      "details": "Trying /auth/token with json format"
+    },
+    {
+      "timestamp": "2025-06-10T00:52:22.759490",
+      "type": "AUTH_ERROR",
+      "details": "/auth/token: HTTPConnectionPool(host='127.0.0.1', port=80): Max retries exceeded with url: /auth/token (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7f01a0043c10>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    },
+    {
+      "timestamp": "2025-06-10T00:52:22.759603",
+      "type": "AUTH_ATTEMPT",
+      "details": "Trying /auth/login with form format"
+    },
+    {
+      "timestamp": "2025-06-10T00:52:22.764276",
+      "type": "AUTH_ERROR",
+      "details": "/auth/login: HTTPConnectionPool(host='127.0.0.1', port=80): Max retries exceeded with url: /auth/login (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7f01a0097940>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    },
+    {
+      "timestamp": "2025-06-10T00:52:22.764440",
+      "type": "AUTH_ATTEMPT",
+      "details": "Trying /token with form format"
+    },
+    {
+      "timestamp": "2025-06-10T00:52:22.768975",
+      "type": "AUTH_ERROR",
+      "details": "/token: HTTPConnectionPool(host='127.0.0.1', port=80): Max retries exceeded with url: /token (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7f01a0043400>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    },
+    {
+      "timestamp": "2025-06-10T00:52:22.769050",
+      "type": "AUTH_ALL_FAILED",
+      "details": "All authentication attempts failed"
+    }
+  ],
+  "sample_messages": []
+}

@@ -1,0 +1,167 @@
+/* Modal.css - Cyberpunk-themed modal component */
+
+* {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+input, button, select, textarea {
+  font-size: 16px; /* Prevents iOS zoom on focus */
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(10px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999999;
+  animation: fadeIn 0.3s ease-out;
+  padding: 20px;
+}
+
+.modal-content {
+  background: linear-gradient(135deg, #1a0458 0%, #242b42 100%);
+  border-radius: 12px;
+  box-shadow: 0 0 30px rgba(0, 245, 212, 0.5);
+  overflow: hidden;
+  width: 90%;
+  max-width: 600px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 10000000;
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+}
+
+.modal-content::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(90deg, #3333ff, #00f5d4, #3333ff, #00f5d4);
+  background-size: 400% 400%;
+  z-index: auto;
+  border-radius: 14px;
+  animation: borderGlow 12s linear infinite;
+}
+
+.modal-header {
+  padding: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(0, 245, 212, 0.2);
+  position: relative;
+}
+
+.modal-header h2 {
+  margin: 0;
+  color: #00f5d4;
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  text-shadow: 0 0 10px rgba(0, 245, 212, 0.5);
+}
+
+.close-button {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-size: 1.5rem;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.close-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #00f5d4;
+  transform: rotate(90deg);
+}
+
+.modal-body {
+  padding: 1.5rem;
+  overflow-y: auto;
+  color: #ffffff;
+  flex: 1;
+  max-height: 60vh;
+}
+
+/* Size classes */
+.modal-small {
+  width: 400px;
+  max-width: 90vw;
+}
+
+.modal-medium {
+  width: 600px;
+  max-width: 90vw;
+}
+
+.modal-large {
+  width: 800px;
+  max-width: 90vw;
+}
+
+/* Draggable styles */
+.draggable .modal-header {
+  cursor: move;
+  user-select: none;
+}
+
+.draggable .modal-header:hover {
+  background: linear-gradient(135deg, rgba(26, 4, 88, 0.9), rgba(36, 43, 66, 0.9));
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes borderGlow {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .modal-small, .modal-medium, .modal-large {
+    width: 95%;
+    max-height: 75vh;
+  }
+}
+
+/* Export the styles */
+

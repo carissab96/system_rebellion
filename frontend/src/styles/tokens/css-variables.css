@@ -1,0 +1,78 @@
+/* 
+ * System Rebellion CSS Variables
+ * Converting your beautiful design tokens into CSS superpowers
+ * VIC-20: "WHAT SORCERY IS THIS?!"
+ */
+
+ :root {
+    /* Primary Colors */
+    --sr-primary-base: #3a86ff;
+    --sr-primary-light: #61a0ff;
+    --sr-primary-dark: #2667cc;
+    --sr-primary-alpha-10: rgba(58, 134, 255, 0.1);
+    --sr-primary-alpha-20: rgba(58, 134, 255, 0.2);
+    --sr-primary-alpha-50: rgba(58, 134, 255, 0.5);
+    --sr-primary-glow: 0 0 10px rgba(58, 134, 255, 0.5);
+  
+    /* Secondary Colors */
+    --sr-secondary-base: #8338ec;
+    --sr-secondary-light: #9a5ff7;
+    --sr-secondary-dark: #6c1fd6;
+    --sr-secondary-alpha-10: rgba(131, 56, 236, 0.1);
+    --sr-secondary-alpha-20: rgba(131, 56, 236, 0.2);
+    --sr-secondary-alpha-50: rgba(131, 56, 236, 0.5);
+    --sr-secondary-glow: 0 0 10px rgba(131, 56, 236, 0.5);
+  
+    /* Cyberpunk Special */
+    --sr-cyber-neon: #00f5d4;
+    --sr-cyber-electric: #02b5fc;
+    --sr-cyber-plasma: #5108fa;
+    --sr-cyber-toxic: #00f5a3;
+    --sr-cyber-glow: 0 0 15px rgba(0, 245, 212, 0.7);
+  
+    /* Status Colors */
+    --sr-success-base: #38b000;
+    --sr-success-glow: 0 0 10px rgba(56, 176, 0, 0.5);
+    --sr-warning-base: #ffbe0b;
+    --sr-warning-glow: 0 0 10px rgba(255, 190, 11, 0.5);
+    --sr-danger-base: #ff3838;
+    --sr-danger-glow: 0 0 10px rgba(255, 56, 56, 0.5);
+  
+    /* Backgrounds */
+    --sr-bg-primary: #a695d4;
+    --sr-bg-card: #c8b4f7;
+    --sr-bg-panel: rgba(224, 219, 245, 0.993);
+    --sr-bg-dark-panel: rgba(199, 158, 252, 0.993);
+  
+    /* Text Colors */
+    --sr-text-primary: #1a1a1a;
+    --sr-text-secondary: #4a5568;
+    --sr-text-muted: #718096;
+    --sr-text-light: #ffffff;
+    --sr-text-cyber: #2563eb;
+  
+    /* Spacing Scale */
+    --sr-space-xs: 0.25rem;
+    --sr-space-sm: 0.5rem;
+    --sr-space-md: 1rem;
+    --sr-space-lg: 1.5rem;
+    --sr-space-xl: 2rem;
+    --sr-space-xxl: 3rem;
+  
+    /* Border Radius */
+    --sr-radius-sm: 4px;
+    --sr-radius-md: 8px;
+    --sr-radius-lg: 12px;
+    --sr-radius-full: 50%;
+  
+    /* Shadows */
+    --sr-shadow-sm: 0 0 10px rgba(127, 8, 206, 0.1);
+    --sr-shadow-md: 0 0 15px rgba(127, 8, 206, 0.2);
+    --sr-shadow-lg: 0 0 20px rgba(127, 8, 206, 0.3);
+    --sr-shadow-cyber: 0 0 25px rgba(0, 245, 212, 0.4);
+  
+    /* Transitions */
+    --sr-transition-fast: 0.15s ease;
+    --sr-transition-normal: 0.3s ease;
+    --sr-transition-slow: 0.5s ease;
+  }
