@@ -1,0 +1,104 @@
+/* =============================================================================
+   SIGN UP MODAL COMPONENT STYLES
+   SignUpModal.tsx specific styles only
+   ============================================================================= */
+
+/* MODAL OVERLAY & CONTENT */
+.signup-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    padding: var(--space-md);
+    animation: fadeIn 0.2s ease-out;
+  }
+  
+  .signup-modal-content {
+    background: var(--rebellion-surface);
+    border: 1px solid var(--rebellion-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    max-width: 480px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    animation: slideInUp 0.3s ease-out;
+  }
+  
+  .signup-modal-close {
+    position: absolute;
+    top: var(--space-md);
+    right: var(--space-md);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    z-index: 10;
+  }
+  
+  .signup-modal-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: scale(1.1);
+  }
+  
+  /* SIGN UP SPECIFIC FORM STYLES */
+  .signup-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-md);
+  }
+  
+  .signup-form-actions {
+    margin-top: var(--space-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+  
+  .signup-form-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  /* PASSWORD STRENGTH FOR SIGNUP */
+  .signup-password-strength {
+    margin-top: var(--space-xs);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+  }
+  
+  .signup-strength-bar {
+    height: 4px;
+    background: var(--rebellion-border);
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+  }
+  
+  .signup-strength-fill {
+    height: 100%;
+    transition: all 0.3s ease;
+    border-radius: 2px;
+  }
+  
+  .signup-strength-weak { width: 25%; background: var(--error); }
+  .signup-strength-fair { width: 50%; background: var(--warning); }
+  .signup-strength-good { width: 75%; background: var(--vic20-cyan); }
+  .signup-strength-strong { width: 100%; background: var(--success); }
+  
+  @media (max-width: 640px) {
+    .signup-form-grid {
+      grid-template-columns: 1fr;
+    }
+  }

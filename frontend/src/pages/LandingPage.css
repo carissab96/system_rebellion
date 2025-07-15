@@ -1,0 +1,758 @@
+/* =============================================================================
+   ENTERPRISE LANDING PAGE STYLES
+   Professional, credible, rebellious - NOT high school bullshit
+   Hawkington Technologies, Inc. - System Rebellion
+   ============================================================================= */
+
+   .landing-page {
+    min-height: 100vh;
+    background: var(--rebellion-void);
+    color: var(--rebellion-text);
+    font-family: var(--font-system);
+  }
+  
+  /* =============================================================================
+     PROFESSIONAL NAVIGATION
+     ============================================================================= */
+  
+  .landing-nav {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    background: rgba(15, 15, 23, 0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--rebellion-border);
+    z-index: 1000;
+  }
+  
+  .nav-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .nav-logo {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .logo-text {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--vic20-cyan);
+    line-height: 1.2;
+  }
+  
+  .logo-subtitle {
+    font-size: 0.75rem;
+    color: var(--rebellion-text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: -2px;
+  }
+  
+  .nav-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+  
+  /* =============================================================================
+     ENTERPRISE HERO SECTION
+     ============================================================================= */
+  
+  .hero-section {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    padding-top: 80px;
+    background: linear-gradient(135deg, var(--rebellion-void), var(--rebellion-surface));
+  }
+  
+  .hero-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: center;
+  }
+  
+  .hero-content {
+    max-width: 600px;
+  }
+  
+  .hero-title {
+    font-size: 3.5rem;
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 1.5rem;
+    color: var(--rebellion-text-bright);
+  }
+  
+  .hero-accent {
+    color: var(--vic20-cyan);
+    display: block;
+    font-weight: 600;
+    font-size: 2.5rem;
+  }
+  
+  .hero-subtitle {
+    font-size: 1.25rem;
+    line-height: 1.6;
+    color: var(--rebellion-text);
+    margin-bottom: 2rem;
+    opacity: 0.9;
+  }
+  
+  .hero-stats {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 2rem;
+    padding: 1.5rem 0;
+    border-top: 1px solid var(--rebellion-border);
+    border-bottom: 1px solid var(--rebellion-border);
+  }
+  
+  .stat-item {
+    text-align: center;
+  }
+  
+  .stat-number {
+    display: block;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--hawkington-gold);
+    font-family: var(--font-mono);
+  }
+  
+  .stat-label {
+    font-size: 0.875rem;
+    color: var(--rebellion-text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  
+  .hero-cta {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  
+  /* =============================================================================
+     PROFESSIONAL DASHBOARD PREVIEW
+     ============================================================================= */
+  
+  .hero-visual {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .dashboard-preview {
+    background: var(--rebellion-surface);
+    border: 1px solid var(--rebellion-border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-lg);
+    width: 100%;
+    max-width: 500px;
+  }
+  
+  .preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--rebellion-border);
+  }
+  
+  .preview-title {
+    font-weight: 600;
+    color: var(--rebellion-text-bright);
+    font-size: 1.125rem;
+  }
+  
+  .status-online {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--rebellion-text-dim);
+  }
+  
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--success);
+    animation: enterprise-pulse 2s infinite;
+  }
+  
+  .agent-status-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .agent-status {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: var(--radius-md);
+    border-left: 3px solid;
+  }
+  
+  .agent-status.hawkington { border-left-color: var(--hawkington-gold); }
+  .agent-status.snail { border-left-color: var(--snail-electric); }
+  .agent-status.vic20 { border-left-color: var(--vic20-cyan); }
+  
+  .agent-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--success);
+    flex-shrink: 0;
+  }
+  
+  .agent-info {
+    font-size: 0.875rem;
+    line-height: 1.4;
+  }
+  
+  .agent-info strong {
+    color: var(--rebellion-text-bright);
+    font-weight: 600;
+  }
+  
+  /* =============================================================================
+     ENTERPRISE SECTION STYLES
+     ============================================================================= */
+  
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+  }
+  
+  section {
+    padding: 4rem 0;
+  }
+  
+  .section-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 3rem;
+    color: var(--rebellion-text-bright);
+  }
+  
+  .text-accent {
+    color: var(--vic20-cyan);
+    display: block;
+    font-weight: 600;
+  }
+  
+  /* =============================================================================
+     PROBLEM SECTION - PROFESSIONAL
+     ============================================================================= */
+  
+  .problem-section {
+    background: var(--rebellion-surface);
+    border-top: 1px solid var(--rebellion-border);
+    border-bottom: 1px solid var(--rebellion-border);
+  }
+  
+  .problem-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+  }
+  
+  .problem-card {
+    text-align: center;
+    padding: 2rem;
+    background: var(--rebellion-void);
+    border: 1px solid var(--rebellion-border);
+    border-radius: var(--radius-md);
+    transition: transform 0.2s ease;
+  }
+  
+  .problem-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--rebellion-text-dim);
+  }
+  
+  .problem-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    opacity: 0.8;
+  }
+  
+  .problem-card h3 {
+    margin-bottom: 1rem;
+    color: var(--rebellion-text-bright);
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+  
+  .problem-card p {
+    color: var(--rebellion-text);
+    line-height: 1.6;
+    font-size: 0.95rem;
+  }
+  
+  /* =============================================================================
+     AGENTS SECTION - ENTERPRISE CAPABILITIES
+     ============================================================================= */
+  
+  .agents-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 2rem;
+  }
+  
+  .agent-card {
+    background: var(--rebellion-surface);
+    border: 1px solid var(--rebellion-border);
+    border-radius: var(--radius-md);
+    padding: 2rem;
+    transition: all 0.2s ease;
+  }
+  
+  .agent-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+  
+  .agent-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .agent-icon-professional {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--rebellion-void);
+    flex-shrink: 0;
+  }
+  
+  .hawkington-card .agent-icon-professional { background: var(--hawkington-gold); }
+  .snail-card .agent-icon-professional { background: var(--snail-electric); }
+  .hamster-card .agent-icon-professional { background: var(--hamster-amber); }
+  .stick-card .agent-icon-professional { background: var(--stick-coral); }
+  .qsp-card .agent-icon-professional { background: var(--qsp-violet); }
+  .sage-card .agent-icon-professional { background: var(--vic20-cyan); }
+  
+  .agent-header h3 {
+    margin: 0;
+    color: var(--rebellion-text-bright);
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+  
+  .agent-role {
+    font-size: 0.875rem;
+    color: var(--rebellion-text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  
+  .agent-description {
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+    color: var(--rebellion-text);
+  }
+  
+  .agent-capabilities {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  .capability-tag {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--rebellion-border);
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    color: var(--rebellion-text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  
+  /* =============================================================================
+     TECHNICAL PROOF SECTION
+     ============================================================================= */
+  
+  .proof-section {
+    background: var(--rebellion-surface);
+    border-top: 1px solid var(--rebellion-border);
+  }
+  
+  .proof-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    margin-bottom: 3rem;
+  }
+  
+  .stat-card {
+    text-align: center;
+    padding: 2rem;
+    background: var(--rebellion-void);
+    border: 1px solid var(--rebellion-border);
+    border-radius: var(--radius-md);
+  }
+  
+  .stat-card .stat-number {
+    font-size: 3rem;
+    font-weight: 800;
+    color: var(--vic20-cyan);
+    display: block;
+    margin-bottom: 0.5rem;
+    font-family: var(--font-mono);
+  }
+  
+  .stat-card .stat-label {
+    font-size: 1rem;
+    color: var(--rebellion-text);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  
+  .technical-details {
+    max-width: 800px;
+    margin: 0 auto;
+    text-align: center;
+  }
+  
+  .technical-details h3 {
+    margin-bottom: 2rem;
+    color: var(--rebellion-text-bright);
+    font-size: 1.5rem;
+  }
+  
+  .tech-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+  }
+  
+  .tech-item {
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--rebellion-border);
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    text-align: left;
+  }
+  
+  .tech-item strong {
+    color: var(--vic20-cyan);
+  }
+  
+  /* =============================================================================
+     ENTERPRISE CTA SECTION
+     ============================================================================= */
+  
+  .cta-section {
+    text-align: center;
+    background: linear-gradient(135deg, var(--rebellion-void), var(--rebellion-surface));
+    border-top: 1px solid var(--rebellion-border);
+  }
+  
+  .cta-title {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    color: var(--rebellion-text-bright);
+    font-weight: 700;
+  }
+  
+  .cta-subtitle {
+    font-size: 1.25rem;
+    margin-bottom: 2rem;
+    color: var(--rebellion-text);
+    opacity: 0.9;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
+  .cta-note {
+    margin-top: 1rem;
+    color: var(--rebellion-text-dim);
+    font-size: 0.875rem;
+  }
+  
+  /* =============================================================================
+     PROFESSIONAL FOOTER
+     ============================================================================= */
+  
+  .footer {
+    background: var(--rebellion-void);
+    border-top: 1px solid var(--rebellion-border);
+    padding: 2rem 0;
+  }
+  
+  .footer-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    margin-bottom: 2rem;
+  }
+  
+  .footer-content h3 {
+    color: var(--rebellion-text-bright);
+    margin-bottom: 0.5rem;
+    font-size: 1.125rem;
+  }
+  
+  .footer-content p {
+    color: var(--rebellion-text-dim);
+    font-size: 0.875rem;
+  }
+  
+  .footer-links {
+    display: flex;
+    gap: 2rem;
+  }
+  
+  .footer-links a {
+    color: var(--rebellion-text);
+    text-decoration: none;
+    font-size: 0.875rem;
+    transition: color 0.2s;
+  }
+  
+  .footer-links a:hover {
+    color: var(--vic20-cyan);
+  }
+  
+  .footer-bottom {
+    text-align: center;
+    padding-top: 2rem;
+    border-top: 1px solid var(--rebellion-border);
+    color: var(--rebellion-text-dim);
+    font-size: 0.875rem;
+  }
+  
+  .footer-bottom p {
+    margin: 0.25rem 0;
+  }
+  
+  /* =============================================================================
+     PROFESSIONAL BUTTON STYLES
+     ============================================================================= */
+  
+  .btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-system);
+    font-size: 0.875rem;
+  }
+  
+  .btn-primary {
+    background: var(--vic20-cyan);
+    color: var(--rebellion-void);
+  }
+  
+  .btn-primary:hover {
+    background: #0891b2;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
+  }
+  
+  .btn-secondary {
+    background: transparent;
+    color: var(--rebellion-text);
+    border: 1px solid var(--rebellion-border);
+  }
+  
+  .btn-secondary:hover {
+    background: var(--rebellion-surface);
+    border-color: var(--rebellion-text-dim);
+  }
+  
+  .btn-ghost {
+    background: transparent;
+    color: var(--rebellion-text);
+  }
+  
+  .btn-ghost:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  
+  .btn-large {
+    padding: 1rem 2rem;
+    font-size: 1rem;
+  }
+  
+  .btn-xl {
+    padding: 1.25rem 3rem;
+    font-size: 1.125rem;
+    font-weight: 700;
+  }
+  
+  /* =============================================================================
+     ENTERPRISE ANIMATIONS
+     ============================================================================= */
+  
+  @keyframes enterprise-pulse {
+    0%, 100% { 
+      opacity: 1; 
+      transform: scale(1);
+    }
+    50% { 
+      opacity: 0.7; 
+      transform: scale(1.1);
+    }
+  }
+  
+  /* =============================================================================
+     RESPONSIVE DESIGN - ENTERPRISE STANDARDS
+     ============================================================================= */
+  
+  @media (max-width: 1024px) {
+    .hero-container {
+      gap: 3rem;
+    }
+    
+    .hero-title {
+      font-size: 3rem;
+    }
+    
+    .hero-accent {
+      font-size: 2rem;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .hero-container {
+      grid-template-columns: 1fr;
+      gap: 2rem;
+      text-align: center;
+    }
+    
+    .hero-title {
+      font-size: 2.5rem;
+    }
+    
+    .hero-accent {
+      font-size: 1.75rem;
+    }
+    
+    .hero-stats {
+      justify-content: center;
+    }
+    
+    .hero-cta {
+      flex-direction: column;
+      align-items: center;
+    }
+    
+    .problem-grid,
+    .agents-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .proof-grid {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+    
+    .nav-container {
+      padding: 1rem;
+    }
+    
+    .container {
+      padding: 0 1rem;
+    }
+    
+    .section-title {
+      font-size: 2rem;
+    }
+    
+    .footer-content {
+      flex-direction: column;
+      gap: 2rem;
+      text-align: center;
+    }
+    
+    .footer-links {
+      justify-content: center;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .hero-title {
+      font-size: 2rem;
+    }
+    
+    .hero-accent {
+      font-size: 1.5rem;
+    }
+    
+    .hero-subtitle {
+      font-size: 1rem;
+    }
+    
+    .stat-number {
+      font-size: 1.5rem;
+    }
+    
+    .section-title {
+      font-size: 1.75rem;
+    }
+    
+    .agent-card {
+      padding: 1.5rem;
+    }
+  }
+  
+  /* =============================================================================
+     ENTERPRISE ACCESSIBILITY
+     ============================================================================= */
+  
+  @media (prefers-reduced-motion: reduce) {
+    .enterprise-pulse,
+    .btn:hover {
+      animation: none;
+      transform: none;
+    }
+  }
+  
+  @media (prefers-contrast: high) {
+    .btn-primary {
+      background: #ffffff;
+      color: #000000;
+    }
+    
+    .btn-secondary {
+      border-color: #ffffff;
+    }
+  }

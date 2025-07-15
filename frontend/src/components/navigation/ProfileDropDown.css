@@ -1,0 +1,89 @@
+/* =============================================================================
+   PROFILE DROPDOWN COMPONENT STYLES
+   ProfileDropdown.tsx specific styles only
+   ============================================================================= */
+
+   .profile-dropdown {
+    position: relative;
+    display: inline-block;
+  }
+  
+  .profile-trigger {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    background: var(--rebellion-surface);
+    border: 1px solid var(--rebellion-border);
+    border-radius: var(--radius-md);
+    color: var(--rebellion-text);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: var(--font-system);
+    font-size: 0.875rem;
+  }
+  
+  .profile-trigger:hover {
+    background: var(--rebellion-border);
+    border-color: var(--vic20-cyan);
+  }
+  
+  .user-avatar,
+  .guest-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.875rem;
+    flex-shrink: 0;
+  }
+  
+  .user-avatar {
+    background: var(--vic20-cyan);
+    color: var(--rebellion-void);
+  }
+  
+  .guest-avatar {
+    background: var(--rebellion-border);
+    color: var(--rebellion-text-dim);
+  }
+  
+  .dropdown-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: var(--space-xs);
+    background: var(--rebellion-surface);
+    border: 1px solid var(--rebellion-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    min-width: 280px;
+    max-width: 320px;
+    z-index: 1000;
+    animation: slideInDown 0.2s ease-out;
+    overflow: hidden;
+  }
+  
+  .dropdown-item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    background: none;
+    border: none;
+    color: var(--rebellion-text);
+    font-family: var(--font-system);
+    font-size: 0.875rem;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .dropdown-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--rebellion-text-bright);
+  }

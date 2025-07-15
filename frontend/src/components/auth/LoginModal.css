@@ -1,0 +1,66 @@
+/* =============================================================================
+   LOGIN MODAL COMPONENT STYLES
+   LoginModal.tsx specific styles only
+   ============================================================================= */
+
+   .login-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    padding: var(--space-md);
+    animation: fadeIn 0.2s ease-out;
+  }
+  
+  .login-modal-content {
+    background: var(--rebellion-surface);
+    border: 1px solid var(--rebellion-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    max-width: 400px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    animation: slideInUp 0.3s ease-out;
+  }
+  
+  .login-modal-close {
+    position: absolute;
+    top: var(--space-md);
+    right: var(--space-md);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    z-index: 10;
+  }
+  
+  .login-form-checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin: var(--space-md) 0;
+  }
+  
+  .login-auth-links {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+  }
+  
+  .login-auth-links .btn {
+    padding: var(--space-xs) var(--space-sm);
+    font-size: 0.875rem;
+  }

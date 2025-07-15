@@ -1,0 +1,218 @@
+/* =============================================================================
+   ACCESSIBILITY ENHANCEMENTS
+   Supporting all users including the 1.78% who are colorblind
+   ============================================================================= */
+
+/* HIGH CONTRAST MODE SUPPORT */
+@media (prefers-contrast: high) {
+    :root {
+      --rebellion-void: #000000;
+      --rebellion-surface: #1a1a1a;
+      --rebellion-text: #ffffff;
+      --rebellion-border: #ffffff;
+    }
+  }
+  
+  /* REDUCED MOTION PREFERENCES */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+    
+    .snail-pulse,
+    .qsp-fade,
+    .coordination-active::before,
+    .ancient-wisdom::before {
+      animation: none !important;
+    }
+  }
+  
+  /* COLORBLIND ACCESSIBILITY ENHANCEMENTS */
+  .colorblind-safe {
+    position: relative;
+    /* Use patterns + colors for status */
+  }
+  
+  .status-success::before {
+    content: "✓ ";
+    color: var(--success);
+  }
+  
+  .status-warning::before {
+    content: "⚠ ";
+    color: var(--warning);
+  }
+  
+  .status-error::before {
+    content: "✗ ";
+    color: var(--error);
+  }
+  
+  .status-info::before {
+    content: "ℹ ";
+    color: var(--info);
+  }
+  
+  /* AGENT IDENTIFICATION FOR COLORBLIND USERS */
+  .hawkington-panel::before {
+    content: "🧐 ";
+    position: absolute;
+    top: var(--space-sm);
+    right: var(--space-sm);
+  }
+  
+  .snail-panel::before {
+    content: "🐌 ";
+    position: absolute;
+    top: var(--space-sm);
+    right: var(--space-sm);
+  }
+  
+  .hamster-panel::before {
+    content: "🐹 ";
+    position: absolute;
+    top: var(--space-sm);
+    right: var(--space-sm);
+  }
+  
+  .qsp-panel::before {
+    content: "👻 ";
+    position: absolute;
+    top: var(--space-sm);
+    right: var(--space-sm);
+  }
+  
+  .stick-panel::before {
+    content: "📏 ";
+    position: absolute;
+    top: var(--space-sm);
+    right: var(--space-sm);
+  }
+  
+  .vic20-panel::before {
+    content: "🖥️ ";
+    position: absolute;
+    top: var(--space-sm);
+    right: var(--space-sm);
+  }
+  
+  /* KEYBOARD NAVIGATION ENHANCEMENTS */
+  .keyboard-user *:focus {
+    outline: 3px solid var(--vic20-cyan);
+    outline-offset: 2px;
+  }
+  
+  /* Skip to content link */
+  .skip-link {
+    position: absolute;
+    top: -40px;
+    left: 6px;
+    background: var(--rebellion-void);
+    color: var(--rebellion-text);
+    padding: 8px;
+    text-decoration: none;
+    border-radius: var(--radius-sm);
+    z-index: 1000;
+  }
+  
+  .skip-link:focus {
+    top: 6px;
+  }
+  
+  /* SCREEN READER ENHANCEMENTS */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  
+  /* FOCUS MANAGEMENT */
+  .focus-trap {
+    position: relative;
+    outline: 2px solid var(--vic20-cyan);
+    outline-offset: 2px;
+    z-index: 1000;
+    /* For modal focus trapping */
+  }
+  
+  .focus-visible {
+    /* Enhanced focus visibility */
+    outline: 2px solid var(--vic20-cyan);
+    outline-offset: 2px;
+  }
+  
+  /* ARIA LIVE REGIONS */
+  .live-region {
+    position: absolute;
+    left: -10000px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+  
+  /* COLORBLIND PATTERN OVERLAYS */
+  .pattern-success {
+    background-image: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 2px,
+      var(--success) 2px,
+      var(--success) 4px
+    );
+  }
+  
+  .pattern-warning {
+    background-image: repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 2px,
+      var(--warning) 2px,
+      var(--warning) 4px
+    );
+  }
+  
+  .pattern-error {
+    background-image: repeating-linear-gradient(
+      135deg,
+      transparent,
+      transparent 2px,
+      var(--error) 2px,
+      var(--error) 4px
+    );
+  }
+  
+  /* LARGE TEXT SUPPORT */
+  @media (min-width: 1200px) {
+    .large-text {
+      font-size: 1.25rem;
+      line-height: 1.8;
+    }
+  }
+  
+  /* PRINT STYLES */
+  @media print {
+    .no-print {
+      display: none !important;
+    }
+    
+    .rebellion-card {
+      border: 1px solid #000;
+      box-shadow: none;
+    }
+    
+    .agent-personalities {
+      background: white !important;
+      color: black !important;
+    }
+  }
