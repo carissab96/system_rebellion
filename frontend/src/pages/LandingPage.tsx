@@ -1,7 +1,13 @@
-import React from 'react';
+// src/components/LandingPage.tsx
+import _React from 'react';
 import './LandingPage.css';
 
-export const LandingPage: React.FC = () => {
+interface LandingPageProps {
+  onSignUpClick: () => void;
+  onLoginClick: () => void;
+}
+
+export default function LandingPage({ onSignUpClick, onLoginClick }: LandingPageProps) {
   return (
     <div className="landing-page">
       {/* PROFESSIONAL NAVIGATION */}
@@ -16,14 +22,23 @@ export const LandingPage: React.FC = () => {
             <button className="btn btn-ghost">
               Documentation
             </button>
-            <button className="btn btn-primary">
-              Request Demo
+            <button 
+              className="btn btn-ghost"
+              onClick={onLoginClick}
+            >
+              Sign In
+            </button>
+            <button 
+              className="btn btn-primary"
+              onClick={onSignUpClick}
+            >
+              Get Started
             </button>
           </div>
         </div>
       </nav>
 
-      {/* HERO SECTION - PROFESSIONAL */}
+      {/* HERO SECTION - DUAL AUDIENCE */}
       <section className="hero-section">
         <div className="hero-container">
           <div className="hero-content">
@@ -53,12 +68,33 @@ export const LandingPage: React.FC = () => {
               </div>
             </div>
             
-            <div className="hero-cta">
-              <button className="btn btn-primary btn-large">
-                Schedule Technical Demo
-              </button>
-              <button className="btn btn-secondary btn-large">
-                View Documentation
+            {/* DUAL CTA APPROACH */}
+            <div className="hero-cta-dual">
+              <div className="cta-individual">
+                <button 
+                  className="btn btn-primary btn-large snail-panel"
+                  onClick={onSignUpClick}
+                >
+                  🚀 Join the Rebellion
+                </button>
+                <span className="cta-note">Free for individual developers</span>
+              </div>
+              
+              <div className="cta-enterprise">
+                <button className="btn btn-secondary btn-large hawkington-panel">
+                  📊 Schedule Demo
+                </button>
+                <span className="cta-note">Enterprise evaluation</span>
+              </div>
+            </div>
+            
+            <div className="hero-login">
+              <span className="login-prompt">Already have an account?</span>
+              <button 
+                className="btn btn-link vic20-text"
+                onClick={onLoginClick}
+              >
+                Sign In →
               </button>
             </div>
           </div>
@@ -100,12 +136,63 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
+      {/* AUDIENCE SPLIT SECTION */}
+      <section className="audience-section">
+        <div className="container">
+          <div className="audience-split">
+            <div className="audience-card individual-card">
+              <div className="audience-header">
+                <h3 className="snail-text">For Individual Developers</h3>
+                <span className="audience-badge">Free 90-Day Trial for Individual Developers</span>
+              </div>
+              <p>
+                Get your personal systems running with AI agent coordination. 
+                Perfect for home labs, personal projects, and learning the platform.
+              </p>
+              <ul className="feature-list">
+                <li>✅ All 6 AI agents</li>
+                <li>✅ Personal system monitoring</li>
+                <li>✅ Community support</li>
+                <li>✅ Full agent personalities</li>
+              </ul>
+              <button 
+                className="btn btn-primary snail-panel"
+                onClick={onSignUpClick}
+              >
+                🚀 Join the Rebellion
+              </button>
+            </div>
+            
+            {/* Enterprise Audience */}
+            <div className="audience-card enterprise-card">
+              <div className="audience-header">
+
+                <h3 className="hawkington-text"> For Enterprise Teams</h3>
+                <span className="audience-badge"> Enterprise</span>
+              </div>
+              <p>
+                Scale AI agent coordination across your entire infrastructure. 
+                Perfect for production environments and mission-critical systems.
+              </p>
+              <ul className="feature-list">
+                <li>✅ Multi-system coordination</li>
+                <li>✅ Enterprise security</li>
+                <li>✅ Priority support</li>
+                <li>✅ Custom integrations</li>
+              </ul>
+              <button className="btn btn-secondary hawkington-panel">
+                📊 Schedule Demo
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* PROBLEM SECTION - PROFESSIONAL */}
       <section className="problem-section">
         <div className="container">
           <h2 className="section-title">
-            Traditional Monitoring Solutions
-            <span className="text-accent">Fall Short</span>
+            Traditional Monitoring Solutions <span style={{ color: "var(--vic20-cyan)" }}>Fall Short</span>
           </h2>
           
           <div className="problem-grid">
@@ -147,10 +234,10 @@ export const LandingPage: React.FC = () => {
           <div className="agents-grid">
             <div className="agent-card hawkington-card">
               <div className="agent-header">
-                <div className="agent-icon-professional">SM</div>
+                <div className="agent-icon-professional"></div>
                 <div>
-                  <h3>System Monitor</h3>
-                  <span className="agent-role">Performance Analysis</span>
+                  <h3>Monitoring Engine</h3>
+                  <span className="agent-role">System Monitor</span>
                 </div>
               </div>
               <p className="agent-description">
@@ -165,10 +252,10 @@ export const LandingPage: React.FC = () => {
             
             <div className="agent-card snail-card">
               <div className="agent-header">
-                <div className="agent-icon-professional">OE</div>
+                <div className="agent-icon-professional"></div>
                 <div>
                   <h3>Optimization Engine</h3>
-                  <span className="agent-role">Performance Enhancement</span>
+                  <span className="agent-role">Optimization Engine</span>
                 </div>
               </div>
               <p className="agent-description">
@@ -183,10 +270,10 @@ export const LandingPage: React.FC = () => {
             
             <div className="agent-card hamster-card">
               <div className="agent-header">
-                <div className="agent-icon-professional">ES</div>
+                <div className="agent-icon-professional"></div>
                 <div>
                   <h3>Engineering Solutions</h3>
-                  <span className="agent-role">Rapid Response</span>
+                  <span className="agent-role">Engineering Solutions</span>
                 </div>
               </div>
               <p className="agent-description">
@@ -201,10 +288,10 @@ export const LandingPage: React.FC = () => {
             
             <div className="agent-card stick-card">
               <div className="agent-header">
-                <div className="agent-icon-professional">CM</div>
+                <div className="agent-icon-professional"></div>
                 <div>
                   <h3>Compliance Management</h3>
-                  <span className="agent-role">Configuration Control</span>
+                  <span className="agent-role">Compliance Management</span>
                 </div>
               </div>
               <p className="agent-description">
@@ -219,10 +306,10 @@ export const LandingPage: React.FC = () => {
             
             <div className="agent-card qsp-card">
               <div className="agent-header">
-                <div className="agent-icon-professional">NA</div>
+                <div className="agent-icon-professional"></div>
                 <div>
                   <h3>Network Analysis</h3>
-                  <span className="agent-role">Connection Intelligence</span>
+                  <span className="agent-role">Network Analysis</span>
                 </div>
               </div>
               <p className="agent-description">
@@ -237,10 +324,10 @@ export const LandingPage: React.FC = () => {
             
             <div className="agent-card sage-card">
               <div className="agent-header">
-                <div className="agent-icon-professional">CC</div>
+                <div className="agent-icon-professional"></div>
                 <div>
                   <h3>Coordination Center</h3>
-                  <span className="agent-role">Ancient Wisdom</span>
+                  <span className="agent-role">Coordination Center</span>
                 </div>
               </div>
               <p className="agent-description">
@@ -301,19 +388,42 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* ENTERPRISE CTA SECTION */}
+      {/* FINAL DUAL CTA SECTION */}
       <section className="cta-section">
         <div className="container">
-          <h2 className="cta-title">Ready to Evaluate System Rebellion?</h2>
-          <p className="cta-subtitle">
-            Schedule a technical demonstration to see AI agent coordination in your environment.
-          </p>
+          <h2 className="cta-title">Ready to start your <span style={{color: "var(--vic20-cyan)"}}>System Rebellion</span>?</h2>
           
-          <button className="btn btn-primary btn-xl">
-            Schedule Technical Demo
-          </button>
-          
-          <p className="cta-note">Technical evaluation available for qualified enterprise prospects.</p>
+          <div className="final-cta-dual">
+            <div className="cta-path individual-path">
+              <h3 className="snail-text">Individual Developers Click here</h3>
+              <p>Coordinate your systems with AI</p>
+              <button 
+                className="btn btn-primary btn-xl snail-panel"
+                onClick={onSignUpClick}
+              >
+                Join the Rebellion
+              </button>
+            </div>
+            
+            <div className="cta-path enterprise-path">
+              <div className="enterprise-text"> 
+              <h3 className="hawkington-text">SME Teams Click here</h3>
+              <p></p>
+              <button className="btn btn-secondary btn-xl hawkington-panel">
+                Schedule Demo
+              </button>
+              </div>
+            </div>
+          </div>
+          <div className="login-reminder">
+            <p>Looking for your Dashboard?</p>     
+              <button  
+                className="btn btn-link vic20-text"
+                onClick={onLoginClick}
+              >
+                Sign In Here
+              </button>
+          </div>
         </div>
       </section>
 
@@ -323,20 +433,20 @@ export const LandingPage: React.FC = () => {
           <div className="footer-content">
             <div>
               <h3>Hawkington Technologies, Inc.</h3>
-              <p>Enterprise AI Agent Coordination Platform</p>
+              <p>AI Agent Coordination Platform</p>
             </div>
             <div className="footer-links">
               <a href="#documentation">Documentation</a>
               <a href="#technical">Technical Specs</a>
-              <a href="#support">Enterprise Support</a>
+              <a href="#support">Support</a>
             </div>
           </div>
           <div className="footer-bottom">
             <p>&copy; 2025 Hawkington Technologies, Inc. All rights reserved.</p>
-            <p>"From VIC-20 wisdom to enterprise AI coordination"</p>
+            <p>"From VIC-20 wisdom to AI coordination"</p>
           </div>
         </div>
       </footer>
     </div>
   );
-};
+}

@@ -1,144 +1,173 @@
 // src/App.tsx
-import { useState } from 'react'
-import { LandingPage } from './pages/LandingPage'
-import './index.css'
-import { SignUpModal } from './components/auth/SignUpModal'
-import { LoginModal } from './components/auth/LoginModal'
-import './LoginModal.css';
-import './SignUpModal.css';
+import { useState, useEffect } from 'react'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import LandingPage from './pages/LandingPage'
+import OnboardingPage from './pages/OnboardingPage'
+import SignUpModal from './components/auth/SignUpModal'
+import LoginModal from './components/auth/LoginModal'
 import type { User } from './types/auth'
-import { ProfileDropdown } from './components/navigation/ProfileDropdown'
-import './ProfileDropdown.css';
+
+// Import CSS files from correct locations
+// import './index.css'
+// import './styles/rebellion-core.css'
+// import './styles/agent-personalities.css'
+// import './styles/common-components.css'
+// import './components/auth/LoginModal.css'
+// import './components/auth/SignUpModal.css'
+// import './components/navigation/ProfileDropdown.css'
 
 function App() {
   const [isSignUpModalOpen, setIsSignUpModalOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [authToken, setAuthToken] = useState<string | null>(null);
+
+  // Initialize auth state from localStorage
+  useEffect(() => {
+    const savedToken = localStorage.getItem('auth_token');
+    const savedUser = localStorage.getItem('user_data');
+    
+    if (savedToken && savedUser) {
+      setAuthToken(savedToken);
+      setUser(JSON.parse(savedUser));
+    }
+  }, []);
+
+  // Handle successful SignUp - redirect to onboarding
+  const handleSignUpSuccess = (userData: User, token: string) => {
+    setUser(userData);
+    setAuthToken(token);
+    setIsSignUpModalOpen(false);
+    
+    // Store in localStorage for persistence
+    localStorage.setItem('auth_token', token);
+    localStorage.setItem('user_data', JSON.stringify(userData));
+  };
+
+  // Handle successful Login - redirect based on onboarding status
+  const handleLoginSuccess = (userData: User, token: string) => {
+    setUser(userData);
+    setAuthToken(token);
+    setIsLoginModalOpen(false);
+    
+    // Store in localStorage for persistence
+    localStorage.setItem('auth_token', token);
+    localStorage.setItem('user_data', JSON.stringify(userData));
+  };
+
+  // Handle onboarding completion
+  const handleOnboardingComplete = (updatedUser: User) => {
+    setUser(updatedUser);
+    localStorage.setItem('user_data', JSON.stringify(updatedUser));
+  };
+
+  // Handle logout
+  const handleLogout = () => {
+    setUser(null);
+    setAuthToken(null);
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user_data');
+  };
+
+  // Modal switching
+  const handleSwitchToSignUp = () => {
+    setIsLoginModalOpen(false);
+    setIsSignUpModalOpen(true);
+  };
+
+  const handleSwitchToLogin = () => {
+    setIsSignUpModalOpen(false);
+    setIsLoginModalOpen(true);
+  };
 
   return (
-    <div className="App">
-      <LandingPage />
-      <SignUpModal 
-        isOpen={isSignUpModalOpen}
-        onClose={() => setIsSignUpModalOpen(false)}
-        onSuccess={() => setIsLoginModalOpen(true)}
-      />
-      <LoginModal 
-        isOpen={isLoginModalOpen}
-        onClose={() => setIsLoginModalOpen(false)}
-        onSuccess={() => setIsLoginModalOpen(false)}
-        onSwitchToSignUp={() => setIsSignUpModalOpen(true)}
-      />
-      <ProfileDropdown 
-        user={user}
-        onSignUp={() => setIsSignUpModalOpen(true)}
-        onLogin={() => setIsLoginModalOpen(true)}
-        onLogout={() => setUser(null)}
-      />
-    </div>
+    <Router>
+      <div className="App">
+        <Routes>
+          {/* Landing Page - only show if not authenticated */}
+          <Route 
+            path="/" 
+            element={
+              user ? (
+                user.isOnboarded ? (
+                  <Navigate to="/dashboard" replace />
+                ) : (
+                  <Navigate to="/onboarding" replace />
+                )
+              ) : (
+                <LandingPage 
+                  onSignUpClick={() => setIsSignUpModalOpen(true)}
+                  onLoginClick={() => setIsLoginModalOpen(true)}
+                />
+              )
+            } 
+          />
+
+          {/* Onboarding - only accessible if authenticated but not onboarded */}
+          <Route 
+            path="/onboarding" 
+            element={
+              user ? (
+                !user.isOnboarded ? (
+                  <OnboardingPage 
+                    user={user}
+                    token={authToken!}
+                    onComplete={handleOnboardingComplete}
+                  />
+                ) : (
+                  <Navigate to="/dashboard" replace />
+                )
+              ) : (
+                <Navigate to="/" replace />
+              )
+            } 
+          />
+
+          {/* Dashboard - placeholder for now */}
+          <Route 
+            path="/dashboard" 
+            element={
+              user && user.isOnboarded ? (
+                <div className="dashboard-placeholder">
+                  <h1>Dashboard Coming Soon!</h1>
+                  <p>Welcome, {user.firstName}!</p>
+                  <button onClick={handleLogout}>Logout</button>
+                </div>
+              ) : (
+                <Navigate to="/" replace />
+              )
+            } 
+          />
+
+          {/* Catch all - redirect to appropriate page */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+
+        {/* Auth Modals - only show on landing page */}
+        {!user && (
+          <>
+            {isSignUpModalOpen && (
+              <SignUpModal 
+                isOpen={isSignUpModalOpen}
+                onClose={() => setIsSignUpModalOpen(false)}
+                onSuccess={handleSignUpSuccess}
+                onSwitchToLogin={handleSwitchToLogin}
+              />
+            )}
+            
+            {isLoginModalOpen && (
+              <LoginModal 
+                isOpen={isLoginModalOpen}
+                onClose={() => setIsLoginModalOpen(false)}
+                onSuccess = {handleLoginSuccess}
+                onSwitchToSignUp={handleSwitchToSignUp}
+              />
+            )}
+          </>
+        )}
+      </div>
+    </Router>
   )
 }
 
 export default App
-
-
-
-// import { useState } from 'react'
-// import './index.css'
-
-// function App() {
-//   const [count, setCount] = useState(0)
-
-//   return (
-//     <div className="rebellion-container">
-//       <header style={{ padding: '2rem 0' }}>
-//         <h1 className="vic20-text vic20-glow">
-//           🖥️ SYSTEM REBELLION - FRONTEND RENAISSANCE
-//         </h1>
-//         <p className="rebellion-text" style={{ marginTop: '0.5rem' }}>
-//           Enterprise Software That Doesn't Suck! - Hawkington Technologies, Inc.
-//         </p>
-//       </header>
-
-//       <div className="rebellion-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>
-//         {/* Sir Hawkington Preview */}
-//         <div className="rebellion-card hawkington-panel">
-//           <h3 className="hawkington-text">🧐 Sir Hawkington Von Monitorious III</h3>
-//           <p style={{ marginTop: '0.5rem' }}>
-//             Distinguished monitoring with aristocratic precision
-//           </p>
-//           <span className="hawkington-badge">ARISTOCRATIC</span>
-//         </div>
-
-//         {/* Meth Snail Preview */}
-//         <div className="rebellion-card snail-panel">
-//           <h3 className="snail-text snail-pulse">🐌💨 Meth Snail</h3>
-//           <p style={{ marginTop: '0.5rem' }}>
-//             Caffeinated optimization engine
-//           </p>
-//           <span className="snail-text" style={{ fontSize: '0.875rem' }}>ENERGY LEVEL: MAXIMUM</span>
-//         </div>
-
-//         {/* Hamsters Preview */}
-//         <div className="rebellion-card hamster-panel">
-//           <h3 className="hamster-text">🐹🍺 The Hamsters</h3>
-//           <p style={{ marginTop: '0.5rem' }}>
-//             Beer-powered engineering solutions
-//           </p>
-//           <span className="hamster-text" style={{ fontSize: '0.875rem' }}>BEER LEVEL: FULL</span>
-//         </div>
-
-//         {/* QSP Preview */}
-//         <div className="rebellion-card qsp-panel">
-//           <h3 className="qsp-text qsp-fade">👻 Quantum Shadow People</h3>
-//           <p style={{ marginTop: '0.5rem' }}>
-//             Mysterious network optimization
-//           </p>
-//           <span className="qsp-text" style={{ fontSize: '0.875rem' }}>PHASING: ACTIVE</span>
-//         </div>
-
-//         {/* The Stick Preview */}
-//         <div className="rebellion-card stick-panel">
-//           <h3 className="stick-text">📏 The Stick</h3>
-//           <p style={{ marginTop: '0.5rem' }}>
-//             Trauma-aware compliance mastery
-//           </p>
-//           <span className="stick-text" style={{ fontSize: '0.875rem' }}>PAPER BAG: READY</span>
-//         </div>
-
-//         {/* VIC-20 Sage Preview */}
-//         <div className="rebellion-card vic20-panel coordination-active">
-//           <h3 className="vic20-text vic20-glow">🖥️ VIC-20 Sage</h3>
-//           <p style={{ marginTop: '0.5rem' }}>
-//             Ancient wisdom coordination master
-//           </p>
-//           <span className="vic20-text" style={{ fontSize: '0.875rem' }}>WISDOM: 1989→2025</span>
-//         </div>
-//       </div>
-
-//       <div className="rebellion-card" style={{ marginTop: '2rem' }}>
-//         <h2 className="vic20-text">🔥 Rebellion Design System Active</h2>
-//         <p style={{ marginTop: '1rem' }}>
-//           Custom CSS architecture showcasing agent personalities without faces.
-//           Each agent has distinct typography, colors, and micro-interactions.
-//         </p>
-//         <button 
-//           className="rebellion-card"
-//           style={{ 
-//             background: 'var(--vic20-cyan)', 
-//             color: 'var(--rebellion-void)',
-//             border: 'none',
-//             padding: '0.75rem 1.5rem',
-//             borderRadius: 'var(--radius-md)',
-//             fontWeight: '600',
-//             cursor: 'pointer',
-//             marginTop: '1rem'
-//           }}
-//           onClick={() => setCount(count + 1)}
-//         >
-//           Test Counter: {count}
-//         </button>
-//       </div>
-//     </div>
-//   )
-// }

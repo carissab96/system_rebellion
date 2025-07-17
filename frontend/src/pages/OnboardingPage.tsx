@@ -1,7 +1,8 @@
 // src/pages/OnboardingPage.tsx
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './OnboardingPage.css';
+import type { User } from '../types/auth';
 
 interface OnboardingFormData {
   systemName: string;
@@ -36,7 +37,13 @@ interface OnboardingResponse {
   };
 }
 
-export const OnboardingPage: React.FC = () => {
+interface OnboardingPageProps {
+  user: User;
+  token: string;
+  onComplete: (updatedUser: User) => void;
+}
+
+export default function OnboardingPage({ user, token, onComplete }: OnboardingPageProps) {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -67,11 +74,10 @@ export const OnboardingPage: React.FC = () => {
 
   // Check if user is authenticated
   useEffect(() => {
-    const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
     if (!token) {
       navigate('/');
     }
-  }, [navigate]);
+  }, [navigate, token]);
 
   const validateStep = (step: number): boolean => {
     const newErrors: Record<string, string> = {};
@@ -128,14 +134,7 @@ export const OnboardingPage: React.FC = () => {
     setErrors({});
     
     try {
-      const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
-      
-      if (!token) {
-        throw new Error('Authentication token not found');
-      }
-
-      // Submit onboarding data using exact backend endpoint
-      const response = await fetch('http://localhost:8000/users/complete-onboarding', {
+      const response = await fetch('/api/users/complete-onboarding', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -159,19 +158,16 @@ export const OnboardingPage: React.FC = () => {
       }
 
       const data: OnboardingResponse = await response.json();
+      console.log('Onboarding completed:', data);
+
+      // Create updated user object
+      const updatedUser: User = {
+        ...user,
+        isOnboarded: true
+      };
       
-      // Update user data in storage
-      const userData = JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user') || '{}');
-      userData.isOnboarded = true;
-      
-      if (localStorage.getItem('user')) {
-        localStorage.setItem('user', JSON.stringify(userData));
-      } else {
-        sessionStorage.setItem('user', JSON.stringify(userData));
-      }
-      
-      // Redirect to dashboard
-      navigate('/dashboard');
+      // Call the onComplete callback
+      onComplete(updatedUser);
       
     } catch (error) {
       console.error('Onboarding error:', error);
@@ -553,3 +549,100 @@ export const OnboardingPage: React.FC = () => {
               })}
             >
               <option value="conservative">Conservative</option>
+              <option value="balanced">Balanced</option>
+              <option value="aggressive">Aggressive</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderCurrentStep = () => {
+    switch (currentStep) {
+      case 1:
+        return renderStep1();
+      case 2:
+        return renderStep2();
+      case 3:
+        return renderStep3();
+      case 4:
+        return renderStep4();
+      default:
+        return renderStep1();
+    }
+  };
+
+  const renderNavigationButtons = () => (
+    <div className="onboarding-navigation">
+      {currentStep > 1 && (
+        <button
+          type="button"
+          className="btn btn-secondary"
+          onClick={handlePrevious}
+          disabled={isSubmitting}
+        >
+          Previous
+        </button>
+      )}
+      
+      <div className="navigation-spacer"></div>
+      
+      {currentStep < 4 ? (
+        <button
+          type="button"
+          className="btn btn-primary vic20-panel"
+          onClick={handleNext}
+          disabled={isSubmitting}
+        >
+          Next
+        </button>
+      ) : (
+        <button
+          type="button"
+          className="btn btn-primary hawkington-panel"
+          onClick={handleSubmit}
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? 'Completing Setup...' : 'Complete Setup'}
+        </button>
+      )}
+    </div>
+  );
+
+  // THE MAIN RETURN STATEMENT - PROPERLY STRUCTURED
+  return (
+    <div className="onboarding-container">
+      <div className="onboarding-header">
+        <h1 className="vic20-text">System Rebellion Setup</h1>
+        <p className="rebellion-text">Configure your AI agent coordination system</p>
+        
+        <div className="progress-bar">
+          <div 
+            className="progress-fill vic20-panel" 
+            style={{ width: `${(currentStep / 4) * 100}%` }}
+          ></div>
+          <div className="progress-steps">
+            <span className={`step-indicator ${currentStep >= 1 ? 'active' : ''}`}>1</span>
+            <span className={`step-indicator ${currentStep >= 2 ? 'active' : ''}`}>2</span>
+            <span className={`step-indicator ${currentStep >= 3 ? 'active' : ''}`}>3</span>
+            <span className={`step-indicator ${currentStep >= 4 ? 'active' : ''}`}>4</span>
+          </div>
+        </div>
+      </div>
+      
+      <div className="onboarding-content">
+        {renderCurrentStep()}
+      </div>
+      
+      {renderNavigationButtons()}
+      
+      {errors.submit && (
+        <div className="error-message">
+          <span className="error-icon">⚠️</span>
+          {errors.submit}
+        </div>
+      )}
+    </div>
+  );
+}

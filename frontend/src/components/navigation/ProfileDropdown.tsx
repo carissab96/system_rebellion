@@ -1,14 +1,8 @@
 // src/components/navigation/ProfileDropdown.tsx
-import React, { useState, useRef, useEffect } from 'react';
-import './ProfileDropdown.css';
+import { useState, useRef, useEffect } from 'react';
+import type { User } from '../../types/auth';
 
-interface User {
-  firstName: string;
-  lastName: string;
-  email: string;
-  company: string;
-  avatar?: string;
-}
+import './ProfileDropdown.css';
 
 interface ProfileDropdownProps {
   user?: User;
@@ -17,12 +11,12 @@ interface ProfileDropdownProps {
   onLogout: () => void;
 }
 
-export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
+export default function ProfileDropdown({
   user,
   onSignUp,
   onLogin,
   onLogout
-}) => {
+}: ProfileDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -84,7 +78,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
                 <div className="user-info">
                   <strong>{user.firstName} {user.lastName}</strong>
                   <span className="user-email">{user.email}</span>
-                  <span className="user-company">{user.company}</span>
+                  <span className="user-company">{user.companyName}</span>
                 </div>
               </div>
               

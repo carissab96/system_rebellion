@@ -1,11 +1,13 @@
 // src/components/auth/SignUpModal.tsx
 import React, { useState } from 'react';
 import './SignUpModal.css';
+import type { User } from '../../types/auth';
 
 interface SignUpModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (user: User, token: string) => void;
+  onSwitchToLogin: () => void;
 }
 
 interface SignUpFormData {
@@ -24,12 +26,15 @@ interface SignUpResponse {
   user: {
     id: string;
     email: string;
-    firstName: string;
-    lastName: string;
+    first_name: string;
+    last_name: string;
+    is_onboarded: boolean;
+    company_name?: string;
+    job_title?: string;
   };
 }
 
-export const SignUpModal: React.FC<SignUpModalProps> = ({ isOpen, onClose, onSuccess }) => {
+export default function SignUpModal({ isOpen, onClose, onSuccess, onSwitchToLogin }: SignUpModalProps) {
   const [formData, setFormData] = useState<SignUpFormData>({
     firstName: '',
     lastName: '',
@@ -78,7 +83,7 @@ export const SignUpModal: React.FC<SignUpModalProps> = ({ isOpen, onClose, onSuc
       newErrors.password = 'Password must contain at least one number';
     }
     
-    if (!/(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?])/.test(formData.password)) {
+    if (!/(?=.*[!@#$%^&*()_+\-=\n\${};':"\\|,.<>\/?])/.test(formData.password)) {
       newErrors.password = 'Password must contain at least one special character';
     }
     
@@ -99,7 +104,7 @@ export const SignUpModal: React.FC<SignUpModalProps> = ({ isOpen, onClose, onSuc
     if (/(?=.*[a-z])/.test(password)) strength += 1;
     if (/(?=.*[A-Z])/.test(password)) strength += 1;
     if (/(?=.*\d)/.test(password)) strength += 1;
-    if (/(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?])/.test(password)) strength += 1;
+    if (/(?=.*[!@#$%^&*()_+\-=\n\${};':"\\|,.<>\/?])/.test(password)) strength += 1;
     return strength;
   };
 
@@ -110,10 +115,12 @@ export const SignUpModal: React.FC<SignUpModalProps> = ({ isOpen, onClose, onSuc
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Set loading state and clear errors at START
     setIsSubmitting(true);
     setErrors({});
     
-    // Client-side validation
+    // Client-side validation FIRST
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
@@ -122,16 +129,28 @@ export const SignUpModal: React.FC<SignUpModalProps> = ({ isOpen, onClose, onSuc
     }
 
     try {
-      // Get CSRF token first
-      const csrfResponse = await fetch('http://localhost:8000/csrf_token');
+      // ✅ FIXED: Use your exact backend endpoint for CSRF
+      const csrfResponse = await fetch('/api/auth/csrf_token', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!csrfResponse.ok) {
+        throw new Error('Failed to get CSRF token');
+      }
+      
       const csrfData = await csrfResponse.json();
       
-      // Register user using exact backend endpoint
-      const response = await fetch('http://localhost:8000/register', {
+      // ✅ FIXED: Use your exact backend endpoint for registration
+      const response = await fetch('/api/auth/register', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRF-Token': csrfData.csrf_token
+          'X-CSRFToken': csrfData.csrf_token
         },
         body: JSON.stringify({
           email: formData.email,
@@ -145,21 +164,32 @@ export const SignUpModal: React.FC<SignUpModalProps> = ({ isOpen, onClose, onSuc
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.detail || 'Registration failed');
+        throw new Error(errorData.message || 'Registration failed');
       }
 
       const data: SignUpResponse = await response.json();
       
-      // Store authentication token
-      localStorage.setItem('access_token', data.access_token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      // Transform backend response to frontend User type
+      const userData: User = {
+        id: data.user.id,
+        email: data.user.email,
+        firstName: data.user.first_name,
+        lastName: data.user.last_name,
+        isOnboarded: data.user.is_onboarded || false,
+        companyName: data.user.company_name,
+        jobTitle: data.user.job_title
+      };
       
-      onSuccess();
+      // Call onSuccess with user data AND token
+      onSuccess(userData, data.access_token);
       
     } catch (error) {
       console.error('Registration error:', error);
-      setErrors({ 
-        submit: error instanceof Error ? error.message : 'Registration failed. Please try again.' 
+      if (!(error instanceof Error)) {
+        throw new Error(`An unexpected error occurred: ${error}`);
+      }
+      setErrors({
+        submit: error.message
       });
     } finally {
       setIsSubmitting(false);
@@ -220,6 +250,7 @@ export const SignUpModal: React.FC<SignUpModalProps> = ({ isOpen, onClose, onSuc
                 value={formData.firstName}
                 onChange={(e) => setFormData({...formData, firstName: e.target.value})}
                 placeholder="Enter your first name"
+                disabled={isSubmitting}
                 required
               />
               {errors.firstName && (
@@ -238,6 +269,7 @@ export const SignUpModal: React.FC<SignUpModalProps> = ({ isOpen, onClose, onSuc
                 value={formData.lastName}
                 onChange={(e) => setFormData({...formData, lastName: e.target.value})}
                 placeholder="Enter your last name"
+                disabled={isSubmitting}
                 required
               />
               {errors.lastName && (
@@ -257,6 +289,7 @@ export const SignUpModal: React.FC<SignUpModalProps> = ({ isOpen, onClose, onSuc
               value={formData.email}
               onChange={(e) => setFormData({...formData, email: e.target.value})}
               placeholder="your.name@company.com"
+              disabled={isSubmitting}
               required
             />
             {errors.email && (
@@ -275,6 +308,7 @@ export const SignUpModal: React.FC<SignUpModalProps> = ({ isOpen, onClose, onSuc
               value={formData.companyName}
               onChange={(e) => setFormData({...formData, companyName: e.target.value})}
               placeholder="Your organization"
+              disabled={isSubmitting}
               required
             />
             {errors.companyName && (
@@ -293,6 +327,7 @@ export const SignUpModal: React.FC<SignUpModalProps> = ({ isOpen, onClose, onSuc
               value={formData.jobTitle}
               onChange={(e) => setFormData({...formData, jobTitle: e.target.value})}
               placeholder="Your role"
+              disabled={isSubmitting}
             />
           </div>
 
@@ -308,6 +343,7 @@ export const SignUpModal: React.FC<SignUpModalProps> = ({ isOpen, onClose, onSuc
                 value={formData.password}
                 onChange={(e) => handlePasswordChange(e.target.value)}
                 placeholder="8+ characters required"
+                disabled={isSubmitting}
                 required
               />
               {formData.password && (
@@ -334,6 +370,7 @@ export const SignUpModal: React.FC<SignUpModalProps> = ({ isOpen, onClose, onSuc
                 value={formData.confirmPassword}
                 onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
                 placeholder="Confirm password"
+                disabled={isSubmitting}
                 required
               />
               {errors.confirmPassword && (
@@ -371,8 +408,9 @@ export const SignUpModal: React.FC<SignUpModalProps> = ({ isOpen, onClose, onSuc
             Already have an account?{' '}
             <button 
               className="btn btn-ghost btn-sm" 
-              onClick={onClose}
+              onClick={onSwitchToLogin}
               type="button"
+              disabled={isSubmitting}
             >
               Sign In
             </button>
@@ -381,4 +419,4 @@ export const SignUpModal: React.FC<SignUpModalProps> = ({ isOpen, onClose, onSuc
       </div>
     </div>
   );
-};
+}

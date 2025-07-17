@@ -1,11 +1,12 @@
 // src/components/auth/LoginModal.tsx
-import React, { useState } from 'react';
+import { useState } from 'react';
 import './LoginModal.css';
+import type { User } from '../../types/auth';
 
 interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (userData: User, token: string) => void;
   onSwitchToSignUp: () => void;
 }
 
@@ -27,12 +28,12 @@ interface LoginResponse {
   };
 }
 
-export const LoginModal: React.FC<LoginModalProps> = ({ 
+export default function LoginModal({ 
   isOpen, 
   onClose, 
   onSuccess, 
   onSwitchToSignUp 
-}) => {
+}: LoginModalProps) {
   const [formData, setFormData] = useState<LoginFormData>({
     email: '',
     password: '',
@@ -51,11 +52,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     
     try {
       // Get CSRF token first
-      const csrfResponse = await fetch('http://localhost:8000/csrf_token');
+      const csrfResponse = await fetch('/api/csrf_token');
       const csrfData = await csrfResponse.json();
       
       // Login using exact backend endpoint
-      const response = await fetch('http://localhost:8000/login', {
+      const response = await fetch('/api/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -83,7 +84,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
         sessionStorage.setItem('user', JSON.stringify(data.user));
       }
       
-      onSuccess();
+      onSuccess(data.user, data.access_token);
       
     } catch (error) {
       console.error('Login error:', error);
