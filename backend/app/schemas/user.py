@@ -25,15 +25,25 @@ class UserProfileUpdate(BaseModel):
 
 
 class UserCreate(BaseModel):
-    username: str
     email: EmailStr
     password: str = Field(..., min_length=8)
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    company_name: Optional[str] = None
+    job_title: Optional[str] = None
+    bio: Optional[str] = None
+    profile_picture: Optional[str] = None
 
 
 class UserResponse(BaseModel):
     id: str
-    username: str
-    email: str
+    email: EmailStr
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    company_name: Optional[str] = None
+    job_title: Optional[str] = None
+    bio: Optional[str] = None
+    profile_picture: Optional[str] = None
     operating_system: Optional[str] = None
     os_version: Optional[str] = None
     cpu_cores: Optional[int] = None

@@ -189,7 +189,7 @@ def create_application() -> FastAPI:
         
         # Set cookie that matches frontend expectations
         response.set_cookie(
-            key="csrftoken",  # Django-style CSRF token name
+            key="csrftoken", 
             value=csrf_token,
             httponly=False,  # Allow JavaScript to read
             secure=False,    # Set to True in production with HTTPS

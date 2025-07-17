@@ -9,7 +9,6 @@ class User(Base):
     __tablename__ = "users"
     
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    username = Column(String(50), unique=True, nullable=False, index=True)
     email = Column(String(100), unique=True, nullable=False, index=True)
     hashed_password = Column(String(255), nullable=False)
     needs_onboarding = Column(Boolean, default=True)
@@ -17,6 +16,8 @@ class User(Base):
     # Profile Information
     first_name = Column(String(50), nullable=True)
     last_name = Column(String(50), nullable=True)
+    company_name = Column(String(100), nullable=True)
+    job_title = Column(String(50), nullable=True)
     bio = Column(Text, nullable=True)
     profile_picture = Column(String(255), nullable=True)
     

@@ -1,3 +1,4 @@
+from posix import EX_TEMPFAIL
 from fastapi import APIRouter, Depends, HTTPException, status, Response, Request, Header
 from sqlalchemy.orm import Session
 from sqlalchemy import select
@@ -186,7 +187,6 @@ async def register_user(
         # Check if user already exists
         existing_user = await find_user_by_username_or_email(
             db, 
-            username=user_data.username, 
             email=user_data.email
         )
         
@@ -207,8 +207,11 @@ async def register_user(
         print(f"👤 Creating user object for: {user_data.username}")
         new_user = User(
             id=user_id,
-            username=user_data.username,
+            first_name=user_data.first_name,
+            last_name=user_data.last_name,
             email=user_data.email,
+            company_name=user_data.company_name,
+            job_title=user_data.job_title,
             hashed_password=hashed_password,
             is_active=True,
             needs_onboarding=True,  # Explicitly set needs_onboarding to True for new users
@@ -246,8 +249,11 @@ async def register_user(
         return {
             "user": {
                 "id": new_user.id,
-                "username": new_user.username,
+                "first_name": new_user.first_name,
+                "last_name": new_user.last_name,
                 "email": new_user.email,
+                "company_name": new_user.company_name,
+                "job_title": new_user.job_title,
                 "is_active": new_user.is_active,
                 "needs_onboarding": new_user.needs_onboarding,  # Include needs_onboarding flag
                 "created_at": new_user.created_at
@@ -279,7 +285,6 @@ async def create_test_user(db: Union[Session, AsyncSession] = Depends(get_db)):
         user_id = str(uuid.uuid4())
         test_user = User(
             id=user_id,
-            username="testuser",
             email="test@example.com",
             hashed_password=hash_password("password123"),
             is_active=True,
@@ -305,21 +310,21 @@ async def login_for_access_token(
     The Meth Snail's Authentication Protocol
     Validates user credentials and returns access token
     """
-    print(f"🔐 Login attempt for user: {form_data.username}")
+    print(f"🔐 Login attempt for user: {form_data.email}")
     print(f"🔐 Form data received: {form_data}")
     
     # Find the user
-    user = await find_user_by_username_or_email(db, username=form_data.username)
+    user = await find_user_by_email(db, email=form_data.email)
     
     # Get the system log service
     log_service = await LogService.get_instance()
     
     if not user or not verify_password(form_data.password, user.hashed_password):
-        print(f"❌ Invalid credentials for username: {form_data.username}")
+        print(f"❌ Invalid credentials for username: {form_data.email}")
         
         # Log failed authentication attempt
         log_service.add_auth_log(
-            username=form_data.username,
+            email=form_data.email,
             success=False
         )
         
@@ -333,26 +338,26 @@ async def login_for_access_token(
     
     # Validate password
     if not verify_password(form_data.password, user.hashed_password):
-        print(f"❌ Invalid password for user: {form_data.username}")
+        print(f"❌ Invalid password for user: {form_data.email}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
+            detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
     
     # Create access token
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user.username, "user_id": user.id},
+        data={"sub": user.email, "user_id": user.id},
         expires_delta=access_token_expires
     )
     
     # Create refresh token
-    refresh_token = create_refresh_token(data={"sub": user.username})
+    refresh_token = create_refresh_token(data={"sub": user.email})
     
     # Log successful authentication
     log_service.add_auth_log(
-        username=user.username,
+        email=user.email,
         success=True
     )
     
@@ -374,8 +379,11 @@ async def login_for_access_token(
         "token_type": "bearer",
         "user": {
             "id": user.id,
-            "username": user.username,
             "email": user.email,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "company_name": user.company_name,
+            "job_title": user.job_title,
             "is_active": user.is_active,
             "created_at": user.created_at,
             "updated_at": user.updated_at,
@@ -418,16 +426,14 @@ async def test_database_operations(db: Union[Session, AsyncSession] = Depends(ge
     try:
         # Generate test data
         test_id = str(uuid.uuid4())
-        test_username = f"test_user_{test_id[:8]}"
         test_email = f"test_{test_id[:8]}@example.com"
         test_password = hash_password("password123")
         
-        print(f"🧪 Creating test user: {test_username}")
+        print(f"🧪 Creating test user: {test_email}")
         
         # Create test user
         test_user = User(
             id=test_id,
-            username=test_username,
             email=test_email,
             hashed_password=test_password,
             is_active=True,
@@ -451,14 +457,14 @@ async def test_database_operations(db: Union[Session, AsyncSession] = Depends(ge
         
         # Verify user exists
         print(f"🧪 Verifying user exists")
-        found_user = await find_user_by_username_or_email(db, username=test_username)
+        found_user = await find_user_by_email(db, email=test_email)
         
         if found_user:
             print(f"✅ Test successful! User found: {found_user.id}")
             return {
                 "success": True,
                 "user_id": found_user.id,
-                "username": found_user.username
+                "email": found_user.email
             }
         else:
             print(f"❌ Test failed! User not found after creation")
@@ -541,12 +547,12 @@ async def auth_status(request: Request, db: AsyncSession = Depends(get_db)):
                 payload = jwt.decode(
                     token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
                 )
-                username = payload.get("sub")
+                email = payload.get("sub")
                 is_authenticated = True
-                print(f"🧐 Token validated successfully for user: {username}")
+                print(f"🧐 Token validated successfully for user: {email}")
                 
                 # If authenticated, fetch the user data
-                if username:
+                if email:
                     try:
                         # Use sync_engine for user lookup to avoid async issues
                         from app.core.database import sync_engine
@@ -554,12 +560,15 @@ async def auth_status(request: Request, db: AsyncSession = Depends(get_db)):
                         
                         sync_session = Session(sync_engine)
                         try:
-                            user = sync_session.query(User).filter(User.username == username).first()
+                            user = sync_session.query(User).filter(User.email == email).first()
                             if user:
                                 user_data = {
                                     "id": str(user.id),
-                                    "username": user.username,
                                     "email": user.email,
+                                    "first_name": user.first_name,
+                                    "last_name": user.last_name,
+                                    "company_name": user.company_name,
+                                    "job_title": user.job_title,
                                     "operating_system": user.operating_system,
                                     "os_version": user.os_version,
                                     "cpu_cores": user.cpu_cores,
