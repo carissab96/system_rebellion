@@ -64,7 +64,7 @@ class SimplifiedMemoryService:
             try:
                 # Get all processes sorted by memory usage
                 processes = []
-                for proc in psutil.process_iter(['pid', 'name', 'username', 'memory_percent']):
+                for proc in psutil.process_iter(['pid', 'name', 'email', 'memory_percent']):
                     try:
                         processes.append(proc)
                     except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
@@ -77,7 +77,7 @@ class SimplifiedMemoryService:
                         top_processes.append({
                             'pid': proc.pid,
                             'name': proc.info['name'],
-                            'username': proc.info['username'],
+                            'email': proc.info['email'],
                             'memory_percent': proc.info['memory_percent'],
                             'memory_mb': round(proc.info['memory_percent'] * virtual_memory.total / (1024 * 1024), 2)
                         })

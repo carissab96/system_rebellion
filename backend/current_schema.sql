@@ -21,7 +21,7 @@ CREATE TABLE user_profiles (
 	user_id VARCHAR(36) NOT NULL, 
 	location VARCHAR(100), 
 	website VARCHAR(200), 
-	github_username VARCHAR(50), 
+	github_email VARCHAR(50), 
 	linkedin_profile VARCHAR(200), 
 	theme_preference VARCHAR(20), 
 	notification_settings VARCHAR(100), 
@@ -85,7 +85,7 @@ CREATE TABLE system_configurations (
 );
 CREATE TABLE users (
 	id VARCHAR(36) NOT NULL, 
-	username VARCHAR(50) NOT NULL, 
+	email VARCHAR(50) NOT NULL, 
 	email VARCHAR(100) NOT NULL, 
 	hashed_password VARCHAR(255) NOT NULL, 
 	needs_onboarding BOOLEAN, 
@@ -111,7 +111,7 @@ CREATE TABLE users (
 	updated_at DATETIME, 
 	PRIMARY KEY (id)
 );
-CREATE INDEX ix_users_username ON users (username);
+CREATE INDEX ix_users_email ON users (email);
 CREATE INDEX ix_users_email ON users (email);
 CREATE TABLE metrics_hourly (
 	id INTEGER NOT NULL, 

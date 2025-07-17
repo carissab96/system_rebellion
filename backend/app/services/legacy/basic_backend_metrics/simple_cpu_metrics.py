@@ -7,7 +7,7 @@ It displays:
 - CPU count (cores)
 - Per-core CPU usage percentages
 - All running processes sorted by CPU usage (highest to lowest)
-- Process details including PID, name, username, CPU%, and memory%
+- Process details including PID, name, email, CPU%, and memory%
 
 No fallback values, sample data, or hard-coded values are used.
 All data is collected in real-time from the actual system.
@@ -51,7 +51,7 @@ def get_all_processes():
     processes = []
     
     # First pass to collect processes and initialize CPU measurement
-    for proc in psutil.process_iter(['pid', 'name', 'username', 'cpu_percent', 'memory_percent']):
+    for proc in psutil.process_iter(['pid', 'name', 'email', 'cpu_percent', 'memory_percent']):
         try:
             proc.cpu_percent(interval=None)  # Initialize CPU measurement
             processes.append(proc)
@@ -71,7 +71,7 @@ def get_all_processes():
             process_info = {
                 "pid": proc.info['pid'],
                 "name": proc.info['name'],
-                "username": proc.info['username'] if 'username' in proc.info else 'unknown',
+                "email": proc.info['email'] if 'email' in proc.info else 'unknown',
                 "cpu_percent": cpu_percent,
                 "memory_percent": memory_percent
             }
@@ -148,7 +148,7 @@ def display_metrics():
     print("-" * 70)
     
     for proc in processes[:20]:  # Show top 20 processes
-        print(f"{proc['pid']:<8} {proc['cpu_percent']:<8.1f} {proc['memory_percent']:<8.1f} {proc['username'][:15]:<15} {proc['name'][:30]}")
+        print(f"{proc['pid']:<8} {proc['cpu_percent']:<8.1f} {proc['memory_percent']:<8.1f} {proc['email'][:15]:<15} {proc['name'][:30]}")
     
     print(f"\nTotal processes with CPU activity: {len(processes)}")
     print("\n" + "="*50 + "\n")

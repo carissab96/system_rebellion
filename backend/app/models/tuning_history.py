@@ -2,12 +2,13 @@
 Enhanced TuningHistory Model with Hamsters-specific tracking
 """
 
-from sqlalchemy import Column, Integer, String, Boolean, Float, DateTime, ForeignKey, JSON
+from sqlalchemy import Column, String, DateTime, Boolean, Integer, Float, Text, JSON, ForeignKey
 from sqlalchemy.orm import relationship
 from datetime import datetime
-
+import uuid
 from app.core.base import Base
-
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import func
 
 class TuningHistory(Base):
     """
@@ -88,5 +89,5 @@ class TuningHistory(Base):
             "learned_from_patterns": self.learned_from_patterns,
             "historical_data_points": self.historical_data_points,
             
-            "username": None  # Don't access the user relationship to avoid greenlet_spawn error
+            "email": None  # Don't access the user relationship to avoid greenlet_spawn error
         }

@@ -56,7 +56,7 @@ async def get_current_user(
         )
     
     try:
-        # Query for the user by username
+        # Query for the user by email
         logger.info(f"Looking up user: {token_data.sub}")
         
         # Use a completely different approach to avoid ChunkedIteratorResult issues
@@ -68,7 +68,7 @@ async def get_current_user(
         sync_session = Session(sync_engine)
         try:
             # Execute the query synchronously
-            user = sync_session.query(User).filter(User.username == token_data.sub).first()
+            user = sync_session.query(User).filter(User.email == token_data.sub).first()
             
             if not user:
                 logger.error(f"User not found: {token_data.sub}")
@@ -81,7 +81,7 @@ async def get_current_user(
             from copy import deepcopy
             user_copy = deepcopy(user)
             
-            logger.info(f"User authenticated successfully: {user.username}")
+            logger.info(f"User authenticated successfully: {user.email}")
             return user_copy
         finally:
             # Always close the session

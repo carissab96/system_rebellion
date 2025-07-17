@@ -13,7 +13,7 @@ async def create_test_user():
     async for db in get_async_db():
         try:
             # Check if test user already exists
-            result = await db.execute("SELECT * FROM users WHERE username = 'testuser' OR email = 'test@example.com'")
+            result = await db.execute("SELECT * FROM users WHERE email = 'testuser' OR email = 'test@example.com'")
             existing_user = result.first()
             
             if existing_user:
@@ -23,7 +23,7 @@ async def create_test_user():
             # Create new test user
             password_hash = get_password_hash("password123")
             new_user = User(
-                username="testuser",
+                email="testuser",
                 email="test@example.com",
                 hashed_password=password_hash,
                 is_active=True,
@@ -34,7 +34,7 @@ async def create_test_user():
             await db.commit()
             
             print("✅ Test user created successfully!")
-            print("Username: testuser")
+            print("email: testuser")
             print("Password: password123")
             print("The Meth Snail approves of these credentials.")
             

@@ -99,7 +99,7 @@ class MemoryMetricsService:
         try:
             # Get all processes with memory info
             processes = []
-            for proc in psutil.process_iter(['pid', 'name', 'username', 'memory_percent', 'memory_info', 'create_time']):
+            for proc in psutil.process_iter(['pid', 'name', 'email', 'memory_percent', 'memory_info', 'create_time']):
                 try:
                     processes.append(proc)
                 except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
@@ -114,7 +114,7 @@ class MemoryMetricsService:
                         top_memory_processes.append({
                             'pid': proc.info['pid'],
                             'name': proc.info['name'],
-                            'username': proc.info['username'],
+                            'email': proc.info['email'],
                             'memory_percent': memory_percent,
                             'rss': memory_info.rss if memory_info else None,  # Resident Set Size
                             'vms': memory_info.vms if memory_info else None,  # Virtual Memory Size

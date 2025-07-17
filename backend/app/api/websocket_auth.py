@@ -27,34 +27,33 @@ async def get_current_user_from_token(token: str) -> Optional[User]:
             token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
         )
         
-        # Extract the subject (username)
-        username = cast(str, payload.get("sub"))
-        if not username:
+        # Extract the subject (email)
+        email = cast(str, payload.get("sub"))
+        if not email:
             print("Token missing 'sub' field")
             return None
-        print(f"Token subject: {username}")
+        print(f"Token subject: {email}")
 
         # Get user from database
         async with AsyncSessionLocal() as db:  # type: ignore
             db_session: AsyncSession = db
-            print(f"Looking up user: {username}")
-            stmt = select(User).where(User.username == username)  # type: ignore
+            print(f"Looking up user: {email}")
+            stmt = select(User).where(User.email == email)  # type: ignore
             result = (await db_session.execute(stmt)).scalars()  # type: ignore
             user = result.first()  # type: ignore
                 
             if not user:
-                print(f"User not found: {username}")
+                print(f"User not found: {email}")
                 return None
                 
         # Create a detached copy of the user object
         detached_user = User(
             id=str(user.id),  # Keep as string since it's a UUID
-            username=cast(str, user.username),  # Use type.cast to ensure proper typing
-            email=str(user.email),
+            email=cast(str, user.email),  # Use type.cast to ensure proper typing
             is_active=bool(user.is_active)
         )
         
-        print(f"User authenticated successfully: {detached_user.username}")
+        print(f"User authenticated successfully: {detached_user.email}")
         return detached_user
                 
     except JWTError as e:
@@ -109,7 +108,7 @@ async def authenticate_websocket(websocket: WebSocket) -> Optional[User]:
                 await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
             return None
         
-        print(f"WebSocket authenticated for user: {getattr(user, 'username')}")  # type: ignore
+        print(f"WebSocket authenticated for user: {getattr(user, 'email')}")  # type: ignore
         return user
         
     except Exception as e:

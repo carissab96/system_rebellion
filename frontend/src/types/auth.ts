@@ -44,7 +44,7 @@ export interface User {
   // User creation responses
   export interface CreateUserResponse extends User {}
   export interface CreateProfileResponse extends User {
-    username: string;
+    email: string;
   }
   
   // Form data interfaces

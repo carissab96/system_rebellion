@@ -1,7 +1,10 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, Text, JSON
-from sqlalchemy.sql import func
-from app.models.database import Base
-
+from sqlalchemy import Column, String, DateTime, Boolean, Integer, Float, Text, JSON, ForeignKey
+from sqlalchemy.orm import relationship
+from datetime import datetime
+import uuid
+from app.core.base import Base
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import func
 class StickUserPatterns(Base):
     """
     The Stick's eidetic memory storage for user behavior patterns

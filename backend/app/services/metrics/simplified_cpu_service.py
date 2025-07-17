@@ -85,7 +85,7 @@ class SimplifiedCPUService:
             try:
                 # Get all processes sorted by CPU usage
                 processes = []
-                for proc in psutil.process_iter(['pid', 'name', 'username', 'cpu_percent', 'memory_percent']):
+                for proc in psutil.process_iter(['pid', 'name', 'email', 'cpu_percent', 'memory_percent']):
                     try:
                         # Update CPU usage
                         proc.cpu_percent(interval=0)
@@ -103,7 +103,7 @@ class SimplifiedCPUService:
                         top_processes.append({
                             'pid': proc.pid,
                             'name': proc.info['name'],
-                            'username': proc.info['username'],
+                            'email': proc.info['email'],
                             'cpu_percent': proc.cpu_percent(),
                             'memory_percent': proc.info['memory_percent']
                         })

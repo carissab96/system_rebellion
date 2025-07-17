@@ -42,12 +42,12 @@ async def get_current_user(
         payload = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
         )
-        username: str = payload.get("sub")
-        if username is None:
+        email: str = payload.get("sub")
+        if email is None:
             raise credentials_exception
         
         # Get user from database
-        result = await db.execute(select(User).where(User.username == username))
+        result = await db.execute(select(User).where(User.email == email))
         user = result.scalars().first()
         
         if user is None:
@@ -80,11 +80,11 @@ async def get_optional_user(
         payload = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
         )
-        username: str = payload.get("sub")
-        if not username:
+        email: str = payload.get("sub")
+        if not email:
             return None
             
-        result = await db.execute(select(User).where(User.username == username))
+        result = await db.execute(select(User).where(User.email == email))
         user = result.scalars().first()
         return user
     except:

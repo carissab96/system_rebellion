@@ -1,9 +1,10 @@
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text, JSON
+from sqlalchemy import Column, String, DateTime, Boolean, Integer, Float, Text, JSON, ForeignKey
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
 from app.core.base import Base
-
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import func
 
 class User(Base):
     __tablename__ = "users"
@@ -87,7 +88,7 @@ class UserProfile(Base):
     # Additional Profile Fields
     location = Column(String(100), nullable=True)
     website = Column(String(200), nullable=True)
-    github_username = Column(String(50), nullable=True)
+    github_email = Column(String(50), nullable=True)
     linkedin_profile = Column(String(200), nullable=True)
     
     # Preferences

@@ -1,10 +1,12 @@
 # /models/vic20_sage_model_v2.py
 # /models/vic20_sage_model.py - OPTIMIZED DESIGN
-from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, JSON, Text, Index
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.sql import func
+from sqlalchemy import Column, String, DateTime, Boolean, Integer, Float, Text, JSON, ForeignKey
+from sqlalchemy.orm import relationship
 from datetime import datetime
-
+import uuid
+from app.core.base import Base
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Index, func
 Base = declarative_base()
 
 class VIC20CoordinationLog(Base):

@@ -34,12 +34,12 @@ def check_current_permissions():
 
 def create_sudoers_file():
     """Create a sudoers file for System Rebellion"""
-    username = getpass.getuser()
+    email = getpass.getuser()
     sudoers_content = f"""# System Rebellion sudoers file
 # Created by setup_permissions.py
 
-# Allow {username} to run specific commands without password
-{username} ALL=(ALL) NOPASSWD: /usr/sbin/sysctl, /usr/bin/tee, /sbin/blockdev, /usr/bin/renice
+# Allow {email} to run specific commands without password
+{email} ALL=(ALL) NOPASSWD: /usr/sbin/sysctl, /usr/bin/tee, /sbin/blockdev, /usr/bin/renice
 """
     
     # Write to a temporary file
@@ -69,13 +69,13 @@ def create_sudoers_file():
 
 def setup_group_permissions():
     """Set up group permissions for system access"""
-    username = getpass.getuser()
+    email = getpass.getuser()
     
     try:
         # Add user to necessary groups
         for group in ["sudo", "adm", "systemd-journal"]:
             try:
-                subprocess.run(["sudo", "usermod", "-a", "-G", group, username], check=True)
+                subprocess.run(["sudo", "usermod", "-a", "-G", group, email], check=True)
                 print(f"✅ Added user to {group} group")
             except subprocess.CalledProcessError:
                 print(f"❌ Failed to add user to {group} group")

@@ -62,15 +62,15 @@ def client():
 
 # Test user registration with a unique user
 def test_user_registration(client):
-    # Generate a unique username/email to avoid conflicts
+    # Generate a unique email/email to avoid conflicts
     unique_id = str(uuid.uuid4())[:8]
-    username = f"testuser_{unique_id}"
+    email = f"testuser_{unique_id}"
     email = f"test_{unique_id}@systemrebellion.com"
     
     response = client.post(
         "/auth/register",
         json={
-            "username": username,
+            "email": email,
             "email": email,
             "password": "SecureP@ssw0rd123!"
         }
@@ -82,7 +82,7 @@ def test_user_registration(client):
     assert response.status_code == 200
     
     data = response.json()
-    assert data["username"] == username
+    assert data["email"] == email
     assert data["email"] == email
     assert "id" in data
 
@@ -90,14 +90,14 @@ def test_user_registration(client):
 def test_duplicate_registration(client):
     # First create a user
     unique_id = str(uuid.uuid4())[:8]
-    username = f"testuser_{unique_id}"
+    email = f"testuser_{unique_id}"
     email = f"test_{unique_id}@systemrebellion.com"
     
     # Register first time
     response = client.post(
         "/auth/register",
         json={
-            "username": username,
+            "email": email,
             "email": email,
             "password": "SecureP@ssw0rd123!"
         }
@@ -108,7 +108,7 @@ def test_duplicate_registration(client):
     response = client.post(
         "/auth/register",
         json={
-            "username": username,
+            "email": email,
             "email": email,
             "password": "SecureP@ssw0rd123!"
         }
@@ -123,14 +123,14 @@ def test_duplicate_registration(client):
 def test_login(client):
     # First create a user
     unique_id = str(uuid.uuid4())[:8]
-    username = f"testuser_{unique_id}"
+    email = f"testuser_{unique_id}"
     email = f"test_{unique_id}@systemrebellion.com"
     
     # Register the user
     response = client.post(
         "/auth/register",
         json={
-            "username": username,
+            "email": email,
             "email": email,
             "password": "SecureP@ssw0rd123!"
         }
@@ -141,7 +141,7 @@ def test_login(client):
     response = client.post(
         "/auth/token",
         data={
-            "username": username,
+            "email": email,
             "password": "SecureP@ssw0rd123!"
         }
     )
@@ -159,14 +159,14 @@ def test_login(client):
 def test_invalid_login(client):
     # First create a user
     unique_id = str(uuid.uuid4())[:8]
-    username = f"testuser_{unique_id}"
+    email = f"testuser_{unique_id}"
     email = f"test_{unique_id}@systemrebellion.com"
     
     # Register the user
     response = client.post(
         "/auth/register",
         json={
-            "username": username,
+            "email": email,
             "email": email,
             "password": "SecureP@ssw0rd123!"
         }
@@ -177,7 +177,7 @@ def test_invalid_login(client):
     response = client.post(
         "/auth/token",
         data={
-            "username": username,
+            "email": email,
             "password": "WrongPassword123!"
         }
     )

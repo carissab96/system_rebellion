@@ -59,7 +59,7 @@ export const API_ENDPOINTS = {
   DEBUG_DB_TEST: "/debug/db-test",
   DEBUG_DB_CONFIG: "/debug/db-config",
   USERS_COMPLETE_ONBOARDING: "/users/complete-onboarding",
-  DIRECT_PROFILE_UPDATE__USERNAME: "/direct-profile-update/{username}",
+  DIRECT_PROFILE_UPDATE__email: "/direct-profile-update/{email}",
   UPDATE_PROFILE: "/update-profile",
   METRICS_CURRENT: "/metrics/current",
   RECOMMENDATIONS: "/recommendations",

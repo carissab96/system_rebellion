@@ -1,7 +1,12 @@
 # app/models/metrics_aggregates.py
-from sqlalchemy import Column, Integer, Float, DateTime, String, JSON, Index
-from app.core.base import Base
+from sqlalchemy import Column, String, DateTime, Boolean, Integer, Float, Text, JSON, ForeignKey
+from sqlalchemy.orm import relationship
 from datetime import datetime
+import uuid
+from app.core.base import Base
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Index
+from sqlalchemy import func
 
 class MetricsHourly(Base):
     """Hourly aggregated metrics - The Meth Snail's first optimization layer"""
@@ -89,5 +94,5 @@ class MetricsDaily(Base):
     
     __table_args__ = (
         Index('idx_user_date', 'user_id', 'date'),
-        Index('idx_ai_incident_count', 'daily_ai_incident_count, ai_agent_incident_type, ai_agent_incident_reason')
+        Index('idx_ai_incident_count', 'daily_ai_incident_count', 'daily_ai_incident_type', 'daily_ai_incident_reason')
     )

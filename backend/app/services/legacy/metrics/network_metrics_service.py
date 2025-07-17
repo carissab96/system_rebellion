@@ -287,10 +287,10 @@ class NetworkMetricsService:
                     try:
                         process = psutil.Process(conn.pid)
                         process_name = process.name()
-                        username = process.username()
+                        email = process.email()
                     except (psutil.NoSuchProcess, psutil.AccessDenied):
                         process_name = "Unknown"
-                        username = "Unknown"
+                        email = "Unknown"
                     
                     # Format local and remote addresses
                     laddr = f"{conn.laddr.ip}:{conn.laddr.port}" if conn.laddr else "N/A"
@@ -314,7 +314,7 @@ class NetworkMetricsService:
                         'status': conn.status,
                         'pid': conn.pid,
                         'process_name': process_name,
-                        'username': username
+                        'email': email
                     }
                     
                     connections_info.append(connection_info)

@@ -146,7 +146,7 @@ async def run_realtime_optimization():
                         # This will automatically trigger Meth Snail's decision engine
                         user_context = {
                             'user_id': str(user.id),
-                            'username': user.username,
+                            'email': user.email,
                             'historical_data': historical_data
                             }
                             
@@ -164,7 +164,7 @@ async def run_realtime_optimization():
                             if meth_decision.get('urgency') == 'immediate':
                                 logger.warning(
                                     f"🐌⚡ Meth Snail executing IMMEDIATE optimizations "
-                                    f"for user {user.username}: {meth_decision.get('rationale')}"
+                                    f"for user {user.email}: {meth_decision.get('rationale')}"
                                 )
                                 # TODO: Execute optimization actions
                                 # This would interface with system optimization APIs
@@ -172,7 +172,7 @@ async def run_realtime_optimization():
                             elif meth_decision.get('urgency') == 'soon':
                                 logger.info(
                                     f"🐌 Meth Snail planning optimizations "
-                                    f"for user {user.username}: {meth_decision.get('rationale')}"
+                                    f"for user {user.email}: {meth_decision.get('rationale')}"
                                 )
                             
             except Exception as e:

@@ -105,7 +105,7 @@ class CPUMetricsService:
         try:
             # Get all processes and sort by CPU usage
             processes = []
-            for proc in psutil.process_iter(['pid', 'name', 'username', 'cpu_percent', 'memory_percent', 'create_time']):
+            for proc in psutil.process_iter(['pid', 'name', 'email', 'cpu_percent', 'memory_percent', 'create_time']):
                 try:
                     # Update CPU usage value
                     proc.cpu_percent(interval=0)
@@ -124,7 +124,7 @@ class CPUMetricsService:
                         top_cpu_processes.append({
                             'pid': proc.info['pid'],
                             'name': proc.info['name'],
-                            'username': proc.info['username'],
+                            'email': proc.info['email'],
                             'cpu_percent': cpu_usage,
                             'memory_percent': proc.info['memory_percent'],
                             'create_time': datetime.fromtimestamp(proc.info['create_time']).isoformat() if proc.info['create_time'] else None

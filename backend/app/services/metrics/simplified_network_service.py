@@ -601,7 +601,7 @@ if __name__ == "__main__":
 #                     # Add process to result
 #                     result[str(pid)] = {
 #                         'name': proc.name(),
-#                         'username': proc.username(),
+#                         'email': proc.email(),
 #                         'connection_count': len(conns),
 #                         'connection_types': conn_types,
 #                         'connection_states': conn_states

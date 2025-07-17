@@ -100,13 +100,13 @@ async def simple_metrics_socket(websocket: WebSocket):
                 })
                 return
             
-            logger.info(f"WebSocket authenticated for user {user.username} ({client_id})")
+            logger.info(f"WebSocket authenticated for user {user.email} ({client_id})")
             
             # Send authentication success
             await websocket.send_json({
                 "type": "auth_success",
-                "message": f"Welcome {user.username}!",
-                "user": user.username,
+                "message": f"Welcome {user.email}!",
+                "user": user.email,
                 "timestamp": datetime.now().isoformat()
             })
             

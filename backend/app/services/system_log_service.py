@@ -102,11 +102,11 @@ class LogService:
         message = f"Command: {command}\nOutput: {output}"
         return self.add_log(message, level, "command")
     
-    def add_auth_log(self, username: str, success: bool, ip_address: Optional[str] = None):
+    def add_auth_log(self, email: str, success: bool, ip_address: Optional[str] = None):
         """Add an authentication log entry"""
         level = "success" if success else "error"
         action = "successful" if success else "failed"
-        message = f"Authentication {action} for user: {username}"
+        message = f"Authentication {action} for user: {email}"
         if ip_address:
             message += f" from {ip_address}"
         return self.add_log(message, level, "auth")

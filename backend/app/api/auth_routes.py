@@ -30,7 +30,6 @@ class StatusResponse(BaseModel):
     status: str
     auth_service: str
     is_authenticated: bool
-    username: str = None
     timestamp: str
 
 # Add model for refresh token request
@@ -48,7 +47,7 @@ async def register_user(
     # Check if user already exists
     result = await db.execute(
         select(User).where(
-            (User.username == user_data.username) | (User.email == user_data.email)
+            (User.email == user_data.email)
         )
     )
     existing_user = result.scalars().first()
@@ -56,7 +55,7 @@ async def register_user(
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username or email already exists"
+            detail="Email already exists"
         )
     
     # Create user with UUID
@@ -65,7 +64,6 @@ async def register_user(
     
     new_user = User(
         id=user_id,
-        username=user_data.username,
         email=user_data.email,
         hashed_password=hashed_password,
         is_active=True,
@@ -80,11 +78,11 @@ async def register_user(
     
     # Generate tokens
     access_token = create_access_token(
-        data={"sub": new_user.username, "user_id": new_user.id}
+        data={"sub": new_user.email, "user_id": new_user.id}
     )
     
     refresh_token = create_refresh_token(
-        data={"sub": new_user.username, "user_id": new_user.id}
+        data={"sub": new_user.email, "user_id": new_user.id}
     )
     
     # Return user data with tokens
@@ -94,7 +92,6 @@ async def register_user(
         "token_type": "bearer",
         "user": {
             "id": new_user.id,
-            "username": new_user.username,
             "email": new_user.email,
             "is_active": new_user.is_active,
             "created_at": new_user.created_at.isoformat(),
@@ -108,29 +105,29 @@ async def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(), 
     db: AsyncSession = Depends(get_async_db)
 ):
-    """Login with username/password and return access tokens."""
+    """Login with email/password and return access tokens."""
     # Find user
-    result = await db.execute(select(User).where(User.username == form_data.username))
+    result = await db.execute(select(User).where(User.email == form_data.email))
     user = result.scalars().first()
     
     # Validate credentials
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
+            detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
     
     # Create access token
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user.username, "user_id": user.id},
+        data={"sub": user.email, "user_id": user.id},
         expires_delta=access_token_expires
     )
     
     # Create refresh token
     refresh_token = create_refresh_token(
-        data={"sub": user.username, "user_id": user.id}
+        data={"sub": user.email, "user_id": user.id}
     )
     
     # Update last login
@@ -145,7 +142,6 @@ async def login_for_access_token(
         "token_type": "bearer",
         "user": {
             "id": user.id,
-            "username": user.username,
             "email": user.email,
             "needs_onboarding": user.needs_onboarding,
             "operating_system": user.operating_system,
@@ -169,7 +165,7 @@ async def auth_status(
         "status": "operational",
         "auth_service": "active",
         "is_authenticated": user is not None,
-        "username": user.username if user else None,
+        "email": user.email if user else None,
         "timestamp": datetime.now().isoformat()
     }
 
@@ -223,7 +219,6 @@ async def update_user_profile(
             "message": "Profile updated successfully",
             "user": {
                 "id": current_user.id,
-                "username": current_user.username,
                 "email": current_user.email,
                 "operating_system": current_user.operating_system,
                 "os_version": current_user.os_version,
@@ -286,10 +281,10 @@ async def refresh_access_token(
         payload = jwt.decode(
             refresh_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
         )
-        username = payload.get("sub")
+        email = payload.get("sub")
         
         # Get user
-        result = await db.execute(select(User).where(User.username == username))
+        result = await db.execute(select(User).where(User.email == email))
         user = result.scalars().first()
         
         if not user:
@@ -299,7 +294,7 @@ async def refresh_access_token(
             )
         
         # Generate new access token
-        access_token = create_access_token(data={"sub": username, "user_id": user.id})
+        access_token = create_access_token(data={"sub": email, "user_id": user.id})
         
         return {
             "access_token": access_token,
@@ -325,7 +320,6 @@ async def get_current_user_info(current_user: User = Depends(get_current_user)):
     """Get the current authenticated user's information."""
     return {
         "id": current_user.id,
-        "username": current_user.username,
         "email": current_user.email,
         "needs_onboarding": current_user.needs_onboarding,
         "operating_system": current_user.operating_system,
@@ -344,7 +338,7 @@ async def validate_token(current_user: User = Depends(get_current_user)):
     return {
         "is_valid": True,
         "user_id": current_user.id,
-        "username": current_user.username
+        "email": current_user.email
     }
 
 # Alternative refresh endpoint that takes token from request body
@@ -361,10 +355,10 @@ async def refresh_token_alt(
         payload = jwt.decode(
             refresh_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
         )
-        username = payload.get("sub")
+        email = payload.get("sub")
         
         # Get user
-        result = await db.execute(select(User).where(User.username == username))
+        result = await db.execute(select(User).where(User.email == email))
         user = result.scalars().first()
         
         if not user:
@@ -374,7 +368,7 @@ async def refresh_token_alt(
             )
         
         # Generate new access token
-        access_token = create_access_token(data={"sub": username, "user_id": user.id})
+        access_token = create_access_token(data={"sub": email, "user_id": user.id})
         
         return {
             "access_token": access_token,

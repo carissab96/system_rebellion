@@ -102,7 +102,7 @@
       },
       {
         "method": "POST",
-        "path": "/direct-profile-update/{username}",
+        "path": "/direct-profile-update/{email}",
         "handler": "direct_profile_update"
       },
       {

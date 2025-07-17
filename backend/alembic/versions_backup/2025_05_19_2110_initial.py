@@ -14,7 +14,7 @@ depends_on = None
 def upgrade() -> None:
     op.create_table('users',
         sa.Column('id', sa.VARCHAR(length=36), nullable=False),
-        sa.Column('username', sa.VARCHAR(length=50), nullable=False),
+        sa.Column('email', sa.VARCHAR(length=50), nullable=False),
         sa.Column('email', sa.VARCHAR(length=100), nullable=False),
         sa.Column('hashed_password', sa.VARCHAR(length=255), nullable=False),
         sa.Column('needs_onboarding', sa.BOOLEAN(), nullable=True),
@@ -40,7 +40,7 @@ def upgrade() -> None:
         sa.Column('updated_at', sa.DATETIME(), nullable=True),
         sa.PrimaryKeyConstraint('id')
     )
-    op.create_index('ix_users_username', 'users', ['username'], unique=False)
+    op.create_index('ix_users_email', 'users', ['email'], unique=False)
     op.create_index('ix_users_email', 'users', ['email'], unique=False)
     op.create_table('tuning_history',
         sa.Column('id', sa.INTEGER(), nullable=False),
@@ -75,7 +75,7 @@ def upgrade() -> None:
         sa.Column('user_id', sa.VARCHAR(length=36), nullable=False),
         sa.Column('location', sa.VARCHAR(length=100), nullable=True),
         sa.Column('website', sa.VARCHAR(length=200), nullable=True),
-        sa.Column('github_username', sa.VARCHAR(length=50), nullable=True),
+        sa.Column('github_email', sa.VARCHAR(length=50), nullable=True),
         sa.Column('linkedin_profile', sa.VARCHAR(length=200), nullable=True),
         sa.Column('theme_preference', sa.VARCHAR(length=20), nullable=True),
         sa.Column('notification_settings', sa.VARCHAR(length=100), nullable=True),
@@ -132,5 +132,5 @@ def downgrade() -> None:
     op.drop_index('ix_tuning_history_id', table_name='tuning_history')
     op.drop_table('tuning_history')
     op.drop_index('ix_users_email', table_name='users')
-    op.drop_index('ix_users_username', table_name='users')
+    op.drop_index('ix_users_email', table_name='users')
     op.drop_table('users')

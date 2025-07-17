@@ -61,12 +61,12 @@ def get_memory_by_process():
     """Get memory usage by process (sorted by memory usage)"""
     processes = []
     
-    for proc in psutil.process_iter(['pid', 'name', 'username', 'memory_percent']):
+    for proc in psutil.process_iter(['pid', 'name', 'email', 'memory_percent']):
         try:
             process_info = {
                 "pid": proc.info['pid'],
                 "name": proc.info['name'],
-                "username": proc.info['username'] if 'username' in proc.info else 'unknown',
+                "email": proc.info['email'] if 'email' in proc.info else 'unknown',
                 "memory_percent": proc.info['memory_percent'] if 'memory_percent' in proc.info else 0
             }
             
@@ -115,7 +115,7 @@ def display_metrics():
     print("-" * 60)
     
     for proc in processes[:20]:  # Show top 20 processes
-        print(f"{proc['pid']:<8} {proc['memory_percent']:<8.1f} {proc['username'][:15]:<15} {proc['name'][:30]}")
+        print(f"{proc['pid']:<8} {proc['memory_percent']:<8.1f} {proc['email'][:15]:<15} {proc['name'][:30]}")
     
     print(f"\nTotal processes with memory activity: {len(processes)}")
     print("\n" + "="*50 + "\n")

@@ -15,7 +15,7 @@ async def init_db(db: AsyncSession) -> None:
         # Create initial superuser
         user = User(
             email=settings.FIRST_SUPERUSER,
-            username=settings.FIRST_SUPERUSER,
+            email=settings.FIRST_SUPERUSER,
             hashed_password=get_password_hash(settings.FIRST_SUPERUSER_PASSWORD),
             is_superuser=True,
             is_active=True,

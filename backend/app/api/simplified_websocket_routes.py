@@ -147,7 +147,7 @@ async def system_metrics_socket(websocket: WebSocket):
             await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
             return
         
-        logger.info(f"WebSocket authenticated for user {user.username} ({client_id})")
+        logger.info(f"WebSocket authenticated for user {user.email} ({client_id})")
         
         # Get async database session
         db_gen = get_async_db()
@@ -156,7 +156,7 @@ async def system_metrics_socket(websocket: WebSocket):
         # Initialize AI Agent Manager
         try:
             agent_manager = await get_agent_manager()
-            logger.info(f"🤖 AI Agent Manager initialized for user {user.username} - Active agents: {agent_manager.get_active_agents()}")
+            logger.info(f"🤖 AI Agent Manager initialized for user {user.email} - Active agents: {agent_manager.get_active_agents()}")
         except Exception as e:
             logger.error(f"Failed to initialize AI Agent Manager: {str(e)}")
             agent_manager = None
@@ -200,7 +200,7 @@ async def system_metrics_socket(websocket: WebSocket):
                         # Create user context for personalized analysis
                         user_context = {
                             'user_id': str(user.id),
-                            'username': user.username,
+                            'email': user.email,
                             'client_id': client_id
                         }
                         
@@ -251,7 +251,7 @@ async def system_metrics_socket(websocket: WebSocket):
                         
                         # Enhanced logging to show what we're saving
                         ai_info = " + AI analysis" if 'sir_hawkington' in metrics else ""
-                        logger.debug(f"💾 Metrics{ai_info} saved to database for user {user.username}")
+                        logger.debug(f"💾 Metrics{ai_info} saved to database for user {user.email}")
                         
                     except Exception as db_error:
                         logger.error(f"Database save failed (non-critical): {db_error}")

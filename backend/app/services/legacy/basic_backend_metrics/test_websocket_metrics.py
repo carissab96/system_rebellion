@@ -35,7 +35,7 @@ async def test_websocket_metrics():
     mock_user = User(
         id=1,
         email="test@example.com",
-        username="test_user",
+        email="test_user",
         is_active=True,
         is_superuser=True
     )

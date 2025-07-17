@@ -24,7 +24,7 @@ class AuthService:
             # Create user
             db_user = User(
                 id=user_id,
-                username=user_data.username,
+                email=user_data.email,
                 email=user_data.email,
                 hashed_password=hashed_password
             )
@@ -55,10 +55,10 @@ class AuthService:
             db.rollback()
             # Extract specific error message
             error_msg = str(integrity_error)
-            if "username" in error_msg:
+            if "email" in error_msg:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Username already exists. The Quantum Shadow People are laughing."
+                    detail="email already exists. The Quantum Shadow People are laughing."
                 )
             elif "email" in error_msg:
                 raise HTTPException(
@@ -78,11 +78,11 @@ class AuthService:
             )
     
     @staticmethod
-    def authenticate_user(db: Session, username: str, password: str):
+    def authenticate_user(db: Session, email: str, password: str):
         """
         User Authentication with Sir Hawkington's Seal of Approval
         """
-        user = db.query(User).filter(User.username == username).first()
+        user = db.query(User).filter(User.email == email).first()
         
         if not user:
             raise HTTPException(
@@ -105,11 +105,11 @@ class AuthService:
         The Meth Snail ensures your credentials are quantum-optimized!
         """
         access_token = create_access_token(
-            data={"sub": user.username, "user_id": user.id}
+            data={"sub": user.email, "user_id": user.id}
         )
         
         refresh_token = create_refresh_token(
-            data={"sub": user.username, "user_id": user.id}
+            data={"sub": user.email, "user_id": user.id}
         )
         
         return {
@@ -118,7 +118,7 @@ class AuthService:
             "token_type": "bearer",
             "user": {
                 "id": user.id,
-                "username": user.username,
+                "email": user.email,
                 "email": user.email,
                 "needs_onboarding": user.needs_onboarding
             }

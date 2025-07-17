@@ -408,7 +408,7 @@
     },
     {
       "method": "POST",
-      "path": "/direct-profile-update/{username}",
+      "path": "/direct-profile-update/{email}",
       "handler": "direct_profile_update",
       "file": "app/api/endpoints/auth.py",
       "line": 627
@@ -1017,7 +1017,7 @@
         },
         {
           "method": "POST",
-          "path": "/direct-profile-update/{username}",
+          "path": "/direct-profile-update/{email}",
           "handler": "direct_profile_update",
           "file": "app/api/endpoints/auth.py",
           "line": 627

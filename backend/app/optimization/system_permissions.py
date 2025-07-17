@@ -72,9 +72,9 @@ To set this up, run:
 sudo visudo
 ```
 
-And add the following line at the end (replace 'username' with your actual username):
+And add the following line at the end (replace 'email' with your actual email):
 ```
-username ALL=(ALL) NOPASSWD: /usr/sbin/sysctl, /usr/bin/tee, /sbin/blockdev, /usr/bin/renice
+email ALL=(ALL) NOPASSWD: /usr/sbin/sysctl, /usr/bin/tee, /sbin/blockdev, /usr/bin/renice
 ```
 """)
     

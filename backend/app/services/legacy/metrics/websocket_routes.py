@@ -291,13 +291,13 @@ async def system_metrics_socket(websocket: WebSocket):
                 db = next(get_db())
                 
                 authenticated = True
-                logger.info(f"✅ WebSocket authenticated for user {user.username} ({client_id})")
+                logger.info(f"✅ WebSocket authenticated for user {user.email} ({client_id})")
                 
                 # Send authentication success
                 await websocket.send_json({
                     "type": "auth_success",
-                    "message": f"Welcome, {user.username}!",
-                    "user": user.username,
+                    "message": f"Welcome, {user.email}!",
+                    "user": user.email,
                     "system_info": await get_system_info()
                 })
                 
