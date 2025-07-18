@@ -1,6 +1,6 @@
 // src/components/agents/QuantumShadowPeople.tsx
 import React from 'react';
-import { useWebSocket } from '../../hooks/useWebSocket';
+import { useWebSocket } from '../../frontend/src/hooks/useWebSocket';
 import { QSPFix } from '../../types/agents';
 
 export const QuantumShadowPeople: React.FC = () => {

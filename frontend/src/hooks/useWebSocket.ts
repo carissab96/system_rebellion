@@ -1,4 +1,6 @@
 // src/hooks/useWebSocket.ts
+import { useState, useRef, useEffect } from 'react';
+import type { AgentMessageType } from '../components/agent-theater/agents/shared/types';
 export const useWebSocket = (url: string) => {
     const [isConnected, setIsConnected] = useState(false);
     const [messages, setMessages] = useState<AgentMessageType[]>([]);

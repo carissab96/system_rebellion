@@ -134,7 +134,7 @@ export default function OnboardingPage({ user, token, onComplete }: OnboardingPa
     setErrors({});
     
     try {
-      const response = await fetch('/api/users/complete-onboarding', {
+      const response = await fetch('/api/auth/users/complete-onboarding', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -52,7 +52,7 @@ export default function LoginModal({
     
     try {
       // Get CSRF token first
-      const csrfResponse = await fetch('/api/csrf_token');
+      const csrfResponse = await fetch('/api/auth/csrf_token');
       const csrfData = await csrfResponse.json();
       
       // Login using exact backend endpoint

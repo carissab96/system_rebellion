@@ -1,6 +1,6 @@
 // src/components/agents/SirHawkington.tsx
 import React from 'react';
-import { useWebSocket } from '../../hooks/useWebSocket';
+import { useWebSocket } from '../../frontend/src/hooks/useWebSocket';
 import { HawkingtonAlert } from '../../types/agents';
 
 export const SirHawkington: React.FC = () => {

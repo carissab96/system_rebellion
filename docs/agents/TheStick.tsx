@@ -1,6 +1,6 @@
 // src/components/agents/TheStick.tsx
 import React from 'react';
-import { useWebSocket } from '../../hooks/useWebSocket';
+import { useWebSocket } from '../../frontend/src/hooks/useWebSocket';
 import { StickCompliance } from '../../types/agents';
 
 export const TheStick: React.FC = () => {

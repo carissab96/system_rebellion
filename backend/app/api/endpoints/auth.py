@@ -19,6 +19,7 @@ from app.core.security import hash_password, verify_password, create_access_toke
 from app.core.security import ACCESS_TOKEN_EXPIRE_MINUTES
 from app.core.config import settings
 from app.services.system_log_service import LogService
+from sqlalchemy.ext.asyncio import AsyncSession
 
 # Define a simple UserProfileCreate if it doesn't exist in your schemas
 from pydantic import BaseModel
@@ -610,7 +611,6 @@ async def read_users_me(current_user: User = Depends(get_current_user)):
     return {
         "id": str(current_user.id),
         "email": current_user.email,
-        "email": current_user.email,
         "operating_system": current_user.operating_system,
         "os_version": current_user.os_version,
         "cpu_cores": current_user.cpu_cores,
@@ -621,7 +621,7 @@ async def read_users_me(current_user: User = Depends(get_current_user)):
 @router.post("/users/complete-onboarding")
 async def complete_onboarding(
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     # Update the user's onboarding status
     current_user.needs_onboarding = False

@@ -1,6 +1,6 @@
 // src/components/agents/TheHamsters.tsx
 import React from 'react';
-import { useWebSocket } from '../../hooks/useWebSocket';
+import { useWebSocket } from '../../frontend/src/hooks/useWebSocket';
 import { HamsterSolution } from '../../types/agents';
 
 export const TheHamsters: React.FC = () => {

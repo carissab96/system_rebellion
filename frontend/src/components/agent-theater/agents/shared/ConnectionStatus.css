@@ -1,0 +1,210 @@
+/* =============================================================================
+   CONNECTION STATUS COMPONENT
+   Real-time connection status with personality
+   ============================================================================= */
+
+   .connection-status {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    padding: var(--space-md);
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--rebellion-border);
+    min-width: 200px;
+  }
+  
+  .status-main {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+  }
+  
+  .status-indicator-section {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    flex: 1;
+  }
+  
+  .status-icon {
+    font-size: 1.125rem;
+    animation: status-pulse 2s ease-in-out infinite;
+  }
+  
+  .status-text-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+  }
+  
+  .status-text {
+    font-size: 0.875rem;
+    font-weight: 600;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+  }
+  
+  .last-update {
+    font-size: 0.75rem;
+    color: var(--rebellion-text-dim);
+    font-family: var(--font-mono);
+  }
+  
+  .connecting-spinner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--rebellion-border);
+    border-top: 2px solid var(--vic20-cyan);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  
+  .connection-error {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-sm);
+    padding: var(--space-sm);
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid var(--error);
+    border-radius: var(--radius-sm);
+    margin-top: var(--space-sm);
+  }
+  
+  .error-icon {
+    font-size: 1rem;
+    color: var(--error);
+  }
+  
+  .error-message {
+    font-size: 0.875rem;
+    color: var(--error);
+    font-weight: 500;
+    line-height: 1.4;
+  }
+  
+  .reconnection-info {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm);
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid var(--warning);
+    border-radius: var(--radius-sm);
+    margin-top: var(--space-sm);
+  }
+  
+  .reconnection-text {
+    font-size: 0.875rem;
+    color: var(--warning);
+    font-weight: 500;
+    font-family: var(--font-mono);
+  }
+  
+  /* Status-specific styles */
+  .connection-status.connected {
+    border-left: 4px solid var(--success);
+  }
+  
+  .connection-status.connecting {
+    border-left: 4px solid var(--warning);
+  }
+  
+  .connection-status.disconnected {
+    border-left: 4px solid var(--error);
+  }
+  
+  /* Animation keyframes */
+  @keyframes status-pulse {
+    0%, 100% { 
+      opacity: 1; 
+      transform: scale(1);
+    }
+    50% { 
+      opacity: 0.7; 
+      transform: scale(1.1);
+    }
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  /* Hover effects */
+  .connection-status:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--rebellion-text-dim);
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .connection-status {
+      min-width: 150px;
+      padding: var(--space-sm);
+    }
+    
+    .status-main {
+      gap: var(--space-sm);
+    }
+    
+    .status-text {
+      font-size: 0.8rem;
+    }
+    
+    .last-update {
+      font-size: 0.7rem;
+    }
+  }
+  
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    .connection-status {
+      border: 2px solid var(--rebellion-text);
+    }
+    
+    .connection-error {
+      border: 2px solid var(--error);
+    }
+    
+    .reconnection-info {
+      border: 2px solid var(--warning);
+    }
+  }
+  
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .status-icon {
+      animation: none;
+    }
+    
+    .spinner {
+      animation: none;
+    }
+  }
+  
+  /* Focus styles for accessibility */
+  .connection-status:focus-within {
+    outline: 2px solid var(--vic20-cyan);
+    outline-offset: 2px;
+  }
+  
+  /* Screen reader support */
+  .connection-status .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }

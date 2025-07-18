@@ -1,6 +1,6 @@
 // src/components/agents/MethSnail.tsx
 import React from 'react';
-import { useWebSocket } from '../../hooks/useWebSocket';
+import { useWebSocket } from '../../frontend/src/hooks/useWebSocket';
 import { SnailOptimization } from '../../types/agents';
 
 export const MethSnail: React.FC = () => {
