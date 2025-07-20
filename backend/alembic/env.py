@@ -18,8 +18,8 @@ from app.models.system import OptimizationProfile
 from app.models.alerts import SystemAlert
 from app.models.metrics import SystemMetrics
 from app.models.tuning_history import TuningHistory
-from app.models.agent_coordination_models import AgentPerformanceSummary, CrossAgentCoordination
-from app.models.agent_decision_models import HawkingtonDecisionLog, MethSnailDecisionLog, HamstersDecisionLog
+from app.models.agent_coordination_models import CrossAgentCoordination
+from app.models.agent_decision_models import HawkingtonDecisionLog, MethSnailDecisionLog, HamstersDecisionLog, AgentPerformanceSummary
 from app.models.ai_agent_tracking import AIAgentMetrics, MethSnailShellSpins, SirHawkingtonMonocleYeets, TheStickHyperventilations, QuantumShadowPhasings, VIC20Wisdom
 from app.models.hamsters_model import HamstersEngineeringStats
 from app.models.meth_snail_model import MethSnailOptimizationStats

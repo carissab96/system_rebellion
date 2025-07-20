@@ -1,0 +1,339 @@
+/* components/agent-theater/AdminConsole/AdminConsole.css */
+.admin-console-toggle {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 1000;
+    background: var(--rebellion-surface);
+    border: 1px solid var(--vic20-cyan);
+    color: var(--vic20-cyan);
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+  }
+  
+  .admin-console-toggle:hover {
+    background: var(--vic20-cyan);
+    color: var(--rebellion-void);
+    box-shadow: 0 0 10px var(--vic20-cyan);
+  }
+  
+  .console-icon {
+    margin-right: 0.5rem;
+  }
+  
+  .admin-console-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 15, 23, 0.95);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+  
+  .admin-console {
+    background: var(--rebellion-surface);
+    border: 1px solid var(--rebellion-border);
+    border-radius: 8px;
+    width: 90vw;
+    height: 80vh;
+    max-width: 1200px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  }
+  
+  .admin-console-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    border-bottom: 1px solid var(--rebellion-border);
+    background: var(--rebellion-void);
+  }
+  
+  .console-title {
+    display: flex;
+    align-items: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    color: var(--vic20-cyan);
+    font-size: 1.1rem;
+  }
+  
+  .console-status {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.875rem;
+  }
+  
+  .status-indicator {
+    padding: 0.25rem 0.5rem;
+    border-radius: 3px;
+    font-weight: 600;
+  }
+  
+  .status-indicator--connected {
+    background: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+  }
+  
+  .status-indicator--disconnected {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+  }
+  
+  .status-indicator--connecting {
+    background: rgba(249, 115, 22, 0.2);
+    color: #f97316;
+  }
+  
+  .auth-status {
+    color: var(--rebellion-text);
+  }
+  
+  .console-close {
+    background: none;
+    border: none;
+    color: var(--rebellion-text);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 3px;
+    transition: background-color 0.2s ease;
+  }
+  
+  .console-close:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+  }
+  
+  .admin-console-controls {
+    display: flex;
+    gap: 2rem;
+    padding: 1rem;
+    border-bottom: 1px solid var(--rebellion-border);
+    flex-wrap: wrap;
+  }
+  
+  .control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .control-group h4 {
+    margin: 0;
+    color: var(--rebellion-text);
+    font-size: 0.875rem;
+    font-family: 'JetBrains Mono', monospace;
+    opacity: 0.8;
+  }
+  
+  .control-btn {
+    padding: 0.5rem 1rem;
+    border: 1px solid;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+    background: var(--rebellion-surface);
+  }
+  
+  .control-btn--primary {
+    border-color: var(--vic20-cyan);
+    color: var(--vic20-cyan);
+  }
+  
+  .control-btn--primary:hover {
+    background: var(--vic20-cyan);
+    color: var(--rebellion-void);
+  }
+  
+  .control-btn--info {
+    border-color: #3b82f6;
+    color: #3b82f6;
+  }
+  
+  .control-btn--info:hover {
+    background: #3b82f6;
+    color: white;
+  }
+  
+  .control-btn--warning {
+    border-color: var(--stick-coral);
+    color: var(--stick-coral);
+  }
+  
+  .control-btn--warning:hover {
+    background: var(--stick-coral);
+    color: white;
+  }
+  
+  .control-btn--success {
+    border-color: var(--snail-electric);
+    color: var(--snail-electric);
+  }
+  
+  .control-btn--success:hover {
+    background: var(--snail-electric);
+    color: var(--rebellion-void);
+  }
+  
+  .control-btn--secondary {
+    border-color: var(--rebellion-border);
+    color: var(--rebellion-text);
+  }
+  
+  .control-btn--secondary:hover {
+    background: var(--rebellion-border);
+    color: var(--rebellion-text);
+  }
+  
+  .control-select {
+    padding: 0.5rem;
+    border: 1px solid var(--rebellion-border);
+    border-radius: 4px;
+    background: var(--rebellion-surface);
+    color: var(--rebellion-text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.875rem;
+  }
+  
+  .control-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--rebellion-text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.875rem;
+  }
+  
+  .admin-console-logs {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  
+  .logs-header {
+    padding: 1rem;
+    border-bottom: 1px solid var(--rebellion-border);
+  }
+  
+  .logs-header h4 {
+    margin: 0;
+    color: var(--rebellion-text);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  
+  .logs-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    background: var(--rebellion-void);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    line-height: 1.4;
+  }
+  
+  .console-log {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.25rem 0;
+    border-left: 2px solid transparent;
+    padding-left: 0.5rem;
+  }
+  
+  .console-log--info {
+    border-left-color: #3b82f6;
+  }
+  
+  .console-log--error {
+    border-left-color: #ef4444;
+  }
+  
+  .console-log--warning {
+    border-left-color: var(--stick-coral);
+  }
+  
+  .console-log--success {
+    border-left-color: var(--snail-electric);
+  }
+  
+  .console-log--websocket {
+    border-left-color: var(--vic20-cyan);
+  }
+  
+  .console-log--database {
+    border-left-color: var(--qsp-violet);
+  }
+  
+  .console-timestamp {
+    color: var(--rebellion-text);
+    opacity: 0.6;
+    white-space: nowrap;
+  }
+  
+  .console-type {
+    color: var(--vic20-cyan);
+    font-weight: 600;
+    min-width: 80px;
+    text-align: left;
+  }
+  
+  .console-message {
+    color: var(--rebellion-text);
+    flex: 1;
+  }
+  
+  .console-data {
+    margin-top: 0.5rem;
+    margin-left: 2rem;
+  }
+  
+  .console-data summary {
+    color: var(--vic20-cyan);
+    cursor: pointer;
+    font-size: 0.7rem;
+  }
+  
+  .console-data pre {
+    background: var(--rebellion-surface);
+    padding: 0.5rem;
+    border-radius: 3px;
+    margin-top: 0.25rem;
+    font-size: 0.7rem;
+    overflow-x: auto;
+    color: var(--rebellion-text);
+  }
+  
+  /* Scrollbar styling */
+  .logs-container::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .logs-container::-webkit-scrollbar-track {
+    background: var(--rebellion-surface);
+  }
+  
+  .logs-container::-webkit-scrollbar-thumb {
+    background: var(--rebellion-border);
+    border-radius: 3px;
+  }
+  
+  .logs-container::-webkit-scrollbar-thumb:hover {
+    background: var(--vic20-cyan);
+  }

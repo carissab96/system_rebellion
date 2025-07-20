@@ -1,13 +1,14 @@
 // src/components/auth/SignUpModal.tsx
 import React, { useState } from 'react';
 import './SignUpModal.css';
-import type { User } from '../../types/auth';
+import { useDispatch } from 'react-redux';
+import { loginSuccess } from '../../store/slices/authSlice';
 
 interface SignUpModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (user: User, token: string) => void;
   onSwitchToLogin: () => void;
+  // Removed onSuccess - using Redux now
 }
 
 interface SignUpFormData {
@@ -34,7 +35,8 @@ interface SignUpResponse {
   };
 }
 
-export default function SignUpModal({ isOpen, onClose, onSuccess, onSwitchToLogin }: SignUpModalProps) {
+export default function SignUpModal({ isOpen, onClose, onSwitchToLogin }: SignUpModalProps) {
+  const dispatch = useDispatch();
   const [formData, setFormData] = useState<SignUpFormData>({
     firstName: '',
     lastName: '',
@@ -129,7 +131,7 @@ export default function SignUpModal({ isOpen, onClose, onSuccess, onSwitchToLogi
     }
 
     try {
-      // ✅ FIXED: Use your exact backend endpoint for CSRF
+      // Get CSRF token
       const csrfResponse = await fetch('/api/auth/csrf_token', {
         method: 'GET',
         credentials: 'include',
@@ -144,7 +146,7 @@ export default function SignUpModal({ isOpen, onClose, onSuccess, onSwitchToLogi
       
       const csrfData = await csrfResponse.json();
       
-      // ✅ FIXED: Use your exact backend endpoint for registration
+      // Register user
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         credentials: 'include',
@@ -169,8 +171,8 @@ export default function SignUpModal({ isOpen, onClose, onSuccess, onSwitchToLogi
 
       const data: SignUpResponse = await response.json();
       
-      // Transform backend response to frontend User type
-      const userData: User = {
+      // Transform backend response to match Redux User type
+      const userData = {
         id: data.user.id,
         email: data.user.email,
         firstName: data.user.first_name,
@@ -180,8 +182,14 @@ export default function SignUpModal({ isOpen, onClose, onSuccess, onSwitchToLogi
         jobTitle: data.user.job_title
       };
       
-      // Call onSuccess with user data AND token
-      onSuccess(userData, data.access_token);
+      // 🎯 DISPATCH TO REDUX instead of callback
+      dispatch(loginSuccess({ 
+        user: userData, 
+        token: data.access_token 
+      }));
+      
+      // Close modal
+      onClose();
       
     } catch (error) {
       console.error('Registration error:', error);

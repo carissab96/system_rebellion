@@ -10,38 +10,7 @@ from sqlalchemy import func
 Base = declarative_base()
 
 
-class HamstersDecisionLog(Base):
-    """Store The Hamsters' beer-powered engineering decisions"""
-    __tablename__ = 'hamsters_decision_log'
-    
-    id = Column(Integer, primary_key=True)
-    user_id = Column(String, ForeignKey('users.id'), nullable=False, index=True)
-    timestamp = Column(DateTime, default=datetime.now, nullable=False, index=True)
-    
-    # Decision details
-    decision_type = Column(String, nullable=False, index=True)
-    beer_level = Column(String, nullable=False)
-    engineering_target = Column(String, nullable=False)
-    
-    # Engineering details
-    engineering_parameters = Column(JSON, nullable=True)
-    beer_consumed = Column(Integer, default=0)
-    duct_tape_used = Column(Boolean, default=False)
-    supply_closet_raids = Column(Integer, default=0)
-    beer_powered_explanation = Column(Text, nullable=True)
-    technical_details = Column(JSON, nullable=True)
-    
-    # Engineering metrics
-    redneck_ingenuity_level = Column(Float, nullable=True)
-    confidence_level = Column(Float, nullable=True)
-    urgency_level = Column(String, nullable=True)
-    priority_level = Column(String, nullable=True)
-    
-    # Success tracking
-    solution_applied = Column(Boolean, default=False)
-    actual_improvement = Column(Float, nullable=True)
-    success_verified = Column(Boolean, default=False)
-    beer_level_after = Column(String, nullable=True)
+# NOTE: HamstersDecisionLog is now centralized in agent_decision_models.py
 
 class HamstersEngineeringStats(Base):
     """Store The Hamsters' engineering performance statistics"""

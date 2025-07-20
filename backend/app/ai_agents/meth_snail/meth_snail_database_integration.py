@@ -4,10 +4,8 @@ import logging
 from datetime import datetime, timedelta
 from sqlalchemy import select, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.models.meth_snail_model import (
-    MethSnailDecisionLog, MethSnailOptimizationStats, 
-    
-)
+from app.models.agent_decision_models import MethSnailDecisionLog
+from app.models.meth_snail_model import MethSnailOptimizationStats
 from app.ai_agents.meth_snail.data_types import OptimizationDecision
 
 class MethSnailDatabaseIntegration:

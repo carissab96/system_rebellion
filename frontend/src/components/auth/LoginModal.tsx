@@ -2,11 +2,12 @@
 import { useState } from 'react';
 import './LoginModal.css';
 import type { User } from '../../types/auth';
+import { useDispatch } from 'react-redux';
+import { loginSuccess } from '../../store/slices/authSlice';
 
 interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (userData: User, token: string) => void;
   onSwitchToSignUp: () => void;
 }
 
@@ -22,29 +23,30 @@ interface LoginResponse {
   user: {
     id: string;
     email: string;
-    firstName: string;
-    lastName: string;
-    isOnboarded: boolean;
+    first_name: string;  // ✅ Fixed: backend sends snake_case
+    last_name: string;   // ✅ Fixed: backend sends snake_case
+    is_onboarded: boolean; // ✅ Fixed: backend sends snake_case
   };
 }
 
-export default function LoginModal({ 
+function LoginModal({ 
   isOpen, 
   onClose, 
-  onSuccess, 
   onSwitchToSignUp 
 }: LoginModalProps) {
+  // ✅ HOOKS AT THE TOP LEVEL - BEFORE ANY CONDITIONALS
+  const dispatch = useDispatch();
   const [formData, setFormData] = useState<LoginFormData>({
     email: '',
     password: '',
     rememberMe: false
   });
-  
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // ✅ EARLY RETURN AFTER HOOKS
   if (!isOpen) return null;
-
+    
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -56,15 +58,16 @@ export default function LoginModal({
       const csrfData = await csrfResponse.json();
       
       // Login using exact backend endpoint
-      const response = await fetch('/api/login', {
+      const response = await fetch('/api/auth/token', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': csrfData.csrf_token
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-CSRFToken': csrfData.csrf_token // ✅ Fixed: Use CSRFToken not CSRF-Token
         },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password
+        body: new URLSearchParams({
+          username: formData.email,
+          password: formData.password,
+          grant_type: 'password'
         })
       });
 
@@ -75,16 +78,23 @@ export default function LoginModal({
 
       const data: LoginResponse = await response.json();
       
-      // Store authentication token
-      if (formData.rememberMe) {
-        localStorage.setItem('access_token', data.access_token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-      } else {
-        sessionStorage.setItem('access_token', data.access_token);
-        sessionStorage.setItem('user', JSON.stringify(data.user));
-      }
+      // ✅ Transform backend response to frontend User type
+      const userData: User = {
+        id: data.user.id,
+        email: data.user.email,
+        firstName: data.user.first_name,
+        lastName: data.user.last_name,
+        isOnboarded: data.user.is_onboarded
+      };
       
-      onSuccess(data.user, data.access_token);
+      // ✅ DISPATCH WITH BOTH USER AND TOKEN
+      dispatch(loginSuccess({ 
+        user: userData, 
+        token: data.access_token 
+      }));
+      
+      // Close modal
+      onClose();
       
     } catch (error) {
       console.error('Login error:', error);
@@ -202,3 +212,6 @@ export default function LoginModal({
     </div>
   );
 };
+
+export default LoginModal;
+

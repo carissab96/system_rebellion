@@ -1,6 +1,6 @@
-// components/AgentTheater/shared/MissingAgentsIndicator.tsx
+// components/agent-theater/agents/shared/MissingAgentsIndicator.tsx
 import React from 'react';
-import './MissingAgentsIndicator.css';
+import './MissingAgentIndicator.css';
 
 interface MissingAgentsIndicatorProps {
   metricsData: any;

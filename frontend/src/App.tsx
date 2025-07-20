@@ -1,75 +1,20 @@
 // src/App.tsx
 import { useState, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { useDispatch, useSelector } from 'react-redux'
+import type { RootState } from './store/store'
 import LandingPage from './pages/LandingPage'
 import OnboardingPage from './pages/OnboardingPage'
 import SignUpModal from './components/auth/SignUpModal'
 import LoginModal from './components/auth/LoginModal'
-import type { User } from './types/auth'
+import AgentTheater from './components/agent-theater/AgentTheater'
+import { initializeAuth } from './store/slices/authSlice'
 
-// Import CSS files from correct locations
-// import './index.css'
-// import './styles/rebellion-core.css'
-// import './styles/agent-personalities.css'
-// import './styles/common-components.css'
-// import './components/auth/LoginModal.css'
-// import './components/auth/SignUpModal.css'
-// import './components/navigation/ProfileDropdown.css'
-
-function App() {
+// Landing page with modal state management
+function LandingPageWithModals() {
   const [isSignUpModalOpen, setIsSignUpModalOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
-  const [authToken, setAuthToken] = useState<string | null>(null);
 
-  // Initialize auth state from localStorage
-  useEffect(() => {
-    const savedToken = localStorage.getItem('auth_token');
-    const savedUser = localStorage.getItem('user_data');
-    
-    if (savedToken && savedUser) {
-      setAuthToken(savedToken);
-      setUser(JSON.parse(savedUser));
-    }
-  }, []);
-
-  // Handle successful SignUp - redirect to onboarding
-  const handleSignUpSuccess = (userData: User, token: string) => {
-    setUser(userData);
-    setAuthToken(token);
-    setIsSignUpModalOpen(false);
-    
-    // Store in localStorage for persistence
-    localStorage.setItem('auth_token', token);
-    localStorage.setItem('user_data', JSON.stringify(userData));
-  };
-
-  // Handle successful Login - redirect based on onboarding status
-  const handleLoginSuccess = (userData: User, token: string) => {
-    setUser(userData);
-    setAuthToken(token);
-    setIsLoginModalOpen(false);
-    
-    // Store in localStorage for persistence
-    localStorage.setItem('auth_token', token);
-    localStorage.setItem('user_data', JSON.stringify(userData));
-  };
-
-  // Handle onboarding completion
-  const handleOnboardingComplete = (updatedUser: User) => {
-    setUser(updatedUser);
-    localStorage.setItem('user_data', JSON.stringify(updatedUser));
-  };
-
-  // Handle logout
-  const handleLogout = () => {
-    setUser(null);
-    setAuthToken(null);
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('user_data');
-  };
-
-  // Modal switching
   const handleSwitchToSignUp = () => {
     setIsLoginModalOpen(false);
     setIsSignUpModalOpen(true);
@@ -81,6 +26,49 @@ function App() {
   };
 
   return (
+    <>
+      <LandingPage 
+        onSignUpClick={() => setIsSignUpModalOpen(true)}
+        onLoginClick={() => setIsLoginModalOpen(true)}
+      />
+      
+      {isSignUpModalOpen && (
+        <SignUpModal 
+          isOpen={isSignUpModalOpen}
+          onClose={() => setIsSignUpModalOpen(false)}
+          onSwitchToLogin={handleSwitchToLogin}
+        />
+      )}
+      
+      {isLoginModalOpen && (
+        <LoginModal 
+          isOpen={isLoginModalOpen}
+          onClose={() => setIsLoginModalOpen(false)}
+          onSwitchToSignUp={handleSwitchToSignUp}
+          // ❌ REMOVED onSuccess - LoginModal should handle Redux internally
+        />
+      )}
+    </>
+  );
+}
+
+// Main App component
+function App() {
+  const [isInitialized, setIsInitialized] = useState(false);
+  const dispatch = useDispatch();
+  const auth = useSelector((state: RootState) => state.auth);
+  const { user, token, isAuthenticated } = auth;
+
+  useEffect(() => {
+    dispatch(initializeAuth());
+    setIsInitialized(true); // Mark as initialized
+  }, [dispatch]);
+
+  // Show loading while initializing
+  if (!isInitialized) {
+    return <div className="app-loading">Initializing System Rebellion...</div>;
+  }
+  return (
     <Router>
       <div className="App">
         <Routes>
@@ -88,17 +76,14 @@ function App() {
           <Route 
             path="/" 
             element={
-              user ? (
+              isAuthenticated && user ? (
                 user.isOnboarded ? (
-                  <Navigate to="/dashboard" replace />
+                  <Navigate to="/agent-theater" replace />
                 ) : (
                   <Navigate to="/onboarding" replace />
                 )
               ) : (
-                <LandingPage 
-                  onSignUpClick={() => setIsSignUpModalOpen(true)}
-                  onLoginClick={() => setIsLoginModalOpen(true)}
-                />
+                <LandingPageWithModals />
               )
             } 
           />
@@ -107,15 +92,17 @@ function App() {
           <Route 
             path="/onboarding" 
             element={
-              user ? (
+              isAuthenticated && user ? (
                 !user.isOnboarded ? (
                   <OnboardingPage 
                     user={user}
-                    token={authToken!}
-                    onComplete={handleOnboardingComplete}
+                    token={token || '' } // ✅ FIXED - added exclamation mark since we know it exists here
+                    onComplete={() => {
+                      console.log('Onboarding completed - component will handle Redux update');
+                    }}
                   />
                 ) : (
-                  <Navigate to="/dashboard" replace />
+                  <Navigate to="/agent-theater" replace />
                 )
               ) : (
                 <Navigate to="/" replace />
@@ -123,16 +110,12 @@ function App() {
             } 
           />
 
-          {/* Dashboard - placeholder for now */}
+          {/* Agent Theater - only accessible if authenticated and onboarded */}
           <Route 
-            path="/dashboard" 
+            path="/agent-theater" 
             element={
-              user && user.isOnboarded ? (
-                <div className="dashboard-placeholder">
-                  <h1>Dashboard Coming Soon!</h1>
-                  <p>Welcome, {user.firstName}!</p>
-                  <button onClick={handleLogout}>Logout</button>
-                </div>
+              isAuthenticated && user && user.isOnboarded ? (
+                <AgentTheater /> 
               ) : (
                 <Navigate to="/" replace />
               )
@@ -142,32 +125,9 @@ function App() {
           {/* Catch all - redirect to appropriate page */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-
-        {/* Auth Modals - only show on landing page */}
-        {!user && (
-          <>
-            {isSignUpModalOpen && (
-              <SignUpModal 
-                isOpen={isSignUpModalOpen}
-                onClose={() => setIsSignUpModalOpen(false)}
-                onSuccess={handleSignUpSuccess}
-                onSwitchToLogin={handleSwitchToLogin}
-              />
-            )}
-            
-            {isLoginModalOpen && (
-              <LoginModal 
-                isOpen={isLoginModalOpen}
-                onClose={() => setIsLoginModalOpen(false)}
-                onSuccess = {handleLoginSuccess}
-                onSwitchToSignUp={handleSwitchToSignUp}
-              />
-            )}
-          </>
-        )}
       </div>
     </Router>
-  )
+  );
 }
 
-export default App
+export default App;

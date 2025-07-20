@@ -31,6 +31,19 @@ class UserProfileCreate(BaseModel):
     # Add any fields you need, or leave it empty
     pass
 
+class OnboardingConfigurationData(BaseModel):
+    """
+    Schema for onboarding configuration data
+    """
+    system_name: str
+    operating_system: str
+    cpu_cores: int
+    ram_gb: int
+    storage_gb: int
+    primary_use_case: str
+    monitoring_preferences: dict
+    agent_preferences: dict
+
 router = APIRouter()
 
 @router.post("/refresh-token", response_model=Dict[str, str])
@@ -310,21 +323,21 @@ async def login_for_access_token(
     The Meth Snail's Authentication Protocol
     Validates user credentials and returns access token
     """
-    print(f"🔐 Login attempt for user: {form_data.email}")
+    print(f"🔐 Login attempt for user: {form_data.username}")
     print(f"🔐 Form data received: {form_data}")
     
     # Find the user
-    user = await find_user_by_email(db, email=form_data.email)
+    user = await find_user_by_email(db, email=form_data.username)
     
     # Get the system log service
     log_service = await LogService.get_instance()
     
     if not user or not verify_password(form_data.password, user.hashed_password):
-        print(f"❌ Invalid credentials for email: {form_data.email}")
+        print(f"❌ Invalid credentials for email: {form_data.username}")
         
         # Log failed authentication attempt
         log_service.add_auth_log(
-            email=form_data.email,
+            username=form_data.email,
             success=False
         )
         
@@ -357,8 +370,8 @@ async def login_for_access_token(
     
     # Log successful authentication
     log_service.add_auth_log(
-        email=user.email,
-        success=True
+       email=user.email,
+       success=True
     )
     
     # Update last login
@@ -620,16 +633,38 @@ async def read_users_me(current_user: User = Depends(get_current_user)):
 
 @router.post("/users/complete-onboarding")
 async def complete_onboarding(
+    config_data: OnboardingConfigurationData,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db)
 ):
-    # Update the user's onboarding status
+    # Update the user's onboarding status and configuration data
     current_user.needs_onboarding = False
+    
+    # Store system configuration data
+    current_user.system_name = config_data.system_name
+    current_user.operating_system = config_data.operating_system
+    current_user.cpu_cores = config_data.cpu_cores
+    current_user.ram_gb = config_data.ram_gb
+    current_user.storage_gb = config_data.storage_gb
+    current_user.primary_use_case = config_data.primary_use_case
+    
+    # Store preferences as JSON
+    current_user.monitoring_preferences = config_data.monitoring_preferences
+    current_user.agent_preferences = config_data.agent_preferences
+    
+    # Update timestamp
+    current_user.updated_at = datetime.now()
+    
     db.add(current_user)
     await db.commit()
     await db.refresh(current_user)
     
-    return {"message": "Onboarding completed successfully"}
+    return {
+        "message": "Onboarding completed successfully",
+        "user_id": current_user.id,
+        "system_name": current_user.system_name,
+        "configuration_stored": True
+    }
 
 # Simple direct profile update endpoint that doesn't use the complex authentication
 @router.post("/direct-profile-update/{email}")

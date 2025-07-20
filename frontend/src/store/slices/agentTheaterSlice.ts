@@ -2,6 +2,12 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 interface AgentTheaterState {
+  sirHawkington: any;
+  methSnail: any;
+  hamsters: any;
+  quantumShadow: any;
+  theStick: any;
+  vic20: any;
   connectionStatus: 'connecting' | 'connected' | 'disconnected';
   lastUpdate: Date | null;
   error: string | null;
@@ -57,7 +63,7 @@ export const agentTheaterSlice = createSlice({
     },
     
     // Handle WebSocket messages and route to appropriate agents
-    updateWebSocketMessage: (state, action: PayloadAction<any>) => {
+    updateWebSocketMessage: (state: AgentTheaterState, action: PayloadAction<any>) => {
       const message = action.payload;
       
       switch (message.type) {

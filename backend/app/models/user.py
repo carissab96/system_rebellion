@@ -23,12 +23,16 @@ class User(Base):
     profile_picture = Column(String(255), nullable=True)
     
     # System Profile Information
+    system_name = Column(String(100), nullable=True)  # User's custom system name
     operating_system = Column(String(50), nullable=True)
     os_version = Column(String(50), nullable=True)
     linux_distro = Column(String(50), nullable=True)
     linux_distro_version = Column(String(50), nullable=True)
     cpu_cores = Column(Integer, nullable=True)
     total_memory = Column(Integer, nullable=True)  # in MB
+    ram_gb = Column(Integer, nullable=True)  # RAM in GB from onboarding
+    storage_gb = Column(Integer, nullable=True)  # Storage in GB from onboarding
+    primary_use_case = Column(String(100), nullable=True)  # How user primarily uses system
     avatar = Column(String(50), default='sir-hawkington')
     
     # User Preferences
@@ -36,6 +40,10 @@ class User(Base):
         "optimization_level": "moderate",
         "theme_preferences": {"use_dark_mode": True}
     })
+    
+    # Onboarding Configuration Data
+    monitoring_preferences = Column(JSON, nullable=True)  # Monitoring settings from onboarding
+    agent_preferences = Column(JSON, nullable=True)  # AI agent preferences from onboarding
     
     # Account Status & Security
     is_active = Column(Boolean, default=True)

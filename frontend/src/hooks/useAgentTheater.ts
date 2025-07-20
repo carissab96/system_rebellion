@@ -1,12 +1,12 @@
 // hooks/useAgentTheater.ts
 import { useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import  type { RootState } from '../store';
+import  type { RootState, AppDispatch } from '../store/store';
 import { 
   updateWebSocketMessage, 
   setConnectionStatus, 
   setError,
-  updateActiveAgentCount 
+  updateActiveAgentCount,
 } from '../store/slices/agentTheaterSlice';
 import { updateMetrics as updateSirHawkington, setOffline as setSirHawkingtonOffline } from '../store/slices/sirHawkingtonSlice';
 import { updateMetrics as updateMethSnail, setOffline as setMethSnailOffline } from '../store/slices/methSnailSlice';
@@ -16,10 +16,12 @@ import { updateMetrics as updateTheStick, setOffline as setTheStickOffline } fro
 import { updateMetrics as updateVIC20, setOffline as setVIC20Offline } from '../store/slices/vic20Slice';
 
 export const useAgentTheater = () => {
-  const dispatch = useDispatch();
+  const { token, isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const dispatch = useDispatch<AppDispatch>();
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
+  const connectionAttempts = useRef(0);
+
   // Get state from all slices
   const agentTheater = useSelector((state: RootState) => state.agentTheater);
   const sirHawkington = useSelector((state: RootState) => state.sirHawkington);
@@ -30,35 +32,59 @@ export const useAgentTheater = () => {
   const vic20 = useSelector((state: RootState) => state.vic20);
 
   useEffect(() => {
+    console.log('useAgentTheater Auth Check:', {
+      hasToken: !! token,
+      isAuthenticated,
+      tokenPreview: token ? `${token.substring(0, 10)}...` : 'null',
+      tokenLength: token ?. length
+    });
+
     const connectWebSocket = () => {
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-        dispatch(setError('No authentication token found'));
+      if (!token || !isAuthenticated) {
+        console.log('No authentication - cannot connect to WebSocket');
+        dispatch(setError('authentication required for websocket connection'));
         dispatch(setConnectionStatus('disconnected'));
         return;
       }
 
-      const ws = new WebSocket('ws://localhost:8000/ws/system-metrics');
+      connectionAttempts.current += 1;
+      console.log(`websocket connection attempt ${connectionAttempts.current}`);
+
+      //create websocket url with token in query params (as backend expects)
+      const wsUrl = `ws://localhost:8000/ws/system-metrics?token=${encodeURIComponent(token)}`;
+      console.log('connecting to:', wsUrl.replace(token, `${token.substring(0, 10)}...`));
+      
+      const ws = new WebSocket(wsUrl.toString());
       wsRef.current = ws;
 
       ws.onopen = () => {
+        console.log('WebSocket connect successfully');
+        connectionAttempts.current = 0; //reset on successful connection
         dispatch(setConnectionStatus('connected'));
         dispatch(setError(null));
-        
-        // Send authentication
-        ws.send(JSON.stringify({ token }));
       };
 
       ws.onmessage = (event) => {
+        console.log('WebSocket message received:', event.data);
+        console.log('event type:', event.type);
+        console.log('event target:', event.target);
+        console.log('event current target:', event.currentTarget);
         try {
           const message = JSON.parse(event.data);
           
+          if (message.type === 'error') {
+            console.error('Backend error:', message.message);
+            dispatch(setError(`Backend error: ${message.message}`));
+            return; 
+          }
           // Route to main theater slice
           dispatch(updateWebSocketMessage(message));
           
           // Route to individual agent slices based on real data
           if (message.type === 'metrics_update' && message.data) {
             const data = message.data;
+            console.log('Processing metrics update:', Object.keys(data));
+            console.log('data:', data);
             
             // Update each agent slice with their specific data - NO FAKE DATA
             if (data.sir_hawkington) {
@@ -110,21 +136,43 @@ export const useAgentTheater = () => {
             dispatch(updateActiveAgentCount(activeCount));
           }
         } catch (err) {
+          console.error('Failed to parse WebSocket message:', err);
           dispatch(setError(`Failed to parse WebSocket message: ${err}`));
         }
       };
 
       ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
         dispatch(setError(`WebSocket error: ${error}`));
         dispatch(setConnectionStatus('disconnected'));
       };
 
-      ws.onclose = () => {
+      ws.onclose = (closeEvent: CloseEvent) => {
+        console.log('🔌 WebSocket closed:', {
+          code: closeEvent.code,
+          reason: closeEvent.reason,
+          wasClean: closeEvent.wasClean
+        });
+
         dispatch(setConnectionStatus('disconnected'));
-        // Auto-reconnect after 5 seconds
-        reconnectTimeoutRef.current = setTimeout(() => {
-          connectWebSocket();
-        }, 5000);
+
+        // Handle specific close codes from your backend
+        if (closeEvent.code === 1008) { // WS_1008_POLICY_VIOLATION
+          console.error('🚫 Authentication failed - not reconnecting');
+          dispatch(setError('Authentication failed - please log in again'));
+          return;
+        }
+        // Only auto-reconnect if we have valid auth and haven't tried too many times
+        if (token && isAuthenticated && connectionAttempts.current < 5) {
+          const delay = Math.min(1000 * Math.pow(2, connectionAttempts.current), 30000);
+          console.log(`⏰ Reconnecting in ${delay}ms... (attempt ${connectionAttempts.current + 1})`);
+          reconnectTimeoutRef.current = setTimeout(() => {
+            connectWebSocket();
+          }, delay);
+        } else {
+          console.log('❌ Max reconnection attempts reached or no auth');
+          dispatch(setError('Connection failed - please refresh page'));
+        }
       };
     };
 
@@ -138,7 +186,8 @@ export const useAgentTheater = () => {
         clearTimeout(reconnectTimeoutRef.current);
       }
     };
-  }, [dispatch]);
+  }, [dispatch, token, isAuthenticated]);
+
 
   const sendMessage = (message: any) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {

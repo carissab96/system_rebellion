@@ -6,8 +6,8 @@ from .system import OptimizationProfile
 from .alerts import SystemAlert
 from .metrics import SystemMetrics
 from .tuning_history import TuningHistory
-from .agent_coordination_models import AgentPerformanceSummary, CrossAgentCoordination
-from .agent_decision_models import HawkingtonDecisionLog, MethSnailDecisionLog, HamstersDecisionLog
+from .agent_coordination_models import CrossAgentCoordination
+from .agent_decision_models import HawkingtonDecisionLog, MethSnailDecisionLog, HamstersDecisionLog, AgentPerformanceSummary
 from .ai_agent_tracking import AIAgentMetrics, MethSnailShellSpins, SirHawkingtonMonocleYeets, TheStickHyperventilations, QuantumShadowPhasings, VIC20Wisdom
 from .hamsters_model import HamstersEngineeringStats
 from .meth_snail_model import MethSnailOptimizationStats

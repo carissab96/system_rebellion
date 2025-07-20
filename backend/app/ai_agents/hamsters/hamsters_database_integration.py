@@ -4,10 +4,8 @@ import logging
 from datetime import datetime, timedelta
 from sqlalchemy import select, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
-from models.hamsters_models import (
-    HamstersDecisionLog, HamstersEngineeringStats,
-    HamstersBeerConsumption, HamstersQuantumTapeUsage
-)
+from app.models.agent_decision_models import HamstersDecisionLog
+from app.models.hamsters_model import HamstersEngineeringStats
 
 class HamstersDatabaseIntegration:
     def __init__(self, db_manager):

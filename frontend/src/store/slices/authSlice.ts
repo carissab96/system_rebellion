@@ -1,22 +1,14 @@
 // src/store/slices/authSlice.ts
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
-
-interface User {
-  id: string;
-  email: string;
-  name: string;
-  roles: string[];
-  permissions: string[];
-  lastLogin: string;
-  isAdmin: boolean;
+import type { User } from '../../types/auth';
+// Match your actual User type from your backend
 
 
 interface AuthState {
   isAuthenticated: boolean;
   user: User | null;
   token: string | null;
-  refreshToken: string | null;
   isLoading: boolean;
   error: string | null;
   csrfToken: string | null;
@@ -26,82 +18,196 @@ const initialState: AuthState = {
   isAuthenticated: false,
   user: null,
   token: null,
-  refreshToken: null,
   isLoading: false,
   error: null,
   csrfToken: null,
 };
 
-// Async thunks for your existing auth flow
+// Fetch CSRF token (you already have this working)
+export const fetchCsrfToken = createAsyncThunk(
+  'auth/fetchCsrfToken',
+  async () => {
+    const response = await fetch('/api/auth/csrf_token');
+    if (!response.ok) throw new Error('Failed to fetch CSRF token');
+    const data = await response.json();
+    return data.csrf_token;
+  }
+);
+
+// Login with email/password (matches your OAuth flow)
+export const loginUser = createAsyncThunk(
+  'auth/login',
+  async ({ email, password, csrfToken }: { email: string; password: string; csrfToken: string }) => {
+    const response = await fetch('/api/auth/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRFToken': csrfToken,
+      },
+      body: new URLSearchParams({
+        username: email, // OAuth2 expects username field but we pass email
+        password: password,
+        grant_type: 'password'
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Login failed');
+    }
+
+    const data = await response.json();
+    return {
+      token: data.access_token,
+      user: data.user
+    };
+  }
+);
+
+// Validate existing token
 export const validateToken = createAsyncThunk(
   'auth/validateToken',
   async (token: string) => {
-    // Integration with your existing JWT validation
-    const response = await fetch('/api/auth/validate', {
-      headers: { Authorization: `Bearer ${token}` }
+    const response = await fetch('/api/auth/validate-token', {
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
     });
+    
+    if (!response.ok) throw new Error('Token validation failed');
     return response.json();
   }
 );
 
-export const refreshAccessToken = createAsyncThunk(
-  'auth/refreshToken',
-  async (refreshToken: string) => {
-    // Integration with your existing refresh flow
-    const response = await fetch('/api/auth/refresh', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken })
-    });
-    return response.json();
-  }
-);
-
-const authSlice = createSlice({
+export const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    setAuth: (state, action: PayloadAction<{ user: User; token: string; refreshToken: string }>) => {
+    // For manual login success (from your modals)
+    loginSuccess: (state, action: PayloadAction<{ user: User; token: string }>) => {
       state.isAuthenticated = true;
-      state.user = action.payload.user;
+      state.user = {
+        ...action.payload.user,
+        isOnboarded: action.payload.user.isOnboarded ?? false,
+        isActive: action.payload.user.isActive ?? true,
+      };
       state.token = action.payload.token;
-      state.refreshToken = action.payload.refreshToken;
       state.error = null;
+      state.isLoading = false;
+      
+      // Store in localStorage for persistence
+      localStorage.setItem('auth_token', action.payload.token);
+      localStorage.setItem('user_data', JSON.stringify(action.payload.user));
     },
-    clearAuth: (state) => {
+    
+    // Logout and clear everything
+    logout: (state) => {
       state.isAuthenticated = false;
       state.user = null;
       state.token = null;
-      state.refreshToken = null;
       state.error = null;
+      
+      // Clear localStorage
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('user_data');
     },
+    
+    // Set CSRF token
     setCsrfToken: (state, action: PayloadAction<string>) => {
       state.csrfToken = action.payload;
     },
+    
+    // Update user (for onboarding completion)
+    updateUser: (state, action: PayloadAction<User>) => {
+      state.user = action.payload;
+      localStorage.setItem('user_data', JSON.stringify(action.payload));
+    },
+    
+    // Set error
     setError: (state, action: PayloadAction<string>) => {
       state.error = action.payload;
       state.isLoading = false;
     },
+    
+    // Clear error
+    clearError: (state) => {
+      state.error = null;
+    },
+    
+    // Initialize from localStorage (call this on app startup)
+    initializeAuth: (state) => {
+      const savedToken = localStorage.getItem('auth_token');
+      const savedUser = localStorage.getItem('user_data');
+      
+      if (savedToken && savedUser) {
+        state.token = savedToken;
+        state.user = JSON.parse(savedUser);
+        state.isAuthenticated = true;
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
-      .addCase(validateToken.pending, (state) => {
+      // CSRF token
+      .addCase(fetchCsrfToken.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(fetchCsrfToken.fulfilled, (state, action) => {
+        state.csrfToken = action.payload;
+        state.isLoading = false;
+      })
+      .addCase(fetchCsrfToken.rejected, (state, action) => {
+        state.error = action.error.message || 'Failed to fetch CSRF token';
+        state.isLoading = false;
+      })
+      
+      // Login
+      .addCase(loginUser.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(validateToken.fulfilled, (state, action) => {
+      .addCase(loginUser.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isAuthenticated = true;
         state.user = action.payload.user;
+        state.token = action.payload.token;
+        state.error = null;
+        
+        // Store in localStorage
+        localStorage.setItem('auth_token', action.payload.token);
+        localStorage.setItem('user_data', JSON.stringify(action.payload.user));
       })
-      .addCase(validateToken.rejected, (state, action) => {
+      .addCase(loginUser.rejected, (state, action) => {
         state.isLoading = false;
         state.isAuthenticated = false;
-        state.error = action.error.message || 'Token validation failed';
+        state.error = action.error.message || 'Login failed';
+      })
+      
+      // Token validation
+      .addCase(validateToken.fulfilled, (state, action) => {
+        state.isAuthenticated = true;
+        state.user = action.payload.user;
+        state.error = null;
+      })
+      .addCase(validateToken.rejected, (state) => {
+        state.isAuthenticated = false;
+        state.user = null;
+        state.token = null;
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user_data');
       });
   },
 });
 
-export const { setAuth, clearAuth, setCsrfToken, setError } = authSlice.actions;
+export const { 
+  loginSuccess, 
+  logout, 
+  setCsrfToken, 
+  updateUser, 
+  setError, 
+  clearError, 
+  initializeAuth 
+} = authSlice.actions;
 
-export default authSlice.reducer;
+export default authSlice;

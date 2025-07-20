@@ -2,6 +2,7 @@
 
 // Shared User interface to avoid repetition
 export interface User {
+    token: any;
     id: string;
     email: string;
     firstName: string;
@@ -11,6 +12,7 @@ export interface User {
     jobTitle?: string;
     createdAt?: string;
     updatedAt?: string;
+    isActive?: boolean;
   }
   
   // Base response with token

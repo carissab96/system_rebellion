@@ -28,10 +28,10 @@ class MetricsAggregationService:
             end_hour = start_hour + timedelta(hours=1)
             
             # Query raw metrics for this hour
-            query = select(SystemMetrics).filter(
-                SystemMetrics.user_id == user_id,
-                SystemMetrics.timestamp >= start_hour,
-                SystemMetrics.timestamp < end_hour
+            query = select(system_metrics).filter(
+                system_metrics.user_id == user_id,
+                system_metrics.timestamp >= start_hour,
+                system_metrics.timestamp < end_hour
             )
             
             result = await db.execute(query)

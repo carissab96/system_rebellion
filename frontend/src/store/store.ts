@@ -7,7 +7,7 @@ import { hamstersSlice } from './slices/hamstersSlice';
 import { quantumShadowSlice } from './slices/quantumShadowPeopleSlice';
 import { theStickSlice } from './slices/theStickSlice';
 import { vic20Slice } from './slices/vic20Slice';
-import authReducer from './slices/authSlice';
+import { authSlice } from './slices/authSlice';
 
 export const store = configureStore({
   reducer: {
@@ -18,7 +18,7 @@ export const store = configureStore({
     quantumShadow: quantumShadowSlice.reducer,
     theStick: theStickSlice.reducer,
     vic20: vic20Slice.reducer,
-    auth: authReducer
+    auth: authSlice.reducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

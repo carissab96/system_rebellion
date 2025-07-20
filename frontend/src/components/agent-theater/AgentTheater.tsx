@@ -1,5 +1,5 @@
-// components/AgentTheater/AgentTheater.tsx
-import React from 'react';
+// components/agent-theater/AgentTheater.tsx
+import React, { useEffect, useState } from 'react';
 import { useAgentTheater } from '../../hooks/useAgentTheater';
 import SirHawkingtonCard from '../../components/agent-theater/agents/SirHawingtonCard/SirHawkingtonCard.tsx';
 import MethSnailCard from '../../components/agent-theater/agents/MethSnailCard/MethSnailCard.tsx';
@@ -10,15 +10,67 @@ import VIC20Card from '../../components/agent-theater/agents/VIC20Card/VIC20Card
 import ConnectionStatus from '../../components/agent-theater/agents/shared/ConnectionStatus';
 import { MissingAgentsIndicator } from '../../components/agent-theater/agents/shared/MissingAgentsIndicator';
 import './AgentTheater.css';
+import { useDispatch, useSelector } from 'react-redux';
+import type { RootState } from '../../store/store';
+import { logout } from '../../store/slices/authSlice.ts';
 
 export const AgentTheater: React.FC = () => {
   const { metricsData, connectionStatus, error, lastUpdate } = useAgentTheater();
-  
+  console.log('AgentTheater Debug:', {
+    metricsData,
+    connectionStatus,
+    error,
+    lastUpdate
+  });
   const activeAgentCount = Object.keys(metricsData || {}).length;
   const totalAgents = 6;
+  const dispatch = useDispatch();
+  const auth = useSelector((state: RootState) => state.auth);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  
+  const handleLogout = () => {
+    dispatch(logout());
+  };
+  useEffect(() => {
+    const testBackend = async () => {
+      try {
+        console.log('Testing backend connectivitiy...');
+        const response = await fetch('/api/auth/csrf_token');
+        console.log('backend CSRF test:', response.status);
+      } catch (error) {
+        console.error('Error testing backend:', error);
+      }
+    }
+    testBackend();
+  }, []);
   
   return (
     <div className="agent-theater">
+      <nav className="theater-nav">
+        <div className="nav-left">
+          <button
+            onClick={() => window.location.href = '/'}
+            className="logo-button"
+            >System Rebellion</button>
+        </div>
+        <div className="nav-right">
+          <div className="profile-dropdown">
+            <button
+              onClick={() => setShowProfileMenu(!showProfileMenu)}
+              className="profile-button"
+              >{auth.user?.firstName}</button>
+            {showProfileMenu && (
+              <div className="dropdown-menu">
+                <button onClick={() => console.log('Settings')}>Settings</button>
+                <button onClick={() => console.log('Profile')}>Profile</button>
+                <hr />
+                <button onClick={handleLogout} className="logout-btn">
+                  Logout</button>
+              </div>
+            )}
+          </div>
+        </div>
+      </nav>
       <div className="theater-header">
         <div className="theater-title-section">
           <h1 className="theater-title">Agent Theater</h1>
@@ -78,3 +130,4 @@ export const AgentTheater: React.FC = () => {
     </div>
   );
 };
+export default AgentTheater;

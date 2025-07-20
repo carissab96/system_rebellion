@@ -1,8 +1,10 @@
 // src/pages/OnboardingPage.tsx
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './OnboardingPage.css';
 import type { User } from '../types/auth';
+import { useDispatch } from 'react-redux';
+import { updateUser } from '../store/slices/authSlice';
 
 interface OnboardingFormData {
   systemName: string;
@@ -39,16 +41,16 @@ interface OnboardingResponse {
 
 interface OnboardingPageProps {
   user: User;
-  token: string;
   onComplete: (updatedUser: User) => void;
+  token: string;
 }
 
-export default function OnboardingPage({ user, token, onComplete }: OnboardingPageProps) {
+const OnboardingPage = ({ user, onComplete, token }: OnboardingPageProps) => {
+  const dispatch = useDispatch();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  
   const [formData, setFormData] = useState<OnboardingFormData>({
     systemName: '',
     operatingSystem: '',
@@ -71,14 +73,17 @@ export default function OnboardingPage({ user, token, onComplete }: OnboardingPa
       vic20CoordinationMode: 'adaptive'
     }
   });
-
-  // Check if user is authenticated
-  useEffect(() => {
-    if (!token) {
-      navigate('/');
-    }
-  }, [navigate, token]);
-
+  // Early return to prevent infinite loops - NO useEffect needed
+  if (!token || !user) {
+    navigate('/');
+    return <div className="onboarding-loading">Redirecting...</div>;
+  }
+  // Prevent already onboarded users from re-onboarding
+    if (user.isOnboarded) {
+    navigate('/agent-theater');
+    return <div className="onboarding-loading">Redirecting to Agent Theater...</div>;
+  }
+  
   const validateStep = (step: number): boolean => {
     const newErrors: Record<string, string> = {};
     
@@ -134,11 +139,16 @@ export default function OnboardingPage({ user, token, onComplete }: OnboardingPa
     setErrors({});
     
     try {
-      const response = await fetch('/api/auth/users/complete-onboarding', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+        let currentToken = token;
+
+      if(!currentToken || currentToken === null || currentToken === undefined) {
+        throw new Error('No authentication token available');
+      }
+    const response = await fetch('/api/auth/users/complete-onboarding', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${currentToken}`
         },
         body: JSON.stringify({
           system_name: formData.systemName,
@@ -151,8 +161,22 @@ export default function OnboardingPage({ user, token, onComplete }: OnboardingPa
           agent_preferences: formData.agentPreferences
         })
       });
-
+      
       if (!response.ok) {
+
+        if (response.status === 401) {
+
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('user_data');
+          setErrors({
+            submt: 'Your session has expired.  Please log in again.'
+
+          });
+          setTimeout(() => {
+            navigate('/');
+          }, 3000);
+          return;
+        }
         const errorData = await response.json();
         throw new Error(errorData.detail || 'Onboarding failed');
       }
@@ -166,8 +190,12 @@ export default function OnboardingPage({ user, token, onComplete }: OnboardingPa
         isOnboarded: true
       };
       
-      // Call the onComplete callback
+      // Update Redux store with the onboarded user
+      dispatch(updateUser(updatedUser));
+      
+      // Call the onComplete callback with updated user data
       onComplete(updatedUser);
+      navigate('/agent-theater');
       
     } catch (error) {
       console.error('Onboarding error:', error);
@@ -645,4 +673,6 @@ export default function OnboardingPage({ user, token, onComplete }: OnboardingPa
       )}
     </div>
   );
-}
+};
+
+export default OnboardingPage;

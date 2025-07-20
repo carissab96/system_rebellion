@@ -274,8 +274,6 @@
   }
   
   .details-button {
-    @extend .btn;
-    @extend .btn-primary;
     font-size: 0.875rem;
   }
   
@@ -368,3 +366,65 @@
     color: var(--rebellion-text-dim);
     margin: 0;
   }
+  /* Add to AgentTheater.css */
+.theater-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background: var(--rebellion-void);
+  border-bottom: 1px solid var(--rebellion-border);
+}
+
+.logo-button {
+  background: none;
+  border: none;
+  color: var(--vic20-cyan);
+  font-size: 1.2rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.profile-dropdown {
+  position: relative;
+}
+
+.profile-button {
+  background: var(--rebellion-surface);
+  border: 1px solid var(--rebellion-border);
+  color: var(--rebellion-text);
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: var(--rebellion-surface);
+  border: 1px solid var(--rebellion-border);
+  border-radius: 4px;
+  padding: 0.5rem 0;
+  min-width: 150px;
+  z-index: 1000;
+}
+
+.dropdown-menu button {
+  width: 100%;
+  text-align: left;
+  padding: 0.5rem 1rem;
+  background: none;
+  border: none;
+  color: var(--rebellion-text);
+  cursor: pointer;
+}
+
+.dropdown-menu button:hover {
+  background: var(--rebellion-border);
+}
+
+.logout-btn {
+  color: var(--stick-coral) !important;
+}

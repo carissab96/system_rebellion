@@ -5,7 +5,8 @@ from datetime import datetime, timedelta
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy import select, func, desc
-from app.models.sir_hawkington_model import HawkingtonDecisionLog, HawkingtonMonitoringStats
+from app.models.agent_decision_models import HawkingtonDecisionLog
+from app.models.sir_hawkington_model import HawkingtonMonitoringStats
 from .data_types import HawkingtonDecision
 
 class HawkingtonDatabaseIntegration:

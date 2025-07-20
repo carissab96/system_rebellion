@@ -105,13 +105,18 @@ async def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(), 
     db: AsyncSession = Depends(get_async_db)
 ):
+    email = form_data.username
+    password = form_data.password
+
     """Login with email/password and return access tokens."""
-    # Find user
-    result = await db.execute(select(User).where(User.email == form_data.email))
-    user = result.scalars().first()
+    # Now you can use email and password directly
+    user = await authenticate_user(db, email, password)
+
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
     
     # Validate credentials
-    if not user or not verify_password(form_data.password, user.hashed_password):
+    if not user or not verify_password(password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
@@ -310,7 +315,7 @@ async def refresh_access_token(
 
 # New login alias for frontend compatibility
 @router.post("/login", response_model=TokenResponse)
-async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_async_db)):
+async def login(form_data: LoginFormData, db: AsyncSession = Depends(get_async_db)):
     """Alias for /token endpoint for frontend compatibility."""
     return await login_for_access_token(form_data, db)
 
