@@ -11,14 +11,13 @@ from .data_types import QSPDecision
 class QSPDatabaseIntegration:
     """Database integration for QSP quantum network optimization"""
     
-    def __init__(self, database_url: str):
-        self.database_url = database_url
+    def __init__(self):
         self.engine = None
         self.session_factory = None
     
     async def initialize(self):
         """Initialize database connection"""
-        self.engine = create_async_engine(self.database_url)
+        self.engine = create_async_engine()
         self.session_factory = sessionmaker(
             bind=self.engine,
             class_=AsyncSession,

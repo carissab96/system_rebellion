@@ -1,102 +1,160 @@
-# agents/hamsters/hamsters_database_integration.py
-import asyncio
-import logging
+"""
+Database integration for Hamster infrastructure operations
+"""
+
+from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
-from sqlalchemy import select, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.models.agent_decision_models import HamstersDecisionLog
-from app.models.hamsters_model import HamstersEngineeringStats
+from sqlalchemy import select, func, and_, or_
+
+from app.models.hamsters_models import (
+    HamsterIntervention,
+    HamsterCommunicationLog,
+    DuctTapeUsageLog,
+    BeerConsumptionLog,
+    SupplyClosetRaid,
+    InfrastructureMetrics
+)
 
 class HamstersDatabaseIntegration:
-    def __init__(self, db_manager):
-        self.db_manager = db_manager
-        self.logger = logging.getLogger(__name__)
+    """Handles all database operations for the Hamsters"""
+    
+    def __init__(self, db: AsyncSession):
+        self.db = db
         
-    async def store_engineering_metrics(self, user_id: int, metrics_data: dict):
-        """Store engineering metrics - real data only"""
+    async def log_intervention(
+        self,
+        intervention_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Log a complete infrastructure intervention"""
         try:
-            async with self.db_manager.get_session() as session:
-                engineering_stats = HamstersEngineeringStats(
-                    user_id=user_id,
-                    problem_type=metrics_data.get('problem_type'),
-                    severity_level=metrics_data.get('severity_level'),
-                    response_time_seconds=metrics_data.get('response_time_seconds'),
-                    solution_applied=metrics_data.get('solution_applied'),
-                    beer_consumption_ml=metrics_data.get('beer_consumption_ml', 0),
-                    quantum_tape_used_meters=metrics_data.get('quantum_tape_used_meters', 0),
-                    engineering_success=metrics_data.get('engineering_success', False),
-                    raw_metrics=metrics_data
-                )
-                
-                session.add(engineering_stats)
-                await session.commit()
-                return engineering_stats.id
-                
+            intervention = HamsterIntervention(
+                type=intervention_data['type'],
+                status=intervention_data['status'],
+                steve_action=intervention_data['steve_action'],
+                bob_action=intervention_data['bob_action'],
+                carl_action=intervention_data['carl_action'],
+                beer_consumed=intervention_data['beer_consumed'],
+                tools_used=intervention_data['tools_used'],
+                space_freed_gb=intervention_data.get('space_freed_gb', 0),
+                started_at=datetime.utcnow()
+            )
+            
+            self.db.add(intervention)
+            await self.db.commit()
+            
+            return {
+                'status': 'success',
+                'intervention_id': intervention.id,
+                'message': 'Intervention logged successfully'
+            }
+            
         except Exception as e:
-            self.logger.error(f"Failed to store engineering metrics: {e}")
-            raise
+            await self.db.rollback()
+            return {
+                'status': 'error',
+                'message': f'Failed to log intervention: {str(e)}'
+            }
     
-    async def get_historical_engineering_data(self, user_id: int, days: int = 30):
-        """Get historical engineering data - no bullshit"""
+    async def log_communication(
+        self,
+        source_hamster: str,
+        squeaks: str,
+        translation: str,
+        target_agent: Optional[str] = None
+    ) -> None:
+        """Log Hamster communication attempts"""
         try:
-            async with self.db_manager.get_session() as session:
-                cutoff_date = datetime.utcnow() - timedelta(days=days)
-                
-                result = await session.execute(
-                    select(HamstersEngineeringStats)
-                    .where(HamstersEngineeringStats.user_id == user_id)
-                    .where(HamstersEngineeringStats.timestamp >= cutoff_date)
-                    .order_by(desc(HamstersEngineeringStats.timestamp))
-                )
-                
-                historical_data = result.scalars().all()
-                
-                if not historical_data:
-                    return {
-                        'status': 'no_data',
-                        'message': "No engineering data available - these hamsters haven't had problems to solve yet!"
-                    }
-                
-                return {
-                    'status': 'success',
-                    'data': [
-                        {
-                            'timestamp': record.timestamp,
-                            'problem_type': record.problem_type,
-                            'severity_level': record.severity_level,
-                            'response_time_seconds': record.response_time_seconds,
-                            'solution_applied': record.solution_applied,
-                            'beer_consumption_ml': record.beer_consumption_ml,
-                            'quantum_tape_used_meters': record.quantum_tape_used_meters,
-                            'engineering_success': record.engineering_success
-                        } for record in historical_data
-                    ]
+            comm_log = HamsterCommunicationLog(
+                source_hamster=source_hamster,
+                audible_squeaks=squeaks,
+                human_translation=translation,
+                target_agent=target_agent,
+                timestamp=datetime.utcnow()
+            )
+            
+            self.db.add(comm_log)
+            await self.db.commit()
+            
+        except Exception as e:
+            await self.db.rollback()
+            # Hamsters don't care if logging fails
+            
+    async def track_duct_tape_usage(
+        self,
+        grade: str,
+        strips_used: int,
+        purpose: str,
+        used_by: str = "carl"
+    ) -> None:
+        """Track duct tape consumption"""
+        try:
+            usage = DuctTapeUsageLog(
+                grade=grade,
+                strips_used=strips_used,
+                purpose=purpose,
+                used_by=used_by,
+                timestamp=datetime.utcnow()
+            )
+            
+            self.db.add(usage)
+            await self.db.commit()
+            
+        except Exception as e:
+            await self.db.rollback()
+            
+    async def log_beer_consumption(
+        self,
+        hamster_name: str,
+        beers: int,
+        occasion: str
+    ) -> None:
+        """Track beer consumption for operational metrics"""
+        try:
+            consumption = BeerConsumptionLog(
+                hamster_name=hamster_name,
+                beers_consumed=beers,
+                occasion=occasion,
+                timestamp=datetime.utcnow()
+            )
+            
+            self.db.add(consumption)
+            await self.db.commit()
+            
+        except Exception as e:
+            await self.db.rollback()
+            
+    async def get_recent_interventions(
+        self,
+        hours: int = 24
+    ) -> List[Dict[str, Any]]:
+        """Get recent intervention history"""
+        try:
+            since = datetime.utcnow() - timedelta(hours=hours)
+            
+            query = select(HamsterIntervention).where(
+                HamsterIntervention.started_at >= since
+            ).order_by(HamsterIntervention.started_at.desc())
+            
+            result = await self.db.execute(query)
+            interventions = result.scalars().all()
+            
+            return [
+                {
+                    'id': i.id,
+                    'type': i.type,
+                    'status': i.status,
+                    'space_freed_gb': i.space_freed_gb,
+                    'beer_consumed': i.beer_consumed,
+                    'duration': (i.completed_at - i.started_at).seconds if i.completed_at else None
                 }
-                
+                for i in interventions
+            ]
+            
         except Exception as e:
-            self.logger.error(f"Failed to get historical engineering data: {e}")
-            raise
-    
-    async def store_decision(self, user_id: int, decision_data: dict):
-        """Store engineering decision with full context"""
-        try:
-            async with self.db_manager.get_session() as session:
-                decision = HamstersDecisionLog(
-                    user_id=user_id,
-                    decision_type=decision_data.get('decision_type'),
-                    decision_context=decision_data.get('context'),
-                    decision_result=decision_data.get('result'),
-                    confidence_level=decision_data.get('confidence_level'),
-                    beer_required=decision_data.get('beer_required', False),
-                    quantum_tape_required=decision_data.get('quantum_tape_required', False),
-                    emergency_response=decision_data.get('emergency_response', False),
-                    raw_decision_data=decision_data
-                )
-                
-                session.add(decision)
-                await session.commit()
-                return decision.id
-                
-        except Exception as e:
-            self.logger.error(f"Failed to store decision: {e}")
-            raise
+            return []
+            
+    async def get_infrastructure_metrics(
+        self,
+        metric_type: str
+    ) -> Dict[str, Any

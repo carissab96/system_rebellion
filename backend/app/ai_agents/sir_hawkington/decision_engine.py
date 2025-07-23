@@ -72,16 +72,16 @@ class HawkingtonDecision:
     data_quality_score: float     # 0.0 to 1.0
     timestamp: datetime
     
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary for JSON serialization"""
-        return {
-            'decision_type': self.decision_type.value,
-            'message': self.message,
-            'confidence': self.confidence,
-            'stress_score': self.stress_score,
-            'monocle_state': self.monocle_state.value,
-            'reasoning': self.reasoning,
-            'estimated_impact': self.estimated_impact,
+def to_dict(self) -> Dict[str, Any]:
+    """Convert to dictionary for JSON serialization"""
+    return {
+        'decision_type': self.decision_type.value,
+        'message': self.message,
+        'confidence': self.confidence,
+        'stress_score': self.stress_score,
+        'monocle_state': self.monocle_state.value,
+        'reasoning': self.reasoning,
+        'estimated_impact': self.estimated_impact,
             'urgency': self.urgency,
             'analysis_depth': self.analysis_depth.value,
             'monocle_yeet_count': self.monocle_yeet_count,
@@ -95,47 +95,63 @@ class SirHawkingtonBrainV2:
     One brain, one method, pure distinguished decisions only.
     ABSOLUTE INTOLERANCE FOR FABRICATED DATA.
     """
+@property
+def is_active(self) -> bool:
+    """Sir Hawkington is always active and ready for aristocratic analysis"""
+    return True
     
-    def __init__(self, database_url: str):
-        self.database_url = database_url
-        self._db = None  # Initialize later
+def activate(self):
+    """Sir Hawkington cannot be deactivated -  he's always vigilant"""
+    pass
+    
+def deactivate(self):
+    """Sir Hawkington refuses to be deactivated - aristrocraticc duty never sleeps"""
+    pass
+    
+def __init__(self, db_getter=None):
+    if db_getter is None:
+        from app.core.database import get_async_db
+        self.db_getter = get_async_db
+    else:
+        self.db_getter = db_getter
+    self._db = None  # Initialize later
             
-        self.recent_decisions: List[Dict[str, Any]] = []
-        self.monocle_yeet_incidents: List[MonocleYeetIncident] = []
-        self.current_monocle_state = MonocleState.POLISHED
-        self.logger = logging.getLogger("SirHawkington.Brain")
-        self.total_analyses = 0
-        self.successful_analyses = 0
+    self.recent_decisions: List[Dict[str, Any]] = []
+    self.monocle_yeet_incidents: List[MonocleYeetIncident] = []
+    self.current_monocle_state = MonocleState.POLISHED
+    self.logger = logging.getLogger("SirHawkington.Brain")
+    self.total_analyses = 0
+    self.successful_analyses = 0
         
-        # Sir Hawkington's distinguished thresholds
-        self.concern_threshold = 0.65
-        self.alert_threshold = 0.85
-        self.critical_threshold = 0.95
+    # Sir Hawkington's distinguished thresholds
+    self.concern_threshold = 0.65
+    self.alert_threshold = 0.85
+    self.critical_threshold = 0.95
         
-        # Metrics tracking for database storage
-        self.metrics_quality_stats = {
-            'cpu_missing_count': 0,
-            'memory_missing_count': 0,
-            'disk_missing_count': 0,
-            'network_missing_count': 0,
-            'process_missing_count': 0,
-            'invalid_data_count': 0,
-            'monocle_yeets_total': 0
-        }
+    # Metrics tracking for database storage
+    self.metrics_quality_stats = {
+        'cpu_missing_count': 0,
+        'memory_missing_count': 0,
+        'disk_missing_count': 0,
+        'network_missing_count': 0,
+        'process_missing_count': 0,
+        'invalid_data_count': 0,
+        'monocle_yeets_total': 0
+    }
         
-        # System baseline for pattern recognition
-        self.system_baseline: Dict[str, float] = {}
+    # System baseline for pattern recognition
+    self.system_baseline: Dict[str, float] = {}
         
-        self.logger.info("🧐 Sir Hawkington's distinguished brain initialized. Monocle polished to aristocratic perfection.")
+    self.logger.info("🧐 Sir Hawkington's distinguished brain initialized. Monocle polished to aristocratic perfection.")
     
-    async def initialize_database(self):
-        """Initialize database connection with aristocratic dignity"""
-        if self.db is None:
-            from .database_integration import HawkingtonDatabaseIntegration
-            self.db = HawkingtonDatabaseIntegration(self.database_url)
-            await self.db.initialize()
+def initialize_database(self):
+    """Initialize database connection with aristocratic dignity"""
+    if self.db is None:
+        from .database_integration import HawkingtonDatabaseIntegration
+        self.db = HawkingtonDatabaseIntegration(self.db_getter)
+        self.db.initialize()
     
-    async def analyze_metrics(
+def analyze_metrics(
         self, 
         metrics_data: Dict[str, Any], 
         historical_data: Optional[List[Dict]] = None,
@@ -162,11 +178,11 @@ class SirHawkingtonBrainV2:
         
         # Store incoming metrics in database
         if self.db and user_id:
-            await self.db.store_metrics(user_id, metrics_data)
+            self.db.store_metrics(user_id, metrics_data)
         
         # Get historical data from database if not provided
         if not historical_data and self.db and user_id:
-            historical_data = await self.db.get_historical_decisions(user_id, days=7)
+            historical_data = self.db.get_historical_decisions(user_id, days=7)
         
         self.total_analyses += 1
         monocle_yeet_count = 0
@@ -199,7 +215,7 @@ class SirHawkingtonBrainV2:
             
             # If missing critical metrics, YEET THE MONOCLE
             if missing_metrics:
-                await self._record_monocle_yeet(
+                self._record_monocle_yeet(
                     missing_metrics, [], 
                     f"Missing critical metrics: {', '.join(missing_metrics)}", 
                     "concerned", user_id
@@ -222,7 +238,7 @@ class SirHawkingtonBrainV2:
             
             # If critical metrics are invalid, YEET THE MONOCLE
             if invalid_metrics:
-                await self._record_monocle_yeet(
+                self._record_monocle_yeet(
                     [], invalid_metrics,
                     f"Invalid metric ranges: {', '.join(invalid_metrics)}",
                     "utterly_appalled", user_id
@@ -249,18 +265,18 @@ class SirHawkingtonBrainV2:
             
             # === ANALYSIS DEPTH BRANCHING ===
             if analysis_depth == AnalysisDepth.BASIC:
-                decision = await self._basic_analysis(
+                decision = self._basic_analysis(
                     cpu_usage, memory_usage, disk_usage, 
                     monocle_yeet_count, data_quality_score
                 )
             elif analysis_depth == AnalysisDepth.THOROUGH:
-                decision = await self._thorough_analysis(
+                decision = self._thorough_analysis(
                     cpu_usage, memory_usage, disk_usage,
                     network_data, process_count, load_avg, historical_data,
                     monocle_yeet_count, data_quality_score
                 )
             else:  # STANDARD
-                decision = await self._standard_analysis(
+                decision = self._standard_analysis(
                     cpu_usage, memory_usage, disk_usage,
                     network_data, process_count, load_avg,
                     monocle_yeet_count, data_quality_score
@@ -272,7 +288,7 @@ class SirHawkingtonBrainV2:
                 
                 # Store decision in database
                 if self.db and user_id:
-                    await self.db.store_decision(user_id, decision)
+                    self.db.store_decision(user_id, decision)
                 
                 # Record decision in history
                 self.recent_decisions.append({
@@ -301,12 +317,12 @@ class SirHawkingtonBrainV2:
             
         except Exception as e:
             self.logger.error(f"🧐💥 Sir Hawkington's analysis failed with aristocratic horror: {str(e)}")
-            await self._record_monocle_yeet(
+            self._record_monocle_yeet(
                 [], [], f"Analysis error: {str(e)}", "alarmed", user_id
             )
             return None
     
-    async def _basic_analysis(
+def _basic_analysis(
         self, 
         cpu: float, 
         memory: float, 
@@ -341,7 +357,7 @@ class SirHawkingtonBrainV2:
             timestamp=datetime.now(timezone.utc)
         )
     
-    async def _standard_analysis(
+def _standard_analysis(
         self, 
         cpu: float, 
         memory: float, 
@@ -379,7 +395,7 @@ class SirHawkingtonBrainV2:
             timestamp=datetime.now(timezone.utc)
         )
     
-    async def _thorough_analysis(
+def _thorough_analysis(
         self, 
         cpu: float, 
         memory: float, 
@@ -423,13 +439,13 @@ class SirHawkingtonBrainV2:
     
     # === VALIDATION HELPERS ===
     
-    def _validate_metric_range(self, value: float, metric_name: str) -> bool:
+def _validate_metric_range(self, value: float, metric_name: str) -> bool:
         """Validate metric with aristocratic standards"""
         if not isinstance(value, (int, float)):
             return False
         return 0 <= value <= 100
     
-    def _validate_network_data(self, network_data: Any) -> Optional[Dict]:
+def _validate_network_data(self, network_data: Any) -> Optional[Dict]:
         """Validate network data with gentleman's discretion"""
         if not isinstance(network_data, dict):
             return None
@@ -444,7 +460,7 @@ class SirHawkingtonBrainV2:
             
         return network_data
     
-    def _validate_process_count(self, process_count: Any) -> Optional[int]:
+def _validate_process_count(self, process_count: Any) -> Optional[int]:
         """Validate process count with aristocratic precision"""
         if not isinstance(process_count, int):
             return None
@@ -452,7 +468,7 @@ class SirHawkingtonBrainV2:
             return None
         return process_count
     
-    def _validate_load_average(self, load_avg: Any) -> Optional[List[float]]:
+def _validate_load_average(self, load_avg: Any) -> Optional[List[float]]:
         """Validate load average with distinguished care"""
         if not isinstance(load_avg, (list, tuple)):
             return None
@@ -464,7 +480,7 @@ class SirHawkingtonBrainV2:
         except (ValueError, TypeError):
             return None
     
-    def _calculate_data_quality_score(
+def _calculate_data_quality_score(
         self, 
         cpu: float, 
         memory: float, 
@@ -485,7 +501,7 @@ class SirHawkingtonBrainV2:
         
         return min(score, 1.0)
     
-    async def _record_monocle_yeet(
+async def _record_monocle_yeet(
         self, 
         missing_metrics: List[str], 
         invalid_metrics: List[str], 
@@ -511,7 +527,7 @@ class SirHawkingtonBrainV2:
         if len(self.monocle_yeet_incidents) > 1000:
             self.monocle_yeet_incidents = self.monocle_yeet_incidents[-1000:]
     
-    def _polish_monocle(self):
+async def _polish_monocle(self):
         """Polish monocle after successful analysis"""
         if self.current_monocle_state == MonocleState.YEETED:
             self.current_monocle_state = MonocleState.CLEANING
@@ -521,7 +537,7 @@ class SirHawkingtonBrainV2:
     
     # === STRESS CALCULATION METHODS ===
     
-    def _calculate_basic_stress_score(self, cpu: float, memory: float, disk: float) -> float:
+async def _calculate_basic_stress_score(self, cpu: float, memory: float, disk: float) -> float:
         """Basic stress calculation for quick analysis"""
         weights = {'cpu': 0.25, 'memory': 0.35, 'disk': 0.40}
         
@@ -531,7 +547,7 @@ class SirHawkingtonBrainV2:
             (disk / 100.0) * weights['disk']
         )
     
-    def _calculate_standard_stress_score(
+async def _calculate_standard_stress_score(
         self, cpu: float, memory: float, disk: float,
         network_data: Optional[Dict], process_count: Optional[int], load_avg: Optional[List[float]]
     ) -> float:
@@ -550,7 +566,7 @@ class SirHawkingtonBrainV2:
         
         return min(base_stress, 1.0)
     
-    def _calculate_thorough_stress_score(
+async def _calculate_thorough_stress_score(
         self, cpu: float, memory: float, disk: float,
         network_data: Optional[Dict], process_count: Optional[int], 
         load_avg: Optional[List[float]], patterns: Dict
@@ -569,7 +585,7 @@ class SirHawkingtonBrainV2:
     
     # === DECISION DETERMINATION ===
     
-    def _determine_monocle_state(self, stress_score: float) -> MonocleState:
+async def _determine_monocle_state(self, stress_score: float) -> MonocleState:
         """Determine monocle state based on stress"""
         if stress_score >= self.critical_threshold:
             return MonocleState.YEETED
@@ -580,7 +596,7 @@ class SirHawkingtonBrainV2:
         else:
             return MonocleState.POLISHED
     
-    def _determine_decision_type(self, stress_score: float) -> DecisionType:
+async def _determine_decision_type(self, stress_score: float) -> DecisionType:
         """Determine decision type based on stress"""
         if stress_score >= self.critical_threshold:
             return DecisionType.CRITICAL
@@ -593,7 +609,7 @@ class SirHawkingtonBrainV2:
     
     # === CONFIDENCE CALCULATIONS ===
     
-    def _calculate_basic_confidence(self, cpu: float, memory: float, disk: float) -> float:
+async def _calculate_basic_confidence(self, cpu: float, memory: float, disk: float) -> float:
         """Basic confidence calculation"""
         if cpu > 80 or memory > 80 or disk > 80:
             return 0.95  # High confidence for clear problems
@@ -602,7 +618,7 @@ class SirHawkingtonBrainV2:
         else:
             return 0.75  # Lower confidence for normal systems
     
-    def _calculate_standard_confidence(
+async def _calculate_standard_confidence(
         self, cpu: float, memory: float, disk: float,
         network_data: Optional[Dict], process_count: Optional[int]
     ) -> float:
@@ -617,7 +633,7 @@ class SirHawkingtonBrainV2:
         
         return min(base_confidence, 1.0)
     
-    def _calculate_thorough_confidence(
+async def _calculate_thorough_confidence(
         self, cpu: float, memory: float, disk: float,
         network_data: Optional[Dict], process_count: Optional[int], patterns: Dict
     ) -> float:
@@ -637,7 +653,7 @@ class SirHawkingtonBrainV2:
     
     # === URGENCY ASSESSMENT ===
     
-    def _assess_urgency_basic(self, cpu: float, memory: float, disk: float) -> str:
+async  def _assess_urgency_basic(self, cpu: float, memory: float, disk: float) -> str:
         """Basic urgency assessment"""
         if cpu > 95 or memory > 95 or disk > 98:
             return "immediate"
@@ -646,7 +662,7 @@ class SirHawkingtonBrainV2:
         else:
             return "eventual"
     
-    def _assess_urgency_standard(
+async def _assess_urgency_standard(
         self, cpu: float, memory: float, disk: float,
         network_data: Optional[Dict], load_avg: Optional[List[float]]
     ) -> str:
@@ -659,7 +675,7 @@ class SirHawkingtonBrainV2:
         
         return base_urgency
     
-    def _assess_urgency_thorough(
+async def _assess_urgency_thorough(
         self, cpu: float, memory: float, disk: float,
         network_data: Optional[Dict], load_avg: Optional[List[float]], patterns: Dict
     ) -> str:
@@ -680,7 +696,7 @@ class SirHawkingtonBrainV2:
     
     # === MESSAGE CREATION ===
     
-    def _create_basic_message(self, decision_type: DecisionType, stress_score: float, cpu: float, memory: float, disk: float) -> Optional[str]:
+async def _create_basic_message(self, decision_type: DecisionType, stress_score: float, cpu: float, memory: float, disk: float) -> Optional[str]:
         """Create basic message"""
         if decision_type == DecisionType.CRITICAL:
             return f"🧐🚨 Sir Hawkington has YEETED his monocle in aristocratic horror! CRITICAL SYSTEM FAILURE IMMINENT (CPU: {cpu:.1f}%, Memory: {memory:.1f}%, Disk: {disk:.1f}%)"
@@ -695,7 +711,7 @@ class SirHawkingtonBrainV2:
                 return f"🧐 Sir Hawkington's monocle gleams with aristocratic satisfaction"
             return None
     
-    def _create_standard_message(self, decision_type: DecisionType, stress_score: float, cpu: float, memory: float, disk: float, network_data: Optional[Dict], process_count: Optional[int]) -> Optional[str]:
+async def _create_standard_message(self, decision_type: DecisionType, stress_score: float, cpu: float, memory: float, disk: float, network_data: Optional[Dict], process_count: Optional[int]) -> Optional[str]:
         """Create standard message with additional context"""
         base_message = self._create_basic_message(decision_type, stress_score, cpu, memory, disk)
         
@@ -709,7 +725,7 @@ class SirHawkingtonBrainV2:
         
         return base_message
     
-    def _create_thorough_message(self, decision_type: DecisionType, stress_score: float, cpu: float, memory: float, disk: float, network_data: Optional[Dict], process_count: Optional[int], patterns: Dict) -> Optional[str]:
+async def _create_thorough_message(self, decision_type: DecisionType, stress_score: float, cpu: float, memory: float, disk: float, network_data: Optional[Dict], process_count: Optional[int], patterns: Dict) -> Optional[str]:
         """Create thorough message with pattern insights"""
         base_message = self._create_standard_message(decision_type, stress_score, cpu, memory, disk, network_data, process_count)
         
@@ -727,11 +743,11 @@ class SirHawkingtonBrainV2:
     
     # === REASONING CREATION ===
     
-    def _create_basic_reasoning(self, decision_type: DecisionType, stress_score: float, cpu: float, memory: float, disk: float) -> str:
+async def _create_basic_reasoning(self, decision_type: DecisionType, stress_score: float, cpu: float, memory: float, disk: float) -> str:
         """Create basic reasoning"""
         return f"System stress score {stress_score:.3f} indicates {decision_type.value} conditions. Aristocratic analysis based on CPU: {cpu:.1f}%, Memory: {memory:.1f}%, Disk: {disk:.1f}%"
     
-    def _create_standard_reasoning(self, decision_type: DecisionType, stress_score: float, cpu: float, memory: float, disk: float, network_data: Optional[Dict], process_count: Optional[int]) -> str:
+async def _create_standard_reasoning(self, decision_type: DecisionType, stress_score: float, cpu: float, memory: float, disk: float, network_data: Optional[Dict], process_count: Optional[int]) -> str:
         """Create standard reasoning"""
         base_reasoning = self._create_basic_reasoning(decision_type, stress_score, cpu, memory, disk)
         
@@ -746,7 +762,7 @@ class SirHawkingtonBrainV2:
         
         return base_reasoning
     
-    def _create_thorough_reasoning(self, decision_type: DecisionType, stress_score: float, cpu: float, memory: float, disk: float, network_data: Optional[Dict], process_count: Optional[int], patterns: Dict) -> str:
+async def _create_thorough_reasoning(self, decision_type: DecisionType, stress_score: float, cpu: float, memory: float, disk: float, network_data: Optional[Dict], process_count: Optional[int], patterns: Dict) -> str:
         """Create thorough reasoning with patterns"""
         base_reasoning = self._create_standard_reasoning(decision_type, stress_score, cpu, memory, disk, network_data, process_count)
         
@@ -764,7 +780,7 @@ class SirHawkingtonBrainV2:
     
     # === IMPACT ESTIMATION ===
     
-    def _estimate_basic_impact(self, decision_type: DecisionType, cpu: float, memory: float, disk: float) -> Dict[str, float]:
+async def _estimate_basic_impact(self, decision_type: DecisionType, cpu: float, memory: float, disk: float) -> Dict[str, float]:
         """Estimate basic impact"""
         impact = {
             'cpu_attention_needed': 0,
@@ -793,7 +809,7 @@ class SirHawkingtonBrainV2:
         
         return impact
     
-    def _estimate_standard_impact(self, decision_type: DecisionType, cpu: float, memory: float, disk: float, network_data: Optional[Dict], process_count: Optional[int]) -> Dict[str, float]:
+async def _estimate_standard_impact(self, decision_type: DecisionType, cpu: float, memory: float, disk: float, network_data: Optional[Dict], process_count: Optional[int]) -> Dict[str, float]:
         """Estimate standard impact"""
         impact = self._estimate_basic_impact(decision_type, cpu, memory, disk)
         
@@ -806,7 +822,7 @@ class SirHawkingtonBrainV2:
         
         return impact
     
-    def _estimate_thorough_impact(self, decision_type: DecisionType, cpu: float, memory: float, disk: float, network_data: Optional[Dict], process_count: Optional[int], patterns: Dict) -> Dict[str, float]:
+async def _estimate_thorough_impact(self, decision_type: DecisionType, cpu: float, memory: float, disk: float, network_data: Optional[Dict], process_count: Optional[int], patterns: Dict) -> Dict[str, float]:
         """Estimate thorough impact with patterns"""
         impact = self._estimate_standard_impact(decision_type, cpu, memory, disk, network_data, process_count)
         
@@ -819,7 +835,7 @@ class SirHawkingtonBrainV2:
         
         return impact
     
-    def _analyze_patterns(self, historical_data: List[Dict]) -> Dict:
+async def _analyze_patterns(self, historical_data: List[Dict]) -> Dict:
         """Analyze historical patterns with aristocratic precision"""
         if not historical_data or len(historical_data) < 5:
             return {}
@@ -855,7 +871,7 @@ class SirHawkingtonBrainV2:
     
     # === UTILITY METHODS ===
     
-    def get_monocle_yeet_stats(self) -> Dict[str, Any]:
+def get_monocle_yeet_stats(self) -> Dict[str, Any]:
         """Get monocle yeeting statistics for database storage"""
         recent_incidents = [
             {
@@ -882,7 +898,7 @@ class SirHawkingtonBrainV2:
             }
         }
     
-    def get_decision_summary(self) -> Dict[str, Any]:
+def get_decision_summary(self) -> Dict[str, Any]:
         """Get summary of Sir Hawkington's decisions"""
         if not self.recent_decisions:
             return {
@@ -918,7 +934,7 @@ class SirHawkingtonBrainV2:
             'metrics_quality_stats': self.metrics_quality_stats.copy()
         }
     
-    def health_check(self) -> Dict[str, Any]:
+def health_check(self) -> Dict[str, Any]:
         """Sir Hawkington's health status"""
         return {
             'agent_name': 'sir_hawkington',
@@ -937,7 +953,7 @@ class SirHawkingtonBrainV2:
             'data_quality_enforcement': 'ABSOLUTE'
         }
     
-    def reset_stats(self):
+def reset_stats(self):
         """Reset statistics for testing"""
         self.total_analyses = 0
         self.successful_analyses = 0
@@ -956,7 +972,7 @@ class SirHawkingtonBrainV2:
         self.logger.info("🧐✨ Sir Hawkington's aristocratic brain statistics reset with dignity")
 
 # === GLOBAL INSTANCE ===
-sir_hawkington_brain = SirHawkingtonBrainV2(database_url="database_url")
+sir_hawkington_brain = SirHawkingtonBrainV2()
 
 # === CONVENIENCE FUNCTIONS FOR DIFFERENT USE CASES ===
 

@@ -11,8 +11,8 @@ class QSPWebSocketHandler:
     Network optimization with mysterious tequila jello shots
     """
     
-    def __init__(self, database_url: str):
-        self.qsp_brain = QuantumShadowPeopleBrainV2(database_url)
+    def __init__(self):
+        self.qsp_brain = QuantumShadowPeopleBrainV2()
         self.active_connections = {}
         self.quantum_fixes_in_progress = {}
         
@@ -204,7 +204,7 @@ class QSPWebSocketHandler:
             del self.quantum_fixes_in_progress[user_id]
 
 # Global QSP handler instance
-qsp_websocket_handler = QSPWebSocketHandler(database_url="")
+qsp_websocket_handler = QSPWebSocketHandler()
 
 def get_qsp_websocket_handler():
     """Get the global QSP WebSocket handler"""

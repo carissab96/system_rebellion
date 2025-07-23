@@ -1,409 +1,707 @@
 """
-Metrics Repository
+Metrics Repository - PURIFIED ARISTOCRATIC VERSION
 
-Provides database operations for storing and retrieving system metrics.
-Implements the repository pattern for metric persistence.
+Handles ONLY database persistence operations for system metrics.
+Follows the Single Responsibility Principle with aristocratic precision.
+
+🧐 "A repository's duty is data persistence - nothing more, nothing less"
+
+CORE PRINCIPLES:
+- Database operations ONLY
+- NO metrics collection
+- NO fake data generation  
+- NO business logic
+- Clean separation of concerns
 """
+
 from typing import List, Dict, Any, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy import delete, update
+from sqlalchemy import delete, update, func, and_, or_
 from datetime import datetime, timedelta
-from functools import lru_cache
 import uuid
-import asyncio
 import logging
+import json
 
 from app.models.metrics import SystemMetrics
 from app.schemas.metrics import MetricCreate, MetricUpdate
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("MetricsRepository")
 
 class MetricsRepository:
-    """Repository for managing system metrics persistence in the database.
-    Handles all database operations including creating, reading, updating, and deleting metrics.
+    """
+    Pure database repository for system metrics persistence.
+    
+    🧐 ARISTOCRATIC ARCHITECTURE:
+    - Handles ONLY database CRUD operations
+    - No metrics collection (that's SimplifiedMetricsService's job)
+    - No triage logic (that's Sir Hawkington's domain)
+    - No fake data generation (EVER!)
     """
     
     def __init__(self):
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger("MetricsRepository")
+        self.logger.info("🧐 Metrics Repository initialized with aristocratic precision")
+
+    # === CORE CRUD OPERATIONS ===
     
-    @staticmethod
     async def create_metric(
+        self,
         db: AsyncSession, 
-        metric_data: MetricCreate
+        user_id: str,
+        cpu_usage: float,
+        memory_usage: float,
+        disk_usage: float,
+        network_data: Dict[str, Any],
+        process_count: int,
+        additional_metrics: Dict[str, Any]
     ) -> SystemMetrics:
         """
-        Sir Hawkington's Metric Creation Protocol
+        🧐 Sir Hawkington's Metric Persistence Protocol
         
-        Creates a new metric record in the database with proper error handling.
+        Store a complete system metrics snapshot in the database.
+        
+        Args:
+            db: Database session
+            user_id: User identifier
+            cpu_usage: CPU usage percentage
+            memory_usage: Memory usage percentage  
+            disk_usage: Disk usage percentage
+            network_data: Network metrics dictionary
+            process_count: Number of running processes
+            additional_metrics: Any additional metrics data
+            
+        Returns:
+            Created SystemMetrics database record
         """
         try:
+            # Create the database record
             db_metric = SystemMetrics(
-                **metric_data.model_dump()
+                user_id=user_id,
+                timestamp=datetime.utcnow(),
+                cpu_usage=cpu_usage,
+                memory_usage=memory_usage,
+                disk_usage=disk_usage,
+                network=json.dumps(network_data) if isinstance(network_data, dict) else str(network_data),
+                process_count=process_count,
+                additional_metrics=json.dumps(additional_metrics) if isinstance(additional_metrics, dict) else str(additional_metrics)
             )
             
             db.add(db_metric)
             await db.commit()
             await db.refresh(db_metric)
             
-            logger.info(f"Sir Hawkington successfully created metric: {db_metric.id}")
+            self.logger.info(f"🧐✅ Sir Hawkington successfully persisted metric: {db_metric.id}")
             return db_metric
             
         except Exception as e:
             await db.rollback()
-            logger.error(f"Sir Hawkington's protocol failed: {str(e)}")
-            raise
+            self.logger.error(f"🧐💥 Sir Hawkington's persistence protocol failed: {str(e)}")
+            raise Exception(f"Database persistence failed: {str(e)}")
 
-    @staticmethod
     async def get_user_metrics(
+        self,
         db: AsyncSession, 
-        user_id: uuid.UUID, 
+        user_id: str, 
         skip: int = 0, 
-        limit: int = 100
+        limit: int = 100,
+        order_desc: bool = True
     ) -> List[SystemMetrics]:
         """
-        The Meth Snail's Metric Retrieval Mechanism
+        🐌 The Meth Snail's Metric Retrieval Mechanism
         
-        Retrieves paginated metrics for a specific user.
+        Retrieve paginated metrics for a specific user from database.
+        
+        Args:
+            db: Database session
+            user_id: User identifier
+            skip: Number of records to skip (pagination)
+            limit: Maximum number of records to return
+            order_desc: If True, order by timestamp descending (newest first)
+            
+        Returns:
+            List of SystemMetrics records from database
         """
         try:
             query = select(SystemMetrics).filter(
                 SystemMetrics.user_id == str(user_id)
-            ).order_by(SystemMetrics.created_at.desc()).offset(skip).limit(limit)
+            )
+            
+            # Apply ordering
+            if order_desc:
+                query = query.order_by(SystemMetrics.timestamp.desc())
+            else:
+                query = query.order_by(SystemMetrics.timestamp.asc())
+            
+            # Apply pagination
+            query = query.offset(skip).limit(limit)
             
             result = await db.execute(query)
             metrics = result.scalars().all()
             
-            logger.debug(f"The Meth Snail retrieved {len(metrics)} metrics for user {user_id}")
-            return metrics
+            self.logger.debug(f"🐌📊 Retrieved {len(metrics)} metrics for user {user_id}")
+            return list(metrics)
             
         except Exception as e:
-            logger.error(f"The Meth Snail's retrieval failed: {str(e)}")
-            raise
+            self.logger.error(f"🐌💥 Metric retrieval failed: {str(e)}")
+            raise Exception(f"Database query failed: {str(e)}")
 
-    @staticmethod
     async def get_metric_by_id(
+        self,
         db: AsyncSession, 
-        metric_id: uuid.UUID
+        metric_id: int
     ) -> Optional[SystemMetrics]:
         """
-        Quantum Precision Metric Lookup
+        👻 Quantum Shadow People's Precision Lookup
         
-        Retrieves a single metric by its ID with quantum precision.
+        Retrieve a single metric by its database ID.
+        
+        Args:
+            db: Database session
+            metric_id: Database ID of the metric
+            
+        Returns:
+            SystemMetrics record or None if not found
         """
         try:
             query = select(SystemMetrics).filter(
-                SystemMetrics.id == str(metric_id)
+                SystemMetrics.id == metric_id
             )
             
             result = await db.execute(query)
             metric = result.scalar_one_or_none()
             
             if metric:
-                logger.debug(f"Quantum lookup successful for metric: {metric_id}")
+                self.logger.debug(f"👻✅ Quantum lookup successful for metric: {metric_id}")
             else:
-                logger.warning(f"Quantum lookup found no metric with ID: {metric_id}")
+                self.logger.debug(f"👻📭 No metric found with ID: {metric_id}")
                 
             return metric
             
         except Exception as e:
-            logger.error(f"Quantum precision lookup failed: {str(e)}")
-            raise
+            self.logger.error(f"👻💥 Quantum lookup failed: {str(e)}")
+            raise Exception(f"Database lookup failed: {str(e)}")
 
-    @staticmethod
-    async def update_metric(
-        db: AsyncSession, 
-        metric_id: uuid.UUID, 
-        metric_data: MetricUpdate
-    ) -> Optional[SystemMetrics]:
-        """
-        Sir Hawkington's Metric Update Protocol
-        
-        Updates an existing metric with new data.
-        """
-        try:
-            # First check if metric exists
-            existing_metric = await MetricsRepository.get_metric_by_id(db, metric_id)
-            if not existing_metric:
-                logger.warning(f"Sir Hawkington cannot update non-existent metric: {metric_id}")
-                return None
-            
-            query = update(SystemMetrics).where(
-                SystemMetrics.id == str(metric_id)
-            ).values(
-                **metric_data.model_dump(exclude_unset=True),
-                updated_at=datetime.utcnow()
-            )
-            
-            await db.execute(query)
-            await db.commit()
-            
-            updated_metric = await MetricsService.get_metric_by_id(db, metric_id)
-            logger.info(f"Sir Hawkington successfully updated metric: {metric_id}")
-            
-            return updated_metric
-            
-        except Exception as e:
-            await db.rollback()
-            logger.error(f"Sir Hawkington's update protocol failed: {str(e)}")
-            raise
-
-    @staticmethod
     async def delete_metric(
+        self,
         db: AsyncSession, 
-        metric_id: uuid.UUID
+        metric_id: int
     ) -> bool:
         """
-        The Meth Snail's Metric Deletion Ceremony
+        🐹 The Hamsters' Metric Deletion Protocol
         
-        Performs the sacred ritual of metric deletion.
+        Delete a metric record from the database.
+        
+        Args:
+            db: Database session
+            metric_id: Database ID of metric to delete
+            
+        Returns:
+            True if metric was deleted, False if not found
         """
         try:
             query = delete(SystemMetrics).where(
-                SystemMetrics.id == str(metric_id)
+                SystemMetrics.id == metric_id
             )
             
             result = await db.execute(query)
             await db.commit()
             
-            success = result.rowcount > 0
-            if success:
-                logger.info(f"The Meth Snail completed deletion ceremony for metric: {metric_id}")
+            deleted = result.rowcount > 0
+            
+            if deleted:
+                self.logger.info(f"🐹✅ The Hamsters successfully deleted metric: {metric_id}")
             else:
-                logger.warning(f"The Meth Snail found no metric to delete: {metric_id}")
+                self.logger.warning(f"🐹📭 The Hamsters found no metric to delete: {metric_id}")
                 
-            return success
+            return deleted
             
         except Exception as e:
             await db.rollback()
-            logger.error(f"The Meth Snail's deletion ceremony failed: {str(e)}")
-            raise
+            self.logger.error(f"🐹💥 The Hamsters' deletion protocol failed: {str(e)}")
+            raise Exception(f"Database deletion failed: {str(e)}")
     
-    @staticmethod
+    # === ADVANCED QUERY OPERATIONS ===
+    
     async def get_latest_metrics_for_user(
+        self,
         db: AsyncSession,
         user_id: str,
         limit: int = 10
     ) -> List[SystemMetrics]:
         """
-        Get the most recent metrics for a user, optimized for real-time display.
+        📏 The Stick's Latest Metrics Retrieval
+        
+        Get the most recent metrics for a user (optimized query).
+        
+        Args:
+            db: Database session
+            user_id: User identifier
+            limit: Maximum number of recent metrics
+            
+        Returns:
+            List of most recent SystemMetrics records
         """
         try:
             query = select(SystemMetrics).filter(
                 SystemMetrics.user_id == str(user_id)
-            ).order_by(SystemMetrics.created_at.desc()).limit(limit)
+            ).order_by(
+                SystemMetrics.timestamp.desc()
+            ).limit(limit)
             
             result = await db.execute(query)
-            return result.scalars().all()
+            metrics = result.scalars().all()
+            
+            self.logger.debug(f"📏📊 Retrieved {len(metrics)} latest metrics for user {user_id}")
+            return list(metrics)
             
         except Exception as e:
-            logger.error(f"Failed to get latest metrics for user {user_id}: {str(e)}")
-            raise
-        
-    @staticmethod
-    async def get_live_system_metrics(
-        db: AsyncSession = None, 
-        force_refresh: bool = False
-    ) -> Dict[str, Any]:
-        """
-        Get real-time system metrics with caching for WebSocket performance.
-        
-        Args:
-            db: Database session (optional, for future database storage)
-            force_refresh: If True, bypasses cache and gets fresh metrics
-            
-        Returns:
-            Dictionary containing current system metrics
-        """
-        now = datetime.now()
-        
-        # Check cache first unless force refresh
-        if not force_refresh and MetricsService._metrics_cache:
-            last_update = MetricsService._metrics_cache.get('timestamp')
-            if last_update and (now - datetime.fromisoformat(last_update.replace('Z', '+00:00').replace('+00:00', ''))) < MetricsService._cache_duration:
-                logger.debug("Returning cached metrics")
-                return MetricsService._metrics_cache
-        
-        try:
-            import psutil
-            
-            # Get metrics asynchronously where possible
-            metrics_data = await MetricsService._collect_system_metrics()
-            
-            # Update cache
-            MetricsService._metrics_cache = metrics_data
-            
-            logger.debug("Fresh system metrics collected and cached")
-            return metrics_data
-            
-        except ImportError:
-            logger.error("psutil not available - cannot collect system metrics")
-            return MetricsService._get_fallback_metrics()
-        except Exception as e:
-            logger.error(f"Failed to collect system metrics: {str(e)}")
-            return MetricsService._get_fallback_metrics(error=str(e))
-    
-    @staticmethod
-    async def _collect_system_metrics() -> Dict[str, Any]:
-        """
-        Internal method to collect system metrics using psutil.
-        Made async to avoid blocking the event loop.
-        """
-        import psutil
-        
-        # Run CPU intensive operations in thread pool
-        loop = asyncio.get_event_loop()
-        
-        # Get CPU usage (this blocks for 1 second, so run in thread)
-        cpu_percent = await loop.run_in_executor(
-            None, lambda: psutil.cpu_percent(interval=0.1)
-        )
-        
-        # Get other metrics (these are fast)
-        memory = psutil.virtual_memory()
-        disk = psutil.disk_usage('/')
-        net_io = psutil.net_io_counters()
-        process_count = len(psutil.pids())
-        
-        # Get CPU temperature if available
-        cpu_temp = None
-        try:
-            if hasattr(psutil, 'sensors_temperatures'):
-                temps = psutil.sensors_temperatures()
-                if 'coretemp' in temps and temps['coretemp']:
-                    cpu_temp = temps['coretemp'][0].current
-        except Exception:
-            pass  # Temperature not available on this system
-        
-        # Get disk I/O counters
-        disk_io = psutil.disk_io_counters()
-        
-        # Get network interfaces info
-        interfaces = await MetricsService._get_network_interfaces()
-        
-        return {
-            'timestamp': datetime.now().isoformat(),
-            'cpu': {
-                'percent': round(cpu_percent, 2),
-                'temperature': cpu_temp,
-                'cores': psutil.cpu_count(logical=True),
-                'physical_cores': psutil.cpu_count(logical=False)
-            },
-            'memory': {
-                'percent': round(memory.percent, 2),
-                'total': memory.total,
-                'available': memory.available,
-                'used': memory.used,
-                'free': memory.free
-            },
-            'disk': {
-                'percent': round(disk.percent, 2),
-                'total': disk.total,
-                'used': disk.used,
-                'free': disk.free,
-                'io': {
-                    'read_bytes': disk_io.read_bytes if disk_io else 0,
-                    'write_bytes': disk_io.write_bytes if disk_io else 0,
-                    'read_count': disk_io.read_count if disk_io else 0,
-                    'write_count': disk_io.write_count if disk_io else 0
-                } if disk_io else {}
-            },
-            'network': {
-                'bytes_sent': net_io.bytes_sent,
-                'bytes_recv': net_io.bytes_recv,
-                'packets_sent': net_io.packets_sent,
-                'packets_recv': net_io.packets_recv,
-                'interfaces': interfaces
-            },
-            'process_count': process_count,
-            'system_uptime': psutil.boot_time(),
-            'load_average': list(psutil.getloadavg()) if hasattr(psutil, 'getloadavg') else []
-        }
-    
-    @staticmethod
-    async def _get_network_interfaces() -> Dict[str, Any]:
-        """Get network interface information safely."""
-        try:
-            import psutil
-            
-            net_if_addrs = psutil.net_if_addrs()
-            net_if_stats = psutil.net_if_stats()
-            
-            interfaces = {}
-            for interface, addrs in net_if_addrs.items():
-                if interface not in net_if_stats or not net_if_stats[interface].isup:
-                    continue
-                    
-                interfaces[interface] = {
-                    'addresses': [str(addr.address) for addr in addrs if addr.address and addr.address != '::1' and addr.address != '127.0.0.1'],
-                    'is_up': bool(net_if_stats[interface].isup),
-                    'mtu': int(net_if_stats[interface].mtu) if net_if_stats[interface].mtu else 0,
-                    'speed': int(net_if_stats[interface].speed) if net_if_stats[interface].speed else 0
-                }
-            
-                return interfaces
-            
-        except Exception as e:
-            logger.warning(f"Could not get network interfaces: {str(e)}")
-            return {}
-    
-    @staticmethod
-    def _get_fallback_metrics(error: str = None) -> Dict[str, Any]:
-        """Return minimal fallback metrics when collection fails."""
-        return {
-            'timestamp': datetime.now().isoformat(),
-            'cpu': {'percent': 0, 'cores': 0, 'physical_cores': 0, 'temperature': None},
-            'memory': {'percent': 0, 'total': 0, 'available': 0, 'used': 0, 'free': 0},
-            'disk': {'percent': 0, 'total': 0, 'used': 0, 'free': 0, 'io': {}},
-            'network': {'bytes_sent': 0, 'bytes_recv': 0, 'packets_sent': 0, 'packets_recv': 0, 'interfaces': {}},
-            'process_count': 0,
-            'system_uptime': 0,
-            'load_average': [],
-            'error': error or 'System metrics unavailable',
-            'status': 'error'
-        }
-    
-    @staticmethod
-    async def store_current_metrics(
+            self.logger.error(f"📏💥 Latest metrics retrieval failed: {str(e)}")
+            raise Exception(f"Database query failed: {str(e)}")
+
+    async def get_metrics_by_date_range(
+        self,
         db: AsyncSession,
         user_id: str,
-        metric_type: str = "system_snapshot"
-    ) -> SystemMetrics:
+        start_date: datetime,
+        end_date: datetime,
+        limit: int = 1000
+    ) -> List[SystemMetrics]:
         """
-        Collect current system metrics and store them in the database.
-        Useful for historical tracking and WebSocket updates.
+        🧐 Sir Hawkington's Historical Analysis Query
+        
+        Retrieve metrics within a specific date range for historical analysis.
+        
+        Args:
+            db: Database session
+            user_id: User identifier
+            start_date: Start of date range (inclusive)
+            end_date: End of date range (inclusive)
+            limit: Maximum number of records to return
+            
+        Returns:
+            List of SystemMetrics within the date range
         """
         try:
-            # Get live metrics
-            # Get metrics from the metrics service
-            from app.services.metrics.metrics_service import MetricsService
-            metrics_service = await MetricsService.get_instance()
-            metrics_data = await metrics_service.get_metrics(force_refresh=True)
+            query = select(SystemMetrics).filter(
+                and_(
+                    SystemMetrics.user_id == str(user_id),
+                    SystemMetrics.timestamp >= start_date,
+                    SystemMetrics.timestamp <= end_date
+                )
+            ).order_by(
+                SystemMetrics.timestamp.desc()
+            ).limit(limit)
             
-            # Create metric record
-            metric_create = MetricCreate(
-                user_id=user_id,
-                metric_type=metric_type,
-                name="system_metrics",
-                value=metrics_data.get('cpu', {}).get('percent', 0),
-                unit="percent",
-                metadata=metrics_data,
-                timestamp=datetime.utcnow()
+            result = await db.execute(query)
+            metrics = result.scalars().all()
+            
+            self.logger.debug(
+                f"🧐📊 Retrieved {len(metrics)} metrics for user {user_id} "
+                f"between {start_date.isoformat()} and {end_date.isoformat()}"
             )
-            
-            # Store in database
-            stored_metric = await MetricsRepository.create_metric(db, metric_create)
-            
-            logger.info(f"Stored system metrics snapshot: {stored_metric.id}")
-            return stored_metric
+            return list(metrics)
             
         except Exception as e:
-            logger.error(f"Failed to store current metrics: {str(e)}")
-            raise
+            self.logger.error(f"🧐💥 Date range query failed: {str(e)}")
+            raise Exception(f"Database query failed: {str(e)}")
+
+    async def get_metrics_with_high_cpu_usage(
+        self,
+        db: AsyncSession,
+        user_id: str,
+        cpu_threshold: float = 80.0,
+        limit: int = 100
+    ) -> List[SystemMetrics]:
+        """
+        🔥 Emergency High CPU Usage Query
+        
+        Find metrics where CPU usage exceeded a threshold.
+        
+        Args:
+            db: Database session
+            user_id: User identifier
+            cpu_threshold: CPU usage percentage threshold
+            limit: Maximum records to return
+            
+        Returns:
+            List of SystemMetrics with high CPU usage
+        """
+        try:
+            query = select(SystemMetrics).filter(
+                and_(
+                    SystemMetrics.user_id == str(user_id),
+                    SystemMetrics.cpu_usage >= cpu_threshold
+                )
+            ).order_by(
+                SystemMetrics.timestamp.desc()
+            ).limit(limit)
+            
+            result = await db.execute(query)
+            metrics = result.scalars().all()
+            
+            self.logger.debug(
+                f"🔥 Found {len(metrics)} metrics with CPU >= {cpu_threshold}% for user {user_id}"
+            )
+            return list(metrics)
+            
+        except Exception as e:
+            self.logger.error(f"🔥💥 High CPU query failed: {str(e)}")
+            raise Exception(f"Database query failed: {str(e)}")
+
+    # === STATISTICS AND AGGREGATION ===
     
-    @staticmethod
-    def clear_metrics_cache():
-        """Clear the metrics cache to force fresh data on next request."""
-        # This method is no longer needed as we don't cache metrics in the DB service
-        pass
-        logger.debug("Metrics cache cleared")
+    async def get_metrics_count_for_user(
+        self,
+        db: AsyncSession,
+        user_id: str
+    ) -> int:
+        """
+        📊 Total Metrics Count Query
+        
+        Get the total number of metrics stored for a user.
+        
+        Args:
+            db: Database session
+            user_id: User identifier
+            
+        Returns:
+            Total count of metrics for the user
+        """
+        try:
+            query = select(func.count(SystemMetrics.id)).filter(
+                SystemMetrics.user_id == str(user_id)
+            )
+            
+            result = await db.execute(query)
+            count = result.scalar() or 0
+            
+            self.logger.debug(f"📊 User {user_id} has {count} total metrics in database")
+            return count
+            
+        except Exception as e:
+            self.logger.error(f"📊💥 Metrics count query failed: {str(e)}")
+            raise Exception(f"Database query failed: {str(e)}")
+
+    async def get_average_cpu_usage(
+        self,
+        db: AsyncSession,
+        user_id: str,
+        days: int = 7
+    ) -> float:
+        """
+        📈 Average CPU Usage Calculation
+        
+        Calculate average CPU usage over the last N days.
+        
+        Args:
+            db: Database session
+            user_id: User identifier
+            days: Number of days to average over
+            
+        Returns:
+            Average CPU usage percentage
+        """
+        try:
+            cutoff_date = datetime.utcnow() - timedelta(days=days)
+            
+            query = select(func.avg(SystemMetrics.cpu_usage)).filter(
+                and_(
+                    SystemMetrics.user_id == str(user_id),
+                    SystemMetrics.timestamp >= cutoff_date
+                )
+            )
+            
+            result = await db.execute(query)
+            average = result.scalar()
+            
+            if average is not None:
+                average = round(float(average), 2)
+                self.logger.debug(f"📈 Average CPU usage for user {user_id} over {days} days: {average}%")
+            else:
+                average = 0.0
+                self.logger.debug(f"📈 No CPU data available for user {user_id} over {days} days")
+            
+            return average
+            
+        except Exception as e:
+            self.logger.error(f"📈💥 Average CPU calculation failed: {str(e)}")
+            raise Exception(f"Database calculation failed: {str(e)}")
+
+    # === MAINTENANCE OPERATIONS ===
+    
+    async def cleanup_old_metrics(
+        self,
+        db: AsyncSession,
+        days_to_keep: int = 30
+    ) -> int:
+        """
+        🧹 Database Maintenance - Old Metrics Cleanup
+        
+        Remove metrics older than specified number of days.
+        
+        Args:
+            db: Database session
+            days_to_keep: Number of days of metrics to retain
+            
+        Returns:
+            Number of metrics deleted
+        """
+        try:
+            cutoff_date = datetime.utcnow() - timedelta(days=days_to_keep)
+            
+            query = delete(SystemMetrics).where(
+                SystemMetrics.timestamp < cutoff_date
+            )
+            
+            result = await db.execute(query)
+            await db.commit()
+            
+            deleted_count = result.rowcount
+            self.logger.info(f"🧹✅ Cleaned up {deleted_count} metrics older than {days_to_keep} days")
+            
+            return deleted_count
+            
+        except Exception as e:
+            await db.rollback()
+            self.logger.error(f"🧹💥 Cleanup operation failed: {str(e)}")
+            raise Exception(f"Database cleanup failed: {str(e)}")
+
+    async def get_database_size_info(
+        self,
+        db: AsyncSession
+    ) -> Dict[str, Any]:
+        """
+        📊 Database Size Information
+        
+        Get information about the metrics table size and storage.
+        
+        Args:
+            db: Database session
+            
+        Returns:
+            Dictionary with database size information
+        """
+        try:
+            # Get total record count
+            total_count_query = select(func.count(SystemMetrics.id))
+            total_result = await db.execute(total_count_query)
+            total_metrics = total_result.scalar() or 0
+            
+            # Get oldest and newest records
+            oldest_query = select(func.min(SystemMetrics.timestamp))
+            oldest_result = await db.execute(oldest_query)
+            oldest_timestamp = oldest_result.scalar()
+            
+            newest_query = select(func.max(SystemMetrics.timestamp))
+            newest_result = await db.execute(newest_query)
+            newest_timestamp = newest_result.scalar()
+            
+            # Calculate date range
+            date_range_days = 0
+            if oldest_timestamp and newest_timestamp:
+                date_range_days = (newest_timestamp - oldest_timestamp).days
+            
+            return {
+                'total_metrics': total_metrics,
+                'oldest_metric': oldest_timestamp.isoformat() if oldest_timestamp else None,
+                'newest_metric': newest_timestamp.isoformat() if newest_timestamp else None,
+                'date_range_days': date_range_days,
+                'estimated_daily_average': round(total_metrics / max(date_range_days, 1), 2) if date_range_days > 0 else 0,
+                'last_analyzed': datetime.utcnow().isoformat()
+            }
+            
+        except Exception as e:
+            self.logger.error(f"📊💥 Database size analysis failed: {str(e)}")
+            raise Exception(f"Database analysis failed: {str(e)}")
+
+    # === HEALTH CHECK ===
+    
+    async def health_check(
+        self,
+        db: AsyncSession
+    ) -> Dict[str, Any]:
+        """
+        🏥 Repository Health Check
+        
+        Perform comprehensive health check of the repository and database.
+        
+        Args:
+            db: Database session
+            
+        Returns:
+            Health check status dictionary
+        """
+        try:
+            start_time = datetime.utcnow()
+            
+            # Test basic connectivity with a simple query
+            test_query = select(SystemMetrics).limit(1)
+            await db.execute(test_query)
+            
+            query_response_time = (datetime.utcnow() - start_time).total_seconds()
+            
+            # Get database statistics
+            size_info = await self.get_database_size_info(db)
+            
+            return {
+                'status': 'OPERATIONAL',
+                'repository_type': 'metrics_persistence',
+                'database_connected': True,
+                'query_response_time_seconds': round(query_response_time, 4),
+                'total_metrics_stored': size_info['total_metrics'],
+                'date_range_days': size_info['date_range_days'],
+                'available_operations': [
+                    'create_metric', 'get_user_metrics', 'get_metric_by_id',
+                    'delete_metric', 'get_latest_metrics_for_user', 
+                    'get_metrics_by_date_range', 'get_metrics_with_high_cpu_usage',
+                    'get_metrics_count_for_user', 'get_average_cpu_usage',
+                    'cleanup_old_metrics', 'get_database_size_info'
+                ],
+                'architectural_principles': [
+                    'single_responsibility_principle',
+                    'no_metrics_collection',
+                    'no_fake_data_generation',
+                    'database_operations_only'
+                ],
+                'aristocratic_authority': 'DATABASE_PERSISTENCE_MAINTAINED',
+                'last_health_check': datetime.utcnow().isoformat()
+            }
+            
+        except Exception as e:
+            return {
+                'status': 'FAILED',
+                'repository_type': 'metrics_persistence',
+                'database_connected': False,
+                'error': str(e),
+                'last_health_check': datetime.utcnow().isoformat()
+            }
+
+# === SINGLETON PATTERN ===
+
+_metrics_repository: Optional[MetricsRepository] = None
+
+async def get_metrics_repository() -> MetricsRepository:
+    """
+    Get the singleton metrics repository instance.
+    
+    Returns:
+        MetricsRepository instance
+    """
+    global _metrics_repository
+    
+    if _metrics_repository is None:
+        _metrics_repository = MetricsRepository()
+    
+    return _metrics_repository
+
+# === CONVENIENCE FUNCTIONS ===
+
+async def store_metrics_snapshot(
+    db: AsyncSession,
+    user_id: str,
+    enhanced_metrics: Dict[str, Any]
+) -> SystemMetrics:
+    """
+    Convenience function to store a metrics snapshot from triage engine.
+    
+    Args:
+        db: Database session
+        user_id: User identifier
+        enhanced_metrics: Enhanced metrics from Sir Hawkington's triage engine
+        
+    Returns:
+        Created SystemMetrics record
+    """
+    repository = await get_metrics_repository()
+    
+    return await repository.create_metric(
+        db=db,
+        user_id=user_id,
+        cpu_usage=enhanced_metrics.get('cpu_usage', 0.0),
+         memory_usage=enhanced_metrics.get('memory_usage', 0.0),
+        disk_usage=enhanced_metrics.get('disk_usage', 0.0),
+        network_data=enhanced_metrics.get('network', {}),
+        process_count=enhanced_metrics.get('process_count', 0),
+        additional_metrics=enhanced_metrics  # Store the complete enhanced metrics
+    )
+
+async def get_recent_user_metrics(
+    db: AsyncSession,
+    user_id: str,
+    limit: int = 10
+) -> List[SystemMetrics]:
+    """
+    Convenience function to get recent metrics for a user.
+    
+    Args:
+        db: Database session
+        user_id: User identifier
+        limit: Number of recent metrics to retrieve
+        
+    Returns:
+        List of recent SystemMetrics records
+    """
+    repository = await get_metrics_repository()
+    return await repository.get_latest_metrics_for_user(db, user_id, limit)
+
+async def repository_health_check(db: AsyncSession) -> Dict[str, Any]:
+    """
+    Convenience function for repository health check.
+    
+    Args:
+        db: Database session
+        
+    Returns:
+        Health check results
+    """
+    repository = await get_metrics_repository()
+    return await repository.health_check(db)
+
+# === TESTING FUNCTIONS ===
+
+async def test_metrics_repository():
+    """
+    Test function for the metrics repository (requires database connection).
+    This would typically be run with a test database session.
+    """
+    print("\n" + "="*80)
+    print(" 🧐📊 METRICS REPOSITORY TEST - ARISTOCRATIC DATABASE OPERATIONS")
+    print("="*80)
+    
+    print("\n🧐 Metrics Repository initialized and ready")
+    print("📊 Available operations:")
+    operations = [
+        "create_metric", "get_user_metrics", "get_metric_by_id",
+        "delete_metric", "get_latest_metrics_for_user", 
+        "get_metrics_by_date_range", "get_metrics_with_high_cpu_usage",
+        "get_metrics_count_for_user", "get_average_cpu_usage",
+        "cleanup_old_metrics", "get_database_size_info", "health_check"
+    ]
+    
+    for i, operation in enumerate(operations, 1):
+        print(f"   {i:2d}. {operation}")
+    
+    print("\n🏗️ Architectural Principles:")
+    principles = [
+        "✅ Single Responsibility: Database operations ONLY",
+        "✅ No metrics collection (that's SimplifiedMetricsService)",
+        "✅ No triage logic (that's Sir Hawkington's domain)", 
+        "✅ No fake data generation (EVER!)",
+        "✅ Clean separation of concerns",
+        "✅ Proper error handling with honest failures"
+    ]
+    
+    for principle in principles:
+        print(f"   {principle}")
+    
+    print("\n🧐 Repository ready for aristocratic database operations!")
+    print("   To test with actual database, provide AsyncSession to methods")
+    
+    print("\n" + "="*80)
+    print(" 🧐✨ METRICS REPOSITORY READY - PURE DATABASE PERSISTENCE")
+    print("="*80)
+
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(test_metrics_repository())

@@ -237,11 +237,11 @@ async def system_metrics_socket(websocket: WebSocket):
                         # Create metric record for database
                         metric_create = MetricCreate(
                             user_id=str(user.id),
-                            cpu_usage=metrics.get('cpu_usage', 0),
-                            memory_usage=metrics.get('memory_usage', 0),
-                            disk_usage=metrics.get('disk_usage', 0),
-                            network=metrics.get('network', {}),
-                            process_count=metrics.get('process_count', 0),
+                            cpu_usage=metrics.get('cpu_usage'),
+                            memory_usage=metrics.get('memory_usage'),
+                            disk_usage=metrics.get('disk_usage'),
+                            network=metrics.get('network'),
+                            process_count=metrics.get('process_count'),
                             additional_metrics=metrics,  # Store full metrics as JSON (now includes AI analysis!)
                             timestamp=datetime.now(timezone.utc)
                         )

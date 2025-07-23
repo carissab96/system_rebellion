@@ -14,14 +14,13 @@ class VIC20DatabaseIntegration:
     Like The Stick's eidetic memory, but for system-wide coordination
     """
     
-    def __init__(self, database_url: str):
-        self.database_url = database_url
+    def __init__(self):
         self.engine = None
         self.session_factory = None
 
     async def initialize(self):
         """Initialize database connection with coordination precision"""
-        self.engine = create_async_engine(self.database_url)
+        self.engine = create_async_engine()
         self.session_factory = sessionmaker(
             bind=self.engine,
             class_=AsyncSession,

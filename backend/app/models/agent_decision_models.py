@@ -36,6 +36,8 @@ class HawkingtonDecisionLog(Base):
     user_acknowledged = Column(Boolean, default=False)
     issue_resolved = Column(Boolean, default=False)
 
+    triage_decisions = relationship("TriageDecisionLog", back_populates="hawkington_decision")
+
 class MethSnailDecisionLog(Base):
     """Store Meth Snail's caffeinated optimization decisions"""
     __tablename__ = 'meth_snail_decision_log'
@@ -64,6 +66,8 @@ class MethSnailDecisionLog(Base):
     optimization_applied = Column(Boolean, default=False)
     actual_improvement = Column(Float, nullable=True)
     success_verified = Column(Boolean, default=False)
+
+    triage_decisions = relationship("TriageDecisionLog", back_populates="meth_snail_decision")
 
 class HamstersDecisionLog(Base):
     """Store The Hamsters' beer-powered engineering decisions"""

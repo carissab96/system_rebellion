@@ -21,7 +21,7 @@ class SirHawkingtonWebSocketHandler:
     Handles aristocratic communication with proper monocle etiquette
     """
     
-    def __init__(self, database_url: str):
+    def __init__(self):
         self.logger = logging.getLogger("SirHawkington.WebSocket")
         self.processing_count = 0
         self.error_count = 0

@@ -639,7 +639,8 @@ async def complete_onboarding(
 ):
     # Update the user's onboarding status and configuration data
     current_user.needs_onboarding = False
-    
+    current_user.is_onboarded = True
+
     # Store system configuration data
     current_user.system_name = config_data.system_name
     current_user.operating_system = config_data.operating_system

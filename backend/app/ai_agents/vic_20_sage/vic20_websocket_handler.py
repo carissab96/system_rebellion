@@ -20,11 +20,10 @@ class VIC20SageWebSocketHandler:
     Learning-enabled coordination with pattern recognition
     """
     
-    def __init__(self, database_url: str, websocket_port: int = 8086):
-        self.database_url = database_url
+    def __init__(self, websocket_port: int = 8086):
         self.websocket_port = websocket_port
-        self.brain = VIC20SageBrainV2(database_url)
-        self.db_integration = VIC20DatabaseIntegration(database_url)
+        self.brain = VIC20SageBrainV2()
+        self.db_integration = VIC20DatabaseIntegration()
         
         # Connected clients
         self.connected_clients = set()

@@ -35,6 +35,18 @@ class StickDecision:
     expected_improvement: float
     confidence_level: float
     timestamp: datetime
+    @property
+    def is_active(self) -> bool:
+        """The Stick is always active and ready to enforce compliance"""
+        return True
+    
+    def activate(self):
+        """The Stick cannot be deactivated -  he's always vigilant"""
+        pass
+    
+    def deactivate(self):
+        """The Stick refuses to be deactivated - anxiety induced compliance never sleeps"""
+        pass
 
 class TheStickBrainV2:
     """
@@ -42,9 +54,13 @@ class TheStickBrainV2:
     Analyzes user behavior patterns and ensures optimal system configurations
     """
     
-    def __init__(self, database_url: str):
-        self.database_url = database_url
-        self._db = None
+    def __init__(self, db_getter=None):
+        if db_getter is None:
+            from app.core.database import get_async_db
+            self.db_getter = get_async_db
+        else:
+            self.db_getter = db_getter
+        self.db = None  
         self.compliance_state = ComplianceState.LEARNING
         self.user_patterns = {}
         self.configuration_profiles = {}
@@ -96,10 +112,8 @@ class TheStickBrainV2:
 
     async def initialize_database(self):
         """Initialize database connection"""
-        if self._db is None:
-            from .database_integration import StickDatabaseIntegration
-            self._db = StickDatabaseIntegration(self.database_url)
-            await self._db.initialize()
+        if self.db is None:
+            self.db = await self.db_getter()
     
     async def analyze_user_behavior(
         self, 

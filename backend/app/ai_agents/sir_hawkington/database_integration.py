@@ -1,4 +1,4 @@
-# /agents/sir_hawkington/database_integration.py
+# app/ai_agents/sir_hawkington/database_integration.py
 import asyncio
 from typing import Dict, Any, Optional, List
 from datetime import datetime, timedelta
@@ -12,14 +12,13 @@ from .data_types import HawkingtonDecision
 class HawkingtonDatabaseIntegration:
     """Database integration for Sir Hawkington's aristocratic monitoring"""
     
-    def __init__(self, database_url: str):
-        self.database_url = database_url
+    def __init__(self):
         self.engine = None
         self.session_factory = None
     
     async def initialize(self):
         """Initialize database connection with aristocratic dignity"""
-        self.engine = create_async_engine(self.database_url)
+        self.engine = create_async_engine()
         self.session_factory = sessionmaker(
             bind=self.engine,
             class_=AsyncSession,
@@ -130,6 +129,114 @@ class HawkingtonDatabaseIntegration:
                 await session.rollback()
                 raise Exception(f"Failed to store monitoring stats: {str(e)}")
     
+    async def store_triage_decision(
+        self, 
+        user_id: str, 
+        triage_data: Dict[str, Any]
+    ) -> int:
+        """Store Sir Hawkington's triage decision - SIMPLIFIED VERSION"""
+        
+        # For now, we'll store triage decisions as special HawkingtonDecisionLog entries
+        # This avoids creating new tables and keeps everything working
+        
+        async with self.session_factory() as session:
+            try:
+                triage_log = HawkingtonDecisionLog(
+                    user_id=user_id,
+                    decision_type="triage_decision",
+                    monocle_state=triage_data.get('monocle_state', 'polished'),
+                    monitoring_target="system_triage",
+                    alert_parameters={
+                        'triage_severity': triage_data.get('triage_severity'),
+                        'routing_decision': triage_data.get('routing_decision'),
+                        'target_agents': triage_data.get('target_agents', []),
+                        'processing_time': triage_data.get('processing_time'),
+                        'confidence': triage_data.get('confidence')
+                    },
+                    monocle_yeet_required=triage_data.get('monocle_yeeted', False),
+                    aristocratic_explanation=triage_data.get('reasoning', 'Triage decision'),
+                    technical_details={
+                        'routing_results': triage_data.get('routing_results'),
+                        'success': triage_data.get('success', True),
+                        'hawkington_decision_id': triage_data.get('hawkington_decision_id')
+                    },
+                    severity_level=triage_data.get('triage_severity', 'normal'),
+                    confidence_level=triage_data.get('confidence', 0.0),
+                    alert_sent=True,
+                    timestamp=triage_data.get('timestamp', datetime.now())
+                )
+                
+                session.add(triage_log)
+                await session.commit()
+                
+                return triage_log.id
+                
+            except Exception as e:
+                await session.rollback()
+                raise Exception(f"Failed to store triage decision: {str(e)}")
+    
+    async def get_triage_statistics(
+        self, 
+        user_id: str, 
+        days: int = 7
+    ) -> Dict[str, Any]:
+        """Get triage statistics for the user"""
+        
+        async with self.session_factory() as session:
+            try:
+                cutoff_date = datetime.now() - timedelta(days=days)
+                
+                # Get recent triage decisions (stored as special HawkingtonDecisionLog entries)
+                query = select(HawkingtonDecisionLog).where(
+                    HawkingtonDecisionLog.user_id == user_id,
+                    HawkingtonDecisionLog.monitoring_target == "system_triage",
+                    HawkingtonDecisionLog.timestamp >= cutoff_date
+                ).order_by(desc(HawkingtonDecisionLog.timestamp))
+                
+                result = await session.execute(query)
+                decisions = result.scalars().all()
+                
+                if not decisions:
+                    return {'status': 'no_data'}
+                
+                # Calculate statistics
+                total_decisions = len(decisions)
+                successful_decisions = len([d for d in decisions if d.technical_details.get('success', True)])
+                monocle_yeets = len([d for d in decisions if d.monocle_yeet_required])
+                
+                routing_counts = {}
+                severity_counts = {}
+                
+                for decision in decisions:
+                    # Count routing decisions
+                    routing = decision.alert_parameters.get('routing_decision', 'unknown')
+                    routing_counts[routing] = routing_counts.get(routing, 0) + 1
+                    
+                    # Count severity levels
+                    severity = decision.alert_parameters.get('triage_severity', 'unknown')
+                    severity_counts[severity] = severity_counts.get(severity, 0) + 1
+                
+                # Calculate averages
+                avg_confidence = sum(d.confidence_level for d in decisions) / total_decisions
+                avg_processing_time = sum(d.alert_parameters.get('processing_time', 0) for d in decisions) / total_decisions
+                
+                return {
+                    'total_decisions': total_decisions,
+                    'successful_decisions': successful_decisions,
+                    'success_rate': successful_decisions / total_decisions,
+                    'monocle_yeet_count': monocle_yeets,
+                    'monocle_yeet_rate': monocle_yeets / total_decisions,
+                    'routing_distribution': routing_counts,
+                    'severity_distribution': severity_counts,
+                    'average_confidence': avg_confidence,
+                    'average_processing_time': avg_processing_time,
+                    'period_days': days,
+                    'latest_decision': decisions[0].timestamp if decisions else None
+                }
+                
+            except Exception as e:
+                raise Exception(f"Failed to get triage statistics: {str(e)}")
+    
     async def get_hawkington_performance_metrics(self, user_id: str) -> Dict[str, Any]:
         """Get Sir Hawkington's performance metrics for monitoring"""
         
@@ -189,18 +296,27 @@ class HawkingtonDatabaseIntegration:
                 # Keep decision logs longer for audit trail (only clean very old ones)
                 very_old_cutoff = datetime.now() - timedelta(days=days_to_keep * 2)
                 
-                await session.execute(
+                # Delete very old decision logs
+                old_decisions = await session.execute(
                     select(HawkingtonDecisionLog).where(
                         HawkingtonDecisionLog.timestamp < very_old_cutoff
-                    ).delete()
+                    )
                 )
+                decisions_to_delete = old_decisions.scalars().all()
                 
-                # Clean up old monitoring stats
-                await session.execute(
+                for decision in decisions_to_delete:
+                    await session.delete(decision)
+                
+                # Delete old monitoring stats
+                old_stats = await session.execute(
                     select(HawkingtonMonitoringStats).where(
                         HawkingtonMonitoringStats.timestamp < cutoff_date
-                    ).delete()
+                    )
                 )
+                stats_to_delete = old_stats.scalars().all()
+                
+                for stat in stats_to_delete:
+                    await session.delete(stat)
                 
                 await session.commit()
                 

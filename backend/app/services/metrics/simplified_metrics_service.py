@@ -3,14 +3,15 @@ Simplified Metrics Service
 
 A direct, no-nonsense metrics service that combines all individual metrics services
 and provides a unified interface for the WebSocket route. No complex layers, no caching
-issues, just pure data.
+issues, just pure data routed through Sir Hawkington's Triage Engine.
+
+🧐 "One does not simply collect metrics - one triages them with aristocratic precision"
 """
 
 import asyncio
 import logging
 from datetime import datetime
 from typing import Dict, Any
-
 
 from app.core.resilience import get_circuit_breaker
 
@@ -19,11 +20,13 @@ from app.services.metrics.simplified_memory_service import SimplifiedMemoryServi
 from app.services.metrics.simplified_disk_service import SimplifiedDiskService
 from app.services.metrics.simplified_network_service import SimplifiedNetworkService
 
-
 class SimplifiedMetricsService:
     """
     Simplified metrics service that combines all individual metrics services.
-    No complex layers or transformations, just real data.
+    No complex layers or transformations, just real data routed through triage.
+    
+    🧐 ARISTOCRATIC ARCHITECTURE:
+    Raw Metrics → Sir Hawkington's Triage Engine → Enhanced Metrics → WebSocket
     """
     
     _instance = None
@@ -39,9 +42,9 @@ class SimplifiedMetricsService:
         if not self._initialized:
             self._initialized = True
             self.logger = logging.getLogger('SimplifiedMetricsService')
-            self.logger.info("SimplifiedMetricsService initialized as singleton")
-            self.agent_manager = None
+            self.logger.info("🧐 SimplifiedMetricsService initialized - Ready for aristocratic triage")
     
+        # Circuit breakers for individual metrics services
         self.cpu_circuit_breaker = get_circuit_breaker(
             name="simplified_cpu_metrics", 
             max_failures=3,
@@ -73,16 +76,7 @@ class SimplifiedMetricsService:
         self.memory_circuit_breaker.reset()
         self.disk_circuit_breaker.reset()
         self.network_circuit_breaker.reset()
-        self.logger.info("All circuit breakers reset")
-
-    async def get_agent_manager(self):
-        if self.agent_manager is None:
-            try:
-                from app.ai_agents.agent_manager import get_agent_manager
-                self.agent_manager = await get_agent_manager()
-                self.logger.info("Agent manager connect to metrics service")
-            except Exception as e:
-                self.logger.error(f"Failed to connect agent manager to metrics service: {str(e)}")
+        self.logger.info("🧐 All circuit breakers reset with aristocratic precision")
 
     @classmethod
     async def get_instance(cls):
@@ -106,13 +100,14 @@ class SimplifiedMetricsService:
             circuit_breaker: The circuit breaker for this service
             service_name: Name of the service for logging
         
-            Returns:
-            Dictionary with metrics data or empty dict on error
+        Returns:
+            Dictionary with metrics data or raises exception on error
         """
         # Check if circuit breaker allows the call
         if not circuit_breaker.can_attempt_connection():
-            self.logger.warning(f"{service_name} circuit breaker is open, skipping metrics collection")
-            return {'data': {}, 'error': f"{service_name} circuit breaker open"}
+            error_msg = f"{service_name} circuit breaker is open"
+            self.logger.warning(f"🧐⚠️ {error_msg}")
+            raise Exception(error_msg)
     
         try:
             metrics = await service.get_metrics()
@@ -122,8 +117,9 @@ class SimplifiedMetricsService:
         except Exception as e:
             # Record failure in circuit breaker
             circuit_breaker.record_failure()
-            self.logger.error(f"Error collecting {service_name} metrics: {str(e)}")
-            return {'data': {}, 'error': str(e)}
+            error_msg = f"Error collecting {service_name} metrics: {str(e)}"
+            self.logger.error(f"🧐💥 {error_msg}")
+            raise Exception(error_msg)
         
     async def get_cpu_metrics(self, force_refresh=False) -> Dict[str, Any]:
         """Get CPU metrics only"""
@@ -148,18 +144,28 @@ class SimplifiedMetricsService:
         network_service = await SimplifiedNetworkService.get_instance()
         result = await self._safe_get_metrics(network_service, self.network_circuit_breaker, "Network")
         return result.get('data', {})
-        
+    
     async def get_metrics(self, force_refresh=False) -> Dict[str, Any]:
         """
         Get comprehensive system metrics from all services.
+        🧐⚡ ROUTES THROUGH SIR HAWKINGTON'S TRIAGE ENGINE EXCLUSIVELY!
+        
+        THE ARISTOCRATIC DATA FLOW:
+        1. Collect real psutil metrics from all services
+        2. Route through Sir Hawkington's Triage Engine
+        3. Return enhanced metrics with triage decisions
+        4. NO FALLBACKS, NO FAKE DATA, NO LIES!
         
         Args:
             force_refresh: Ignored in this implementation (no caching)
         
         Returns:
-        Dictionary containing all system metrics
+            Dictionary containing all system metrics WITH TRIAGE ORCHESTRATION
         """
         try:
+            # PHASE 1: COLLECT REAL METRICS FROM ALL SERVICES
+            self.logger.info("🧐📊 Collecting real system metrics from all services")
+            
             # Create tasks for concurrent execution
             cpu_task = asyncio.create_task(self.get_cpu_metrics(force_refresh))
             memory_task = asyncio.create_task(self.get_memory_metrics(force_refresh))
@@ -171,25 +177,8 @@ class SimplifiedMetricsService:
                 cpu_task, memory_task, disk_task, network_task
             )
             
-            # No need to extract data, as our get_*_metrics methods already return the data directly
-            # Track if we have any errors
-            errors = {}
-            
-            # Check for errors in each metrics result
-            if isinstance(cpu_data, dict) and 'error' in cpu_data:
-                errors['cpu'] = cpu_data['error']
-            if isinstance(memory_data, dict) and 'error' in memory_data:
-                errors['memory'] = memory_data['error']
-            if isinstance(disk_data, dict) and 'error' in disk_data:
-                errors['disk'] = disk_data['error']
-            if isinstance(network_data, dict) and 'error' in network_data:
-                errors['network'] = network_data['error']
-                
-            # Determine if we have any errors
-            has_errors = len(errors) > 0
-            
-            # Combine all metrics into a single response
-            result = {
+            # PHASE 2: COMPILE RAW METRICS
+            raw_metrics = {
                 'timestamp': datetime.now().isoformat(),
                 'cpu_usage': cpu_data.get('usage_percent'),
                 'memory_usage': memory_data.get('percent'),
@@ -202,80 +191,145 @@ class SimplifiedMetricsService:
                 'network': network_data,
                 'process_count': len(cpu_data.get('top_processes', [])),
                 'system_info': {
-                    'hostname': network_data.get('hostname') if network_data.get('hostname') else None,
-                    'physical_cores': cpu_data.get('physical_cores') if cpu_data.get('physical_cores') else None,
-                    'logical_cores': cpu_data.get('logical_cores') if cpu_data.get('logical_cores') else None,
-                    'total_memory': memory_data.get('total') if memory_data.get('total') else None,
-                    'total_disk': disk_data.get('total') if disk_data.get('total') else None
+                    'hostname': network_data.get('hostname'),
+                    'physical_cores': cpu_data.get('physical_cores'),
+                    'logical_cores': cpu_data.get('logical_cores'),
+                    'total_memory': memory_data.get('total'),
+                    'total_disk': disk_data.get('total')
                 }
             }
             
-            # Add error information if any
-            if has_errors:
-                result['has_errors'] = True
-                result['errors'] = errors
-                
-            return result
+            self.logger.info(f"🧐✅ Raw metrics collected successfully: CPU {raw_metrics['cpu_usage']}%, Memory {raw_metrics['memory_usage']}%")
+            
+            # PHASE 3: ROUTE THROUGH SIR HAWKINGTON'S TRIAGE ENGINE
+            self.logger.info("🧐⚡ Routing metrics through Sir Hawkington's Triage Engine")
+            
+            from app.ai_agents.sir_hawkington.triage_engine import process_metrics_through_triage
+            
+            enhanced_metrics = await process_metrics_through_triage(
+                raw_metrics,
+                user_id=None,  # TODO: Get from context if available
+                user_context=None
+            )
+            
+            self.logger.info("🧐✨ Triage processing complete - enhanced metrics ready")
+            return enhanced_metrics
                 
         except Exception as e:
-            self.logger.error(f"Error collecting system metrics: {str(e)}")
-            # Return minimal data structure on error
+            self.logger.error(f"🧐💥 SYSTEM METRICS COLLECTION FAILURE: {str(e)}")
+            # NO FALLBACKS, NO FAKE DATA - FAIL WITH DIGNITY
+            raise Exception(f"METRICS COLLECTION SYSTEM FAILURE: {str(e)}")
+
+    async def health_check(self) -> Dict[str, Any]:
+        """
+        Comprehensive health check of the metrics service
+        """
+        try:
+            # Check all circuit breakers
+            circuit_breaker_status = {
+                'cpu': self.cpu_circuit_breaker.can_attempt_connection(),
+                'memory': self.memory_circuit_breaker.can_attempt_connection(),
+                'disk': self.disk_circuit_breaker.can_attempt_connection(),
+                'network': self.network_circuit_breaker.can_attempt_connection()
+            }
+            
+            # Try a quick metrics collection
+            start_time = datetime.now()
+            try:
+                test_metrics = await self.get_metrics()
+                collection_time = (datetime.now() - start_time).total_seconds()
+                metrics_collection_status = 'OPERATIONAL'
+                has_triage_data = 'triage_decision' in test_metrics
+            except Exception as e:
+                collection_time = (datetime.now() - start_time).total_seconds()
+                metrics_collection_status = f'FAILED: {str(e)}'
+                has_triage_data = False
+            
             return {
-                'timestamp': datetime.now().isoformat(),
-                'cpu_usage': 0,
-                'memory_usage': 0,
-                'disk_usage': 0,
-                'network_sent_rate': 0,
-                'network_recv_rate': 0,
-                'cpu': {},
-                'memory': {},
-                'disk': {},
-                'network': {},
-                'process_count': 0,
-                'system_info': {},
+                'service_status': 'OPERATIONAL',
+                'metrics_collection': metrics_collection_status,
+                'collection_time_seconds': collection_time,
+                'circuit_breakers': circuit_breaker_status,
+                'triage_integration': has_triage_data,
+                'aristocratic_authority': 'MAINTAINED',
+                'last_check': datetime.now().isoformat()
+            }
+            
+        except Exception as e:
+            return {
+                'service_status': 'FAILED',
                 'error': str(e),
-                'has_errors': True
-        }
-    
+                'last_check': datetime.now().isoformat()
+            }
+
 # Test function to run the service directly
 async def test_simplified_metrics_service():
-    """Test the simplified metrics service"""
-    print("\n" + "="*60)
-    print(" SIMPLIFIED METRICS SERVICE TEST")
-    print("="*60)
+    """Test the simplified metrics service with triage integration"""
+    print("\n" + "="*80)
+    print(" 🧐⚡ SIMPLIFIED METRICS SERVICE TEST - ARISTOCRATIC TRIAGE INTEGRATION")
+    print("="*80)
     
     # Get timestamp
-    print(f"\nTimestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"\n🕐 Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
     # Initialize service
     service = await SimplifiedMetricsService.get_instance()
-    print(f"Service instance: {service}")
+    print(f"📊 Service instance: {service}")
     
-    # Get metrics
-    metrics = await service.get_metrics()
-    print("\nSystem Metrics Overview:")
-    print(f"CPU Usage: {metrics['cpu_usage']}%")
-    print(f"Memory Usage: {metrics['memory_usage']}%")
-    print(f"Disk Usage: {metrics['disk_usage']}%")
-    print(f"Network Send Rate: {metrics['network_sent_rate'] / 1024:.2f} KB/s")
-    print(f"Network Receive Rate: {metrics['network_recv_rate'] / 1024:.2f} KB/s")
-    print(f"Process Count: {metrics['process_count']}")
-    
-    print("\nSystem Info:")
-    for key, value in metrics['system_info'].items():
-        if key in ['total_memory', 'total_disk']:
-            print(f"  {key}: {value / (1024 * 1024 * 1024):.2f} GB")
+    try:
+        # Get metrics through triage
+        print("\n🧐 Collecting metrics through Sir Hawkington's Triage Engine...")
+        metrics = await service.get_metrics()
+        
+        # Basic metrics overview
+        print("\n📈 System Metrics Overview:")
+        print(f"   CPU Usage: {metrics.get('cpu_usage', 'N/A')}%")
+        print(f"   Memory Usage: {metrics.get('memory_usage', 'N/A')}%")
+        print(f"   Disk Usage: {metrics.get('disk_usage', 'N/A')}%")
+        
+        if metrics.get('network_sent_rate') and metrics.get('network_recv_rate'):
+            print(f"   Network Send Rate: {metrics['network_sent_rate'] / 1024:.2f} KB/s")
+            print(f"   Network Receive Rate: {metrics['network_recv_rate'] / 1024:.2f} KB/s")
+        
+        print(f"   Process Count: {metrics.get('process_count', 'N/A')}")
+        
+        # Triage information
+        if 'triage_decision' in metrics:
+            triage = metrics['triage_decision']
+            print(f"\n🧐 TRIAGE DECISION:")
+            print(f"   Severity: {triage.get('severity', 'N/A')}")
+            print(f"   Routing: {triage.get('routing', 'N/A')}")
+            print(f"   Target Agents: {triage.get('target_agents', [])}")
+            print(f"   Monocle Yeeted: {triage.get('monocle_yeeted', 'N/A')}")
+            print(f"   Confidence: {triage.get('confidence', 'N/A')}")
         else:
-            print(f"  {key}: {value}")
+            print("\n⚠️ No triage data found in metrics")
+        
+        # System info
+        if 'system_info' in metrics:
+            print(f"\n💻 System Info:")
+            system_info = metrics['system_info']
+            for key, value in system_info.items():
+                if key in ['total_memory', 'total_disk'] and value:
+                    print(f"   {key}: {value / (1024 * 1024 * 1024):.2f} GB")
+                else:
+                    print(f"   {key}: {value}")
+        
+        # Health check
+        print(f"\n🏥 Health Check:")
+        health = await service.health_check()
+        print(f"   Service Status: {health.get('service_status', 'N/A')}")
+        print(f"   Collection Time: {health.get('collection_time_seconds', 'N/A'):.3f}s")
+        print(f"   Triage Integration: {health.get('triage_integration', 'N/A')}")
+        print(f"   Aristocratic Authority: {health.get('aristocratic_authority', 'N/A')}")
+        
+    except Exception as e:
+        print(f"\n💥 TEST FAILED: {str(e)}")
+        print("This indicates the triage engine or metrics collection has failed")
     
-    print("\nDetailed Metrics Available:")
-    print(f"CPU: {len(metrics['cpu'])} metrics")
-    print(f"Memory: {len(metrics['memory'])} metrics")
-    print(f"Disk: {len(metrics['disk'])} metrics")
-    print(f"Network: {len(metrics['network'])} metrics")
-    
-    print("\n" + "="*60)
-
+    print("\n" + "="*80)
+    print(" 🧐✨ SIMPLIFIED METRICS SERVICE TEST COMPLETE")
+    print("="*80)
 
 if __name__ == "__main__":
     asyncio.run(test_simplified_metrics_service())

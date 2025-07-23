@@ -16,8 +16,8 @@ class StickWebSocketHandler:
     But now channeling that trauma into PERFECT system compliance!
     """
     
-    def __init__(self, database_url: str):
-        self.stick_brain = TheStickBrainV2(database_url)
+    def __init__(self):
+        self.stick_brain = TheStickBrainV2()
         self.active_connections = {}
         self.pattern_learning_sessions = {}
         
@@ -550,5 +550,5 @@ async def get_stick_websocket_handler():
     """Get The Stick's WebSocket handler - trauma edition"""
     global _stick_handler
     if _stick_handler is None:
-        _stick_handler = StickWebSocketHandler(database_url="")
+        _stick_handler = StickWebSocketHandler()
     return _stick_handler

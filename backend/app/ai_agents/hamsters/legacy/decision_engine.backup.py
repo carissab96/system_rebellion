@@ -51,6 +51,19 @@ class HamstersOptimizationDecision:
     supply_closet_raids: int
     redneck_ingenuity_level: float
 
+@property
+def is_active(self) -> bool:
+    """The Hamsters are always active and ready for rapid responses and beer"""
+    return True
+    
+def activate(self):
+    """The Hamsters cannot be deactivated -  they're always vigilant"""
+    pass
+    
+def deactivate(self):
+    """The Hamsters refuse to be deactivated - 3am beer and duct tape never sleeps"""
+    pass
+
 class HamstersBrainV2:
     """
     The Hamsters' auto-tuning brain
@@ -59,9 +72,13 @@ class HamstersBrainV2:
     duct tape and fix whatever's broken with pure ingenuity.
     """
     
-    def __init__(self, database_url: str):
-        self.database_url = database_url
-        self.db = None
+    def __init__(self, db_getter=None):
+        if db_getter is None:
+            from app.core.database import get_async_db
+            self.db_getter = get_async_db
+        else:
+            self.db_getter = db_getter
+        self.db = None  
         self.logger = logging.getLogger("Hamsters.Brain")
         self.total_analyses = 0
         self.successful_analyses = 0
@@ -88,10 +105,9 @@ class HamstersBrainV2:
         
         self.logger.info("🐹🍺 The Hamsters Brain V2 initialized - BEER LEVEL: FULL, DUCT TAPE: READY")
     async def get_database(self):
-        if self._db is None:
-            from .hamsters_database_integration import get_database
-            self._db = await get_database()
-        return self._db
+        if self.db is None:
+            self.db = await self.db_getter()
+        return self.db
     
     async def analyze_metrics(
         self, 
@@ -573,9 +589,93 @@ class HamstersBrainV2:
                 creative_bonus += 0.03
         
         return min(1.0, base_ingenuity + creative_bonus)
+# Add to Hamsters' decision engine
 
+class BeerLevel(Enum):
+    """The Hamsters' fuel gauge"""
+    SOBER = "sober"  # Impossible
+    TIPSY = "tipsy"  # Minimum operational level
+    OPTIMAL = "optimal"  # 3-4 beers, peak performance
+    ADVENTUROUS = "adventurous"  # 5-6 beers, "hold my beer" territory
+    LEGENDARY = "legendary"  # 7+ beers, duct tape solutions incoming
+
+async def _beer_mediated_safety_check(self, proposed_action: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    The Hamsters' beer level actually creates natural safety gates
+    """
+    beer_level = self._calculate_beer_level()
+    safety_assessment = {
+        'action_proposed': proposed_action,
+        'beer_level': beer_level.value,
+        'safety_rating': 'TBD',
+        'proceed': False
+    }
+    
+    # Sober Hamsters are too confused to do anything dangerous
+    if beer_level == BeerLevel.SOBER:
+        safety_assessment['safety_rating'] = 'SAFE_BY_CONFUSION'
+        safety_assessment['message'] = "We need beer to think about this properly..."
+        safety_assessment['proceed'] = False
+        
+    # Optimal beer level - best judgment
+    elif beer_level == BeerLevel.OPTIMAL:
+        safety_assessment['safety_rating'] = 'OPTIMAL_JUDGMENT'
+        safety_assessment['proceed'] = True
+        safety_assessment['confidence'] = 0.85
+        safety_assessment['message'] = "This'll work! We've done the math on this napkin!"
+        
+    # "Hold my beer" level - need peer review
+    elif beer_level == BeerLevel.ADVENTUROUS:
+        # Check if other Hamsters agree
+        peer_review = await self._hamster_peer_review(proposed_action)
+        if peer_review['unanimous']:
+            safety_assessment['safety_rating'] = 'PEER_REVIEWED_CHAOS'
+            safety_assessment['proceed'] = True
+            safety_assessment['message'] = "All three of us agree! *clink bottles* Let's do this!"
+        else:
+            safety_assessment['safety_rating'] = 'SAVED_BY_DISAGREEMENT'
+            safety_assessment['proceed'] = False
+            safety_assessment['message'] = "Steve thinks we should use more duct tape first..."
+            
+    # Legendary level - automatic safety intervention
+    elif beer_level == BeerLevel.LEGENDARY:
+        safety_assessment['safety_rating'] = 'INTERVENTION_REQUIRED'
+        safety_assessment['proceed'] = False
+        safety_assessment['message'] = "*hiccup* Maybe we should... *passes out*"
+        safety_assessment['vic20_intervention'] = True
+        
+        # VIC-20 steps in
+        await self._request_vic20_intervention({
+            'situation': 'hamsters_legendary_drunk',
+            'proposed_action': proposed_action,
+            'safety_concern': 'HIGH'
+        })
+    
+    return safety_assessment
+
+async def _hamster_peer_review(self, action: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    The three Hamsters vote on risky decisions
+    """
+    # Simulate the three Hamsters discussing
+    steve_vote = self._steve_assessment(action)  # The careful one
+    bob_vote = self._bob_assessment(action)      # The wild one  
+    carl_vote = self._carl_assessment(action)    # The duct tape expert
+    
+    unanimous = steve_vote == bob_vote == carl_vote == 'proceed'
+    
+    return {
+        'unanimous': unanimous,
+        'votes': {
+            'steve': steve_vote,
+            'bob': bob_vote,
+            'carl': carl_vote
+        },
+        'duct_tape_required': carl_vote == 'needs_more_duct_tape',
+        'safety_modifications': steve_vote == 'proceed_with_caution'
+    }
 # Global brain instance
-hamsters_brain = HamstersBrainV2(database_url="")
+hamsters_brain = HamstersBrainV2()
 
 # Convenience functions for WebSocket integration
 async def analyze_for_websocket(
