@@ -2,6 +2,7 @@
 import { useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import  type { RootState, AppDispatch } from '../store/store';
+import apiConfig from '../frontend-config/api-config.json';
 import { 
   updateWebSocketMessage, 
   setConnectionStatus, 
@@ -50,18 +51,16 @@ export const useAgentTheater = () => {
       connectionAttempts.current += 1;
       console.log(`websocket connection attempt ${connectionAttempts.current}`);
 
-      //create websocket url with token in query params (as backend expects)
-      const wsUrl = `ws://localhost:8000/ws/system-metrics?token=${encodeURIComponent(token)}`;
-      console.log('connecting to:', wsUrl.replace(token, `${token.substring(0, 10)}...`));
+      // Create WebSocket URL (no token in URL - backend expects token via message)
+      const wsUrl = `${apiConfig.WS_BASE_URL}/api/ws/system-metrics`;
+      console.log('Connecting to WebSocket:', wsUrl);
       
-      const ws = new WebSocket(wsUrl.toString());
+      const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
       ws.onopen = () => {
-        console.log('WebSocket connect successfully');
-        connectionAttempts.current = 0; //reset on successful connection
-        dispatch(setConnectionStatus('connected'));
-        dispatch(setError(null));
+        console.log('WebSocket connection opened, waiting for authentication request...');
+        // Don't set connected status yet - wait for connection_established message
       };
 
       ws.onmessage = (event) => {
@@ -71,16 +70,52 @@ export const useAgentTheater = () => {
         console.log('event current target:', event.currentTarget);
         try {
           const message = JSON.parse(event.data);
+          console.log('🔌 WebSocket message received:', {
+            type: message.type,
+            hasData: !!message.data,
+            dataKeys: message.data ? Object.keys(message.data) : [],
+            timestamp: message.timestamp
+          });
+          
+          // Handle connection_established message first
+          if (message.type === 'connection_established') {
+            console.log('✅ Connection established! Sending auth token...');
+            ws.send(JSON.stringify({ token }));
+            return;
+          }
+          
+          // Handle system_info message (sent after successful authentication)
+          if (message.type === 'system_info') {
+            console.log('🔐 Authentication successful! Received system info:', message.data);
+            connectionAttempts.current = 0;
+            dispatch(setConnectionStatus('connected'));
+            dispatch(setError(null));
+            // Continue processing this message below
+          }
+          
+          // Handle heartbeat messages
+          if (message.type === 'heartbeat') {
+            console.log('💓 Heartbeat received');
+            return;
+          }
           
           if (message.type === 'error') {
-            console.error('Backend error:', message.message);
+            console.error('❌ Backend error:', message.message, message.code);
             dispatch(setError(`Backend error: ${message.message}`));
-            return; 
+            if (message.code === 'invalid_token' || message.code === 'no_token') {
+              dispatch(setConnectionStatus('disconnected'));
+            }
+            return;
           }
+          
           // Route to main theater slice
           dispatch(updateWebSocketMessage(message));
           
           // Route to individual agent slices based on real data
+          console.log('🔍 Checking for metrics_update message...');
+          console.log('Message type:', message.type);
+          console.log('Has message.data:', !!message.data);
+          
           if (message.type === 'metrics_update' && message.data) {
             const data = message.data;
             console.log('Processing metrics update:', Object.keys(data));
@@ -134,6 +169,10 @@ export const useAgentTheater = () => {
             ].filter(Boolean).length;
             
             dispatch(updateActiveAgentCount(activeCount));
+          } else {
+            // Log any message types we're not handling
+            console.log('🤔 Unhandled message type:', message.type);
+            console.log('Message content:', JSON.stringify(message, null, 2));
           }
         } catch (err) {
           console.error('Failed to parse WebSocket message:', err);

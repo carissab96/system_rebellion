@@ -4,7 +4,7 @@ import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 interface TheStickState {
   isOnline: boolean;
   data: any;
-  lastUpdate: Date | null;
+  lastUpdate: string | null;
   error: string | null;
   decisionType: string;
   complianceState: string;
@@ -49,7 +49,7 @@ export const theStickSlice = createSlice({
       if (data) {
         state.isOnline = true;
         state.data = data;
-        state.lastUpdate = new Date();
+        state.lastUpdate = new Date().toISOString();
         state.error = null;
         
         // Extract specific metrics - NO FAKE DATA

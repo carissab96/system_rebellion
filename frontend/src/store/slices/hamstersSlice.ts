@@ -4,7 +4,7 @@ import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 interface HamstersState {
   isOnline: boolean;
   data: any;
-  lastUpdate: Date | null;
+  lastUpdate: string | null;
   error: string | null;
   wheelState: string;
   wheelSpinCount: number;
@@ -41,7 +41,7 @@ export const hamstersSlice = createSlice({
       if (data) {
         state.isOnline = true;
         state.data = data;
-        state.lastUpdate = new Date();
+        state.lastUpdate = new Date().toISOString();
         state.error = null;
         
         // Extract specific metrics - NO FAKE DATA

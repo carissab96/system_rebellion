@@ -5,7 +5,7 @@ import type { PayloadAction } from '@reduxjs/toolkit';
 interface QuantumShadowState {
   isOnline: boolean;
   data: any;
-  lastUpdate: Date | null;
+  lastUpdate: string | null;
   error: string | null;
   quantumState: string;
   networkTarget: string;
@@ -42,7 +42,7 @@ export const quantumShadowSlice = createSlice({
       if (data) {
         state.isOnline = true;
         state.data = data;
-        state.lastUpdate = new Date();
+        state.lastUpdate = new Date().toISOString();
         state.error = null;
         
         // Extract specific metrics - NO FAKE DATA

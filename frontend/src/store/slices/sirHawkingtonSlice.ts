@@ -4,13 +4,13 @@ import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 interface SirHawkingtonState {
   isOnline: boolean;
   data: any;
-  lastUpdate: Date | null;
+  lastUpdate: string | null;
   error: string | null;
   monocleState: string;
-  monocleYeetCount: number;
-  confidence: number;
-  dataQualityScore: number;
-  stressScore: number;
+  monocleYeetCount: number | null;
+  confidence: number | null;
+  dataQualityScore: number | null;
+  stressScore: number | null;
   urgency: string;
   aristocraticSeal: boolean;
 }
@@ -20,11 +20,11 @@ const initialState: SirHawkingtonState = {
   data: null,
   lastUpdate: null,
   error: null,
-  monocleState: 'unknown',
-  monocleYeetCount: 0,
-  confidence: 0,
-  dataQualityScore: 0,
-  stressScore: 0,
+  monocleState: 'yeeted',
+  monocleYeetCount: null  ,
+  confidence: null,
+  dataQualityScore: null,
+  stressScore: null,
   urgency: 'unknown',
   aristocraticSeal: false,
 };
@@ -39,15 +39,15 @@ export const sirHawkingtonSlice = createSlice({
       if (data) {
         state.isOnline = true;
         state.data = data;
-        state.lastUpdate = new Date();
+        state.lastUpdate = new Date().toISOString();
         state.error = null;
         
         // Extract specific metrics - NO FAKE DATA
-        state.monocleState = data.monocle_state || 'unknown';
-        state.monocleYeetCount = data.monocle_yeet_count || 0;
-        state.confidence = data.confidence || 0;
-        state.dataQualityScore = data.data_quality_score || 0;
-        state.stressScore = data.stress_score || 0;
+        state.monocleState = data.monocle_state || 'yeeted';
+        state.monocleYeetCount = data.monocle_yeet_count || null;
+        state.confidence = data.confidence || null;
+        state.dataQualityScore = data.data_quality_score || null;
+        state.stressScore = data.stress_score || null;
         state.urgency = data.urgency || 'unknown';
         state.aristocraticSeal = data.aristocratic_seal || false;
       } else {

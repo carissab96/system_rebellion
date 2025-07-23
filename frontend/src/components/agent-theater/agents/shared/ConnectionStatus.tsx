@@ -5,7 +5,7 @@ import './ConnectionStatus.css';
 interface ConnectionStatusProps {
   status: 'connecting' | 'connected' | 'disconnected';
   error?: string | null;
-  lastUpdate?: Date | null;
+  lastUpdate?: string | null;
   className?: string;
   metricsData?: any;
 }
@@ -59,7 +59,8 @@ export const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
     if (!lastUpdate) return 'Never';
     
     const now = new Date();
-    const diff = now.getTime() - lastUpdate.getTime();
+    const updateTime = new Date(lastUpdate);
+    const diff = now.getTime() - updateTime.getTime();
     const seconds = Math.floor(diff / 1000);
     const minutes = Math.floor(seconds / 60);
     const hours = Math.floor(minutes / 60);
@@ -67,7 +68,7 @@ export const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
     if (seconds < 60) return `${seconds}s ago`;
     if (minutes < 60) return `${minutes}m ago`;
     if (hours < 24) return `${hours}h ago`;
-    return lastUpdate.toLocaleDateString();
+    return updateTime.toLocaleDateString();
   };
 
   return (

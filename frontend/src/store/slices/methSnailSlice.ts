@@ -4,7 +4,7 @@ import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 interface MethSnailState {
   isOnline: boolean;
   data: any;
-  lastUpdate: Date | null;
+  lastUpdate: string | null;
   error: string | null;
   shellState: string;
   shellSpinCount: number;
@@ -37,7 +37,7 @@ export const methSnailSlice = createSlice({
       if (data) {
         state.isOnline = true;
         state.data = data;
-        state.lastUpdate = new Date();
+        state.lastUpdate = new Date().toISOString();
         state.error = null;
         
         // Extract specific metrics - NO FAKE DATA

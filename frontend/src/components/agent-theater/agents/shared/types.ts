@@ -58,7 +58,7 @@ export interface Chart3DProps {
 export interface ConnectionStatusProps {
   status: ConnectionStatus;
   error?: string | null;
-  lastUpdate?: Date | null;
+  lastUpdate?: string | null;
   circuitBreakerStatus?: CircuitBreakerStatus;
   reconnectAttempts?: number;
   className?: string;

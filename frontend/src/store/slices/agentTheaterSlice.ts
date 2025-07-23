@@ -9,7 +9,7 @@ interface AgentTheaterState {
   theStick: any;
   vic20: any;
   connectionStatus: 'connecting' | 'connected' | 'disconnected';
-  lastUpdate: Date | null;
+  lastUpdate: string | null;
   error: string | null;
   activeAgentCount: number;
   totalAgents: number;
@@ -25,6 +25,12 @@ const initialState: AgentTheaterState = {
   totalAgents: 6,
   systemInfo: null,
   circuitBreakerStatus: 'closed',
+  sirHawkington: undefined,
+  methSnail: undefined,
+  hamsters: undefined,
+  quantumShadow: undefined,
+  theStick: undefined,
+  vic20: undefined
 };
 
 export const agentTheaterSlice = createSlice({
@@ -47,7 +53,7 @@ export const agentTheaterSlice = createSlice({
     },
     
     updateLastUpdate: (state) => {
-      state.lastUpdate = new Date();
+      state.lastUpdate = new Date().toISOString();
     },
     
     updateActiveAgentCount: (state, action: PayloadAction<number>) => {
@@ -60,6 +66,30 @@ export const agentTheaterSlice = createSlice({
     
     setCircuitBreakerStatus: (state, action: PayloadAction<'closed' | 'open' | 'half_open'>) => {
       state.circuitBreakerStatus = action.payload;
+    },
+    
+    setSirHawkington: (state, action: PayloadAction<any>) => {
+      state.sirHawkington = action.payload;
+    },
+    
+    setMethSnail: (state, action: PayloadAction<any>) => {
+      state.methSnail = action.payload;
+    },
+    
+    setHamsters: (state, action: PayloadAction<any>) => {
+      state.hamsters = action.payload;
+    },
+    
+    setQuantumShadow: (state, action: PayloadAction<any>) => {
+      state.quantumShadow = action.payload;
+    },
+    
+    setTheStick: (state, action: PayloadAction<any>) => {
+      state.theStick = action.payload;
+    },
+    
+    setVIC20: (state, action: PayloadAction<any>) => {
+      state.vic20 = action.payload;
     },
     
     // Handle WebSocket messages and route to appropriate agents
@@ -77,7 +107,7 @@ export const agentTheaterSlice = createSlice({
           break;
           
         case 'metrics_update':
-          state.lastUpdate = new Date();
+          state.lastUpdate = new Date().toISOString();
           // Individual agent slices will handle their own data
           break;
           
@@ -101,6 +131,12 @@ export const {
   updateActiveAgentCount,
   setSystemInfo,
   setCircuitBreakerStatus,
+  setSirHawkington,
+  setMethSnail,
+  setHamsters,
+  setQuantumShadow,
+  setTheStick,
+  setVIC20,
   updateWebSocketMessage 
 } = agentTheaterSlice.actions;
 
