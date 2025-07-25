@@ -37,6 +37,7 @@ class HawkingtonDecisionLog(Base):
     issue_resolved = Column(Boolean, default=False)
 
     triage_decisions = relationship("TriageDecisionLog", back_populates="hawkington_decision")
+    triage_statistics = relationship("TriageStatistics", back_populates="hawkington_decision")
 
 class MethSnailDecisionLog(Base):
     """Store Meth Snail's caffeinated optimization decisions"""
@@ -101,6 +102,25 @@ class HamstersDecisionLog(Base):
     actual_improvement = Column(Float, nullable=True)
     success_verified = Column(Boolean, default=False)
     beer_level_after = Column(String, nullable=True)
+
+class StickDecisionLog(Base):
+    __tablename__ = 'stick_decision_log'
+    
+    id = Column(Integer, primary_key=True)
+    user_id = Column(String(255), nullable=False, index=True)
+    decision_type = Column(String(100), nullable=False)
+    compliance_state = Column(String(100), nullable=False)
+    anxiety_level = Column(String(50), nullable=False)  # NEW: Track anxiety level
+    configuration_target = Column(String(255))
+    optimization_parameters = Column(JSON)
+    user_pattern_confidence = Column(Float)
+    compliance_explanation = Column(Text)
+    anxiety_explanation = Column(Text)  # NEW: Anxiety context
+    technical_details = Column(JSON)
+    expected_improvement = Column(Float)
+    confidence_level = Column(Float)
+    paper_bags_consumed = Column(Integer, default=0)  # NEW: Paper bag tracking
+    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
 
 class AgentPerformanceSummary(Base):
     """Store cross-agent performance summary for intelligence coordination"""

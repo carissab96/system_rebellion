@@ -8,8 +8,7 @@ from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, JSON, 
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime, timezone
-
-from app.models.base import Base
+Base = declarative_base()
 
 class TriageDecisionLog(Base):
     """

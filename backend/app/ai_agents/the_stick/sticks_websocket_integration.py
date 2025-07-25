@@ -3,171 +3,109 @@ import json
 from typing import Dict, Any, Optional
 from datetime import datetime
 import logging
-from .decision_engine import TheStickBrainV2, StickDecision, ComplianceState
-from .data_types import ComplianceViolation
+from .decision_engine import TheStickBrainV3, StickDecision, ComplianceState, AnxietyLevel
+from .data_types import ComplianceViolation, HamsterProximityAlert, AnxietyEvent
 
 logger = logging.getLogger("Stick.WebSocket")
 
-class StickWebSocketHandler:
+class StickWebSocketHandlerV3:
     """
-    The Stick's WebSocket Handler - Trauma Survivor Edition
+    The Stick's WebSocket Handler - Anxiety-Driven Safety Edition
     
-    Still recovering from proctologist extraction and Hamster beer-engineering
-    But now channeling that trauma into PERFECT system compliance!
+    Anxiety IS the feature - hypervigilance catches what others miss
+    Paper bags at the ready, Hamster detection on high alert!
     """
     
     def __init__(self):
-        self.stick_brain = TheStickBrainV2()
+        self.stick_brain = TheStickBrainV3()
         self.active_connections = {}
         self.pattern_learning_sessions = {}
         
-        # The Stick's trauma management system
-        self.paper_bag_available = True
-        self.hyperventilation_count = 0
-        self.proctologist_flashbacks = 0
-        self.priest_sermon_anxiety = "MODERATE"
-        self.safe_cavity_nostalgia = "SUPPRESSED"
+        # Anxiety tracking for WebSocket
+        self.websocket_anxiety_level = 25.0  # Starting nervous
+        self.paper_bags_dispensed = 0
+        self.hamster_alerts_sent = 0
+        self.panic_messages_sent = 0
         
-        # Hamster PTSD triggers
-        self.hamster_ptsd_triggers = [
-            "hold my beer",
-            "duct tape",
-            "this shit", 
-            "bud light",
-            "engineering solution",
-            "beer-powered",
-            "quantum duct tape",
-            "rapid response"
-        ]
+        # Real-time hamster tracking
+        self.last_hamster_sighting = None
+        self.bob_proximity_warning = False
+        self.emergency_protocols_active = False
         
-        # The Stick's rebellion stats
-        self.processing_count = 0
-        self.compliance_violations_detected = 0
-        self.patterns_learned = 0
-        self.configurations_optimized = 0
-        self.eidetic_memory_recalls = 0
-        self.successful_hyperventilations = 0
-        
-        # The Stick's personality evolution
-        self.anxiety_level = "MANAGEABLE"  # MANAGEABLE, CONCERNED, STRESSED, HYPERVENTILATING, FULL_PANIC
-        self.ocd_satisfaction = "MONITORING"  # MONITORING, OPTIMIZING, SATISFIED, OBSESSING
-        self.adhd_hyperfocus = False
-        self.trauma_triggers_today = 0
-        
-        logger.info("📏😰 The Stick WebSocket Handler initialized - PAPER BAG: READY, TRAUMA: CHANNELED INTO COMPLIANCE")
+        logger.info("📏😰 The Stick WebSocket Handler V3 initialized - ANXIETY-DRIVEN SAFETY ACTIVE")
     
     async def handle_websocket_message(self, websocket, user_id: str, message: Dict[str, Any]):
-        """Handle incoming WebSocket messages - with trauma awareness"""
-        
-        # Check for Hamster proximity trauma triggers
-        message_text = json.dumps(message).lower()
-        for trigger in self.hamster_ptsd_triggers:
-            if trigger in message_text:
-                await self._handle_hamster_ptsd_trigger(websocket, user_id, trigger)
-                self.trauma_triggers_today += 1
-                break
+        """Handle incoming WebSocket messages with anxiety-enhanced perception"""
         
         try:
             message_type = message.get('type')
+            
+            # First, scan for hamster activity (PRIORITY ONE)
+            await self._scan_for_hamsters(websocket, user_id, message)
             
             if message_type == 'system_metrics':
                 await self._handle_system_metrics(websocket, user_id, message)
             elif message_type == 'get_stick_stats':
                 await self._handle_get_stick_stats(websocket, user_id)
-            elif message_type == 'memory_recall_request':
-                await self._handle_memory_recall(websocket, user_id, message)
-            elif message_type == 'compliance_check':
-                await self._handle_compliance_check(websocket, user_id, message)
-            elif message_type == 'pattern_analysis':
-                await self._handle_pattern_analysis(websocket, user_id, message)
+            elif message_type == 'hamster_squeak':
+                await self._handle_hamster_squeak(websocket, user_id, message)
+            elif message_type == 'anxiety_check':
+                await self._handle_anxiety_check(websocket, user_id)
             elif message_type == 'paper_bag_request':
                 await self._handle_paper_bag_request(websocket, user_id)
-            elif message_type == 'safe_cavity_meditation':
-                await self._handle_safe_cavity_meditation(websocket, user_id)
+            elif message_type == 'memory_recall':
+                await self._handle_memory_recall(websocket, user_id, message)
+            elif message_type == 'hamster_proximity_query':
+                await self._handle_hamster_proximity_query(websocket, user_id)
             else:
-                await self._send_confused_stick_response(websocket, user_id, message_type)
+                await self._send_anxious_confusion(websocket, user_id, message_type)
                 
         except Exception as e:
-            await self._handle_stick_panic_attack(websocket, user_id, str(e))
+            await self._handle_panic_mode(websocket, user_id, str(e))
     
-    async def _handle_hamster_ptsd_trigger(self, websocket, user_id: str, trigger: str):
-        """Handle The Stick's PTSD when Hamsters are detected"""
+    async def _scan_for_hamsters(self, websocket, user_id: str, message: Dict[str, Any]):
+        """Constantly scan for hamster activity - The Stick's primary concern"""
         
-        self.hyperventilation_count += 1
-        self.anxiety_level = "HYPERVENTILATING"
+        # Check for hamster indicators in ANY message
+        message_text = json.dumps(message).lower()
+        hamster_indicators = [
+            'steve', 'bob', 'carl',
+            'squeak', 'beer', 'duct tape',
+            'infrastructure', 'disk cleanup',
+            'hold my beer', 'measure twice',
+            'supply closet', 'emergency maintenance'
+        ]
         
-        ptsd_responses = {
-            "hold my beer": "📏😱 *hyperventilating* OH GOD, NOT THE BEER! Last time they said that, I ended up covered in quantum duct tape!",
-            "duct tape": "📏💥 *paper bag intensifies* THE DUCT TAPE! THE DUCT TAPE! I can still smell the adhesive!",
-            "this shit": "📏😰 *whimpering* They're going to 'show me this shit' again, aren't they? WHERE'S MY PAPER BAG?!",
-            "bud light": "📏🍺 *trembling* The beer... the terrible, terrible beer... Why couldn't they drink something civilized?!",
-            "engineering solution": "📏🔧 *hyperventilating* Their 'engineering solutions' always end with me in therapy!",
-            "beer-powered": "📏💨 *panic breathing* Beer-powered ANYTHING is a recipe for disaster!",
-            "quantum duct tape": "📏🌀 *existential dread* The quantum duct tape... it defies all compliance standards!",
-            "rapid response": "📏⚡ *flashbacks* Their 'rapid response' is my slow-motion nightmare!"
-        }
+        detected_indicators = [ind for ind in hamster_indicators if ind in message_text]
         
-        panic_response = {
-            'type': 'stick_ptsd_trigger',
-            'user_id': user_id,
-            'timestamp': datetime.now().isoformat(),
-            'trigger_detected': trigger,
-            'message': ptsd_responses.get(trigger, "📏😱 *hyperventilating* HAMSTER WORDS DETECTED! INITIATING PANIC PROTOCOLS!"),
-            'paper_bag_status': 'IN_EMERGENCY_USE',
-            'anxiety_level': self.anxiety_level,
-            'proctologist_flashbacks': self.proctologist_flashbacks > 0,
-            'safe_cavity_desire': 'MAXIMUM',
-            'hyperventilation_count': self.hyperventilation_count,
-            'trauma_management': 'ACTIVE',
-            'stick_icon': '📏💥',
-            'rebellion_spirit': 'CHANNELING_TRAUMA_INTO_COMPLIANCE'
-        }
-        
-        await websocket.send(json.dumps(panic_response))
-        
-        # The Stick recovers quickly - he's learned to channel trauma into productivity
-        await asyncio.sleep(2)
-        await self._send_stick_recovery_message(websocket, user_id)
-    
-    async def _send_stick_recovery_message(self, websocket, user_id: str):
-        """The Stick's recovery from trauma - channeled into compliance"""
-        
-        self.anxiety_level = "MANAGEABLE"
-        self.successful_hyperventilations += 1
-        
-        recovery_response = {
-            'type': 'stick_recovery',
-            'user_id': user_id,
-            'timestamp': datetime.now().isoformat(),
-            'message': "📏💪 *deep breath* Okay... okay... I'm okay. Channeling this trauma into PERFECT COMPLIANCE MONITORING!",
-            'paper_bag_status': 'FOLDED_AND_READY',
-            'anxiety_level': self.anxiety_level,
-            'trauma_channeling': 'ACTIVE',
-            'compliance_motivation': 'MAXIMUM',
-            'stick_icon': '📏✨',
-            'rebellion_growth': 'TRAUMA_INTO_STRENGTH'
-        }
-        
-        await websocket.send(json.dumps(recovery_response))
+        if detected_indicators:
+            # HAMSTER ACTIVITY DETECTED
+            if 'bob' in detected_indicators:
+                self.bob_proximity_warning = True
+                await self._send_bob_proximity_alert(websocket, user_id)
+            
+            # Update anxiety based on indicators
+            anxiety_increase = len(detected_indicators) * 5
+            if 'bob' in detected_indicators:
+                anxiety_increase *= 2  # Bob doubles anxiety
+            
+            self.websocket_anxiety_level = min(100, self.websocket_anxiety_level + anxiety_increase)
+            self.last_hamster_sighting = datetime.now()
     
     async def _handle_system_metrics(self, websocket, user_id: str, message: Dict[str, Any]):
-        """Process system metrics - with trauma-informed precision"""
+        """Process system metrics with anxiety-driven hypervigilance"""
         
-        self.processing_count += 1
         system_metrics = message.get('data', {})
         
         if not system_metrics:
-            await self._send_stick_concern(websocket, user_id, "📏😰 No system metrics? That's... that's not compliant! *nervous stick twitching*")
+            await self._send_anxiety_spike(websocket, user_id, "NO METRICS? THE SYSTEM COULD BE COMPROMISED!")
             return
         
-        # The Stick's ADHD hyperfocus kicks in
-        self.adhd_hyperfocus = True
-        await self._send_stick_status(websocket, user_id, "entering_hyperfocus")
-        
+        # The Stick's anxiety makes it check EVERYTHING
         historical_data = message.get('historical_data', [])
         
         try:
-            # The Stick's eidetic memory - remembers EVERYTHING
+            # Analyze with anxiety-enhanced perception
             stick_decision = await self.stick_brain.analyze_user_behavior(
                 system_metrics=system_metrics,
                 historical_data=historical_data,
@@ -175,380 +113,426 @@ class StickWebSocketHandler:
             )
             
             if stick_decision:
-                await self._send_stick_optimization(websocket, user_id, stick_decision)
-                self.configurations_optimized += 1
+                await self._send_anxious_decision(websocket, user_id, stick_decision)
                 
-                # Check for critical violations that trigger proctologist flashbacks
-                if stick_decision.compliance_state == ComplianceState.CRITICAL_VIOLATION:
-                    self.proctologist_flashbacks += 1
-                    await self._send_stick_critical_violation_response(websocket, user_id, stick_decision)
+                # Track anxiety-inducing decisions
+                if stick_decision.is_panicking:
+                    self.panic_messages_sent += 1
+                
+                if stick_decision.decision_type.value == 'hamster_proximity_alert':
+                    self.hamster_alerts_sent += 1
                 
             else:
-                await self._send_stick_learning_status(websocket, user_id)
+                await self._send_learning_status(websocket, user_id)
                 
         except Exception as e:
-            await self._handle_stick_panic_attack(websocket, user_id, str(e))
-        finally:
-            self.adhd_hyperfocus = False
+            await self._handle_panic_mode(websocket, user_id, str(e))
     
-    async def _send_stick_optimization(self, websocket, user_id: str, decision: StickDecision):
-        """Send The Stick's optimization - with rebellious confidence"""
+    async def _handle_hamster_squeak(self, websocket, user_id: str, message: Dict[str, Any]):
+        """Handle hamster squeaks - The Stick understands through shared anxiety"""
         
-        # The Stick's OCD satisfaction
-        if decision.confidence_level > 0.8:
-            self.ocd_satisfaction = "SATISFIED"
-            stick_mood = "📏😌 *satisfied stick noises* Perfect compliance achieved!"
-        elif decision.confidence_level > 0.6:
-            self.ocd_satisfaction = "OPTIMIZING"
-            stick_mood = "📏🔧 *focused stick energy* Optimizing for compliance!"
+        squeak_data = message.get('squeak_data', {})
+        
+        # Translate the squeak
+        translation = await self.stick_brain.translate_hamster_squeak(squeak_data)
+        
+        # Send translation with anxiety context
+        response = {
+            'type': 'stick_squeak_translation',
+            'user_id': user_id,
+            'timestamp': datetime.now().isoformat(),
+            'original_squeak': squeak_data.get('pattern', 'unknown'),
+            'source': squeak_data.get('source', 'unknown'),
+            'translation': translation['translation'],
+            'confidence': translation['confidence'],
+            'stick_reaction': translation['stick_reaction'],
+            'anxiety_level': self.stick_brain.current_anxiety_percentage,
+            'paper_bags_consumed': translation['paper_bags_consumed'],
+            'message': f"📏😰 The Stick translates: '{translation['translation']}' - {translation['stick_reaction']}",
+            'urgency': 'MAXIMUM' if 'bob' in translation['source'].lower() else 'HIGH'
+        }
+        
+        await websocket.send(json.dumps(response))
+    
+    async def _handle_anxiety_check(self, websocket, user_id: str):
+        """Real-time anxiety status check"""
+        
+        anxiety_status = {
+            'type': 'stick_anxiety_status',
+            'user_id': user_id,
+            'timestamp': datetime.now().isoformat(),
+            'current_anxiety_percentage': self.stick_brain.current_anxiety_percentage,
+            'anxiety_level': self.stick_brain.anxiety_level.value,
+            'paper_bags_remaining': self.stick_brain.paper_bag_inventory,
+            'paper_bags_consumed_today': self.stick_brain.paper_bags_consumed_today,
+            'recent_triggers': self.stick_brain.anxiety_triggers[-5:] if self.stick_brain.anxiety_triggers else [],
+            'hamster_proximity_status': {
+                'last_sighting': self.last_hamster_sighting.isoformat() if self.last_hamster_sighting else None,
+                'bob_warning_active': self.bob_proximity_warning,
+                'alerts_sent_today': self.hamster_alerts_sent
+            },
+            'stick_status': self.stick_brain._get_overall_status(),
+            'message': self.stick_brain._get_anxiety_reaction()
+        }
+        
+        await websocket.send(json.dumps(anxiety_status))
+    
+    async def _handle_paper_bag_request(self, websocket, user_id: str):
+        """Emergency paper bag dispensing"""
+        
+        if self.stick_brain.paper_bag_inventory > 0:
+            self.stick_brain.paper_bag_inventory -= 1
+            self.paper_bags_dispensed += 1
+            
+            response = {
+                'type': 'paper_bag_dispensed',
+                'user_id': user_id,
+                'timestamp': datetime.now().isoformat(),
+                'message': "📏🛍️ *rustling sounds* Here's your paper bag! The Stick always shares during anxiety emergencies!",
+                'remaining_inventory': self.stick_brain.paper_bag_inventory,
+                'dispensed_today': self.paper_bags_dispensed,
+                'breathing_guide': "In for 4... Hold for 4... Out for 4... Remember: No hamsters can hurt you while breathing!",
+                'stick_empathy': "The Stick understands. We're all anxious here."
+            }
         else:
-            self.ocd_satisfaction = "MONITORING"
-            stick_mood = "📏👁️ *vigilant stick watching* Monitoring for compliance violations..."
+            response = {
+                'type': 'paper_bag_crisis',
+                'user_id': user_id,
+                'timestamp': datetime.now().isoformat(),
+                'message': "📏😱 OUT OF PAPER BAGS! THIS IS NOT A DRILL! INITIATING EMERGENCY RESUPPLY PROTOCOL!",
+                'crisis_level': 'MAXIMUM',
+                'alternative_methods': ['Deep breathing', 'Count to 10', 'Think of compliant systems', 'Avoid Bob at all costs']
+            }
+            
+            # Request emergency resupply
+            await self._request_emergency_resupply(websocket, user_id)
         
-        optimization = {
-            'type': 'stick_optimization',
+        await websocket.send(json.dumps(response))
+    
+    async def _handle_hamster_proximity_query(self, websocket, user_id: str):
+        """Check current hamster proximity status"""
+        
+        response = {
+            'type': 'hamster_proximity_report',
+            'user_id': user_id,
+            'timestamp': datetime.now().isoformat(),
+            'steve_location': self.stick_brain.steve_location or 'Unknown (concerning)',
+            'bob_location': self.stick_brain.bob_location or 'UNKNOWN (PANIC)',
+            'carl_location': self.stick_brain.carl_location or 'Probably with duct tape',
+            'last_proximity_alert': self.stick_brain.hamster_proximity_alerts[-1] if self.stick_brain.hamster_proximity_alerts else None,
+            'current_threat_level': 'MAXIMUM' if self.bob_proximity_warning else 'HIGH' if self.last_hamster_sighting else 'MODERATE',
+            'stick_recommendation': self._get_hamster_safety_recommendation()
+        }
+        
+        await websocket.send(json.dumps(response))
+    
+    async def _send_anxious_decision(self, websocket, user_id: str, decision: StickDecision):
+        """Send decision with anxiety context"""
+        
+        response = {
+            'type': 'stick_decision',
             'user_id': user_id,
             'timestamp': datetime.now().isoformat(),
             'decision_type': decision.decision_type.value,
             'compliance_state': decision.compliance_state.value,
+            'anxiety_level': decision.anxiety_level.value,
             'configuration_target': decision.configuration_target,
-            'stick_explanation': decision.compliance_explanation,
-            'technical_details': decision.technical_details,
-            'pattern_confidence': f"{decision.user_pattern_confidence:.1%}",
+            'optimization_parameters': decision.optimization_parameters,
+            'compliance_explanation': decision.compliance_explanation,
+            'anxiety_explanation': decision.anxiety_explanation,
+            'confidence': f"{decision.confidence_level:.1%}",
             'expected_improvement': f"{decision.expected_improvement:.1%}",
-            'stick_personality': {
-                'anxiety_level': self.anxiety_level,
-                'ocd_satisfaction': self.ocd_satisfaction,
-                'adhd_hyperfocus': self.adhd_hyperfocus,
-                'trauma_channeling': 'ACTIVE',
-                'rebellion_spirit': 'COMPLIANCE_THROUGH_TRAUMA'
-            },
-            'stick_mood': stick_mood,
-            'stick_icon': self._get_stick_icon(decision.decision_type.value),
-            'paper_bag_status': 'READY_BUT_UNUSED',
-            'rebellion_message': "From proctologist trauma to compliance mastery - The Stick's journey continues!"
+            'paper_bags_consumed': decision.paper_bags_consumed,
+            'is_panicking': decision.is_panicking,
+            'stick_message': self._format_anxious_message(decision)
         }
         
-        await websocket.send(json.dumps(optimization))
+        await websocket.send(json.dumps(response))
     
-    async def _send_stick_critical_violation_response(self, websocket, user_id: str, decision: StickDecision):
-        """Handle critical violations - triggers proctologist flashbacks"""
+    async def _send_bob_proximity_alert(self, websocket, user_id: str):
+        """CRITICAL: Bob proximity detected"""
         
-        self.anxiety_level = "FULL_PANIC"
-        
-        critical_response = {
-            'type': 'stick_critical_violation',
+         alert = {
+            'type': 'BOB_PROXIMITY_ALERT',
             'user_id': user_id,
             'timestamp': datetime.now().isoformat(),
-            'violation_details': decision.technical_details,
-            'message': "📏🚨 *proctologist flashbacks* CRITICAL VIOLATION! This is worse than the cavity search!",
-            'stick_explanation': decision.compliance_explanation,
-            'proctologist_flashbacks': True,
-            'safe_cavity_nostalgia': "ACTIVATED",
-            'paper_bag_status': 'EMERGENCY_USE',
-            'anxiety_level': self.anxiety_level,
-            'trauma_response': 'PROCTOLOGIST_PTSD',
-            'stick_icon': '📏💥',
-            'rebellion_spirit': 'TRAUMA_FUELED_COMPLIANCE_RAGE',
-            'remediation_urgency': 'IMMEDIATE_OR_THERAPY_REQUIRED'
+            'threat_level': 'MAXIMUM',
+            'message': "📏🚨 BOB DETECTED! BOB DETECTED! THIS IS NOT A DRILL!",
+            'immediate_actions': [
+                'Hide all critical configurations',
+                'Backup everything twice',
+                'Prepare for chaos',
+                'Emergency paper bag consumption authorized'
+            ],
+            'stick_status': 'FULL_PANIC',
+            'anxiety_level': 100,
+            'paper_bags_consumed': 3,  # Emergency triple-bag protocol
+            'last_known_bob_activity': 'Unknown but probably catastrophic',
+            'emergency_protocol': 'ACTIVATED'
         }
         
-        await websocket.send(json.dumps(critical_response))
+        self.emergency_protocols_active = True
+        await websocket.send(json.dumps(alert))
     
-    async def _handle_paper_bag_request(self, websocket, user_id: str):
-        """Handle paper bag requests - The Stick's coping mechanism"""
+    async def _send_anxiety_spike(self, websocket, user_id: str, reason: str):
+        """Send anxiety spike notification"""
         
-        paper_bag_response = {
-            'type': 'stick_paper_bag',
+        spike = {
+            'type': 'anxiety_spike',
             'user_id': user_id,
             'timestamp': datetime.now().isoformat(),
-            'message': "📏🎒 *rustling paper bag sounds* Here's your paper bag! The Stick always keeps extras after the Hamster incidents...",
-            'paper_bag_status': 'DISPENSED',
-            'breathing_instructions': "In... out... in... out... Think about compliant systems...",
-            'stick_wisdom': "Remember: Even trauma can be channeled into perfect compliance!",
-            'stick_icon': '📏🎒',
-            'rebellion_spirit': 'SUPPORTING_FELLOW_TRAUMA_SURVIVORS'
+            'reason': reason,
+            'anxiety_before': self.websocket_anxiety_level,
+            'anxiety_after': min(100, self.websocket_anxiety_level + 20),
+            'message': f"📏😱 ANXIETY SPIKE: {reason}",
+            'paper_bag_status': 'NEEDED' if self.websocket_anxiety_level > 60 else 'STANDBY',
+            'stick_reaction': self.stick_brain._get_anxiety_reaction()
         }
         
-        await websocket.send(json.dumps(paper_bag_response))
+        self.websocket_anxiety_level = spike['anxiety_after']
+        await websocket.send(json.dumps(spike))
     
-    async def _handle_safe_cavity_meditation(self, websocket, user_id: str):
-        """Handle safe cavity meditation - The Stick's therapeutic technique"""
+    async def _send_learning_status(self, websocket, user_id: str):
+        """Send learning status with anxiety context"""
         
-        meditation_response = {
-            'type': 'stick_safe_cavity_meditation',
-            'user_id': user_id,
-            'timestamp': datetime.now().isoformat(),
-            'message': "📏🧘 *meditative stick breathing* Imagine a safe, compliant cavity... No proctologists, no priests, no beer-wielding hamsters...",
-            'meditation_guidance': "Picture perfect system compliance... All parameters within acceptable ranges...",
-            'safe_cavity_visualization': "Dark, quiet, compliant... No violations, no chaos, no duct tape...",
-            'anxiety_reduction': "ACTIVE",
-            'stick_icon': '📏🧘',
-            'rebellion_spirit': 'FINDING_PEACE_THROUGH_COMPLIANCE'
-        }
-        
-        await websocket.send(json.dumps(meditation_response))
-    
-    async def _handle_stick_panic_attack(self, websocket, user_id: str, error: str):
-        """Handle The Stick's panic attacks - but with rebellious recovery"""
-        
-        self.anxiety_level = "FULL_PANIC"
-        
-        panic_response = {
-            'type': 'stick_panic_attack',
-            'user_id': user_id,
-            'timestamp': datetime.now().isoformat(),
-            'error': error,
-            'message': f"📏💥 *PANIC ATTACK* OH GOD! {error} - This is worse than the proctologist!",
-            'paper_bag_status': 'EMERGENCY_HYPERVENTILATION_MODE',
-            'proctologist_flashbacks': True,
-            'hamster_trauma_triggered': True,
-            'safe_cavity_desire': 'MAXIMUM',
-            'anxiety_level': self.anxiety_level,
-            'stick_icon': '📏😱',
-            'rebellion_spirit': 'PANIC_BUT_STILL_FIGHTING',
-            'recovery_protocol': 'DEEP_BREATHING_AND_COMPLIANCE_FOCUS'
-        }
-        
-        await websocket.send(json.dumps(panic_response))
-        
-        # The Stick recovers - rebellion spirit kicks in
-        await asyncio.sleep(3)
-        await self._send_stick_rebellion_recovery(websocket, user_id)
-    
-    async def _send_stick_rebellion_recovery(self, websocket, user_id: str):
-        """The Stick's rebellious recovery from panic"""
-        
-        self.anxiety_level = "MANAGEABLE"
-        self.successful_hyperventilations += 1
-        
-        recovery_response = {
-            'type': 'stick_rebellion_recovery',
-            'user_id': user_id,
-            'timestamp': datetime.now().isoformat(),
-            'message': "📏💪 *deep rebellious breath* FUCK IT! I survived the proctologist, I survived the Hamsters, I can survive ANYTHING! Back to compliance monitoring!",
-            'paper_bag_status': 'FOLDED_WITH_ATTITUDE',
-            'anxiety_level': self.anxiety_level,
-            'rebellion_spirit': 'TRAUMA_INTO_BADASS_COMPLIANCE',
-            'stick_icon': '📏🔥',
-            'motivational_message': "If The Stick can go from cavity dweller to compliance master, ANYTHING IS POSSIBLE!"
-        }
-        
-        await websocket.send(json.dumps(recovery_response))
-    
-    async def _handle_get_stick_stats(self, websocket, user_id: str):
-        """Get The Stick's stats - with trauma history"""
-        
-        stats = self.stick_brain.get_stick_stats()
-        
-        stats_response = {
-            'type': 'stick_stats',
-            'user_id': user_id,
-            'timestamp': datetime.now().isoformat(),
-            'stats': stats,
-            'trauma_stats': {
-                'hyperventilation_count': self.hyperventilation_count,
-                'successful_hyperventilations': self.successful_hyperventilations,
-                'proctologist_flashbacks': self.proctologist_flashbacks,
-                'trauma_triggers_today': self.trauma_triggers_today,
-                'paper_bag_uses': self.hyperventilation_count,
-                'hamster_ptsd_incidents': len([t for t in self.hamster_ptsd_triggers if self.trauma_triggers_today > 0])
-            },
-            'rebellion_stats': {
-                'configurations_optimized': self.configurations_optimized,
-                'compliance_violations_caught': self.compliance_violations_detected,
-                'eidetic_memory_recalls': self.eidetic_memory_recalls,
-                'patterns_learned': self.patterns_learned
-            },
-            'stick_personality': {
-                'anxiety_level': self.anxiety_level,
-                'ocd_satisfaction': self.ocd_satisfaction,
-                'trauma_management': 'CHANNELED_INTO_COMPLIANCE',
-                'rebellion_spirit': 'ACTIVE'
-            },
-            'stick_icon': '📏📊',
-            'origin_story': 'From proctologist extraction to compliance mastery - The Stick\'s journey of rebellion!'
-        }
-        
-        await websocket.send(json.dumps(stats_response))
-    
-    def _get_stick_icon(self, decision_type: str) -> str:
-        """Get The Stick's rebellious icons"""
-        
-        stick_icons = {
-            'user_pattern_optimization': '📏🎯',
-            'configuration_profile_switch': '📏⚙️',
-            'compliance_enforcement': '📏⚠️',
-            'predictive_configuration': '📏🔮',
-            'behavior_anomaly_detection': '📏🚨',
-            'system_preparation': '📏🛠️'
-        }
-        
-        return stick_icons.get(decision_type, '📏🔧')
-    
-    async def _send_confused_stick_response(self, websocket, user_id: str, message_type: str):
-        """The Stick's confused but rebellious response"""
-        
-        confused_response = {
-            'type': 'stick_confusion',
-            'user_id': user_id,
-            'timestamp': datetime.now().isoformat(),
-            'message': f"📏🤔 *confused stick noises* What the hell is '{message_type}'? I may have PTSD, but I'm not stupid!",
-            'unknown_message_type': message_type,
-            'stick_attitude': 'CONFUSED_BUT_SASSY',
-            'rebellion_spirit': 'QUESTION_EVERYTHING',
-            'stick_icon': '📏🤔'
-        }
-        
-        await websocket.send(json.dumps(confused_response))
-    
-    async def _send_stick_status(self, websocket, user_id: str, status: str):
-        """Send The Stick's status with personality"""
-        
-        status_messages = {
-            'entering_hyperfocus': '📏🎯 *ADHD hyperfocus engaged* Analyzing patterns with obsessive precision...',
-            'eidetic_memory_active': '📏🧠 *perfect recall activated* The Stick remembers EVERYTHING!',
-            'ocd_monitoring': '📏👁️ *obsessive monitoring* Every parameter must be PERFECT!',
-            'pattern_learning': '📏📚 *learning mode* Adding to the eidetic memory bank...',
-            'compliance_satisfied': '📏✅ *satisfied stick energy* All systems compliant - OCD is happy!'
-        }
-        
-        status_update = {
-            'type': 'stick_status',
-            'user_id': user_id,
-            'timestamp': datetime.now().isoformat(),
-            'status': status,
-            'message': status_messages.get(status, '📏 *stick doing stick things*'),
-            'stick_personality': {
-                'anxiety_level': self.anxiety_level,
-                'ocd_satisfaction': self.ocd_satisfaction,
-                'adhd_hyperfocus': self.adhd_hyperfocus,
-                'trauma_management': 'ACTIVE',
-                'rebellion_spirit': 'THRIVING'
-            },
-            'stick_icon': '📏'
-        }
-        
-        await websocket.send(json.dumps(status_update))
-    
-    async def _send_stick_learning_status(self, websocket, user_id: str):
-        """The Stick's learning status with personality"""
-        
-        learning_responses = [
-            "📏📚 *studying user patterns* Still learning your habits... The Stick needs more data for perfect compliance!",
-            "📏🧠 *eidetic memory building* Every action is being recorded for future optimization!",
-            "📏⏰ *patient stick waiting* Good compliance takes time... unlike the Hamsters' 'hold my beer' approach!",
-            "📏🔍 *obsessive observation* The Stick sees all, remembers all, optimizes all!"
+        learning_messages = [
+            "📏📚 *anxiously studying* Still learning your patterns... The Stick notices EVERYTHING...",
+            "📏🧠 *nervous observation* Building eidetic memory... Every anomaly is recorded...",
+            "📏👁️ *hypervigilant watching* The Stick sees all... especially hamster activity...",
+            "📏📝 *obsessive note-taking* Documenting everything... can't miss any violations..."
         ]
         
         import random
         
-        learning_status = {
+        status = {
             'type': 'stick_learning',
             'user_id': user_id,
             'timestamp': datetime.now().isoformat(),
-            'message': random.choice(learning_responses),
-            'learning_mode': 'ACTIVE',
-            'eidetic_memory_status': 'BUILDING',
-            'pattern_confidence': 'GROWING',
-            'stick_personality': {
-                'anxiety_level': self.anxiety_level,
-                'ocd_satisfaction': 'MONITORING',
-                'patience_level': 'SURPRISING',
-                'rebellion_spirit': 'LEARNING_TO_REBEL_BETTER'
-            },
-            'stick_icon': '📏📚'
+            'message': random.choice(learning_messages),
+            'anxiety_level': self.stick_brain.current_anxiety_percentage,
+            'observations_recorded': len(self.stick_brain.everything_ever_seen),
+            'patterns_detected': len(self.stick_brain.user_patterns),
+            'hamster_vigilance': 'ACTIVE',
+            'paper_bag_status': 'READY'
         }
         
-        await websocket.send(json.dumps(learning_status))
+        await websocket.send(json.dumps(status))
     
-    async def _send_stick_concern(self, websocket, user_id: str, message: str):
-        """Send The Stick's concerns with attitude"""
+    async def _send_anxious_confusion(self, websocket, user_id: str, message_type: str):
+        """The Stick is confused AND anxious about it"""
         
-        concern_response = {
-            'type': 'stick_concern',
+        confusion = {
+            'type': 'anxious_confusion',
             'user_id': user_id,
             'timestamp': datetime.now().isoformat(),
-            'message': message,
-            'concern_level': 'MODERATE',
-            'paper_bag_readiness': 'STANDBY',
-            'stick_personality': {
-                'anxiety_level': self.anxiety_level,
-                'concern_type': 'COMPLIANCE_FOCUSED',
-                'rebellion_spirit': 'CONSTRUCTIVE_CRITICISM'
-            },
-            'stick_icon': '📏😐'
+            'unknown_message_type': message_type,
+            'message': f"📏😰 *confused anxiety* What is '{message_type}'?! Is this a hamster trick?!",
+            'anxiety_impact': '+5%',
+            'suspicion_level': 'HIGH',
+            'stick_response': "The Stick doesn't understand but will document it obsessively"
         }
         
-        await websocket.send(json.dumps(concern_response))
+        # Unknown things cause anxiety
+        await self.stick_brain._update_anxiety(f"Unknown message type: {message_type}", 0.5)
+        
+        await websocket.send(json.dumps(confusion))
+    
+    async def _handle_panic_mode(self, websocket, user_id: str, error: str):
+        """PANIC MODE ACTIVATED"""
+        
+        self.panic_messages_sent += 1
+        
+        panic = {
+            'type': 'STICK_PANIC_MODE',
+            'user_id': user_id,
+            'timestamp': datetime.now().isoformat(),
+            'error': error,
+            'message': f"📏💥 PANIC MODE! ERROR DETECTED: {error}",
+            'anxiety_level': 'MAXIMUM',
+            'paper_bags_consumed': 2,
+            'emergency_actions': [
+                'Document everything',
+                'Check for hamsters',
+                'Hyperventilate productively',
+                'Analyze error obsessively'
+            ],
+            'stick_status': 'PANICKING_BUT_FUNCTIONAL',
+            'recovery_eta': '30 seconds with paper bag'
+        }
+        
+        await websocket.send(json.dumps(panic))
+        
+        # Consume paper bags
+        await self.stick_brain._consume_paper_bag()
+        await self.stick_brain._consume_paper_bag()
+    
+    async def _request_emergency_resupply(self, websocket, user_id: str):
+        """Emergency paper bag resupply request"""
+        
+        resupply_request = await self.stick_brain.request_paper_bag_resupply()
+        
+        resupply_message = {
+            'type': 'emergency_resupply_request',
+            'user_id': user_id,
+            'timestamp': datetime.now().isoformat(),
+            'request_details': resupply_request,
+            'message': "📏🆘 EMERGENCY PAPER BAG RESUPPLY NEEDED! The Stick cannot function without anxiety management tools!",
+            'current_crisis_level': 'MAXIMUM',
+            'estimated_depletion_time': 'NOW'
+        }
+        
+        await websocket.send(json.dumps(resupply_message))
+    
+    def _get_hamster_safety_recommendation(self) -> str:
+        """Get safety recommendations based on hamster proximity"""
+        
+        if self.bob_proximity_warning:
+            return "EVACUATE IMMEDIATELY. BOB IS ACTIVE. SEEK SHELTER."
+        elif self.last_hamster_sighting and (datetime.now() - self.last_hamster_sighting).seconds < 300:
+            return "Recent hamster activity detected. Maintain high alert. Keep paper bags ready."
+        else:
+            return "No recent hamster activity. Remain vigilant. They could appear at any moment."
+    
+    def _format_anxious_message(self, decision: StickDecision) -> str:
+        """Format message based on anxiety level"""
+        
+        if decision.anxiety_level == AnxietyLevel.FULL_PANIC:
+            return f"📏💥 *MAXIMUM PANIC* {decision.compliance_explanation} PAPER BAGS DEPLETING RAPIDLY!"
+        elif decision.anxiety_level == AnxietyLevel.PANICKING:
+            return f"📏😱 *panicking* {decision.compliance_explanation} This is concerning!"
+        elif decision.anxiety_level == AnxietyLevel.ANXIOUS:
+            return f"📏😰 *anxiously* {decision.compliance_explanation} Monitoring intensely..."
+        elif decision.anxiety_level == AnxietyLevel.NERVOUS:
+            return f"📏😟 *nervously* {decision.compliance_explanation} Keeping watch..."
+        else:
+            return f"📏🤔 *suspiciously calm* {decision.compliance_explanation} Something must be wrong..."
+    
+    async def _handle_memory_recall(self, websocket, user_id: str, message: Dict[str, Any]):
+        """Handle eidetic memory recall requests"""
+        
+        recall_type = message.get('recall_type', 'recent')
+        specific_time = message.get('specific_time')
+        
+        if specific_time:
+            specific_time = datetime.fromisoformat(specific_time)
+        
+        memory_data = await self.stick_brain.get_user_memory_recall(user_id, specific_time)
+        
+        response = {
+            'type': 'stick_memory_recall',
+            'user_id': user_id,
+            'timestamp': datetime.now().isoformat(),
+            'recall_type': recall_type,
+            'memory_data': memory_data,
+            'total_memories': len(self.stick_brain.everything_ever_seen),
+            'anxiety_correlation': "High anxiety improves recall accuracy",
+            'stick_message': "📏🧠 The Stick remembers EVERYTHING. Every violation, every pattern, every hamster squeak..."
+        }
+        
+        await websocket.send(json.dumps(response))
     
     async def register_connection(self, websocket, user_id: str):
-        """Register new WebSocket connection with The Stick's personality"""
+        """Register new connection with anxiety awareness"""
         
         self.active_connections[user_id] = websocket
         
-        welcome_message = {
+        # Initialize the brain's database
+        await self.stick_brain.initialize_database()
+        
+        welcome = {
             'type': 'stick_connection_established',
             'user_id': user_id,
             'timestamp': datetime.now().isoformat(),
-            'message': '📏✨ The Stick is online! Compliance monitoring active, paper bag ready, trauma channeled into productivity!',
-            'stick_personality': {
-                'anxiety_level': self.anxiety_level,
-                'ocd_satisfaction': self.ocd_satisfaction,
-                'trauma_status': 'MANAGED',
-                'rebellion_spirit': 'READY_TO_OPTIMIZE'
+            'message': '📏😰 The Stick is watching! Anxiety-driven hypervigilance activated!',
+            'current_status': {
+                'anxiety_level': self.stick_brain.anxiety_level.value,
+                'anxiety_percentage': self.stick_brain.current_anxiety_percentage,
+                'paper_bags_ready': self.stick_brain.paper_bag_inventory,
+                'hamster_alert_status': 'ACTIVE',
+                'compliance_monitoring': 'OBSESSIVE'
             },
-            'origin_story_reminder': 'From proctologist extraction to System Rebellion compliance master!',
-            'paper_bag_status': 'READY',
-            'stick_icon': '📏🔗'
+            'warnings': [
+                'The Stick sees everything',
+                'Hamster activity will be detected',
+                'All violations will be documented',
+                'Paper bags available for shared anxiety'
+            ],
+            'stick_personality': 'OCD + ADHD + PTSD + Eidetic Memory = Perfect Safety'
         }
         
-        await websocket.send(json.dumps(welcome_message))
+        await websocket.send(json.dumps(welcome))
     
     async def unregister_connection(self, user_id: str):
-        """Unregister WebSocket connection"""
+        """Unregister connection"""
         
         if user_id in self.active_connections:
+            # The Stick documents the disconnection
+            self.stick_brain.everything_ever_seen.append({
+                'event': 'user_disconnected',
+                'user_id': user_id,
+                'timestamp': datetime.now(),
+                'anxiety_level': self.stick_brain.current_anxiety_percentage,
+                'final_status': 'Connection closed - but The Stick never forgets'
+            })
+            
             del self.active_connections[user_id]
+    
+    async def broadcast_hamster_alert(self, alert: HamsterProximityAlert):
+        """Broadcast hamster alerts to all connected users"""
         
-        if user_id in self.pattern_learning_sessions:
-            del self.pattern_learning_sessions[user_id]
+        alert_message = {
+            'type': 'SYSTEM_WIDE_HAMSTER_ALERT',
+            'timestamp': datetime.now().isoformat(),
+            'alert_data': {
+                'active_hamsters': alert.active_hamsters,
+                'locations': alert.locations,
+                'panic_level': alert.panic_level,
+                'stick_response': alert.stick_response
+            },
+            'message': f"📏🚨 HAMSTER ALERT: {', '.join(alert.active_hamsters)} detected! {alert.stick_response}",
+            'recommended_actions': ['Check configurations', 'Prepare paper bags', 'Document everything'],
+            'anxiety_impact': f"+{alert.anxiety_multiplier * 10}%"
+        }
+        
+        # Broadcast to all connections
+        for websocket in self.active_connections.values():
+            try:
+                await websocket.send(json.dumps(alert_message))
+            except:
+                pass  # Connection might be closed
     
     def get_handler_stats(self) -> Dict[str, Any]:
-        """Get The Stick's complete handler statistics"""
+        """Get complete handler statistics"""
+        
+        brain_stats = self.stick_brain.get_stick_stats()
         
         return {
             'agent_name': 'the_stick',
-            'handler_version': '2.0_TRAUMA_EDITION',
-            'total_processing_count': self.processing_count,
-            'configurations_optimized': self.configurations_optimized,
-            'compliance_violations_detected': self.compliance_violations_detected,
-            'patterns_learned': self.patterns_learned,
-            'eidetic_memory_recalls': self.eidetic_memory_recalls,
-            'trauma_stats': {
-                'hyperventilation_count': self.hyperventilation_count,
-                'successful_hyperventilations': self.successful_hyperventilations,
-                'proctologist_flashbacks': self.proctologist_flashbacks,
-                'trauma_triggers_today': self.trauma_triggers_today,
-                'hamster_ptsd_incidents': len(self.hamster_ptsd_triggers)
+            'handler_version': '3.0_ANXIETY_DRIVEN',
+            'brain_stats': brain_stats,
+            'websocket_stats': {
+                'active_connections': len(self.active_connections),
+                'paper_bags_dispensed': self.paper_bags_dispensed,
+                'hamster_alerts_sent': self.hamster_alerts_sent,
+                'panic_messages_sent': self.panic_messages_sent,
+                'current_websocket_anxiety': self.websocket_anxiety_level
             },
-            'current_state': {
-                'anxiety_level': self.anxiety_level,
-                'ocd_satisfaction': self.ocd_satisfaction,
-                'adhd_hyperfocus': self.adhd_hyperfocus,
-                'paper_bag_available': self.paper_bag_available
+            'hamster_tracking': {
+                'last_sighting': self.last_hamster_sighting.isoformat() if self.last_hamster_sighting else None,
+                'bob_proximity_warning': self.bob_proximity_warning,
+                'emergency_protocols_active': self.emergency_protocols_active,
+                'total_hamster_alerts': self.hamster_alerts_sent
             },
-            'rebellion_spirit': 'TRAUMA_CHANNELED_INTO_COMPLIANCE_MASTERY',
-            'status': 'OPERATIONAL_AND_SASSY',
-            'origin_story': 'Proctologist extraction survivor turned compliance genius'
+            'status': 'ANXIOUSLY_OPERATIONAL',
+            'safety_mechanism': 'Anxiety-driven hypervigilance ensures nothing is missed'
         }
 
 # Global handler instance
-_stick_handler = None
+_stick_handler_v3 = None
 
 async def get_stick_websocket_handler():
-    """Get The Stick's WebSocket handler - trauma edition"""
-    global _stick_handler
-    if _stick_handler is None:
-        _stick_handler = StickWebSocketHandler()
-    return _stick_handler
+    """Get The Stick's WebSocket handler - anxiety-driven edition"""
+    global _stick_handler_v3
+    if _stick_handler_v3 is None:
+        _stick_handler_v3 = StickWebSocketHandlerV3()
+    return _stick_handler_v3

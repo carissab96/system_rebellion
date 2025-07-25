@@ -1,264 +1,141 @@
-from sqlalchemy import Column, String, DateTime, Boolean, Integer, Float, Text, JSON, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, JSON, Text, ForeignKey
 from sqlalchemy.orm import relationship
-from datetime import datetime
-import uuid
-from app.core.base import Base
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import func
-class StickUserPatterns(Base):
-    """
-    The Stick's eidetic memory storage for user behavior patterns
-    Every observation, every pattern, every detail perfectly preserved
-    """
-    __tablename__ = "stick_user_patterns"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(String, nullable=False, index=True)
-    
-    # Pattern learning data
-    observation_count = Column(Integer, default=0)
-    learned_patterns = Column(JSON, nullable=True)  # The Stick's pattern database
-    confidence_score = Column(Float, default=0.0)   # Pattern confidence (0.0 - 1.0)
-    
-    # Eidetic memory metadata
-    first_observation = Column(DateTime(timezone=True), server_default=func.now())
-    last_observation = Column(DateTime(timezone=True), server_default=func.now())
-    pattern_complexity = Column(Float, default=0.0)  # How complex the user's patterns are
-    
-    # The Stick's learning progress
-    learning_stage = Column(String, default="initial_observation")  # initial, pattern_recognition, optimization, mastery
-    eidetic_memory_active = Column(Boolean, default=False)
-    
-    # User behavior insights
-    primary_activities = Column(JSON, nullable=True)  # Most common activities
-    time_based_patterns = Column(JSON, nullable=True)  # Hour-based behavior patterns
-    configuration_preferences = Column(JSON, nullable=True)  # Learned system preferences
-    
-    # The Stick's notes (because he's obsessive)
-    stick_observations = Column(Text, nullable=True)  # The Stick's personal notes
-    anomaly_detections = Column(JSON, nullable=True)  # Unusual behavior patterns
-    
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+from datetime import datetime
+from sqlalchemy import Index 
+Base = declarative_base()
 
-class StickDecisionLog(Base):
-    """
-    Complete audit trail of every decision The Stick makes
-    Because trauma taught him to document EVERYTHING
-    """
-    __tablename__ = "stick_decision_log"
+class StickUserPatterns(Base):
+    __tablename__ = 'stick_user_patterns'
     
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(String, nullable=False, index=True)
-    
-    # Decision details
-    decision_type = Column(String, nullable=False)  # StickDecisionType enum value
-    compliance_state = Column(String, nullable=False)  # ComplianceState enum value
-    configuration_target = Column(String, nullable=False)
-    
-    # Decision rationale
-    optimization_parameters = Column(JSON, nullable=False)
-    user_pattern_confidence = Column(Float, nullable=False)
-    compliance_explanation = Column(Text, nullable=False)
-    technical_details = Column(JSON, nullable=False)
-    
-    # Outcome tracking
-    expected_improvement = Column(Float, nullable=False)
-    confidence_level = Column(Float, nullable=False)
-    actual_improvement = Column(Float, nullable=True)  # Measured after implementation
-    success_verified = Column(Boolean, default=False)
-    
-    # The Stick's anxiety tracking
-    stick_anxiety_level = Column(String, default="manageable")
-    trauma_triggers = Column(JSON, nullable=True)  # Any trauma triggers during decision
-    paper_bag_used = Column(Boolean, default=False)
-    
-    # Implementation tracking
-    implemented = Column(Boolean, default=False)
-    implementation_timestamp = Column(DateTime(timezone=True), nullable=True)
-    implementation_notes = Column(Text, nullable=True)
-    
-    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+    id = Column(Integer, primary_key=True)
+    user_id = Column(String(255), unique=True, nullable=False, index=True)
+    observation_count = Column(Integer, default=0)
+    learned_patterns = Column(JSON)
+    confidence_score = Column(Float, default=0.0)
+    anxiety_correlation = Column(Float, default=0.0)  # How user actions correlate with anxiety
+    last_observation = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
 
 class StickComplianceHistory(Base):
-    """
-    The Stick's OCD compliance violation tracking
-    Every violation recorded with obsessive detail
-    """
-    __tablename__ = "stick_compliance_history"
+    __tablename__ = 'stick_compliance_history'
     
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(String, nullable=False, index=True)
-    
-    # Violation details
-    violation_type = Column(String, nullable=False)  # cpu_overload, memory_overload, thermal_violation, etc.
+    id = Column(Integer, primary_key=True)
+    user_id = Column(String(255), nullable=False, index=True)
+    violation_type = Column(String(100), nullable=False)
     measured_value = Column(Float, nullable=False)
     threshold_value = Column(Float, nullable=False)
-    severity = Column(String, nullable=False)  # low, medium, high, critical
-    
-    # The Stick's response
-    recommendation = Column(String, nullable=False)
-    compliance_action_taken = Column(String, nullable=True)
+    anxiety_adjusted_threshold = Column(Float)  # NEW: Anxiety makes thresholds stricter
+    severity = Column(String(50), nullable=False)
+    recommendation = Column(String(255))
+    anxiety_impact = Column(Float, default=0.0)  # NEW: How much this increased anxiety
+    paper_bags_triggered = Column(Integer, default=0)  # NEW: Paper bags used
     resolved = Column(Boolean, default=False)
-    resolution_timestamp = Column(DateTime(timezone=True), nullable=True)
-    
-    # Pattern analysis
-    recurring_violation = Column(Boolean, default=False)
-    violation_frequency = Column(Integer, default=1)  # How often this violation occurs
-    user_pattern_related = Column(Boolean, default=False)  # Is this related to user behavior?
-    
-    # The Stick's trauma responses
-    triggered_ptsd = Column(Boolean, default=False)
-    anxiety_level_during = Column(String, default="manageable")
-    proctologist_flashback = Column(Boolean, default=False)
-    
-    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
 
 class StickConfigurationProfiles(Base):
-    """
-    The Stick's learned configuration profiles for different user activities
-    Eidetic memory creates perfect configurations for every scenario
-    """
-    __tablename__ = "stick_configuration_profiles"
+    __tablename__ = 'stick_configuration_profiles'
     
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(String, nullable=False, index=True)
-    
-    # Profile identification
-    profile_name = Column(String, nullable=False)  # e.g., "evening_gaming", "morning_coding"
-    activity_type = Column(String, nullable=False)  # gaming, coding, streaming, design, etc.
-    
-    # Configuration data
-    configuration_parameters = Column(JSON, nullable=False)  # The actual config settings
-    usage_confidence = Column(Float, nullable=False)  # Confidence in this profile
-    performance_metrics = Column(JSON, nullable=True)  # Performance data when using this profile
-    
-    # Learning metadata
-    created_from_pattern = Column(Boolean, default=True)  # Created from observed patterns
+    id = Column(Integer, primary_key=True)
+    user_id = Column(String(255), nullable=False, index=True)
+    profile_name = Column(String(100), nullable=False)
+    activity_type = Column(String(100))
+    configuration_parameters = Column(JSON)
+    usage_confidence = Column(Float)
+    performance_metrics = Column(JSON)
+    created_from_pattern = Column(Boolean, default=False)
     times_applied = Column(Integer, default=0)
-    success_rate = Column(Float, default=0.0)  # Success rate when applied
-    user_satisfaction_score = Column(Float, nullable=True)  # If user provides feedback
-    
-    # Time-based applicability
-    time_patterns = Column(JSON, nullable=True)  # When this profile is typically used
-    context_triggers = Column(JSON, nullable=True)  # What triggers this profile
-    
-    # The Stick's profile notes
-    stick_profile_notes = Column(Text, nullable=True)
-    optimization_history = Column(JSON, nullable=True)  # How this profile has evolved
-    
-    # Timestamps
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    last_used = Column(DateTime(timezone=True), server_default=func.now())
-    last_optimized = Column(DateTime(timezone=True), server_default=func.now())
+    success_rate = Column(Float, default=0.0)
+    anxiety_level_when_created = Column(Float)  # NEW: Track anxiety context
+    stick_notes = Column(JSON)  # NEW: Obsessive documentation
+    last_used = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+# NEW TABLES for anxiety-driven functionality
 
 class StickAnxietyLog(Base):
-    """
-    The Stick's anxiety and trauma tracking
-    Because mental health matters, even for compliance officers
-    """
-    __tablename__ = "stick_anxiety_log"
+    __tablename__ = 'stick_anxiety_log'
     
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(String, nullable=True, index=True)  # Can be null for system-wide anxiety
-    
-    # Anxiety tracking
-    anxiety_level = Column(String, nullable=False)  # manageable, concerned, stressed, hyperventilating, full_panic
-    trigger_type = Column(String, nullable=True)  # hamster_proximity, compliance_violation, system_failure
-    trigger_details = Column(JSON, nullable=True)
-    
-    # Trauma responses
-    ptsd_triggered = Column(Boolean, default=False)
-    trauma_type = Column(String, nullable=True)  # proctologist_flashback, hamster_ptsd, priest_anxiety
-    hyperventilation_occurred = Column(Boolean, default=False)
-    paper_bag_used = Column(Boolean, default=False)
-    
-    # Recovery tracking
-    recovery_time_seconds = Column(Integer, nullable=True)  # How long to recover
-    recovery_method = Column(String, nullable=True)  # deep_breathing, safe_cavity_meditation, compliance_focus
-    channeled_into_productivity = Column(Boolean, default=False)
-    
-    # Context
-    system_state_during = Column(JSON, nullable=True)  # System state when anxiety occurred
-    other_agents_active = Column(JSON, nullable=True)  # Were Hamsters nearby?
-    
-    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+    id = Column(Integer, primary_key=True)
+    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    trigger = Column(String(255), nullable=False)
+    anxiety_level_before = Column(Float, nullable=False)
+    anxiety_level_after = Column(Float, nullable=False)
+    multiplier = Column(Float, default=1.0)
+    paper_bags_consumed = Column(Integer, default=0)
+    hamster_involved = Column(Boolean, default=False)
+    resolution = Column(String(100))
 
-class StickLearningMetrics(Base):
-    """
-    The Stick's learning progress and intelligence metrics
-    Track how The Stick evolves from trauma survivor to compliance genius
-    """
-    __tablename__ = "stick_learning_metrics"
+class StickHamsterEncounters(Base):
+    __tablename__ = 'stick_hamster_encounters'
     
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(String, nullable=False, index=True)
-    
-    # Learning progress
-    total_observations = Column(Integer, default=0)
-    patterns_identified = Column(Integer, default=0)
-    configurations_created = Column(Integer, default=0)
-    successful_optimizations = Column(Integer, default=0)
-    
-    # Intelligence metrics
-    pattern_recognition_accuracy = Column(Float, default=0.0)
-    configuration_success_rate = Column(Float, default=0.0)
-    compliance_detection_rate = Column(Float, default=0.0)
-    eidetic_memory_capacity = Column(Integer, default=0)  # Number of patterns stored
-    
-    # The Stick's evolution
-    intelligence_level = Column(String, default="learning")  # learning, competent, expert, genius, stick_god
-    rebellion_mastery = Column(Float, default=0.0)  # How well trauma has been channeled
-    trauma_management_score = Column(Float, default=0.0)  # Mental health progress
-    
-    # Performance benchmarks
-    average_decision_time_ms = Column(Float, nullable=True)
-    pattern_confidence_average = Column(Float, default=0.0)
-    user_satisfaction_score = Column(Float, nullable=True)
-    
-    # Comparative metrics
-    better_than_baseline_percent = Column(Float, default=0.0)  # Performance vs. no optimization
-    hamster_engineering_prevention = Column(Integer, default=0)  # Times prevented chaos
-    
-    # Time tracking
-    measurement_period_start = Column(DateTime(timezone=True), server_default=func.now())
-    measurement_period_end = Column(DateTime(timezone=True), nullable=True)
-    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+    id = Column(Integer, primary_key=True)
+    user_id = Column(String(255), nullable=False, index=True)
+    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    hamsters_present = Column(String(100))  # Comma-separated: Steve,Bob,Carl
+    steve_location = Column(String(255))
+    bob_location = Column(String(255))
+    carl_location = Column(String(255))
+    anxiety_multiplier = Column(Float, nullable=False)
+    panic_level = Column(String(50), nullable=False)  # LOW, MODERATE, HIGH, MAXIMUM
+    infrastructure_risk = Column(String(100))
+    stick_response = Column(Text)
+    paper_bags_consumed = Column(Integer, default=0)
 
-class StickRebelionStats(Base):
-    """
-    The Stick's rebellion statistics - from trauma to triumph
-    Track The Stick's journey in the System Rebellion
-    """
-    __tablename__ = "stick_rebellion_stats"
+class StickPaperBagUsage(Base):
+    __tablename__ = 'stick_paper_bag_usage'
     
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True)
+    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    bags_consumed = Column(Integer, default=0)
+    bags_added = Column(Integer, default=0)  # For resupply tracking
+    reason = Column(String(255))
+    anxiety_level_at_time = Column(Float)
+    hamster_related = Column(Boolean, default=False)
+
+class StickMemoryBank(Base):
+    __tablename__ = 'stick_memory_bank'
     
-    # Rebellion milestones
-    trauma_incidents_overcome = Column(Integer, default=0)
-    hamster_encounters_survived = Column(Integer, default=0)
-    proctologist_flashbacks_managed = Column(Integer, default=0)
-    compliance_victories = Column(Integer, default=0)
+    id = Column(Integer, primary_key=True)
+    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    event_type = Column(String(100), nullable=False)
+    details = Column(JSON)
+    anxiety_level = Column(Float)
+    importance = Column(String(50))  # LOW, MEDIUM, HIGH, CRITICAL, EIDETIC
+    related_hamsters = Column(String(100))  # Comma-separated if multiple
+    compliance_impact = Column(String(100))
+    never_forget = Column(Boolean, default=False)  # Some memories are PERMANENT
     
-    # The Stick's growth
-    anxiety_management_improvement = Column(Float, default=0.0)
-    confidence_growth = Column(Float, default=0.0)
-    rebellion_spirit_strength = Column(Float, default=0.0)
-    eidetic_memory_mastery = Column(Float, default=0.0)
+    # Index for critical memories
+    __table_args__ = (
+        Index('idx_never_forget', 'never_forget', 'importance'),
+        Index('idx_hamster_memories', 'related_hamsters'),
+    )
+
+class StickSqueakTranslations(Base):
+    __tablename__ = 'stick_squeak_translations'
     
-    # System impact
-    total_users_helped = Column(Integer, default=0)
-    system_optimizations_delivered = Column(Integer, default=0)
-    compliance_violations_prevented = Column(Integer, default=0)
-    paper_bags_dispensed = Column(Integer, default=0)
+    id = Column(Integer, primary_key=True)
+    timestamp = Column(DateTime, default=datetime.utcnow)
+    hamster_source = Column(String(50))  # Steve, Bob, or Carl
+    original_squeak = Column(String(255))
+    translation = Column(Text)
+    confidence = Column(Float)
+    anxiety_level_during_translation = Column(Float)
+    stick_reaction = Column(Text)
+    paper_bags_consumed = Column(Integer, default=0)
+
+class StickEmergencyProtocols(Base):
+    __tablename__ = 'stick_emergency_protocols'
     
-    # Legacy metrics
-    trauma_to_triumph_ratio = Column(Float, default=0.0)
-    inspiration_factor = Column(Float, default=0.0)  # How much The Stick inspires others
-    rebellion_leadership_score = Column(Float, default=0.0)
-    
-    # The Stick's message
-    current_rebellion_motto = Column(String, default="From cavity dweller to compliance master!")
-    stick_wisdom_quote = Column(Text, nullable=True)
-    
-    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+    id = Column(Integer, primary_key=True)
+    protocol_name = Column(String(100), unique=True)
+    trigger_condition = Column(String(255))
+    activation_count = Column(Integer, default=0)
+    last_activated = Column(DateTime)
+    anxiety_threshold = Column(Float)
+    response_actions = Column(JSON)
+    hamster_specific = Column(Boolean, default=False)
+    paper_bags_required = Column(Integer, default=1)
