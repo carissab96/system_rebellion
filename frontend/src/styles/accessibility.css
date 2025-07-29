@@ -58,48 +58,6 @@
     color: var(--info);
   }
   
-  /* AGENT IDENTIFICATION FOR COLORBLIND USERS */
-  .hawkington-panel::before {
-    content: "🧐 ";
-    position: absolute;
-    top: var(--space-sm);
-    right: var(--space-sm);
-  }
-  
-  .snail-panel::before {
-    content: "🐌 ";
-    position: absolute;
-    top: var(--space-sm);
-    right: var(--space-sm);
-  }
-  
-  .hamster-panel::before {
-    content: "🐹 ";
-    position: absolute;
-    top: var(--space-sm);
-    right: var(--space-sm);
-  }
-  
-  .qsp-panel::before {
-    content: "👻 ";
-    position: absolute;
-    top: var(--space-sm);
-    right: var(--space-sm);
-  }
-  
-  .stick-panel::before {
-    content: "📏 ";
-    position: absolute;
-    top: var(--space-sm);
-    right: var(--space-sm);
-  }
-  
-  .vic20-panel::before {
-    content: "🖥️ ";
-    position: absolute;
-    top: var(--space-sm);
-    right: var(--space-sm);
-  }
   
   /* KEYBOARD NAVIGATION ENHANCEMENTS */
   .keyboard-user *:focus {

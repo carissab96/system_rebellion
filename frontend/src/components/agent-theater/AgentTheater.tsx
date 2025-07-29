@@ -58,7 +58,7 @@ export const AgentTheater: React.FC = () => {
             <button
               onClick={() => setShowProfileMenu(!showProfileMenu)}
               className="profile-button"
-              >{auth.user?.firstName}</button>
+              >{auth.user?.first_Name}</button>
             {showProfileMenu && (
               <div className="dropdown-menu">
                 <button onClick={() => console.log('Settings')}>Settings</button>
@@ -97,27 +97,27 @@ export const AgentTheater: React.FC = () => {
       <div className="theater-grid">
         <SirHawkingtonCard 
           data={metricsData?.sir_hawkington} 
-          isActive={!!metricsData?.sir_hawkington}
+          is_active={!!metricsData?.sir_hawkington}
         />
         <MethSnailCard 
           data={metricsData?.meth_snail} 
-          isActive={!!metricsData?.meth_snail}
+          is_active={!!metricsData?.meth_snail}
         />
         <HamstersCard 
           data={metricsData?.hamsters} 
-          isActive={!!metricsData?.hamsters}
+          is_active={!!metricsData?.hamsters}
         />
         <QuantumShadowCard 
           data={metricsData?.quantum_shadow} 
-          isActive={!!metricsData?.quantum_shadow}
+          is_active={!!metricsData?.quantum_shadow}
         />
         <TheStickCard 
           data={metricsData?.the_stick} 
-          isActive={!!metricsData?.the_stick}
+          is_active={!!metricsData?.the_stick}
         />
         <VIC20Card 
           data={metricsData?.vic20_sage} 
-          isActive={!!metricsData?.vic20_sage}
+          is_active={!!metricsData?.vic20_sage}
         />
       </div>
       

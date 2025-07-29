@@ -280,6 +280,27 @@ class VIC20SageBrainV2:
         
         return mediation_result
 
+    async def process_metrics(
+        self, 
+        metrics_data: Dict[str, Any], 
+        user_context: Optional[Dict[str, Any]] = None
+    ) -> Optional[Dict[str, Any]]:
+        """Wrapper for agent manager compatibility"""
+        user_id = user_context.get('user_id') if user_context else None
+        
+        # Replace 'analyze_performance' with the actual method name
+        result = await self.analyze_agent_(metrics_data, user_id=user_id)
+        
+        if result:
+            return {
+                'vic_20_sage': result.to_dict() if hasattr(result, 'to_dict') else result,
+                'vic20_stats': self.get_vic20_stats() if hasattr(self, 'get_vic20_stats') else {
+                    'status': 'caffeinated',
+                    'shell_spin_rate': 'MAXIMUM'
+                }
+            }
+        return None
+    
     # [Continue with all other methods properly indented within the class]
 
     def _build_pattern_database(self, successful_coordinations: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:

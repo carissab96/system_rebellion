@@ -150,8 +150,8 @@ def initialize_database(self):
         from .database_integration import HawkingtonDatabaseIntegration
         self.db = HawkingtonDatabaseIntegration(self.db_getter)
         self.db.initialize()
-    
-def analyze_metrics(
+
+async def analyze_metrics(
         self, 
         metrics_data: Dict[str, Any], 
         historical_data: Optional[List[Dict]] = None,

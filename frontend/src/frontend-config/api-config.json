@@ -39,6 +39,11 @@
         "handler": "validate_token"
       },
       {
+        "method": "GET",
+        "path": "/csrf_token",
+        "handler": "get_csrf_token"
+      },
+      {
         "method": "POST",
         "path": "/refresh-token",
         "handler": "refresh_access_token"
@@ -52,11 +57,6 @@
         "method": "POST",
         "path": "/token",
         "handler": "login_for_access_token"
-      },
-      {
-        "method": "GET",
-        "path": "/csrf_token",
-        "handler": "get_csrf_token"
       }
     ],
     "users": [
@@ -87,6 +87,11 @@
       },
       {
         "method": "POST",
+        "path": "/profiles/{profile_id}/apply",
+        "handler": "apply_optimization_profile"
+      },
+      {
+        "method": "POST",
         "path": "/create-test-user",
         "handler": "create_test_user"
       },
@@ -109,11 +114,6 @@
         "method": "POST",
         "path": "/update-profile",
         "handler": "update_profile"
-      },
-      {
-        "method": "POST",
-        "path": "/profiles/{profile_id}/apply",
-        "handler": "apply_optimization_profile"
       }
     ],
     "agents": [
@@ -133,24 +133,34 @@
         "handler": "apply_hamsters_engineering"
       },
       {
+        "method": "POST",
+        "path": "/hamsters/emergency",
+        "handler": "hamster_emergency_response"
+      },
+      {
         "method": "GET",
         "path": "/hamsters/history",
         "handler": "get_hamsters_history"
       },
       {
         "method": "GET",
-        "path": "/hamsters/patterns",
-        "handler": "get_hamsters_patterns"
+        "path": "/hamsters/communication-log",
+        "handler": "get_hamster_communications"
       },
       {
         "method": "GET",
-        "path": "/hamsters/stats",
-        "handler": "get_hamsters_stats_endpoint"
+        "path": "/hamsters/supply-closet",
+        "handler": "check_supply_closet"
       },
       {
         "method": "POST",
         "path": "/hamsters/restock",
         "handler": "restock_hamsters_inventory"
+      },
+      {
+        "method": "GET",
+        "path": "/hamsters/stats",
+        "handler": "get_hamsters_stats_endpoint"
       },
       {
         "method": "DELETE",
@@ -183,6 +193,11 @@
         "method": "GET",
         "path": "/metrics/current",
         "handler": "get_current_metrics"
+      },
+      {
+        "method": "POST",
+        "path": "/disk-cleanup",
+        "handler": "request_disk_cleanup"
       }
     ],
     "websockets": [

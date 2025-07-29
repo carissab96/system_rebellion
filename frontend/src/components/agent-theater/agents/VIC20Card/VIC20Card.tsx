@@ -7,10 +7,10 @@ import './VIC20Card.css';
 
 interface VIC20CardProps {
   data?: any;
-  isActive: boolean;
+  is_active: boolean;
 }
 
-export const VIC20Card: React.FC<VIC20CardProps> = ({ data, isActive }) => {
+export const VIC20Card: React.FC<VIC20CardProps> = ({ data, is_active }) => {
   const navigate = useNavigate();
   const [warGamesMode, setWarGamesMode] = useState(false);
   
@@ -23,7 +23,7 @@ export const VIC20Card: React.FC<VIC20CardProps> = ({ data, isActive }) => {
     setTimeout(() => setWarGamesMode(false), 5000);
   };
   
-  if (!isActive) {
+  if (!is_active) {
     return (
       <div className="agent-card vic-20 offline">
         <div className="agent-header">

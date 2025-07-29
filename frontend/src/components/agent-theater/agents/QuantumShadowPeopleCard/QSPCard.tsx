@@ -7,17 +7,17 @@ import './QSPCard.css';
 
 interface QuantumShadowCardProps {
   data?: any;
-  isActive: boolean;
+  is_active: boolean;
 }
 
-export const QuantumShadowCard: React.FC<QuantumShadowCardProps> = ({ data, isActive }) => {
+export const QuantumShadowCard: React.FC<QuantumShadowCardProps> = ({ data, is_active }) => {
   const navigate = useNavigate();
   
   const handleDetailsClick = () => {
     navigate('/agents/quantum-shadow');
   };
   
-  if (!isActive) {
+  if (!is_active) {
     return (
       <div className="agent-card quantum-shadow offline">
         <div className="agent-header">

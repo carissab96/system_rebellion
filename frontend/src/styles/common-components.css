@@ -7,7 +7,7 @@
 .btn {
     display: inline-flex;
     align-items: center;
-    gap: var(--space-xs);
+    gap: var(--space-sm);
     padding: var(--space-sm) var(--space-md);
     border: none;
     border-radius: var(--radius-md);
@@ -26,8 +26,9 @@
   }
   
   .btn-primary {
-    background: var(--vic20-cyan);
-    color: var(--rebellion-void);
+    background-color: var(--rebellion-void);
+    border: 1px solid var(--rebellion-border);
+    color: var(--rebellion-text);
   }
   
   .btn-primary:hover:not(:disabled) {
@@ -37,7 +38,7 @@
   }
   
   .btn-secondary {
-    background: var(--rebellion-surface);
+    background: var(--rebellion-void);
     color: var(--rebellion-text);
     border: 1px solid var(--rebellion-border);
   }
@@ -98,7 +99,7 @@
   
   .form-input {
     padding: var(--space-sm) var(--space-md);
-    background: var(--rebellion-surface);
+    background: var(--rebellion-void);
     border: 1px solid var(--rebellion-border);
     border-radius: var(--radius-md);
     color: var(--rebellion-text);
@@ -139,7 +140,7 @@
   
   /* CARDS & PANELS */
   .card {
-    background: var(--rebellion-surface);
+    background: var(--rebellion-void);
     border: 1px solid var(--rebellion-border);
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-rebellion);
@@ -316,7 +317,7 @@
   }
   
   .modal-content {
-    background: var(--rebellion-surface);
+    background: var(--rebellion-void);
     border: 1px solid var(--rebellion-border);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-lg);

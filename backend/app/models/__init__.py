@@ -1,6 +1,6 @@
 # models/__init__.py
 from .user import User
-from .user import UserProfile
+
 from .system import SystemConfiguration
 from .system import OptimizationProfile
 from .alerts import SystemAlert
@@ -19,7 +19,7 @@ from .vic20_sage_model import VIC20CoordinationLog, VIC20SystemSynthesis, VIC20A
 
 # Ensure all models are imported and registered
 __all__ = [
-    'User', 'UserProfile', 'SystemConfiguration', 'OptimizationProfile', 
+    'User', 'SystemConfiguration', 'OptimizationProfile', 
     'SystemAlert', 'SystemMetrics', 'TuningHistory',
     'AgentPerformanceSummary', 'CrossAgentCoordination',
     'HawkingtonDecisionLog', 'MethSnailDecisionLog', 'HamstersDecisionLog', 'StickDecisionLog',

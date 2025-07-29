@@ -1,0 +1,1223 @@
+/* OnboardingFlow.css */
+.onboarding-container {
+    min-height: 100vh;
+    background: #000000;
+    color: #ffffff;
+    font-family: var(--font-system);
+    position: relative;
+  }
+  
+  /* Progress Bar */
+  .onboarding-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.1);
+    z-index: 100;
+  }
+  
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #06b6d4 0%, #a855f7 100%);
+    transition: width 0.3s ease;
+  }
+  
+  /* Content Container */
+  .onboarding-content {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 4rem 2rem;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* Step Header */
+  .step-header {
+    margin-bottom: 3rem;
+  }
+  
+  .step-title {
+    font-size: 2.5rem;
+    font-weight: 200;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.02em;
+  }
+  
+  .step-subtitle {
+    font-size: 1.125rem;
+    color: rgba(255, 255, 255, 0.6);
+    letter-spacing: 0.02em;
+  }
+  
+  /* Step Body */
+  .step-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* Form Elements */
+  .form-group {
+    margin-bottom: 2rem;
+  }
+  
+  .form-group.large {
+    margin-bottom: 3rem;
+  }
+  
+  .form-group label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+    color: rgba(255, 255, 255, 0.8);
+  }
+  
+  .onboarding-input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 1rem;
+    color: #ffffff;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    font-family: inherit;
+  }
+  
+  .onboarding-input:focus {
+    outline: none;
+    border-color: rgba(6, 182, 212, 0.5);
+    background: rgba(255, 255, 255, 0.08);
+  }
+  
+  .onboarding-input.large {
+    font-size: 1.25rem;
+    padding: 1.25rem;
+  }
+  
+  .input-hint {
+    display: block;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.5);
+    margin-top: 0.5rem;
+  }
+  
+  /* Buttons */
+  .button-group {
+    display: flex;
+    gap: 1rem;
+    margin-top: auto;
+    padding-top: 3rem;
+  }
+  
+  .onboarding-button {
+    padding: 1rem 2rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: inherit;
+  }
+  
+  .onboarding-button.primary {
+    background: #ffffff;
+    color: #000000;
+  }
+  
+  .onboarding-button.primary:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.9);
+    transform: translateY(-1px);
+  }
+  
+  .onboarding-button.primary:disabled {
+    background: rgba(255, 255, 255, 0.3);
+    cursor: not-allowed;
+  }
+  
+  .onboarding-button.secondary {
+    background: transparent;
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  
+  .onboarding-button.secondary:hover {
+    border-color: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.05);
+  }
+  
+  .onboarding-button.large {
+    padding: 1.25rem 3rem;
+    font-size: 1rem;
+  }
+  
+  .onboarding-button.loading {
+    position: relative;
+    color: transparent;
+  }
+  
+  .onboarding-button.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #000;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  
+  /* Footer */
+  .onboarding-footer {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.4);
+  }
+  
+  /* Welcome Step */
+  .welcome-step {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+  
+  .welcome-content {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: center;
+    margin-bottom: 3rem;
+  }
+  
+  .welcome-lead {
+    font-size: 1.25rem;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 2rem;
+  }
+  
+  .welcome-features {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .feature-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .feature-number {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #06b6d4;
+    font-family: var(--font-mono);
+  }
+  
+  .memory-counter-preview {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 2rem;
+    text-align: center;
+  }
+  
+  .counter-label {
+    display: block;
+    font-size: 0.75rem;
+    letter-spacing: 0.2em;
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+  }
+  
+  .counter-value {
+    display: block;
+    font-size: 3rem;
+    font-weight: 100;
+    font-family: var(--font-mono);
+    color: #06b6d4;
+    margin-bottom: 0.5rem;
+  }
+  
+  .counter-text {
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.6);
+  }
+  
+  /* System Step */
+  .system-preview {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: rgba(255, 255, 255, 0.02);
+    border-left: 2px solid #e6ac00;
+  }
+  
+  .preview-text {
+    font-style: italic;
+    color: rgba(255, 255, 255, 0.8);
+  }
+  
+  .preview-text .highlight {
+    color: #e6ac00;
+    font-weight: 500;
+  }
+  
+  /* Agent Showcase Cards */
+/* Updated agent showcase card styles */
+
+/* Agent pattern container on cards */
+.agent-pattern-container {
+    width: 60px;
+    height: 60px;
+    flex-shrink: 0;
+    position: relative;
+    margin-right: 1rem;
+  }
+  
+  /* Scale down patterns for card display */
+  .agent-showcase-card .agent-pattern {
+    transform: scale(0.75);
+    transform-origin: center;
+  }
+  
+  /* Adjust the agent identity layout */
+  .agent-identity {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+    position: relative;
+  }
+  
+  /* Remove the color bar since we have patterns now */
+  .agent-color-bar {
+    display: none;
+  }
+  
+  /* Make patterns more prominent on hover */
+  .agent-showcase-card:hover .agent-pattern {
+    transform: scale(0.8);
+    transition: transform 0.3s ease;
+  }
+  
+  .agent-showcase-card.expanded .agent-pattern {
+    transform: scale(0.85);
+  }
+  
+  /* Ensure patterns use their agent colors */
+  .agent-showcase-card .hawkington-pattern .pattern-element {
+    border-color: #e6ac00;
+  }
+  
+  .agent-showcase-card .stick-pattern .pattern-element {
+    background: #f97316;
+  }
+  
+  .agent-showcase-card .hamsters-pattern .pattern-element {
+    background: #ff8c42;
+  }
+  
+  .agent-showcase-card .snail-pattern .snail-spiral {
+    stroke: #00d084;
+  }
+  
+  .agent-showcase-card .qsp-pattern .pattern-element {
+    border-color: #a855f7;
+  }
+  
+  .agent-showcase-card .vic20-pattern .pattern-element {
+    background: #06b6d4;
+  }
+  
+  /* Add subtle glow on expanded cards */
+  .agent-showcase-card.expanded .agent-pattern::after {
+    content: '';
+    position: absolute;
+    inset: -10px;
+    background: radial-gradient(circle, var(--agent-color) 0%, transparent 70%);
+    opacity: 0.1;
+    pointer-events: none;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .agent-pattern-container {
+      width: 50px;
+      height: 50px;
+    }
+    
+    .agent-showcase-card .agent-pattern {
+      transform: scale(0.65);
+    }
+  }
+.agent-showcase-card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    padding: 1.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .agent-showcase-card:hover:not(.locked) {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+  
+  .agent-showcase-card.expanded {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  
+  .agent-showcase-card.locked {
+    background: rgba(255, 255, 255, 0.06);
+    box-shadow: 0 0 0 1px var(--agent-color) inset;
+  }
+  
+  /* Lock indicator */
+  .lock-indicator {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+  }
+  
+  .lock-icon {
+    width: 16px;
+    height: 20px;
+    position: relative;
+  }
+  
+  .lock-icon::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 12px;
+    height: 12px;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-bottom: none;
+    border-radius: 6px 6px 0 0;
+  }
+  
+  .lock-icon::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 16px;
+    height: 10px;
+    background: rgba(255, 255, 255, 0.4);
+    border-radius: 1px;
+  }
+  
+  /* Interaction hint styling */
+  .interaction-hint {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.4);
+    font-style: italic;
+    transition: all 0.2s ease;
+  }
+  
+  .agent-showcase-card:hover .interaction-hint {
+    color: rgba(255, 255, 255, 0.6);
+  }
+  
+  .agent-showcase-card.locked .interaction-hint {
+    color: var(--agent-color);
+    opacity: 0.7;
+  }
+  
+  /* Smooth transition for details section */
+  .agent-details {
+    overflow: hidden;
+  }
+  
+  /* Hover-only expansion should be slightly faster */
+  .agent-showcase-card:hover:not(.locked) .agent-details {
+    transition-duration: 0.2s;
+  }
+  
+  /* Visual feedback for clickable area */
+  .agent-showcase-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: transparent;
+    pointer-events: none;
+    transition: background 0.2s ease;
+  }
+  
+  .agent-showcase-card:active::after {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  
+  .agent-identity {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    align-items: flex-start;
+  }
+  
+/* Continue the CSS */
+.agent-color-bar {
+    width: 4px;
+    height: 60px;
+    flex-shrink: 0;
+  }
+  
+  .agent-basic-info {
+    flex: 1;
+  }
+  
+  .agent-details {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .detail-item {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.875rem;
+  }
+  
+  .detail-label {
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+  }
+  
+  .detail-content {
+    color: rgba(255, 255, 255, 0.8);
+    line-height: 1.4;
+  }
+  
+  .card-footer {
+    position: absolute;
+    bottom: 0.75rem;
+    right: 1rem;
+  }
+  
+  .click-hint {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.4);
+    font-style: italic;
+  }
+  
+  /* Agent Identifiers - Geometric Patterns Instead of Icons */
+  .agent-identifier {
+    width: 80px;
+    height: 80px;
+    position: relative;
+    flex-shrink: 0;
+  }
+  
+  .agent-pattern {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* Hawkington - Triangle formation (aristocratic) */
+  .hawkington-pattern .pattern-element {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    border: 2px solid #e6ac00;
+  }
+  
+  .hawkington-pattern .pattern-element:nth-child(1) {
+    transform: rotate(45deg);
+    top: 0;
+  }
+  
+  .hawkington-pattern .pattern-element:nth-child(2) {
+    transform: rotate(45deg) scale(0.7);
+    bottom: 0;
+    left: 0;
+  }
+  
+  .hawkington-pattern .pattern-element:nth-child(3) {
+    transform: rotate(45deg) scale(0.7);
+    bottom: 0;
+    right: 0;
+  }
+  
+  /* The Stick - Vertical lines (rigid, anxious) */
+  .stick-pattern {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .stick-pattern .pattern-element {
+    width: 3px;
+    background: #f97316;
+    animation: anxious-vibrate 2s ease-in-out infinite;
+  }
+  
+  .stick-pattern .pattern-element:nth-child(1) { height: 60px; }
+  .stick-pattern .pattern-element:nth-child(2) { height: 50px; animation-delay: 0.1s; }
+  .stick-pattern .pattern-element:nth-child(3) { height: 55px; animation-delay: 0.2s; }
+  .stick-pattern .pattern-element:nth-child(4) { height: 45px; animation-delay: 0.3s; }
+  
+  @keyframes anxious-vibrate {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-1px); }
+    75% { transform: translateX(1px); }
+  }
+  
+  /* Hamsters - Three circles (Steve, Bob, Carl) */
+  .hamsters-pattern {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    width: 60px;
+    height: 60px;
+    margin: 10px;
+  }
+  
+  .hamsters-pattern .pattern-element {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #ff8c42;
+  }
+  
+  .hamsters-pattern .pattern-element:nth-child(1) { grid-column: 1 / 3; margin: 0 auto; }
+  .hamsters-pattern .pattern-element:nth-child(2) { animation: bob-chaos 3s infinite; }
+  .hamsters-pattern .pattern-element:nth-child(3) { opacity: 0.8; }
+  
+  @keyframes bob-chaos {
+    0%, 100% { transform: translate(0, 0); }
+    33% { transform: translate(3px, -3px); }
+    66% { transform: translate(-3px, 3px); }
+  }
+  
+  /* Meth Snail - Spiral (speed trail) */
+  .snail-pattern {
+    width: 100%;
+    height: 100%;
+  }
+  
+  .snail-pattern svg {
+    width: 100%;
+    height: 100%;
+  }
+  
+  .snail-spiral {
+    fill: none;
+    stroke: #00d084;
+    stroke-width: 2;
+    opacity: 0.8;
+    stroke-dasharray: 150;
+    stroke-dashoffset: 0;
+    animation: spiral-trail 3s linear infinite;
+  }
+  
+  @keyframes spiral-trail {
+    to { stroke-dashoffset: -150; }
+  }
+  
+  /* QSP - Phasing squares (dimensional) */
+  .qsp-pattern {
+    width: 100%;
+    height: 100%;
+    position: relative;
+  }
+  
+  .qsp-pattern .pattern-element {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    border: 2px solid #a855f7;
+    opacity: 0.6;
+  }
+  
+  .qsp-pattern .pattern-element:nth-child(1) {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    animation: phase-shift 4s ease-in-out infinite;
+  }
+  
+  .qsp-pattern .pattern-element:nth-child(2) {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.7);
+    animation: phase-shift 4s ease-in-out infinite reverse;
+    animation-delay: 1s;
+  }
+  
+  @keyframes phase-shift {
+    0%, 100% { opacity: 0.6; transform: translate(-50%, -50%) rotate(0deg); }
+    50% { opacity: 0.2; transform: translate(-50%, -50%) rotate(45deg) scale(1.2); }
+  }
+  
+  /* VIC-20 - Retro grid (ancient wisdom) */
+  .vic20-pattern {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 4px;
+    padding: 15px;
+  }
+  
+  .vic20-pattern .pattern-element {
+    background: #06b6d4;
+    opacity: 0.3;
+  }
+  
+  .vic20-pattern .pattern-element:nth-child(1),
+  .vic20-pattern .pattern-element:nth-child(3),
+  .vic20-pattern .pattern-element:nth-child(5),
+  .vic20-pattern .pattern-element:nth-child(7),
+  .vic20-pattern .pattern-element:nth-child(9) {
+    opacity: 0.6;
+  }
+  
+  /* Complete Step - Agent Circle Without Emojis */
+  .agent-node {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--color);
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.9);
+    animation: pulse 2s ease-in-out infinite;
+    overflow: hidden;
+  }
+  
+  .agent-node::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--color);
+    opacity: 0.1;
+  }
+  
+  .agent-node-pattern {
+    width: 30px;
+    height: 30px;
+    position: relative;
+    z-index: 1;
+  }
+  
+  /* Mini patterns for completion circle */
+  .agent-node.hawkington .agent-node-pattern::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 2px solid #e6ac00;
+    transform: rotate(45deg);
+  }
+  
+  .agent-node.stick .agent-node-pattern {
+    display: flex;
+    gap: 3px;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .agent-node.stick .agent-node-pattern::before,
+  .agent-node.stick .agent-node-pattern::after {
+    content: '';
+    width: 2px;
+    height: 20px;
+    background: #f97316;
+  }
+  
+  .agent-node.hamsters .agent-node-pattern {
+    display: flex;
+    gap: 3px;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .agent-node.hamsters .agent-node-pattern::before,
+  .agent-node.hamsters .agent-node-pattern::after {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ff8c42;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 1024px) {
+    .agents-showcase {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .detail-item {
+      grid-template-columns: 1fr;
+      gap: 0.25rem;
+    }
+    
+    .agent-identifier {
+      width: 60px;
+      height: 60px;
+    }
+  }  
+  /* System Profile Step */
+.system-profile-step {
+    max-width: 800px;
+  }
+  
+  .detection-spinner {
+    text-align: center;
+    padding: 3rem;
+  }
+  
+  .spinner {
+    width: 50px;
+    height: 50px;
+    border: 3px solid rgba(255, 255, 255, 0.1);
+    border-top-color: #06b6d4;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem;
+  }
+  
+  .system-basics,
+  .system-environment {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 2rem;
+    margin-bottom: 2rem;
+  }
+  
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .system-input,
+  .system-select {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 1rem;
+    color: #ffffff;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    font-family: inherit;
+  }
+  /* Config Sections */
+  .config-section {
+    margin-bottom: 3rem;
+  }
+  
+  .config-section h4 {
+    font-size: 1.125rem;
+    font-weight: 400;
+    margin-bottom: 0.5rem;
+    letter-spacing: 0.02em;
+  }
+  
+  .config-description {
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 1.5rem;
+    line-height: 1.4;
+  }
+  
+  /* Sliders */
+  .slider-group {
+    margin-bottom: 1.5rem;
+  }
+  
+  .slider-group.compact {
+    margin-bottom: 1rem;
+  }
+  
+  .slider-group label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+  }
+  
+  .slider-group .value {
+    font-family: var(--font-mono);
+    color: #06b6d4;
+    font-weight: 500;
+  }
+  
+  .config-slider {
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+    cursor: pointer;
+  }
+  
+  .config-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    background: #ffffff;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .config-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 0 8px rgba(255, 255, 255, 0.1);
+  }
+  
+  .config-slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    background: #ffffff;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+  }
+  
+  .slider-hint {
+    display: block;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.4);
+    margin-top: 0.25rem;
+  }
+  
+  /* Specialists Grid */
+  .specialists-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    margin-bottom: 2rem;
+  }
+  
+  .specialist-section {
+    padding: 1.5rem;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .specialist-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .specialist-header h4 {
+    font-size: 1rem;
+    font-weight: 400;
+    margin: 0;
+  }
+  
+  .specialist-desc {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 1rem;
+    line-height: 1.3;
+  }
+  
+  /* Monitoring Config */
+  .monitoring-config-step {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+  
+  .monitoring-section {
+    padding: 2rem;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .weight-sliders {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .weight-total {
+    text-align: center;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    font-family: var(--font-mono);
+  }
+  
+  .weight-total .warning {
+    color: #f97316;
+    font-weight: 500;
+  }
+  
+  .threshold-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+  
+  .threshold-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .threshold-item label {
+    flex: 1;
+    font-size: 0.875rem;
+  }
+  
+  .threshold-input {
+    width: 80px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 0.5rem;
+    color: #ffffff;
+    font-family: var(--font-mono);
+    text-align: center;
+  }
+  
+  .threshold-input:focus {
+    outline: none;
+    border-color: rgba(6, 182, 212, 0.5);
+  }
+  
+  /* Toggles and Selects */
+  .toggle-group {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .toggle-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    cursor: pointer;
+  }
+  
+  .toggle-label input[type="checkbox"] {
+    margin-top: 0.125rem;
+  }
+  
+  .toggle-label span {
+    display: block;
+  }
+  
+  .toggle-hint {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.5);
+    margin-top: 0.25rem;
+  }
+  
+  .select-group {
+    margin-top: 1.5rem;
+  }
+  
+  .select-group label {
+    display: block;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .config-select {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 0.75rem;
+    color: #ffffff;
+    font-size: 0.875rem;
+    cursor: pointer;
+  }
+  
+  .config-select:focus {
+    outline: none;
+    border-color: rgba(6, 182, 212, 0.5);
+  }
+  
+  /* Complete Step */
+  .complete-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding-top: 2rem;
+  }
+  
+  .completion-animation {
+    margin-bottom: 3rem;
+  }
+  
+  .agents-circle {
+    width: 300px;
+    height: 300px;
+    position: relative;
+    margin: 0 auto;
+  }
+  
+  .agent-node {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    border: 2px solid var(--color);
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.9);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  
+  .agent-node.hawkington { top: 20px; left: 50%; transform: translateX(-50%); }
+  .agent-node.stick { top: 70px; right: 30px; animation-delay: 0.3s; }
+  .agent-node.hamsters { bottom: 70px; right: 30px; animation-delay: 0.6s; }
+  .agent-node.snail { bottom: 20px; left: 50%; transform: translateX(-50%); animation-delay: 0.9s; }
+  .agent-node.qsp { bottom: 70px; left: 30px; animation-delay: 1.2s; }
+  .agent-node.vic20 { top: 70px; left: 30px; animation-delay: 1.5s; }
+  
+  .connection-lines {
+    position: absolute;
+    inset: 0;
+  }
+  
+  .connections {
+    width: 100%;
+    height: 100%;
+  }
+  
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 0.8; }
+    50% { transform: scale(1.05); opacity: 1; }
+  }
+  
+  .completion-content h2 {
+    font-size: 2rem;
+    font-weight: 300;
+    margin-bottom: 1rem;
+  }
+  
+  .completion-message {
+    font-size: 1.125rem;
+    color: rgba(255, 255, 255, 0.8);
+    line-height: 1.6;
+    margin-bottom: 3rem;
+    max-width: 600px;
+  }
+  
+  .completion-message .highlight {
+    color: #06b6d4;
+    font-weight: 500;
+  }
+  
+  .initialization-summary {
+    text-align: left;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    max-width: 600px;
+  }
+  
+  .initialization-summary h3 {
+    font-size: 1.125rem;
+    font-weight: 400;
+    margin-bottom: 1rem;
+  }
+  
+  .summary-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .summary-list li {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.8);
+  }
+  
+  .summary-icon {
+    font-size: 1.25rem;
+  }
+  
+  .memory-notice {
+    background: rgba(6, 182, 212, 0.1);
+    border: 1px solid rgba(6, 182, 212, 0.3);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    max-width: 600px;
+  }
+  
+  .notice-text {
+    font-size: 0.875rem;
+    line-height: 1.4;
+    color: rgba(255, 255, 255, 0.9);
+  }
+  
+  /* Responsive */
+  @media (max-width: 768px) {
+    .welcome-content {
+      grid-template-columns: 1fr;
+      gap: 2rem;
+    }
+  
+    .agents-grid {
+      grid-template-columns: 1fr;
+    }
+  
+    .specialists-grid {
+      grid-template-columns: 1fr;
+    }
+  
+    .threshold-grid {
+      grid-template-columns: 1fr;
+    }
+  
+    .button-group {
+      flex-direction: column;
+    }
+  
+    .onboarding-button {
+      width: 100%;
+    }
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }

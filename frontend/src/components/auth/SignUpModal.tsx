@@ -1,55 +1,69 @@
 // src/components/auth/SignUpModal.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './SignUpModal.css';
-import { useDispatch } from 'react-redux';
-import { loginSuccess } from '../../store/slices/authSlice';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchCsrfToken, registerUser, clearError } from '../../store/slices/authSlice';
+import type { RootState, AppDispatch } from '../../store';
 
 interface SignUpModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSwitchToLogin: () => void;
-  // Removed onSuccess - using Redux now
 }
 
 interface SignUpFormData {
-  firstName: string;
-  lastName: string;
+  first_name: string; // Fixed: was first_Name
+  last_name: string;
   email: string;
   password: string;
   confirmPassword: string;
-  companyName: string;
-  jobTitle: string;
-}
-
-interface SignUpResponse {
-  access_token: string;
-  token_type: string;
-  user: {
-    id: string;
-    email: string;
-    first_name: string;
-    last_name: string;
-    is_onboarded: boolean;
-    company_name?: string;
-    job_title?: string;
-  };
+  company_name: string;
+  job_title: string;
+  username: string; // Added: backend expects username
 }
 
 export default function SignUpModal({ isOpen, onClose, onSwitchToLogin }: SignUpModalProps) {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
+  const { isLoading, error, csrfToken } = useSelector((state: RootState) => state.auth);
+  
   const [formData, setFormData] = useState<SignUpFormData>({
-    firstName: '',
-    lastName: '',
+    first_name: '',
+    last_name: '',
     email: '',
     password: '',
     confirmPassword: '',
-    companyName: '',
-    jobTitle: ''
+    company_name: '',
+    job_title: '',
+    username: '' // Will be generated from email
   });
   
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [localErrors, setLocalErrors] = useState<Record<string, string>>({});
   const [passwordStrength, setPasswordStrength] = useState(0);
+
+  // Fetch CSRF token when modal opens
+  useEffect(() => {
+    if (isOpen && !csrfToken) {
+      dispatch(fetchCsrfToken());
+    }
+  }, [isOpen, csrfToken, dispatch]);
+
+  // Clear errors when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      dispatch(clearError());
+      setLocalErrors({});
+    }
+  }, [isOpen, dispatch]);
+
+  // Generate username from email
+  useEffect(() => {
+    if (formData.email) {
+      const username = formData.email.split('@')[0];
+      setFormData(prev => ({ ...prev, username }));
+    }
+  }, [formData.email]);
 
   if (!isOpen) return null;
 
@@ -57,12 +71,12 @@ export default function SignUpModal({ isOpen, onClose, onSwitchToLogin }: SignUp
     const newErrors: Record<string, string> = {};
     
     // Enterprise validation rules
-    if (!formData.firstName.trim() || formData.firstName.length < 2) {
-      newErrors.firstName = 'First name must be at least 2 characters';
+    if (!formData.first_name.trim() || formData.first_name.length < 2) {
+      newErrors.first_name = 'First name must be at least 2 characters';
     }
     
-    if (!formData.lastName.trim() || formData.lastName.length < 2) {
-      newErrors.lastName = 'Last name must be at least 2 characters';
+    if (!formData.last_name.trim() || formData.last_name.length < 2) {
+      newErrors.last_name = 'Last name must be at least 2 characters';
     }
     
     if (!formData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
@@ -85,7 +99,10 @@ export default function SignUpModal({ isOpen, onClose, onSwitchToLogin }: SignUp
       newErrors.password = 'Password must contain at least one number';
     }
     
-    if (!/(?=.*[!@#$%^&*()_+\-=\n\${};':"\\|,.<>\/?])/.test(formData.password)) {
+    if (!/(?=.*[!@#$%^&*()_+\-=
+$$
+
+$${};':"\\|,.<>\/?])/.test(formData.password)) {
       newErrors.password = 'Password must contain at least one special character';
     }
     
@@ -93,8 +110,8 @@ export default function SignUpModal({ isOpen, onClose, onSwitchToLogin }: SignUp
       newErrors.confirmPassword = 'Passwords do not match';
     }
     
-    if (!formData.companyName.trim()) {
-      newErrors.companyName = 'Company name is required';
+    if (!formData.company_name.trim()) {
+      newErrors.company_name = 'Company name is required';
     }
     
     return newErrors;
@@ -106,7 +123,10 @@ export default function SignUpModal({ isOpen, onClose, onSwitchToLogin }: SignUp
     if (/(?=.*[a-z])/.test(password)) strength += 1;
     if (/(?=.*[A-Z])/.test(password)) strength += 1;
     if (/(?=.*\d)/.test(password)) strength += 1;
-    if (/(?=.*[!@#$%^&*()_+\-=\n\${};':"\\|,.<>\/?])/.test(password)) strength += 1;
+    if (/(?=.*[!@#$%^&*()_+\-=
+$$
+
+$${};':"\\|,.<>\/?])/.test(password)) strength += 1;
     return strength;
   };
 
@@ -117,90 +137,38 @@ export default function SignUpModal({ isOpen, onClose, onSwitchToLogin }: SignUp
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLocalErrors({});
     
-    // Set loading state and clear errors at START
-    setIsSubmitting(true);
-    setErrors({});
-    
-    // Client-side validation FIRST
+    // Client-side validation
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      setIsSubmitting(false);
+      setLocalErrors(validationErrors);
+      return;
+    }
+
+    if (!csrfToken) {
+      setLocalErrors({ submit: 'Security token not available. Please refresh and try again.' });
       return;
     }
 
     try {
-      // Get CSRF token
-      const csrfResponse = await fetch('/api/auth/csrf_token', {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (!csrfResponse.ok) {
-        throw new Error('Failed to get CSRF token');
-      }
-      
-      const csrfData = await csrfResponse.json();
-      
-      // Register user
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': csrfData.csrf_token
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          company_name: formData.companyName,
-          job_title: formData.jobTitle || null
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Registration failed');
-      }
-
-      const data: SignUpResponse = await response.json();
-      
-      // Transform backend response to match Redux User type
-      const userData = {
-        id: data.user.id,
-        email: data.user.email,
-        firstName: data.user.first_name,
-        lastName: data.user.last_name,
-        isOnboarded: data.user.is_onboarded || false,
-        companyName: data.user.company_name,
-        jobTitle: data.user.job_title
-      };
-      
-      // 🎯 DISPATCH TO REDUX instead of callback
-      dispatch(loginSuccess({ 
-        user: userData, 
-        token: data.access_token 
-      }));
+      // Use the registerUser thunk from auth slice
+      const result = await dispatch(registerUser({
+        email: formData.email,
+        username: formData.username,
+        password: formData.password,
+        csrfToken
+      })).unwrap();
       
       // Close modal
       onClose();
       
+      // New users always go to onboarding
+      navigate('/onboarding');
+      
     } catch (error) {
+      // Error is already in Redux store
       console.error('Registration error:', error);
-      if (!(error instanceof Error)) {
-        throw new Error(`An unexpected error occurred: ${error}`);
-      }
-      setErrors({
-        submit: error.message
-      });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -228,60 +196,60 @@ export default function SignUpModal({ isOpen, onClose, onSwitchToLogin }: SignUp
     }
   };
 
+  // Combine Redux error and local errors
+  const displayError = error || localErrors.submit;
+  
   return (
     <div className="signup-modal-overlay" onClick={onClose}>
       <div className="signup-modal-content" onClick={e => e.stopPropagation()}>
-        <div className="card-header">
-          <h2 className="card-title vic20-text">Create Enterprise Account</h2>
-          <p className="card-subtitle">
-            Join System Rebellion for enterprise AI agent coordination
-          </p>
-          <button 
-            className="btn btn-ghost btn-sm signup-modal-close"
-            onClick={onClose}
-            aria-label="Close"
-          >
-            ✕
-          </button>
-        </div>
-
+        <button className="signup-modal-close" onClick={onClose}>
+          &times;
+        </button>
+        <h2>Create Enterprise Account</h2>
+        <p className="subtitle">Join System Rebellion for enterprise AI agent coordination</p>
         <form onSubmit={handleSubmit} className="card-body">
+          {displayError && (
+            <div className="alert alert-error">
+              {displayError}
+            </div>
+          )}
+          
           <div className="signup-form-grid">
             <div className="form-group">
-              <label className="form-label" htmlFor="firstName">
+              <label className="form-label" htmlFor="first_name">
                 First Name
               </label>
               <input
-                id="firstName"
+                id="first_name"
                 type="text"
-                className={`form-input ${errors.firstName ? 'error' : ''}`}
-                value={formData.firstName}
-                onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+                className={`form-input ${localErrors.first_name ? 'error' : ''}`}
+                value={formData.first_name}
+                onChange={(e) => setFormData({...formData, first_name: e.target.value})}
                 placeholder="Enter your first name"
-                disabled={isSubmitting}
+                disabled={isLoading}
                 required
               />
-              {errors.firstName && (
-                <span className="form-error">{errors.firstName}</span>
+              {localErrors.first_name && (
+                <span className="form-error">{localErrors.first_name}</span>
               )}
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="lastName">
+              <label className="form-label" htmlFor="last_name">
                 Last Name
               </label>
               <input
-                id="lastName"
+                id="last_name"
                 type="text"
-                className={`form-input ${errors.lastName ? 'error' : ''}`}
-                value={formData.lastName}
-                onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+                className={`form-input ${localErrors.last_name ? 'error' : ''}`}
+                value={formData.last_name}
+                onChange={(e) => setFormData({...formData, last_name: e.target.value})}
                 placeholder="Enter your last name"
-                disabled={isSubmitting}
+                disabled={isLoading}
                 required
               />
-              {errors.lastName && (
-                <span className="form-error">{errors.lastName}</span>
+              {localErrors.last_name && (
+                <span className="form-error">{localErrors.last_name}</span>
               )}
             </div>
           </div>
@@ -293,49 +261,49 @@ export default function SignUpModal({ isOpen, onClose, onSwitchToLogin }: SignUp
             <input
               id="email"
               type="email"
-              className={`form-input ${errors.email ? 'error' : ''}`}
+              className={`form-input ${localErrors.email ? 'error' : ''}`}
               value={formData.email}
               onChange={(e) => setFormData({...formData, email: e.target.value})}
               placeholder="your.name@company.com"
-              disabled={isSubmitting}
+              disabled={isLoading}
               required
             />
-            {errors.email && (
-              <span className="form-error">{errors.email}</span>
+            {localErrors.email && (
+              <span className="form-error">{localErrors.email}</span>
             )}
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="companyName">
+            <label className="form-label" htmlFor="company_name">
               Company Name
             </label>
             <input
-              id="companyName"
+              id="company_name"
               type="text"
-              className={`form-input ${errors.companyName ? 'error' : ''}`}
-              value={formData.companyName}
-              onChange={(e) => setFormData({...formData, companyName: e.target.value})}
+              className={`form-input ${localErrors.company_name ? 'error' : ''}`}
+              value={formData.company_name}
+              onChange={(e) => setFormData({...formData, company_name: e.target.value})}
               placeholder="Your organization"
-              disabled={isSubmitting}
+              disabled={isLoading}
               required
             />
-            {errors.companyName && (
-              <span className="form-error">{errors.companyName}</span>
+            {localErrors.company_name && (
+              <span className="form-error">{localErrors.company_name}</span>
             )}
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="jobTitle">
+            <label className="form-label" htmlFor="job_title">
               Job Title (Optional)
             </label>
             <input
-              id="jobTitle"
+              id="job_title"
               type="text"
               className="form-input"
-              value={formData.jobTitle}
-              onChange={(e) => setFormData({...formData, jobTitle: e.target.value})}
+              value={formData.job_title}
+              onChange={(e) => setFormData({...formData, job_title: e.target.value})}
               placeholder="Your role"
-              disabled={isSubmitting}
+              disabled={isLoading}
             />
           </div>
 
@@ -347,11 +315,11 @@ export default function SignUpModal({ isOpen, onClose, onSwitchToLogin }: SignUp
               <input
                 id="password"
                 type="password"
-                className={`form-input ${errors.password ? 'error' : ''}`}
+                className={`form-input ${localErrors.password ? 'error' : ''}`}
                 value={formData.password}
                 onChange={(e) => handlePasswordChange(e.target.value)}
                 placeholder="8+ characters required"
-                disabled={isSubmitting}
+                disabled={isLoading}
                 required
               />
               {formData.password && (
@@ -362,8 +330,8 @@ export default function SignUpModal({ isOpen, onClose, onSwitchToLogin }: SignUp
                   <span className="text-sm">Strength: {getStrengthText()}</span>
                 </div>
               )}
-              {errors.password && (
-                <span className="form-error">{errors.password}</span>
+              {localErrors.password && (
+                <span className="form-error">{localErrors.password}</span>
               )}
             </div>
 
@@ -374,57 +342,51 @@ export default function SignUpModal({ isOpen, onClose, onSwitchToLogin }: SignUp
               <input
                 id="confirmPassword"
                 type="password"
-                className={`form-input ${errors.confirmPassword ? 'error' : ''}`}
+                className={`form-input ${localErrors.confirmPassword ? 'error' : ''}`}
                 value={formData.confirmPassword}
                 onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
                 placeholder="Confirm password"
-                disabled={isSubmitting}
+                disabled={isLoading}
                 required
               />
-              {errors.confirmPassword && (
-                <span className="form-error">{errors.confirmPassword}</span>
+              {localErrors.confirmPassword && (
+                <span className="form-error">{localErrors.confirmPassword}</span>
               )}
             </div>
           </div>
 
-          {errors.submit && (
-            <div className="alert alert-error">
-              {errors.submit}
-            </div>
-          )}
-
-          <div className="signup-form-actions">
-            <button
-              type="submit"
-              className="btn btn-primary btn-lg"
-              disabled={isSubmitting}
+          <div className="signup-actions">
+            <button 
+              type="button" 
+              className="btn btn-secondary"
+              onClick={onClose}
+              disabled={isLoading}
             >
-              {isSubmitting ? (
-                <>
-                  <span className="loading-spinner"></span>
-                  Creating Account...
-                </>
-              ) : (
-                'Create Enterprise Account'
-              )}
+              Cancel
             </button>
+            <button 
+              type="submit" 
+              className="btn btn-primary"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Creating Account...' : 'Create User Account'}
+            </button>
+          </div>
+          
+          <div className="auth-switch">
+            <p className="text-center">
+              Already have an account?{' '}
+              <button 
+                type="button"
+                className="text-link"
+                onClick={onSwitchToLogin}
+                disabled={isLoading}
+              >
+                Sign In
+              </button>
+            </p>
           </div>
         </form>
-
-        <div className="card-footer">
-          <p className="text-center">
-            Already have an account?{' '}
-            <button 
-              className="btn btn-ghost btn-sm" 
-              onClick={onSwitchToLogin}
-              type="button"
-              disabled={isSubmitting}
-            >
-              Sign In
-            </button>
-          </p>
-        </div>
       </div>
     </div>
   );
-}

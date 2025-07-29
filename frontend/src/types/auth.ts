@@ -5,14 +5,14 @@ export interface User {
     token: any;
     id: string;
     email: string;
-    firstName: string;
-    lastName: string;
-    isOnboarded: boolean;
-    companyName?: string;
-    jobTitle?: string;
-    createdAt?: string;
-    updatedAt?: string;
-    isActive?: boolean;
+    first_name: string;
+    last_name: string;
+    is_onboarded: boolean;
+    company_name?: string;
+    job_title?: string;
+    created_at?: string;
+    updated_at?: string;
+    is_active?: boolean;
   }
   
   // Base response with token
@@ -57,13 +57,13 @@ export interface User {
   }
   
   export interface SignUpFormData {
-    firstName: string;
-    lastName: string;
+    first_Name: string;
+    last_name: string;
     email: string;
     password: string;
     confirmPassword: string;
-    companyName: string;
-    jobTitle: string;
+    company_name: string;
+    job_title: string;
   }
   
   // Error response interface

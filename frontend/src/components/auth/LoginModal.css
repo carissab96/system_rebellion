@@ -23,11 +23,13 @@
     border: 1px solid var(--rebellion-border);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-lg);
-    max-width: 400px;
-    width: 100%;
+    max-width: 480px;
+    width: 90vw;
     max-height: 90vh;
+    padding: 2rem;
     overflow-y: auto;
     position: relative;
+    margin: 2rem auto;
     animation: slideInUp 0.3s ease-out;
   }
   
@@ -50,6 +52,26 @@
     align-items: center;
     gap: var(--space-sm);
     margin: var(--space-md) 0;
+  }
+  
+  .login-form-actions {
+    display: flex;
+    flex-direction: row;
+    gap: var(--space-md);
+    margin-top: var(--space-md);
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+  
+  .login-form-actions .btn {
+    flex: 1;
+    min-width: 120px;
+  }
+  
+  .forgot-password {
+    text-align: center;
+    margin-top: 1rem;
   }
   
   .login-auth-links {

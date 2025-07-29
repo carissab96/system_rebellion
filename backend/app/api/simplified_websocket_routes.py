@@ -1,6 +1,5 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, status
 from app.websockets import websocket_manager
-from app.ai_agents.agent_manager import get_agent_manager
 from app.api.websocket_auth import get_current_user_from_token
 from app.services.metrics.simplified_metrics_service import SimplifiedMetricsService
 from app.services.metrics_repository import MetricsRepository
@@ -156,7 +155,8 @@ async def system_metrics_socket(websocket: WebSocket):
         # Initialize AI Agent Manager
         try:
             agent_manager = await get_agent_manager()
-            logger.info(f"🤖 AI Agent Manager initialized for user {user.email} - Active agents: {agent_manager.get_active_agents()}")
+            active_agents = await agent_manager.get_active_agents()
+            logger.info(f" AI Agent manager initialized for user {user.email} - Active agents: { active_agents }")
         except Exception as e:
             logger.error(f"Failed to initialize AI Agent Manager: {str(e)}")
             agent_manager = None

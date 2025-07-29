@@ -32,7 +32,10 @@ from app.models import *  # noqa
 # Import AI Agents and Background Tasks
 from app.ai_agents.agent_manager import get_agent_manager
 from app.core.background_tasks import start_all_background_tasks
-from app.ai_agents.hamsters.hamsters_api_routes import router as hamsters_router
+from app.ai_agents.hamsters.hamsters_api_routes_refactored import router as hamsters_router
+from rich.console import Console
+from rich.table import Table
+from rich.live import Live
 
 # Global reference to background tasks for cleanup
 background_tasks = []
@@ -299,6 +302,8 @@ def create_application() -> FastAPI:
     
     return app
 
+
+        
 # Create the app
 app = create_application()
 

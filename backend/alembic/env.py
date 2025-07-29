@@ -12,7 +12,6 @@ from alembic import context
 
 # Import all your models so alembic can see them
 from app.models import user
-from app.models import UserProfile
 from app.models.system import SystemConfiguration
 from app.models.system import OptimizationProfile
 from app.models.alerts import SystemAlert

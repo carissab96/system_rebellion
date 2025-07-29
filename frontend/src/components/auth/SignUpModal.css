@@ -20,28 +20,28 @@
   }
   
   .signup-modal-content {
-    background: var(--rebellion-surface);
+    background: var(--rebellion-void);
     border: 1px solid var(--rebellion-border);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-lg);
-    max-width: 480px;
-    width: 100%;
+    max-width: 800px;
+    width: 90vw;
     max-height: 90vh;
+    padding: 2rem;
     overflow-y: auto;
     position: relative;
+    margin: 2rem auto;
     animation: slideInUp 0.3s ease-out;
   }
   
   .signup-modal-close {
     position: absolute;
-    top: var(--space-md);
-    right: var(--space-md);
+    top: 0;
+    right: 0;
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: block;
     font-size: 1.25rem;
     z-index: 10;
   }
@@ -56,23 +56,27 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: var(--space-md);
+    margin-bottom: 1rem;
   }
   
-  .signup-form-actions {
+  .signup-actions {
     margin-top: var(--space-lg);
     display: flex;
-    flex-direction: column;
-    gap: var(--space-sm);
+    flex-direction: row;
+    gap: var(--space-md);
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
   }
   
-  .signup-form-actions .btn {
+  .signup-actions .btn {
     width: 100%;
     justify-content: center;
   }
   
   /* PASSWORD STRENGTH FOR SIGNUP */
   .signup-password-strength {
-    margin-top: var(--space-xs);
+    margin-top: var(--space-sm);
     display: flex;
     flex-direction: column;
     gap: var(--space-xs);

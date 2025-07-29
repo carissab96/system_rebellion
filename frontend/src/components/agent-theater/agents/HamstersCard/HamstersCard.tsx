@@ -7,17 +7,17 @@ import './HamstersCard.css';
 
 interface HamstersCardProps {
   data?: any;
-  isActive: boolean;
+  is_active: boolean;
 }
 
-export const HamstersCard: React.FC<HamstersCardProps> = ({ data, isActive }) => {
+export const HamstersCard: React.FC<HamstersCardProps> = ({ data, is_active }) => {
   const navigate = useNavigate();
   
   const handleDetailsClick = () => {
     navigate('/agents/hamsters');
   };
   
-  if (!isActive) {
+  if (!is_active) {
     return (
       <div className="agent-card hamsters offline">
         <div className="agent-header">

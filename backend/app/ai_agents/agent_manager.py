@@ -18,9 +18,9 @@ from functools import wraps
 
 from .base_agent import BaseAIAgent
 from .meth_snail.decision_engine import MethSnailBrainV2
-from .hamsters.decision_engine import HamstersBrainV2
+from .hamsters.decision_engine_sbcV3 import HamstersBrainV3
 from .quantum_shadow_people.decision_engine import QuantumShadowPeopleBrainV2
-from .the_stick.decision_engine import TheStickBrainV2
+from .the_stick.decision_engine import TheStickBrainV3
 from .vic_20_sage.decision_engine import VIC20SageBrainV2
 
 logger = logging.getLogger(__name__)
@@ -83,7 +83,7 @@ class AIAgentManager:
                 "retry_attempts": 3
             },
             "hamsters": {
-                "class": HamstersBrainV2,
+                "class": HamstersBrainV3,
                 "role": "Storage/Disk Engineers",
                 "retry_attempts": 2
             },
@@ -93,7 +93,7 @@ class AIAgentManager:
                 "retry_attempts": 3
             },
             "the_stick": {
-                "class": TheStickBrainV2,
+                "class": TheStickBrainV3,
                 "role": "Compliance and Learning Coordinator",
                 "retry_attempts": 1
             },

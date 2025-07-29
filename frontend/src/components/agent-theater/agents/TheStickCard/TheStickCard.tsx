@@ -7,17 +7,17 @@ import './TheStickCard.css';
 
 interface TheStickCardProps {
   data?: any;
-  isActive: boolean;
+  is_active: boolean;
 }
 
-export const TheStickCard: React.FC<TheStickCardProps> = ({ data, isActive }) => {
+export const TheStickCard: React.FC<TheStickCardProps> = ({ data, is_active }) => {
   const navigate = useNavigate();
   
   const handleDetailsClick = () => {
     navigate('/agents/the-stick');
   };
   
-  if (!isActive) {
+  if (!is_active) {
     return (
       <div className="agent-card the-stick offline">
         <div className="agent-header">

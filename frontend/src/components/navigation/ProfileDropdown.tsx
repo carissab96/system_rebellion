@@ -42,10 +42,10 @@ export default function ProfileDropdown({
         {user ? (
           <>
             <div className="user-avatar">
-              {user.firstName[0]}{user.lastName[0]}
+              {user.first_Name[0]}{user.last_name[0]}
             </div>
             <span className="user-name">
-              {user.firstName} {user.lastName}
+              {user.first_Name} {user.last_name}
             </span>
           </>
         ) : (
@@ -76,9 +76,9 @@ export default function ProfileDropdown({
             <>
               <div className="dropdown-header">
                 <div className="user-info">
-                  <strong>{user.firstName} {user.lastName}</strong>
+                  <strong>{user.first_Name} {user.last_name}</strong>
                   <span className="user-email">{user.email}</span>
-                  <span className="user-company">{user.companyName}</span>
+                  <span className="user-company">{user.company_name}</span>
                 </div>
               </div>
               

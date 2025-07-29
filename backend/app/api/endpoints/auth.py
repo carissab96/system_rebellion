@@ -631,42 +631,83 @@ async def read_users_me(current_user: User = Depends(get_current_user)):
         "needs_onboarding": current_user.needs_onboarding
     }
 
-@router.post("/users/complete-onboarding")
+# Complete onboarding
+@router.post("/complete-onboarding")
 async def complete_onboarding(
-    config_data: OnboardingConfigurationData,
+    onboarding_data: dict,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db)
 ):
-    # Update the user's onboarding status and configuration data
-    current_user.needs_onboarding = False
-    current_user.is_onboarded = True
+    """Complete user onboarding with all collected data"""
+    try:
+        # Update user with all onboarding data
+        current_user.first_name = onboarding_data.get('first_name')
+        current_user.last_name = onboarding_data.get('last_name')
+        current_user.company_name = onboarding_data.get('company_name')
+        current_user.job_title = onboarding_data.get('job_title')
+        current_user.system_name = onboarding_data.get('system_name')
+        
+        # System profile
+        current_user.system_profile = onboarding_data.get('system_profile', {})
+        
+        # Permissions tracking
+        current_user.permissions_granted_at = datetime.now(timezone.utc)
+        current_user.installation_method = onboarding_data.get('installation_method')
+        
+        # Agent preferences with system-adjusted defaults
+        system_profile = onboarding_data.get('system_profile', {})
+        agent_prefs = adjust_agent_preferences_for_system(
+            onboarding_data.get('agent_preferences', {}),
+            system_profile
+        )
+        current_user.agent_preferences = agent_prefs
+        
+        # Monitoring preferences
+        current_user.monitoring_preferences = onboarding_data.get('monitoring_preferences', {})
+        
+        # Mark as onboarded
+        current_user.is_onboarded = True
+        
+        await db.commit()
+        await db.refresh(current_user)
+        
+        # Initialize agent memory banks for this user
+        await initialize_agent_memories(current_user.id, db)
+        
+        return {
+            "success": True,
+            "user": user_to_dict(current_user),
+            "next_steps": determine_next_steps(current_user)
+        }
+        
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
 
-    # Store system configuration data
-    current_user.system_name = config_data.system_name
-    current_user.operating_system = config_data.operating_system
-    current_user.cpu_cores = config_data.cpu_cores
-    current_user.ram_gb = config_data.ram_gb
-    current_user.storage_gb = config_data.storage_gb
-    current_user.primary_use_case = config_data.primary_use_case
-    
-    # Store preferences as JSON
-    current_user.monitoring_preferences = config_data.monitoring_preferences
-    current_user.agent_preferences = config_data.agent_preferences
-    
-    # Update timestamp
-    current_user.updated_at = datetime.now()
-    
-    db.add(current_user)
-    await db.commit()
-    await db.refresh(current_user)
-    
-    return {
-        "message": "Onboarding completed successfully",
-        "user_id": current_user.id,
-        "system_name": current_user.system_name,
-        "configuration_stored": True
+def determine_next_steps(user: User) -> dict:
+    """Determine what the user should do next based on their profile"""
+    steps = {
+        "agent_installation": False,
+        "limited_mode": False,
+        "enterprise_setup": False,
+        "immediate_monitoring": False
     }
-
+    
+    profile = user.system_profile or {}
+    
+    # Check if they need special setup
+    if profile.get('admin_access') in ['none', 'limited']:
+        steps['limited_mode'] = True
+    elif profile.get('mdm_controlled') or profile.get('network_type') == 'enterprise':
+        steps['enterprise_setup'] = True
+    else:
+        steps['immediate_monitoring'] = True
+    
+    # Check if agent is installed
+    if not user.agent_installed:
+        steps['agent_installation'] = True
+    
+    return steps
 # Simple direct profile update endpoint that doesn't use the complex authentication
 @router.post("/direct-profile-update/{email}")
 async def direct_profile_update(

@@ -33,7 +33,35 @@ export const fetchCsrfToken = createAsyncThunk(
     return data.csrf_token;
   }
 );
+export const registerUser = createAsyncThunk(
+  'auth/register',
+  async ({ email, username, password, csrfToken }: { 
+    email: string; 
+    username: string; 
+    password: string; 
+    csrfToken: string 
+  }) => {
+    const response = await fetch('/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken,
+      },
+      body: JSON.stringify({ email, username, password })
+    });
 
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Registration failed');
+    }
+
+    const data = await response.json();
+    return {
+      token: data.access_token,
+      user: data.user
+    };
+  }
+);
 // Login with email/password (matches your OAuth flow)
 export const loginUser = createAsyncThunk(
   'auth/login',
@@ -89,8 +117,8 @@ export const authSlice = createSlice({
       state.isAuthenticated = true;
       state.user = {
         ...action.payload.user,
-        isOnboarded: action.payload.user.isOnboarded ?? false,
-        isActive: action.payload.user.isActive ?? true,
+        is_onboarded: action.payload.user.is_onboarded ?? false,
+        is_active: action.payload.user.is_active ?? true,
       };
       state.token = action.payload.token;
       state.error = null;
@@ -161,7 +189,25 @@ export const authSlice = createSlice({
         state.error = action.error.message || 'Failed to fetch CSRF token';
         state.isLoading = false;
       })
-      
+      .addCase(registerUser.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(registerUser.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.isAuthenticated = true;
+        state.user = action.payload.user;
+        state.token = action.payload.token;
+        state.error = null;
+        
+        localStorage.setItem('auth_token', action.payload.token);
+        localStorage.setItem('user_data', JSON.stringify(action.payload.user));
+      })
+      .addCase(registerUser.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isAuthenticated = false;
+        state.error = action.error.message || 'Registration failed';
+      })
       // Login
       .addCase(loginUser.pending, (state) => {
         state.isLoading = true;
@@ -203,7 +249,7 @@ export const authSlice = createSlice({
 export const { 
   loginSuccess, 
   logout, 
-  setCsrfToken, 
+  setCsrfToken,
   updateUser, 
   setError, 
   clearError, 

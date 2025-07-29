@@ -331,7 +331,27 @@ class MethSnailBrainV2:
                 [], [], f"Brain error: {str(e)}", user_id
             )
             return None
+
+    async def process_metrics(
+        self, 
+        metrics_data: Dict[str, Any], 
+        user_context: Optional[Dict[str, Any]] = None
+    ) -> Optional[Dict[str, Any]]:
+        """Wrapper for agent manager compatibility"""
+        user_id = user_context.get('user_id') if user_context else None
     
+        # Call the existing analyze_metrics method
+        result = await self.analyze_metrics(metrics_data, user_id=user_id)
+    
+        if result:
+            return {
+                'meth_snail': result.to_dict() if hasattr(result, 'to_dict') else result,
+            'snail_status': self.get_snail_stats() if hasattr(self, 'get_snail_stats') else {
+                'status': 'caffeinated',
+                'shell_spin_rate': 'MAXIMUM'
+            }
+        }
+        return None
     # === ALL THE EXISTING METHODS REMAIN THE SAME ===
     # [All the analysis methods from _basic_analysis through _generate_quality_recommendation remain unchanged]
 

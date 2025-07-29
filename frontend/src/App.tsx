@@ -4,7 +4,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { useDispatch, useSelector } from 'react-redux'
 import type { RootState } from './store/store'
 import LandingPage from './pages/LandingPage'
-import OnboardingPage from './pages/OnboardingPage'
+import OnboardingPage from './pages/OnboardingFlow'
 import SignUpModal from './components/auth/SignUpModal'
 import LoginModal from './components/auth/LoginModal'
 import AgentTheater from './components/agent-theater/AgentTheater'
@@ -77,7 +77,7 @@ function App() {
             path="/" 
             element={
               isAuthenticated && user ? (
-                user.isOnboarded ? (
+                user.is_onboarded ? (
                   <Navigate to="/agent-theater" replace />
                 ) : (
                   <Navigate to="/onboarding" replace />
@@ -93,7 +93,7 @@ function App() {
             path="/onboarding" 
             element={
               isAuthenticated && user ? (
-                !user.isOnboarded ? (
+                !user.is_onboarded ? (
                   <OnboardingPage 
                     user={user}
                     token={token || '' } // ✅ FIXED - added exclamation mark since we know it exists here
@@ -114,7 +114,7 @@ function App() {
           <Route 
             path="/agent-theater" 
             element={
-              isAuthenticated && user && user.isOnboarded ? (
+              isAuthenticated && user && user.is_onboarded ? (
                 <AgentTheater /> 
               ) : (
                 <Navigate to="/" replace />

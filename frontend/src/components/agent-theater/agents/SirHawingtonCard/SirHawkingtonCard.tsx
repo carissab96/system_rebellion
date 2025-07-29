@@ -7,17 +7,17 @@ import './SirHawkingtonCard.css';
 
 interface SirHawkingtonCardProps {
   data?: any;
-  isActive: boolean;
+  is_active: boolean;
 }
 
-export const SirHawkingtonCard: React.FC<SirHawkingtonCardProps> = ({ data, isActive }) => {
+export const SirHawkingtonCard: React.FC<SirHawkingtonCardProps> = ({ data, is_active }) => {
   const navigate = useNavigate();
   
   const handleDetailsClick = () => {
     navigate('/agents/sir-hawkington');
   };
   
-  if (!isActive) {
+  if (!is_active) {
     return (
       <div className="agent-card sir-hawkington offline">
         <div className="agent-header">

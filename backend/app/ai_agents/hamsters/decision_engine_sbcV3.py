@@ -15,7 +15,6 @@ from dataclasses import dataclass
 import random
 
 from app.services.metrics.simplified_metrics_service import SimplifiedMetricsService
-from app.ai_agents.hamsters.auto_tuner_db_helpers import get_tuning_history_from_db, save_tuning_history_to_db
 
 logger = logging.getLogger("Hamsters.Brain")
 
@@ -361,7 +360,22 @@ class HamstersBrainV3:
         except Exception as e:
             self.logger.error(f"🐹❌ *confused squeaking* Error: {str(e)}")
             return None
+
+    async def process_metrics(
+        self, 
+        metrics_data: Dict[str, Any], 
+        user_context: Optional[Dict[str, Any]] = None
+    ) -> Optional[Dict[str, Any]]:
+        """Wrapper for agent manager compatibility"""
+        user_id = user_context.get('user_id') if user_context else None
+        result = await self.analyze_infrastructure(metrics_data, user_id=user_id)
     
+        if result:
+            return {
+                'hamsters': result.to_dict(),
+                'hamster_status': self.get_hamster_stats()
+            }
+        return None    
     def _steve_analysis(self, disk_data: Dict, memory_data: Dict, system_data: Dict) -> str:
         """Steve's careful analysis - he's the sensible one"""
         thoughts = []

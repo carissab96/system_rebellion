@@ -7,17 +7,17 @@ import './MethSnailCard.css';
 
 interface MethSnailCardProps {
   data?: any;
-  isActive: boolean;
+  is_active: boolean;
 }
 
-export const MethSnailCard: React.FC<MethSnailCardProps> = ({ data, isActive }) => {
+export const MethSnailCard: React.FC<MethSnailCardProps> = ({ data, is_active }) => {
   const navigate = useNavigate();
   
   const handleDetailsClick = () => {
     navigate('/agents/meth-snail');
   };
   
-  if (!isActive) {
+  if (!is_active) {
     return (
       <div className="agent-card meth-snail offline">
         <div className="agent-header">

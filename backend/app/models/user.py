@@ -1,10 +1,8 @@
-from sqlalchemy import Column, String, DateTime, Boolean, Integer, Float, Text, JSON, ForeignKey
+from sqlalchemy import Column, String, DateTime, Boolean, Integer, JSON, ForeignKey
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
 from app.core.base import Base
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import func
 
 class User(Base):
     __tablename__ = "users"
@@ -12,7 +10,8 @@ class User(Base):
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     email = Column(String(100), unique=True, nullable=False, index=True)
     hashed_password = Column(String(255), nullable=False)
-    needs_onboarding = Column(Boolean, default=True)
+    
+    # Onboarding Status
     is_onboarded = Column(Boolean, default=False)
     
     # Profile Information
@@ -20,49 +19,127 @@ class User(Base):
     last_name = Column(String(50), nullable=True)
     company_name = Column(String(100), nullable=True)
     job_title = Column(String(50), nullable=True)
-    bio = Column(Text, nullable=True)
-    profile_picture = Column(String(255), nullable=True)
     
-    # System Profile Information
+    # System Information
     system_name = Column(String(100), nullable=True)  # User's custom system name
-    operating_system = Column(String(50), nullable=True)
-    os_version = Column(String(50), nullable=True)
-    linux_distro = Column(String(50), nullable=True)
-    linux_distro_version = Column(String(50), nullable=True)
-    cpu_cores = Column(Integer, nullable=True)
-    total_memory = Column(Integer, nullable=True)  # in MB
-    ram_gb = Column(Integer, nullable=True)  # RAM in GB from onboarding
-    storage_gb = Column(Integer, nullable=True)  # Storage in GB from onboarding
-    primary_use_case = Column(String(100), nullable=True)  # How user primarily uses system
     avatar = Column(String(50), default='sir-hawkington')
     
-    # User Preferences
-    preferences = Column(JSON, default=lambda: {
-        "optimization_level": "moderate",
-        "theme_preferences": {"use_dark_mode": True}
+    # Agent Configuration (from onboarding) - UPDATED TO MATCH ACTUAL PREFERENCES
+    agent_preferences = Column(JSON, default=lambda: {
+        # Sir Hawkington
+        "hawkington_triage_normal_threshold": 30,
+        "hawkington_triage_medium_threshold": 65,
+        "hawkington_triage_emergency_threshold": 85,
+        "hawkington_message_frequency": 10,
+        "hawkington_analysis_thoroughness": 7,
+        
+        # The Stick
+        "stick_base_anxiety": 25,
+        "stick_paper_bag_threshold": 60,
+        "stick_bob_anxiety_multiplier": 30,
+        "stick_compliance_strictness": 50,
+        "stick_pattern_memory_depth": 7,
+        
+        # The Hamsters
+        "hamster_beer_optimal_level": 3,
+        "hamster_disk_intervention_threshold": 70,
+        "hamster_3am_activity_boost": 5,
+        "hamster_carl_duct_tape_quality": 5,
+        "hamster_bob_wildness_factor": 8,
+        
+        # Meth Snail
+        "snail_caffeine_sensitivity": 5,
+        "snail_optimization_aggression": 5,
+        "snail_trail_intensity": 5,
+        
+        # Quantum Shadow People
+        "qsp_tequila_jello_tolerance": 5,
+        "qsp_phase_shift_threshold": 5,
+        "qsp_quantum_fix_confidence": 5,
+        "qsp_comprehensibility": 3,
+        
+        # VIC-20
+        "vic20_pattern_recognition_depth": 5,
+        "vic20_mediation_patience": 5,
+        "vic20_recommendation_confidence": 5,
+        
+        # Inter-agent dynamics
+        "agent_interaction_frequency": 5,
+        "hamster_stick_proximity_alerts": 5,
+        "cross_agent_memory_sharing": 5
     })
     
-    # Onboarding Configuration Data
-    monitoring_preferences = Column(JSON, nullable=True)  # Monitoring settings from onboarding
-    agent_preferences = Column(JSON, nullable=True)  # AI agent preferences from onboarding
+    # Monitoring Preferences (from onboarding) - UPDATED TO MATCH ACTUAL PREFERENCES
+    monitoring_preferences = Column(JSON, default=lambda: {
+        # Stress calculation weights
+        "cpu_stress_weight": 25,
+        "memory_stress_weight": 35,
+        "disk_stress_weight": 40,
+        
+        # Compliance thresholds
+        "cpu_compliance_threshold": 80,
+        "memory_compliance_threshold": 85,
+        "temperature_paranoia_threshold": 75,
+        
+        # Hamster triggers
+        "disk_cleanup_threshold": 70,
+        "disk_emergency_threshold": 90,
+        "fragmentation_threshold": 20,
+        
+        # QSP network thresholds
+        "latency_gaming_threshold": 20,
+        "latency_streaming_threshold": 50,
+        "latency_critical_threshold": 5,
+        "packet_loss_intervention": 1,
+        
+        # System-wide settings
+        "alert_frequency": "balanced",
+        "enable_3am_operations": True,
+        "quantum_interventions_allowed": True,
+        "cross_agent_collaboration": True
+    })
     
-    # Account Status & Security
+    # System Profile (from onboarding)
+    system_profile = Column(JSON, nullable=True, default=lambda: {
+        'os_type': None,
+        'os_version': None,
+        'total_ram_gb': None,
+        'storage_type': None,
+        'total_storage_gb': None,
+        'cpu_cores': None,
+        'is_virtual': False,
+        'network_type': 'standard',
+        'admin_access': 'full',
+        'mdm_controlled': False,
+        'custom_restrictions': []
+    })
+    
+    # Installation tracking
+    agent_installed = Column(Boolean, default=False)
+    agent_version = Column(String(20), nullable=True)
+    installation_method = Column(String(50), nullable=True)
+    permissions_granted_at = Column(DateTime, nullable=True)
+    
+    # Account Status
     is_active = Column(Boolean, default=True)
-    is_superuser = Column(Boolean, default=False)
     is_verified = Column(Boolean, default=False)
+    is_enterprise = Column(Boolean, default=False)  # For $5k/month clients
     
     # Security Tracking
     last_login = Column(DateTime, nullable=True)
     failed_login_attempts = Column(Integer, default=0)
     lockout_until = Column(DateTime, nullable=True)
     
+    # Persistent AI Memory Stats
+    total_interactions = Column(Integer, default=0)
+    patterns_learned = Column(Integer, default=0)
+    decisions_made = Column(Integer, default=0)
+    
     # Timestamps
     created_at = Column(DateTime, default=datetime.now)
     updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
     
     # Relationships
-    
-    # Use string-based relationships to avoid circular imports
     configurations = relationship(
         "SystemConfiguration", 
         back_populates="user", 
@@ -88,24 +165,10 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan"
     )
-class UserProfile(Base):
-    __tablename__ = "user_profiles"
     
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = Column(String(36), nullable=False)
-    
-    # Additional Profile Fields
-    location = Column(String(100), nullable=True)
-    website = Column(String(200), nullable=True)
-    github_email = Column(String(50), nullable=True)
-    linkedin_profile = Column(String(200), nullable=True)
-    
-    # Preferences
-    theme_preference = Column(String(20), default='system')
-    notification_settings = Column(String(100), default='all')
-    optimization_level = Column(String(50), default='balanced')
-    
-    # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.now)
-
+    # New relationship for persistent AI memory
+    agent_memories = relationship(
+        "AgentMemory",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )

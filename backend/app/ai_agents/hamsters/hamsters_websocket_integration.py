@@ -9,7 +9,7 @@ from typing import Dict, Any, Optional, List
 from datetime import datetime, timezone
 import random
 
-from .decision_engine import (
+from .decision_engine_sbcV3 import (
     hamsters_brain,
     analyze_infrastructure,
     get_hamster_stats,

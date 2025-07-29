@@ -1,8 +1,9 @@
 // src/components/auth/LoginModal.tsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './LoginModal.css';
 import type { User } from '../../types/auth';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { loginSuccess } from '../../store/slices/authSlice';
 
 interface LoginModalProps {
@@ -36,6 +37,7 @@ function LoginModal({
 }: LoginModalProps) {
   // ✅ HOOKS AT THE TOP LEVEL - BEFORE ANY CONDITIONALS
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState<LoginFormData>({
     email: '',
     password: '',
@@ -82,9 +84,10 @@ function LoginModal({
       const userData: User = {
         id: data.user.id,
         email: data.user.email,
-        firstName: data.user.first_name,
-        lastName: data.user.last_name,
-        isOnboarded: data.user.is_onboarded
+        first_name: data.user.first_name,
+        last_name: data.user.last_name,
+        token: data.access_token,
+        is_onboarded: data.user.is_onboarded
       };
       
       // ✅ DISPATCH WITH BOTH USER AND TOKEN
@@ -96,6 +99,8 @@ function LoginModal({
       // Close modal
       onClose();
       
+      // Navigate to dashboard
+      navigate('/dashboard');
     } catch (error) {
       console.error('Login error:', error);
       setErrors({ 

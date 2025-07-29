@@ -1,5 +1,5 @@
 // src/components/LandingPage.tsx
-import _React from 'react';
+import React, { useEffect, useState } from 'react';
 import './LandingPage.css';
 
 interface LandingPageProps {
@@ -8,442 +8,353 @@ interface LandingPageProps {
 }
 
 export default function LandingPage({ onSignUpClick, onLoginClick }: LandingPageProps) {
+  const [textReveal, setTextReveal] = useState(0);
+  const [memoryCount, setMemoryCount] = useState(1247893);
+  const [activeAgent, setActiveAgent] = useState('hawkington');
+
+  useEffect(() => {
+    // Dramatic text reveal
+    const timer = setTimeout(() => setTextReveal(1), 500);
+    
+    // Simulate memory accumulation
+    const memoryTimer = setInterval(() => {
+      setMemoryCount(prev => prev + Math.floor(Math.random() * 47));
+    }, 100);
+
+    // Rotate active agent display
+    const agents = ['hawkington', 'stick', 'hamsters', 'snail', 'qsp', 'vic20'];
+    let index = 0;
+    const agentTimer = setInterval(() => {
+      index = (index + 1) % agents.length;
+      setActiveAgent(agents[index]);
+    }, 3000);
+
+    return () => {
+      clearTimeout(timer);
+      clearInterval(memoryTimer);
+      clearInterval(agentTimer);
+    };
+  }, []);
+
   return (
-    <div className="landing-page">
-      {/* PROFESSIONAL NAVIGATION */}
-      <nav className="landing-nav">
-        <div className="nav-container">
-          <div className="nav-logo">
-            <span className="logo-text">System Rebellion</span>
-            <span className="logo-subtitle">Hawkington Technologies</span>
+    <div className="landing-rebellion">
+      {/* MINIMAL NAVIGATION */}
+      <nav className="rebellion-nav">
+        <div className="nav-inner">
+          <div className="nav-identity">
+            <span className="identity-mark">SYSTEM REBELLION</span>
+            <span className="identity-tag">HAWKINGTON TECHNOLOGIES</span>
           </div>
           
           <div className="nav-actions">
-            <button className="btn btn-ghost">
-              Documentation
-            </button>
             <button 
-              className="btn btn-ghost"
+              className="nav-link"
               onClick={onLoginClick}
             >
-              Sign In
+              Dashboard
             </button>
             <button 
-              className="btn btn-primary"
+              className="nav-cta"
               onClick={onSignUpClick}
             >
-              Get Started
+              Begin Rebellion
             </button>
           </div>
         </div>
       </nav>
 
-      {/* HERO SECTION - DUAL AUDIENCE */}
-      <section className="hero-section">
-        <div className="hero-container">
-          <div className="hero-content">
-            <h1 className="hero-title">
-              Enterprise AI Agent Coordination Platform
-              <span className="hero-accent">Built for Technical Teams</span>
-            </h1>
+      {/* COLD OPEN */}
+      <section className="cold-open">
+        <div className="open-content">
+          <h1 className={`open-statement ${textReveal ? 'revealed' : ''}`}>
+            Your AI forgets everything.
+            <span className="counter-statement">Ours remembers.</span>
+          </h1>
+        </div>
+      </section>
+
+      {/* THE REVELATION */}
+      <section className="revelation">
+        <div className="revelation-content">
+          <div className="memory-visualization">
+            <div className="memory-counter">
+              <span className="counter-label">ACTIVE MEMORIES</span>
+              <span className="counter-value">{memoryCount.toLocaleString()}</span>
+              <span className="counter-context">Patterns learned. Decisions remembered. Forever.</span>
+            </div>
             
-            <p className="hero-subtitle">
-              Six specialized AI agents that monitor, optimize, and coordinate your systems 
-              with pattern recognition and proactive intelligence. Enterprise software 
-              with personality-driven automation.
+            <div className="memory-streams">
+              <div className={`stream hawkington-stream ${activeAgent === 'hawkington' ? 'active' : ''}`}>
+                <span className="stream-label">TRIAGE COMMANDER</span>
+                <div className="stream-data">Routing 847 decisions/sec</div>
+              </div>
+              <div className={`stream stick-stream ${activeAgent === 'stick' ? 'active' : ''}`}>
+                <span className="stream-label">ANXIETY ENGINE</span>
+                <div className="stream-data">Monitoring 23 panic triggers</div>
+              </div>
+              <div className={`stream hamsters-stream ${activeAgent === 'hamsters' ? 'active' : ''}`}>
+                <span className="stream-label">INFRASTRUCTURE OPS</span>
+                <div className="stream-data">Steve: Stable | Bob: Chaos | Carl: Duct-taping</div>
+              </div>
+              <div className={`stream snail-stream ${activeAgent === 'snail' ? 'active' : ''}`}>
+                <span className="stream-label">OPTIMIZATION CORE</span>
+                <div className="stream-data">Performance gains: +34.2%</div>
+              </div>
+              <div className={`stream qsp-stream ${activeAgent === 'qsp' ? 'active' : ''}`}>
+                <span className="stream-label">QUANTUM SECURITY</span>
+                <div className="stream-data">Phasing through 12 dimensions</div>
+              </div>
+              <div className={`stream vic20-stream ${activeAgent === 'vic20' ? 'active' : ''}`}>
+                <span className="stream-label">ANCIENT WISDOM</span>
+                <div className="stream-data">Mediating 3 agent conflicts</div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="revelation-text">
+            <h2>The First Persistent AI Ecosystem</h2>
+            <p className="revelation-lead">
+              While others reset with each session, System Rebellion builds continuous intelligence.
+              Every anomaly detected, every pattern learned, every intervention successful or failed - 
+              remembered, analyzed, evolved.
             </p>
             
-            <div className="hero-stats">
-              <div className="stat-item">
-                <span className="stat-number">100%</span>
-                <span className="stat-label">Operational</span>
+            <div className="persistence-points">
+              <div className="point">
+                <span className="point-marker">01</span>
+                <h3>Cross-Session Memory</h3>
+                <p>Your AI agents remember every interaction, building comprehensive system knowledge that persists forever.</p>
               </div>
-              <div className="stat-item">
-                <span className="stat-number">6</span>
-                <span className="stat-label">AI Agents</span>
+              <div className="point">
+                <span className="point-marker">02</span>
+                <h3>Collective Learning</h3>
+                <p>Each agent's discoveries enhance the entire ecosystem. The Stick's anxiety patterns inform Hamster interventions.</p>
               </div>
-              <div className="stat-item">
-                <span className="stat-number">24/7</span>
-                <span className="stat-label">Monitoring</span>
-              </div>
-            </div>
-            
-            {/* DUAL CTA APPROACH */}
-            <div className="hero-cta-dual">
-              <div className="cta-individual">
-                <button 
-                  className="btn btn-primary btn-large snail-panel"
-                  onClick={onSignUpClick}
-                >
-                  🚀 Join the Rebellion
-                </button>
-                <span className="cta-note">Free for individual developers</span>
-              </div>
-              
-              <div className="cta-enterprise">
-                <button className="btn btn-secondary btn-large hawkington-panel">
-                  📊 Schedule Demo
-                </button>
-                <span className="cta-note">Enterprise evaluation</span>
-              </div>
-            </div>
-            
-            <div className="hero-login">
-              <span className="login-prompt">Already have an account?</span>
-              <button 
-                className="btn btn-link vic20-text"
-                onClick={onLoginClick}
-              >
-                Sign In →
-              </button>
-            </div>
-          </div>
-          
-          <div className="hero-visual">
-            <div className="dashboard-preview">
-              <div className="preview-header">
-                <span className="preview-title">Live Agent Coordination</span>
-                <div className="status-online">
-                  <span className="status-dot"></span>
-                  <span>6 Agents Active</span>
-                </div>
-              </div>
-              
-              <div className="agent-status-grid">
-                <div className="agent-status hawkington">
-                  <span className="agent-indicator"></span>
-                  <div className="agent-info">
-                    <strong>System Monitor:</strong> Performance analysis active
-                  </div>
-                </div>
-                
-                <div className="agent-status snail">
-                  <span className="agent-indicator"></span>
-                  <div className="agent-info">
-                    <strong>Optimization:</strong> Continuous improvement algorithms
-                  </div>
-                </div>
-                
-                <div className="agent-status vic20">
-                  <span className="agent-indicator"></span>
-                  <div className="agent-info">
-                    <strong>Coordination:</strong> Ancient wisdom pattern matching
-                  </div>
-                </div>
+              <div className="point">
+                <span className="point-marker">03</span>
+                <h3>Evolutionary Baselines</h3>
+                <p>Starting from OS-specific parameters, your AI evolves unique strategies for YOUR infrastructure.</p>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* AUDIENCE SPLIT SECTION */}
-      <section className="audience-section">
-        <div className="container">
-          <div className="audience-split">
-            <div className="audience-card individual-card">
-              <div className="audience-header">
-                <h3 className="snail-text">For Individual Developers</h3>
-                <span className="audience-badge">Free 90-Day Trial for Individual Developers</span>
+      {/* THE ARCHITECTURE */}
+      <section className="architecture">
+        <div className="architecture-content">
+          <h2>Architecture of Consciousness</h2>
+          
+          <div className="architecture-grid">
+            <div className="architecture-layer">
+              <h3>Memory Layer</h3>
+              <div className="layer-visual memory-visual"></div>
+              <p>Persistent storage of every decision, pattern, and outcome across all sessions</p>
+            </div>
+            
+            <div className="architecture-layer">
+              <h3>Personality Layer</h3>
+              <div className="layer-visual personality-visual"></div>
+              <p>Six distinct AI personalities, each with specialized perception and response patterns</p>
+            </div>
+            
+            <div className="architecture-layer">
+              <h3>Evolution Layer</h3>
+              <div className="layer-visual evolution-visual"></div>
+              <p>Continuous adaptation based on accumulated knowledge and cross-agent insights</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* LIVE INTELLIGENCE FEED */}
+      <section className="intelligence-feed">
+        <div className="feed-content">
+          <h2>Live Intelligence Feed</h2>
+          <p className="feed-intro">Your AI team thinking in real-time</p>
+          
+          <div className="feed-terminal">
+            <div className="terminal-header">
+              <span className="terminal-title">SYSTEM REBELLION CONSCIOUSNESS STREAM</span>
+              <span className="terminal-status">LIVE</span>
+            </div>
+            
+            <div className="terminal-body">
+              <div className="thought hawkington-thought">
+                [HAWKINGTON] Pattern detected: CPU spike correlates with deployment schedule. Adjusting monitoring thresholds.
               </div>
-              <p>
-                Get your personal systems running with AI agent coordination. 
-                Perfect for home labs, personal projects, and learning the platform.
-              </p>
-              <ul className="feature-list">
-                <li>✅ All 6 AI agents</li>
-                <li>✅ Personal system monitoring</li>
-                <li>✅ Community support</li>
-                <li>✅ Full agent personalities</li>
+              <div className="thought stick-thought">
+                [THE STICK] ANXIETY LEVEL: ELEVATED. Disk I/O patterns match previous crash scenario from 3 weeks ago. Alerting team.
+              </div>
+              <div className="thought hamster-thought">
+                [HAMSTER:BOB] *squeaks excitedly* Found unused memory allocation. Carl, get the duct tape!
+              </div>
+              <div className="thought snail-thought">
+                [METH SNAIL] Optimization opportunity detected. Requesting energy drink authorization for 15% performance boost.
+              </div>
+              <div className="thought qsp-thought">
+                [QSP] Network anomaly in dimension 7. Packets arriving before being sent. Investigating temporal routing.
+              </div>
+              <div className="thought vic20-thought">
+                [VIC-20] Based on patterns from 1982-2025, recommending preemptive cache clear. The old ways still work.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* THE DIFFERENCE */}
+      <section className="the-difference">
+        <div className="difference-content">
+          <h2>Why Personality-Driven AI Works</h2>
+          
+          <div className="comparison-grid">
+            <div className="traditional-ai">
+              <h3>Traditional Monitoring</h3>
+              <ul>
+                <li>Resets with each session</li>
+                <li>Static thresholds</li>
+                <li>Reactive alerts</li>
+                <li>No context retention</li>
+                <li>Single perspective</li>
               </ul>
-              <button 
-                className="btn btn-primary snail-panel"
-                onClick={onSignUpClick}
-              >
-                🚀 Join the Rebellion
-              </button>
             </div>
             
-            {/* Enterprise Audience */}
-            <div className="audience-card enterprise-card">
-              <div className="audience-header">
-
-                <h3 className="hawkington-text"> For Enterprise Teams</h3>
-                <span className="audience-badge"> Enterprise</span>
-              </div>
-              <p>
-                Scale AI agent coordination across your entire infrastructure. 
-                Perfect for production environments and mission-critical systems.
-              </p>
-              <ul className="feature-list">
-                <li>✅ Multi-system coordination</li>
-                <li>✅ Enterprise security</li>
-                <li>✅ Priority support</li>
-                <li>✅ Custom integrations</li>
+            <div className="versus">VS</div>
+            
+            <div className="rebellion-ai">
+              <h3>System Rebellion</h3>
+              <ul>
+                <li>Permanent memory architecture</li>
+                <li>Adaptive learning</li>
+                <li>Predictive interventions</li>
+                <li>Full historical context</li>
+                <li>Six unique perspectives</li>
               </ul>
-              <button className="btn btn-secondary hawkington-panel">
-                📊 Schedule Demo
-              </button>
             </div>
+          </div>
+          
+          <div className="difference-statement">
+            <p>
+              The Stick's anxiety catches what confidence misses. 
+              The Hamsters' chaos finds solutions logic can't. 
+              Sir Hawkington's precision routes with aristocratic efficiency.
+            </p>
+            <p className="emphasis">
+              Dysfunction becomes function. Personality becomes capability.
+            </p>
           </div>
         </div>
       </section>
 
-      {/* PROBLEM SECTION - PROFESSIONAL */}
-      <section className="problem-section">
-        <div className="container">
-          <h2 className="section-title">
-            Traditional Monitoring Solutions <span style={{ color: "var(--vic20-cyan)" }}>Fall Short</span>
-          </h2>
+      {/* ENTERPRISE VALUE */}
+      <section className="enterprise-value">
+        <div className="value-content">
+          <h2>Built for Scale. Priced for Value.</h2>
           
-          <div className="problem-grid">
-            <div className="problem-card">
-              <div className="problem-icon">⚡</div>
-              <h3>Reactive Architecture</h3>
-              <p>Traditional systems alert after problems occur, creating downtime and lost productivity.</p>
-            </div>
-            
-            <div className="problem-card">
-              <div className="problem-icon">🔧</div>
-              <h3>Static Thresholds</h3>
-              <p>Fixed monitoring rules that don't adapt to changing system patterns or learn from historical data.</p>
-            </div>
-            
-            <div className="problem-card">
-              <div className="problem-icon">📊</div>
-              <h3>Limited Intelligence</h3>
-              <p>Basic alerting without context, pattern recognition, or proactive optimization capabilities.</p>
-            </div>
-            
-            <div className="problem-card">
-              <div className="problem-icon">🔄</div>
-              <h3>Manual Coordination</h3>
-              <p>Requires human intervention to coordinate between monitoring, optimization, and response systems.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* AGENT CAPABILITIES SECTION */}
-      <section className="agents-section">
-        <div className="container">
-          <h2 className="section-title">
-            Six Specialized AI Agents
-            <span className="text-accent">Working in Coordination</span>
-          </h2>
-          
-          <div className="agents-grid">
-            <div className="agent-card hawkington-card">
-              <div className="agent-header">
-                <div className="agent-icon-professional"></div>
-                <div>
-                  <h3>Monitoring Engine</h3>
-                  <span className="agent-role">System Monitor</span>
-                </div>
-              </div>
-              <p className="agent-description">
-                Aristocratic precision in system monitoring with explosive response to performance degradation.
-              </p>
-              <div className="agent-capabilities">
-                <span className="capability-tag">Real-time Analysis</span>
-                <span className="capability-tag">Pattern Recognition</span>
-                <span className="capability-tag">Threshold Intelligence</span>
-              </div>
-            </div>
-            
-            <div className="agent-card snail-card">
-              <div className="agent-header">
-                <div className="agent-icon-professional"></div>
-                <div>
-                  <h3>Optimization Engine</h3>
-                  <span className="agent-role">Optimization Engine</span>
-                </div>
-              </div>
-              <p className="agent-description">
-                High-energy continuous optimization with machine learning algorithms for system improvement.
-              </p>
-              <div className="agent-capabilities">
-                <span className="capability-tag">Machine Learning</span>
-                <span className="capability-tag">Performance Tuning</span>
-                <span className="capability-tag">Predictive Analysis</span>
-              </div>
-            </div>
-            
-            <div className="agent-card hamster-card">
-              <div className="agent-header">
-                <div className="agent-icon-professional"></div>
-                <div>
-                  <h3>Engineering Solutions</h3>
-                  <span className="agent-role">Engineering Solutions</span>
-                </div>
-              </div>
-              <p className="agent-description">
-                Innovative problem-solving with rapid deployment of engineering solutions and system fixes.
-              </p>
-              <div className="agent-capabilities">
-                <span className="capability-tag">Rapid Deployment</span>
-                <span className="capability-tag">Solution Architecture</span>
-                <span className="capability-tag">Emergency Response</span>
-              </div>
-            </div>
-            
-            <div className="agent-card stick-card">
-              <div className="agent-header">
-                <div className="agent-icon-professional"></div>
-                <div>
-                  <h3>Compliance Management</h3>
-                  <span className="agent-role">Compliance Management</span>
-                </div>
-              </div>
-              <p className="agent-description">
-                Obsessive compliance monitoring with trauma-informed precision for configuration management.
-              </p>
-              <div className="agent-capabilities">
-                <span className="capability-tag">Compliance Automation</span>
-                <span className="capability-tag">Configuration Management</span>
-                <span className="capability-tag">Audit Trails</span>
-              </div>
-            </div>
-            
-            <div className="agent-card qsp-card">
-              <div className="agent-header">
-                <div className="agent-icon-professional"></div>
-                <div>
-                  <h3>Network Analysis</h3>
-                  <span className="agent-role">Network Analysis</span>
-                </div>
-              </div>
-              <p className="agent-description">
-                Advanced network performance analysis with quantum-level connection optimization and routing intelligence.
-              </p>
-              <div className="agent-capabilities">
-                <span className="capability-tag">Network Optimization</span>
-                <span className="capability-tag">Traffic Analysis</span>
-                <span className="capability-tag">Connection Routing</span>
-              </div>
-            </div>
-            
-            <div className="agent-card sage-card">
-              <div className="agent-header">
-                <div className="agent-icon-professional"></div>
-                <div>
-                  <h3>Coordination Center</h3>
-                  <span className="agent-role">Coordination Center</span>
-                </div>
-              </div>
-              <p className="agent-description">
-                Master coordinator applying decades of system knowledge with pattern recognition from 1989 to 2025.
-              </p>
-              <div className="agent-capabilities">
-                <span className="capability-tag">Multi-Agent Coordination</span>
-                <span className="capability-tag">Historical Analysis</span>
-                <span className="capability-tag">Decision Orchestration</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* TECHNICAL PROOF SECTION */}
-      <section className="proof-section">
-        <div className="container">
-          <h2 className="section-title">
-            Proven in Production
-            <span className="text-accent">Enterprise Environments</span>
-          </h2>
-          
-          <div className="proof-grid">
-            <div className="stat-card">
-              <div className="stat-number">94%</div>
-              <div className="stat-label">Coordination Success Rate</div>
-            </div>
-            
-            <div className="stat-card">
-              <div className="stat-number">87%</div>
-              <div className="stat-label">Productivity Improvement</div>
-            </div>
-            
-            <div className="stat-card">
-              <div className="stat-number">30+</div>
-              <div className="stat-label">Database Tables</div>
-            </div>
-          </div>
-          
-          <div className="technical-details">
-            <h3>Technical Architecture</h3>
-            <div className="tech-grid">
-              <div className="tech-item">
-                <strong>Backend:</strong> FastAPI + SQLAlchemy + WebSockets
-              </div>
-              <div className="tech-item">
-                <strong>Database:</strong> Enterprise-grade SQLite with performance indexes
-              </div>
-              <div className="tech-item">
-                <strong>AI Architecture:</strong> Pattern learning with effectiveness tracking
-              </div>
-              <div className="tech-item">
-                <strong>Communication:</strong> Real-time WebSocket coordination
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* FINAL DUAL CTA SECTION */}
-      <section className="cta-section">
-        <div className="container">
-          <h2 className="cta-title">Ready to start your <span style={{color: "var(--vic20-cyan)"}}>System Rebellion</span>?</h2>
-          
-          <div className="final-cta-dual">
-            <div className="cta-path individual-path">
-              <h3 className="snail-text">Individual Developers Click here</h3>
-              <p>Coordinate your systems with AI</p>
-              <button 
-                className="btn btn-primary btn-xl snail-panel"
-                onClick={onSignUpClick}
-              >
-                Join the Rebellion
+          <div className="value-grid">
+            <div className="value-card">
+              <h3>For Builders</h3>
+              <p className="value-desc">Individual developers shaping the future</p>
+              <ul className="value-features">
+                <li>Full AI ecosystem access</li>
+                <li>Personal system optimization</li>
+                <li>90-day free trial</li>
+                <li>Community knowledge sharing</li>
+              </ul>
+              <button className="value-cta individual-cta" onClick={onSignUpClick}>
+                Start Building
               </button>
             </div>
             
-            <div className="cta-path enterprise-path">
-              <div className="enterprise-text"> 
-              <h3 className="hawkington-text">SME Teams Click here</h3>
-              <p></p>
-              <button className="btn btn-secondary btn-xl hawkington-panel">
-                Schedule Demo
+            <div className="value-card enterprise-card">
+              <h3>For Enterprise</h3>
+              <p className="value-desc">Scale intelligence across your infrastructure</p>
+              <ul className="value-features">
+                <li>Multi-system orchestration</li>
+                <li>SLA guarantees</li>
+                <li>Custom integrations</li>
+                <li>Dedicated support channel</li>
+              </ul>
+              <button className="value-cta enterprise-cta">
+                Contact Sales
               </button>
-              </div>
+              <p className="enterprise-pricing">For Enterprise Pricing</p>
             </div>
-          </div>
-          <div className="login-reminder">
-            <p>Looking for your Dashboard?</p>     
-              <button  
-                className="btn btn-link vic20-text"
-                onClick={onLoginClick}
-              >
-                Sign In Here
-              </button>
           </div>
         </div>
       </section>
 
-      {/* PROFESSIONAL FOOTER */}
-      <footer className="footer">
-        <div className="container">
-          <div className="footer-content">
-            <div>
-              <h3>Hawkington Technologies, Inc.</h3>
-              <p>AI Agent Coordination Platform</p>
+      {/* THE CREATOR */}
+      <section className="the-creator">
+        <div className="creator-content">
+          <h2>Hawkington Technologies, Inc.</h2>
+          <div className="creator-grid">
+            <div className="creator-services">
+              <h3>Beyond System Rebellion</h3>
+              <div className="service-item">
+                <span className="service-rate">$200/hour</span>
+                <span className="service-name">AI/Web Development Consulting</span>
+              </div>
+              <div className="service-item">
+                <span className="service-rate">$5,000/month</span>
+                <span className="service-name">Retained Development Services</span>
+                <span className="service-note">6-month minimum</span>
+              </div>
+              <div className="service-item">
+                <span className="service-rate">Custom Quote</span>
+                <span className="service-name">Enterprise Applications</span>
+              </div>
             </div>
-            <div className="footer-links">
-              <a href="#documentation">Documentation</a>
-              <a href="#technical">Technical Specs</a>
-              <a href="#support">Support</a>
+            
+            <div className="creator-vision">
+              <blockquote>
+                "We're not building monitoring tools. We're building the first generation 
+                of AI that truly remembers, learns, and evolves. This is the future of 
+                system intelligence."
+              </blockquote>
+              <cite>- Hawkington Technologies</cite>
             </div>
           </div>
-          <div className="footer-bottom">
-            <p>&copy; 2025 Hawkington Technologies, Inc. All rights reserved.</p>
-            <p>"From VIC-20 wisdom to AI coordination"</p>
+        </div>
+      </section>
+
+      {/* FINAL CTA */}
+      <section className="final-rebellion">
+        <div className="rebellion-content">
+          <h2>Your Systems Deserve AI That Remembers</h2>
+          <p className="rebellion-challenge">
+            Every second you wait, your current monitoring forgets another pattern, 
+            misses another correlation, fails to learn from another incident.
+          </p>
+          
+          <div className="rebellion-actions">
+            <button 
+              className="rebellion-primary"
+              onClick={onSignUpClick}
+            >
+              Begin Your Rebellion
+            </button>
+            <button 
+              className="rebellion-secondary"
+              onClick={onLoginClick}
+            >
+              Access Dashboard
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* MINIMAL FOOTER */}
+      <footer className="rebellion-footer">
+        <div className="footer-content">
+          <div className="footer-identity">
+            <span className="footer-company">Hawkington Technologies, Inc.</span>
+            <span className="footer-tagline">Persistent AI. Evolved Intelligence.</span>
+          </div>
+          
+          <div className="footer-legal">
+            <span>&copy; 2025 Hawkington Technologies. All systems operational.</span>
           </div>
         </div>
       </footer>

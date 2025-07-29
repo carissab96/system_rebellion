@@ -174,3 +174,17 @@
     0% { left: -100%; }
     100% { left: 100%; }
   }
+  /*
+  AGENT PATTERN BADGE
+  A non-color, non-emoji identifier for accessibility and UI clarity.
+*/
+.agent-pattern-badge {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  border-radius: 3px;
+  border: 1px solid var(--rebellion-border);
+  margin-right: var(--space-sm);
+  vertical-align: -0.15em; /* Aligns the badge nicely with surrounding text */
+  background-size: 200%; /* Ensures patterns are visible at this small size */
+}

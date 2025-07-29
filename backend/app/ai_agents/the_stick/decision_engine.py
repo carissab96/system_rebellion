@@ -111,7 +111,17 @@ class TheStickBrainV3:
         # Documentation compulsion (anxiety outlet)
         self.panic_documentation_queue = []
         self.documentation_backlog = []
-        
+    @property
+    def compliance_thresholds(self) -> Dict[str, Dict[str, float]]:
+        """Get compliance thresholds adjusted by anxiety"""
+        base_thresholds = {
+            'cpu_usage': {'max': 80.0, 'min': 0.0},
+            'memory_usage': {'max': 85.0, 'min': 0.0},
+            'temperature': {'max': 75.0, 'min': 0.0},
+            'disk_usage': {'max': 90.0,'min': 0.0}
+        }
+        return base_thresholds 
+           
     async def initialize_database(self):
         """Initialize database connection"""
         if self.db is None:
@@ -443,6 +453,29 @@ class TheStickBrainV3:
         
         return analysis
     
+    async def process_metrics(
+        self, 
+        metrics_data: Dict[str, Any], 
+        user_context: Optional[Dict[str, Any]] = None
+    ) -> Optional[Dict[str, Any]]:
+        """Wrapper for agent manager compatibility"""
+        user_id = user_context.get('user_id') if user_context else None
+        historical_data = user_context.get('historical_data') if user_context else None
+    
+        result = await self.analyze_user_behavior(
+            metrics_data, 
+            historical_data=historical_data,
+            user_id=user_id
+        )
+    
+        if result:
+            return {
+                'the_stick': result.__dict__,  # Convert dataclass to dict
+                'stick_status': self.get_stick_stats(),
+                'anxiety_history': await self.get_anxiety_history(timedelta(hours=1))
+            }
+        return None
+
     async def _detect_activity_anxiously(self, system_metrics: Dict[str, Any]) -> str:
         """Detect activity with anxiety-driven pattern matching"""
         

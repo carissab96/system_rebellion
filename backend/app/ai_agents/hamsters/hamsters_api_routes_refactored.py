@@ -12,7 +12,7 @@ from typing import Optional, List, Dict, Any
 
 from app.api.deps import get_db, get_current_user
 from app.models.user import User
-from app.ai_agents.hamsters.decision_engine import (
+from app.ai_agents.hamsters.decision_engine_sbcV3 import (
     hamsters_brain,
     analyze_infrastructure,
     handle_emergency,
@@ -270,9 +270,9 @@ async def apply_hamsters_engineering(
 
 @router.post("/hamsters/emergency")
 async def hamster_emergency_response(
+    background_tasks: BackgroundTasks,
     crisis_type: str,
     severity: str = "HIGH",
-    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
