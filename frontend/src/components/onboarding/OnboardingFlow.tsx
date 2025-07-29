@@ -7,12 +7,22 @@ import type { AxiosError } from 'axios';
 
 // Import our final, robust apiService
 import apiService from '../../services/api'; 
-import { OnboardingProvider, useOnboarding } from './OnboardingContext';
+import { useOnboarding } from './hooks/useOnboarding';
 import { steps } from './steps'; // The array of step configurations
 import { ProgressBar } from './components/ProgressBar'; // The progress bar component
 
 import styles from './OnboardingFlow.module.css'; // Our layout styles
+import OnboardingProvider from './OnboardingContext';
 
+export interface StepProps {
+  onNext: () => void;
+  onBack: () => void;
+  onComplete: () => void;
+  isFirst: boolean;
+  isLast: boolean;
+  isCompleting: boolean;
+  completionError: string | null;
+}
 const OnboardingFlowContent: React.FC = () => {
   const { state, dispatch } = useOnboarding();
   const { currentStep } = state;
@@ -69,7 +79,11 @@ const OnboardingFlowContent: React.FC = () => {
                 onNext={handleNext}
                 onBack={handleBack}
                 onComplete={handleComplete}
+                isFirst={currentStep === 1}
+                isLast={currentStep === totalSteps}
                 isCompleting={isCompleting}
+                nextLabel="Next"
+                backLabel="Back"
                 completionError={completionError}
               />
             </motion.div>

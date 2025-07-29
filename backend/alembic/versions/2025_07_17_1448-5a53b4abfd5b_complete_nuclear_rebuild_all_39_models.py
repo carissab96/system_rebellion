@@ -370,7 +370,7 @@ def upgrade() -> None:
     sa.Column('id', sa.String(length=36), nullable=False),
     sa.Column('email', sa.String(length=100), nullable=False),
     sa.Column('hashed_password', sa.String(length=255), nullable=False),
-    sa.Column('needs_onboarding', sa.Boolean(), nullable=True),
+    sa.Column('is_onboarded', sa.Boolean(), nullable=False),
     sa.Column('first_name', sa.String(length=50), nullable=True),
     sa.Column('last_name', sa.String(length=50), nullable=True),
     sa.Column('company_name', sa.String(length=100), nullable=True),

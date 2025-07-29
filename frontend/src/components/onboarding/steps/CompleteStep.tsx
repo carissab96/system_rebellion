@@ -1,7 +1,7 @@
 // components/onboarding/steps/CompleteStep.tsx
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { useOnboarding } from '../OnboardingContext';
+import { useOnboarding } from '../../../hooks/useOnboarding';
 
 // This step is special; it doesn't use the standard navigation.
 // It receives a final onComplete function from the main flow component.

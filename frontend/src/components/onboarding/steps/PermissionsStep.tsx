@@ -1,32 +1,32 @@
 // components/onboarding/steps/PermissionsStep.tsx
-
 import React, { useState } from 'react';
-
-// --- Our new, clean imports ---
+import { useOnboarding } from '../../../hooks/useOnboarding';
+import type { StepProps } from '../OnboardingFlow';
 import { useSystemDetection } from '../hooks/useSystemDetection';
 import { getInstallCommand } from '../utils/installCommands';
+import { StepNavigation } from '../components/StepNavigation';
 
-// A functional helper for the "Copy Command" button
 const copyToClipboard = (text: string) => {
   if (navigator.clipboard) {
     navigator.clipboard.writeText(text).catch(err => {
       console.error('Failed to copy text: ', err);
-      // Fallback for older browsers could be implemented here if needed
     });
   }
 };
 
-export const PermissionsStep: React.FC<any> = ({ data, updateData, onNext, onBack }) => {
-  // The old OS detection logic is now replaced with this single line
+export const PermissionsStep: React.FC<StepProps> = ({ onNext, onBack }) => {
+  const { state, dispatch } = useOnboarding();
   const osType = useSystemDetection();
 
-  // State local to this component
-  const [permissionsGranted, setPermissionsGranted] = useState(data.permissions_granted || false);
-  const [installMethod, setInstallMethod] = useState(data.installation_method || '');
+  // Initialize from context state
+  const [permissionsGranted, setPermissionsGranted] = useState(
+    state.system.permissions_granted || false
+  );
+  const [installMethod, setInstallMethod] = useState(
+    state.system.installation_method || ''
+  );
 
-  // This helper function is specific to this component's UI, so it can stay
   const getInstructions = () => {
-    // ... (This function's content is the same as before)
     switch (osType) {
       case 'windows':
         return {
@@ -81,46 +81,51 @@ export const PermissionsStep: React.FC<any> = ({ data, updateData, onNext, onBac
 
   const instructions = getInstructions();
   
-  // New handler to save data before navigating
   const handleContinue = () => {
-    updateData({ 
-      ...data, 
-      permissions_granted: permissionsGranted, 
-      installation_method: installMethod 
+    // Dispatch to context
+    dispatch({ 
+      type: 'SET_PERMISSIONS', 
+      payload: { 
+        permissions_granted: permissionsGranted, 
+        method: installMethod 
+      } 
     });
     onNext();
   };
 
   return (
-    <div className="permissions-step">
-      <div className="permissions-header">
-        <h3>System Access Configuration</h3>
-        <p className="permissions-intro">
+    <div className="d-flex flex-col gap-4">
+      <div>
+        <p className="text-lg mb-3">
           System Rebellion's AI agents need access to monitor and optimize your system.
           This requires elevated permissions to read metrics and make adjustments.
         </p>
       </div>
 
-      <div className="detected-os">
-        <span className="os-label">Detected Operating System:</span>
-        <span className="os-value">{osType.toUpperCase()}</span>
+      <div className="card">
+        <div className="card-body">
+          <div className="d-flex align-center gap-2 mb-3">
+            <span className="text-dim">Detected Operating System:</span>
+            <span className="badge badge-primary">{osType.toUpperCase()}</span>
+          </div>
+
+          <h4 className="card-title">{instructions.title}</h4>
+          <p className="text-sm text-dim mb-2">The following permissions are required:</p>
+          <ul className="d-flex flex-col gap-1 mb-0" style={{ paddingLeft: '1.5rem' }}>
+            {instructions.requirements.map((req, index) => (
+              <li key={index} className="text-sm">{req}</li>
+            ))}
+          </ul>
+        </div>
       </div>
 
-      <div className="permissions-requirements">
-        <h4>{instructions.title}</h4>
-        <p className="requirements-intro">The following permissions are required:</p>
-        <ul className="requirements-list">
-          {instructions.requirements.map((req, index) => (
-            <li key={index}>{req}</li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="installation-methods">
-        <h4>Choose Installation Method</h4>
-        <div className="method-options">
+      <div className="card">
+        <div className="card-header">
+          <h4 className="card-title">Choose Installation Method</h4>
+        </div>
+        <div className="card-body d-flex flex-col gap-2">
           {instructions.methods.map((method) => (
-            <label key={method.id} className="method-option">
+            <label key={method.id} className="d-flex gap-3 p-3 rebellion-card" style={{ cursor: 'pointer' }}>
               <input
                 type="radio"
                 name="install-method"
@@ -128,9 +133,9 @@ export const PermissionsStep: React.FC<any> = ({ data, updateData, onNext, onBac
                 checked={installMethod === method.id}
                 onChange={(e) => setInstallMethod(e.target.value)}
               />
-              <div className="method-details">
-                <span className="method-name">{method.name}</span>
-                <span className="method-desc">{method.desc}</span>
+              <div className="d-flex flex-col gap-1">
+                <span className="font-medium">{method.name}</span>
+                <span className="text-sm text-dim">{method.desc}</span>
               </div>
             </label>
           ))}
@@ -138,57 +143,53 @@ export const PermissionsStep: React.FC<any> = ({ data, updateData, onNext, onBac
       </div>
 
       {installMethod && (
-        <div className="installation-instructions">
-          <h4>Installation Instructions</h4>
-          <pre className="code-block">
-            <code>{getInstallCommand(osType, installMethod)}</code>
-          </pre>
-          <button
-            className="copy-button"
-            onClick={() => copyToClipboard(getInstallCommand(osType, installMethod))}
-          >
-            Copy Command
-          </button>
+        <div className="card">
+          <div className="card-header d-flex justify-between align-center">
+            <h4 className="card-title">Installation Instructions</h4>
+            <button
+              className="btn btn-secondary btn-sm"
+              onClick={() => copyToClipboard(getInstallCommand(osType, installMethod))}
+            >
+              Copy Command
+            </button>
+          </div>
+          <div className="card-body">
+            <pre className="form-textarea font-mono text-sm p-3" style={{ background: 'var(--rebellion-void)' }}>
+              <code>{getInstallCommand(osType, installMethod)}</code>
+            </pre>
+          </div>
         </div>
       )}
 
-      {/* --- THIS IS THE SECTION I MISTAKENLY OMITTED --- */}
-      <div className="permissions-consent">
-        <label className="consent-checkbox">
-          <input
-            type="checkbox"
-            checked={permissionsGranted}
-            onChange={(e) => setPermissionsGranted(e.target.checked)}
-          />
-          <span>
-            I understand and authorize System Rebellion to access system metrics,
-            manage processes, and perform optimizations as configured by my agent preferences.
-          </span>
-        </label>
+      <div className="card">
+        <div className="card-body">
+          <label className="d-flex gap-3">
+            <input
+              type="checkbox"
+              checked={permissionsGranted}
+              onChange={(e) => setPermissionsGranted(e.target.checked)}
+              style={{ marginTop: '4px' }}
+            />
+            <span className="text-sm">
+              I understand and authorize System Rebellion to access system metrics,
+              manage processes, and perform optimizations as configured by my agent preferences.
+            </span>
+          </label>
+        </div>
       </div>
 
-      <div className="permissions-notice">
-        <p className="notice-text">
-          <strong>Privacy Notice:</strong> All metrics are processed locally.
-          Only aggregated patterns are stored for AI learning.
-          You can revoke permissions at any time from the dashboard.
-        </p>
+      <div className="alert alert-info">
+        <strong>Privacy Notice:</strong> All metrics are processed locally.
+        Only aggregated patterns are stored for AI learning.
+        You can revoke permissions at any time from the dashboard.
       </div>
-      {/* --- END OF OMITTED SECTION --- */}
 
-      <div className="button-group">
-        <button className="onboarding-button secondary" onClick={onBack}>
-          Back
-        </button>
-        <button
-          className="onboarding-button primary"
-          // IMPORTANT: This now calls our new handler function
-          onClick={handleContinue}
-          disabled={!permissionsGranted || !installMethod}
-        >
-          Continue Configuration
-        </button>
-      </div>
+      <StepNavigation
+        onBack={onBack}
+        onNext={handleContinue}
+        canContinue={permissionsGranted && !!installMethod}
+        nextLabel="Continue Configuration"
+      />
     </div>
   );
 };

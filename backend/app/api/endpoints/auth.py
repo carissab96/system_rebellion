@@ -227,7 +227,7 @@ async def register_user(
             job_title=user_data.job_title,
             hashed_password=hashed_password,
             is_active=True,
-            needs_onboarding=True,  # Explicitly set needs_onboarding to True for new users
+            is_onboarded=False,  
             created_at=datetime.now()
         )
         
@@ -268,7 +268,7 @@ async def register_user(
                 "company_name": new_user.company_name,
                 "job_title": new_user.job_title,
                 "is_active": new_user.is_active,
-                "needs_onboarding": new_user.needs_onboarding,  # Include needs_onboarding flag
+                "is_onboarded": new_user.is_onboarded, 
                 "created_at": new_user.created_at
             },
             "access_token": access_token,
@@ -400,7 +400,7 @@ async def login_for_access_token(
             "is_active": user.is_active,
             "created_at": user.created_at,
             "updated_at": user.updated_at,
-            "needs_onboarding": user.needs_onboarding,
+            "is_onboarded": user.is_onboarded,
             "operating_system": user.operating_system,
             "os_version": user.os_version,
             "cpu_cores": user.cpu_cores,
@@ -586,7 +586,7 @@ async def auth_status(request: Request, db: AsyncSession = Depends(get_db)):
                                     "os_version": user.os_version,
                                     "cpu_cores": user.cpu_cores,
                                     "total_memory": user.total_memory,
-                                    "needs_onboarding": user.needs_onboarding
+                                    "is_onboarded": user.is_onboarded
                                 }
                         finally:
                             sync_session.close()
@@ -628,7 +628,7 @@ async def read_users_me(current_user: User = Depends(get_current_user)):
         "os_version": current_user.os_version,
         "cpu_cores": current_user.cpu_cores,
         "total_memory": current_user.total_memory,
-        "needs_onboarding": current_user.needs_onboarding
+        "is_onboarded": current_user.is_onboarded
     }
 
 # Complete onboarding
@@ -812,7 +812,7 @@ async def direct_profile_update(
                 print(f"⚠️ Error updating preferences: {str(pref_error)}")
         
         # Mark onboarding as completed
-        user.needs_onboarding = False
+        user.is_onboarded = True,
         print(f"🧐 Onboarding completed for user: {email}")
         
         try:
@@ -841,7 +841,7 @@ async def direct_profile_update(
                 "cpu_cores": user.cpu_cores,
                 "total_memory": user.total_memory,
                 "avatar": user.avatar,
-                "needs_onboarding": user.needs_onboarding,
+                "is_onboarded": user.is_onboarded,
                 "profile": user.profile,
                 "preferences": user.preferences
             }
@@ -894,8 +894,8 @@ async def update_profile(
         
         # Always mark onboarding as completed when profile data is updated
         # This ensures the user won't be redirected back to onboarding
-        print(f"🧐 Setting needs_onboarding to False for user: {current_user.email}")
-        current_user.needs_onboarding = False
+        print(f"🧐 Setting is_onboarded to True for user: {current_user.email}")
+        current_user.is_onboarded = True
         
         # Save changes to database using AsyncSessionLocal directly
         from app.core.database import AsyncSessionLocal
@@ -916,7 +916,7 @@ async def update_profile(
                 "os_version": current_user.os_version,
                 "cpu_cores": current_user.cpu_cores,
                 "total_memory": current_user.total_memory,
-                "needs_onboarding": current_user.needs_onboarding
+                "is_onboarded": current_user.is_onboarded
             }
         }
     except Exception as e:

@@ -1407,7 +1407,7 @@ async function completeOnboarding(data: any) {
         system_name: data.system_name,
         agent_preferences: data.agent_preferences,
         monitoring_preferences: data.monitoring_preferences,
-        is_onboarded: true
+        is_onboarded: false
       })
     });
 

@@ -9,6 +9,7 @@ interface StepNavigationProps {
   isNextDisabled?: boolean;
   nextLabel?: string;
   backLabel?: string;
+  canContinue?: boolean;
 }
 
 export const StepNavigation: React.FC<StepNavigationProps> = ({
@@ -19,6 +20,7 @@ export const StepNavigation: React.FC<StepNavigationProps> = ({
   isNextDisabled = false,
   nextLabel = 'Continue',
   backLabel = 'Back',
+  canContinue = true,
 }) => {
   return (
     <div className="button-group">
@@ -30,7 +32,7 @@ export const StepNavigation: React.FC<StepNavigationProps> = ({
       <button 
         className="onboarding-button primary" 
         onClick={onNext}
-        disabled={isNextDisabled}
+        disabled={!canContinue || isNextDisabled}
       >
         {isLast ? 'Finish' : nextLabel}
       </button>

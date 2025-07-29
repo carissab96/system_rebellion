@@ -49,7 +49,7 @@ class UserResponse(BaseModel):
     cpu_cores: Optional[int] = None
     total_memory: Optional[int] = None
     avatar: Optional[str] = None
-    needs_onboarding: Optional[bool] = True
+    is_onboarded: Optional[bool] = False,
     profile: Optional[Dict[str, Any]] = None
     preferences: Optional[Dict[str, Any]] = None
     created_at: datetime

@@ -68,7 +68,7 @@ async def register_user(
         hashed_password=hashed_password,
         is_active=True,
         created_at=datetime.now(),
-        needs_onboarding=True  # New users need onboarding
+        is_onboarded=False  # New users need onboarding
     )
     
     # Save to database
@@ -95,7 +95,7 @@ async def register_user(
             "email": new_user.email,
             "is_active": new_user.is_active,
             "created_at": new_user.created_at.isoformat(),
-            "needs_onboarding": new_user.needs_onboarding
+            "is_onboarded": new_user.is_onboarded
         }
     }
 
@@ -148,7 +148,7 @@ async def login_for_access_token(
         "user": {
             "id": user.id,
             "email": user.email,
-            "needs_onboarding": user.needs_onboarding,
+            "is_onboarded": user.is_onboarded,
             "operating_system": user.operating_system,
             "os_version": user.os_version,
             "cpu_cores": user.cpu_cores,
@@ -213,7 +213,7 @@ async def update_user_profile(
             current_user.preferences.update(profile_data.preferences.model_dump(exclude_unset=True))
         
         # Mark onboarding as completed
-        current_user.needs_onboarding = False
+        current_user.is_onboarded = False
         
         # Save changes
         db.add(current_user)
@@ -230,7 +230,7 @@ async def update_user_profile(
                 "cpu_cores": current_user.cpu_cores,
                 "total_memory": current_user.total_memory,
                 "avatar": current_user.avatar,
-                "needs_onboarding": current_user.needs_onboarding,
+                "is_onboarded": current_user.is_onboarded,
                 "profile": current_user.profile,
                 "preferences": current_user.preferences
             }
@@ -326,7 +326,7 @@ async def get_current_user_info(current_user: User = Depends(get_current_user)):
     return {
         "id": current_user.id,
         "email": current_user.email,
-        "needs_onboarding": current_user.needs_onboarding,
+        "is_onboarded": current_user.is_onboarded,
         "operating_system": current_user.operating_system,
         "os_version": current_user.os_version,
         "cpu_cores": current_user.cpu_cores,

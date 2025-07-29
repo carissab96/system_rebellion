@@ -1,10 +1,6 @@
 // src/components/auth/LoginModal.tsx
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import './LoginModal.css';
-import type { User } from '../../types/auth';
-import { useDispatch, useSelector } from 'react-redux';
-import { loginSuccess } from '../../store/slices/authSlice';
+import React from 'react';
+import { useLoginForm } from '../../hooks/useLoginForm';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -12,178 +8,85 @@ interface LoginModalProps {
   onSwitchToSignUp: () => void;
 }
 
-interface LoginFormData {
-  email: string;
-  password: string;
-  rememberMe: boolean;
-}
+export default function LoginModal({ isOpen, onClose, onSwitchToSignUp }: LoginModalProps) {
+  const {
+    formData,
+    isLoading,
+    displayError,
+    localErrors,
+    handleInputChange,
+    handleSubmit
+  } = useLoginForm(isOpen, onClose);
 
-interface LoginResponse {
-  access_token: string;
-  token_type: string;
-  user: {
-    id: string;
-    email: string;
-    first_name: string;  // ✅ Fixed: backend sends snake_case
-    last_name: string;   // ✅ Fixed: backend sends snake_case
-    is_onboarded: boolean; // ✅ Fixed: backend sends snake_case
-  };
-}
-
-function LoginModal({ 
-  isOpen, 
-  onClose, 
-  onSwitchToSignUp 
-}: LoginModalProps) {
-  // ✅ HOOKS AT THE TOP LEVEL - BEFORE ANY CONDITIONALS
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const [formData, setFormData] = useState<LoginFormData>({
-    email: '',
-    password: '',
-    rememberMe: false
-  });
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // ✅ EARLY RETURN AFTER HOOKS
   if (!isOpen) return null;
-    
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setErrors({});
-    
-    try {
-      // Get CSRF token first
-      const csrfResponse = await fetch('/api/auth/csrf_token');
-      const csrfData = await csrfResponse.json();
-      
-      // Login using exact backend endpoint
-      const response = await fetch('/api/auth/token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'X-CSRFToken': csrfData.csrf_token // ✅ Fixed: Use CSRFToken not CSRF-Token
-        },
-        body: new URLSearchParams({
-          username: formData.email,
-          password: formData.password,
-          grant_type: 'password'
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Login failed');
-      }
-
-      const data: LoginResponse = await response.json();
-      
-      // ✅ Transform backend response to frontend User type
-      const userData: User = {
-        id: data.user.id,
-        email: data.user.email,
-        first_name: data.user.first_name,
-        last_name: data.user.last_name,
-        token: data.access_token,
-        is_onboarded: data.user.is_onboarded
-      };
-      
-      // ✅ DISPATCH WITH BOTH USER AND TOKEN
-      dispatch(loginSuccess({ 
-        user: userData, 
-        token: data.access_token 
-      }));
-      
-      // Close modal
-      onClose();
-      
-      // Navigate to dashboard
-      navigate('/dashboard');
-    } catch (error) {
-      console.error('Login error:', error);
-      setErrors({ 
-        submit: 'Invalid email or password. Please try again.' 
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   return (
-    <div className="login-modal-overlay" onClick={onClose}>
-      <div className="login-modal-content" onClick={e => e.stopPropagation()}>
-        <div className="card-header">
+    <div className="modal-overlay" onMouseDown={onClose}>
+      <div className="modal-content" onMouseDown={e => e.stopPropagation()}>
+        <header className="card-header text-center">
           <h2 className="card-title vic20-text">Enterprise Sign In</h2>
-          <p className="card-subtitle">
-            Access your System Rebellion dashboard
-          </p>
-          <button 
-            className="btn btn-ghost btn-sm login-modal-close"
-            onClick={onClose}
-            aria-label="Close"
-          >
-            ✕
-          </button>
-        </div>
+          <p className="card-subtitle mt-1">Access your System Rebellion dashboard</p>
+        </header>
 
-        <form onSubmit={handleSubmit} className="card-body">
+        <form onSubmit={handleSubmit} className="card-body d-flex flex-col gap-3">
+          {displayError && <div className="alert alert-error">{displayError}</div>}
+
           <div className="form-group">
-            <label className="form-label" htmlFor="loginEmail">
-              Email Address
-            </label>
-            <input
-              id="loginEmail"
-              type="email"
-              className="form-input"
-              value={formData.email}
-              onChange={(e) => setFormData({...formData, email: e.target.value})}
+            <label className="form-label" htmlFor="email">Email Address</label>
+            <input 
+              type="email" 
+              id="email" 
+              value={formData.email} 
+              disabled={isLoading} 
+              required
               placeholder="your.name@company.com"
-              required
+              className={`form-input ${localErrors.email ? 'border-error' : ''}`}
+              onChange={e => handleInputChange('email', e.target.value)} 
             />
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="loginPassword">
-              Password
-            </label>
-            <input
-              id="loginPassword"
-              type="password"
-              className="form-input"
-              value={formData.password}
-              onChange={(e) => setFormData({...formData, password: e.target.value})}
-              placeholder="Enter your password"
+            <label className="form-label" htmlFor="password">Password</label>
+            <input 
+              type="password" 
+              id="password" 
+              value={formData.password} 
+              disabled={isLoading} 
               required
+              placeholder="Enter your password"
+              className={`form-input ${localErrors.password ? 'border-error' : ''}`}
+              onChange={e => handleInputChange('password', e.target.value)} 
             />
           </div>
 
-          <div className="login-form-checkbox-group">
-            <label className="checkbox-label">
+          <div className="d-flex align-center gap-2">
+            <label className="d-flex align-center gap-2 text-sm">
               <input
                 type="checkbox"
                 checked={formData.rememberMe}
-                onChange={(e) => setFormData({...formData, rememberMe: e.target.checked})}
+                disabled={isLoading}
+                onChange={e => handleInputChange('rememberMe', e.target.checked)}
+                style={{ marginTop: '2px' }}
               />
-              <span className="checkmark"></span>
-              Remember me for 30 days
+              <span>Remember me for 30 days</span>
             </label>
           </div>
 
-          {errors.submit && (
-            <div className="alert alert-error">
-              {errors.submit}
-            </div>
-          )}
-
-          <div className="signup-form-actions">
-            <button
-              type="submit"
-              className="btn btn-primary btn-lg"
-              disabled={isSubmitting}
+          <div className="d-flex justify-between align-center mt-4">
+            <button 
+              type="button" 
+              onClick={() => {/* TODO: Implement forgot password */}} 
+              className="btn btn-ghost p-1"
             >
-              {isSubmitting ? (
+              Forgot Password?
+            </button>
+            
+            <button 
+              type="submit" 
+              className="btn btn-primary btn-lg" 
+              disabled={isLoading}
+            >
+              {isLoading ? (
                 <>
                   <span className="loading-spinner"></span>
                   Signing In...
@@ -195,28 +98,19 @@ function LoginModal({
           </div>
         </form>
 
-        <div className="card-footer">
-          <div className="login-auth-links">
+        <footer className="card-footer text-center">
+          <p className="text-sm text-dim">
+            Don't have an account?{' '}
             <button 
-              className="btn btn-ghost btn-sm"
-              type="button"
-              onClick={() => {/* TODO: Implement forgot password */}}
-            >
-              Forgot Password?
-            </button>
-            <button 
-              className="btn btn-ghost btn-sm" 
-              onClick={onSwitchToSignUp}
-              type="button"
+              type="button" 
+              onClick={onSwitchToSignUp} 
+              className="btn btn-ghost p-1"
             >
               Create Account
             </button>
-          </div>
-        </div>
+          </p>
+        </footer>
       </div>
     </div>
   );
-};
-
-export default LoginModal;
-
+}

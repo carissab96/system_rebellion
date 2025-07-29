@@ -120,6 +120,6 @@ class AuthService:
                 "id": user.id,
                 "email": user.email,
                 "email": user.email,
-                "needs_onboarding": user.needs_onboarding
+                "is_onboarded": user.is_onboarded
             }
         }

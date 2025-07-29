@@ -1,7 +1,7 @@
 // components/onboarding/steps/agents/StickConfig.tsx
 import React, { useState } from 'react';
 import type { StepProps } from '../../OnboardingFlow';
-import { useOnboarding } from '../../OnboardingContext';
+import { useOnboarding } from '../../../../hooks/useOnboarding';
 import { StepNavigation } from '../../components/StepNavigation';
 import { SliderGroup } from '../../components/SliderGroup';
 

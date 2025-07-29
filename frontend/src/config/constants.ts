@@ -1,6 +1,6 @@
-// API Configuration
-export const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-export const WS_BASE_URL = process.env.REACT_APP_WS_URL || 'ws://localhost:8000';
+// API Configuration - Using Vite environment variables
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+export const WS_BASE_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000';
 
 // Local Storage Keys
 export const AUTH_TOKEN_KEY = 'access_token';

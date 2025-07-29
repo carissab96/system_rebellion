@@ -59,7 +59,7 @@ async def get_current_user_info(
         "os_version": current_user.os_version,
         "cpu_cores": current_user.cpu_cores,
         "total_memory": current_user.total_memory,
-        "needs_onboarding": current_user.needs_onboarding,
+        "is_onboarded": current_user.is_onboarded,
         "avatar": current_user.avatar
     }
 
@@ -102,7 +102,7 @@ async def update_current_user(
 
             # Mark onboarding as complete if system information is provided
             if any([user_data.operating_system, user_data.os_version, user_data.cpu_cores, user_data.total_memory]):
-                current_user.needs_onboarding = False
+                current_user.is_onboarded = False
                 logger.info(f"Marking onboarding as complete for user {current_user.id}")
         except Exception as e:
             logger.error(f"Error updating user fields: {str(e)}")
@@ -135,7 +135,7 @@ async def update_current_user(
             "os_version": current_user.os_version,
             "cpu_cores": current_user.cpu_cores,
             "total_memory": current_user.total_memory,
-            "needs_onboarding": current_user.needs_onboarding,
+            "is_onboarded": current_user.is_onboarded,
             "avatar": current_user.avatar
         }
     except Exception as e:

@@ -4,11 +4,11 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { useDispatch, useSelector } from 'react-redux'
 import type { RootState } from './store/store'
 import LandingPage from './pages/LandingPage'
-import OnboardingPage from './pages/OnboardingFlow'
 import SignUpModal from './components/auth/SignUpModal'
 import LoginModal from './components/auth/LoginModal'
 import AgentTheater from './components/agent-theater/AgentTheater'
 import { initializeAuth } from './store/slices/authSlice'
+import { OnboardingFlow } from './components/onboarding/OnboardingFlow'
 
 // Landing page with modal state management
 function LandingPageWithModals() {
@@ -94,13 +94,7 @@ function App() {
             element={
               isAuthenticated && user ? (
                 !user.is_onboarded ? (
-                  <OnboardingPage 
-                    user={user}
-                    token={token || '' } // ✅ FIXED - added exclamation mark since we know it exists here
-                    onComplete={() => {
-                      console.log('Onboarding completed - component will handle Redux update');
-                    }}
-                  />
+                  <OnboardingFlow /> 
                 ) : (
                   <Navigate to="/agent-theater" replace />
                 )

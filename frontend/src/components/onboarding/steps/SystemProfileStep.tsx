@@ -1,7 +1,7 @@
 // components/onboarding/steps/SystemProfileStep.tsx
 
 import React, { useState, useEffect } from 'react';
-import { useOnboarding } from '../OnboardingContext';
+import { useOnboarding } from '../../../hooks/useOnboarding';
 import type { StepProps } from '../OnboardingFlow'; // Assuming StepProps is exported from here
 
 export const SystemProfileStep: React.FC<StepProps> = ({ onNext, onBack }) => {

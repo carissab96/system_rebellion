@@ -110,7 +110,7 @@ def upgrade() -> None:
     sa.Column('email', sa.VARCHAR(length=50), nullable=False),
     sa.Column('email', sa.VARCHAR(length=100), nullable=False),
     sa.Column('hashed_password', sa.VARCHAR(length=255), nullable=False),
-    sa.Column('needs_onboarding', sa.BOOLEAN(), nullable=True),
+    sa.Column('is_onboarded', sa.BOOLEAN(), nullable=False),
     sa.Column('first_name', sa.VARCHAR(length=50), nullable=True),
     sa.Column('last_name', sa.VARCHAR(length=50), nullable=True),
     sa.Column('bio', sa.TEXT(), nullable=True),

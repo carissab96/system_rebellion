@@ -1,7 +1,7 @@
 // components/onboarding/steps/agents/MonitoringConfig.tsx
 import React, { useState, useEffect } from 'react';
 import type { StepProps } from '../../OnboardingFlow';
-import { useOnboarding } from '../../OnboardingContext';
+import { useOnboarding } from '../../../../hooks/useOnboarding';
 import { StepNavigation } from '../../components/StepNavigation';
 
 type MonitoringConfigState = {

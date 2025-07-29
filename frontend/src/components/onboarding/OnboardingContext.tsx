@@ -47,7 +47,7 @@ export type OnboardingAction =
   | { type: 'UPDATE_SYSTEM_PROFILE'; payload: Partial<OnboardingState['system']['system_profile']> }
   | { type: 'UPDATE_AGENT_PREFERENCES'; payload: Partial<OnboardingState['preferences']['agent_preferences']> }
   | { type: 'UPDATE_MONITORING_PREFERENCES'; payload: Partial<OnboardingState['preferences']['monitoring_preferences']> }
-  | { type: 'SET_PERMISSIONS'; payload: { granted: boolean; method: string } }
+  | { type: 'SET_PERMISSIONS'; payload: { permissions_granted: boolean; method: string } }
   | { type: 'ADJUST_DEFAULTS_FROM_PROFILE'; payload: OnboardingState['system']['system_profile'] }
   | { type: 'NEXT_STEP' }
   | { type: 'PREVIOUS_STEP' }
@@ -88,10 +88,12 @@ const initialState: OnboardingState = {
 };
 
 // 4. The context definition
-const OnboardingContext = createContext<{
+interface OnboardingContextType {
   state: OnboardingState;
   dispatch: React.Dispatch<OnboardingAction>;
-}>({ state: initialState, dispatch: () => {} });
+}
+
+const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
 
 // 5. The complete reducer function
 function onboardingReducer(state: OnboardingState, action: OnboardingAction): OnboardingState {
@@ -107,7 +109,7 @@ function onboardingReducer(state: OnboardingState, action: OnboardingAction): On
     case 'UPDATE_MONITORING_PREFERENCES':
       return { ...state, preferences: { ...state.preferences, monitoring_preferences: { ...state.preferences.monitoring_preferences, ...action.payload } } };
     case 'SET_PERMISSIONS':
-      return { ...state, system: { ...state.system, permissions_granted: action.payload.granted, installation_method: action.payload.method } };
+      return { ...state, system: { ...state.system, permissions_granted: action.payload.permissions_granted, installation_method: action.payload.method } };
     case 'ADJUST_DEFAULTS_FROM_PROFILE':
       const newAgentPrefs = adjustAgentDefaults(action.payload);
       return { ...state, preferences: { ...state.preferences, agent_preferences: newAgentPrefs } };
@@ -133,11 +135,4 @@ export const OnboardingProvider: React.FC<{ children: ReactNode }> = ({ children
   );
 };
 
-// 7. The consumer hook
-export const useOnboarding = () => {
-  const context = useContext(OnboardingContext);
-  if (!context) {
-    throw new Error('useOnboarding must be used within OnboardingProvider');
-  }
-  return context;
-};
+export default OnboardingProvider;

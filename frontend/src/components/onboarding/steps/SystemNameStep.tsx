@@ -1,6 +1,6 @@
 // components/onboarding/steps/SystemNameStep.tsx
 import React, { useState } from 'react';
-import { useOnboarding } from '../OnboardingContext';
+import { useOnboarding } from '../../../hooks/useOnboarding';
 import type { StepProps } from '../OnboardingFlow';
 import { StepNavigation } from '../components/StepNavigation';
 

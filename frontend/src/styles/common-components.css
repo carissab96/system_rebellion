@@ -110,8 +110,12 @@
   
   .form-input:focus {
     outline: none;
-    border-color: var(--vic20-cyan);
-    box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.1);
+    /* Make the border a bit more subtle */
+    border-color: var(--rebellion-text-dim); 
+    /* The "glow" comes from the VIC-20 cyan box-shadow */
+    box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.2);
+    /* Shift the background to the elevated surface color for a premium feel */
+    background-color: var(--rebellion-surface);
   }
   
   .form-input::placeholder {

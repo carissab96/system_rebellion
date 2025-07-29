@@ -167,8 +167,8 @@ class User(Base):
     )
     
     # New relationship for persistent AI memory
-    agent_memories = relationship(
-        "AgentMemory",
-        back_populates="user",
-        cascade="all, delete-orphan"
-    )
+    # agent_memories = relationship(
+    #     "AgentMemory",
+    #     back_populates="user",
+    #     cascade="all, delete-orphan"
+    # )
