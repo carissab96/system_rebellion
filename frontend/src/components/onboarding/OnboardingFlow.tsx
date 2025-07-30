@@ -7,14 +7,14 @@ import type { AxiosError } from 'axios';
 
 // Import our final, robust apiService
 import apiService from '../../services/api'; 
-import { useOnboarding } from './hooks/useOnboarding';
+import { useOnboarding } from '../../hooks/useOnboarding';
 import { steps } from './steps'; // The array of step configurations
 import { ProgressBar } from './components/ProgressBar'; // The progress bar component
 
 import styles from './OnboardingFlow.module.css'; // Our layout styles
 import OnboardingProvider from './OnboardingContext';
 
-export interface StepProps {
+interface StepProps {
   onNext: () => void;
   onBack: () => void;
   onComplete: () => void;
@@ -22,6 +22,8 @@ export interface StepProps {
   isLast: boolean;
   isCompleting: boolean;
   completionError: string | null;
+  nextLabel: string;
+  backLabel: string;
 }
 const OnboardingFlowContent: React.FC = () => {
   const { state, dispatch } = useOnboarding();
@@ -45,7 +47,20 @@ const OnboardingFlowContent: React.FC = () => {
     setCompletionError(null);
 
     try {
-      await apiService.completeOnboarding(state.preferences);
+      const onboardingData = {
+        first_name: state.profile.first_name,
+        last_name: state.profile.last_name,
+        company_name: state.profile.company_name,
+        job_title: state.profile.job_title,
+        system_name: state.system.system_name,
+        system_profile: state.system.system_profile,
+        permissions_granted: state.system.permissions_granted,
+        installation_method: state.system.installation_method,
+        agent_preferences: state.preferences.agent_preferences,
+        monitoring_preferences: state.preferences.monitoring_preferences,
+        is_onboarded: true
+      };
+      await apiService.completeOnboarding(onboardingData);
       navigate('/dashboard'); // Navigate on success
     } catch (err: any) {
       const error = err as AxiosError<any>;
@@ -103,7 +118,7 @@ export const OnboardingFlow: React.FC = () => {
   );
 };
 
-
+export type { StepProps };
 
 
 

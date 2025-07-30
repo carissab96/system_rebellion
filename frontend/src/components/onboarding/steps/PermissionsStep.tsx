@@ -93,7 +93,7 @@ export const PermissionsStep: React.FC<StepProps> = ({ onNext, onBack }) => {
     onNext();
   };
 
-  return (
+return (
     <div className="d-flex flex-col gap-4">
       <div>
         <p className="text-lg mb-3">
@@ -192,4 +192,4 @@ export const PermissionsStep: React.FC<StepProps> = ({ onNext, onBack }) => {
       />
     </div>
   );
-};
+};;

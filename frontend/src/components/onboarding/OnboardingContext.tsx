@@ -87,13 +87,18 @@ const initialState: OnboardingState = {
   }
 };
 
-// 4. The context definition
-interface OnboardingContextType {
+// 4. The context type definition
+export interface OnboardingContextType {
   state: OnboardingState;
   dispatch: React.Dispatch<OnboardingAction>;
 }
 
+// Create the context with the correct type
 const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
+
+// Re-export the types for use in other files
+type ExportedOnboardingState = OnboardingState;
+type ExportedOnboardingAction = OnboardingAction;
 
 // 5. The complete reducer function
 function onboardingReducer(state: OnboardingState, action: OnboardingAction): OnboardingState {
@@ -134,5 +139,9 @@ export const OnboardingProvider: React.FC<{ children: ReactNode }> = ({ children
     </OnboardingContext.Provider>
   );
 };
+
+// Export the context and types
+export { OnboardingContext };
+export type { ExportedOnboardingState, ExportedOnboardingAction };
 
 export default OnboardingProvider;

@@ -1,6 +1,7 @@
 import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosResponse, type AxiosError } from 'axios';
 import { API_BASE_URL, WS_BASE_URL } from '../config/constants';
 
+
 // Types
 export interface ApiResponse<T = any> {
   data: T;
@@ -56,7 +57,7 @@ api.interceptors.response.use(
         }
         
         const response = await axios.post(
-          `${API_BASE_URL}/auth/refresh-token`,
+          `${API_BASE_URL}/api/auth/refresh-token`,
           { refresh_token: refreshToken },
           { withCredentials: true }
         );
@@ -90,36 +91,42 @@ api.interceptors.response.use(
 export const apiService = {
   // Auth
   login: async (email: string, password: string): Promise<ApiResponse<{ access_token: string; refresh_token: string }>> => {
-    const response = await api.post('/auth/token', { email, password });
+    const response = await api.post('/api/auth/token', { 
+      username: email,  // OAuth2 expects 'username' not 'email'
+      password: password,
+      grant_type: 'password'  // OAuth2 password flow
+    });
     return response;
   },
   
   register: async (email: string, password: string, username: string): Promise<ApiResponse> => {
-    const response = await api.post('/auth/register', { email, password, username });
+    const response = await api.post('/api/auth/register', { email, password, username });
     return response;
   },
   
-  getProfile: async (): Promise<ApiResponse> => {
-    const response = await api.get('/auth/me');
+  updateProfile: async (profileData: object): Promise<ApiResponse> => {
+    const response = await api.put('/api/auth/me', profileData);  // This endpoint isn't in your config
     return response;
   },
+
   completeOnboarding: async (onboardingData: object): Promise<AxiosResponse> => {
-    // The call is simple because the interceptors handle all the complexity.
-    const response = await api.post('/profile', onboardingData);
+    // Based on your api-config, this should be:
+    const response = await api.post('/api/users/profile', onboardingData);
     return response;
   },
   
   // System Metrics
   getSystemMetrics: async (): Promise<ApiResponse> => {
-    const response = await api.get('/system/metrics');
+    const response = await api.get('/api/metrics/system');  // Should match your config
     return response;
   },
   
   // AI Agents
   getAgentStatus: async (): Promise<ApiResponse> => {
-    const response = await api.get('/ai-agents/status');
+    const response = await api.get('/api/ai-agents/status');  // Added /api prefix
     return response;
   },
+
   
   // WebSocket
   getWebSocketUrl: (): string => {
