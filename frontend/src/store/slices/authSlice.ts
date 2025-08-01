@@ -125,7 +125,7 @@ export const authSlice = createSlice({
       state.isLoading = false;
       
       // Store in localStorage for persistence
-      localStorage.setItem('auth_token', action.payload.token);
+      localStorage.setItem('access_token', action.payload.token);
       localStorage.setItem('user_data', JSON.stringify(action.payload.user));
     },
     
@@ -137,7 +137,7 @@ export const authSlice = createSlice({
       state.error = null;
       
       // Clear localStorage
-      localStorage.removeItem('auth_token');
+      localStorage.removeItem('access_token');
       localStorage.removeItem('user_data');
     },
     
@@ -165,7 +165,7 @@ export const authSlice = createSlice({
     
     // Initialize from localStorage (call this on app startup)
     initializeAuth: (state) => {
-      const savedToken = localStorage.getItem('auth_token');
+      const savedToken = localStorage.getItem('access_token');
       const savedUser = localStorage.getItem('user_data');
       
       if (savedToken && savedUser) {
@@ -200,7 +200,7 @@ export const authSlice = createSlice({
         state.token = action.payload.token;
         state.error = null;
         
-        localStorage.setItem('auth_token', action.payload.token);
+        localStorage.setItem('access_token', action.payload.token);
         localStorage.setItem('user_data', JSON.stringify(action.payload.user));
       })
       .addCase(registerUser.rejected, (state, action) => {
@@ -221,7 +221,7 @@ export const authSlice = createSlice({
         state.error = null;
         
         // Store in localStorage
-        localStorage.setItem('auth_token', action.payload.token);
+        localStorage.setItem('access_token', action.payload.token);
         localStorage.setItem('user_data', JSON.stringify(action.payload.user));
       })
       .addCase(loginUser.rejected, (state, action) => {
@@ -240,7 +240,7 @@ export const authSlice = createSlice({
         state.isAuthenticated = false;
         state.user = null;
         state.token = null;
-        localStorage.removeItem('auth_token');
+        localStorage.removeItem('access_token');
         localStorage.removeItem('user_data');
       });
   },

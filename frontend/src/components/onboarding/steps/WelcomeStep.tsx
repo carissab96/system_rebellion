@@ -35,7 +35,7 @@ export const WelcomeStep: React.FC<StepProps> = ({ onNext, isFirst, onBack }) =>
           <div className="memory-counter-preview">
             <span className="counter-label">PATTERNS LEARNED</span>
             <span className="counter-value">0</span>
-            <span className="counter-text">About to begin...</span>
+            <span className="counter-text">Awaiting first connection...</span>
           </div>
         </div>
       </div>

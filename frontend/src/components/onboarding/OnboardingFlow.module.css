@@ -68,7 +68,8 @@
   /* Use this for the main title/subtitle header of the card.
      This will use the .card-header global class in JSX. */
   .stepHeader {
-    text-align: left;
+    text-align: center;
+
   }
   
   
@@ -84,7 +85,8 @@
   /* A flexible grid for laying out form inputs */
   .formGrid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-rows: repeat(auto-fit, minmax(100px, 1fr));
     gap: var(--space-lg);
   }
   
@@ -101,7 +103,7 @@
     border-bottom: 1px solid var(--rebellion-border);
   }
   .sectionHeader:first-child {
-    margin-top: 0;
+    margin-top: 0
   }
   
   
@@ -114,6 +116,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+
   }
   
   /* --- 6. Step-Specific Styles --- */

@@ -14,6 +14,7 @@ from app.api.endpoints import health
 from app.api import router as api_router
 from app.api import router as metrics_router
 from app.api import router as debug_router
+from app.api import system
 from app.api import simplified_websocket_routes, minimal_websocket_routes
 from datetime import datetime
 import uvicorn
@@ -227,6 +228,11 @@ def create_application() -> FastAPI:
     #     )
 
     # Include routers
+    app.include_router(
+        system.router,
+        prefix="/api/system",
+        tags=["System"]
+    )
     app.include_router(
         auth.router, 
         prefix="/api/auth", 

@@ -1,0 +1,124 @@
+/* In common-components.css or create onboarding.css 
+.progress-indicator {
+    background: var(--rebellion-surface);
+    padding: 1rem;
+    margin-bottom: 2rem;
+  }
+  
+  .progress-indicator .step-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--step-inactive);
+    transition: all 0.3s ease;
+  }
+  
+  .progress-indicator .step-dot.active {
+    background: var(--step-active);
+    box-shadow: var(--rebellion-cyan-glow);
+  }
+  
+  .progress-indicator .step-dot.complete {
+    background: var(--step-complete);
+  }
+  
+  .progress-connector {
+    height: 2px;
+    background: var(--rebellion-surface-light);
+    transition: all 0.3s ease;
+  }
+  
+  .progress-connector.complete {
+    background: var(--rebellion-cyan);
+  }
+  */
+  /* Installation method cards */
+.installation-method {
+    background: var(--rebellion-void);
+    border: 1px solid var(--rebellion-border);
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .installation-method:hover {
+    border-color: rgba(38, 208, 206, 0.3);
+    background: rgba(38, 208, 206, 0.02);
+  }
+
+
+  
+  .installation-method.selected {
+    border-color: var(--vic20-cyan);
+    background: var(--vic20-cyan-dim);
+    box-shadow: var(--vic20-cyan-glow);
+  }
+  
+  .installation-method input[type="radio"] {
+    accent-color: var(--vic20-cyan);
+  }
+  */
+  
+  .onboarding-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 0;
+    margin-bottom: 2rem;
+  }
+  /* In common-components.css or a new onboarding.css 
+
+.patterns-learned {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; /* Or center, depending on desired alignment 
+  margin-top: 2rem; /* Give it some space 
+  padding: 1rem 0; /* Some padding if it's a distinct block 
+}
+
+.patterns-learned .stat-label {
+  font-size: 0.85rem;
+  color: var(--rebellion-text-secondary); /* Use your secondary text color 
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+}
+
+.patterns-learned .stat-value {
+  font-size: 2.5rem; /* Larger, like the landing page 
+  font-weight: 700;
+  color: var(--vic20-cyan); /* Make it pop with the accent color 
+  line-height: 1; /* Tidy up spacing 
+}
+
+.patterns-learned .stat-note {
+  font-size: 0.9rem;
+  color: var(--rebellion-text-dim); /* A slightly lighter, more subtle text color 
+  margin-top: 0.5rem;
+}
+
+/* Optional: If you want it to look like a small card/block, uncomment this 
+/*
+.patterns-learned-card {
+  background: var(--rebellion-surface-light);
+  border: 1px solid var(--rebellion-surface-light);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-top: 2rem;
+  width: fit-content;
+}
+
+  .escape-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--rebellion-text-secondary);
+    text-decoration: none;
+    transition: color 0.3s ease;
+  }
+  
+  .escape-link:hover {
+    color: var(--vic20-cyan);
+  }
+  */

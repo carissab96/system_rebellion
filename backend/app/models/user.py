@@ -106,7 +106,7 @@ class User(Base):
         'total_ram_gb': None,
         'storage_type': None,
         'total_storage_gb': None,
-        'cpu_cores': None,
+        'cpu_cores': None,  
         'is_virtual': False,
         'network_type': 'standard',
         'admin_access': 'full',

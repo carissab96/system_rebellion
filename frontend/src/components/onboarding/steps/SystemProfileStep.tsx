@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useOnboarding } from '../../../hooks/useOnboarding';
 import type { StepProps } from '../OnboardingFlow'; // Assuming StepProps is exported from here
+import apiService from '../../../services/api';
 
 export const SystemProfileStep: React.FC<StepProps> = ({ onNext, onBack }) => {
   const { state, dispatch } = useOnboarding();
@@ -19,14 +20,10 @@ export const SystemProfileStep: React.FC<StepProps> = ({ onNext, onBack }) => {
 
   const autoDetectSystemInfo = async () => {
     try {
-      const response = await fetch('/api/system/detect');
-      if (response.ok) {
-        const detected = await response.json();
-        setSystemInfo(prevInfo => ({ ...prevInfo, ...detected }));
-        setDetectionStatus('success');
-      } else {
-        setDetectionStatus('manual');
-      }
+      const response = await apiService.detectSystem();
+      const detected = response.data;
+      setSystemInfo(prevInfo => ({ ...prevInfo, ...detected }));
+      setDetectionStatus('success');
     } catch (error) {
       console.error('System detection failed:', error);
       setDetectionStatus('manual');

@@ -47,7 +47,7 @@ async def get_current_user(
             raise credentials_exception
         
         # Get user from database
-        result = await db.execute(select(User).where(User.username == email))
+        result = await db.execute(select(User).where(User.email == email))
         user = result.scalars().first()
         
         if user is None:
@@ -84,7 +84,7 @@ async def get_optional_user(
         if not email:
             return None
             
-        result = await db.execute(select(User).where(User.username == email))
+        result = await db.execute(select(User).where(User.email == email))
         user = result.scalars().first()
         return user
     except:

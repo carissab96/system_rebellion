@@ -33,7 +33,7 @@ export const ProfileStep: React.FC<StepProps> = ({ onNext, onBack, isFirst }) =>
           value={profile.first_name}
           onChange={(e) => handleChange('first_name', e.target.value)}
           placeholder="John"
-          className="onboarding-input"
+          className="form-input"
         />
       </div>
 
@@ -45,7 +45,7 @@ export const ProfileStep: React.FC<StepProps> = ({ onNext, onBack, isFirst }) =>
           value={profile.last_name}
           onChange={(e) => handleChange('last_name', e.target.value)}
           placeholder="Doe"
-          className="onboarding-input"
+          className="form-input"
         />
       </div>
 
@@ -57,7 +57,7 @@ export const ProfileStep: React.FC<StepProps> = ({ onNext, onBack, isFirst }) =>
           value={profile.company_name}
           onChange={(e) => handleChange('company_name', e.target.value)}
           placeholder="Acme Corp"
-          className="onboarding-input"
+          className="form-input"
         />
       </div>
 
@@ -69,7 +69,7 @@ export const ProfileStep: React.FC<StepProps> = ({ onNext, onBack, isFirst }) =>
           value={profile.job_title}
           onChange={(e) => handleChange('job_title', e.target.value)}
           placeholder="DevOps Engineer"
-          className="onboarding-input"
+          className= "form-input"
         />
       </div>
 

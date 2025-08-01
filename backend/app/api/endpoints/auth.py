@@ -4,10 +4,10 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Dict, Any, Union, Optional
-import inspect
-import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 import uuid
+import secrets
+import platform
 from jose import jwt, JWTError
 from fastapi.security import OAuth2PasswordRequestForm
 from app.api.deps import get_current_user   
@@ -144,7 +144,7 @@ async def refresh_access_token(
 
 async def is_async_session(session) -> bool:
     """Check if the session is async or not"""
-    return hasattr(session, "execute") and inspect.iscoroutinefunction(session.execute)
+    return isinstance(session, AsyncSession)
 
 async def find_user_by_email(db, email=None):
     """Find a user by email or email, handling both async and sync sessions"""
@@ -386,6 +386,7 @@ async def login_for_access_token(
         db.commit()
     
     # Return full token with complete user information
+    # Replace the problematic section with just the fields you need:
     return {
         "access_token": access_token,
         "refresh_token": refresh_token,
@@ -395,21 +396,16 @@ async def login_for_access_token(
             "email": user.email,
             "first_name": user.first_name,
             "last_name": user.last_name,
-            "company_name": user.company_name,
-            "job_title": user.job_title,
-            "is_active": user.is_active,
-            "created_at": user.created_at,
-            "updated_at": user.updated_at,
             "is_onboarded": user.is_onboarded,
-            "operating_system": user.operating_system,
-            "os_version": user.os_version,
-            "cpu_cores": user.cpu_cores,
-            "total_memory": int(user.total_memory) if user.total_memory is not None else None,
-            "avatar": user.avatar,
-            "profile": user.profile if hasattr(user, 'profile') else None,
-            "preferences": user.preferences if hasattr(user, 'preferences') else None
+            "is_active": user.is_active,
+            "created_at": user.created_at.isoformat() if isinstance(user.created_at, datetime) else None,
+            "updated_at": user.updated_at.isoformat() if isinstance(user.updated_at, datetime) else None,
+            "last_login": user.last_login.isoformat() if isinstance(user.last_login, datetime) else None,
+            "failed_login_attempts": user.failed_login_attempts,
+            "lockout_until": user.lockout_until.isoformat() if isinstance(user.lockout_until, datetime) else None
         }
     }
+
 # Add this to a route to check your User model structure
 @router.get("/debug/user-model")
 def debug_user_model():
@@ -636,48 +632,53 @@ async def read_users_me(current_user: User = Depends(get_current_user)):
 async def complete_onboarding(
     onboarding_data: dict,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_async_db)
+    db: AsyncSession = Depends(get_db)
 ):
+    await db.refresh(current_user)
+
+    user_email = current_user.email
+    result = await db.execute(select(User).where(User.email == user_email))
+    fresh_user = result.scalar_one_or_none()
     """Complete user onboarding with all collected data"""
     try:
         # Update user with all onboarding data
-        current_user.first_name = onboarding_data.get('first_name')
-        current_user.last_name = onboarding_data.get('last_name')
-        current_user.company_name = onboarding_data.get('company_name')
-        current_user.job_title = onboarding_data.get('job_title')
-        current_user.system_name = onboarding_data.get('system_name')
+        fresh_user.first_name = onboarding_data.get('first_name')
+        fresh_user.last_name = onboarding_data.get('last_name')
+        fresh_user.company_name = onboarding_data.get('company_name')
+        fresh_user.job_title = onboarding_data.get('job_title')
+        fresh_user.system_name = onboarding_data.get('system_name')
         
         # System profile
-        current_user.system_profile = onboarding_data.get('system_profile', {})
+        fresh_user.system_profile = onboarding_data.get('system_profile', {})
         
         # Permissions tracking
-        current_user.permissions_granted_at = datetime.now(timezone.utc)
-        current_user.installation_method = onboarding_data.get('installation_method')
+        fresh_user.permissions_granted_at = datetime.now(timezone.utc)
+        fresh_user.installation_method = onboarding_data.get('installation_method')
         
         # Agent preferences with system-adjusted defaults
-        system_profile = onboarding_data.get('system_profile', {})
-        agent_prefs = adjust_agent_preferences_for_system(
-            onboarding_data.get('agent_preferences', {}),
-            system_profile
-        )
-        current_user.agent_preferences = agent_prefs
-        
+        # system_profile = onboarding_data.get('system_profile', {})
+        # agent_prefs = adjust_agent_preferences_for_system(
+        #     onboarding_data.get('agent_preferences', {}),
+        #     system_profile
+        # )
+        # fresh_user.agent_preferences = agent_prefs
+        fresh_user.agent_preferences = onboarding_data.get('agent_preferences', {})
         # Monitoring preferences
-        current_user.monitoring_preferences = onboarding_data.get('monitoring_preferences', {})
+        fresh_user.monitoring_preferences = onboarding_data.get('monitoring_preferences', {})
         
         # Mark as onboarded
-        current_user.is_onboarded = True
+        fresh_user.is_onboarded = True
         
         await db.commit()
-        await db.refresh(current_user)
+        await db.refresh(fresh_user)
         
         # Initialize agent memory banks for this user
-        await initialize_agent_memories(current_user.id, db)
+        # await initialize_agent_memories(current_user.id, db)
         
         return {
             "success": True,
-            "user": user_to_dict(current_user),
-            "next_steps": determine_next_steps(current_user)
+            "user": user_to_dict(fresh_user),
+            "next_steps": determine_next_steps(fresh_user)
         }
         
     except Exception as e:
@@ -912,7 +913,7 @@ async def update_profile(
                 "id": current_user.id,
                 "email": current_user.email,
                 "email": current_user.email,
-                "operating_system": current_user.operating_system,
+                "os_type": current_user.operating_system,
                 "os_version": current_user.os_version,
                 "cpu_cores": current_user.cpu_cores,
                 "total_memory": current_user.total_memory,

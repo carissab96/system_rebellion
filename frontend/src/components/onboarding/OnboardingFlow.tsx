@@ -85,7 +85,7 @@ const OnboardingFlowContent: React.FC = () => {
           <h1 className="card-title">{title}</h1>
           <p className="card-subtitle mt-1">{subtitle}</p>
         </header>
-
+      
         {/* --- FIX: STEP CONTENT IS NOW DYNAMIC --- */}
         <main className={`${styles.contentArea} card-body`}>
           <AnimatePresence mode="wait">

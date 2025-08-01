@@ -372,6 +372,33 @@ esac
 
 exit 0"""
 
+def detect_os_from_user_agent(user_agent: str) -> str:
+    """Detect the operating system from a user agent string.
+    
+    Args:
+        user_agent: The User-Agent header string from the request
+        
+    Returns:
+        str: Detected OS name (windows, linux, darwin, or unknown)
+    """
+    if not user_agent:
+        return 'unknown'
+        
+    user_agent = user_agent.lower()
+    
+    if 'windows' in user_agent:
+        return 'windows'
+    elif 'linux' in user_agent:
+        return 'linux' 
+    elif 'darwin' in user_agent or 'mac' in user_agent:
+        return 'darwin'
+    elif 'android' in user_agent:
+        return 'android'
+    elif 'iphone' in user_agent or 'ipad' in user_agent:
+        return 'ios'
+    else:
+        return 'unknown'
+
 # Convenience function for installation
 # Convenience function for installation
 def install_agent():

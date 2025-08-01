@@ -4,6 +4,7 @@ import { API_BASE_URL, WS_BASE_URL } from '../config/constants';
 
 // Types
 export interface ApiResponse<T = any> {
+  [x: string]: any;
   data: T;
   status: number;
   statusText: string;
@@ -28,9 +29,8 @@ const api: AxiosInstance = axios.create({
 api.interceptors.request.use(
   async (config) => {
     const token = localStorage.getItem('access_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+    config.headers = config.headers || {};
+    config.headers.Authorization = `Bearer ${token}`;
     return config;
   },
   (error) => {
@@ -109,9 +109,20 @@ export const apiService = {
     return response;
   },
 
-  completeOnboarding: async (onboardingData: object): Promise<AxiosResponse> => {
-    // Based on your api-config, this should be:
-    const response = await api.post('/api/users/profile', onboardingData);
+// Add the Authorization header manually to the completeOnboarding call:
+completeOnboarding: async (onboardingData: object): Promise<AxiosResponse> => {
+  const token = localStorage.getItem('access_token');
+  const response = await api.post('/api/auth/complete-onboarding', onboardingData, {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  return response;
+},
+
+  //System detection method
+  detectSystem: async(): Promise<ApiResponse> => {
+    const response = await api.get('/api/system/detect');
     return response;
   },
   
