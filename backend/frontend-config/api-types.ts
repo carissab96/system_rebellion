@@ -98,6 +98,14 @@ export const API_ENDPOINTS = {
   UPDATE_PROFILE: "/update-profile",
   ME: "/me",
   ME: "/me",
+  ONBOARDING_PROGRESS: "/onboarding-progress",
+  ONBOARDING_PROGRESS: "/onboarding-progress",
+  ONBOARDING_PROGRESS: "/onboarding-progress",
+  EMERGENCY_INTERVENTION: "/emergency-intervention",
+  DISK_CLEANUP: "/disk-cleanup",
+  SUPPLY_CLOSET_INVENTORY: "/supply-closet-inventory",
+  BEER_STATUS: "/beer-status",
+  RESTOCK_SUPPLIES: "/restock-supplies",
   HAMSTERS_RECOMMENDATIONS: "/hamsters/recommendations",
   HAMSTERS_APPLY_ENGINEERING: "/hamsters/apply-engineering",
   HAMSTERS_EMERGENCY: "/hamsters/emergency",
@@ -107,11 +115,6 @@ export const API_ENDPOINTS = {
   HAMSTERS_RESTOCK: "/hamsters/restock",
   HAMSTERS_STATS: "/hamsters/stats",
   HAMSTERS_RESET: "/hamsters/reset",
-  EMERGENCY_INTERVENTION: "/emergency-intervention",
-  DISK_CLEANUP: "/disk-cleanup",
-  SUPPLY_CLOSET_INVENTORY: "/supply-closet-inventory",
-  BEER_STATUS: "/beer-status",
-  RESTOCK_SUPPLIES: "/restock-supplies",
 };
 
 // WebSocket Endpoint Constants

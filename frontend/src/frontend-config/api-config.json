@@ -102,11 +102,6 @@
       },
       {
         "method": "POST",
-        "path": "/users/complete-onboarding",
-        "handler": "complete_onboarding"
-      },
-      {
-        "method": "POST",
         "path": "/direct-profile-update/{email}",
         "handler": "direct_profile_update"
       },

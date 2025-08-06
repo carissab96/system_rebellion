@@ -210,9 +210,9 @@
   }
   
   .alert-info {
-    background: rgba(59, 130, 246, 0.1);
-    border-color: var(--info);
-    color: var(--info);
+    background: var(--rebellion-void);
+    border: 1px solid var(--rebellion-border);
+    color: var(--rebellion-text-dim);
   }
   
   /* BADGES */

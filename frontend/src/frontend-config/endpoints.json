@@ -5,35 +5,35 @@
       "path": "/api/debug/ping",
       "handler": "ping",
       "file": "main.py",
-      "line": 148
+      "line": 150
     },
     {
       "method": "GET",
       "path": "/health-check/",
       "handler": "health_check",
       "file": "main.py",
-      "line": 153
+      "line": 155
     },
     {
       "method": "GET",
       "path": "/api/health-check/",
       "handler": "health_check",
       "file": "main.py",
-      "line": 154
+      "line": 156
     },
     {
       "method": "GET",
       "path": "/api/ai-agents/status",
       "handler": "ai_agents_status",
       "file": "main.py",
-      "line": 181
+      "line": 183
     },
     {
       "method": "GET",
       "path": "/api/auth/csrf_token",
       "handler": "get_csrf_token",
       "file": "main.py",
-      "line": 188
+      "line": 190
     },
     {
       "method": "GET",
@@ -160,6 +160,13 @@
       "handler": "logout",
       "file": "app/api/auth_routes.py",
       "line": 391
+    },
+    {
+      "method": "GET",
+      "path": "/detect",
+      "handler": "detect_system",
+      "file": "app/api/system.py",
+      "line": 112
     },
     {
       "method": "GET",
@@ -369,74 +376,74 @@
       "path": "/refresh-token",
       "handler": "refresh_access_token",
       "file": "app/api/endpoints/auth.py",
-      "line": 49
+      "line": 50
     },
     {
       "method": "POST",
       "path": "/register",
       "handler": "register_user",
       "file": "app/api/endpoints/auth.py",
-      "line": 187
+      "line": 188
     },
     {
       "method": "POST",
       "path": "/create-test-user",
       "handler": "create_test_user",
       "file": "app/api/endpoints/auth.py",
-      "line": 290
+      "line": 291
     },
     {
       "method": "POST",
       "path": "/token",
       "handler": "login_for_access_token",
       "file": "app/api/endpoints/auth.py",
-      "line": 317
+      "line": 318
     },
     {
       "method": "GET",
       "path": "/debug/user-model",
       "handler": "debug_user_model",
       "file": "app/api/endpoints/auth.py",
-      "line": 414
+      "line": 411
     },
     {
       "method": "POST",
       "path": "/debug/db-test",
       "handler": "test_database_operations",
       "file": "app/api/endpoints/auth.py",
-      "line": 434
+      "line": 431
     },
     {
       "method": "GET",
       "path": "/debug/db-config",
       "handler": "debug_db_config",
       "file": "app/api/endpoints/auth.py",
-      "line": 498
+      "line": 495
     },
     {
       "method": "GET",
       "path": "/health-check/",
       "handler": "health_check",
       "file": "app/api/endpoints/auth.py",
-      "line": 515
+      "line": 512
     },
     {
       "method": "GET",
       "path": "/status/",
       "handler": "auth_status",
       "file": "app/api/endpoints/auth.py",
-      "line": 540
+      "line": 537
     },
     {
       "method": "GET",
       "path": "/me",
       "handler": "read_users_me",
       "file": "app/api/endpoints/auth.py",
-      "line": 622
+      "line": 619
     },
     {
       "method": "POST",
-      "path": "/users/complete-onboarding",
+      "path": "/complete-onboarding",
       "handler": "complete_onboarding",
       "file": "app/api/endpoints/auth.py",
       "line": 634
@@ -446,14 +453,14 @@
       "path": "/direct-profile-update/{email}",
       "handler": "direct_profile_update",
       "file": "app/api/endpoints/auth.py",
-      "line": 671
+      "line": 741
     },
     {
       "method": "POST",
       "path": "/update-profile",
       "handler": "update_profile",
       "file": "app/api/endpoints/auth.py",
-      "line": 816
+      "line": 886
     },
     {
       "method": "GET",
@@ -468,6 +475,62 @@
       "handler": "update_current_user",
       "file": "app/api/endpoints/users.py",
       "line": 66
+    },
+    {
+      "method": "POST",
+      "path": "/onboarding-progress",
+      "handler": "save_onboarding_progress",
+      "file": "app/api/endpoints/onboarding.py",
+      "line": 33
+    },
+    {
+      "method": "GET",
+      "path": "/onboarding-progress",
+      "handler": "get_onboarding_progress",
+      "file": "app/api/endpoints/onboarding.py",
+      "line": 94
+    },
+    {
+      "method": "DELETE",
+      "path": "/onboarding-progress",
+      "handler": "clear_onboarding_progress",
+      "file": "app/api/endpoints/onboarding.py",
+      "line": 127
+    },
+    {
+      "method": "POST",
+      "path": "/emergency-intervention",
+      "handler": "emergency_intervention",
+      "file": "app/ai_agents/hamsters/hamsters_api_routes.py",
+      "line": 20
+    },
+    {
+      "method": "POST",
+      "path": "/disk-cleanup",
+      "handler": "request_disk_cleanup",
+      "file": "app/ai_agents/hamsters/hamsters_api_routes.py",
+      "line": 42
+    },
+    {
+      "method": "GET",
+      "path": "/supply-closet-inventory",
+      "handler": "check_supply_closet",
+      "file": "app/ai_agents/hamsters/hamsters_api_routes.py",
+      "line": 60
+    },
+    {
+      "method": "GET",
+      "path": "/beer-status",
+      "handler": "get_beer_status",
+      "file": "app/ai_agents/hamsters/hamsters_api_routes.py",
+      "line": 81
+    },
+    {
+      "method": "POST",
+      "path": "/restock-supplies",
+      "handler": "restock_hamster_supplies",
+      "file": "app/ai_agents/hamsters/hamsters_api_routes.py",
+      "line": 98
     },
     {
       "method": "GET",
@@ -531,41 +594,6 @@
       "handler": "reset_hamsters_brain",
       "file": "app/ai_agents/hamsters/hamsters_api_routes_refactored.py",
       "line": 572
-    },
-    {
-      "method": "POST",
-      "path": "/emergency-intervention",
-      "handler": "emergency_intervention",
-      "file": "app/ai_agents/hamsters/hamsters_api_routes.py",
-      "line": 20
-    },
-    {
-      "method": "POST",
-      "path": "/disk-cleanup",
-      "handler": "request_disk_cleanup",
-      "file": "app/ai_agents/hamsters/hamsters_api_routes.py",
-      "line": 42
-    },
-    {
-      "method": "GET",
-      "path": "/supply-closet-inventory",
-      "handler": "check_supply_closet",
-      "file": "app/ai_agents/hamsters/hamsters_api_routes.py",
-      "line": 60
-    },
-    {
-      "method": "GET",
-      "path": "/beer-status",
-      "handler": "get_beer_status",
-      "file": "app/ai_agents/hamsters/hamsters_api_routes.py",
-      "line": 81
-    },
-    {
-      "method": "POST",
-      "path": "/restock-supplies",
-      "handler": "restock_hamster_supplies",
-      "file": "app/ai_agents/hamsters/hamsters_api_routes.py",
-      "line": 98
     }
   ],
   "websocket_routes": [
@@ -596,35 +624,35 @@
           "path": "/api/debug/ping",
           "handler": "ping",
           "file": "main.py",
-          "line": 148
+          "line": 150
         },
         {
           "method": "GET",
           "path": "/health-check/",
           "handler": "health_check",
           "file": "main.py",
-          "line": 153
+          "line": 155
         },
         {
           "method": "GET",
           "path": "/api/health-check/",
           "handler": "health_check",
           "file": "main.py",
-          "line": 154
+          "line": 156
         },
         {
           "method": "GET",
           "path": "/api/ai-agents/status",
           "handler": "ai_agents_status",
           "file": "main.py",
-          "line": 181
+          "line": 183
         },
         {
           "method": "GET",
           "path": "/api/auth/csrf_token",
           "handler": "get_csrf_token",
           "file": "main.py",
-          "line": 188
+          "line": 190
         }
       ],
       "websocket_routes": []
@@ -786,6 +814,18 @@
           "line": 64
         }
       ]
+    },
+    "app/api/system.py": {
+      "http_routes": [
+        {
+          "method": "GET",
+          "path": "/detect",
+          "handler": "detect_system",
+          "file": "app/api/system.py",
+          "line": 112
+        }
+      ],
+      "websocket_routes": []
     },
     "app/api/endpoints/optimization.py": {
       "http_routes": [
@@ -1032,74 +1072,74 @@
           "path": "/refresh-token",
           "handler": "refresh_access_token",
           "file": "app/api/endpoints/auth.py",
-          "line": 49
+          "line": 50
         },
         {
           "method": "POST",
           "path": "/register",
           "handler": "register_user",
           "file": "app/api/endpoints/auth.py",
-          "line": 187
+          "line": 188
         },
         {
           "method": "POST",
           "path": "/create-test-user",
           "handler": "create_test_user",
           "file": "app/api/endpoints/auth.py",
-          "line": 290
+          "line": 291
         },
         {
           "method": "POST",
           "path": "/token",
           "handler": "login_for_access_token",
           "file": "app/api/endpoints/auth.py",
-          "line": 317
+          "line": 318
         },
         {
           "method": "GET",
           "path": "/debug/user-model",
           "handler": "debug_user_model",
           "file": "app/api/endpoints/auth.py",
-          "line": 414
+          "line": 411
         },
         {
           "method": "POST",
           "path": "/debug/db-test",
           "handler": "test_database_operations",
           "file": "app/api/endpoints/auth.py",
-          "line": 434
+          "line": 431
         },
         {
           "method": "GET",
           "path": "/debug/db-config",
           "handler": "debug_db_config",
           "file": "app/api/endpoints/auth.py",
-          "line": 498
+          "line": 495
         },
         {
           "method": "GET",
           "path": "/health-check/",
           "handler": "health_check",
           "file": "app/api/endpoints/auth.py",
-          "line": 515
+          "line": 512
         },
         {
           "method": "GET",
           "path": "/status/",
           "handler": "auth_status",
           "file": "app/api/endpoints/auth.py",
-          "line": 540
+          "line": 537
         },
         {
           "method": "GET",
           "path": "/me",
           "handler": "read_users_me",
           "file": "app/api/endpoints/auth.py",
-          "line": 622
+          "line": 619
         },
         {
           "method": "POST",
-          "path": "/users/complete-onboarding",
+          "path": "/complete-onboarding",
           "handler": "complete_onboarding",
           "file": "app/api/endpoints/auth.py",
           "line": 634
@@ -1109,14 +1149,14 @@
           "path": "/direct-profile-update/{email}",
           "handler": "direct_profile_update",
           "file": "app/api/endpoints/auth.py",
-          "line": 671
+          "line": 741
         },
         {
           "method": "POST",
           "path": "/update-profile",
           "handler": "update_profile",
           "file": "app/api/endpoints/auth.py",
-          "line": 816
+          "line": 886
         }
       ],
       "websocket_routes": []
@@ -1140,6 +1180,32 @@
       ],
       "websocket_routes": []
     },
+    "app/api/endpoints/onboarding.py": {
+      "http_routes": [
+        {
+          "method": "POST",
+          "path": "/onboarding-progress",
+          "handler": "save_onboarding_progress",
+          "file": "app/api/endpoints/onboarding.py",
+          "line": 33
+        },
+        {
+          "method": "GET",
+          "path": "/onboarding-progress",
+          "handler": "get_onboarding_progress",
+          "file": "app/api/endpoints/onboarding.py",
+          "line": 94
+        },
+        {
+          "method": "DELETE",
+          "path": "/onboarding-progress",
+          "handler": "clear_onboarding_progress",
+          "file": "app/api/endpoints/onboarding.py",
+          "line": 127
+        }
+      ],
+      "websocket_routes": []
+    },
     "app/services/legacy/metrics/websocket_routes.py": {
       "http_routes": [],
       "websocket_routes": [
@@ -1150,6 +1216,46 @@
           "line": 213
         }
       ]
+    },
+    "app/ai_agents/hamsters/hamsters_api_routes.py": {
+      "http_routes": [
+        {
+          "method": "POST",
+          "path": "/emergency-intervention",
+          "handler": "emergency_intervention",
+          "file": "app/ai_agents/hamsters/hamsters_api_routes.py",
+          "line": 20
+        },
+        {
+          "method": "POST",
+          "path": "/disk-cleanup",
+          "handler": "request_disk_cleanup",
+          "file": "app/ai_agents/hamsters/hamsters_api_routes.py",
+          "line": 42
+        },
+        {
+          "method": "GET",
+          "path": "/supply-closet-inventory",
+          "handler": "check_supply_closet",
+          "file": "app/ai_agents/hamsters/hamsters_api_routes.py",
+          "line": 60
+        },
+        {
+          "method": "GET",
+          "path": "/beer-status",
+          "handler": "get_beer_status",
+          "file": "app/ai_agents/hamsters/hamsters_api_routes.py",
+          "line": 81
+        },
+        {
+          "method": "POST",
+          "path": "/restock-supplies",
+          "handler": "restock_hamster_supplies",
+          "file": "app/ai_agents/hamsters/hamsters_api_routes.py",
+          "line": 98
+        }
+      ],
+      "websocket_routes": []
     },
     "app/ai_agents/hamsters/hamsters_api_routes_refactored.py": {
       "http_routes": [
@@ -1215,46 +1321,6 @@
           "handler": "reset_hamsters_brain",
           "file": "app/ai_agents/hamsters/hamsters_api_routes_refactored.py",
           "line": 572
-        }
-      ],
-      "websocket_routes": []
-    },
-    "app/ai_agents/hamsters/hamsters_api_routes.py": {
-      "http_routes": [
-        {
-          "method": "POST",
-          "path": "/emergency-intervention",
-          "handler": "emergency_intervention",
-          "file": "app/ai_agents/hamsters/hamsters_api_routes.py",
-          "line": 20
-        },
-        {
-          "method": "POST",
-          "path": "/disk-cleanup",
-          "handler": "request_disk_cleanup",
-          "file": "app/ai_agents/hamsters/hamsters_api_routes.py",
-          "line": 42
-        },
-        {
-          "method": "GET",
-          "path": "/supply-closet-inventory",
-          "handler": "check_supply_closet",
-          "file": "app/ai_agents/hamsters/hamsters_api_routes.py",
-          "line": 60
-        },
-        {
-          "method": "GET",
-          "path": "/beer-status",
-          "handler": "get_beer_status",
-          "file": "app/ai_agents/hamsters/hamsters_api_routes.py",
-          "line": 81
-        },
-        {
-          "method": "POST",
-          "path": "/restock-supplies",
-          "handler": "restock_hamster_supplies",
-          "file": "app/ai_agents/hamsters/hamsters_api_routes.py",
-          "line": 98
         }
       ],
       "websocket_routes": []

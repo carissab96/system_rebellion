@@ -1,8 +1,11 @@
 // components/AgentTheater/agents/SirHawkingtonCard/SirHawkingtonCard.tsx
 import React from 'react';
+
 import { useNavigate } from 'react-router-dom';
-import { SirHawkingtonMetrics } from './SirHawkingtonMetrics';
+
 import { Chart3D } from '../shared/Chart3D';
+
+import { SirHawkingtonMetrics } from './SirHawkingtonMetrics';
 import './SirHawkingtonCard.css';
 
 interface SirHawkingtonCardProps {

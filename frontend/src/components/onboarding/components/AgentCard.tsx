@@ -1,6 +1,8 @@
 // components/onboarding/components/AgentCard.tsx
 import React from 'react';
+
 import { motion, AnimatePresence } from 'framer-motion';
+
 import { AgentPattern } from './AgentPattern';
 
 interface AgentDetails {

@@ -1,5 +1,5 @@
 // src/components/auth/LoginModal.tsx
-import React from 'react';
+// React import not needed with React 17+
 import { useLoginForm } from '../../hooks/useLoginForm';
 
 interface LoginModalProps {

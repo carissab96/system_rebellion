@@ -1,9 +1,10 @@
 // components/onboarding/steps/agents/HawkingtonConfig.tsx
 import React, { useState } from 'react';
-import type { StepProps } from '../../OnboardingFlow';
+
 import { useOnboarding } from '../../../../hooks/useOnboarding';
-import { StepNavigation } from '../../components/StepNavigation';
 import { SliderGroup } from '../../components/SliderGroup'; // Assuming path is correct
+import { StepNavigation } from '../../components/StepNavigation';
+import type { StepProps } from '../../OnboardingFlow';
 
 // Define a type for just Hawkington's config for cleaner code
 type HawkingtonConfigState = {

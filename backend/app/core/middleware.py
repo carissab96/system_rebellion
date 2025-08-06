@@ -36,5 +36,12 @@ def setup_middleware(app: FastAPI):
         expose_headers=["Content-Type", "X-CSRFToken", "Authorization"],
         max_age=600
     )
+    
+    # Session middleware
+    app.add_middleware(
+        SessionMiddleware, 
+        secret_key=secrets.token_hex(32),
+        session_cookie="system_rebellion_session"
+    )
 
     

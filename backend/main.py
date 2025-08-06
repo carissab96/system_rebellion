@@ -11,6 +11,7 @@ from app.api.endpoints import alerts
 from app.api.endpoints import users
 from app.api.endpoints import system_logs
 from app.api.endpoints import health
+from app.api.endpoints import onboarding
 from app.api import router as api_router
 from app.api import router as metrics_router
 from app.api import router as debug_router
@@ -298,6 +299,13 @@ def create_application() -> FastAPI:
         health.router,
         prefix="/api/health-check",
         tags=["Health"]
+    )
+    
+    # Add onboarding router
+    app.include_router(
+        onboarding.router,
+        prefix="/api/onboarding",
+        tags=["Onboarding"]
     )
     
     # Include API router (includes WebSocket routes)

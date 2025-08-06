@@ -1,8 +1,11 @@
 // components/AgentTheater/agents/VIC20Card/VIC20Card.tsx
 import React, { useState } from 'react';
+
 import { useNavigate } from 'react-router-dom';
-import { VIC20Metrics } from './VIC20Metrics';
+
 import { Chart3D } from '../shared/Chart3D';
+
+import { VIC20Metrics } from './VIC20Metrics';
 import './VIC20Card.css';
 
 interface VIC20CardProps {

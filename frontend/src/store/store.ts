@@ -1,13 +1,14 @@
 // store/index.ts
 import { configureStore } from '@reduxjs/toolkit';
+
 import { agentTheaterSlice } from './slices/agentTheaterSlice';
-import { sirHawkingtonSlice } from './slices/sirHawkingtonSlice';
-import { methSnailSlice } from './slices/methSnailSlice';
+import { authSlice } from './slices/authSlice';
 import { hamstersSlice } from './slices/hamstersSlice';
+import { methSnailSlice } from './slices/methSnailSlice';
 import { quantumShadowSlice } from './slices/quantumShadowPeopleSlice';
+import { sirHawkingtonSlice } from './slices/sirHawkingtonSlice';
 import { theStickSlice } from './slices/theStickSlice';
 import { vic20Slice } from './slices/vic20Slice';
-import { authSlice } from './slices/authSlice';
 
 export const store = configureStore({
   reducer: {

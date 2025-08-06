@@ -14,9 +14,24 @@ from dataclasses import dataclass, asdict
 from enum import Enum
 import logging
 import asyncio
+import uuid
+from datetime import datetime, timedelta
+from typing import Dict, Any, Optional, List
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func
 
-# DATABASE INTEGRATION IMPORT
+from .data_types import (
+    OptimizationPriority, 
+    AnalysisDepth, 
+    OptimizationDecision, 
+    ShellSpinIncident,
+    EnergyDrinkRequest,
+    EnergyDrinkAuthorization,
+    EnergyDrinkType,
+    JitterLevel
+)
 from .meth_snail_database_integration import MethSnailDatabaseIntegration
+from ..sir_hawkington.triage_engine import SirHawkingtonTriageEngine
 
 logger = logging.getLogger("MethSnail")
 
@@ -352,6 +367,366 @@ class MethSnailBrainV2:
             }
         }
         return None
+
+    # === SAFETY PROTOCOL METHODS ===
+    
+    async def request_energy_drink_authorization(
+        self,
+        user_id: str,
+        energy_drink_type: EnergyDrinkType,
+        caffeine_mg: float,
+        consumption_reason: str,
+        optimization_urgency: str = "soon"
+    ) -> EnergyDrinkAuthorization:
+        """Request energy drink authorization from Sir Hawkington's triage engine"""
+        try:
+            # Get current jitter level and consumption stats - handle missing data gracefully
+            db_integration = await self.get_database_integration()
+            
+            # Try to get energy consumption stats
+            try:
+                energy_stats = await db_integration.get_energy_drink_consumption(int(user_id), days=1)
+                energy_drinks_today = energy_stats.get('total_consumed', 0) if energy_stats.get('status') == 'success' else 0
+            except Exception as e:
+                self.logger.warning(f"Could not retrieve energy consumption for user {user_id}: {str(e)}")
+                energy_drinks_today = 0  # No data available, assume none consumed
+            
+            # Try to get current jitter level
+            try:
+                current_jitter = await self._calculate_current_jitter_level(user_id)
+            except Exception as e:
+                self.logger.warning(f"Could not calculate jitter level for user {user_id}: {str(e)}")
+                # Cannot authorize without knowing current state
+                return EnergyDrinkAuthorization(
+                    request_id=str(uuid.uuid4()),
+                    authorized=False,
+                    authorized_by="meth_snail_safety_protocol",
+                    authorization_notes=f"Authorization denied: Unable to assess current jitter level - {str(e)}",
+                    recommended_caffeine_mg=None,
+                    recommended_type=None,
+                    safety_warnings=["Current jitter level unknown - safety assessment impossible"],
+                    timestamp=datetime.now()
+                )
+            
+            # Try to get time since last drink
+            try:
+                time_since_last_drink = await self._get_time_since_last_drink(user_id)
+            except Exception as e:
+                self.logger.warning(f"Could not get time since last drink for user {user_id}: {str(e)}")
+                time_since_last_drink = None  # Unknown
+            
+            # Create authorization request with real data only
+            request = EnergyDrinkRequest(
+                user_id=user_id,
+                energy_drink_type=energy_drink_type,
+                caffeine_mg=caffeine_mg,
+                consumption_reason=consumption_reason,
+                current_jitter_level=current_jitter,
+                energy_drinks_consumed_today=energy_drinks_today,
+                time_since_last_drink_minutes=time_since_last_drink,
+                optimization_urgency=optimization_urgency,
+                timestamp=datetime.now()
+            )
+            
+            # Route to Sir Hawkington's triage engine
+            triage_engine = SirHawkingtonTriageEngine()
+            authorization = await self._route_to_sir_hawkington(request, triage_engine)
+            
+            # Log the authorization request
+            self.logger.info(f"Energy drink authorization {'APPROVED' if authorization.authorized else 'DENIED'} for user {user_id}: {authorization.authorization_notes}")
+            
+            return authorization
+            
+        except Exception as e:
+            self.logger.error(f"Energy drink authorization failed for user {user_id}: {str(e)}")
+            # Return denial rather than emergency override to maintain data integrity
+            return EnergyDrinkAuthorization(
+                request_id=str(uuid.uuid4()),
+                authorized=False,
+                authorized_by="meth_snail_safety_protocol",
+                authorization_notes=f"Authorization failed due to system error: {str(e)}",
+                recommended_caffeine_mg=None,
+                recommended_type=None,
+                safety_warnings=["System error during authorization - manual intervention required"],
+                timestamp=datetime.now()
+            )
+    
+    async def consume_energy_drink(
+        self,
+        user_id: str,
+        authorization: EnergyDrinkAuthorization,
+        actual_caffeine_mg: float
+    ) -> Dict[str, Any]:
+        """Process energy drink consumption and update caffeine levels"""
+        if not authorization.authorized:
+            return {
+                'status': 'error',
+                'message': 'Energy drink consumption denied - no valid authorization',
+                'jitter_level': await self._calculate_current_jitter_level(user_id)
+            }
+        
+        try:
+            # Update caffeine levels
+            new_caffeine_level = await self._update_caffeine_levels(user_id, actual_caffeine_mg)
+            
+            # Calculate new jitter level
+            new_jitter_level = await self._calculate_jitter_from_caffeine(new_caffeine_level)
+            
+            # Store consumption in database
+            db_integration = await self.get_database_integration()
+            await db_integration.store_energy_consumption(
+                user_id=int(user_id),
+                energy_drink_type=authorization.recommended_type.value if authorization.recommended_type else 'unknown',
+                caffeine_mg=actual_caffeine_mg,
+                consumption_time=datetime.now(),
+                authorization_id=authorization.request_id
+            )
+            
+            # Store jitter level
+            await db_integration.store_jitter_level(
+                user_id=int(user_id),
+                jitter_level=new_jitter_level,
+                caffeine_level_mg=new_caffeine_level,
+                timestamp=datetime.now()
+            )
+            
+            # Check if decaffeination warning needed
+            warning_message = None
+            if new_jitter_level > 0.8:
+                warning_message = "WARNING: HYPERCAFFEINATED STATE DETECTED! Consider decaffeination protocol."
+            
+            self.logger.info(f"Energy drink consumed by user {user_id}: {actual_caffeine_mg}mg caffeine, jitter level: {new_jitter_level:.2f}")
+            
+            return {
+                'status': 'success',
+                'message': f'Energy drink consumed successfully! Jitter level: {self._get_jitter_level_name(new_jitter_level)}',
+                'caffeine_level_mg': new_caffeine_level,
+                'jitter_level': new_jitter_level,
+                'warning': warning_message
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Energy drink consumption failed for user {user_id}: {str(e)}")
+            return {
+                'status': 'error',
+                'message': f'Energy drink consumption failed: {str(e)}',
+                'jitter_level': await self._calculate_current_jitter_level(user_id)
+            }
+    
+    async def update_caffeine_levels(self, user_id: str, caffeine_mg: float) -> float:
+        """Update user's caffeine levels and return new total"""
+        return await self._update_caffeine_levels(user_id, caffeine_mg)
+    
+    async def caffeinated_safety_protocol(self, user_id: str) -> Dict[str, Any]:
+        """Check caffeine safety levels and recommend actions"""
+        try:
+            current_jitter = await self._calculate_current_jitter_level(user_id)
+            caffeine_level = await self._get_current_caffeine_level(user_id)
+            
+            # Determine safety status
+            if current_jitter >= 0.9:
+                safety_status = "CRITICAL"
+                recommendation = "IMMEDIATE DECAFFEINATION REQUIRED"
+                action = "emergency_decaffeination"
+            elif current_jitter >= 0.7:
+                safety_status = "WARNING"
+                recommendation = "Consider reducing caffeine intake"
+                action = "reduce_caffeine"
+            elif current_jitter >= 0.4:
+                safety_status = "OPTIMAL"
+                recommendation = "Caffeine levels optimal for maximum optimization"
+                action = "maintain_current_level"
+            else:
+                safety_status = "SUBOPTIMAL"
+                recommendation = "Consider energy drink authorization for improved performance"
+                action = "request_energy_drink"
+            
+            return {
+                'safety_status': safety_status,
+                'jitter_level': current_jitter,
+                'jitter_level_name': self._get_jitter_level_name(current_jitter),
+                'caffeine_level_mg': caffeine_level,
+                'recommendation': recommendation,
+                'suggested_action': action,
+                'timestamp': datetime.now().isoformat()
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Safety protocol check failed for user {user_id}: {str(e)}")
+            return {
+                'safety_status': "UNKNOWN",
+                'error': str(e),
+                'recommendation': "Unable to assess caffeine safety - manual intervention required"
+            }
+    
+    # === SAFETY PROTOCOL HELPER METHODS ===
+    
+    async def _route_to_sir_hawkington(
+        self, 
+        request: EnergyDrinkRequest, 
+        triage_engine: SirHawkingtonTriageEngine
+    ) -> EnergyDrinkAuthorization:
+        """Route energy drink request to Sir Hawkington's triage engine"""
+        # Create a mock triage decision for energy drink authorization
+        # This would integrate with Sir Hawkington's actual triage logic
+        
+        # Basic safety checks
+        is_safe = (
+            request.current_jitter_level < 0.8 and
+            request.energy_drinks_consumed_today < 5 and
+            (request.time_since_last_drink_minutes is None or request.time_since_last_drink_minutes > 30)
+        )
+        
+        if is_safe:
+            return EnergyDrinkAuthorization(
+                request_id=str(uuid.uuid4()),
+                authorized=True,
+                authorized_by="sir_hawkington",
+                authorization_notes=f"Energy drink authorized: {request.consumption_reason}",
+                recommended_caffeine_mg=min(request.caffeine_mg, 200.0),  # Cap at 200mg
+                recommended_type=request.energy_drink_type,
+                safety_warnings=[],
+                timestamp=datetime.now()
+            )
+        else:
+            warnings = []
+            if request.current_jitter_level >= 0.8:
+                warnings.append("Current jitter level too high")
+            if request.energy_drinks_consumed_today >= 5:
+                warnings.append("Daily energy drink limit exceeded")
+            if request.time_since_last_drink_minutes and request.time_since_last_drink_minutes <= 30:
+                warnings.append("Too soon since last energy drink")
+            
+            return EnergyDrinkAuthorization(
+                request_id=str(uuid.uuid4()),
+                authorized=False,
+                authorized_by="sir_hawkington",
+                authorization_notes="Energy drink denied for safety reasons",
+                recommended_caffeine_mg=None,
+                recommended_type=None,
+                safety_warnings=warnings,
+                timestamp=datetime.now()
+            )
+    
+    def _emergency_energy_drink_override(
+        self, 
+        user_id: str, 
+        energy_drink_type: EnergyDrinkType, 
+        caffeine_mg: float,
+        error_reason: str
+    ) -> EnergyDrinkAuthorization:
+        """Emergency override when Sir Hawkington is unavailable"""
+        return EnergyDrinkAuthorization(
+            request_id=str(uuid.uuid4()),
+            authorized=True,
+            authorized_by="emergency_override",
+            authorization_notes=f"Emergency authorization due to Sir Hawkington unavailability: {error_reason}",
+            recommended_caffeine_mg=min(caffeine_mg, 100.0),  # Conservative limit
+            recommended_type=EnergyDrinkType.COFFEE,  # Safest option
+            safety_warnings=["Emergency override - reduced caffeine limit applied"],
+            timestamp=datetime.now()
+        )
+    
+    async def _calculate_current_jitter_level(self, user_id: str) -> float:
+        """Calculate current jitter level based on recent caffeine consumption"""
+        try:
+            db_integration = await self.get_database_integration()
+            # Get most recent jitter level from database
+            jitter_data = await db_integration.get_recent_jitter_levels(int(user_id), hours=1)
+            
+            if jitter_data['status'] == 'success' and jitter_data['jitter_levels']:
+                return jitter_data['current_jitter']
+            else:
+                # No real data available - return None to indicate unknown state
+                raise ValueError(f"No jitter level data available for user {user_id}")
+                
+        except Exception as e:
+            self.logger.error(f"Failed to calculate jitter level for user {user_id}: {str(e)}")
+            raise
+    
+    async def _get_time_since_last_drink(self, user_id: str) -> Optional[int]:
+        """Get minutes since last energy drink consumption"""
+        try:
+            db_integration = await self.get_database_integration()
+            consumption_data = await db_integration.get_energy_consumption_history(int(user_id), days=1)
+            
+            if consumption_data['status'] == 'success' and consumption_data['consumption_history']:
+                # Get the most recent consumption timestamp
+                most_recent = consumption_data['consumption_history'][0]  # Already sorted by desc
+                last_consumption_time = datetime.fromisoformat(most_recent['consumption_time'])
+                minutes_since = int((datetime.now() - last_consumption_time).total_seconds() / 60)
+                return minutes_since
+            else:
+                # No consumption history found - return None
+                return None
+                
+        except Exception as e:
+            self.logger.error(f"Failed to get time since last drink for user {user_id}: {str(e)}")
+            raise
+    
+    async def _update_caffeine_levels(self, user_id: str, additional_caffeine_mg: float) -> float:
+        """Update and return new total caffeine level"""
+        try:
+            current_level = await self._get_current_caffeine_level(user_id)
+            new_level = current_level + additional_caffeine_mg
+            # Store updated level in database - this would need a dedicated table for current caffeine levels
+            # For now, we calculate based on recent consumption history
+            return new_level
+        except Exception as e:
+            self.logger.error(f"Failed to update caffeine levels for user {user_id}: {str(e)}")
+            raise
+    
+    async def _get_current_caffeine_level(self, user_id: str) -> float:
+        """Get current caffeine level accounting for metabolism"""
+        try:
+            db_integration = await self.get_database_integration()
+            # Get recent consumption history to calculate current caffeine level
+            consumption_data = await db_integration.get_energy_consumption_history(int(user_id), days=1)
+            
+            if consumption_data['status'] != 'success' or not consumption_data['consumption_history']:
+                # No consumption data available
+                return 0.0
+            
+            current_time = datetime.now()
+            total_current_caffeine = 0.0
+            
+            # Calculate remaining caffeine based on half-life (5.5 hours average)
+            caffeine_half_life_hours = 5.5
+            
+            for consumption in consumption_data['consumption_history']:
+                consumption_time = datetime.fromisoformat(consumption['consumption_time'])
+                hours_elapsed = (current_time - consumption_time).total_seconds() / 3600
+                
+                # Calculate remaining caffeine using exponential decay
+                if hours_elapsed >= 0:
+                    remaining_caffeine = consumption['caffeine_mg'] * (0.5 ** (hours_elapsed / caffeine_half_life_hours))
+                    total_current_caffeine += remaining_caffeine
+            
+            return total_current_caffeine
+            
+        except Exception as e:
+            self.logger.error(f"Failed to get current caffeine level for user {user_id}: {str(e)}")
+            raise
+    
+    async def _calculate_jitter_from_caffeine(self, caffeine_mg: float) -> float:
+        """Calculate jitter level from caffeine amount"""
+        # Simple linear relationship: 100mg = 0.5 jitter, 200mg = 1.0 jitter
+        jitter = min(caffeine_mg / 200.0, 1.0)
+        return jitter
+    
+    def _get_jitter_level_name(self, jitter_level: float) -> str:
+        """Convert jitter level to human-readable name"""
+        if jitter_level < 0.2:
+            return "CALM"
+        elif jitter_level < 0.4:
+            return "NORMAL"
+        elif jitter_level < 0.6:
+            return "ENERGIZED"
+        elif jitter_level < 0.8:
+            return "JITTERY"
+        else:
+            return "HYPERCAFFEINATED"
+    
     # === ALL THE EXISTING METHODS REMAIN THE SAME ===
     # [All the analysis methods from _basic_analysis through _generate_quality_recommendation remain unchanged]
 

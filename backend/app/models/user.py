@@ -1,8 +1,24 @@
-from sqlalchemy import Column, String, DateTime, Boolean, Integer, JSON, ForeignKey
+from sqlalchemy import Column, String, DateTime, Boolean, Integer, JSON, ForeignKey, TEXT
 from sqlalchemy.orm import relationship
+from sqlalchemy.types import TypeDecorator
 from datetime import datetime
 import uuid
 from app.core.base import Base
+import json
+
+class JSONType(TypeDecorator):
+    impl = TEXT
+
+    def process_bind_param(self, value, dialect):
+        if value is not None:
+            return json.dumps(value)
+        return value
+
+    def process_result_value(self, value, dialect):
+        if value is not None:
+            return json.loads(value)
+        return value
+
 
 class User(Base):
     __tablename__ = "users"
@@ -13,7 +29,14 @@ class User(Base):
     
     # Onboarding Status
     is_onboarded = Column(Boolean, default=False)
+    onboarding_progress = Column(Integer, nullable=True)  # Current step number
     
+    # New detailed tracking
+    onboarding_data = Column(JSONType, nullable=True)  # Full form data as JSON
+    onboarding_started_at = Column(DateTime, nullable=True)
+    onboarding_last_step_at = Column(DateTime, nullable=True)
+    onboarding_abandoned_count = Column(Integer, default=0, nullable=False)
+
     # Profile Information
     first_name = Column(String(50), nullable=True)
     last_name = Column(String(50), nullable=True)

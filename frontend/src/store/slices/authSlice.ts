@@ -1,6 +1,8 @@
 // src/store/slices/authSlice.ts
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
+
+import apiService from '../../services/api';
 import type { User } from '../../types/auth';
 // Match your actual User type from your backend
 
@@ -74,7 +76,7 @@ export const loginUser = createAsyncThunk(
       },
       body: new URLSearchParams({
         username: email, // OAuth2 expects username field but we pass email
-        password: password,
+        password,
         grant_type: 'password'
       })
     });
@@ -107,7 +109,15 @@ export const validateToken = createAsyncThunk(
     return response.json();
   }
 );
-
+export const completeOnboarding = createAsyncThunk(
+  'auth/completeOnboarding',
+  async (onboardingData: any) => {
+    console.log('Data being sent to API:', onboardingData);
+    const response = await apiService.completeOnboarding(onboardingData);
+    console.log('API response:', response.data);
+    return response.data;
+  }
+);
 export const authSlice = createSlice({
   name: 'auth',
   initialState,
@@ -175,6 +185,7 @@ export const authSlice = createSlice({
       }
     },
   },
+
   extraReducers: (builder) => {
     builder
       // CSRF token
@@ -242,9 +253,29 @@ export const authSlice = createSlice({
         state.token = null;
         localStorage.removeItem('access_token');
         localStorage.removeItem('user_data');
-      });
-  },
-});
+      })
+      .addCase(completeOnboarding.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(completeOnboarding.fulfilled, (state, action) => {
+        state.isLoading = false;
+        // Update user with onboarded status
+        if (state.user) {
+          state.user = {
+            ...state.user,
+            is_onboarded: true,
+            ...action.payload.user // Change from user_data to user
+          };
+          localStorage.setItem('user_data', JSON.stringify(state.user));
+        }
+      })
+      .addCase(completeOnboarding.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.error.message || 'Onboarding completion failed';
+      })
+    }
+  })
 
 export const { 
   loginSuccess, 

@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Dict, Any, Union, Optional
 from datetime import datetime, timezone, timedelta
 import uuid
+import logging
 import secrets
 import platform
 from jose import jwt, JWTError
@@ -56,7 +57,7 @@ async def refresh_access_token(
     Sir Hawkington's Token Refresh Protocol
     Refreshes an expired access token using the refresh token.
     """
-    print(f"🔄 Refresh token request received. Headers: {request.headers}")
+    logging.info(f"🔄 Refresh token request received. Headers: {request.headers}")
     
     # Try to get token from header or request body
     refresh_token = x_refresh_token
@@ -70,7 +71,7 @@ async def refresh_access_token(
             pass
     
     if not refresh_token:
-        print("❌ No refresh token provided in headers or body")
+        logging.error("❌ No refresh token provided in headers or body")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Refresh token is required",
@@ -78,7 +79,7 @@ async def refresh_access_token(
         )
     
     try:
-        print(f"🔍 Decoding refresh token")
+        logging.info(f"🔍 Decoding refresh token")
         # Decode the refresh token
         payload = jwt.decode(
             refresh_token, SECRET_KEY, algorithms=[ALGORITHM]
@@ -86,20 +87,20 @@ async def refresh_access_token(
         email = payload.get("sub")
         
         if not email:
-            print("❌ No email in token payload")
+            logging.error("❌ No email in token payload")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid refresh token - no email",
                 headers={"WWW-Authenticate": "Bearer"}
             )
         
-        print(f"👤 Looking up user: {email}")
+        logging.info(f"👤 Looking up user: {email}")
         # Find the user
         result = await db.execute(select(User).where(User.email == email))
         user = result.scalars().first()
         
         if not user:
-            print(f"❌ User not found: {email}")
+            logging.error(f"❌ User not found: {email}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="User not found",
@@ -107,14 +108,14 @@ async def refresh_access_token(
             )
             
         if not user.is_active:
-            print(f"❌ User inactive: {email}")
+            logging.error(f"❌ User inactive: {email}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Account is inactive",
                 headers={"WWW-Authenticate": "Bearer"}
             )
         
-        print(f"🔑 Generating new access token for {email}")
+        logging.info(f"🔑 Generating new access token for {email}")
         # Generate a new access token
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(
@@ -122,21 +123,21 @@ async def refresh_access_token(
             expires_delta=access_token_expires
         )
         
-        print(f"✅ Token refresh successful for {email}")
+        logging.info(f"✅ Token refresh successful for {email}")
         return {
             "access_token": access_token,
             "token_type": "bearer"
         }
         
     except JWTError as e:
-        print(f"❌ JWT Error: {str(e)}")
+        logging.error(f"❌ JWT Error: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Invalid refresh token: {str(e)}",
             headers={"WWW-Authenticate": "Bearer"}
         )
     except Exception as e:
-        print(f"❌ Unexpected error in refresh_token: {str(e)}")
+        logging.error(f"❌ Unexpected error in refresh_token: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error processing refresh token: {str(e)}"
@@ -196,8 +197,8 @@ async def register_user(
     The Meth Snail prepares your optimization credentials.
     """
     try:
-        print(f"🚀 Registration attempt for user: {user_data.email}")
-        print(f"🔍 Database session type: {type(db)}")
+        logging.info(f"🚀 Registration attempt for user: {user_data.email}")
+        logging.info(f"🔍 Database session type: {type(db)}")
         # Check if user already exists
         existing_user = await find_user_by_email(
             db, 
@@ -212,12 +213,12 @@ async def register_user(
         
         # Create new user
         user_id = str(uuid.uuid4())
-        print(f"🆔 Generated user ID: {user_id}")
+        logging.info(f"🆔 Generated user ID: {user_id}")
         
         hashed_password = hash_password(user_data.password)
-        print(f"🔒 Password hashed successfully")
+        logging.info(f"🔒 Password hashed successfully")
         
-        print(f"👤 Creating user object for: {user_data.email}")
+        logging.info(f"👤 Creating user object for: {user_data.email}")
         new_user = User(
             id=user_id,
             first_name=user_data.first_name,
@@ -232,20 +233,20 @@ async def register_user(
         )
         
         # Save user to database
-        print(f"💾 Adding user to database session")
+        logging.info(f"💾 Adding user to database session")
         db.add(new_user)
         
-        print(f"💾 Committing transaction")
+        logging.info(f"💾 Committing transaction")
         if await is_async_session(db):
-            print("🔄 Using async commit")
+            logging.info("🔄 Using async commit")
             await db.commit()
             await db.refresh(new_user)
         else:
-            print("🔄 Using sync commit")
+            logging.info("🔄 Using sync commit")
             db.commit()
             db.refresh(new_user)
         
-        print(f"✅ User created successfully: {new_user.id}")
+        logging.info(f"✅ User created successfully: {new_user.id}")
         
         # Generate tokens for immediate login
         access_token = create_access_token(
@@ -256,7 +257,7 @@ async def register_user(
             data={"sub": new_user.email, "user_id": new_user.id}
         )
         
-        print(f"🎟️ Tokens generated successfully")
+        logging.info(f"🎟️ Tokens generated successfully")
         
         # Return user data with tokens
         return {
@@ -276,11 +277,11 @@ async def register_user(
             "token_type": "bearer"
         }
     except HTTPException as e:
-        print(f"❌ HTTPException in register_user: {e.detail}")
+        logging.error(f"❌ HTTPException in register_user: {e.detail}")
         raise e
     except Exception as e:
-        print(f"❌ Unexpected error in register_user: {str(e)}")
-        print(f"❌ Error type: {type(e)}")
+        logging.error(f"❌ Unexpected error in register_user: {str(e)}")
+        logging.error(f"❌ Error type: {type(e)}")
         import traceback
         print(f"❌ Traceback: {traceback.format_exc()}")
         raise HTTPException(
@@ -333,7 +334,7 @@ async def login_for_access_token(
     log_service = await LogService.get_instance()
     
     if not user or not verify_password(form_data.password, user.hashed_password):
-        print(f"❌ Invalid credentials for email: {form_data.username}")
+        logging.error(f"❌ Invalid credentials for email: {form_data.username}")
         
         # Log failed authentication attempt
         log_service.add_auth_log(
@@ -347,11 +348,11 @@ async def login_for_access_token(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    print(f"👤 User found: {user.email} (ID: {user.id})")
+    logging.info(f"👤 User found: {user.email} (ID: {user.id})")
     
     # Validate password
     if not verify_password(form_data.password, user.hashed_password):
-        print(f"❌ Invalid password for user: {form_data.email}")
+        logging.error(f"❌ Invalid password for user: {form_data.email}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
@@ -438,7 +439,7 @@ async def test_database_operations(db: Union[Session, AsyncSession] = Depends(ge
         test_email = f"test_{test_id[:8]}@example.com"
         test_password = hash_password("password123")
         
-        print(f"🧪 Creating test user: {test_email}")
+        logging.info(f"🧪 Creating test user: {test_email}")
         
         # Create test user
         test_user = User(
@@ -450,11 +451,11 @@ async def test_database_operations(db: Union[Session, AsyncSession] = Depends(ge
         )
         
         # Add to session
-        print(f"🧪 Adding to database session")
+        logging.info(f"🧪 Adding to database session")
         db.add(test_user)
         
         # Commit
-        print(f"🧪 Committing transaction")
+        logging.info(f"🧪 Committing transaction")
         if await is_async_session(db):
             await db.commit()
             await db.refresh(test_user)
@@ -462,30 +463,30 @@ async def test_database_operations(db: Union[Session, AsyncSession] = Depends(ge
             db.commit()
             db.refresh(test_user)
         
-        print(f"🧪 Test user created: {test_id}")
+        logging.info(f"🧪 Test user created: {test_id}")
         
         # Verify user exists
-        print(f"🧪 Verifying user exists")
+        logging.info(f"🧪 Verifying user exists")
         found_user = await find_user_by_email(db, email=test_email)
         
         if found_user:
-            print(f"✅ Test successful! User found: {found_user.id}")
+            logging.info(f"✅ Test successful! User found: {found_user.id}")
             return {
                 "success": True,
                 "user_id": found_user.id,
                 "email": found_user.email
             }
         else:
-            print(f"❌ Test failed! User not found after creation")
+            logging.info(f"❌ Test failed! User not found after creation")
             return {
                 "success": False,
                 "error": "User not found after creation"
             }
     
     except Exception as e:
-        print(f"❌ Database test error: {str(e)}")
+        logging.info(f"❌ Database test error: {str(e)}")
         import traceback
-        print(f"❌ Traceback: {traceback.format_exc()}")
+        logging.info(f"❌ Traceback: {traceback.format_exc()}")
         return {
             "success": False,
             "error": str(e),
@@ -541,7 +542,7 @@ async def auth_status(request: Request, db: AsyncSession = Depends(get_db)):
     """
     try:
         # Log request headers for debugging
-        print(f"🧐 Auth status request headers: {request.headers}")
+        logging.info(f"🧐 Auth status request headers: {request.headers}")
         
         # Extract token from Authorization header if present
         auth_header = request.headers.get('Authorization')
@@ -558,7 +559,7 @@ async def auth_status(request: Request, db: AsyncSession = Depends(get_db)):
                 )
                 email = payload.get("sub")
                 is_authenticated = True
-                print(f"🧐 Token validated successfully for user: {email}")
+                logging.info(f"🧐 Token validated successfully for user: {email}")
                 
                 # If authenticated, fetch the user data
                 if email:
@@ -587,9 +588,9 @@ async def auth_status(request: Request, db: AsyncSession = Depends(get_db)):
                         finally:
                             sync_session.close()
                     except Exception as user_error:
-                        print(f"⚠️ Error fetching user data: {str(user_error)}")
+                        logging.info(f"⚠️ Error fetching user data: {str(user_error)}")
             except Exception as e:
-                print(f"⚠️ Token validation failed: {str(e)}")
+                logging.info(f"⚠️ Token validation failed: {str(e)}")
                 # Don't fail the request, just note that auth failed
         
         response_data = {
@@ -606,7 +607,7 @@ async def auth_status(request: Request, db: AsyncSession = Depends(get_db)):
             
         return response_data
     except Exception as e:
-        print(f"❌ Auth status error: {str(e)}")
+        logging.info(f"❌ Auth status error: {str(e)}")
         # Return a 200 response even on error to prevent frontend issues
         return {
             "status": "operational",
@@ -627,63 +628,90 @@ async def read_users_me(current_user: User = Depends(get_current_user)):
         "is_onboarded": current_user.is_onboarded
     }
 
+from app.utils.agent_preferences import adjust_agent_preferences_for_system, adjust_monitoring_preferences_for_system
+
 # Complete onboarding
 @router.post("/complete-onboarding")
 async def complete_onboarding(
     onboarding_data: dict,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)  # Ensure we're using async DB
 ):
-    await db.refresh(current_user)
-
-    user_email = current_user.email
-    result = await db.execute(select(User).where(User.email == user_email))
-    fresh_user = result.scalar_one_or_none()
-    """Complete user onboarding with all collected data"""
+    """
+    Complete user onboarding with all collected data.
+    
+    This endpoint applies system-adjusted defaults to agent and monitoring preferences
+    based on the user's system profile before saving them.
+    """
     try:
-        # Update user with all onboarding data
-        fresh_user.first_name = onboarding_data.get('first_name')
-        fresh_user.last_name = onboarding_data.get('last_name')
-        fresh_user.company_name = onboarding_data.get('company_name')
-        fresh_user.job_title = onboarding_data.get('job_title')
-        fresh_user.system_name = onboarding_data.get('system_name')
-        
-        # System profile
-        fresh_user.system_profile = onboarding_data.get('system_profile', {})
-        
-        # Permissions tracking
-        fresh_user.permissions_granted_at = datetime.now(timezone.utc)
-        fresh_user.installation_method = onboarding_data.get('installation_method')
-        
-        # Agent preferences with system-adjusted defaults
-        # system_profile = onboarding_data.get('system_profile', {})
-        # agent_prefs = adjust_agent_preferences_for_system(
-        #     onboarding_data.get('agent_preferences', {}),
-        #     system_profile
-        # )
-        # fresh_user.agent_preferences = agent_prefs
-        fresh_user.agent_preferences = onboarding_data.get('agent_preferences', {})
-        # Monitoring preferences
-        fresh_user.monitoring_preferences = onboarding_data.get('monitoring_preferences', {})
-        
-        # Mark as onboarded
-        fresh_user.is_onboarded = True
-        
-        await db.commit()
-        await db.refresh(fresh_user)
+        # Start a transaction
+        async with db.begin():
+            # Get fresh user object from database
+            result = await db.execute(select(User).where(User.id == current_user.id))
+            user = result.scalars().first()
+            
+            if not user:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="User not found"
+                )
+                
+            # Update basic user info
+            user.first_name = onboarding_data.get('first_name')
+            user.last_name = onboarding_data.get('last_name')
+            user.company_name = onboarding_data.get('company_name')
+            user.job_title = onboarding_data.get('job_title')
+            user.system_name = onboarding_data.get('system_name')
+            
+            # Get system profile from onboarding data
+            system_profile = onboarding_data.get('system_profile', {})
+            user.system_profile = system_profile
+            
+            # Apply system-adjusted defaults to agent preferences
+            agent_prefs = onboarding_data.get('agent_preferences', {})
+            user.agent_preferences = adjust_agent_preferences_for_system(
+                user_preferences=agent_prefs,
+                system_profile=system_profile
+            )
+            
+            # Apply system-adjusted defaults to monitoring preferences
+            monitoring_prefs = onboarding_data.get('monitoring_preferences', {})
+            user.monitoring_preferences = adjust_monitoring_preferences_for_system(
+                user_preferences=monitoring_prefs,
+                system_profile=system_profile
+            )
+            
+            # Track permissions and installation
+            user.permissions_granted_at = datetime.now(timezone.utc)
+            user.installation_method = onboarding_data.get('installation_method')
+            user.is_onboarded = True
+            
+            # Add user to session and commit transaction
+            db.add(user)
+            await db.commit()
+            await db.refresh(user)
         
         # Initialize agent memory banks for this user
-        # await initialize_agent_memories(current_user.id, db)
+        # await initialize_agent_memories(user.id, db)
         
         return {
             "success": True,
-            "user": user_to_dict(fresh_user),
-            "next_steps": determine_next_steps(fresh_user)
+            "user": user_to_dict(user),
+            "next_steps": determine_next_steps(user),
+            "message": "Onboarding completed successfully with system-optimized preferences"
         }
         
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
     except Exception as e:
-        await db.rollback()
-        raise HTTPException(status_code=400, detail=str(e))
+        # Log the full error for debugging
+        logging.error(f"Error completing onboarding: {str(e)}", exc_info=True)
+        # Return a user-friendly error message
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while completing your onboarding. Please try again."
+        )
 
 def determine_next_steps(user: User) -> dict:
     """Determine what the user should do next based on their profile"""
@@ -722,14 +750,14 @@ async def direct_profile_update(
     A simpler approach for updating profiles during onboarding
     """
     try:
-        print(f"🧐 Looking up user by email: {email}")
-        print(f"🧐 Request headers: {request.headers}")
-        print(f"🧐 Full profile data received: {profile_data}")
+        logging.info(f"🧐 Looking up user by email: {email}")
+        logging.info(f"🧐 Request headers: {request.headers}")
+        logging.info(f"🧐 Full profile data received: {profile_data}")
         
         # Extract token from Authorization header
         auth_header = request.headers.get('Authorization')
         if auth_header and auth_header.startswith('Bearer '):
-            print(f"🧐 Authorization header found")
+            logging.info(f"🧐 Authorization header found")
             # Extract the token
             token = auth_header.replace('Bearer ', '')
             try:
@@ -737,12 +765,12 @@ async def direct_profile_update(
                 payload = jwt.decode(
                     token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
                 )
-                print(f"🧐 Token validated successfully")
+                logging.info(f"🧐 Token validated successfully")
             except JWTError as e:
-                print(f"⚠️ Token validation failed: {str(e)}")
+                logging.info(f"⚠️ Token validation failed: {str(e)}")
                 # Continue anyway for onboarding - we're using email as identifier
         else:
-            print(f"⚠️ No valid Authorization header found")
+            logging.info(f"⚠️ No valid Authorization header found")
         
         # Find the user by email
         result = await db.execute(select(User).where(User.email == email))
@@ -766,7 +794,7 @@ async def direct_profile_update(
         
         # Check if we have a nested profile structure
         if "profile" in profile_data and isinstance(profile_data["profile"], dict):
-            print(f"🧐 Found nested profile data: {profile_data['profile']}")
+            logging.info(f"🧐 Found nested profile data: {profile_data['profile']}")
             nested_profile = profile_data["profile"]
             
             # Update system information fields from nested profile
@@ -785,7 +813,7 @@ async def direct_profile_update(
                         # Also update the profile dictionary
                         user.profile[field] = nested_profile[field]
                 except Exception as field_error:
-                    print(f"⚠️ Error setting field {field}: {str(field_error)}")
+                    logging.info(f"⚠️ Error setting field {field}: {str(field_error)}")
         else:
             # Handle direct fields in the root of profile_data
             system_fields = [
@@ -801,20 +829,20 @@ async def direct_profile_update(
                         # Also update the profile dictionary
                         user.profile[field] = profile_data[field]
                 except Exception as field_error:
-                    print(f"⚠️ Error setting field {field}: {str(field_error)}")
+                    logging.info(f"⚠️ Error setting field {field}: {str(field_error)}")
         
         # Handle preferences if provided
         if "preferences" in profile_data and isinstance(profile_data["preferences"], dict):
             try:
                 # Update preferences
                 user.preferences.update(profile_data["preferences"])
-                print(f"🧐 Updated preferences: {user.preferences}")
+                logging.info(f"🧐 Updated preferences: {user.preferences}")
             except Exception as pref_error:
-                print(f"⚠️ Error updating preferences: {str(pref_error)}")
+                logging.info(f"⚠️ Error updating preferences: {str(pref_error)}")
         
         # Mark onboarding as completed
         user.is_onboarded = True,
-        print(f"🧐 Onboarding completed for user: {email}")
+        logging.info(f"🧐 Onboarding completed for user: {email}")
         
         try:
             # Save changes to database
@@ -822,9 +850,9 @@ async def direct_profile_update(
             await db.commit()
             await db.refresh(user)
             
-            print(f"✅ Profile updated successfully for {email}")
+            logging.info(f"✅ Profile updated successfully for {email}")
         except Exception as commit_error:
-            print(f"❌ Error committing changes: {str(commit_error)}")
+            logging.info(f"❌ Error committing changes: {str(commit_error)}")
             await db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -848,7 +876,7 @@ async def direct_profile_update(
             }
         }
     except Exception as e:
-        print(f"❌ Error updating profile: {str(e)}")
+        logging.info(f"❌ Error updating profile: {str(e)}")
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -865,13 +893,13 @@ async def update_profile(
     The Meth Snail ensures your system details are recorded with aristocratic precision!
     """
     try:
-        print(f"🧐 Updating profile for user: {current_user.email}")
-        print(f"🧐 Profile data: {profile_data}")
+        logging.info(f"🧐 Updating profile for user: {current_user.email}")
+        logging.info(f"🧐 Profile data: {profile_data}")
         
         # Check if system_info is in the profile data (from onboarding)
         if "system_info" in profile_data:
             system_info = profile_data["system_info"]
-            print(f"🧐 System info: {system_info}")
+            logging.info(f"🧐 System info: {system_info}")
             
             # Update the user's system information from nested structure
             if "operating_system" in system_info:
@@ -895,7 +923,7 @@ async def update_profile(
         
         # Always mark onboarding as completed when profile data is updated
         # This ensures the user won't be redirected back to onboarding
-        print(f"🧐 Setting is_onboarded to True for user: {current_user.email}")
+        logging.info(f"🧐 Setting is_onboarded to True for user: {current_user.email}")
         current_user.is_onboarded = True
         
         # Save changes to database using AsyncSessionLocal directly
@@ -905,7 +933,7 @@ async def update_profile(
             db.add(current_user)
             await db.commit()
             await db.refresh(current_user)
-            print(f"✅ Profile updated successfully for {current_user.email}")
+            logging.info(f"✅ Profile updated successfully for {current_user.email}")
         
         return {
             "message": "Profile updated successfully",
@@ -921,7 +949,7 @@ async def update_profile(
             }
         }
     except Exception as e:
-        print(f"❌ Error updating profile: {str(e)}")
+        logging.info(f"❌ Error updating profile: {str(e)}")
         # No need to handle rollback as the context manager will do it automatically
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

@@ -1,8 +1,10 @@
 // components/agent-theater/AdminConsole/AdminConsole.tsx
 import React, { useState, useRef, useEffect } from 'react';
+
 import { useSelector } from 'react-redux';
-import type { RootState } from '../../store/store';
+
 import { useAgentTheater } from '../../hooks/useAgentTheater';
+import type { RootState } from '../../store/store';
 import './AdminConsole.css';
 
 interface ConsoleLog {

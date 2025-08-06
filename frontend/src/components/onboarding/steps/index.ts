@@ -1,16 +1,16 @@
 // components/onboarding/steps/index.ts
-import { WelcomeStep } from './WelcomeStep';
-import { ProfileStep } from './ProfileStep';
-import { PermissionsStep } from './PermissionsStep';
-import { SystemProfileStep } from './SystemProfileStep';
-import { SystemNameStep } from './SystemNameStep';
-import { AgentsIntroStep } from './AgentsIntroStep';
-import { HawkingtonConfig } from './agents/HawkingtonConfig';
-import { StickConfig } from './agents/StickConfig';
 import { HamstersConfig } from './agents/HamstersConfig';
-import { SpecialistsConfig } from './agents/SpecialistsConfig';
+import { HawkingtonConfig } from './agents/HawkingtonConfig';
 import { MonitoringConfig } from './agents/MonitoringConfig';
+import { SpecialistsConfig } from './agents/SpecialistsConfig';
+import { StickConfig } from './agents/StickConfig';
+import { AgentsIntroStep } from './AgentsIntroStep';
 import { CompleteStep } from './CompleteStep';
+import { PermissionsStep } from './PermissionsStep';
+import { ProfileStep } from './ProfileStep';
+import { SystemNameStep } from './SystemNameStep';
+import { SystemProfileStep } from './SystemProfileStep';
+import { WelcomeStep } from './WelcomeStep';
 
 export interface OnboardingStep {
   id: string;

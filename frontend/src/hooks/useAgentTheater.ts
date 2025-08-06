@@ -1,7 +1,8 @@
 // hooks/useAgentTheater.ts
 import { useEffect, useRef } from 'react';
+
 import { useDispatch, useSelector } from 'react-redux';
-import  type { RootState, AppDispatch } from '../store/store';
+
 import apiConfig from '../frontend-config/api-config.json';
 import { 
   updateWebSocketMessage, 
@@ -9,12 +10,13 @@ import {
   setError,
   updateActiveAgentCount,
 } from '../store/slices/agentTheaterSlice';
-import { updateMetrics as updateSirHawkington, setOffline as setSirHawkingtonOffline } from '../store/slices/sirHawkingtonSlice';
-import { updateMetrics as updateMethSnail, setOffline as setMethSnailOffline } from '../store/slices/methSnailSlice';
 import { updateMetrics as updateHamsters, setOffline as setHamstersOffline } from '../store/slices/hamstersSlice';
+import { updateMetrics as updateMethSnail, setOffline as setMethSnailOffline } from '../store/slices/methSnailSlice';
 import { updateMetrics as updateQuantumShadow, setOffline as setQuantumShadowOffline } from '../store/slices/quantumShadowPeopleSlice';
+import { updateMetrics as updateSirHawkington, setOffline as setSirHawkingtonOffline } from '../store/slices/sirHawkingtonSlice';
 import { updateMetrics as updateTheStick, setOffline as setTheStickOffline } from '../store/slices/theStickSlice';
 import { updateMetrics as updateVIC20, setOffline as setVIC20Offline } from '../store/slices/vic20Slice';
+import  type { RootState, AppDispatch } from '../store/store';
 
 export const useAgentTheater = () => {
   const { token, isAuthenticated } = useSelector((state: RootState) => state.auth);

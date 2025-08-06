@@ -1,10 +1,11 @@
 // components/onboarding/steps/PermissionsStep.tsx
 import React, { useState } from 'react';
+
 import { useOnboarding } from '../../../hooks/useOnboarding';
-import type { StepProps } from '../OnboardingFlow';
-import { useSystemDetection } from '../hooks/useSystemDetection';
-import { getInstallCommand } from '../utils/installCommands';
 import { StepNavigation } from '../components/StepNavigation';
+import { useSystemDetection } from '../hooks/useSystemDetection';
+import type { StepProps } from '../OnboardingFlow';
+import { getInstallCommand } from '../utils/installCommands';
 
 const copyToClipboard = (text: string) => {
   if (navigator.clipboard) {

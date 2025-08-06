@@ -1,5 +1,6 @@
 // src/components/navigation/ProfileDropdown.tsx
 import { useState, useRef, useEffect } from 'react';
+
 import type { User } from '../../types/auth';
 
 import './ProfileDropdown.css';

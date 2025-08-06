@@ -1,8 +1,11 @@
 // components/AgentTheater/agents/QuantumShadowCard/QuantumShadowCard.tsx
 import React from 'react';
+
 import { useNavigate } from 'react-router-dom';
-import { QuantumShadowMetrics } from './QSPMetrics';
+
 import { Chart3D } from '../shared/Chart3D';
+
+import { QuantumShadowMetrics } from './QSPMetrics';
 import './QSPCard.css';
 
 interface QuantumShadowCardProps {

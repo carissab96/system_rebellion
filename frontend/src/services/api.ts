@@ -1,4 +1,5 @@
 import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosResponse, type AxiosError } from 'axios';
+
 import { API_BASE_URL, WS_BASE_URL } from '../config/constants';
 
 
@@ -93,7 +94,7 @@ export const apiService = {
   login: async (email: string, password: string): Promise<ApiResponse<{ access_token: string; refresh_token: string }>> => {
     const response = await api.post('/api/auth/token', { 
       username: email,  // OAuth2 expects 'username' not 'email'
-      password: password,
+      password,
       grant_type: 'password'  // OAuth2 password flow
     });
     return response;
@@ -108,6 +109,15 @@ export const apiService = {
     const response = await api.put('/api/auth/me', profileData);  // This endpoint isn't in your config
     return response;
   },
+  saveOnboardingProgress: async (progressData: object): Promise<AxiosResponse> => {
+    const token = localStorage.getItem('access_token');
+    const response = await api.post('/api/onboarding/onboarding-progress', progressData, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })  
+    return response;
+  },
 
 // Add the Authorization header manually to the completeOnboarding call:
 completeOnboarding: async (onboardingData: object): Promise<AxiosResponse> => {
@@ -119,22 +129,55 @@ completeOnboarding: async (onboardingData: object): Promise<AxiosResponse> => {
   });
   return response;
 },
+getOnboardingProgress: async (): Promise<AxiosResponse> => {
+  const token = localStorage.getItem('access_token');
+  const response = await api.get('/api/onboarding/onboarding-progress', {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  return response;
+},
 
+clearOnboardingProgress: async (): Promise<AxiosResponse> => {
+  const token = localStorage.getItem('access_token');
+  const response = await api.delete('/api/onboarding/onboarding-progress', {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  return response;
+},
   //System detection method
   detectSystem: async(): Promise<ApiResponse> => {
-    const response = await api.get('/api/system/detect');
+    const token = localStorage.getItem('access_token');
+    const response = await api.get('/api/system/detect', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
     return response;
   },
   
   // System Metrics
   getSystemMetrics: async (): Promise<ApiResponse> => {
-    const response = await api.get('/api/metrics/system');  // Should match your config
+    const token = localStorage.getItem('access_token');
+    const response = await api.get('/api/metrics/system', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
     return response;
   },
   
   // AI Agents
   getAgentStatus: async (): Promise<ApiResponse> => {
-    const response = await api.get('/api/ai-agents/status');  // Added /api prefix
+    const token = localStorage.getItem('access_token');
+    const response = await api.get('/api/ai-agents/status', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
     return response;
   },
 

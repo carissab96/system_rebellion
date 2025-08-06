@@ -1,8 +1,9 @@
 // components/onboarding/steps/SystemNameStep.tsx
 import React, { useState } from 'react';
+
 import { useOnboarding } from '../../../hooks/useOnboarding';
-import type { StepProps } from '../OnboardingFlow';
 import { StepNavigation } from '../components/StepNavigation';
+import type { StepProps } from '../OnboardingFlow';
 
 export const SystemNameStep: React.FC<StepProps> = ({ onNext, onBack }) => {
   const { state, dispatch } = useOnboarding();

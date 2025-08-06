@@ -1,8 +1,11 @@
 // components/AgentTheater/agents/MethSnailCard/MethSnailCard.tsx
 import React from 'react';
+
 import { useNavigate } from 'react-router-dom';
-import { MethSnailMetrics } from './MethSnailMetrics';
+
 import { Chart3D } from '../shared/Chart3D';
+
+import { MethSnailMetrics } from './MethSnailMetrics';
 import './MethSnailCard.css';
 
 interface MethSnailCardProps {

@@ -1,5 +1,6 @@
 // components/AgentTheater/shared/Chart3D.tsx
 import React, { useEffect, useRef } from 'react';
+
 import * as THREE from 'three';
 
 interface Chart3DProps {
@@ -175,7 +176,7 @@ export const Chart3D: React.FC<Chart3DProps> = ({
             className="chart-label"
             style={{ 
               left: `${((index + 0.5) / data.length) * 100}%`,
-              color: color 
+              color 
             }}
           >
             <span className="label-text">{item.label}</span>

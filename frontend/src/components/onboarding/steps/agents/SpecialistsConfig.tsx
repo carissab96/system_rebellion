@@ -1,9 +1,10 @@
 // components/onboarding/steps/agents/SpecialistsConfig.tsx
 import React, { useState } from 'react';
-import type { StepProps } from '../../OnboardingFlow';
+
 import { useOnboarding } from '../../../../hooks/useOnboarding';
-import { StepNavigation } from '../../components/StepNavigation';
 import { SliderGroup } from '../../components/SliderGroup';
+import { StepNavigation } from '../../components/StepNavigation';
+import type { StepProps } from '../../OnboardingFlow';
 
 type SpecialistsConfigState = {
   // Meth Snail

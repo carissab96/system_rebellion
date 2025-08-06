@@ -1,8 +1,11 @@
 // components/AgentTheater/agents/HamstersCard/HamstersCard.tsx
 import React from 'react';
+
 import { useNavigate } from 'react-router-dom';
-import { HamstersMetrics } from './HamstersMetrics';
+
 import { Chart3D } from '../shared/Chart3D';
+
+import { HamstersMetrics } from './HamstersMetrics';
 import './HamstersCard.css';
 
 interface HamstersCardProps {

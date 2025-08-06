@@ -1,5 +1,53 @@
 // components/onboarding/utils/agentDefaults.ts
-export const defaultAgentPreferences = {
+
+/**
+ * Interface representing all agent preferences that can be configured
+ */
+export interface AgentPreferences {
+  // Hawkington agent preferences
+  hawkington_triage_normal_threshold: number;
+  hawkington_triage_medium_threshold: number;
+  hawkington_triage_emergency_threshold: number;
+  hawkington_message_frequency: number;
+  hawkington_analysis_thoroughness: number;
+  
+  // Stick agent preferences
+  stick_base_anxiety: number;
+  stick_paper_bag_threshold: number;
+  stick_bob_anxiety_multiplier: number;
+  stick_compliance_strictness: number;
+  stick_pattern_memory_depth: number;
+  
+  // Hamster agent preferences
+  hamster_beer_optimal_level: number;
+  hamster_disk_intervention_threshold: number;
+  hamster_3am_activity_boost: number;
+  hamster_carl_duct_tape_quality: number;
+  hamster_bob_wildness_factor: number;
+  
+  // Snail agent preferences
+  snail_caffeine_sensitivity: number;
+  snail_optimization_aggression: number;
+  snail_trail_intensity: number;
+  
+  // QSP (Quantum Shadow Person) preferences
+  qsp_tequila_jello_tolerance: number;
+  qsp_phase_shift_threshold: number;
+  qsp_quantum_fix_confidence: number;
+  qsp_comprehensibility: number;
+  
+  // VIC-20 agent preferences
+  vic20_pattern_recognition_depth: number;
+  vic20_mediation_patience: number;
+  vic20_recommendation_confidence: number;
+  
+  // Cross-agent preferences
+  agent_interaction_frequency: number;
+  hamster_stick_proximity_alerts: number;
+  cross_agent_memory_sharing: number;
+}
+
+export const defaultAgentPreferences: AgentPreferences = {
     hawkington_triage_normal_threshold: 30,
     hawkington_triage_medium_threshold: 65,
     hawkington_triage_emergency_threshold: 85,

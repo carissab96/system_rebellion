@@ -1,7 +1,8 @@
 // components/onboarding/steps/WelcomeStep.tsx
 import React from 'react';
-import type { StepProps } from '../OnboardingFlow';
+
 import { StepNavigation } from '../components/StepNavigation';
+import type { StepProps } from '../OnboardingFlow';
 
 export const WelcomeStep: React.FC<StepProps> = ({ onNext, isFirst, onBack }) => {
   return (

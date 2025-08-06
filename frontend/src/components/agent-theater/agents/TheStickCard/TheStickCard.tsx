@@ -1,8 +1,11 @@
 // components/AgentTheater/agents/TheStickCard/TheStickCard.tsx
 import React from 'react';
+
 import { useNavigate } from 'react-router-dom';
-import { TheStickMetrics } from './TheStickMetrics';
+
 import { Chart3D } from '../shared/Chart3D';
+
+import { TheStickMetrics } from './TheStickMetrics';
 import './TheStickCard.css';
 
 interface TheStickCardProps {

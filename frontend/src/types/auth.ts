@@ -13,6 +13,11 @@ export interface User {
     created_at?: string;
     updated_at?: string;
     is_active?: boolean;
+    system_name?: string;
+    system_profile?: string;
+    permissions_granted?: boolean;
+    installation_method?: string;
+      
   }
   
   // Base response with token

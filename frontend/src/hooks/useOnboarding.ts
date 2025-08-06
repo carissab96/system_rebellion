@@ -1,5 +1,6 @@
 // src/components/onboarding/hooks/useOnboarding.ts (or wherever you placed it)
 import { useContext } from 'react';
+
 import { OnboardingContext, type OnboardingContextType } from '../components/onboarding/OnboardingContext';
 
 /**

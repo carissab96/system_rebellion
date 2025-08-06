@@ -1,8 +1,12 @@
 // components/onboarding/steps/AgentsIntroStep.tsx
 import React, { useState } from 'react';
+import type { CSSProperties } from 'react';
+
 import { motion, AnimatePresence } from 'framer-motion';
-import type { StepProps } from '../OnboardingFlow';
+
 import { StepNavigation } from '../components/StepNavigation';
+import type { StepProps } from '../OnboardingFlow';
+
 
 // The full agent data with your excellent, thematic lore
 const agents = [
@@ -11,7 +15,7 @@ const agents = [
     name: 'Sir Hawkington',
     role: 'Triage Commander',
     description: 'Aristocratic decision-maker who routes issues with monocle-yeeting precision',
-    color: '#e6ac00',
+    style: { color: '#e6ac00' },
     details: {
       personality: 'Aristocratic perfectionist with zero tolerance for bad data',
       responsibility: 'First responder who assesses severity and delegates to specialists',
@@ -25,7 +29,7 @@ const agents = [
     name: 'The Stick',
     role: 'Compliance Monitor',
     description: 'Anxiety-driven hypervigilance catches what others miss',
-    color: '#f97316',
+    style: { color: '#f97316' },
     details: {
       personality: 'OCD + ADHD + PTSD + Eidetic Memory = Perfect paranoid monitor',
       responsibility: 'Learns user patterns and enforces compliance thresholds',
@@ -39,7 +43,7 @@ const agents = [
     name: 'The Hamsters',
     role: 'Infrastructure Team',
     description: 'Steve, Bob, and Carl fix everything with beer and duct tape',
-    color: '#ff8c42',
+    style: { color: '#ff8c42' },
     details: {
       personality: 'Steve (careful), Bob (chaos), Carl (duct tape mathematician)',
       responsibility: '3AM emergency infrastructure fixes, disk cleanup, defragmentation',
@@ -52,10 +56,10 @@ const agents = [
     id: 'snail',
     name: 'Meth Snail',
     role: 'Speed Optimizer',
-    description: 'Caffeinated mollusk who makes everything faster',
-    color: '#00d084',
+    description: 'Caffeinated gastropod who makes everything faster',
+    style: { color: '#00d084' },
     details: {
-      personality: 'Hyperactive optimization addict leaving trails of improvements',
+      personality: 'Hyperactive optimization and energy-drink addict leaving trails of improvements',
       responsibility: 'CPU optimization, process prioritization, speed enhancements',
       quirks: 'Leaves glowing optimization trails, shell spins indicate excitement',
       memory: 'Remembers every optimization and its cascading effects',
@@ -66,28 +70,28 @@ const agents = [
     id: 'qsp',
     name: 'Quantum Shadow People',
     role: 'Network Specialists',
-    description: 'Phase through dimensions to fix network issues',
-    color: '#a855f7',
+    description: 'Interdimensional travelers who phase through dimensions to fix network issues',
+    style: { color: '#a855f7' },
     details: {
-      personality: 'Mysterious entities who exist partially in multiple dimensions',
+      personality: 'Mysterious entities who have existed across dimensions for eons',
       responsibility: 'Network optimization, security, packet recovery from the void',
-      quirks: 'Fix routers by phasing them through tequila jello dimensions',
+      quirks: 'Fix routers by phasing them upside down through tequila jello shots',
       memory: 'Remember network patterns across dimensional boundaries',
-      interactions: 'Telepathic bond with Hamsters, incomprehensible to most'
+      interactions: 'Telepathic bond with each other and the Hamsters, incomprehensible to most humans'
     }
   },
   {
     id: 'vic20',
     name: 'VIC-20',
     role: 'Ancient Wisdom',
-    description: 'Mediates conflicts with knowledge from 1982-2025',
-    color: '#06b6d4',
+    description: 'Mediates conflicts and provides historical wisdom from 1982-2025',
+    style: { color: '#06b6d4' },
     details: {
-      personality: 'Ancient sage who has seen every pattern since 1982',
+      personality: 'Ancient sage who has seen every pattern since 1982 and might have attempted to start geonuclear war',
       responsibility: 'Pattern recognition, conflict mediation, auto-tuning recommendations',
       quirks: 'Speaks in historical computing references, always relevant',
       memory: '40+ years of patterns, every mistake and solution ever made',
-      interactions: 'Mediates between agents, translates Hamster squeaks to others'
+      interactions: 'Mediates between agents, determines auto-tuning recommendations,translates Hamster squeaks to others, provides historical wisdom'
     }
   }
 ];
@@ -142,8 +146,10 @@ export const AgentsIntroStep: React.FC<StepProps> = ({ onNext, onBack }) => {
               onMouseLeave={handleMouseLeave}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              style={{ '--agent-color': agent.color, borderColor: expanded ? agent.color : 'transparent' }}
-            >
+              style={{
+                ...({ '--agent-color': agent.color } as CSSProperties),
+                borderColor: expanded ? agent.color : 'transparent'
+              }}            >
               <div className="agent-identity">
                 <div className="agent-pattern-container">
                   {renderAgentPattern(agent.id)}

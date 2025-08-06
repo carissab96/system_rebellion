@@ -6,19 +6,30 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "eslint --config=eslint.config.js . --ext .ts,.tsx",
+    "lint:fix": "eslint --config=eslint.config.js --fix . --ext .ts,.tsx",
+    "lint:strict": "eslint --config=eslint.config.js --max-warnings=0 . --ext .ts,.tsx",
+    "lint:types": "tsc --noEmit",
+    "type-check": "tsc --noEmit",
+    "type-check:watch": "npm run type-check -- --watch",
+    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,md}\"",
+    "prepare": "husky install"
   },
   "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.14",
+    "@radix-ui/react-slot": "^1.2.3",
     "@reduxjs/toolkit": "^2.8.2",
     "@types/node": "^24.0.14",
     "@types/react-router-dom": "^5.3.3",
-    "@typescript-eslint/eslint-plugin": "^8.37.0",
-    "@typescript-eslint/parser": "^8.37.0",
     "axios": "^1.10.0",
     "bufferutil": "^4.0.9",
+    "class-variance-authority": "^0.7.1",
+    "cors": "^2.8.5",
     "eslint-plugin-react": "^7.37.5",
     "framer-motion": "^12.23.9",
+    "jshint": "^2.13.6",
+    "lucide-react": "^0.536.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-redux": "^9.2.0",
@@ -26,20 +37,42 @@
     "redux": "^5.0.1",
     "redux-toolkit": "^1.1.2",
     "socket.io-client": "^4.8.1",
+    "storybook": "^9.1.0",
     "three": "^0.178.0"
   },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  },
   "devDependencies": {
-    "@eslint/js": "^9.30.1",
+    "@eslint/js": "^9.31.0",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@types/three": "^0.178.1",
+    "@typescript-eslint/eslint-plugin": "^8.38.0",
+    "@typescript-eslint/parser": "^8.38.0",
     "@vitejs/plugin-react": "^4.6.0",
-    "eslint": "^9.31.0",
+    "eslint": "^9.32.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-import-resolver-typescript": "^3.7.0",
+    "eslint-plugin-import": "^2.31.1",
+    "eslint-plugin-jsx-a11y": "^6.8.0",
+    "eslint-plugin-prettier": "^5.1.3",
+    "eslint-plugin-react": "^7.35.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^16.3.0",
+    "husky": "^9.1.2",
+    "lint-staged": "^15.2.2",
+    "prettier": "^3.3.2",
     "typescript": "~5.8.3",
-    "typescript-eslint": "^8.35.1",
-    "vite": "^7.0.4"
+    "typescript-eslint": "^8.39.0",
+    "vite": "^7.0.4",
+    "vite-plugin-eslint": "^1.8.1"
   }
 }

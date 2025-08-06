@@ -1,9 +1,10 @@
 // components/onboarding/steps/SystemProfileStep.tsx
 
 import React, { useState, useEffect } from 'react';
+
 import { useOnboarding } from '../../../hooks/useOnboarding';
-import type { StepProps } from '../OnboardingFlow'; // Assuming StepProps is exported from here
 import apiService from '../../../services/api';
+import type { StepProps } from '../OnboardingFlow'; // Assuming StepProps is exported from here
 
 export const SystemProfileStep: React.FC<StepProps> = ({ onNext, onBack }) => {
   const { state, dispatch } = useOnboarding();
@@ -101,7 +102,10 @@ export const SystemProfileStep: React.FC<StepProps> = ({ onNext, onBack }) => {
                 <input
                   type="number"
                   value={systemInfo.total_ram_gb}
-                  onChange={(e) => handleChange('total_ram_gb', parseInt(e.target.value))}
+                  onChange={(e) => {
+                    const value = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
+                    handleChange('total_ram_gb', isNaN(value) ? 0 : value);
+                  }}
                   min="1"
                   max="1024"
                   className="system-input"
@@ -113,7 +117,10 @@ export const SystemProfileStep: React.FC<StepProps> = ({ onNext, onBack }) => {
                 <input
                   type="number"
                   value={systemInfo.cpu_cores}
-                  onChange={(e) => handleChange('cpu_cores', parseInt(e.target.value))}
+                  onChange={(e) => {
+                    const value = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
+                    handleChange('cpu_cores', isNaN(value) ? 0 : value);
+                  }}
                   min="1"
                   max="128"
                   className="system-input"
@@ -143,7 +150,10 @@ export const SystemProfileStep: React.FC<StepProps> = ({ onNext, onBack }) => {
                 <input
                   type="number"
                   value={systemInfo.total_storage_gb}
-                  onChange={(e) => handleChange('total_storage_gb', parseInt(e.target.value))}
+                  onChange={(e) => {
+                    const value = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
+                    handleChange('total_storage_gb', isNaN(value) ? 0 : value);
+                  }}
                   min="10"
                   max="100000"
                   className="system-input"

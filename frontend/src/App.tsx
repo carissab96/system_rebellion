@@ -9,6 +9,7 @@ import LoginModal from './components/auth/LoginModal'
 import AgentTheater from './components/agent-theater/AgentTheater'
 import { initializeAuth } from './store/slices/authSlice'
 import { OnboardingFlow } from './components/onboarding/OnboardingFlow'
+import ContinueSetupPage from './components/onboarding/ContinueSetupPage'
 
 // Landing page with modal state management
 function LandingPageWithModals() {
@@ -57,7 +58,7 @@ function App() {
   const [isInitialized, setIsInitialized] = useState(false);
   const dispatch = useDispatch();
   const auth = useSelector((state: RootState) => state.auth);
-  const { user, token, isAuthenticated } = auth;
+  const { user, isAuthenticated } = auth;
 
   useEffect(() => {
     dispatch(initializeAuth());
@@ -103,7 +104,21 @@ function App() {
               )
             } 
           />
-
+          {/* Continue Setup - for users with saved progress */}
+<Route 
+  path="/continue-setup" 
+  element={
+    isAuthenticated && user ? (
+      !user.is_onboarded ? (
+        <ContinueSetupPage /> 
+      ) : (
+        <Navigate to="/agent-theater" replace />
+      )
+    ) : (
+      <Navigate to="/" replace />
+    )
+  }   
+/>
           {/* Agent Theater - only accessible if authenticated and onboarded */}
           <Route 
             path="/agent-theater" 
@@ -113,8 +128,8 @@ function App() {
               ) : (
                 <Navigate to="/" replace />
               )
-            } 
-          />
+            }     
+          /> 
 
           {/* Catch all - redirect to appropriate page */}
           <Route path="*" element={<Navigate to="/" replace />} />

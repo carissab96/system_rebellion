@@ -1,5 +1,6 @@
 // src/components/auth/SignUpModal.tsx
 import React from 'react';
+
 import { useSignUpForm } from '../../hooks/useSignUpForm'; // Our new logic engine
 
 interface SignUpModalProps {
