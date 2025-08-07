@@ -130,6 +130,9 @@ interface OnboardingContextType {
   exitWithoutSaving: () => Promise<void>;
   saveAndLogout: () => Promise<void>;
   
+  // Preview mode
+  startPreviewMode: (agentId: string) => Promise<void>;
+  
   // Progress state
   isProgressSaved: boolean;
   savedAt: string | null;
@@ -380,6 +383,33 @@ const OnboardingProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       navigate('/', { replace: true });
     }
   };
+
+  // Start preview mode with selected agent
+  const startPreviewMode = async (agentId: string) => {
+    try {
+      await saveProgress();
+      
+      // Set preview mode in backend
+      const previewData = {
+        preview_agent_selected: agentId,
+        preview_started_at: new Date().toISOString(),
+        preview_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days
+      };
+      
+      await apiService.request({
+        method: 'PUT',
+        url: '/api/users/preview-mode',
+        data: previewData
+      });
+      
+      // Navigate to Agent Theater with preview mode
+      navigate('/agent-theater?preview=true', { replace: true });
+    } catch (error) {
+      console.error('Start preview mode error:', error);
+      // Still navigate but without backend update
+      navigate('/agent-theater', { replace: true });
+    }
+  };
   const value: OnboardingContextType = {
     state,
     dispatch,
@@ -390,10 +420,11 @@ const OnboardingProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setShowSaveModal,
     saveAndExit,
     exitWithoutSaving,
+    saveAndLogout,
+    startPreviewMode,
     isProgressSaved,
     savedAt,
-    backendProgress,
-    saveAndLogout
+    backendProgress
   };
 
   return (

@@ -17,7 +17,7 @@ import { ProgressBar } from './components/ProgressBar';
 import OnboardingProvider from './OnboardingContext';
 import styles from './OnboardingFlow.module.css';
 import { steps } from './steps';
-import SaveProgressModal from './utils/saveProgressModal';
+import AgentPreviewModal from './utils/AgentPreviewModal';
 
 interface StepProps {
   onNext: () => void;
@@ -32,7 +32,6 @@ interface StepProps {
   onSaveAndExit?: () => void;
   onSaveAndContinue?: () => void;
   onExit?: () => void;
-  onSaveAndLogout?: () => void;
 }
 
 const OnboardingFlowContent: React.FC = () => {
@@ -43,11 +42,11 @@ const OnboardingFlowContent: React.FC = () => {
     setShowSaveModal,
     saveAndExit,
     exitWithoutSaving,
-    saveAndLogout,
     saveProgress,
     clearSavedProgress,
     isProgressSaved,
-    savedAt
+    savedAt,
+    startPreviewMode
   } = useOnboarding();
   
   const { currentStep } = state;
@@ -108,6 +107,16 @@ const OnboardingFlowContent: React.FC = () => {
     saveProgress();
     // You could show a toast notification here
     console.log('Progress saved manually');
+  };
+
+  const handleCancelSetup = () => {
+    setShowSaveModal(true);
+  };
+
+  const handleSelectAgent = (agentId: string) => {
+    // Start preview mode with selected agent
+    startPreviewMode(agentId);
+    setShowSaveModal(false);
   };
 
 
@@ -175,9 +184,8 @@ const OnboardingFlowContent: React.FC = () => {
                 nextLabel="Next"
                 backLabel="Back"
                 completionError={completionError}
-                onSaveAndExit={() => setShowSaveModal(true)}
                 onSaveAndContinue={handleSaveAndContinue}
-                onExit={() => setShowSaveModal(true)}
+                onExit={handleCancelSetup}
               />
             </motion.div>
           </AnimatePresence>
@@ -198,13 +206,15 @@ const OnboardingFlowContent: React.FC = () => {
       </div>
 
       {/* Save Progress Modal */}
-      <SaveProgressModal
-        isOpen={showSaveModal}
-        onClose={() => setShowSaveModal(false)}
-        onSaveAndExit={saveAndExit}
-        onExitWithoutSaving={exitWithoutSaving}
-        onSaveAndLogout={saveAndLogout}
-      />
+      {showSaveModal && (
+        <AgentPreviewModal
+          isOpen={showSaveModal}
+          onClose={() => setShowSaveModal(false)}
+          onSelectAgent={handleSelectAgent}
+          onSaveAndContinueLater={saveAndExit}
+          onStartOver={exitWithoutSaving}
+        />
+      )}
     </div>
   );
 };
