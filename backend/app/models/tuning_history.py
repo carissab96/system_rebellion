@@ -17,8 +17,8 @@ class TuningHistory(Base):
     __tablename__ = "tuning_history"
     
     # Original fields
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
     parameter = Column(String, nullable=False)
     old_value = Column(String, nullable=True)
     new_value = Column(String, nullable=False)
