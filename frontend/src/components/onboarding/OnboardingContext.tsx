@@ -348,11 +348,11 @@ const OnboardingProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const saveAndExit = async () => {
     try {
       await saveProgress();
-      const destination = user?.is_onboarded ? '/agent-theater' : '/landingPage';
+      const destination = user?.is_onboarded ? '/agent-theater' : '/';
       navigate(destination, { replace: true });
     } catch (error) {
       console.error('Save error:', error);
-      navigate(user?.is_onboarded ? '/agent-theater' : '/landingPage', { replace: true });
+      navigate(user?.is_onboarded ? '/agent-theater' : '/', { replace: true });
     }
   };
 
@@ -364,20 +364,20 @@ const OnboardingProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       } catch (error) {
         console.error('Clear error:', error);
       }
-      navigate('/login', { replace: true });
+      navigate('/', { replace: true });
     }
   };
   const saveAndLogout = async () => {
     try {
       await saveProgress();
       // Import and dispatch logout action
-      reduxDispatch(logout()); //Uncomment when you have the logout action
+      reduxDispatch(logout());
 
-      navigate('/login', { replace: true });
+      navigate('/', { replace: true });
     } catch (error) {
       console.error('Save and logout error:', error);
-      reduxDispatch(logout()); //Uncomment when you have the logout action
-      navigate('/login', { replace: true });
+      reduxDispatch(logout());
+      navigate('/', { replace: true });
     }
   };
   const value: OnboardingContextType = {

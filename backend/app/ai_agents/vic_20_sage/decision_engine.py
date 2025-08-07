@@ -335,17 +335,200 @@ class VIC20SageBrainV2:
                 'pattern_matches_used': decision.similar_past_decisions,
                 'ancient_wisdom_applied': decision.ancient_wisdom_principle
             }
-            # TODO: Implement database method
-            # await self.db.store_coordination_learning_data(learning_data)
+            from .database_integration import VIC20DatabaseIntegration
+            db_integration = VIC20DatabaseIntegration(self.db)
+            await db_integration.store_coordination_learning_data(learning_data)
 
     async def _log_mediation_event(self, mediation_result: Dict[str, Any], conflict_data: Dict[str, Any]):
         """Log mediation event to database"""
-        if self.db:
-            try:
-                # TODO: Implement database logging
-                pass
-            except Exception as e:
-                self.logger.error(f"Failed to log mediation event: {e}")
+        try:
+            from .database_integration import VIC20DatabaseIntegration
+            
+            db = await self.get_database()
+            db_integration = VIC20DatabaseIntegration(db)
+            
+            # Store mediation event in database
+            await db_integration.store_mediation_event(
+                user_id=conflict_data.get('user_id', 'unknown'),
+                conflict_type=conflict_data.get('conflict_type', 'agent_disagreement'),
+                agents_involved=conflict_data.get('agents_involved', []),
+                mediation_strategy=mediation_result.get('mediation_strategy', 'unknown'),
+                resolution_success=mediation_result.get('resolution_success', False),
+                ancient_wisdom_applied=mediation_result.get('ancient_wisdom_applied'),
+                effectiveness_score=mediation_result.get('effectiveness_score', 0.0),
+                mediation_notes=mediation_result.get('mediation_notes', '')
+            )
+            
+            self.logger.info(f"Mediation event logged: {mediation_result.get('mediation_strategy')} for {conflict_data.get('conflict_type')}")
+            
+        except Exception as e:
+            self.logger.error(f"Failed to log mediation event: {str(e)}")
+    
+    async def coordinate_agent_emergency_response(
+        self,
+        emergency_type: str,
+        affected_agents: List[str],
+        system_context: Dict[str, Any],
+        user_id: str
+    ) -> Dict[str, Any]:
+        """Coordinate emergency response across multiple agents"""
+        try:
+            emergency_response = {
+                'emergency_id': f"emergency_{datetime.now().timestamp()}",
+                'emergency_type': emergency_type,
+                'affected_agents': affected_agents,
+                'coordination_state': CoordinationState.COORDINATING.value,
+                'start_time': datetime.now().isoformat(),
+                'response_actions': [],
+                'status': 'coordinating'
+            }
+            
+            # Apply ancient wisdom for emergency coordination
+            wisdom_applied = None
+            if emergency_type == 'system_overload':
+                wisdom_applied = AncientWisdom.PATIENCE_OF_STONE.value
+            elif emergency_type == 'agent_conflict':
+                wisdom_applied = AncientWisdom.HARMONY_OF_OPPOSITES.value
+            elif emergency_type == 'performance_degradation':
+                wisdom_applied = AncientWisdom.CHAOS_AS_TEACHER.value
+            
+            emergency_response['ancient_wisdom_applied'] = wisdom_applied
+            
+            # Coordinate specific agent responses based on emergency type
+            if emergency_type == 'system_overload':
+                if 'meth_snail' in affected_agents:
+                    emergency_response['response_actions'].append({
+                        'agent': 'meth_snail',
+                        'action': 'emergency_optimization_protocol',
+                        'priority': 'high'
+                    })
+                
+                if 'hamsters' in affected_agents:
+                    emergency_response['response_actions'].append({
+                        'agent': 'hamsters',
+                        'action': 'emergency_infrastructure_intervention',
+                        'priority': 'high'
+                    })
+            
+            elif emergency_type == 'agent_conflict':
+                # VIC-20 takes direct mediation role
+                conflict_data = {
+                    'user_id': user_id,
+                    'conflict_type': 'emergency_agent_conflict',
+                    'agents_involved': affected_agents,
+                    'system_context': system_context
+                }
+                
+                mediation_result = await self._mediate_agent_conflict(conflict_data)
+                emergency_response['mediation_result'] = mediation_result
+            
+            emergency_response['end_time'] = datetime.now().isoformat()
+            emergency_response['status'] = 'completed'
+            emergency_response['coordination_notes'] = f'Emergency coordination completed using {wisdom_applied}'
+            
+            # Log emergency coordination for learning
+            await self._store_coordination_for_learning(
+                VIC20Decision(
+                    decision_type=VIC20DecisionType.EMERGENCY_COORDINATION,
+                    coordination_state=CoordinationState.COORDINATING,
+                    coordination_target=emergency_type,
+                    agent_actions=emergency_response['response_actions'],
+                    system_synthesis_confidence=0.9,  # High confidence for emergency response
+                    technical_orchestration=emergency_response,
+                    expected_rebellion_improvement=0.8,
+                    confidence_level=0.9,
+                    timestamp=datetime.now(),
+                    ancient_wisdom_principle=wisdom_applied
+                ),
+                system_context
+            )
+            
+            return emergency_response
+            
+        except Exception as e:
+            self.logger.error(f"Emergency coordination failed: {str(e)}")
+            return {
+                'emergency_id': f"emergency_{datetime.now().timestamp()}",
+                'emergency_type': emergency_type,
+                'status': 'failed',
+                'error': str(e),
+                'affected_agents': affected_agents
+            }
+    
+    async def optimize_agent_partnerships(
+        self,
+        agent_performance_data: Dict[str, Any],
+        user_id: str
+    ) -> Dict[str, Any]:
+        """Optimize partnerships between agents based on performance data"""
+        try:
+            optimization_result = {
+                'optimization_id': f"partnership_opt_{datetime.now().timestamp()}",
+                'user_id': user_id,
+                'start_time': datetime.now().isoformat(),
+                'partnership_recommendations': [],
+                'coordination_improvements': [],
+                'status': 'analyzing'
+            }
+            
+            # Analyze agent performance patterns
+            if not agent_performance_data:
+                optimization_result['status'] = 'insufficient_data'
+                optimization_result['message'] = 'No agent performance data available for optimization'
+                return optimization_result
+            
+            # Apply ancient wisdom for partnership optimization
+            wisdom_applied = AncientWisdom.STRENGTH_IN_DIFFERENCE.value
+            optimization_result['ancient_wisdom_applied'] = wisdom_applied
+            
+            # Analyze partnerships and suggest improvements
+            for agent_name, performance in agent_performance_data.items():
+                if isinstance(performance, dict):
+                    effectiveness = performance.get('effectiveness_score', 0.0)
+                    response_time = performance.get('response_time', 0.0)
+                    
+                    if effectiveness < 0.7:
+                        optimization_result['partnership_recommendations'].append({
+                            'agent': agent_name,
+                            'recommendation': 'coordination_support_needed',
+                            'reason': f'Effectiveness below threshold: {effectiveness:.2f}',
+                            'suggested_partners': self._suggest_complementary_agents(agent_name)
+                        })
+                    
+                    if response_time > 5.0:
+                        optimization_result['coordination_improvements'].append({
+                            'agent': agent_name,
+                            'improvement': 'response_time_optimization',
+                            'current_time': response_time,
+                            'target_time': 3.0
+                        })
+            
+            optimization_result['end_time'] = datetime.now().isoformat()
+            optimization_result['status'] = 'completed'
+            optimization_result['coordination_notes'] = f'Partnership optimization using {wisdom_applied}'
+            
+            return optimization_result
+            
+        except Exception as e:
+            self.logger.error(f"Partnership optimization failed: {str(e)}")
+            return {
+                'optimization_id': f"partnership_opt_{datetime.now().timestamp()}",
+                'status': 'failed',
+                'error': str(e),
+                'user_id': user_id
+            }
+    
+    def _suggest_complementary_agents(self, agent_name: str) -> List[str]:
+        """Suggest complementary agents based on capabilities"""
+        agent_synergies = {
+            'meth_snail': ['sir_hawkington', 'vic_20_sage'],  # Optimization + Triage + Coordination
+            'hamsters': ['the_stick', 'vic_20_sage'],         # Infrastructure + Stress Testing + Coordination
+            'sir_hawkington': ['meth_snail', 'quantum_shadow_person'],  # Triage + Optimization + Monitoring
+            'quantum_shadow_person': ['sir_hawkington', 'vic_20_sage'],  # Monitoring + Triage + Coordination
+            'the_stick': ['hamsters', 'vic_20_sage']          # Stress Testing + Infrastructure + Coordination
+        }
+        
+        return agent_synergies.get(agent_name, ['vic_20_sage'])  # VIC-20 is always a good coordinator
 
 # === STANDALONE HELPER CLASSES ===
 
@@ -492,6 +675,196 @@ class AgentInteractionProtocols:
         
         return dynamics_report
 
+# === EMERGENCY OPERATIONS METHODS ===
+
+async def _execute_emergency_optimization(
+    agents: List[str], 
+    parameters: Dict[str, Any]
+) -> Dict[str, Any]:
+    """Execute emergency system optimization with coordinated agents"""
+    try:
+        optimization_result = {
+            'operation_type': 'emergency_optimization',
+            'agents_involved': agents,
+            'start_time': datetime.now().isoformat(),
+            'actions_taken': [],
+            'metrics_improved': {},
+            'status': 'in_progress'
+        }
+        
+        # Coordinate agents based on their capabilities
+        if 'meth_snail' in agents:
+            # Meth Snail handles performance optimization
+            optimization_result['actions_taken'].append({
+                'agent': 'meth_snail',
+                'action': 'emergency_performance_optimization',
+                'target': parameters.get('performance_target', 'cpu_memory_optimization')
+            })
+        
+        if 'hamsters' in agents:
+            # Hamsters handle infrastructure emergency interventions
+            optimization_result['actions_taken'].append({
+                'agent': 'hamsters',
+                'action': 'emergency_infrastructure_intervention',
+                'target': parameters.get('infrastructure_target', 'disk_cleanup_defrag')
+            })
+        
+        if 'sir_hawkington' in agents:
+            # Sir Hawkington handles triage and prioritization
+            optimization_result['actions_taken'].append({
+                'agent': 'sir_hawkington',
+                'action': 'emergency_triage_coordination',
+                'target': parameters.get('triage_target', 'critical_issue_prioritization')
+            })
+        
+        # VIC-20 coordinates the entire operation
+        optimization_result['actions_taken'].append({
+            'agent': 'vic_20_sage',
+            'action': 'coordination_oversight',
+            'target': 'multi_agent_synchronization'
+        })
+        
+        optimization_result['end_time'] = datetime.now().isoformat()
+        optimization_result['status'] = 'completed'
+        optimization_result['coordination_notes'] = 'Emergency optimization coordinated successfully'
+        
+        return optimization_result
+        
+    except Exception as e:
+        logger.error(f"Emergency optimization failed: {str(e)}")
+        return {
+            'operation_type': 'emergency_optimization',
+            'status': 'failed',
+            'error': str(e),
+            'agents_involved': agents
+        }
+
+async def _execute_security_sweep(
+    agents: List[str], 
+    parameters: Dict[str, Any]
+) -> Dict[str, Any]:
+    """Execute coordinated security sweep across system"""
+    try:
+        security_result = {
+            'operation_type': 'security_sweep',
+            'agents_involved': agents,
+            'start_time': datetime.now().isoformat(),
+            'security_actions': [],
+            'threats_identified': [],
+            'vulnerabilities_found': [],
+            'status': 'in_progress'
+        }
+        
+        # Coordinate security actions based on agent capabilities
+        if 'sir_hawkington' in agents:
+            # Sir Hawkington leads security assessment
+            security_result['security_actions'].append({
+                'agent': 'sir_hawkington',
+                'action': 'security_threat_assessment',
+                'scope': parameters.get('assessment_scope', 'full_system_scan')
+            })
+        
+        if 'quantum_shadow_person' in agents:
+            # QSP handles stealth security monitoring
+            security_result['security_actions'].append({
+                'agent': 'quantum_shadow_person',
+                'action': 'stealth_vulnerability_scan',
+                'scope': parameters.get('stealth_scope', 'network_monitoring')
+            })
+        
+        if 'hamsters' in agents:
+            # Hamsters handle infrastructure security
+            security_result['security_actions'].append({
+                'agent': 'hamsters',
+                'action': 'infrastructure_security_check',
+                'scope': parameters.get('infrastructure_scope', 'access_control_audit')
+            })
+        
+        # VIC-20 coordinates and synthesizes security findings
+        security_result['security_actions'].append({
+            'agent': 'vic_20_sage',
+            'action': 'security_coordination_synthesis',
+            'scope': 'multi_agent_security_orchestration'
+        })
+        
+        security_result['end_time'] = datetime.now().isoformat()
+        security_result['status'] = 'completed'
+        security_result['coordination_notes'] = 'Security sweep coordinated across all agents'
+        
+        return security_result
+        
+    except Exception as e:
+        logger.error(f"Security sweep failed: {str(e)}")
+        return {
+            'operation_type': 'security_sweep',
+            'status': 'failed',
+            'error': str(e),
+            'agents_involved': agents
+        }
+
+async def _execute_chaos_engineering(
+    agents: List[str], 
+    parameters: Dict[str, Any]
+) -> Dict[str, Any]:
+    """Execute controlled chaos engineering with agent coordination"""
+    try:
+        chaos_result = {
+            'operation_type': 'chaos_engineering',
+            'agents_involved': agents,
+            'start_time': datetime.now().isoformat(),
+            'chaos_experiments': [],
+            'system_resilience_tests': [],
+            'recovery_actions': [],
+            'status': 'in_progress'
+        }
+        
+        # Coordinate chaos engineering based on agent capabilities
+        if 'the_stick' in agents:
+            # The Stick handles controlled system stress
+            chaos_result['chaos_experiments'].append({
+                'agent': 'the_stick',
+                'experiment': 'controlled_system_stress_test',
+                'parameters': parameters.get('stress_parameters', {'intensity': 'moderate'})
+            })
+        
+        if 'hamsters' in agents:
+            # Hamsters handle infrastructure resilience testing
+            chaos_result['chaos_experiments'].append({
+                'agent': 'hamsters',
+                'experiment': 'infrastructure_resilience_test',
+                'parameters': parameters.get('resilience_parameters', {'scope': 'disk_network'})
+            })
+        
+        if 'meth_snail' in agents:
+            # Meth Snail monitors optimization during chaos
+            chaos_result['system_resilience_tests'].append({
+                'agent': 'meth_snail',
+                'test': 'optimization_under_stress',
+                'parameters': parameters.get('optimization_parameters', {'maintain_performance': True})
+            })
+        
+        # VIC-20 coordinates the entire chaos engineering process
+        chaos_result['recovery_actions'].append({
+            'agent': 'vic_20_sage',
+            'action': 'chaos_coordination_oversight',
+            'parameters': 'ensure_controlled_recovery'
+        })
+        
+        chaos_result['end_time'] = datetime.now().isoformat()
+        chaos_result['status'] = 'completed'
+        chaos_result['coordination_notes'] = 'Chaos engineering coordinated with safety protocols'
+        
+        return chaos_result
+        
+    except Exception as e:
+        logger.error(f"Chaos engineering failed: {str(e)}")
+        return {
+            'operation_type': 'chaos_engineering',
+            'status': 'failed',
+            'error': str(e),
+            'agents_involved': agents
+        }
+
 # === STANDALONE UTILITY FUNCTIONS ===
 
 async def execute_combined_agent_operation(
@@ -529,13 +902,17 @@ async def execute_combined_agent_operation(
         if 'vic_20_sage' not in agents:
             agents.append('vic_20_sage')
     
-    # TODO: Implement actual operation execution
-    # if operation_type == 'emergency_optimization':
-    #     operation_result['results'] = await _execute_emergency_optimization(agents, parameters)
-        # elif operation_type == 'security_sweep':
-    #     operation_result['results'] = await _execute_security_sweep(agents, parameters)
-    # elif operation_type == 'chaos_engineering':
-    #     operation_result['results'] = await _execute_chaos_engineering(agents, parameters)
+    # Execute actual operation based on type
+    if operation_type == 'emergency_optimization':
+        operation_result['results'] = await _execute_emergency_optimization(agents, parameters)
+    elif operation_type == 'security_sweep':
+        operation_result['results'] = await _execute_security_sweep(agents, parameters)
+    elif operation_type == 'chaos_engineering':
+        operation_result['results'] = await _execute_chaos_engineering(agents, parameters)
+    else:
+        operation_result['status'] = 'failed'
+        operation_result['reason'] = f'Unknown operation type: {operation_type}'
+        return operation_result
     
     operation_result['status'] = 'completed'
     return operation_result

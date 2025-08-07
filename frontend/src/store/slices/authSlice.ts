@@ -98,7 +98,7 @@ export const loginUser = createAsyncThunk(
 export const validateToken = createAsyncThunk(
   'auth/validateToken',
   async (token: string) => {
-    const response = await fetch('/api/auth/validate-token', {
+    const response = await fetch('/validate-token', {
       headers: { 
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -116,6 +116,50 @@ export const completeOnboarding = createAsyncThunk(
     const response = await apiService.completeOnboarding(onboardingData);
     console.log('API response:', response.data);
     return response.data;
+  }
+);
+
+// Initialize auth from localStorage with token validation
+export const initializeAuth = createAsyncThunk(
+  'auth/initializeAuth',
+  async () => {
+    const savedToken = localStorage.getItem('access_token');
+    const savedUser = localStorage.getItem('user_data');
+    
+    if (!savedToken || !savedUser) {
+      // No saved auth data, user needs to login
+      return { authenticated: false };
+    }
+    
+    try {
+      // Validate the saved token
+      const response = await fetch('/validate-token', {
+        headers: { 
+          'Authorization': `Bearer ${savedToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        // Token is invalid, clear localStorage
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('user_data');
+        return { authenticated: false };
+      }
+      
+      const userData = await response.json();
+      return {
+        authenticated: true,
+        token: savedToken,
+        user: userData.user
+      };
+    } catch (error) {
+      // Network error or token validation failed
+      console.error('Token validation failed during initialization:', error);
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('user_data');
+      return { authenticated: false };
+    }
   }
 );
 export const authSlice = createSlice({
@@ -173,16 +217,14 @@ export const authSlice = createSlice({
       state.error = null;
     },
     
-    // Initialize from localStorage (call this on app startup)
-    initializeAuth: (state) => {
-      const savedToken = localStorage.getItem('access_token');
-      const savedUser = localStorage.getItem('user_data');
-      
-      if (savedToken && savedUser) {
-        state.token = savedToken;
-        state.user = JSON.parse(savedUser);
-        state.isAuthenticated = true;
-      }
+    // Clear auth state completely (for logout and failed validation)
+    clearAuthState: (state) => {
+      state.isAuthenticated = false;
+      state.user = null;
+      state.token = null;
+      state.error = null;
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('user_data');
     },
   },
 
@@ -274,6 +316,36 @@ export const authSlice = createSlice({
         state.isLoading = false;
         state.error = action.error.message || 'Onboarding completion failed';
       })
+      
+      // Initialize auth
+      .addCase(initializeAuth.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(initializeAuth.fulfilled, (state, action) => {
+        state.isLoading = false;
+        if (action.payload.authenticated) {
+          state.isAuthenticated = true;
+          state.user = action.payload.user!;
+          state.token = action.payload.token!;
+        } else {
+          // Not authenticated, ensure clean state
+          state.isAuthenticated = false;
+          state.user = null;
+          state.token = null;
+        }
+        state.error = null;
+      })
+      .addCase(initializeAuth.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isAuthenticated = false;
+        state.user = null;
+        state.token = null;
+        state.error = action.error.message || 'Authentication initialization failed';
+        // Clear localStorage on initialization failure
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('user_data');
+      })
     }
   })
 
@@ -284,7 +356,7 @@ export const {
   updateUser, 
   setError, 
   clearError, 
-  initializeAuth 
+  clearAuthState 
 } = authSlice.actions;
 
 export default authSlice;

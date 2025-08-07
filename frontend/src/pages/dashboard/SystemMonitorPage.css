@@ -1,0 +1,324 @@
+/* pages/dashboard/SystemMonitorPage.css */
+.system-monitor-page {
+  padding: 2rem;
+  background: var(--rebellion-void);
+  color: var(--rebellion-text);
+  font-family: 'JetBrains Mono', monospace;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--rebellion-border);
+}
+
+.header-content h1 {
+  margin: 0 0 0.5rem 0;
+  color: var(--vic20-cyan);
+  font-size: 1.75rem;
+  font-weight: 600;
+}
+
+.header-content p {
+  margin: 0;
+  color: var(--rebellion-text-secondary);
+  font-size: 1rem;
+}
+
+.connection-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--rebellion-surface);
+  border: 1px solid var(--rebellion-border);
+  border-radius: 6px;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+.status-connected { background: #00ff00; }
+.status-connecting { background: #ffaa00; }
+.status-disconnected { background: #ff4444; }
+
+.status-text {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.monitor-content {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 1.5rem;
+}
+
+/* Metric Panels */
+.metric-panel {
+  background: var(--rebellion-surface);
+  border: 1px solid var(--rebellion-border);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.panel-header h2 {
+  margin: 0;
+  color: var(--rebellion-text);
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.metric-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--vic20-cyan);
+}
+
+.metric-bar {
+  width: 100%;
+  height: 8px;
+  background: var(--rebellion-void);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.metric-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.cpu-fill {
+  background: linear-gradient(90deg, #51cf66, #ffd43b, #ff6b6b);
+}
+
+.memory-fill {
+  background: linear-gradient(90deg, #4dabf7, #9775fa);
+}
+
+.disk-fill {
+  background: linear-gradient(90deg, #51cf66, #ffaa00);
+}
+
+.network-recv-fill {
+  background: #4dabf7;
+}
+
+.network-sent-fill {
+  background: #9775fa;
+}
+
+.metric-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.875rem;
+}
+
+.detail-item span:first-child {
+  color: var(--rebellion-text-secondary);
+}
+
+.detail-item span:last-child {
+  color: var(--rebellion-text);
+  font-weight: 500;
+}
+
+/* Network specific styles */
+.network-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.network-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.network-label {
+  min-width: 80px;
+  font-size: 0.875rem;
+  color: var(--rebellion-text-secondary);
+}
+
+.network-bar .metric-bar {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+/* Overview Panel */
+.overview-panel {
+  grid-column: 1 / -1;
+  background: var(--rebellion-surface);
+  border: 1px solid var(--rebellion-border);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.overview-card {
+  background: var(--rebellion-void);
+  border: 1px solid var(--rebellion-border);
+  border-radius: 6px;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.overview-icon {
+  font-size: 1.5rem;
+  color: var(--vic20-cyan);
+}
+
+.overview-content h3 {
+  margin: 0 0 0.25rem 0;
+  color: var(--rebellion-text);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.overview-status {
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* Agent Status Panel */
+.agent-status-panel {
+  grid-column: 1 / -1;
+  background: var(--rebellion-surface);
+  border: 1px solid var(--rebellion-border);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.panel-header p {
+  margin: 0.5rem 0 0 0;
+  color: var(--rebellion-text-secondary);
+  font-size: 0.875rem;
+}
+
+.agent-status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.agent-status-card {
+  background: var(--rebellion-void);
+  border: 1px solid var(--rebellion-border);
+  border-radius: 6px;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.agent-icon {
+  font-size: 1.5rem;
+}
+
+.agent-info h3 {
+  margin: 0 0 0.25rem 0;
+  color: var(--rebellion-text);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.agent-status {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.agent-status.online {
+  background: rgba(81, 207, 102, 0.2);
+  color: #51cf66;
+}
+
+.agent-status.offline {
+  background: rgba(255, 68, 68, 0.2);
+  color: #ff4444;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .monitor-content {
+    grid-template-columns: 1fr;
+  }
+  
+  .overview-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .agent-status-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .system-monitor-page {
+    padding: 1rem;
+  }
+  
+  .page-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+  
+  .overview-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .agent-status-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .network-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .network-label {
+    min-width: auto;
+  }
+}

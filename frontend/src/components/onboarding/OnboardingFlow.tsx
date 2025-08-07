@@ -43,6 +43,7 @@ const OnboardingFlowContent: React.FC = () => {
     setShowSaveModal,
     saveAndExit,
     exitWithoutSaving,
+    saveAndLogout,
     saveProgress,
     clearSavedProgress,
     isProgressSaved,
@@ -93,7 +94,7 @@ const OnboardingFlowContent: React.FC = () => {
       
       await clearSavedProgress();
 
-      navigate('/AgentTheater');
+      navigate('/agent-theater');
     } catch (err: any) {
       const error = err as AxiosError<any>;
       const errorMessage = error.response?.data?.detail || 'A server error occurred. Please try again.';
@@ -109,9 +110,7 @@ const OnboardingFlowContent: React.FC = () => {
     console.log('Progress saved manually');
   };
 
-  function saveAndLogout(): void {
-    throw new Error('Function not implemented.');
-  }
+
 
   return (
     <div className={styles.onboardingFlow}>

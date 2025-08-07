@@ -1,0 +1,429 @@
+/* pages/dashboard/AgentTestingPage.css */
+.agent-testing-page {
+  padding: 2rem;
+  background: var(--rebellion-void);
+  color: var(--rebellion-text);
+  font-family: 'JetBrains Mono', monospace;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--rebellion-border);
+}
+
+.header-content h1 {
+  margin: 0 0 0.5rem 0;
+  color: var(--vic20-cyan);
+  font-size: 1.75rem;
+  font-weight: 600;
+}
+
+.header-content p {
+  margin: 0;
+  color: var(--rebellion-text-secondary);
+  font-size: 1rem;
+}
+
+.connection-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--rebellion-surface);
+  border: 1px solid var(--rebellion-border);
+  border-radius: 6px;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+.status-connected { background: #00ff00; }
+.status-connecting { background: #ffaa00; }
+.status-disconnected { background: #ff4444; }
+
+.status-text {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.testing-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto 1fr;
+  gap: 1.5rem;
+  height: calc(100vh - 200px);
+}
+
+/* Test Scenarios Panel */
+.test-scenarios-panel {
+  grid-column: 1 / -1;
+  background: var(--rebellion-surface);
+  border: 1px solid var(--rebellion-border);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.panel-header {
+  margin-bottom: 1.5rem;
+}
+
+.panel-header h2 {
+  margin: 0 0 0.5rem 0;
+  color: var(--rebellion-text);
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.panel-header p {
+  margin: 0;
+  color: var(--rebellion-text-secondary);
+  font-size: 0.875rem;
+}
+
+.test-scenarios-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1rem;
+}
+
+.test-scenario-card {
+  background: var(--rebellion-void);
+  border: 1px solid var(--rebellion-border);
+  border-radius: 6px;
+  padding: 1rem;
+  transition: all 0.2s ease;
+}
+
+.test-scenario-card:hover {
+  border-color: var(--vic20-cyan);
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.1);
+}
+
+.scenario-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.scenario-icon {
+  font-size: 1.5rem;
+  min-width: 1.5rem;
+}
+
+.scenario-info h3 {
+  margin: 0 0 0.5rem 0;
+  color: var(--rebellion-text);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.scenario-info p {
+  margin: 0;
+  color: var(--rebellion-text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.scenario-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.scenario-agent {
+  font-size: 0.75rem;
+  color: var(--vic20-cyan);
+  background: rgba(0, 255, 255, 0.1);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.run-test-btn {
+  background: var(--vic20-cyan);
+  color: var(--rebellion-void);
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.run-test-btn:hover:not(:disabled) {
+  background: #00cccc;
+  transform: translateY(-1px);
+}
+
+.run-test-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.run-test-btn.running {
+  background: #ffaa00;
+  animation: pulse 1s infinite;
+}
+
+/* System Controls Panel */
+.system-controls-panel {
+  background: var(--rebellion-surface);
+  border: 1px solid var(--rebellion-border);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.controls-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.control-group h4 {
+  margin: 0 0 1rem 0;
+  color: var(--rebellion-text);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.control-btn {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--rebellion-border);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.control-btn--primary {
+  background: var(--vic20-cyan);
+  color: var(--rebellion-void);
+  border-color: var(--vic20-cyan);
+}
+
+.control-btn--primary:hover {
+  background: #00cccc;
+}
+
+.control-btn--info {
+  background: #4dabf7;
+  color: white;
+  border-color: #4dabf7;
+}
+
+.control-btn--info:hover {
+  background: #339af0;
+}
+
+.control-btn--secondary {
+  background: var(--rebellion-surface);
+  color: var(--rebellion-text);
+  border-color: var(--rebellion-border);
+}
+
+.control-btn--secondary:hover {
+  background: var(--rebellion-border);
+}
+
+.control-btn--success {
+  background: #51cf66;
+  color: white;
+  border-color: #51cf66;
+}
+
+.control-btn--success:hover {
+  background: #40c057;
+}
+
+/* Console Panel */
+.console-panel {
+  grid-column: 1 / -1;
+  background: var(--rebellion-surface);
+  border: 1px solid var(--rebellion-border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  min-height: 400px;
+}
+
+.console-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.agent-filter {
+  background: var(--rebellion-void);
+  color: var(--rebellion-text);
+  border: 1px solid var(--rebellion-border);
+  padding: 0.5rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+.auto-scroll-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--rebellion-text-secondary);
+  cursor: pointer;
+}
+
+.console-logs {
+  flex: 1;
+  margin-top: 1rem;
+}
+
+.logs-container {
+  height: 100%;
+  overflow-y: auto;
+  background: var(--rebellion-void);
+  border: 1px solid var(--rebellion-border);
+  border-radius: 4px;
+  padding: 1rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.console-log {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  padding: 0.25rem 0;
+}
+
+.console-timestamp {
+  color: var(--rebellion-text-secondary);
+  font-size: 0.75rem;
+  min-width: 80px;
+}
+
+.console-type {
+  font-weight: 600;
+  font-size: 0.75rem;
+  padding: 0.125rem 0.375rem;
+  border-radius: 3px;
+  min-width: 80px;
+  text-align: center;
+}
+
+.console-agent {
+  color: var(--vic20-cyan);
+  font-size: 0.75rem;
+  font-weight: 600;
+  min-width: 100px;
+}
+
+.console-message {
+  flex: 1;
+  color: var(--rebellion-text);
+}
+
+.console-log--info .console-type {
+  background: rgba(74, 171, 247, 0.2);
+  color: #4dabf7;
+}
+
+.console-log--success .console-type {
+  background: rgba(81, 207, 102, 0.2);
+  color: #51cf66;
+}
+
+.console-log--warning .console-type {
+  background: rgba(255, 170, 0, 0.2);
+  color: #ffaa00;
+}
+
+.console-log--error .console-type {
+  background: rgba(255, 68, 68, 0.2);
+  color: #ff4444;
+}
+
+.console-log--websocket .console-type {
+  background: rgba(0, 255, 255, 0.2);
+  color: var(--vic20-cyan);
+}
+
+.console-log--agent-test .console-type {
+  background: rgba(147, 51, 234, 0.2);
+  color: #9333ea;
+}
+
+.console-data {
+  margin-top: 0.5rem;
+  margin-left: 160px;
+}
+
+.console-data summary {
+  cursor: pointer;
+  color: var(--vic20-cyan);
+  font-size: 0.75rem;
+}
+
+.console-data pre {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 0.5rem;
+  border-radius: 4px;
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  overflow-x: auto;
+  color: var(--rebellion-text-secondary);
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .testing-content {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto 1fr;
+  }
+  
+  .controls-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .test-scenarios-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .agent-testing-page {
+    padding: 1rem;
+  }
+  
+  .page-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+  
+  .console-controls {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}

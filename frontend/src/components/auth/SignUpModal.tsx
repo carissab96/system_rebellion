@@ -54,9 +54,25 @@ export default function SignUpModal({ isOpen, onClose, onSwitchToLogin }: SignUp
     <div className="modal-overlay" onMouseDown={onClose}>
       <div className="modal-content" onMouseDown={e => e.stopPropagation()}>
         {/* We compose the header using .card classes and utilities */}
-        <header className="card-header text-center">
-          <h2 className="card-title">Create Your Rebellion Account</h2>
-          <p className="card-subtitle mt-1">Begin the journey to persistent AI-driven intelligence.</p>
+        <header className="card-header text-center" style={{ position: 'relative' }}>
+          <button 
+            onClick={onClose}
+            className="btn btn-ghost btn-sm"
+            style={{ 
+              position: 'absolute', 
+              right: '1rem', 
+              top: '1rem',
+              padding: '0.25rem',
+              minHeight: 'auto',
+              fontSize: '1.2rem',
+              lineHeight: '1'
+            }}
+            title="Close modal"
+          >
+            ×
+          </button>
+          <h2 className="card-title vic20-text">Join the Rebellion</h2>
+          <p className="card-subtitle mt-1">Create your System Rebellion account</p>
         </header>
 
         {/* The body uses our global form classes */}

@@ -31,11 +31,26 @@ class User(Base):
     is_onboarded = Column(Boolean, default=False)
     onboarding_progress = Column(Integer, nullable=True)  # Current step number
     
-    # New detailed tracking
+    # Enhanced onboarding tracking
     onboarding_data = Column(JSONType, nullable=True)  # Full form data as JSON
     onboarding_started_at = Column(DateTime, nullable=True)
     onboarding_last_step_at = Column(DateTime, nullable=True)
     onboarding_abandoned_count = Column(Integer, default=0, nullable=False)
+    onboarding_step_timestamps = Column(JSONType, default=dict)  # {"step_1": timestamp, "step_2": timestamp}
+    onboarding_abandonment_reasons = Column(JSONType, default=list)  # Track why they left
+    onboarding_device_info = Column(JSONType, nullable=True)  # Browser, OS, screen size
+    onboarding_referral_source = Column(String(100), nullable=True)  # How they found you
+    
+    # Preview/Trial tracking
+    preview_agent_selected = Column(String(20), nullable=True)  # 'hawkington', 'stick', 'vic20'
+    preview_started_at = Column(DateTime, nullable=True)
+    preview_expires_at = Column(DateTime, nullable=True)
+    preview_conversion_emails_sent = Column(JSONType, default=list)  # Track which emails sent
+    preview_converted_at = Column(DateTime, nullable=True)  # When they upgraded to paid
+    
+    # Email campaign tracking
+    email_campaign_responses = Column(JSONType, default=dict)  # Track opens, clicks, conversions
+    last_engagement_at = Column(DateTime, nullable=True)
 
     # Profile Information
     first_name = Column(String(50), nullable=True)

@@ -23,7 +23,23 @@ export default function LoginModal({ isOpen, onClose, onSwitchToSignUp }: LoginM
   return (
     <div className="modal-overlay" onMouseDown={onClose}>
       <div className="modal-content" onMouseDown={e => e.stopPropagation()}>
-        <header className="card-header text-center">
+        <header className="card-header text-center" style={{ position: 'relative' }}>
+          <button 
+            onClick={onClose}
+            className="btn btn-ghost btn-sm"
+            style={{ 
+              position: 'absolute', 
+              right: '1rem', 
+              top: '1rem',
+              padding: '0.25rem',
+              minHeight: 'auto',
+              fontSize: '1.2rem',
+              lineHeight: '1'
+            }}
+            title="Close modal"
+          >
+            ×
+          </button>
           <h2 className="card-title vic20-text">Enterprise Sign In</h2>
           <p className="card-subtitle mt-1">Access your System Rebellion dashboard</p>
         </header>
