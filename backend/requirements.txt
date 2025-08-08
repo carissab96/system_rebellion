@@ -61,6 +61,8 @@ idna==3.10
     #   anyio
     #   requests
     #   yarl
+itsdangerous==2.2.0
+    # via -r requirements.in
 mako==1.2.4
     # via alembic
 markdown-it-py==3.0.0
