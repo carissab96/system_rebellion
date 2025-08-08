@@ -252,7 +252,7 @@ class StickWebSocketHandlerV3:
     async def _send_bob_proximity_alert(self, websocket, user_id: str):
         """CRITICAL: Bob proximity detected"""
         
-         alert = {
+        alert = {
             'type': 'BOB_PROXIMITY_ALERT',
             'user_id': user_id,
             'timestamp': datetime.now().isoformat(),
