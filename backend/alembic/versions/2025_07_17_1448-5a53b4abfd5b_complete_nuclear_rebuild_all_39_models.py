@@ -470,8 +470,8 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_system_metrics_id'), 'system_metrics', ['id'], unique=False)
     op.create_table('tuning_history',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('id', sa.String(36), primary_key=True),
+    sa.Column('user_id', sa.String(36), nullable=False),
     sa.Column('parameter', sa.String(), nullable=False),
     sa.Column('old_value', sa.String(), nullable=True),
     sa.Column('new_value', sa.String(), nullable=False),
@@ -496,8 +496,7 @@ def upgrade() -> None:
     sa.Column('pattern_confidence', sa.Float(), nullable=True),
     sa.Column('learned_from_patterns', sa.Boolean(), nullable=True),
     sa.Column('historical_data_points', sa.Integer(), nullable=True),
-    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
-    sa.PrimaryKeyConstraint('id')
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], )
     )
     op.create_index(op.f('ix_tuning_history_id'), 'tuning_history', ['id'], unique=False)
     # ### end Alembic commands ###
