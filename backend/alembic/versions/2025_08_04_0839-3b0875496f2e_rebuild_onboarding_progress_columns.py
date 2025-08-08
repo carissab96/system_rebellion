@@ -19,16 +19,18 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade():
-    # Keep existing onboarding_progress INTEGER (probably tracks current step)
-    # Add new columns for detailed tracking
-    op.add_column('users', sa.Column('onboarding_data', sa.Text(), nullable=True))  # JSON data
-    op.add_column('users', sa.Column('onboarding_started_at', sa.DateTime(), nullable=True))
-    op.add_column('users', sa.Column('onboarding_last_step_at', sa.DateTime(), nullable=True))
-    op.add_column('users', sa.Column('onboarding_abandoned_count', sa.Integer(), nullable=False, server_default='0'))
+    # NO-OP: All columns this migration was trying to add already exist
+    # This migration was causing PostgreSQL duplicate column errors during deployment
+    
+    # The following columns already exist in the users table (added by previous migrations):
+    # - onboarding_data (added in migration 2025_08_04_0738)
+    # - onboarding_started_at (added in migration 2025_08_04_0738)  
+    # - onboarding_last_step_at (added in migration 2025_08_04_0738)
+    # - onboarding_abandoned_count (added in migration 2025_08_04_0738)
+    
+    pass
 
 def downgrade():
-    op.drop_column('users', 'onboarding_abandoned_count')
-    op.drop_column('users', 'onboarding_last_step_at')
-    op.drop_column('users', 'onboarding_started_at')
-    op.drop_column('users', 'onboarding_data')
-    # Don't touch the existing onboarding_progress INTEGER
+    # NO-OP: This migration doesn't add any columns, so no downgrade needed
+    # Columns exist from previous migration and should not be dropped
+    pass
