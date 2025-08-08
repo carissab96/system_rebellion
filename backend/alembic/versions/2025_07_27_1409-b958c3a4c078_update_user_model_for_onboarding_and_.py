@@ -24,7 +24,7 @@ def upgrade():
     with op.batch_alter_table('users', schema=None) as batch_op:
         batch_op.add_column(sa.Column('system_profile', sa.JSON(), nullable=True))
         batch_op.add_column(sa.Column('onboarding_completed', sa.Boolean(), nullable=True))
-        batch_op.add_column(sa.Column('onboarding_progress', sa.JSON(), nullable=True))
+        # batch_op.add_column(sa.Column('onboarding_progress', sa.JSON(), nullable=True))
         batch_op.add_column(sa.Column('monitoring_thresholds', sa.JSON(), nullable=True))
         batch_op.add_column(sa.Column('permissions_status', sa.JSON(), nullable=True))
         batch_op.add_column(sa.Column('installation_method', sa.String(length=50), nullable=True))
@@ -38,6 +38,6 @@ def downgrade():
         batch_op.drop_column('installation_method')
         batch_op.drop_column('permissions_status')
         batch_op.drop_column('monitoring_thresholds')
-        batch_op.drop_column('onboarding_progress')
+        # batch_op.drop_column('onboarding_progress')
         batch_op.drop_column('onboarding_completed')
         batch_op.drop_column('system_profile')
