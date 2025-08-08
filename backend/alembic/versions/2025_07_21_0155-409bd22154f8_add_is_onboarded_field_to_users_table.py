@@ -20,9 +20,10 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Add is_onboarded field to users table."""
-    # Add the new column with default value False
-    op.add_column('users', sa.Column('is_onboarded', sa.Boolean(), nullable=True ))
+    # Column already exists in original migration - no action needed
+    pass
 
 def downgrade() -> None:
     """Remove is_onboarded field from users table."""
-    op.drop_column('users', 'is_onboarded')
+    # Column managed by original migration - no action needed
+    pass
