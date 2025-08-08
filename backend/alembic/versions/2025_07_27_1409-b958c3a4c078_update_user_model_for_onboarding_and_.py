@@ -19,27 +19,25 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade():
-    # NO-OP: All columns this migration was trying to add already exist
-    # This migration was causing PostgreSQL transaction abort errors during deployment
-    # because it attempted to add existing columns, which works in SQLite with try/except
-    # but causes transaction failures in PostgreSQL
-    
-    # The following columns already exist in the users table:
-    # - onboarding_completed (added in original migration)
-    # - onboarding_progress (added in original migration) 
-    # - system_profile (added in original migration)
-    # - agent_preferences (added in original migration)
-    # - monitoring_thresholds (added in original migration)
-    # - permissions_status (added in original migration)
-    # - installation_method (added in original migration)
-    
-    pass
-    
-    # NO-OP: Default value setting removed since columns already exist with proper defaults
-    # The User model handles default values for new records
-    # Existing records already have appropriate values set by previous migrations
+    # This migration now only adds columns that are NOT created in other migrations
+    # to prevent duplicate column errors during deployment.
+    with op.batch_alter_table('users', schema=None) as batch_op:
+        batch_op.add_column(sa.Column('system_profile', sa.JSON(), nullable=True))
+        batch_op.add_column(sa.Column('onboarding_completed', sa.Boolean(), nullable=True))
+        batch_op.add_column(sa.Column('onboarding_progress', sa.JSON(), nullable=True))
+        batch_op.add_column(sa.Column('monitoring_thresholds', sa.JSON(), nullable=True))
+        batch_op.add_column(sa.Column('permissions_status', sa.JSON(), nullable=True))
+        batch_op.add_column(sa.Column('installation_method', sa.String(length=50), nullable=True))
+
+    # Set default values for new columns on existing rows
+    op.execute("UPDATE users SET system_profile = '{}' WHERE system_profile IS NULL")
+    op.execute("UPDATE users SET onboarding_completed = false WHERE onboarding_completed IS NULL")
 
 def downgrade():
-    # NO-OP: This migration doesn't add any columns, so no downgrade needed
-    # Columns exist from original migration and should not be dropped
-    pass
+    with op.batch_alter_table('users', schema=None) as batch_op:
+        batch_op.drop_column('installation_method')
+        batch_op.drop_column('permissions_status')
+        batch_op.drop_column('monitoring_thresholds')
+        batch_op.drop_column('onboarding_progress')
+        batch_op.drop_column('onboarding_completed')
+        batch_op.drop_column('system_profile')
