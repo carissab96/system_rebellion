@@ -26,7 +26,6 @@
     "bufferutil": "^4.0.9",
     "class-variance-authority": "^0.7.1",
     "cors": "^2.8.5",
-    "eslint-plugin-react": "^7.37.5",
     "framer-motion": "^12.23.9",
     "jshint": "^2.13.6",
     "lucide-react": "^0.536.0",
