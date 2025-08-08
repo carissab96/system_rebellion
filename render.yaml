@@ -16,7 +16,7 @@ services:
       - key: JWT_SECRET_KEY
         generateValue: true
       - key: CORS_ORIGINS
-        value: "https://system-rebellion.onrender.com"
+        value: "https://system-rebellion.onrender.com,https://system-rebellion-frontend.onrender.com,https://system-rebellion-api.onrender.com"
       - key: ENVIRONMENT
         value: "production"
 
