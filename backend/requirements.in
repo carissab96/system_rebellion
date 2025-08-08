@@ -4,7 +4,7 @@ uvicorn>=0.24.0
 starlette>=0.27.0
 pydantic>=2.10.6
 pydantic-settings>=2.1.0
-itsdangerous>=2.1.27.0
+itsdangerous>=2.1.2
 
 # Database
 sqlalchemy>=2.0.28
