@@ -24,7 +24,8 @@ def setup_middleware(app: FastAPI):
         "http://localhost:8000",   # Default Vite port
         "https://system-rebellion.com",  # Production domain
         "https://system-rebellion.onrender.com",  # Render domain
-        "https://system-rebellion-api.onrender.com"  # Render API domain
+        "https://system-rebellion-api.onrender.com",  # Render API domain
+        "https://system-rebellion-frontend.onrender.com"  # Render Frontend domain
     ]
     
     app.add_middleware(

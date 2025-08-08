@@ -10,6 +10,9 @@ export default defineConfig(({ mode }) => {
       react(),
     ],
     server: {
+      preview: {
+        allowedHosts: ['system-rebellion-frontend.onrender.com', 'system-rebellion-api.onrender.com'],
+      },
       port: 5173,
       proxy: {
         '/api': {
