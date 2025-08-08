@@ -38,8 +38,8 @@ export const PermissionsStep: React.FC<StepProps> = ({ onNext, onBack }) => {
             'PowerShell execution for optimizations'
           ],
           methods: [
-            { id: 'installer', name: 'System Rebellion Agent Installer (Recommended)', desc: 'Downloads and configures everything automatically' },
-            { id: 'manual', name: 'Manual PowerShell Setup', desc: 'For advanced users who want to review scripts' }
+            { id: 'installer', name: 'Windows Installer (In Development)', desc: 'Coming soon - use web dashboard for now' },
+            { id: 'manual', name: 'Early Access Preview', desc: 'Contact support for development preview' }
           ]
         };
       case 'macos':
@@ -51,9 +51,9 @@ export const PermissionsStep: React.FC<StepProps> = ({ onNext, onBack }) => {
             'Activity Monitor permissions for process management'
           ],
           methods: [
-            { id: 'homebrew', name: 'Homebrew Installation (Recommended)', desc: 'brew install system-rebellion-agent' },
-            { id: 'installer', name: 'DMG Installer', desc: 'Traditional macOS installer with permission prompts' },
-            { id: 'manual', name: 'Manual Setup', desc: 'Python script with sudo access' }
+            { id: 'homebrew', name: 'Homebrew Package (Coming Soon)', desc: 'Agent package in development for Homebrew' },
+            { id: 'installer', name: 'macOS Installer (In Development)', desc: 'DMG installer coming in next release' },
+            { id: 'manual', name: 'Early Access Preview', desc: 'Contact support for development access' }
           ]
         };
       case 'linux':
@@ -65,10 +65,10 @@ export const PermissionsStep: React.FC<StepProps> = ({ onNext, onBack }) => {
             'Package manager access for dependencies'
           ],
           methods: [
-            { id: 'apt', name: 'APT (Debian/Ubuntu)', desc: 'sudo apt install system-rebellion-agent' },
-            { id: 'yum', name: 'YUM/DNF (RedHat/Fedora)', desc: 'sudo yum install system-rebellion-agent' },
-            { id: 'pacman', name: 'Pacman (Arch)', desc: 'sudo pacman -S system-rebellion-agent' },
-            { id: 'script', name: 'Universal Shell Script', desc: 'Works on any Linux distribution' }
+            { id: 'apt', name: 'APT Package (Coming Soon)', desc: 'Debian/Ubuntu packages in development' },
+            { id: 'yum', name: 'RPM Package (Coming Soon)', desc: 'RedHat/Fedora packages in development' },
+            { id: 'pacman', name: 'AUR Package (Coming Soon)', desc: 'Arch Linux package in development' },
+            { id: 'script', name: 'Early Access Preview', desc: 'Contact support for development access' }
           ]
         };
       default:
