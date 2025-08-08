@@ -42,8 +42,14 @@ click==8.1.8
     # via uvicorn
 django==4.2.23
     # via channels
+dnspython==2.7.0
+    # via
+    #   -r requirements.in
+    #   email-validator
 ecdsa==0.19.1
     # via python-jose
+email-validator==2.2.0
+    # via -r requirements.in
 exceptiongroup==1.2.2
     # via anyio
 fastapi==0.104.1
@@ -58,7 +64,9 @@ h11==0.14.0
     # via uvicorn
 idna==3.10
     # via
+    #   -r requirements.in
     #   anyio
+    #   email-validator
     #   requests
     #   yarl
 itsdangerous==2.2.0
