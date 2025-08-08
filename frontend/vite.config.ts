@@ -9,9 +9,14 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
     ],
+    preview: {
+      host: true,
+      port: process.env.PORT ? parseInt(process.env.PORT) : 5173,
+      allowedHosts: ['system-rebellion-frontend.onrender.com', 'system-rebellion-api.onrender.com'],
+    },
     server: {
-      port: 5173,
-      host: true, // Add this to allow external connections
+      port: process.env.PORT ? parseInt(process.env.PORT) : 5173,
+      host: true, // Allow external connections
       proxy: {
         '/api': {
           target: env.VITE_API_URL || 'http://localhost:8000',
