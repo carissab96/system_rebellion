@@ -1,5 +1,6 @@
 // src/components/onboarding/utils/AgentPreviewModal.tsx
 import { useState } from 'react';
+import { AgentPattern } from '../components/AgentPattern';
 import styles from './AgentPreviewModal.module.css';
 
 interface AgentPreviewModalProps {
@@ -28,7 +29,7 @@ const PREVIEW_AGENTS: Agent[] = [
     title: 'The Aristocratic Triage Master',
     personality: 'Refined, precise, occasionally dramatic',
     signature_color: 'var(--hawkington-gold)',
-    demo_action: '🧐 *adjusts monocle with aristocratic precision*',
+    demo_action: '*adjusts monocle with aristocratic precision*',
     preview_description: 'Experience the most sophisticated system analysis in the galaxy',
     what_they_do: 'Triages system issues with aristocratic precision, yeeting his monocle when data quality is beneath his standards'
   },
@@ -38,7 +39,7 @@ const PREVIEW_AGENTS: Agent[] = [
     title: 'The Hypervigilant Safety Net',
     personality: 'Anxious, thorough, protective',
     signature_color: 'var(--stick-coral)',
-    demo_action: '📄 *nervously huffs paper bag*',
+    demo_action: '*nervously huffs paper bag*',
     preview_description: 'Never miss a potential system failure again',
     what_they_do: 'Monitors everything with eidetic memory, prevents disasters through controlled anxiety and paper bag breathing'
   },
@@ -48,7 +49,7 @@ const PREVIEW_AGENTS: Agent[] = [
     title: 'The Ancient Mediator',
     personality: 'Wise, patient, nostalgic',
     signature_color: 'var(--vic20-cyan)',
-    demo_action: '💾 *hums ancient computing wisdom*',
+    demo_action: '*hums ancient computing wisdom*',
     preview_description: 'Benefit from decades of computing wisdom',
     what_they_do: 'Provides sage guidance and mediates conflicts between agents with the wisdom of computing history'
   }
@@ -102,7 +103,7 @@ export default function AgentPreviewModal({
         <div className="card-body">
           <div className={styles.previewIntro}>
             <div className="alert alert-info">
-              <strong>🎭 Preview Mode:</strong> Experience one agent's full personality and capabilities for 30 days. 
+              <strong>Preview Mode:</strong> Experience one agent's full personality and capabilities for 30 days. 
               The other agents will work silently in the background, learning your system.
             </div>
           </div>
@@ -122,7 +123,12 @@ export default function AgentPreviewModal({
                 </div>
 
                 <div className={styles.agentDemo}>
-                  <div className={styles.demoAction}>{agent.demo_action}</div>
+                  <div className={styles.demoAction}>
+                  <div className={styles.agentPatternContainer}>
+                    <AgentPattern agentId={agent.id} />
+                  </div>
+                  <div>{agent.demo_action}</div>
+                </div>
                   <p className={styles.personality}>"{agent.personality}"</p>
                 </div>
 
@@ -146,10 +152,10 @@ export default function AgentPreviewModal({
           <div className={styles.previewBenefits}>
             <h4>What You'll Experience:</h4>
             <ul>
-              <li>🎭 <strong>Full personality interactions</strong> - See your chosen agent's quirks in action</li>
-              <li>🧠 <strong>Real-time learning</strong> - Watch them adapt to your system and habits</li>
-              <li>📊 <strong>Weekly insights</strong> - Discover what the hidden agents are doing behind the scenes</li>
-              <li>🛡️ <strong>Proactive protection</strong> - Experience autonomous system optimization</li>
+              <li><strong>Full personality interactions</strong> - See your chosen agent's quirks in action</li>
+              <li><strong>Real-time learning</strong> - Watch them adapt to your system and habits</li>
+              <li><strong>Weekly insights</strong> - Discover what the hidden agents are doing behind the scenes</li>
+              <li><strong>Proactive protection</strong> - Experience autonomous system optimization</li>
             </ul>
           </div>
         </div>
@@ -171,21 +177,21 @@ export default function AgentPreviewModal({
                 className="btn btn-ghost"
                 onClick={onSaveAndContinueLater}
               >
-                💾 Save & Continue Later
+                Save & Continue Later
               </button>
               
               <button 
                 className="btn btn-ghost"
                 onClick={onStartOver}
               >
-                🔄 Start Over
+                Start Over
               </button>
               
               <button 
                 className="btn btn-ghost"
                 onClick={onClose}
               >
-                ⏭️ Continue Setup
+                Continue Setup
               </button>
             </div>
           </div>

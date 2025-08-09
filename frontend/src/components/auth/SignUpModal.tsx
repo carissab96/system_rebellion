@@ -2,6 +2,7 @@
 import React from 'react';
 
 import { useSignUpForm } from '../../hooks/useSignUpForm'; // Our new logic engine
+import styles from './SignUpModal.module.css';
 
 interface SignUpModalProps {
   isOpen: boolean;
@@ -50,93 +51,84 @@ export default function SignUpModal({ isOpen, onClose, onSwitchToLogin }: SignUp
   if (!isOpen) return null;
 
   return (
-    // We use the PRE-BUILT classes from common-components.css
-    <div className="modal-overlay" onMouseDown={onClose}>
-      <div className="modal-content" onMouseDown={e => e.stopPropagation()}>
-        {/* We compose the header using .card classes and utilities */}
-        <header className="card-header text-center" style={{ position: 'relative' }}>
+    // Using CSS module for better sizing and layout control
+    <div className={styles.modalOverlay} onMouseDown={onClose}>
+      <div className={styles.modalContent} onMouseDown={e => e.stopPropagation()}>
+        {/* Using CSS module for header styling */}
+        <header className={styles.modalHeader}>
           <button 
             onClick={onClose}
-            className="btn btn-ghost btn-sm"
-            style={{ 
-              position: 'absolute', 
-              right: '1rem', 
-              top: '1rem',
-              padding: '0.25rem',
-              minHeight: 'auto',
-              fontSize: '1.2rem',
-              lineHeight: '1'
-            }}
+            className={styles.closeButton}
             title="Close modal"
           >
             ×
           </button>
-          <h2 className="card-title vic20-text">Join the Rebellion</h2>
-          <p className="card-subtitle mt-1">Create your System Rebellion account</p>
+          <h2 className={styles.modalTitle}>Join the Rebellion</h2>
+          <p className={styles.modalSubtitle}>Create your System Rebellion account</p>
         </header>
 
-        {/* The body uses our global form classes */}
-        <form onSubmit={handleSubmit} className="card-body d-flex flex-col gap-3">
+        {/* Using CSS module for form styling */}
+        <form onSubmit={handleSubmit} className={styles.modalBody}>
           {displayError && <div className="alert alert-error">{displayError}</div>}
 
-          <div className="d-grid gap-3" style={{ gridTemplateColumns: '1fr 1fr' }}>
-            <div className="form-group">
-              <label className="form-label" htmlFor="first_name">First Name</label>
+          <div className={styles.formGrid}>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel} htmlFor="first_name">First Name</label>
               <input type="text" id="first_name" value={formData.first_name} disabled={isLoading} required
-                className={`form-input ${localErrors.first_name ? 'border-error' : ''}`}
+                className={`${styles.formInput} ${localErrors.first_name ? styles.borderError : ''}`}
                 onChange={e => handleInputChange('first_name', e.target.value)} />
             </div>
-            <div className="form-group">
-              <label className="form-label" htmlFor="last_name">Last Name</label>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel} htmlFor="last_name">Last Name</label>
               <input type="text" id="last_name" value={formData.last_name} disabled={isLoading} required
-                className={`form-input ${localErrors.last_name ? 'border-error' : ''}`}
+                className={`${styles.formInput} ${localErrors.last_name ? styles.borderError : ''}`}
                 onChange={e => handleInputChange('last_name', e.target.value)} />
             </div>
           </div>
           
-          <div className="form-group">
-            <label className="form-label" htmlFor="email">Email Address</label>
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel} htmlFor="email">Email Address</label>
             <input type="email" id="email" value={formData.email} disabled={isLoading} required
-              className={`form-input ${localErrors.email ? 'border-error' : ''}`}
+              className={`${styles.formInput} ${localErrors.email ? styles.borderError : ''}`}
               onChange={e => handleInputChange('email', e.target.value)} />
           </div>
           
-          <div className="d-grid gap-3" style={{ gridTemplateColumns: '1fr 1fr' }}>
-             <div className="form-group">
-              <label className="form-label" htmlFor="company_name">Company</label>
+          <div className={styles.formGrid}>
+             <div className={styles.formGroup}>
+              <label className={styles.formLabel} htmlFor="company_name">Company</label>
               <input type="text" id="company_name" value={formData.company_name} disabled={isLoading} required
-                className={`form-input ${localErrors.company_name ? 'border-error' : ''}`}
+                className={`${styles.formInput} ${localErrors.company_name ? styles.borderError : ''}`}
                 onChange={e => handleInputChange('company_name', e.target.value)} />
             </div>
-            <div className="form-group">
-              <label className="form-label" htmlFor="job_title">Job Title (Optional)</label>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel} htmlFor="job_title">Job Title (Optional)</label>
               <input type="text" id="job_title" value={formData.job_title} disabled={isLoading}
-                className="form-input"
+                className={styles.formInput}
                 onChange={e => handleInputChange('job_title', e.target.value)} />
             </div>
           </div>
 
-          <div className="form-group">
-            <label className="form-label" htmlFor="password">Password</label>
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel} htmlFor="password">Password</label>
             <input type="password" id="password" value={formData.password} disabled={isLoading} required
-              className={`form-input ${localErrors.password ? 'border-error' : ''}`}
+              className={`${styles.formInput} ${localErrors.password ? styles.borderError : ''}`}
               onChange={e => handleInputChange('password', e.target.value)} />
             <PasswordStrengthIndicator strength={passwordStrength} />
           </div>
 
-          <div className="form-group">
-            <label className="form-label" htmlFor="confirmPassword">Confirm Password</label>
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel} htmlFor="confirmPassword">Confirm Password</label>
             <input type="password" id="confirmPassword" value={formData.confirmPassword} disabled={isLoading} required
-              className={`form-input ${localErrors.confirmPassword ? 'border-error' : ''}`}
+              className={`${styles.formInput} ${localErrors.confirmPassword ? styles.borderError : ''}`}
               onChange={e => handleInputChange('confirmPassword', e.target.value)} />
           </div>
 
-          <div className="d-flex justify-between align-center mt-4">
-            <p className="text-sm text-dim">
+          <div className={styles.formFooter}>
+            <p className={styles.switchText}>
               Have an account?{' '}
-              <button type="button" onClick={onSwitchToLogin} className="btn btn-ghost p-1">Sign In</button>
+              <button type="button" onClick={onSwitchToLogin} className={styles.switchButton}>Sign In</button>
             </p>
-            <button type="submit" className="btn btn-primary btn-lg" disabled={isLoading}>
+            <button type="submit" className={styles.submitButton} disabled={isLoading}>
               {isLoading ? 'Creating...' : 'Create Account & Begin'}
             </button>
           </div>

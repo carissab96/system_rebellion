@@ -7,6 +7,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { StepNavigation } from '../components/StepNavigation';
 import type { StepProps } from '../OnboardingFlow';
 
+import styles from './AgentsIntroStep.module.css';
+
 
 // The full agent data with your excellent, thematic lore
 const agents = [
@@ -131,8 +133,8 @@ export const AgentsIntroStep: React.FC<StepProps> = ({ onNext, onBack }) => {
   const isExpanded = (agentId: string) => lockedAgents.has(agentId) || hoveredAgent === agentId;
 
   return (
-    <div className="agents-intro-step">
-      <div className="agents-showcase">
+    <div className={styles.agentsIntroStep}>
+      <div className={styles.agentsShowcase}>
         {agents.map((agent) => {
           const expanded = isExpanded(agent.id);
           const locked = lockedAgents.has(agent.id);
@@ -140,50 +142,50 @@ export const AgentsIntroStep: React.FC<StepProps> = ({ onNext, onBack }) => {
           return (
             <motion.div
               key={agent.id}
-              className={`agent-showcase-card ${expanded ? 'expanded' : ''} ${locked ? 'locked' : ''}`}
+              className={`${styles.agentShowcaseCard} ${expanded ? styles.expanded : ''} ${locked ? styles.locked : ''}`}
               onClick={() => handleCardClick(agent.id)}
               onMouseEnter={() => handleMouseEnter(agent.id)}
               onMouseLeave={handleMouseLeave}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               style={{
-                ...({ '--agent-color': agent.color } as CSSProperties),
-                borderColor: expanded ? agent.color : 'transparent'
+                ...({ '--agent-color': agent.style.color } as CSSProperties),
+                borderColor: expanded ? agent.style.color : 'transparent'
               }}            >
-              <div className="agent-identity">
-                <div className="agent-pattern-container">
+              <div className={styles.agentIdentity}>
+                <div className={styles.agentPatternContainer}>
                   {renderAgentPattern(agent.id)}
                 </div>
-                <div className="agent-basic-info">
-                  <h3 className="agent-name">{agent.name}</h3>
-                  <p className="agent-role">{agent.role}</p>
+                <div className={styles.agentBasicInfo}>
+                  <h3 className={styles.agentName}>{agent.name}</h3>
+                  <p className={styles.agentRole}>{agent.role}</p>
                 </div>
-                {locked && <div className="lock-indicator"><div className="lock-icon" /></div>}
+                {locked && <div className={styles.lockIndicator}><div className={styles.lockIcon} /></div>}
               </div>
               
-              <p className="agent-description">{agent.description}</p>
+              <p className={styles.agentDescription}>{agent.description}</p>
               
               <AnimatePresence>
                 {expanded && (
                   <motion.div 
-                    className="agent-details"
+                    className={styles.agentDetails}
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
                     transition={{ duration: 0.3 }}
                   >
                     {/* Re-creating the details from your code */}
-                    <div className="detail-item"><span className="detail-label">Personality</span><span className="detail-content">{agent.details.personality}</span></div>
-                    <div className="detail-item"><span className="detail-label">Responsibility</span><span className="detail-content">{agent.details.responsibility}</span></div>
-                    <div className="detail-item"><span className="detail-label">Quirks</span><span className="detail-content">{agent.details.quirks}</span></div>
-                    <div className="detail-item"><span className="detail-label">Memory</span><span className="detail-content">{agent.details.memory}</span></div>
-                    <div className="detail-item"><span className="detail-label">Interactions</span><span className="detail-content">{agent.details.interactions}</span></div>
+                    <div className={styles.detailItem}><span className={styles.detailLabel}>Personality</span><span className={styles.detailContent}>{agent.details.personality}</span></div>
+                    <div className={styles.detailItem}><span className={styles.detailLabel}>Responsibility</span><span className={styles.detailContent}>{agent.details.responsibility}</span></div>
+                    <div className={styles.detailItem}><span className={styles.detailLabel}>Quirks</span><span className={styles.detailContent}>{agent.details.quirks}</span></div>
+                    <div className={styles.detailItem}><span className={styles.detailLabel}>Memory</span><span className={styles.detailContent}>{agent.details.memory}</span></div>
+                    <div className={styles.detailItem}><span className={styles.detailLabel}>Interactions</span><span className={styles.detailContent}>{agent.details.interactions}</span></div>
                   </motion.div>
                 )}
               </AnimatePresence>
               
-              <div className="card-footer">
-                <span className="interaction-hint">
+              <div className={styles.cardFooter}>
+                <span className={styles.interactionHint}>
                   {locked ? 'Click to collapse' : expanded ? 'Click to lock open' : 'Hover to preview • Click to lock'}
                 </span>
               </div>
@@ -192,8 +194,8 @@ export const AgentsIntroStep: React.FC<StepProps> = ({ onNext, onBack }) => {
         })}
       </div>
 
-      <div className="agents-footer">
-        <p className="agents-note">
+      <div className={styles.agentsFooter}>
+        <p className={styles.agentsNote}>
           Hover over each agent to preview their details. Click to keep a card expanded while exploring others.
           These aren't chatbots - they're specialized decision engines with persistent memory and complex inter-agent relationships.
         </p>
