@@ -713,6 +713,25 @@ async def complete_onboarding(
             detail="An error occurred while completing your onboarding. Please try again."
         )
 
+def user_to_dict(user: User) -> dict:
+    """Convert User object to dictionary for API response"""
+    return {
+        "id": user.id,
+        "email": user.email,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "company_name": user.company_name,
+        "job_title": user.job_title,
+        "system_name": user.system_name,
+        "is_onboarded": user.is_onboarded,
+        "system_profile": user.system_profile,
+        "agent_preferences": user.agent_preferences,
+        "monitoring_preferences": user.monitoring_preferences,
+        "permissions_granted_at": user.permissions_granted_at.isoformat() if user.permissions_granted_at else None,
+        "installation_method": user.installation_method,
+        "created_at": user.created_at.isoformat() if user.created_at else None
+    }
+
 def determine_next_steps(user: User) -> dict:
     """Determine what the user should do next based on their profile"""
     steps = {

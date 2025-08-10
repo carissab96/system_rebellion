@@ -1,0 +1,95 @@
+/* Agent Pattern Styles for Navigation */
+.agent-pattern {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.small-pattern {
+  transform: scale(0.8);
+}
+
+/* Hawkington Pattern */
+.hawkington-pattern {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+}
+
+.hawkington-pattern .pattern-element {
+  width: 4px;
+  height: 4px;
+  background-color: var(--rebellion-void);
+  border-radius: 0;
+}
+
+/* Stick Pattern */
+.stick-pattern {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stick-pattern .pattern-element {
+  width: 12px;
+  height: 2px;
+  background-color: var(--rebellion-void);
+}
+
+/* Hamsters Pattern */
+.hamsters-pattern {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+}
+
+.hamsters-pattern .pattern-element {
+  width: 4px;
+  height: 4px;
+  background-color: var(--rebellion-void);
+  border-radius: 50%;
+}
+
+/* Snail Pattern */
+.snail-pattern {
+  width: 100%;
+  height: 100%;
+}
+
+.snail-spiral {
+  fill: none;
+  stroke: var(--rebellion-void);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+/* QSP Pattern */
+.qsp-pattern {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2px;
+}
+
+.qsp-pattern .pattern-element {
+  width: 6px;
+  height: 6px;
+  background-color: var(--rebellion-void);
+  transform: rotate(45deg);
+}
+
+/* VIC-20 Pattern */
+.vic20-pattern {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 2px;
+}
+
+.vic20-pattern .pattern-element {
+  width: 3px;
+  height: 3px;
+  background-color: var(--rebellion-void);
+  border-radius: 0;
+}

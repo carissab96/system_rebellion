@@ -246,8 +246,18 @@ async def system_metrics_socket(websocket: WebSocket):
                             timestamp=datetime.now(timezone.utc)
                         )
                         
-                        # Save to database using repository
-                        await MetricsRepository.create_metric(db, metric_create)
+                        # Save to database using repository - create instance first
+                        metrics_repo = MetricsRepository()
+                        await metrics_repo.create_metric(
+                            db=db,
+                            user_id=str(user.id),
+                            cpu_usage=metrics.get('cpu_usage', 0.0),
+                            memory_usage=metrics.get('memory_usage', 0.0),
+                            disk_usage=metrics.get('disk_usage', 0.0),
+                            network_data=metrics.get('network', {}),
+                            process_count=metrics.get('process_count', 0),
+                            additional_metrics=metrics  # Store full metrics including AI analysis
+                        )
                         
                         # Enhanced logging to show what we're saving
                         ai_info = " + AI analysis" if 'sir_hawkington' in metrics else ""

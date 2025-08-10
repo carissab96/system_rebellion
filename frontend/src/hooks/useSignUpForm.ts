@@ -39,14 +39,17 @@ export const useSignUpForm = (isOpen: boolean, onClose: () => void) => {
   const [localErrors, setLocalErrors] = useState<Partial<Record<keyof SignUpFormData, string>>>({});
   const [passwordStrength, setPasswordStrength] = useState(0);
 
-  // Fetch CSRF token & clear errors when modal opens
+  // Fetch CSRF token & clear errors when modal opens - STRICTMODE SAFE
   useEffect(() => {
     if (isOpen) {
-      if (!csrfToken) dispatch(authSlice.fetchCsrfToken());
+      // Only fetch CSRF if we don't have one AND not currently loading
+      if (!csrfToken && !isLoading) {
+        dispatch(authSlice.fetchCsrfToken());
+      }
       dispatch(authSlice.clearError());
       setLocalErrors({});
     }
-  }, [isOpen, csrfToken, dispatch]);
+  }, [isOpen, csrfToken, isLoading]); // ← Added isLoading to prevent double fetches
 
   // Generate username from email
   useEffect(() => {

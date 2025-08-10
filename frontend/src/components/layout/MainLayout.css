@@ -40,6 +40,14 @@
 .logo-icon {
   font-size: 1.5rem;
   color: var(--vic20-cyan);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo-pattern {
+  width: 24px;
+  height: 24px;
 }
 
 .logo-text h2 {
@@ -108,6 +116,14 @@
 .nav-icon {
   font-size: 1.25rem;
   min-width: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-pattern {
+  width: 20px;
+  height: 20px;
 }
 
 .nav-content {
@@ -150,6 +166,22 @@
 .user-icon {
   font-size: 1.25rem;
   color: var(--vic20-cyan);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-initials {
+  width: 24px;
+  height: 24px;
+  background-color: var(--vic20-cyan);
+  color: var(--rebellion-void);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: bold;
 }
 
 .user-details {
@@ -197,6 +229,13 @@
 
 .logout-icon {
   font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logout-icon svg {
+  fill: currentColor;
 }
 
 .main-sidebar.collapsed .logout-btn span:not(.logout-icon) {
@@ -231,6 +270,13 @@
 
 .breadcrumb-home {
   color: var(--vic20-cyan);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.breadcrumb-home svg {
+  fill: currentColor;
 }
 
 .breadcrumb-separator {
@@ -327,7 +373,13 @@
 }
 
 .content-loading::before {
-  content: '⚡';
+  content: '';
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--vic20-cyan);
+  border-radius: 50%;
+  border-top-color: transparent;
   margin-right: 0.5rem;
   animation: spin 1s linear infinite;
 }

@@ -1,5 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
-
+import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 
@@ -79,12 +78,7 @@ export const useOnboardingFlow = ({ totalSteps, onComplete }: UseOnboardingFlowP
     }
   }, [isCompleting, state, navigate, onComplete]);
 
-  // Auto-save progress when component unmounts
-  useEffect(() => {
-    return () => {
-      // The context handles auto-saving, nothing to do here
-    };
-  }, []);
+
 
   return {
     currentStep,

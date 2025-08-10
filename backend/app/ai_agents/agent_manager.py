@@ -285,7 +285,20 @@ class AIAgentManager:
             await self.initialize_agents()
             
         self.total_processing_count += 1
-        enhanced_metrics = metrics.copy()
+        
+        # Ensure metrics is a dictionary before calling copy()
+        if isinstance(metrics, dict):
+            enhanced_metrics = metrics.copy()
+        elif isinstance(metrics, str):
+            # If metrics is a string, try to parse as JSON, otherwise create empty dict
+            try:
+                import json
+                enhanced_metrics = json.loads(metrics)
+            except (json.JSONDecodeError, ValueError):
+                enhanced_metrics = {'raw_data': metrics}
+        else:
+            # For any other type, create a dictionary wrapper
+            enhanced_metrics = {'data': metrics} if metrics is not None else {}
         
         # Track which agents processed successfully
         processing_results = {

@@ -22,10 +22,20 @@ type MonitoringConfigState = {
 type WeightKey = 'cpu_stress_weight' | 'memory_stress_weight' | 'disk_stress_weight';
 
 export const MonitoringConfig: React.FC<StepProps> = ({ onNext, onBack }) => {
-  const { state, dispatch } = useOnboarding();
+  const { dispatch } = useOnboarding();
 
   const [config, setConfig] = useState<MonitoringConfigState>({
-    ...state.preferences.monitoring_preferences
+    cpu_stress_weight: 33,
+    memory_stress_weight: 33,
+    disk_stress_weight: 34,
+    cpu_compliance_threshold: 80,
+    memory_compliance_threshold: 80,
+    disk_cleanup_threshold: 85,
+    latency_gaming_threshold: 5,
+    enable_3am_operations: false,
+    quantum_interventions_allowed: true,
+    cross_agent_collaboration: true,
+    alert_frequency: 'balanced'
   });
 
   const [lastChangedWeight, setLastChangedWeight] = useState<WeightKey | null>(null);

@@ -1,4 +1,4 @@
-import { WS_BASE_URL, WS_RECONNECT_INTERVAL, WS_MAX_RECONNECT_ATTEMPTS } from '@/config/constants';
+import { WS_BASE_URL, WS_RECONNECT_INTERVAL, WS_MAX_RECONNECT_ATTEMPTS } from '../config/constants';
 
 type WebSocketCallback = (data: any) => void;
 
@@ -9,6 +9,10 @@ export class WebSocketService {
   private reconnectAttempts = 0;
   private reconnectTimeout: NodeJS.Timeout | null = null;
   private isConnected = false;
+  onopen!: () => void;
+  onmessage!: (event: any) => void;
+  onerror!: (error: any) => void;
+  onclose!: (closeEvent: CloseEvent) => void;
 
   constructor(path: string) {
     this.url = `${WS_BASE_URL}${path}`;
@@ -17,10 +21,11 @@ export class WebSocketService {
 
   private connect(): void {
     try {
+      console.log(`[WebSocketService] Attempting connection to: ${this.url}`);
       this.socket = new WebSocket(this.url);
       this.setupEventListeners();
     } catch (error) {
-      console.error('WebSocket connection error:', error);
+      console.error(`[WebSocketService] Connection failed to ${this.url}:`, error);
       this.handleReconnect();
     }
   }
@@ -41,6 +46,29 @@ export class WebSocketService {
     this.socket.onmessage = (event: MessageEvent) => {
       try {
         const data = JSON.parse(event.data);
+        
+        // Handle backend authentication flow
+        if (data.type === 'connection_established') {
+          console.log('WebSocket connection established, sending auth token...');
+          const token = localStorage.getItem('access_token');
+          if (token) {
+            this.socket?.send(JSON.stringify({ token }));
+          } else {
+            console.error('No access token found for WebSocket authentication');
+          }
+          return;
+        }
+        
+        if (data.type === 'authentication_success') {
+          console.log('WebSocket authentication successful');
+          this.isConnected = true;
+        }
+        
+        if (data.type === 'error' || data.type === 'authentication_failed') {
+          console.error('WebSocket authentication failed:', data.message);
+          this.isConnected = false;
+        }
+        
         this.notifyCallbacks(data);
       } catch (error) {
         console.error('Error parsing WebSocket message:', error);
@@ -133,8 +161,8 @@ let systemMetricsWebSocket: WebSocketService | null = null;
 
 export const getSystemMetricsWebSocket = (): WebSocketService => {
   if (!systemMetricsWebSocket) {
-    const token = localStorage.getItem('access_token');
-    systemMetricsWebSocket = new WebSocketService(`/ws/system-metrics?token=${token}`);
+    // Connect without token in URL - backend expects token via message
+    systemMetricsWebSocket = new WebSocketService('/ws/system-metrics');
   }
   return systemMetricsWebSocket;
 };
