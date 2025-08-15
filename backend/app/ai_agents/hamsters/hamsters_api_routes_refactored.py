@@ -13,7 +13,7 @@ from typing import Optional, List, Dict, Any
 from app.api.deps import get_db, get_current_user
 from app.models.user import User
 from app.ai_agents.hamsters.decision_engine_sbcV3 import (
-    hamsters_brain,
+    get_hamsters_brain,
     analyze_infrastructure,
     handle_emergency,
     get_hamster_stats,
@@ -586,9 +586,7 @@ async def reset_hamsters_brain(
             )
         
         # Reset the brain
-        global hamsters_brain
-        from app.ai_agents.hamsters.decision_engine import HamstersBrainV3
-        hamsters_brain = HamstersBrainV3()
+        brain = get_hamsters_brain()
         
         # Log the reset
         log_service = await LogService.get_instance()

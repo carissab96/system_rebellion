@@ -618,13 +618,16 @@ async def auth_status(request: Request, db: AsyncSession = Depends(get_db)):
 
 @router.get("/me")
 async def read_users_me(current_user: User = Depends(get_current_user)):
+    # Extract system info from system_profile JSON field
+    system_profile = current_user.system_profile or {}
+    
     return {
         "id": str(current_user.id),
         "email": current_user.email,
-        "operating_system": current_user.operating_system,
-        "os_version": current_user.os_version,
-        "cpu_cores": current_user.cpu_cores,
-        "total_memory": current_user.total_memory,
+        "operating_system": system_profile.get("os_type"),
+        "os_version": system_profile.get("os_version"),
+        "cpu_cores": system_profile.get("cpu_cores"),
+        "total_memory": system_profile.get("total_ram_gb"),
         "is_onboarded": current_user.is_onboarded
     }
 

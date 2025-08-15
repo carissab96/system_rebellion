@@ -7,6 +7,7 @@ from app.schemas.metrics import MetricCreate
 from app.core.database import get_async_db
 from app.core.resilience import get_circuit_breaker
 from app.core.resilience.backpressure import BackpressureHandler
+from app.ai_agents.agent_manager import get_agent_manager
 import asyncio
 import logging
 from datetime import datetime, timezone
@@ -40,7 +41,7 @@ async def get_system_info() -> Dict[str, Any]:
         }
         return system_info
     except Exception as e:
-        Logger.error(f"Error getting system info: {str(e)}")
+        logger.error(f"Error getting system info: {str(e)}")
         return {
             "error": True,
             "message": "Failed to retrieve system information"
@@ -246,8 +247,9 @@ async def system_metrics_socket(websocket: WebSocket):
                             timestamp=datetime.now(timezone.utc)
                         )
                         
-                        # Save to database using repository - create instance first
-                        metrics_repo = MetricsRepository()
+                        # Save to database using repository - get singleton instance
+                        from app.services.metrics_repository import get_metrics_repository
+                        metrics_repo = await get_metrics_repository()
                         await metrics_repo.create_metric(
                             db=db,
                             user_id=str(user.id),
@@ -293,9 +295,26 @@ async def system_metrics_socket(websocket: WebSocket):
                         ai_info = f" + AI: {', '.join(ai_agents)}" if ai_agents else ""
                         
                         logger.info(f"📤 Sending metrics{ai_info} to {client_id}: keys={base_keys}")
+                        import json  # Move import to top to fix variable scoping
                         logger.debug(f"📤 Full metrics data structure: {json.dumps(metric_data, indent=2, default=str)[:500]}...")
                         
-                        await websocket.send_json(message_to_send)
+                        # Ensure no coroutine objects are in the message before serialization
+                        try:
+                            # Test serialization to catch coroutine objects early
+                            json.dumps(message_to_send, default=str)
+                            await websocket.send_json(message_to_send)
+                        except TypeError as e:
+                            if "coroutine" in str(e).lower():
+                                logger.error(f"Coroutine serialization error prevented: {str(e)}")
+                                # Send error message instead of crashing
+                                error_message = {
+                                    "type": "metrics_error",
+                                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                                    "message": "Metrics processing error - coroutine not awaited"
+                                }
+                                await websocket.send_json(error_message)
+                            else:
+                                raise
                 else:
                     # Item was dropped due to backpressure
                     logger.warning(f"Metrics dropped due to backpressure for {client_id}")

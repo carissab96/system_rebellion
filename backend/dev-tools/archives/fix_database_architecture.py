@@ -83,7 +83,9 @@ def fix_agent_manager():
         agent_patterns = [
             ("MethSnailBrainV2(database_url=self.database_url)", "MethSnailBrainV2(db_getter=self.db_getter)"),
             ("HamstersBrainV2(database_url=self.database_url)", "HamstersBrainV2(db_getter=self.db_getter)"),
-            # Add other agents as needed
+            ("QuantumShadowPeopleBrainV2(database_url=self.database_url)", "QuantumShadowPeopleBrainV2(db_getter=self.db_getter)"),
+            ("TheStickBrainV2(database_url=self.database_url)", "TheStickBrainV2(db_getter=self.db_getter)"),
+            ("Vic20BrainV2(database_url=self.database_url)", "Vic20BrainV2(db_getter=self.db_getter)")
         ]
         
         for old_pattern, new_pattern in agent_patterns:

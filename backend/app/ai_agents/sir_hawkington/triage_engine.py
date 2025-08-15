@@ -26,6 +26,9 @@ from dataclasses import dataclass, asdict
 from enum import Enum
 import json
 
+# Import agent manager at module level to avoid circular imports
+from ..agent_manager import get_agent_manager
+
 # Import Sir Hawkington's existing brain
 from .decision_engine import (
     sir_hawkington_brain, 
@@ -400,9 +403,7 @@ class SirHawkingtonTriageEngine:
         self.logger.debug("🧐 Routing to The Stick + other agents via Agent Manager")
         
         try:
-            # Import agent manager for non-triage processing
-            from ..agent_manager import get_agent_manager
-            
+            # Get agent manager instance
             agent_manager = await get_agent_manager()
             
             # Process through ALL agents except Sir Hawkington (he's already processed via triage)

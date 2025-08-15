@@ -4,11 +4,14 @@ High-energy optimization WebSocket communication with shell-spinning support
 """
 
 import logging
-from typing import Dict, Any, Optional
-from datetime import datetime, timezone
+import asyncio
+from typing import Dict, Any, Optional, List
+from datetime import datetime, timezone, timedelta
 
+from app.core.database import get_async_db
+from app.models.meth_snail_model import MethSnailJitterLevels, MethSnailOptimizationStats
 from .decision_engine import (
-    meth_snail_brain,
+    meth_snail_brainV2,
     analyze_for_websocket as analyze_metrics
 )
 
@@ -19,6 +22,7 @@ class MethSnailWebSocketHandler:
     Dedicated WebSocket handler for Meth Snail
     
     Handles high-energy optimization communication with proper shell-spinning
+    and real-time jitter level tracking
     """
     
     def __init__(self):
@@ -28,8 +32,128 @@ class MethSnailWebSocketHandler:
         self.shell_spin_count = 0
         self.successful_analyses = 0
         self.caffeine_level = "MAXIMUM"
+        self.active_connections: Dict[str, Any] = {}
+        self.broadcast_task = None
+        self.broadcast_interval = 1.0  # seconds
         
         self.logger.info("🐌💨 Meth Snail WebSocket Handler V2 initialized - CAFFEINE LEVELS: MAXIMUM")
+        
+        # Start the broadcast task
+        self._start_broadcast_task()
+    
+    def _start_broadcast_task(self):
+        """Start the background task for broadcasting updates"""
+        if self.broadcast_task is None or self.broadcast_task.done():
+            self.broadcast_task = asyncio.create_task(self._broadcast_updates())
+    
+    async def connect(self, client_id: str, websocket: Any):
+        """Register a new WebSocket connection"""
+        self.active_connections[client_id] = websocket
+        self.logger.info(f"New WebSocket connection: {client_id}")
+    
+    def disconnect(self, client_id: str):
+        """Remove a WebSocket connection"""
+        if client_id in self.active_connections:
+            del self.active_connections[client_id]
+            self.logger.info(f"WebSocket disconnected: {client_id}")
+    
+    async def _broadcast_updates(self):
+        """Broadcast updates to all connected clients"""
+        try:
+            while self.active_connections:
+                current_time = datetime.utcnow()
+                
+                # Get latest jitter data
+                jitter_data = await self._get_latest_jitter_data()
+                if jitter_data:
+                    await self._broadcast({
+                        "type": "jitter_update",
+                        "data": jitter_data,
+                        "timestamp": current_time.isoformat()
+                    })
+                
+                # Get latest optimization metrics
+                metrics_data = await self._get_latest_metrics()
+                if metrics_data:
+                    await self._broadcast({
+                        "type": "metrics_update",
+                        "data": metrics_data,
+                        "timestamp": current_time.isoformat()
+                    })
+                
+                await asyncio.sleep(self.broadcast_interval)
+                
+        except Exception as e:
+            self.logger.error(f"Error in broadcast_updates: {str(e)}")
+            # Re-raise to trigger task recreation
+            raise
+    
+    async def _broadcast(self, message: Dict):
+        """Broadcast a message to all connected clients"""
+        if not self.active_connections:
+            return
+            
+        message_str = json.dumps(message)
+        disconnected = []
+        
+        for client_id, connection in self.active_connections.items():
+            try:
+                await connection.send_text(message_str)
+            except Exception as e:
+                self.logger.error(f"Error sending to {client_id}: {str(e)}")
+                disconnected.append(client_id)
+        
+        # Clean up disconnected clients
+        for client_id in disconnected:
+            self.disconnect(client_id)
+    
+    async def _get_latest_jitter_data(self) -> Optional[Dict]:
+        """Get the latest jitter level data from the database"""
+        async with get_async_db() as db:
+            try:
+                latest = await MethSnailJitterLevels.get_latest(db)
+                if not latest:
+                    return None
+                    
+                return {
+                    "current_jitter_level": latest.current_jitter_level,
+                    "peak_jitter_level": latest.peak_jitter_level,
+                    "baseline_jitter_level": latest.baseline_jitter_level,
+                    "caffeine_level_mg": latest.caffeine_level_mg,
+                    "is_decaffeinated": latest.is_decaffeinated,
+                    "shell_spin_probability": latest.shell_spin_probability,
+                    "optimization_effectiveness": latest.optimization_effectiveness,
+                    "focus_level": latest.focus_level,
+                    "hypercaffeinated": latest.hypercaffeinated,
+                    "requires_stick_intervention": latest.requires_stick_intervention,
+                    "vic20_mediation_requested": latest.vic20_mediation_requested,
+                    "energy_source": latest.energy_source,
+                    "jitter_trend": latest.jitter_trend
+                }
+            except Exception as e:
+                self.logger.error(f"Error getting latest jitter data: {str(e)}")
+                return None
+    
+    async def _get_latest_metrics(self) -> Optional[Dict]:
+        """Get the latest optimization metrics from the database"""
+        async with get_async_db() as db:
+            try:
+                latest = await MethSnailOptimizationStats.get_latest(db)
+                if not latest:
+                    return None
+                    
+                return {
+                    "optimization_success": latest.optimization_success,
+                    "shell_spins_executed": latest.shell_spins_executed,
+                    "cpu_usage_before": latest.cpu_usage_before,
+                    "cpu_usage_after": latest.cpu_usage_after,
+                    "memory_usage_before": latest.memory_usage_before,
+                    "memory_usage_after": latest.memory_usage_after,
+                    "energy_drink_level": latest.energy_drink_level
+                }
+            except Exception as e:
+                self.logger.error(f"Error getting latest metrics: {str(e)}")
+                return None
     
     async def process_metrics(
         self, 

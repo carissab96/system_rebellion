@@ -148,6 +148,23 @@ export const useAgentTheater = () => {
         // Route to main theater slice
         dispatch(updateWebSocketMessage(data));
         }); // Close requestAnimationFrame callback
+      } else if (data.type === 'heartbeat') {
+        // Handle heartbeat messages - just update connection status
+        if (import.meta.env.DEV) {
+          console.log('[useAgentTheater] Heartbeat received');
+        }
+        dispatch(setConnectionStatus('connected'));
+      } else if (data.type === 'connection_error') {
+        // Handle connection errors
+        console.warn('[useAgentTheater] Connection error:', data.message || 'Unknown error');
+        dispatch(setConnectionStatus('error'));
+      } else if (data.type === 'system_info') {
+        // Handle system info messages
+        if (import.meta.env.DEV) {
+          console.log('[useAgentTheater] System info received');
+        }
+        dispatch(setConnectionStatus('connected'));
+        dispatch(updateWebSocketMessage(data));
       } else {
         console.log('[useAgentTheater] Unhandled message type:', data.type);
       }

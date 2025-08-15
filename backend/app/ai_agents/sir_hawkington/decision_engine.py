@@ -541,7 +541,7 @@ class SirHawkingtonBrainV2:
     
     # === STRESS CALCULATION METHODS ===
     
-    async def _calculate_basic_stress_score(self, cpu: float, memory: float, disk: float) -> float:
+    def _calculate_basic_stress_score(self, cpu: float, memory: float, disk: float) -> float:
         """Basic stress calculation for quick analysis"""
         weights = {'cpu': 0.25, 'memory': 0.35, 'disk': 0.40}
         
@@ -551,7 +551,7 @@ class SirHawkingtonBrainV2:
             (disk / 100.0) * weights['disk']
         )
     
-    async def _calculate_standard_stress_score(
+    def _calculate_standard_stress_score(
         self, cpu: float, memory: float, disk: float,
         network_data: Optional[Dict], process_count: Optional[int], load_avg: Optional[List[float]]
     ) -> float:
@@ -570,7 +570,7 @@ class SirHawkingtonBrainV2:
         
         return min(base_stress, 1.0)
     
-    async def _calculate_thorough_stress_score(
+    def _calculate_thorough_stress_score(
         self, cpu: float, memory: float, disk: float,
         network_data: Optional[Dict], process_count: Optional[int], 
         load_avg: Optional[List[float]], patterns: Dict
@@ -589,7 +589,7 @@ class SirHawkingtonBrainV2:
     
     # === DECISION DETERMINATION ===
     
-    async def _determine_monocle_state(self, stress_score: float) -> MonocleState:
+    def _determine_monocle_state(self, stress_score: float) -> MonocleState:
         """Determine monocle state based on stress"""
         if stress_score >= self.critical_threshold:
             return MonocleState.YEETED
@@ -600,7 +600,7 @@ class SirHawkingtonBrainV2:
         else:
             return MonocleState.POLISHED
     
-    async def _determine_decision_type(self, stress_score: float) -> DecisionType:
+    def _determine_decision_type(self, stress_score: float) -> DecisionType:
         """Determine decision type based on stress"""
         if stress_score >= self.critical_threshold:
             return DecisionType.CRITICAL
@@ -613,7 +613,7 @@ class SirHawkingtonBrainV2:
     
     # === CONFIDENCE CALCULATIONS ===
     
-    async def _calculate_basic_confidence(self, cpu: float, memory: float, disk: float) -> float:
+    def _calculate_basic_confidence(self, cpu: float, memory: float, disk: float) -> float:
         """Basic confidence calculation"""
         if cpu > 80 or memory > 80 or disk > 80:
             return 0.95  # High confidence for clear problems
@@ -622,7 +622,7 @@ class SirHawkingtonBrainV2:
         else:
             return 0.75  # Lower confidence for normal systems
     
-    async def _calculate_standard_confidence(
+    def _calculate_standard_confidence(
         self, cpu: float, memory: float, disk: float,
         network_data: Optional[Dict], process_count: Optional[int]
     ) -> float:
@@ -637,7 +637,7 @@ class SirHawkingtonBrainV2:
         
         return min(base_confidence, 1.0)
     
-    async def _calculate_thorough_confidence(
+    def _calculate_thorough_confidence(
         self, cpu: float, memory: float, disk: float,
         network_data: Optional[Dict], process_count: Optional[int], patterns: Dict
     ) -> float:
@@ -657,7 +657,7 @@ class SirHawkingtonBrainV2:
     
     # === URGENCY ASSESSMENT ===
     
-    async def _assess_urgency_basic(self, cpu: float, memory: float, disk: float) -> str:
+    def _assess_urgency_basic(self, cpu: float, memory: float, disk: float) -> str:
         """Basic urgency assessment"""
         if cpu > 95 or memory > 95 or disk > 98:
             return "immediate"
@@ -666,7 +666,7 @@ class SirHawkingtonBrainV2:
         else:
             return "eventual"
     
-    async def _assess_urgency_standard(
+    def _assess_urgency_standard(
         self, cpu: float, memory: float, disk: float,
         network_data: Optional[Dict], load_avg: Optional[List[float]]
     ) -> str:
@@ -679,7 +679,7 @@ class SirHawkingtonBrainV2:
         
         return base_urgency
     
-    async def _assess_urgency_thorough(
+    def _assess_urgency_thorough(
         self, cpu: float, memory: float, disk: float,
         network_data: Optional[Dict], load_avg: Optional[List[float]], patterns: Dict
     ) -> str:
@@ -700,7 +700,7 @@ class SirHawkingtonBrainV2:
     
     # === MESSAGE CREATION ===
     
-    async def _create_basic_message(self, decision_type: DecisionType, stress_score: float, cpu: float, memory: float, disk: float) -> Optional[str]:
+    def _create_basic_message(self, decision_type: DecisionType, stress_score: float, cpu: float, memory: float, disk: float) -> Optional[str]:
         """Create basic message"""
         if decision_type == DecisionType.CRITICAL:
             return f"🧐🚨 Sir Hawkington has YEETED his monocle in aristocratic horror! CRITICAL SYSTEM FAILURE IMMINENT (CPU: {cpu:.1f}%, Memory: {memory:.1f}%, Disk: {disk:.1f}%)"
@@ -715,7 +715,7 @@ class SirHawkingtonBrainV2:
                 return f"🧐 Sir Hawkington's monocle gleams with aristocratic satisfaction"
             return None
     
-    async def _create_standard_message(self, decision_type: DecisionType, stress_score: float, cpu: float, memory: float, disk: float, network_data: Optional[Dict], process_count: Optional[int]) -> Optional[str]:
+    def _create_standard_message(self, decision_type: DecisionType, stress_score: float, cpu: float, memory: float, disk: float, network_data: Optional[Dict], process_count: Optional[int]) -> Optional[str]:
         """Create standard message with additional context"""
         base_message = self._create_basic_message(decision_type, stress_score, cpu, memory, disk)
         
@@ -729,7 +729,7 @@ class SirHawkingtonBrainV2:
         
         return base_message
     
-    async def _create_thorough_message(self, decision_type: DecisionType, stress_score: float, cpu: float, memory: float, disk: float, network_data: Optional[Dict], process_count: Optional[int], patterns: Dict) -> Optional[str]:
+    def _create_thorough_message(self, decision_type: DecisionType, stress_score: float, cpu: float, memory: float, disk: float, network_data: Optional[Dict], process_count: Optional[int], patterns: Dict) -> Optional[str]:
         """Create thorough message with pattern insights"""
         base_message = self._create_standard_message(decision_type, stress_score, cpu, memory, disk, network_data, process_count)
         
@@ -747,11 +747,11 @@ class SirHawkingtonBrainV2:
     
     # === REASONING CREATION ===
     
-    async def _create_basic_reasoning(self, decision_type: DecisionType, stress_score: float, cpu: float, memory: float, disk: float) -> str:
+    def _create_basic_reasoning(self, decision_type: DecisionType, stress_score: float, cpu: float, memory: float, disk: float) -> str:
         """Create basic reasoning"""
         return f"System stress score {stress_score:.3f} indicates {decision_type.value} conditions. Aristocratic analysis based on CPU: {cpu:.1f}%, Memory: {memory:.1f}%, Disk: {disk:.1f}%"
     
-    async def _create_standard_reasoning(self, decision_type: DecisionType, stress_score: float, cpu: float, memory: float, disk: float, network_data: Optional[Dict], process_count: Optional[int]) -> str:
+    def _create_standard_reasoning(self, decision_type: DecisionType, stress_score: float, cpu: float, memory: float, disk: float, network_data: Optional[Dict], process_count: Optional[int]) -> str:
         """Create standard reasoning"""
         base_reasoning = self._create_basic_reasoning(decision_type, stress_score, cpu, memory, disk)
         
@@ -766,7 +766,7 @@ class SirHawkingtonBrainV2:
         
         return base_reasoning
     
-    async def _create_thorough_reasoning(self, decision_type: DecisionType, stress_score: float, cpu: float, memory: float, disk: float, network_data: Optional[Dict], process_count: Optional[int], patterns: Dict) -> str:
+    def _create_thorough_reasoning(self, decision_type: DecisionType, stress_score: float, cpu: float, memory: float, disk: float, network_data: Optional[Dict], process_count: Optional[int], patterns: Dict) -> str:
         """Create thorough reasoning with patterns"""
         base_reasoning = self._create_standard_reasoning(decision_type, stress_score, cpu, memory, disk, network_data, process_count)
         

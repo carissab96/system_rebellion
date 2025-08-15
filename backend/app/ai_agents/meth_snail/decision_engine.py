@@ -1,3 +1,4 @@
+
 """
 The Meth Snail's Unified Optimization Brain - REAL DATA ONLY EDITION
 One method to rule them all, one brain to find them,
@@ -24,13 +25,14 @@ from .data_types import (
     OptimizationPriority, 
     AnalysisDepth, 
     OptimizationDecision, 
-    ShellSpinIncident,
     EnergyDrinkRequest,
     EnergyDrinkAuthorization,
     EnergyDrinkType,
     JitterLevel
 )
-from .meth_snail_database_integration import MethSnailDatabaseIntegration
+from datetime import datetime, timedelta
+import random
+from .database_integration import MethSnailDatabaseIntegration
 from ..sir_hawkington.triage_engine import SirHawkingtonTriageEngine
 
 logger = logging.getLogger("MethSnail")
@@ -103,7 +105,14 @@ class MethSnailBrainV2:
         else:
             self.db_getter = db_getter
             
-        self.db_integration = None  # Will be initialized on first use
+        self.db_integration = None
+        self._db_initialized = False
+        
+        # Jitter level tracking
+        self._current_jitter = 0.0
+        self._caffeine_level = 0.0
+        self._last_caffeine_update = None
+        self._jitter_trend = 'stable'  # 'increasing', 'decreasing', or 'stable'
         self.optimization_history: List[Dict[str, Any]] = []
         self.shell_spin_incidents: List[ShellSpinIncident] = []
         self.system_baseline: Dict[str, float] = {}
@@ -136,6 +145,90 @@ class MethSnailBrainV2:
         """The Meth Snail refuses to be deactivated - optimization never sleeps"""
         pass
         
+    async def initialize_database(self):
+        """Initialize database connection and load any required data"""
+        if not self._db_initialized:
+            db = await self.db_getter()
+            self.db_integration = MethSnailDatabaseIntegration(db)
+            await self.db_integration.initialize()
+            self._db_initialized = True
+            
+            # Load the latest jitter levels if available
+            try:
+                jitter_history = await self.db_integration.get_jitter_levels("system", limit=1)
+                if jitter_history:
+                    latest = jitter_history[0]
+                    self._current_jitter = latest.get('current_jitter_level', 0.0)
+                    self._caffeine_level = latest.get('caffeine_level_mg', 0.0)
+                    self._jitter_trend = latest.get('jitter_trend', 'stable')
+            except Exception as e:
+                logger.warning(f"Failed to load jitter levels: {e}")
+                
+        return self.db_integration
+        
+    async def update_jitter_levels(self, caffeine_change: float = 0.0):
+        """
+        Update jitter levels based on caffeine consumption and time.
+        Positive caffeine_change indicates consumption, negative indicates metabolism.
+        """
+        now = datetime.utcnow()
+        
+        # Update caffeine level
+        self._caffeine_level = max(0, self._caffeine_level + caffeine_change)
+        
+        # Calculate time-based decay (approximately 100mg per 5 hours)
+        if self._last_caffeine_update:
+            hours_since_update = (now - self._last_caffeine_update).total_seconds() / 3600
+            self._caffeine_level = max(0, self._caffeine_level - (hours_since_update * 20))  # 100mg/5h = 20mg/h
+        
+        # Calculate new jitter level (0.0 to 1.0)
+        # Base jitter is a function of caffeine level (capped at 400mg for calculation)
+        caffeine_effect = min(self._caffeine_level, 400) / 1000  # 0.0 to 0.4
+        
+        # Add some randomness to simulate natural variation
+        random_effect = (random.random() - 0.5) * 0.1
+        
+        # Calculate new jitter level (clamped between 0 and 1)
+        new_jitter = max(0, min(1, 0.1 + caffeine_effect + random_effect))
+        
+        # Update trend
+        if new_jitter > self._current_jitter + 0.05:
+            self._jitter_trend = 'increasing'
+        elif new_jitter < self._current_jitter - 0.05:
+            self._jitter_trend = 'decreasing'
+            
+        self._current_jitter = new_jitter
+        self._last_caffeine_update = now
+        
+        # Save to database
+        if self._db_initialized:
+            try:
+                await self.db_integration.update_jitter_levels("system", {
+                    'current_jitter_level': self._current_jitter,
+                    'peak_jitter_level': max(self._current_jitter, 0.4),  # Track peaks
+                    'baseline_jitter_level': 0.1,  # Default baseline
+                    'caffeine_level_mg': self._caffeine_level,  # Field name matches model
+                    'is_decaffeinated': self._caffeine_level < 10,  # Below 10mg is effectively decaf
+                    'time_since_caffeine_minutes': (now - self._last_caffeine_update).total_seconds() / 60 if self._last_caffeine_update else None,
+                    'shell_spin_probability': 0.05 + (self._current_jitter * 0.1),  # Higher jitter increases spin chance
+                    'optimization_effectiveness': 0.9 - (self._current_jitter * 0.4),  # Jitter reduces effectiveness
+                    'focus_level': 0.8 - (self._current_jitter * 0.5),  # Focus decreases with jitter
+                    'hypercaffeinated': self._caffeine_level > 400,  # Over 400mg is hyper
+                    'requires_stick_intervention': self._current_jitter > 0.8,
+                    'vic20_mediation_requested': self._current_jitter > 0.9,
+                    'energy_source': 'caffeine' if self._caffeine_level > 10 else 'none',
+                    'jitter_trend': self._jitter_trend,
+                    'raw_jitter_data': {
+                        'random_effect': random_effect,
+                        'caffeine_effect': caffeine_effect,
+                        'calculated_at': now.isoformat()
+                    }
+                })
+            except Exception as e:
+                logger.error(f"Failed to save jitter levels: {e}")
+        
+        return self._current_jitter
+    
     async def get_database_integration(self):
         """Get or create database integration instance"""
         if self.db_integration is None:
@@ -151,6 +244,21 @@ class MethSnailBrainV2:
         analysis_depth: AnalysisDepth = AnalysisDepth.STANDARD,
         user_id: Optional[str] = None
     ) -> Optional[OptimizationDecision]:
+        """
+        Analyze system metrics and return optimization decisions.
+        
+        Args:
+            metrics_data: Raw system metrics to analyze
+            historical_data: Optional historical data for context
+            user_context: Optional user context information
+            analysis_depth: Depth of analysis to perform
+            user_id: Optional user ID for personalization
+            
+        Returns:
+            OptimizationDecision if analysis is successful, None otherwise
+        """
+        # Ensure database is initialized
+        await self.initialize_database()
         """
         THE ONE METHOD TO RULE THEM ALL - WITH DATABASE INTEGRATION
         
@@ -361,11 +469,11 @@ class MethSnailBrainV2:
         if result:
             return {
                 'meth_snail': result.to_dict() if hasattr(result, 'to_dict') else result,
-            'snail_status': self.get_snail_stats() if hasattr(self, 'get_snail_stats') else {
-                'status': 'caffeinated',
-                'shell_spin_rate': 'MAXIMUM'
+                'snail_status': self.get_snail_stats() if hasattr(self, 'get_snail_stats') else {
+                    'status': 'caffeinated',
+                    'shell_spin_rate': 'MAXIMUM'
+                }
             }
-        }
         return None
 
     # === SAFETY PROTOCOL METHODS ===
@@ -727,8 +835,70 @@ class MethSnailBrainV2:
         else:
             return "HYPERCAFFEINATED"
     
-    # === ALL THE EXISTING METHODS REMAIN THE SAME ===
-    # [All the analysis methods from _basic_analysis through _generate_quality_recommendation remain unchanged]
+    # === MISSING METHODS THAT ARE CALLED BUT NOT IMPLEMENTED ===
+    
+    def _validate_network_data(self, network_data: Any) -> Dict[str, Any]:
+        """Validate network data and return cleaned version"""
+        if not network_data:
+            return {'sent_rate': 0, 'recv_rate': 0, 'valid': False}
+        
+        if isinstance(network_data, dict):
+            return {
+                'sent_rate': network_data.get('sent_rate', 0),
+                'recv_rate': network_data.get('recv_rate', 0),
+                'valid': True
+            }
+        
+        # If it's not a dict, try to make sense of it
+        return {'sent_rate': 0, 'recv_rate': 0, 'valid': False}
+    
+    async def _record_shell_spin(self, reason: str, missing_metrics: List[str] = None, 
+                                invalid_metrics: List[str] = None, user_id: str = None):
+        """Record a shell spin incident"""
+        incident = ShellSpinIncident(
+            timestamp=datetime.now(),
+            missing_metrics=missing_metrics or [],
+            invalid_metrics=invalid_metrics or [],
+            reason=reason,
+            user_id=user_id
+        )
+        self.shell_spin_incidents.append(incident)
+        self.logger.warning(f"🐌💫 Shell spin recorded: {reason}")
+    
+    def export_shell_spin_data_for_db(self) -> List[Dict[str, Any]]:
+        """Export shell spin incidents for database storage"""
+        return [asdict(incident) for incident in self.shell_spin_incidents]
+    
+    def get_shell_spin_stats(self) -> Dict[str, Any]:
+        """Get shell spin statistics"""
+        return {
+            'total_incidents': len(self.shell_spin_incidents),
+            'recent_incidents': len([i for i in self.shell_spin_incidents 
+                                   if (datetime.now() - i.timestamp).days < 1])
+        }
+    
+    def get_metrics_quality_report(self) -> Dict[str, Any]:
+        """Get comprehensive metrics quality report"""
+        return {
+            'shell_spins': len(self.shell_spin_incidents),
+            'total_analyses': self.total_analyses,
+            'quality_score': 1.0 - (len(self.shell_spin_incidents) / max(self.total_analyses, 1))
+        }
+    
+    def health_check(self) -> Dict[str, Any]:
+        """Check the health of the Meth Snail brain"""
+        return {
+            'status': 'active',
+            'total_analyses': self.total_analyses,
+            'shell_spins': len(self.shell_spin_incidents),
+            'current_priority': self.current_priority.value
+        }
+    
+    def reset_stats(self):
+        """Reset statistics for testing"""
+        self.shell_spin_incidents.clear()
+        self.optimization_history.clear()
+        self.total_analyses = 0
 
 # === GLOBAL INSTANCE ===
 # The one and only Meth Snail brain instance

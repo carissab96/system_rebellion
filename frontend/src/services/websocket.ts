@@ -1,4 +1,4 @@
-import { WS_BASE_URL, WS_RECONNECT_INTERVAL, WS_MAX_RECONNECT_ATTEMPTS } from '../config/constants';
+import { WS_BASE_URL, WS_RECONNECT_INTERVAL, WS_MAX_RECONNECT_ATTEMPTS, API_ENDPOINTS } from '../config/constants';
 
 type WebSocketCallback = (data: any) => void;
 
@@ -64,6 +64,14 @@ export class WebSocketService {
           this.isConnected = true;
         }
         
+        // Backend doesn't send authentication_success, but system_info means auth worked
+        if (data.type === 'system_info' || data.type === 'metrics_update') {
+          if (!this.isConnected) {
+            console.log('WebSocket authentication successful (inferred from data messages)');
+            this.isConnected = true;
+          }
+        }
+        
         if (data.type === 'error' || data.type === 'authentication_failed') {
           console.error('WebSocket authentication failed:', data.message);
           this.isConnected = false;
@@ -125,15 +133,27 @@ export class WebSocketService {
   }
 
   public send(data: any): void {
+    console.log('[WebSocketService] Send attempt:', {
+      hasSocket: !!this.socket,
+      isConnected: this.isConnected,
+      readyState: this.socket?.readyState,
+      data: data
+    });
+    
     if (this.socket && this.isConnected) {
       try {
         const message = typeof data === 'string' ? data : JSON.stringify(data);
+        console.log('[WebSocketService] Sending message:', message);
         this.socket.send(message);
       } catch (error) {
         console.error('Error sending WebSocket message:', error);
       }
     } else {
-      console.warn('WebSocket is not connected');
+      console.warn('[WebSocketService] Cannot send - WebSocket not connected:', {
+        hasSocket: !!this.socket,
+        isConnected: this.isConnected,
+        readyState: this.socket?.readyState
+      });
     }
   }
 
@@ -162,7 +182,7 @@ let systemMetricsWebSocket: WebSocketService | null = null;
 export const getSystemMetricsWebSocket = (): WebSocketService => {
   if (!systemMetricsWebSocket) {
     // Connect without token in URL - backend expects token via message
-    systemMetricsWebSocket = new WebSocketService('/ws/system-metrics');
+    systemMetricsWebSocket = new WebSocketService(API_ENDPOINTS.WEBSOCKET.SYSTEM_METRICS);
   }
   return systemMetricsWebSocket;
 };
