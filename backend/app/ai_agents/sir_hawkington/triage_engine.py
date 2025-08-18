@@ -91,7 +91,8 @@ class TriageResult:
     success: bool
     errors: List[str]
 
-class SirHawkingtonTriageEngine:
+from .hawk_redis_patch.triage_engine_redis_patch import TriageEngineWithRedisMixin
+class SirHawkingtonTriageEngine(TriageEngineWithRedisMixin):
     """
     THE ARISTOCRATIC TRIAGE COMMANDER
     
@@ -101,12 +102,15 @@ class SirHawkingtonTriageEngine:
     🧐 "A gentleman does not merely observe - he commands with distinction"
     """
 
-    def __init__(self, db_getter=None):
+    def __init__(self, db_getter, **kwargs):
+        super().__init__(redis_url="redis://localhost", cache_namespace="hawk", **kwargs)
+        
         if db_getter is None:
             from app.core.database import get_async_db
             self.db_getter = get_async_db
         else:
             self.db_getter = db_getter
+        
         self.db = None
         self.logger = logging.getLogger("SirHawkington.TriageEngine")
         
@@ -130,6 +134,8 @@ class SirHawkingtonTriageEngine:
         # Agent handler cache
         self._agent_handlers = {}
         
+        self.initial_dashboard_cache: dict[str, dict] = {}
+
         self.logger.info("🧐⚡ Sir Hawkington's Triage Engine initialized - ARISTOCRATIC REVOLUTION ACTIVATED")
     
     async def initialize(self):
@@ -138,6 +144,8 @@ class SirHawkingtonTriageEngine:
         if not self.db:
             self.db = HawkingtonDatabaseIntegration(self.db_getter)
             await self.db.initialize()
+            
+            await super().initialize()
             
         # Initialize Sir Hawkington's brain
         await sir_hawkington_brain.initialize_database()

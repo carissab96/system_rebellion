@@ -8,22 +8,60 @@ from sqlalchemy import select, func, desc
 from app.models.agent_decision_models import HawkingtonDecisionLog
 from app.models.sir_hawkington_model import HawkingtonMonitoringStats
 from .data_types import HawkingtonDecision
+import inspect
 
 class HawkingtonDatabaseIntegration:
     """Database integration for Sir Hawkington's aristocratic monitoring"""
     
-    def __init__(self):
+    def __init__(self, db_getter=None):
+        if db_getter is None:
+            from app.core.database import get_async_db
+            self.db_getter = get_async_db
+        else:
+            self.db_getter = db_getter
+
         self.engine = None
         self.session_factory = None
-    
+        self.logger = logging.getLogger(self.__class__.__name__)
+
     async def initialize(self):
-        """Initialize database connection with aristocratic dignity"""
-        self.engine = create_async_engine()
-        self.session_factory = sessionmaker(
-            bind=self.engine,
-            class_=AsyncSession,
-            expire_on_commit=False
-        )
+        """Initialize database connection with aristocratic dignity."""
+        if not callable(self.db_getter):
+            raise ValueError("db_getter must be a callable that returns the database URL.")
+
+        try:
+            if inspect.iscoroutinefunction(self.db_getter):
+                db_url = await self.db_getter()
+            else:
+                db_url = self.db_getter()
+        except Exception as e:
+            raise RuntimeError(f"Failed to obtain database URL from db_getter: {e}") from e
+
+        if not isinstance(db_url, str) or not db_url.strip():
+            raise ValueError(f"Invalid database URL returned by db_getter: {db_url!r}")
+
+        try:
+            self.engine = create_async_engine(
+                db_url,
+                future=True
+            )
+
+            self.session_factory = sessionmaker(
+                bind=self.engine,
+                class_=AsyncSession,
+                expire_on_commit=False
+            )
+
+            self.logger.info("Database engine and session factory initialized successfully.")
+        except Exception as e:
+            raise RuntimeError(f"Failed to initialize database engine or session factory: {e}") from e
+
+    async def dispose(self):
+        """Dispose of the database engine and close all connections."""
+        if self.engine:
+            await self.engine.dispose()
+            self.logger.info("Database engine disposed and connections closed.")
+
     
     async def store_metrics(self, user_id: str, metrics: Dict[str, Any]):
         """Store system metrics (Sir Hawkington uses main system_metrics table)"""

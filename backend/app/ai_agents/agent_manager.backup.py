@@ -73,7 +73,7 @@ class AIAgentManager:
         self.initialization_time = datetime.now()
         self.total_processing_count = 0
         self.logger = logging.getLogger("AgentManager")
-        self._initialized = False
+        self.initialized = False
         
         # Agent processing order for specialized operations
         self.processing_order = [
@@ -173,7 +173,7 @@ class AIAgentManager:
         """
         Initialize all available AI agents for specialized processing.
         """
-        if self._initialized:
+        if self.initialized:
             self.logger.debug("🤖 Agents already initialized, skipping")
             return
             

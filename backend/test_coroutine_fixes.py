@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Test script to verify all coroutine serialization fixes are working
 Tests the complete metrics flow without WebSocket authentication issues
