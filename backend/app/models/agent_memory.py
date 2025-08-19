@@ -4,7 +4,9 @@ from uuid import uuid4
 
 from sqlalchemy import Column, String, Integer, DateTime, JSON, Index
 from sqlalchemy.dialects.postgresql import UUID
-from app.db.base_class import Base  # must exist in your project
+from app.core.base import Base  # must exist in your project
+from sqlalchemy.ext.declarative import declarative_base
+Base = declarative_base()
 
 class AgentMemory(Base):
     """

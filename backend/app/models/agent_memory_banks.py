@@ -3,11 +3,11 @@
 
 from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, JSON, Text, ForeignKey, Index
 from sqlalchemy.orm import relationship
-from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
 import uuid
-
-Base = declarative_base()
+from sqlalchemy.ext.declarative import declarative_base
+from app.core.base import Base
+Base = declarative_base() 
 
 # ============================================================================
 # CENTRAL MEMORY BANK - The Stick's Eidetic Memory Hub
@@ -402,7 +402,24 @@ class MemoryBankMetadata(Base):
     cross_agent_query_speed_ms = Column(Float)
     learning_application_success_rate = Column(Float)
     
+    # agent_memory_bank_base = CentralMemoryBank
+
     __table_args__ = (
         Index('idx_memory_health', 'memory_bank_health_score', 'timestamp'),
         Index('idx_learning_effectiveness', 'average_effectiveness_score', 'successful_transfers'),
     )
+# DEPRECATED: compatibility shim to ease migration away from per-agent memory tables.
+# Remove this file after all imports are updated.
+
+# from app.models.agent_memory import CentralMemoryBank as agent_memory_bank_base  # alias for old name
+# from app.models.agent_memory import CentralMemoryBank
+
+# # If callers imported AgentGlobalPattern for a specific query path,
+# # direct them to use CentralMemoryBank with filters instead.
+# class AgentGlobalPattern:  # sentinel to trigger a clear error if used as a model
+#     def __init__(self, *_, **__):
+#         raise RuntimeError(
+#             "AgentGlobalPattern is deprecated. Use CentralMemoryBank with appropriate filters."
+#         )
+
+# __all__ = ["agent_memory_bank_base", "CentralMemoryBank", "AgentGlobalPattern"]
