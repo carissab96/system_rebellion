@@ -941,6 +941,21 @@ async def coordinate_agents(
         user_id
     )
 
+async def coordinate_emergency_response(
+    emergency_type: str,
+    affected_agents: List[str],
+    system_context: Dict[str, Any],
+    user_id: str,
+) -> Dict[str, Any]:
+    """Convenience wrapper for emergency coordination"""
+    await vic20_brain.initialize_database()
+    return await vic20_brain.coordinate_agent_emergency_response(
+        emergency_type,
+        affected_agents,
+        system_context,
+        user_id,
+    )
+
 async def mediate_conflict(conflict_data: Dict[str, Any]) -> Dict[str, Any]:
     """Mediate agent conflicts"""
     return await vic20_brain._mediate_agent_conflict(conflict_data)
