@@ -35,6 +35,7 @@ from app.models import *  # noqa
 from app.ai_agents.agent_manager import get_agent_manager
 from app.core.background_tasks import start_all_background_tasks
 from app.ai_agents.hamsters.hamsters_api_routes_refactored import router as hamsters_router
+from app.ai_agents.meth_snail import router as meth_snail_router
 from rich.console import Console
 from rich.table import Table
 from rich.live import Live
@@ -174,7 +175,9 @@ def create_application() -> FastAPI:
                     "sir_hawkington": "🧐 Monitoring with distinction" if 'sir_hawkington' in active_agents else "🧐 Adjusting monocle...",
                     "meth_snail": "🐌💨 Optimizing furiously" if 'meth_snail' in active_agents else "🐌 Preparing optimization protocols...",
                     "the_stick": "📏 Enforcing compliance" if 'the_stick' in active_agents else "📏 Calibrating compliance metrics...",
-                    "quantum_shadows": "👻 Monitoring network" if 'quantum_shadow_people' in active_agents else "👻 Phasing into existence..."
+                    "quantum_shadows": "👻 Monitoring network" if 'quantum_shadow_people' in active_agents else "👻 Phasing into existence...",
+                    "hamsters": "🐹 Ready to fix" if 'hamsters' in active_agents else "🐹 Preparing to fix...",
+                    "VIC20": "Ready to mediate" if 'VIC20' in active_agents else "VIC20 Preparing to mediate..."
                 }
             }
         )
@@ -220,7 +223,7 @@ def create_application() -> FastAPI:
             prefix="/api",
             tags=["WebSockets"]
         )
-
+    
     # if hasattr(master_websocket_router_v2, 'router'):
     #     app.include_router(
     #         master_websocket_router_v2.router,
@@ -280,6 +283,13 @@ def create_application() -> FastAPI:
         tags=["Hamsters"]
     )
     
+    # Add Meth Snail API Router
+    app.include_router(
+        meth_snail_router,
+        prefix="/api/meth-snail",
+        tags=["Meth Snail"]
+    )
+    
     # Add users router
     app.include_router(
         users.router,
@@ -328,8 +338,7 @@ if __name__ == "__main__":
     logger.info("🐹 The Hamsters are ready to serve...")
     logger.info("📏 The Stick is enforcing compliance...")
     logger.info("👻 Quantum Shadows are monitoring...")
-    logger.info("VIC20 Are you ready to optimize your system?...")
-    
+    logger.info("VIC20 Sage is preparing ancient computer wisdom...")    
     uvicorn.run(
         "main:app", 
         host="127.0.0.1", 

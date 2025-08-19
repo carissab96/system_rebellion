@@ -1,5 +1,5 @@
 // src/hooks/useLoginForm.ts
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
@@ -29,6 +29,11 @@ export const useLoginForm = (isOpen: boolean, onClose: () => void) => {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   const { isLoading, error, csrfToken } = useSelector((state: RootState) => state.auth);
+  
+  // Ref to track if we've already fetched CSRF for this modal session
+  const csrfFetchedRef = useRef(false);
+
+
 
   const [formData, setFormData] = useState<LoginFormData>({
     email: '',
@@ -41,7 +46,11 @@ export const useLoginForm = (isOpen: boolean, onClose: () => void) => {
   // Fetch CSRF token & clear errors when modal opens
   useEffect(() => {
     if (isOpen) {
-      if (!csrfToken) dispatch(authSlice.fetchCsrfToken());
+      // Only fetch CSRF if we don't have one AND haven't already fetched in this session
+      if (!csrfToken && !csrfFetchedRef.current && !isLoading) {
+        csrfFetchedRef.current = true;
+        dispatch(authSlice.fetchCsrfToken());
+      }
       dispatch(authSlice.clearError());
       setLocalErrors({});
       // Reset form when modal opens
@@ -50,8 +59,11 @@ export const useLoginForm = (isOpen: boolean, onClose: () => void) => {
         password: '',
         rememberMe: false
       });
+    } else {
+      // Reset the ref when modal closes so next open can fetch if needed
+      csrfFetchedRef.current = false;
     }
-  }, [isOpen, csrfToken, dispatch]);
+  }, [isOpen, dispatch, csrfToken, isLoading]); // Added back csrfToken and isLoading for proper logic
 
   const handleInputChange = (field: keyof LoginFormData, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -83,10 +95,8 @@ export const useLoginForm = (isOpen: boolean, onClose: () => void) => {
     if (isLoading || !validateForm()) return;
 
     try {
-      // Ensure we have CSRF token
-      if (!csrfToken) {
-        await dispatch(authSlice.fetchCsrfToken()).unwrap();
-      }
+      // Ensure we have fresh CSRF token for submission
+      await dispatch(authSlice.fetchCsrfToken()).unwrap();
 
       // Make login request
       const response = await fetch('/api/auth/token', {

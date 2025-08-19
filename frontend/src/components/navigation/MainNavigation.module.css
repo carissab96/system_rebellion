@@ -1,0 +1,483 @@
+.mainNav {
+  background-color: var(--rebellion-void);
+  border-bottom: 1px solid var(--rebellion-border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: var(--shadow-sm);
+}
+
+.navContainer {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0.75rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.navBrand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.brandLink {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  color: var(--vic20-cyan);
+  font-weight: 600;
+  font-size: 1.25rem;
+}
+
+.brandIcon {
+  font-size: 1.5rem;
+}
+
+.mobileToggle {
+  display: none;
+  background: transparent;
+  border: none;
+  color: var(--rebellion-text);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.25rem;
+}
+
+.navLinks {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.navLink {
+  color: var(--rebellion-text-secondary);
+  text-decoration: none;
+  font-size: 0.95rem;
+  font-weight: 500;
+  padding: 0.5rem 0;
+  position: relative;
+  transition: color 0.2s ease;
+}
+
+.navLink:hover {
+  color: var(--rebellion-text);
+}
+
+.navLink.active {
+  color: var(--vic20-cyan);
+}
+
+.navLink.active::after {
+  content: '';
+  position: absolute;
+  bottom: -0.25rem;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: var(--vic20-cyan);
+  border-radius: 1px;
+}
+
+.authLinks {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: 1rem;
+}
+
+.authButton {
+  background: transparent;
+  border: none;
+  color: var(--rebellion-text-secondary);
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-md);
+  transition: all 0.2s ease;
+}
+
+.authButton:hover {
+  color: var(--rebellion-text);
+}
+
+.loginButton {
+  color: var(--vic20-cyan);
+}
+
+.signupButton {
+  background-color: var(--vic20-cyan);
+  color: var(--rebellion-void);
+}
+
+.signupButton:hover {
+  background-color: var(--vic20-cyan-bright);
+  color: var(--rebellion-void);
+}
+
+/* Profile Dropdown Styles */
+.profileSection {
+  position: relative;
+}
+
+.profileButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  border: none;
+  color: var(--rebellion-text);
+  font-size: 0.95rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: var(--radius-full);
+  transition: all 0.2s ease;
+}
+
+.profileButton:hover {
+  background-color: var(--rebellion-surface-hover);
+}
+
+.profileAvatar {
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-full);
+  background-color: var(--vic20-cyan);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--rebellion-void);
+  font-weight: 600;
+}
+
+.profileName {
+  max-width: 150px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profileDropdown {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  width: 280px;
+  background-color: var(--rebellion-surface);
+  border: 1px solid var(--rebellion-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 0.75rem 0;
+  z-index: 200;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all 0.2s ease;
+}
+
+.profileDropdown.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.dropdownHeader {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--rebellion-border);
+}
+
+.dropdownUserInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.dropdownAvatar {
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--radius-full);
+  background-color: var(--vic20-cyan);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--rebellion-void);
+  font-weight: 600;
+  font-size: 1.25rem;
+}
+
+.dropdownUserDetails {
+  flex: 1;
+}
+
+.dropdownUserName {
+  font-weight: 600;
+  color: var(--rebellion-text);
+  margin: 0;
+  font-size: 1rem;
+}
+
+.dropdownUserEmail {
+  color: var(--rebellion-text-secondary);
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.dropdownSection {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--rebellion-border);
+}
+
+.dropdownSection:last-child {
+  border-bottom: none;
+}
+
+.dropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  color: var(--rebellion-text);
+  text-decoration: none;
+  transition: background-color 0.2s ease;
+  cursor: pointer;
+}
+
+.dropdownItem:hover {
+  background-color: var(--rebellion-surface-hover);
+}
+
+.dropdownItemIcon {
+  width: 1.25rem;
+  height: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--rebellion-text-secondary);
+}
+
+.dropdownItemText {
+  flex: 1;
+  font-size: 0.95rem;
+}
+
+.logoutItem {
+  color: var(--error);
+}
+
+/* Agent Metrics Styles */
+.agentMetricsSection {
+  position: relative;
+}
+
+.agentMetricsButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  border: none;
+  color: var(--rebellion-text);
+  font-size: 0.95rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: var(--radius-md);
+  transition: all 0.2s ease;
+}
+
+.agentMetricsButton:hover {
+  background-color: var(--rebellion-surface-hover);
+}
+
+.agentMetricsDropdown {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  width: 320px;
+  background-color: var(--rebellion-surface);
+  border: 1px solid var(--rebellion-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 0.75rem;
+  z-index: 200;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all 0.2s ease;
+}
+
+.agentMetricsDropdown.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.agentMetricsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.agentMetricsTitle {
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--rebellion-text);
+  margin: 0;
+}
+
+.agentMetricsViewAll {
+  font-size: 0.85rem;
+  color: var(--vic20-cyan);
+  text-decoration: none;
+}
+
+.agentMetricsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+}
+
+.agentMetricsCard {
+  background-color: var(--rebellion-void);
+  border-radius: var(--radius-md);
+  padding: 0.75rem;
+  transition: transform 0.2s ease;
+}
+
+.agentMetricsCard:hover {
+  transform: translateY(-2px);
+}
+
+.agentMetricsCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.agentMetricsCardIcon {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.agentMetricsCardName {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--rebellion-text);
+  margin: 0;
+}
+
+.agentMetricsCardStatus {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+}
+
+.agentMetricsCardStatusDot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: var(--radius-full);
+}
+
+.agentMetricsCardStatusDot.online {
+  background-color: var(--success);
+}
+
+.agentMetricsCardStatusDot.offline {
+  background-color: var(--error);
+}
+
+.agentMetricsCardData {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+}
+
+.agentMetricsCardDataItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8rem;
+}
+
+.agentMetricsCardDataLabel {
+  color: var(--rebellion-text-secondary);
+}
+
+.agentMetricsCardDataValue {
+  color: var(--rebellion-text);
+  font-weight: 500;
+}
+
+/* Responsive Styles */
+@media (max-width: 1024px) {
+  .navContainer {
+    padding: 0.75rem 1rem;
+  }
+  
+  .navLinks {
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .navContainer {
+    flex-wrap: wrap;
+  }
+  
+  .navBrand {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .mobileToggle {
+    display: block;
+  }
+  
+  .navLinks {
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: all 0.3s ease;
+    gap: 0;
+  }
+  
+  .navLinks.expanded {
+    max-height: 500px;
+    opacity: 1;
+    margin-top: 1rem;
+  }
+  
+  .navLink {
+    width: 100%;
+    padding: 0.75rem 0;
+  }
+  
+  .authLinks {
+    width: 100%;
+    margin: 0.5rem 0 0;
+    justify-content: flex-start;
+  }
+  
+  .profileSection,
+  .agentMetricsSection {
+    position: static;
+  }
+  
+  .profileDropdown,
+  .agentMetricsDropdown {
+    width: 100%;
+    left: 0;
+    right: 0;
+  }
+}

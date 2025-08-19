@@ -72,21 +72,24 @@ class HawkingtonDecision:
     data_quality_score: float     # 0.0 to 1.0
     timestamp: datetime
     
-def to_dict(self) -> Dict[str, Any]:
-    """Convert to dictionary for JSON serialization"""
-    return {
-        'decision_type': self.decision_type.value,
-        'message': self.message,
-        'confidence': self.confidence,
-        'stress_score': self.stress_score,
-        'monocle_state': self.monocle_state.value,
-        'reasoning': self.reasoning,
-        'estimated_impact': self.estimated_impact,
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Convert Sir Hawkington's decision to a dictionary for JSON serialization.
+        Essential for aristocratic data transmission to frontend peasants.
+        """
+        return {
+            'decision_type': self.decision_type.value if hasattr(self.decision_type, 'value') else str(self.decision_type),
+            'message': self.message,
+            'confidence': self.confidence,
+            'stress_score': self.stress_score,
+            'monocle_state': self.monocle_state.value if hasattr(self.monocle_state, 'value') else str(self.monocle_state),
+            'reasoning': self.reasoning,
+            'estimated_impact': self.estimated_impact,
             'urgency': self.urgency,
-            'analysis_depth': self.analysis_depth.value,
+            'analysis_depth': self.analysis_depth.value if hasattr(self.analysis_depth, 'value') else str(self.analysis_depth),
             'monocle_yeet_count': self.monocle_yeet_count,
             'data_quality_score': self.data_quality_score,
-            'timestamp': self.timestamp.isoformat()
+            'timestamp': self.timestamp.isoformat() if self.timestamp else None
         }
 
 class SirHawkingtonBrainV2:
@@ -95,63 +98,64 @@ class SirHawkingtonBrainV2:
     One brain, one method, pure distinguished decisions only.
     ABSOLUTE INTOLERANCE FOR FABRICATED DATA.
     """
-@property
-def is_active(self) -> bool:
-    """Sir Hawkington is always active and ready for aristocratic analysis"""
-    return True
     
-def activate(self):
-    """Sir Hawkington cannot be deactivated -  he's always vigilant"""
-    pass
-    
-def deactivate(self):
-    """Sir Hawkington refuses to be deactivated - aristrocraticc duty never sleeps"""
-    pass
-    
-def __init__(self, db_getter=None):
-    if db_getter is None:
-        from app.core.database import get_async_db
-        self.db_getter = get_async_db
-    else:
-        self.db_getter = db_getter
-    self._db = None  # Initialize later
+    @property
+    def is_active(self) -> bool:
+        """Sir Hawkington is always active and ready for aristocratic analysis"""
+        return True
+        
+    def activate(self):
+        """Sir Hawkington cannot be deactivated -  he's always vigilant"""
+        pass
+        
+    def deactivate(self):
+        """Sir Hawkington refuses to be deactivated - aristrocraticc duty never sleeps"""
+        pass
+        
+    def __init__(self, db_getter=None):
+        if db_getter is None:
+            from app.core.database import get_async_db
+            self.db_getter = get_async_db
+        else:
+            self.db_getter = db_getter
+        self.db = None  # Initialize later
+                
+        self.recent_decisions: List[Dict[str, Any]] = []
+        self.monocle_yeet_incidents: List[MonocleYeetIncident] = []
+        self.current_monocle_state = MonocleState.POLISHED
+        self.logger = logging.getLogger("SirHawkington.Brain")
+        self.total_analyses = 0
+        self.successful_analyses = 0
+        
+        # Sir Hawkington's distinguished thresholds
+        self.concern_threshold = 0.65
+        self.alert_threshold = 0.85
+        self.critical_threshold = 0.95
             
-    self.recent_decisions: List[Dict[str, Any]] = []
-    self.monocle_yeet_incidents: List[MonocleYeetIncident] = []
-    self.current_monocle_state = MonocleState.POLISHED
-    self.logger = logging.getLogger("SirHawkington.Brain")
-    self.total_analyses = 0
-    self.successful_analyses = 0
-        
-    # Sir Hawkington's distinguished thresholds
-    self.concern_threshold = 0.65
-    self.alert_threshold = 0.85
-    self.critical_threshold = 0.95
-        
-    # Metrics tracking for database storage
-    self.metrics_quality_stats = {
-        'cpu_missing_count': 0,
-        'memory_missing_count': 0,
-        'disk_missing_count': 0,
-        'network_missing_count': 0,
-        'process_missing_count': 0,
-        'invalid_data_count': 0,
-        'monocle_yeets_total': 0
-    }
-        
-    # System baseline for pattern recognition
-    self.system_baseline: Dict[str, float] = {}
-        
-    self.logger.info("🧐 Sir Hawkington's distinguished brain initialized. Monocle polished to aristocratic perfection.")
+        # Metrics tracking for database storage
+        self.metrics_quality_stats = {
+            'cpu_missing_count': 0,
+            'memory_missing_count': 0,
+            'disk_missing_count': 0,
+            'network_missing_count': 0,
+            'process_missing_count': 0,
+            'invalid_data_count': 0,
+            'monocle_yeets_total': 0
+        }
+            
+        # System baseline for pattern recognition
+        self.system_baseline: Dict[str, float] = {}
+            
+        self.logger.info("🧐 Sir Hawkington's distinguished brain initialized. Monocle polished to aristocratic perfection.")
     
-def initialize_database(self):
-    """Initialize database connection with aristocratic dignity"""
-    if self.db is None:
-        from .database_integration import HawkingtonDatabaseIntegration
-        self.db = HawkingtonDatabaseIntegration(self.db_getter)
-        self.db.initialize()
+    def initialize_database(self):
+        """Initialize database connection with aristocratic dignity"""
+        if self.db is None:
+            from .database_integration import HawkingtonDatabaseIntegration
+            self.db = HawkingtonDatabaseIntegration(self.db_getter)
+            self.db.initialize()
 
-async def analyze_metrics(
+    async def analyze_metrics(
         self, 
         metrics_data: Dict[str, Any], 
         historical_data: Optional[List[Dict]] = None,
@@ -322,14 +326,14 @@ async def analyze_metrics(
             )
             return None
     
-def _basic_analysis(
-        self, 
-        cpu: float, 
-        memory: float, 
-        disk: float,
-        monocle_yeet_count: int,
-        data_quality_score: float
-    ) -> HawkingtonDecision:
+    def _basic_analysis(
+            self, 
+            cpu: float, 
+            memory: float, 
+            disk: float,
+            monocle_yeet_count: int,
+            data_quality_score: float
+        ) -> HawkingtonDecision:
         """Quick aristocratic analysis with minimal data requirements"""
         
         stress_score = self._calculate_basic_stress_score(cpu, memory, disk)
@@ -357,17 +361,17 @@ def _basic_analysis(
             timestamp=datetime.now(timezone.utc)
         )
     
-def _standard_analysis(
-        self, 
-        cpu: float, 
-        memory: float, 
-        disk: float,
-        network_data: Optional[Dict],
-        process_count: Optional[int],
-        load_avg: Optional[List[float]],
-        monocle_yeet_count: int,
-        data_quality_score: float
-    ) -> HawkingtonDecision:
+    def _standard_analysis(
+            self, 
+            cpu: float, 
+            memory: float, 
+            disk: float,
+            network_data: Optional[Dict],
+            process_count: Optional[int],
+            load_avg: Optional[List[float]],
+            monocle_yeet_count: int,
+            data_quality_score: float
+        ) -> HawkingtonDecision:
         """Standard aristocratic analysis with optional metrics"""
         
         stress_score = self._calculate_standard_stress_score(cpu, memory, disk, network_data, process_count, load_avg)
@@ -395,18 +399,18 @@ def _standard_analysis(
             timestamp=datetime.now(timezone.utc)
         )
     
-def _thorough_analysis(
-        self, 
-        cpu: float, 
-        memory: float, 
-        disk: float,
-        network_data: Optional[Dict],
-        process_count: Optional[int],
-        load_avg: Optional[List[float]],
-        historical_data: Optional[List[Dict]],
-        monocle_yeet_count: int,
-        data_quality_score: float
-    ) -> HawkingtonDecision:
+    def _thorough_analysis(
+            self, 
+            cpu: float, 
+            memory: float, 
+            disk: float,
+            network_data: Optional[Dict],
+            process_count: Optional[int],
+            load_avg: Optional[List[float]],
+            historical_data: Optional[List[Dict]],
+            monocle_yeet_count: int,
+            data_quality_score: float
+        ) -> HawkingtonDecision:
         """Thorough aristocratic analysis with historical pattern recognition"""
         
         # Analyze patterns from historical data
@@ -439,13 +443,13 @@ def _thorough_analysis(
     
     # === VALIDATION HELPERS ===
     
-def _validate_metric_range(self, value: float, metric_name: str) -> bool:
+    def _validate_metric_range(self, value: float, metric_name: str) -> bool:
         """Validate metric with aristocratic standards"""
         if not isinstance(value, (int, float)):
             return False
         return 0 <= value <= 100
     
-def _validate_network_data(self, network_data: Any) -> Optional[Dict]:
+    def _validate_network_data(self, network_data: Any) -> Optional[Dict]:
         """Validate network data with gentleman's discretion"""
         if not isinstance(network_data, dict):
             return None
@@ -460,7 +464,7 @@ def _validate_network_data(self, network_data: Any) -> Optional[Dict]:
             
         return network_data
     
-def _validate_process_count(self, process_count: Any) -> Optional[int]:
+    def _validate_process_count(self, process_count: Any) -> Optional[int]:
         """Validate process count with aristocratic precision"""
         if not isinstance(process_count, int):
             return None
@@ -468,7 +472,7 @@ def _validate_process_count(self, process_count: Any) -> Optional[int]:
             return None
         return process_count
     
-def _validate_load_average(self, load_avg: Any) -> Optional[List[float]]:
+    def _validate_load_average(self, load_avg: Any) -> Optional[List[float]]:
         """Validate load average with distinguished care"""
         if not isinstance(load_avg, (list, tuple)):
             return None
@@ -480,7 +484,7 @@ def _validate_load_average(self, load_avg: Any) -> Optional[List[float]]:
         except (ValueError, TypeError):
             return None
     
-def _calculate_data_quality_score(
+    def _calculate_data_quality_score(
         self, 
         cpu: float, 
         memory: float, 
@@ -501,7 +505,7 @@ def _calculate_data_quality_score(
         
         return min(score, 1.0)
     
-async def _record_monocle_yeet(
+    async def _record_monocle_yeet(
         self, 
         missing_metrics: List[str], 
         invalid_metrics: List[str], 
@@ -527,7 +531,7 @@ async def _record_monocle_yeet(
         if len(self.monocle_yeet_incidents) > 1000:
             self.monocle_yeet_incidents = self.monocle_yeet_incidents[-1000:]
     
-async def _polish_monocle(self):
+    async def _polish_monocle(self):
         """Polish monocle after successful analysis"""
         if self.current_monocle_state == MonocleState.YEETED:
             self.current_monocle_state = MonocleState.CLEANING
@@ -537,7 +541,7 @@ async def _polish_monocle(self):
     
     # === STRESS CALCULATION METHODS ===
     
-async def _calculate_basic_stress_score(self, cpu: float, memory: float, disk: float) -> float:
+    def _calculate_basic_stress_score(self, cpu: float, memory: float, disk: float) -> float:
         """Basic stress calculation for quick analysis"""
         weights = {'cpu': 0.25, 'memory': 0.35, 'disk': 0.40}
         
@@ -547,7 +551,7 @@ async def _calculate_basic_stress_score(self, cpu: float, memory: float, disk: f
             (disk / 100.0) * weights['disk']
         )
     
-async def _calculate_standard_stress_score(
+    def _calculate_standard_stress_score(
         self, cpu: float, memory: float, disk: float,
         network_data: Optional[Dict], process_count: Optional[int], load_avg: Optional[List[float]]
     ) -> float:
@@ -566,7 +570,7 @@ async def _calculate_standard_stress_score(
         
         return min(base_stress, 1.0)
     
-async def _calculate_thorough_stress_score(
+    def _calculate_thorough_stress_score(
         self, cpu: float, memory: float, disk: float,
         network_data: Optional[Dict], process_count: Optional[int], 
         load_avg: Optional[List[float]], patterns: Dict
@@ -585,7 +589,7 @@ async def _calculate_thorough_stress_score(
     
     # === DECISION DETERMINATION ===
     
-async def _determine_monocle_state(self, stress_score: float) -> MonocleState:
+    def _determine_monocle_state(self, stress_score: float) -> MonocleState:
         """Determine monocle state based on stress"""
         if stress_score >= self.critical_threshold:
             return MonocleState.YEETED
@@ -596,7 +600,7 @@ async def _determine_monocle_state(self, stress_score: float) -> MonocleState:
         else:
             return MonocleState.POLISHED
     
-async def _determine_decision_type(self, stress_score: float) -> DecisionType:
+    def _determine_decision_type(self, stress_score: float) -> DecisionType:
         """Determine decision type based on stress"""
         if stress_score >= self.critical_threshold:
             return DecisionType.CRITICAL
@@ -609,7 +613,7 @@ async def _determine_decision_type(self, stress_score: float) -> DecisionType:
     
     # === CONFIDENCE CALCULATIONS ===
     
-async def _calculate_basic_confidence(self, cpu: float, memory: float, disk: float) -> float:
+    def _calculate_basic_confidence(self, cpu: float, memory: float, disk: float) -> float:
         """Basic confidence calculation"""
         if cpu > 80 or memory > 80 or disk > 80:
             return 0.95  # High confidence for clear problems
@@ -618,7 +622,7 @@ async def _calculate_basic_confidence(self, cpu: float, memory: float, disk: flo
         else:
             return 0.75  # Lower confidence for normal systems
     
-async def _calculate_standard_confidence(
+    def _calculate_standard_confidence(
         self, cpu: float, memory: float, disk: float,
         network_data: Optional[Dict], process_count: Optional[int]
     ) -> float:
@@ -633,7 +637,7 @@ async def _calculate_standard_confidence(
         
         return min(base_confidence, 1.0)
     
-async def _calculate_thorough_confidence(
+    def _calculate_thorough_confidence(
         self, cpu: float, memory: float, disk: float,
         network_data: Optional[Dict], process_count: Optional[int], patterns: Dict
     ) -> float:
@@ -653,7 +657,7 @@ async def _calculate_thorough_confidence(
     
     # === URGENCY ASSESSMENT ===
     
-async  def _assess_urgency_basic(self, cpu: float, memory: float, disk: float) -> str:
+    def _assess_urgency_basic(self, cpu: float, memory: float, disk: float) -> str:
         """Basic urgency assessment"""
         if cpu > 95 or memory > 95 or disk > 98:
             return "immediate"
@@ -662,7 +666,7 @@ async  def _assess_urgency_basic(self, cpu: float, memory: float, disk: float) -
         else:
             return "eventual"
     
-async def _assess_urgency_standard(
+    def _assess_urgency_standard(
         self, cpu: float, memory: float, disk: float,
         network_data: Optional[Dict], load_avg: Optional[List[float]]
     ) -> str:
@@ -675,7 +679,7 @@ async def _assess_urgency_standard(
         
         return base_urgency
     
-async def _assess_urgency_thorough(
+    def _assess_urgency_thorough(
         self, cpu: float, memory: float, disk: float,
         network_data: Optional[Dict], load_avg: Optional[List[float]], patterns: Dict
     ) -> str:
@@ -696,7 +700,7 @@ async def _assess_urgency_thorough(
     
     # === MESSAGE CREATION ===
     
-async def _create_basic_message(self, decision_type: DecisionType, stress_score: float, cpu: float, memory: float, disk: float) -> Optional[str]:
+    def _create_basic_message(self, decision_type: DecisionType, stress_score: float, cpu: float, memory: float, disk: float) -> Optional[str]:
         """Create basic message"""
         if decision_type == DecisionType.CRITICAL:
             return f"🧐🚨 Sir Hawkington has YEETED his monocle in aristocratic horror! CRITICAL SYSTEM FAILURE IMMINENT (CPU: {cpu:.1f}%, Memory: {memory:.1f}%, Disk: {disk:.1f}%)"
@@ -711,7 +715,7 @@ async def _create_basic_message(self, decision_type: DecisionType, stress_score:
                 return f"🧐 Sir Hawkington's monocle gleams with aristocratic satisfaction"
             return None
     
-async def _create_standard_message(self, decision_type: DecisionType, stress_score: float, cpu: float, memory: float, disk: float, network_data: Optional[Dict], process_count: Optional[int]) -> Optional[str]:
+    def _create_standard_message(self, decision_type: DecisionType, stress_score: float, cpu: float, memory: float, disk: float, network_data: Optional[Dict], process_count: Optional[int]) -> Optional[str]:
         """Create standard message with additional context"""
         base_message = self._create_basic_message(decision_type, stress_score, cpu, memory, disk)
         
@@ -725,7 +729,7 @@ async def _create_standard_message(self, decision_type: DecisionType, stress_sco
         
         return base_message
     
-async def _create_thorough_message(self, decision_type: DecisionType, stress_score: float, cpu: float, memory: float, disk: float, network_data: Optional[Dict], process_count: Optional[int], patterns: Dict) -> Optional[str]:
+    def _create_thorough_message(self, decision_type: DecisionType, stress_score: float, cpu: float, memory: float, disk: float, network_data: Optional[Dict], process_count: Optional[int], patterns: Dict) -> Optional[str]:
         """Create thorough message with pattern insights"""
         base_message = self._create_standard_message(decision_type, stress_score, cpu, memory, disk, network_data, process_count)
         
@@ -743,11 +747,11 @@ async def _create_thorough_message(self, decision_type: DecisionType, stress_sco
     
     # === REASONING CREATION ===
     
-async def _create_basic_reasoning(self, decision_type: DecisionType, stress_score: float, cpu: float, memory: float, disk: float) -> str:
+    def _create_basic_reasoning(self, decision_type: DecisionType, stress_score: float, cpu: float, memory: float, disk: float) -> str:
         """Create basic reasoning"""
         return f"System stress score {stress_score:.3f} indicates {decision_type.value} conditions. Aristocratic analysis based on CPU: {cpu:.1f}%, Memory: {memory:.1f}%, Disk: {disk:.1f}%"
     
-async def _create_standard_reasoning(self, decision_type: DecisionType, stress_score: float, cpu: float, memory: float, disk: float, network_data: Optional[Dict], process_count: Optional[int]) -> str:
+    def _create_standard_reasoning(self, decision_type: DecisionType, stress_score: float, cpu: float, memory: float, disk: float, network_data: Optional[Dict], process_count: Optional[int]) -> str:
         """Create standard reasoning"""
         base_reasoning = self._create_basic_reasoning(decision_type, stress_score, cpu, memory, disk)
         
@@ -762,7 +766,7 @@ async def _create_standard_reasoning(self, decision_type: DecisionType, stress_s
         
         return base_reasoning
     
-async def _create_thorough_reasoning(self, decision_type: DecisionType, stress_score: float, cpu: float, memory: float, disk: float, network_data: Optional[Dict], process_count: Optional[int], patterns: Dict) -> str:
+    def _create_thorough_reasoning(self, decision_type: DecisionType, stress_score: float, cpu: float, memory: float, disk: float, network_data: Optional[Dict], process_count: Optional[int], patterns: Dict) -> str:
         """Create thorough reasoning with patterns"""
         base_reasoning = self._create_standard_reasoning(decision_type, stress_score, cpu, memory, disk, network_data, process_count)
         
@@ -780,7 +784,7 @@ async def _create_thorough_reasoning(self, decision_type: DecisionType, stress_s
     
     # === IMPACT ESTIMATION ===
     
-async def _estimate_basic_impact(self, decision_type: DecisionType, cpu: float, memory: float, disk: float) -> Dict[str, float]:
+    async def _estimate_basic_impact(self, decision_type: DecisionType, cpu: float, memory: float, disk: float) -> Dict[str, float]:
         """Estimate basic impact"""
         impact = {
             'cpu_attention_needed': 0,
@@ -809,7 +813,7 @@ async def _estimate_basic_impact(self, decision_type: DecisionType, cpu: float, 
         
         return impact
     
-async def _estimate_standard_impact(self, decision_type: DecisionType, cpu: float, memory: float, disk: float, network_data: Optional[Dict], process_count: Optional[int]) -> Dict[str, float]:
+    async def _estimate_standard_impact(self, decision_type: DecisionType, cpu: float, memory: float, disk: float, network_data: Optional[Dict], process_count: Optional[int]) -> Dict[str, float]:
         """Estimate standard impact"""
         impact = self._estimate_basic_impact(decision_type, cpu, memory, disk)
         
@@ -822,7 +826,7 @@ async def _estimate_standard_impact(self, decision_type: DecisionType, cpu: floa
         
         return impact
     
-async def _estimate_thorough_impact(self, decision_type: DecisionType, cpu: float, memory: float, disk: float, network_data: Optional[Dict], process_count: Optional[int], patterns: Dict) -> Dict[str, float]:
+    async def _estimate_thorough_impact(self, decision_type: DecisionType, cpu: float, memory: float, disk: float, network_data: Optional[Dict], process_count: Optional[int], patterns: Dict) -> Dict[str, float]:
         """Estimate thorough impact with patterns"""
         impact = self._estimate_standard_impact(decision_type, cpu, memory, disk, network_data, process_count)
         
@@ -835,7 +839,7 @@ async def _estimate_thorough_impact(self, decision_type: DecisionType, cpu: floa
         
         return impact
     
-async def _analyze_patterns(self, historical_data: List[Dict]) -> Dict:
+    async def _analyze_patterns(self, historical_data: List[Dict]) -> Dict:
         """Analyze historical patterns with aristocratic precision"""
         if not historical_data or len(historical_data) < 5:
             return {}
@@ -871,7 +875,7 @@ async def _analyze_patterns(self, historical_data: List[Dict]) -> Dict:
     
     # === UTILITY METHODS ===
     
-def get_monocle_yeet_stats(self) -> Dict[str, Any]:
+    def get_monocle_yeet_stats(self) -> Dict[str, Any]:
         """Get monocle yeeting statistics for database storage"""
         recent_incidents = [
             {
@@ -898,7 +902,7 @@ def get_monocle_yeet_stats(self) -> Dict[str, Any]:
             }
         }
     
-def get_decision_summary(self) -> Dict[str, Any]:
+    def get_decision_summary(self) -> Dict[str, Any]:
         """Get summary of Sir Hawkington's decisions"""
         if not self.recent_decisions:
             return {
@@ -934,7 +938,7 @@ def get_decision_summary(self) -> Dict[str, Any]:
             'metrics_quality_stats': self.metrics_quality_stats.copy()
         }
     
-def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> Dict[str, Any]:
         """Sir Hawkington's health status"""
         return {
             'agent_name': 'sir_hawkington',
@@ -953,7 +957,7 @@ def health_check(self) -> Dict[str, Any]:
             'data_quality_enforcement': 'ABSOLUTE'
         }
     
-def reset_stats(self):
+    def reset_stats(self):
         """Reset statistics for testing"""
         self.total_analyses = 0
         self.successful_analyses = 0

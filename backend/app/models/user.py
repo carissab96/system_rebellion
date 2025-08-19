@@ -4,6 +4,8 @@ from sqlalchemy.types import TypeDecorator
 from datetime import datetime
 import uuid
 from app.core.base import Base
+from sqlalchemy.ext.declarative import declarative_base
+Base = declarative_base()
 import json
 
 class JSONType(TypeDecorator):

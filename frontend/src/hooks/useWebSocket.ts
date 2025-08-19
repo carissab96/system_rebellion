@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 
-import { WebSocketService } from '@/services/websocket';
+import { WebSocketService } from '../services/websocket';
 
 type WebSocketCallback = (data: any) => void;
 
@@ -133,8 +133,17 @@ export const useSystemMetricsWebSocket = (options: Omit<UseWebSocketOptions, 'en
   // Initialize WebSocket connection
   useEffect(() => {
     const token = localStorage.getItem('access_token');
-    if (!token) return;
+    console.log('[useWebSocket] Token check:', {
+      hasToken: !!token,
+      tokenLength: token?.length
+    });
+    
+    if (!token) {
+      console.log('[useWebSocket] No token - aborting connection');
+      return;
+    }
 
+    console.log('[useWebSocket] Initializing WebSocket connection...');
     const ws = new WebSocketService(`/ws/system-metrics?token=${token}`);
     wsRef.current = {
       send: (data) => ws.send(data),

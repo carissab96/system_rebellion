@@ -4,6 +4,7 @@ import type { PayloadAction } from '@reduxjs/toolkit';
 
 import apiService from '../../services/api';
 import type { User } from '../../types/auth';
+import { API_BASE_URL } from '../../config/constants';
 // Match your actual User type from your backend
 
 
@@ -12,6 +13,7 @@ interface AuthState {
   user: User | null;
   token: string | null;
   isLoading: boolean;
+  isInitializing: boolean; // Separate loading state for initial auth
   error: string | null;
   csrfToken: string | null;
 }
@@ -21,6 +23,7 @@ const initialState: AuthState = {
   user: null,
   token: null,
   isLoading: false,
+  isInitializing: false,
   error: null,
   csrfToken: null,
 };
@@ -133,7 +136,7 @@ export const initializeAuth = createAsyncThunk(
     
     try {
       // Validate the saved token
-      const response = await fetch('/validate-token', {
+      const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
         headers: { 
           'Authorization': `Bearer ${savedToken}`,
           'Content-Type': 'application/json'
@@ -319,11 +322,11 @@ export const authSlice = createSlice({
       
       // Initialize auth
       .addCase(initializeAuth.pending, (state) => {
-        state.isLoading = true;
+        state.isInitializing = true;
         state.error = null;
       })
       .addCase(initializeAuth.fulfilled, (state, action) => {
-        state.isLoading = false;
+        state.isInitializing = false;
         if (action.payload.authenticated) {
           state.isAuthenticated = true;
           state.user = action.payload.user!;
@@ -337,7 +340,7 @@ export const authSlice = createSlice({
         state.error = null;
       })
       .addCase(initializeAuth.rejected, (state, action) => {
-        state.isLoading = false;
+        state.isInitializing = false;
         state.isAuthenticated = false;
         state.user = null;
         state.token = null;

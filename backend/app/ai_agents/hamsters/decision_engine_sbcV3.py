@@ -169,10 +169,10 @@ class HamstersBrainV3:
             'current_task': None,
             'beer_count': 3,
             'duct_tape_inventory': {
-                DuctTapeGrade.REGULAR: 50,
-                DuctTapeGrade.PREMIUM: 20,
-                DuctTapeGrade.QUANTUM: 5,
-                DuctTapeGrade.CARLS_SPECIAL: 1  # Use wisely
+                DuctTapeGrade.REGULAR.value: 50,
+                DuctTapeGrade.PREMIUM.value: 20,
+                DuctTapeGrade.QUANTUM.value: 5,
+                DuctTapeGrade.CARLS_SPECIAL.value: 1  # Use wisely
             }
         }
         
@@ -542,7 +542,7 @@ class HamstersBrainV3:
         
         # Emergency situations require the best
         if priority == HamstersPriority.FULL_REDNECK:
-            if self.carl['duct_tape_inventory'][DuctTapeGrade.CARLS_SPECIAL] > 0:
+            if self.carl['duct_tape_inventory'][DuctTapeGrade.CARLS_SPECIAL.value] > 0:
                 return DuctTapeGrade.CARLS_SPECIAL
             else:
                 return DuctTapeGrade.QUANTUM
@@ -883,7 +883,7 @@ async def _beer_mediated_safety_check(
         # Check if all three hamsters agree
         steve_vote = brain.steve['risk_tolerance'] < 0.5  # Steve votes no if too risky
         bob_vote = True  # Bob always votes yes
-        carl_vote = brain.carl['duct_tape_inventory'][DuctTapeGrade.QUANTUM] > 0  # Carl needs quantum tape
+        carl_vote = brain.carl['duct_tape_inventory'][DuctTapeGrade.QUANTUM.value] > 0  # Carl needs quantum tape
         
         if steve_vote and bob_vote and carl_vote:
             safety_assessment['safety_rating'] = 'PEER_REVIEWED_CHAOS'
@@ -904,13 +904,19 @@ async def _beer_mediated_safety_check(
     safety_assessment['hamster_consensus'] = {
         'steve': "This seems reasonable" if beer_level == BeerLevel.OPTIMAL else "I have concerns",
         'bob': "YOLO! Let's do it!" if beer_level != BeerLevel.SOBER else "Need beer first",
-        'carl': f"I have {brain.carl['duct_tape_inventory'][DuctTapeGrade.QUANTUM]} quantum tapes ready"
+        'carl': f"I have {brain.carl['duct_tape_inventory'][DuctTapeGrade.QUANTUM.value]} quantum tapes ready"
     }
     
     return safety_assessment
 
 # === GLOBAL INSTANCE ===
-hamsters_brain = HamstersBrainV3()
+hamsters_brain: HamstersBrainV3 | None = None
+
+def get_hamsters_brain(db_getter=None) -> HamstersBrainV3:
+    global hamsters_brain
+    if hamsters_brain is None:
+        hamsters_brain = HamstersBrainV3(db_getter)
+    return hamsters_brain
 
 # === CONVENIENCE FUNCTIONS ===
 
@@ -939,9 +945,9 @@ def restock_supplies():
     hamsters_brain.bob['beer_count'] = 4
     hamsters_brain.carl['beer_count'] = 3
     hamsters_brain.carl['duct_tape_inventory'] = {
-        DuctTapeGrade.REGULAR: 50,
-        DuctTapeGrade.PREMIUM: 20,
-        DuctTapeGrade.QUANTUM: 5,
-        DuctTapeGrade.CARLS_SPECIAL: 1
+        DuctTapeGrade.REGULAR.value: 50,
+        DuctTapeGrade.PREMIUM.value: 20,
+        DuctTapeGrade.QUANTUM.value: 5,
+        DuctTapeGrade.CARLS_SPECIAL.value: 1
     }
     return "🐹🍺 Supplies restocked! The Hamsters are ready!"

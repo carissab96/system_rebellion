@@ -4,6 +4,7 @@ from datetime import datetime
 import uuid
 from app.core.base import Base
 from sqlalchemy.ext.declarative import declarative_base
+Base = declarative_base()
 from sqlalchemy import func
 class SystemMetrics(Base):
     __tablename__ = "system_metrics"

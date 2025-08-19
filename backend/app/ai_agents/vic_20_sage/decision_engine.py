@@ -86,13 +86,13 @@ class VIC20SageBrainV2:
 
     async def get_database(self):
         """Get database connection"""
-        if self.db is None:
-            self.db = await self.db_getter()
-        return self.db
+        # Note: get_async_db is an async generator, so we can't store the connection
+        # We'll return None and handle database operations differently
+        return None
 
     async def initialize_database(self):
         """Initialize database and load learning patterns"""
-        self.db = await self.get_database()
+        # Database initialization is handled per-operation
         await self._load_learning_patterns()
 
     async def _load_learning_patterns(self):
@@ -286,17 +286,22 @@ class VIC20SageBrainV2:
         user_context: Optional[Dict[str, Any]] = None
     ) -> Optional[Dict[str, Any]]:
         """Wrapper for agent manager compatibility"""
-        user_id = user_context.get('user_id') if user_context else None
+        user_id = user_context.get('user_id') if user_context else 'default_user'
         
-        # Replace 'analyze_performance' with the actual method name
-        result = await self.analyze_agent_(metrics_data, user_id=user_id)
+        # Use the correct coordination method
+        await self.initialize_database()
+        result = await self.coordinate_system_rebellion(
+            {'system_metrics': metrics_data}, 
+            metrics_data, 
+            user_id
+        )
         
         if result:
             return {
                 'vic_20_sage': result.to_dict() if hasattr(result, 'to_dict') else result,
-                'vic20_stats': self.get_vic20_stats() if hasattr(self, 'get_vic20_stats') else {
-                    'status': 'caffeinated',
-                    'shell_spin_rate': 'MAXIMUM'
+                'vic20_stats': self.get_vic20_coordination_stats() if hasattr(self, 'get_vic20_coordination_stats') else {
+                    'status': 'coordinating',
+                    'wisdom_level': 'ANCIENT'
                 }
             }
         return None
@@ -934,6 +939,21 @@ async def coordinate_agents(
         all_agent_data,
         system_context,
         user_id
+    )
+
+async def coordinate_emergency_response(
+    emergency_type: str,
+    affected_agents: List[str],
+    system_context: Dict[str, Any],
+    user_id: str,
+) -> Dict[str, Any]:
+    """Convenience wrapper for emergency coordination"""
+    await vic20_brain.initialize_database()
+    return await vic20_brain.coordinate_agent_emergency_response(
+        emergency_type,
+        affected_agents,
+        system_context,
+        user_id,
     )
 
 async def mediate_conflict(conflict_data: Dict[str, Any]) -> Dict[str, Any]:

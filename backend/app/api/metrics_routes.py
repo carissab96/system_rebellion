@@ -11,7 +11,7 @@ from sqlalchemy.future import select
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.schemas.metrics import MetricCreate, MetricResponse, MetricUpdate
-from app.services.metrics_repository import MetricsRepository
+from app.services.metrics_repository import get_metrics_repository
 from app.services.metrics.simplified_metrics_service import SimplifiedMetricsService
 
 router = APIRouter(tags=["metrics"])
@@ -71,7 +71,7 @@ async def create_metric(
         metric_data["user_id"] = current_user["id"]
         
         # Create metric using repository pattern
-        metrics_repo = MetricsRepository()
+        metrics_repo = await get_metrics_repository()
         result = await metrics_repo.create_metric(db, metric_data)
         
         # Ensure creation was successful
@@ -107,7 +107,7 @@ async def create_metric(
         metric_data = MetricCreate(**metric.model_dump(), user_id=current_user["id"])
             
         # Use repository pattern to handle database operations
-        metrics_repo = MetricsRepository()
+        metrics_repo = await get_metrics_repository()
         result = await metrics_repo.create_metric(db, metric_data)
         
         # Return the created metric with status code 201 (Created)
@@ -142,7 +142,7 @@ async def read_user_metrics(
         
     try:
         # Initialize repository and fetch metrics for current user
-        metrics_repo = MetricsRepository()
+        metrics_repo = await get_metrics_repository()
         metrics = await metrics_repo.get_user_metrics(
             db, uuid.UUID(current_user['id']), skip, limit
         )
@@ -169,7 +169,7 @@ async def read_metric(
         
     try:
         # Fetch the requested metric
-        metrics_repo = MetricsRepository()
+        metrics_repo = await get_metrics_repository()
         metric = await metrics_repo.get_metric_by_id(db, metric_id)
         
         # Check if metric exists
@@ -205,7 +205,7 @@ async def update_metric(
         raise HTTPException(status_code=401, detail="Authentication required")
         
     try:
-        metrics_repo = MetricsRepository()
+        metrics_repo = await get_metrics_repository()
         
         # First check if metric exists and user has permission
         db_metric = await metrics_repo.get_metric_by_id(db, metric_id)
@@ -248,7 +248,7 @@ async def delete_metric(
         raise HTTPException(status_code=401, detail="Authentication required")
         
     try:
-        metrics_repo = MetricsRepository()
+        metrics_repo = await get_metrics_repository()
         
         # First check if metric exists and user has permission
         db_metric = await metrics_repo.get_metric_by_id(db, metric_id)

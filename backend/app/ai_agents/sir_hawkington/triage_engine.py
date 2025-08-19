@@ -26,6 +26,9 @@ from dataclasses import dataclass, asdict
 from enum import Enum
 import json
 
+# Import agent manager at module level to avoid circular imports
+from ..agent_manager import get_agent_manager
+
 # Import Sir Hawkington's existing brain
 from .decision_engine import (
     sir_hawkington_brain, 
@@ -37,6 +40,11 @@ from .decision_engine import (
 
 # Database integration
 from .database_integration import HawkingtonDatabaseIntegration
+# VIC-20 Sage coordination functions
+from ..vic_20_sage.decision_engine import (
+    coordinate_agents as vic20_coordinate_agents,
+    coordinate_emergency_response as vic20_emergency_response,
+)
 
 logger = logging.getLogger("SirHawkington.TriageEngine")
 
@@ -88,7 +96,8 @@ class TriageResult:
     success: bool
     errors: List[str]
 
-class SirHawkingtonTriageEngine:
+from .hawk_redis_patch.triage_engine_redis_patch import TriageEngineWithRedisMixin
+class SirHawkingtonTriageEngine(TriageEngineWithRedisMixin):
     """
     THE ARISTOCRATIC TRIAGE COMMANDER
     
@@ -98,12 +107,15 @@ class SirHawkingtonTriageEngine:
     🧐 "A gentleman does not merely observe - he commands with distinction"
     """
 
-    def __init__(self, db_getter=None):
+    def __init__(self, db_getter, **kwargs):
+        super().__init__(redis_url="redis://localhost", cache_namespace="hawk", **kwargs)
+        
         if db_getter is None:
             from app.core.database import get_async_db
             self.db_getter = get_async_db
         else:
             self.db_getter = db_getter
+        
         self.db = None
         self.logger = logging.getLogger("SirHawkington.TriageEngine")
         
@@ -127,6 +139,8 @@ class SirHawkingtonTriageEngine:
         # Agent handler cache
         self._agent_handlers = {}
         
+        self.initial_dashboard_cache: dict[str, dict] = {}
+
         self.logger.info("🧐⚡ Sir Hawkington's Triage Engine initialized - ARISTOCRATIC REVOLUTION ACTIVATED")
     
     async def initialize(self):
@@ -135,6 +149,8 @@ class SirHawkingtonTriageEngine:
         if not self.db:
             self.db = HawkingtonDatabaseIntegration(self.db_getter)
             await self.db.initialize()
+            
+            await super().initialize()
             
         # Initialize Sir Hawkington's brain
         await sir_hawkington_brain.initialize_database()
@@ -400,9 +416,7 @@ class SirHawkingtonTriageEngine:
         self.logger.debug("🧐 Routing to The Stick + other agents via Agent Manager")
         
         try:
-            # Import agent manager for non-triage processing
-            from ..agent_manager import get_agent_manager
-            
+            # Get agent manager instance
             agent_manager = await get_agent_manager()
             
             # Process through ALL agents except Sir Hawkington (he's already processed via triage)
@@ -442,28 +456,36 @@ class SirHawkingtonTriageEngine:
         self.logger.debug("🧐 Routing to VIC-20 for specialist coordination")
         
         try:
-            # For now, we'll simulate VIC-20 coordination
-            # TODO: Import and use actual VIC-20 handler when available
+            # Prepare data for VIC-20 coordination
+            all_agent_data = {
+                'sir_hawkington': triage_decision.hawkington_decision.to_dict()
+                if triage_decision.hawkington_decision else {},
+                'system_metrics': metrics_data,
+            }
+            system_context = {
+                'triage_severity': triage_decision.severity.value,
+                'monocle_yeeted': triage_decision.monocle_yeeted,
+            }
+            vic20_decision = await vic20_coordinate_agents(
+                all_agent_data,
+                system_context,
+                user_id or 'anonymous',
+            )
             return {
                 'agent': 'vic_20_sage',
-                'status': 'success', 
-                'result': {
-                    'message': '🖥️ VIC-20 received coordination request and will dispatch to specialists',
-                    'coordination_type': 'medium_severity',
-                    'recommendations_generated': True,
-                    'timestamp': datetime.now(timezone.utc).isoformat()
-                },
+                'status': 'success',
+                'result': vic20_decision.to_dict() if vic20_decision else None,
                 'routing_reason': 'Medium severity - VIC-20 specialist coordination',
-                'coordination_type': 'medium_severity'
+                'coordination_type': 'medium_severity',
             }
-            
+
         except Exception as e:
             self.logger.error(f"🧐💥 Failed to route to VIC-20 coordination: {str(e)}")
             return {
                 'agent': 'vic_20_sage',
                 'status': 'error',
                 'error': str(e),
-                'routing_reason': 'Medium severity - VIC-20 specialist coordination'
+                'routing_reason': 'Medium severity - VIC-20 specialist coordination',
             }
     
     async def _route_to_vic20_emergency(
@@ -476,31 +498,38 @@ class SirHawkingtonTriageEngine:
         self.logger.warning("🧐💥 MONOCLE YEETED TO VIC-20 - EMERGENCY ORCHESTRATION ACTIVATED!")
         
         try:
-            # For now, we'll simulate emergency VIC-20 response
-            # TODO: Import and use actual VIC-20 emergency handler when available
+            emergency_type = (
+                'monocle_yeet' if triage_decision.monocle_yeeted else 'high_severity'
+            )
+            system_context = {
+                'metrics': metrics_data,
+                'triage_decision': triage_decision.to_dict(),
+            }
+            response = await vic20_emergency_response(
+                emergency_type,
+                triage_decision.target_agents,
+                system_context,
+                user_id or 'anonymous',
+            )
             return {
                 'agent': 'vic_20_sage',
                 'status': 'success',
-                'result': {
-                    'message': '🖥️💥 VIC-20 EMERGENCY RESPONSE ACTIVATED - Multi-agent orchestration initiated',
-                    'emergency_type': 'monocle_yeet' if triage_decision.monocle_yeeted else 'high_severity',
-                    'multi_agent_dispatch': True,
-                    'priority_level': 'SUPREME',
-                    'timestamp': datetime.now(timezone.utc).isoformat()
-                },
+                'result': response,
                 'routing_reason': '🧐💥 EMERGENCY - Monocle yeeted to VIC-20 multi-agent orchestration',
-                'emergency_type': 'monocle_yeet' if triage_decision.monocle_yeeted else 'high_severity',
-                'aristocratic_authority': 'SUPREME'
+                'emergency_type': emergency_type,
+                'aristocratic_authority': 'SUPREME',
             }
-            
+
         except Exception as e:
-            self.logger.error(f"🧐💥 CATASTROPHIC FAILURE - Emergency routing to VIC-20 failed: {str(e)}")
+            self.logger.error(
+                f"🧐💥 CATASTROPHIC FAILURE - Emergency routing to VIC-20 failed: {str(e)}"
+            )
             return {
                 'agent': 'vic_20_sage',
                 'status': 'error',
                 'error': str(e),
                 'routing_reason': '🧐💥 EMERGENCY - Monocle yeeted to VIC-20 multi-agent orchestration',
-                'emergency_failure': True
+                'emergency_failure': True,
             }
     
     async def _route_to_cpu_specialist(

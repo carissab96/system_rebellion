@@ -27,7 +27,7 @@ export const SystemMonitorPage: React.FC = () => {
     <div className="system-monitor-page">
       <div className="page-header">
         <div className="header-content">
-          <h1>📊 System Monitor</h1>
+          <h1>◆ System Monitor</h1>
           <p>Real-time system metrics and performance monitoring</p>
         </div>
         <div className="connection-status">
@@ -40,7 +40,7 @@ export const SystemMonitorPage: React.FC = () => {
         {/* CPU Metrics */}
         <div className="metric-panel">
           <div className="panel-header">
-            <h2>🔥 CPU Usage</h2>
+            <h2>◆ CPU Usage</h2>
             <span className="metric-value">{cpu.current?.percent?.toFixed(1) || '0.0'}%</span>
           </div>
           <div className="metric-bar">
@@ -160,11 +160,11 @@ export const SystemMonitorPage: React.FC = () => {
         {/* System Overview */}
         <div className="overview-panel">
           <div className="panel-header">
-            <h2>⚡ System Overview</h2>
+            <h2>◇ System Overview</h2>
           </div>
           <div className="overview-grid">
             <div className="overview-card">
-              <div className="overview-icon">🔥</div>
+              <div className="overview-icon">◆</div>
               <div className="overview-content">
                 <h3>CPU Health</h3>
                 <div className="overview-status">
@@ -203,12 +203,12 @@ export const SystemMonitorPage: React.FC = () => {
         {/* Agent Status */}
         <div className="agent-status-panel">
           <div className="panel-header">
-            <h2>🤖 Agent Status</h2>
+            <h2>◈ Agent Status</h2>
             <p>Current status of all AI agents</p>
           </div>
           <div className="agent-status-grid">
             <div className="agent-status-card">
-              <div className="agent-icon">🧐</div>
+              <div className="agent-icon">◆</div>
               <div className="agent-info">
                 <h3>Sir Hawkington</h3>
                 <div className="agent-status online">Online</div>
@@ -222,14 +222,14 @@ export const SystemMonitorPage: React.FC = () => {
               </div>
             </div>
             <div className="agent-status-card">
-              <div className="agent-icon">🐹</div>
+              <div className="agent-icon">◇</div>
               <div className="agent-info">
                 <h3>Hamsters</h3>
                 <div className="agent-status online">Beer Break</div>
               </div>
             </div>
             <div className="agent-status-card">
-              <div className="agent-icon">🐌</div>
+              <div className="agent-icon">◈</div>
               <div className="agent-info">
                 <h3>Meth Snail</h3>
                 <div className="agent-status online">Caffeinated</div>
@@ -243,7 +243,7 @@ export const SystemMonitorPage: React.FC = () => {
               </div>
             </div>
             <div className="agent-status-card">
-              <div className="agent-icon">💻</div>
+              <div className="agent-icon">◉</div>
               <div className="agent-info">
                 <h3>VIC-20 Sage</h3>
                 <div className="agent-status online">Ancient Wisdom</div>

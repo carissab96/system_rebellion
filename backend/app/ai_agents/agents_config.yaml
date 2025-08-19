@@ -1,0 +1,35 @@
+agents:
+  - name: meth_snail
+    module: app.ai_agents.meth_snail.decision_engine
+    class: MethSnailBrainV2
+    role: Memory Optimization Specialist
+    retry_attempts: 3
+    config: {}
+
+  - name: hamsters
+    module: app.ai_agents.hamsters.decision_engine_sbcV3
+    class: HamstersBrainV3
+    role: Storage/Disk Engineers
+    retry_attempts: 2
+    config: {}
+
+  - name: quantum_shadow_people
+    module: app.ai_agents.quantum_shadow_people.decision_engine
+    class: QuantumShadowPeopleBrainV2
+    role: Network Specialists
+    retry_attempts: 3
+    config: {}
+
+  - name: the_stick
+    module: app.ai_agents.the_stick.decision_engine
+    class: TheStickBrainV3
+    role: Compliance and Learning Coordinator
+    retry_attempts: 1
+    config: {}
+
+  - name: vic_20_sage
+    module: app.ai_agents.vic_20_sage.decision_engine
+    class: VIC20SageBrainV2
+    role: Auto-Tuner and Orchestrator
+    retry_attempts: 2
+    config: {}

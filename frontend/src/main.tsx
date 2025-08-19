@@ -1,4 +1,4 @@
-import { StrictMode } from 'react'
+// import { StrictMode } from 'react' - TEMPORARILY DISABLED
 import { createRoot } from 'react-dom/client'
 import './index.css'
 
@@ -9,9 +9,9 @@ import { store } from './store/store.ts'
 
 
 createRoot(document.getElementById('root')!).render(
-  <StrictMode>
+  // <StrictMode> - TEMPORARILY DISABLED: Causing modal state reset on first click
     <Provider store={store}>
       <App />
     </Provider>
-  </StrictMode>
+  // </StrictMode>
 );

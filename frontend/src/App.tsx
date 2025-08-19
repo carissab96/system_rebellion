@@ -1,5 +1,5 @@
 // src/App.tsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState, AppDispatch } from './store/store';
@@ -20,6 +20,8 @@ function LandingPageWithModals() {
   const [isSignUpModalOpen, setIsSignUpModalOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
+
+
   const handleSwitchToSignUp = () => {
     setIsLoginModalOpen(false);
     setIsSignUpModalOpen(true);
@@ -30,17 +32,31 @@ function LandingPageWithModals() {
     setIsLoginModalOpen(true);
   };
 
+  const handleLoginClick = useCallback((e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
+    setIsLoginModalOpen(true);
+  }, []);
+
+  const handleLoginClose = useCallback(() => {
+    setIsLoginModalOpen(false);
+  }, []);
+
+  const handleSignUpClose = useCallback(() => {
+    setIsSignUpModalOpen(false);
+  }, []);
+
   return (
     <>
       <LandingPage 
         onSignUpClick={() => setIsSignUpModalOpen(true)}
-        onLoginClick={() => setIsLoginModalOpen(true)}
+        onLoginClick={handleLoginClick}
       />
       
       {isSignUpModalOpen && (
         <SignUpModal 
           isOpen={isSignUpModalOpen}
-          onClose={() => setIsSignUpModalOpen(false)}
+          onClose={handleSignUpClose}
           onSwitchToLogin={handleSwitchToLogin}
         />
       )}
@@ -48,7 +64,7 @@ function LandingPageWithModals() {
       {isLoginModalOpen && (
         <LoginModal 
           isOpen={isLoginModalOpen}
-          onClose={() => setIsLoginModalOpen(false)}
+          onClose={handleLoginClose}
           onSwitchToSignUp={handleSwitchToSignUp}
           // ❌ REMOVED onSuccess - LoginModal should handle Redux internally
         />
@@ -61,7 +77,7 @@ function LandingPageWithModals() {
 function App() {
   const dispatch = useDispatch<AppDispatch>();
   const auth = useSelector((state: RootState) => state.auth);
-  const { user, isAuthenticated, isLoading } = auth;
+  const { user, isAuthenticated, isInitializing } = auth;
 
   useEffect(() => {
     // Initialize auth with token validation
@@ -69,7 +85,7 @@ function App() {
   }, [dispatch]);
 
   // Show loading while initializing authentication
-  if (isLoading) {
+  if (isInitializing) {
     return <div className="app-loading">Initializing System Rebellion...</div>;
   }
   return (

@@ -1,6 +1,20 @@
 // API Configuration - Using Vite environment variables
 export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-export const WS_BASE_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000';
+// WebSocket URL - automatically use wss:// for HTTPS sites, ws:// for HTTP
+const getWebSocketBaseUrl = () => {
+  if (import.meta.env.VITE_WS_URL) {
+    return import.meta.env.VITE_WS_URL;
+  }
+  
+  // Auto-detect protocol based on current page protocol
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const host = window.location.hostname;
+  const port = import.meta.env.DEV ? ':8000' : '';
+  
+  return `${protocol}//${host}${port}`;
+};
+
+export const WS_BASE_URL = getWebSocketBaseUrl();
 
 // Local Storage Keys
 export const AUTH_TOKEN_KEY = 'access_token';
@@ -25,8 +39,8 @@ export const API_ENDPOINTS = {
     CONTROL: '/ai-agents/control',
   },
   WEBSOCKET: {
-    SYSTEM_METRICS: '/ws/system-metrics',
-    AGENT_UPDATES: '/ws/agent-updates',
+    SYSTEM_METRICS: '/api/ws/system-metrics',
+    AGENT_UPDATES: '/api/ws/agent-updates',
   },
 } as const;
 

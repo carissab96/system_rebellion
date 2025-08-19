@@ -618,13 +618,16 @@ async def auth_status(request: Request, db: AsyncSession = Depends(get_db)):
 
 @router.get("/me")
 async def read_users_me(current_user: User = Depends(get_current_user)):
+    # Extract system info from system_profile JSON field
+    system_profile = current_user.system_profile or {}
+    
     return {
         "id": str(current_user.id),
         "email": current_user.email,
-        "operating_system": current_user.operating_system,
-        "os_version": current_user.os_version,
-        "cpu_cores": current_user.cpu_cores,
-        "total_memory": current_user.total_memory,
+        "operating_system": system_profile.get("os_type"),
+        "os_version": system_profile.get("os_version"),
+        "cpu_cores": system_profile.get("cpu_cores"),
+        "total_memory": system_profile.get("total_ram_gb"),
         "is_onboarded": current_user.is_onboarded
     }
 
@@ -712,6 +715,25 @@ async def complete_onboarding(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An error occurred while completing your onboarding. Please try again."
         )
+
+def user_to_dict(user: User) -> dict:
+    """Convert User object to dictionary for API response"""
+    return {
+        "id": user.id,
+        "email": user.email,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "company_name": user.company_name,
+        "job_title": user.job_title,
+        "system_name": user.system_name,
+        "is_onboarded": user.is_onboarded,
+        "system_profile": user.system_profile,
+        "agent_preferences": user.agent_preferences,
+        "monitoring_preferences": user.monitoring_preferences,
+        "permissions_granted_at": user.permissions_granted_at.isoformat() if user.permissions_granted_at else None,
+        "installation_method": user.installation_method,
+        "created_at": user.created_at.isoformat() if user.created_at else None
+    }
 
 def determine_next_steps(user: User) -> dict:
     """Determine what the user should do next based on their profile"""

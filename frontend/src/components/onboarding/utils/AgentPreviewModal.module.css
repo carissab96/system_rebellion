@@ -95,9 +95,21 @@
 }
 
 .demoAction {
-  font-size: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
   margin-bottom: var(--space-sm);
-  animation: agentDemo 2s ease-in-out infinite;
+  animation: agentDemo 2s ease-in-out 0.5s;
+}
+
+.agentPatternContainer {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--space-xs);
 }
 
 .personality {

@@ -1,29 +1,42 @@
-// hooks/useAgentTheater.ts
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 
-import { useDispatch, useSelector } from 'react-redux';
-
-import apiConfig from '../frontend-config/api-config.json';
+import { getSystemMetricsWebSocket } from '../services/websocket';
 import { 
   updateWebSocketMessage, 
-  setConnectionStatus, 
-  setError,
-  updateActiveAgentCount,
+  setConnectionStatus,
+  updateActiveAgentCount
 } from '../store/slices/agentTheaterSlice';
-import { updateMetrics as updateHamsters, setOffline as setHamstersOffline } from '../store/slices/hamstersSlice';
-import { updateMetrics as updateMethSnail, setOffline as setMethSnailOffline } from '../store/slices/methSnailSlice';
-import { updateMetrics as updateQuantumShadow, setOffline as setQuantumShadowOffline } from '../store/slices/quantumShadowPeopleSlice';
-import { updateMetrics as updateSirHawkington, setOffline as setSirHawkingtonOffline } from '../store/slices/sirHawkingtonSlice';
-import { updateMetrics as updateTheStick, setOffline as setTheStickOffline } from '../store/slices/theStickSlice';
-import { updateMetrics as updateVIC20, setOffline as setVIC20Offline } from '../store/slices/vic20Slice';
-import  type { RootState, AppDispatch } from '../store/store';
+import { 
+ updateMetrics as updateSirHawkington,
+ setOffline as setSirHawkingtonOffline
+} from '../store/slices/sirHawkingtonSlice';
+import { 
+ updateMetrics as updateMethSnail,
+ setOffline as setMethSnailOffline 
+} from '../store/slices/methSnailSlice';
+import { 
+ updateMetrics as updateHamsters, 
+ setOffline as setHamstersOffline 
+} from '../store/slices/hamstersSlice';
+import { 
+ updateMetrics as updateQuantumShadow, 
+ setOffline as setQuantumShadowOffline 
+} from '../store/slices/quantumShadowPeopleSlice';
+import { 
+ updateMetrics as updateTheStick, 
+ setOffline as setTheStickOffline 
+} from '../store/slices/theStickSlice';
+import { 
+ updateMetrics as updateVIC20, 
+ setOffline as setVIC20Offline 
+} from '../store/slices/vic20Slice';
+import type { RootState } from '../store/store';
 
 export const useAgentTheater = () => {
+  const dispatch = useDispatch();
   const { token, isAuthenticated } = useSelector((state: RootState) => state.auth);
-  const dispatch = useDispatch<AppDispatch>();
-  const wsRef = useRef<WebSocket | null>(null);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const connectionAttempts = useRef(0);
 
   // Get state from all slices
   const agentTheater = useSelector((state: RootState) => state.agentTheater);
@@ -35,204 +48,151 @@ export const useAgentTheater = () => {
   const vic20 = useSelector((state: RootState) => state.vic20);
 
   useEffect(() => {
-    console.log('useAgentTheater Auth Check:', {
-      hasToken: !! token,
+    console.log('[useAgentTheater] Starting WebSocket connection...');
+    console.log('[useAgentTheater] Auth State:', {
+      hasToken: !!token,
       isAuthenticated,
-      tokenPreview: token ? `${token.substring(0, 10)}...` : 'null',
-      tokenLength: token ?. length
+      tokenLength: token?.length
     });
 
-    const connectWebSocket = () => {
-      if (!token || !isAuthenticated) {
-        console.log('No authentication - cannot connect to WebSocket');
-        dispatch(setError('authentication required for websocket connection'));
-        dispatch(setConnectionStatus('disconnected'));
-        return;
+    if (!token || !isAuthenticated) {
+      console.log('[useAgentTheater] No authentication - aborting WebSocket connection');
+      dispatch(setConnectionStatus('disconnected'));
+      return;
+    }
+
+    // Use the existing WebSocket singleton
+    console.log('[useAgentTheater] Getting WebSocket singleton...');
+    const ws = getSystemMetricsWebSocket();
+    
+    console.log('[useAgentTheater] WebSocket singleton obtained, connected:', ws.connected);
+    dispatch(setConnectionStatus(ws.connected ? 'connected' : 'connecting'));
+
+    // Subscribe to WebSocket messages - OPTIMIZED FOR PERFORMANCE
+    const handleMessage = (data: any) => {
+      // Minimal logging to reduce blocking time
+      if (import.meta.env.DEV) {
+        console.log('[useAgentTheater] Message:', data.type);
       }
 
-      connectionAttempts.current += 1;
-      console.log(`websocket connection attempt ${connectionAttempts.current}`);
+      // Handle metrics_update messages with batched dispatches
+      if (data.type === 'metrics_update' && data.data) {
+        // Fast data transformation without heavy logging
+        const rawData = data.data;
+        const transformedData = {
+          sir_hawkington: rawData.sir_hawkington || null,
+          meth_snail: rawData.meth_snail || null,
+          hamsters: rawData.hamsters || null,
+          quantum_shadow_people: rawData.quantum_shadow_people || null,
+          the_stick: rawData.the_stick || null,
+          vic20_sage: rawData.vic_20_sage || rawData.vic20_sage || null,
+        };
 
-      // Create WebSocket URL (no token in URL - backend expects token via message)
-      const wsUrl = `${apiConfig.WS_BASE_URL}/api/ws/system-metrics`;
-      console.log('Connecting to WebSocket:', wsUrl);
-      
-      const ws = new WebSocket(wsUrl);
-      wsRef.current = ws;
+        // Batch all dispatches to reduce re-renders
+        requestAnimationFrame(() => {
 
-      ws.onopen = () => {
-        console.log('WebSocket connection opened, waiting for authentication request...');
-        // Don't set connected status yet - wait for connection_established message
-      };
-
-      ws.onmessage = (event) => {
-        console.log('WebSocket message received:', event.data);
-        console.log('event type:', event.type);
-        console.log('event target:', event.target);
-        console.log('event current target:', event.currentTarget);
-        try {
-          const message = JSON.parse(event.data);
-          console.log('🔌 WebSocket message received:', {
-            type: message.type,
-            hasData: !!message.data,
-            dataKeys: message.data ? Object.keys(message.data) : [],
-            timestamp: message.timestamp
-          });
-          
-          // Handle connection_established message first
-          if (message.type === 'connection_established') {
-            console.log('✅ Connection established! Sending auth token...');
-            ws.send(JSON.stringify({ token }));
-            return;
-          }
-          
-          // Handle system_info message (sent after successful authentication)
-          if (message.type === 'system_info') {
-            console.log('🔐 Authentication successful! Received system info:', message.data);
-            connectionAttempts.current = 0;
-            dispatch(setConnectionStatus('connected'));
-            dispatch(setError(null));
-            // Continue processing this message below
-          }
-          
-          // Handle heartbeat messages
-          if (message.type === 'heartbeat') {
-            console.log('💓 Heartbeat received');
-            return;
-          }
-          
-          if (message.type === 'error') {
-            console.error('❌ Backend error:', message.message, message.code);
-            dispatch(setError(`Backend error: ${message.message}`));
-            if (message.code === 'invalid_token' || message.code === 'no_token') {
-              dispatch(setConnectionStatus('disconnected'));
-            }
-            return;
-          }
-          
-          // Route to main theater slice
-          dispatch(updateWebSocketMessage(message));
-          
-          // Route to individual agent slices based on real data
-          console.log('🔍 Checking for metrics_update message...');
-          console.log('Message type:', message.type);
-          console.log('Has message.data:', !!message.data);
-          
-          if (message.type === 'metrics_update' && message.data) {
-            const data = message.data;
-            console.log('Processing metrics update:', Object.keys(data));
-            console.log('data:', data);
-            
-            // Update each agent slice with their specific data - NO FAKE DATA
-            if (data.sir_hawkington) {
-              dispatch(updateSirHawkington(data.sir_hawkington));
-            } else {
-              dispatch(setSirHawkingtonOffline('No Sir Hawkington data in WebSocket message'));
-            }
-            
-            if (data.meth_snail) {
-              dispatch(updateMethSnail(data.meth_snail));
-            } else {
-              dispatch(setMethSnailOffline('No Meth Snail data in WebSocket message'));
-            }
-            
-            if (data.hamsters) {
-              dispatch(updateHamsters(data.hamsters));
-            } else {
-              dispatch(setHamstersOffline('No Hamsters data in WebSocket message'));
-            }
-            
-            if (data.quantum_shadow) {
-              dispatch(updateQuantumShadow(data.quantum_shadow));
-            } else {
-              dispatch(setQuantumShadowOffline('No Quantum Shadow data in WebSocket message'));
-            }
-            
-            if (data.the_stick) {
-              dispatch(updateTheStick(data.the_stick));
-            } else {
-              dispatch(setTheStickOffline('No Stick data in WebSocket message'));
-            }
-            
-            if (data.vic20_sage) {
-              dispatch(updateVIC20(data.vic20_sage));
-            } else {
-              dispatch(setVIC20Offline('No VIC-20 data in WebSocket message'));
-            }
-            
-            // Update active agent count
-            const activeCount = [
-              data.sir_hawkington,
-              data.meth_snail,
-              data.hamsters,
-              data.quantum_shadow,
-              data.the_stick,
-              data.vic20_sage
-            ].filter(Boolean).length;
-            
-            dispatch(updateActiveAgentCount(activeCount));
-          } else {
-            // Log any message types we're not handling
-            console.log('🤔 Unhandled message type:', message.type);
-            console.log('Message content:', JSON.stringify(message, null, 2));
-          }
-        } catch (err) {
-          console.error('Failed to parse WebSocket message:', err);
-          dispatch(setError(`Failed to parse WebSocket message: ${err}`));
-        }
-      };
-
-      ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
-        dispatch(setError(`WebSocket error: ${error}`));
-        dispatch(setConnectionStatus('disconnected'));
-      };
-
-      ws.onclose = (closeEvent: CloseEvent) => {
-        console.log('🔌 WebSocket closed:', {
-          code: closeEvent.code,
-          reason: closeEvent.reason,
-          wasClean: closeEvent.wasClean
-        });
-
-        dispatch(setConnectionStatus('disconnected'));
-
-        // Handle specific close codes from your backend
-        if (closeEvent.code === 1008) { // WS_1008_POLICY_VIOLATION
-          console.error('🚫 Authentication failed - not reconnecting');
-          dispatch(setError('Authentication failed - please log in again'));
-          return;
-        }
-        // Only auto-reconnect if we have valid auth and haven't tried too many times
-        if (token && isAuthenticated && connectionAttempts.current < 5) {
-          const delay = Math.min(1000 * Math.pow(2, connectionAttempts.current), 30000);
-          console.log(`⏰ Reconnecting in ${delay}ms... (attempt ${connectionAttempts.current + 1})`);
-          reconnectTimeoutRef.current = setTimeout(() => {
-            connectWebSocket();
-          }, delay);
+        // Dispatch to individual agent slices
+        if (transformedData.sir_hawkington) {
+          console.log('[useAgentTheater] ✅ Dispatching Sir Hawkington data');
+          dispatch(updateSirHawkington(transformedData.sir_hawkington));
         } else {
-          console.log('❌ Max reconnection attempts reached or no auth');
-          dispatch(setError('Connection failed - please refresh page'));
+          console.log('[useAgentTheater] ❌ No Sir Hawkington data');
+          dispatch(setSirHawkingtonOffline('No Sir Hawkington data'));
         }
-      };
+
+        if (transformedData.meth_snail) {
+          console.log('[useAgentTheater] ✅ Dispatching Meth Snail data');
+          dispatch(updateMethSnail(transformedData.meth_snail));
+        } else {
+          console.log('[useAgentTheater] ❌ No Meth Snail data');
+          dispatch(setMethSnailOffline('No Meth Snail data'));
+        }
+
+        if (transformedData.hamsters) {
+          console.log('[useAgentTheater] ✅ Dispatching Hamsters data');
+          dispatch(updateHamsters(transformedData.hamsters));
+        } else {
+          console.log('[useAgentTheater] ❌ No Hamsters data');
+          dispatch(setHamstersOffline('No Hamsters data'));
+        }
+
+        if (transformedData.quantum_shadow_people) {
+          console.log('[useAgentTheater] ✅ Dispatching Quantum Shadow People data');
+          dispatch(updateQuantumShadow(transformedData.quantum_shadow_people));
+        } else {
+          console.log('[useAgentTheater] ❌ No Quantum Shadow People data');
+          dispatch(setQuantumShadowOffline('No Quantum Shadow People data'));
+        }
+
+        if (transformedData.the_stick) {
+          console.log('[useAgentTheater] ✅ Dispatching The Stick data');
+          dispatch(updateTheStick(transformedData.the_stick));
+        } else {
+          console.log('[useAgentTheater] ❌ No The Stick data');
+          dispatch(setTheStickOffline('No The Stick data'));
+        }
+
+        if (transformedData.vic20_sage) {
+          console.log('[useAgentTheater] ✅ Dispatching VIC-20 Sage data');
+          dispatch(updateVIC20(transformedData.vic20_sage));
+        } else {
+          console.log('[useAgentTheater] ❌ No VIC-20 Sage data');
+          dispatch(setVIC20Offline('No VIC-20 Sage data'));
+        }
+
+        // Update active agent count
+        const activeCount = Object.values(transformedData).filter(Boolean).length;
+        console.log('[useAgentTheater] Active agent count:', activeCount);
+        dispatch(updateActiveAgentCount(activeCount));
+        
+        // Route to main theater slice
+        dispatch(updateWebSocketMessage(data));
+        }); // Close requestAnimationFrame callback
+      } else if (data.type === 'heartbeat') {
+        // Handle heartbeat messages - just update connection status
+        if (import.meta.env.DEV) {
+          console.log('[useAgentTheater] Heartbeat received');
+        }
+        dispatch(setConnectionStatus('connected'));
+      } else if (data.type === 'connection_error') {
+        // Handle connection errors
+        console.warn('[useAgentTheater] Connection error:', data.message || 'Unknown error');
+        dispatch(setConnectionStatus('error'));
+      } else if (data.type === 'system_info') {
+        // Handle system info messages
+        if (import.meta.env.DEV) {
+          console.log('[useAgentTheater] System info received');
+        }
+        dispatch(setConnectionStatus('connected'));
+        dispatch(updateWebSocketMessage(data));
+      } else {
+        console.log('[useAgentTheater] Unhandled message type:', data.type);
+      }
     };
 
-    connectWebSocket();
+    console.log('[useAgentTheater] Subscribing to WebSocket messages...');
+    const unsubscribe = ws.subscribe(handleMessage);
 
+    // Update connection status based on WebSocket state
+    if (ws.connected) {
+      console.log('[useAgentTheater] WebSocket already connected');
+      dispatch(setConnectionStatus('connected'));
+    }
+
+    // Cleanup function
     return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-      }
+      console.log('[useAgentTheater] Cleaning up WebSocket subscription...');
+      unsubscribe();
     };
-  }, [dispatch, token, isAuthenticated]);
+  }, [token, isAuthenticated]);
 
-
+  // WebSocket helper functions using the singleton
   const sendMessage = (message: any) => {
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify(message));
+    const ws = getSystemMetricsWebSocket();
+    if (ws.connected) {
+      ws.send(message);
+    } else {
+      console.log('[useAgentTheater] Cannot send message - WebSocket not connected');
     }
   };
 
@@ -253,7 +213,8 @@ export const useAgentTheater = () => {
       theStick,
       vic20,
     },
-    //Raw metrics data for MissingAgentsIndicator
+    
+    // Raw metrics data for MissingAgentsIndicator
     metricsData: {
       sir_hawkington: sirHawkington.isOnline ? sirHawkington.data : null,
       meth_snail: methSnail.isOnline ? methSnail.data : null,
@@ -262,6 +223,7 @@ export const useAgentTheater = () => {
       the_stick: theStick.isOnline ? theStick.data : null,
       vic20_sage: vic20.isOnline ? vic20.data : null
     },
+    
     // WebSocket helpers
     sendMessage,
     requestSystemInfo: () => sendMessage({ type: 'request_system_info' }),

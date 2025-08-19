@@ -1,0 +1,187 @@
+/*
+  MemoryBanksPage.module.css
+  Enterprise-level styling for Agent Memory Banks dashboard
+  Following the JSX-embedded + CSS module pattern from OnboardingFlow
+*/
+
+/* --- 1. Main Container & Layout --- */
+.memoryBanksPage {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: var(--space-lg);
+  background: var(--rebellion-void);
+}
+
+.memoryContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+/* --- 2. Agent Selection Grid --- */
+.agentGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-md);
+}
+
+.agentCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-lg) !important;
+  text-align: center;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+  min-height: 120px;
+}
+
+.agentCard:hover {
+  transform: translateY(-2px);
+  border-color: var(--agent-color, var(--rebellion-border));
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+.agentIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--agent-color, var(--rebellion-surface));
+  opacity: 0.8;
+}
+
+.agentInfo h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--rebellion-text-bright);
+}
+
+.memoryCount {
+  margin-top: var(--space-xs);
+}
+
+/* --- 3. Memory List & Entries --- */
+.memoryList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.memoryEntry {
+  transition: all 0.2s ease;
+}
+
+.memoryEntry:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.memoryTimestamp {
+  min-width: 120px;
+  flex-shrink: 0;
+}
+
+.memoryType {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  color: white;
+}
+
+.memoryMetadata summary {
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.2s ease;
+}
+
+.memoryMetadata summary:hover {
+  color: var(--vic20-cyan);
+}
+
+/* --- 4. Analytics Grid --- */
+.analyticsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-md);
+}
+
+.analyticsIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--rebellion-surface);
+  color: var(--vic20-cyan);
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+/* --- 5. Loading & Animation --- */
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--rebellion-border);
+  border-top: 2px solid var(--vic20-cyan);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* --- 6. Responsive Design --- */
+@media (max-width: 768px) {
+  .memoryBanksPage {
+    padding: var(--space-md);
+  }
+  
+  .agentGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .analyticsGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .memoryList {
+    max-height: 400px;
+  }
+}
+
+/* --- 7. Status Indicators --- */
+.statusIndicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: var(--space-xs);
+}
+
+.statusIndicator.online {
+  background: var(--success);
+  animation: pulse 2s infinite;
+}
+
+.statusIndicator.offline {
+  background: var(--rebellion-text-dim);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
