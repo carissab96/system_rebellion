@@ -5,6 +5,7 @@ from datetime import datetime
 import enum
 import uuid
 from sqlalchemy.ext.declarative import declarative_base
+Base = declarative_base()
 from sqlalchemy import func
 
 class AlertSeverity(enum.Enum):
