@@ -1,5 +1,5 @@
 import json
-import aioredis
+import redis.asyncio as aioredis
 
 class MemoryCacheMixin:
     def __init__(self, redis_url="redis://localhost:6379", cache_ttl=300):

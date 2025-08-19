@@ -1,16 +1,37 @@
-import asyncio
-import logging
-import json
+import inspect
+# from app.utils.redis_compat import redis
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.agent_memory_service import AgentMemoryService
 from .memory_cache_mixin import MemoryCacheMixin
 
 
-class AgentMemoryServiceWithCache(MemoryCacheMixin, AgentMemoryService):
-    def __init__(self, *args, redis_url="redis://localhost:6379", cache_ttl=300, **kwargs):
-        MemoryCacheMixin.__init__(self, redis_url=redis_url, cache_ttl=cache_ttl)
-        AgentMemoryService.__init__(self, *args, **kwargs)
+class AgentMemoryServiceWithCache(AgentMemoryService):
+    def __init__(self, *args, **kwargs):
+        # Pull wrapper-only kwargs FIRST so they don't reach the base class
+        self.redis_url   = kwargs.pop("redis_url", None)
+        self._db_getter  = kwargs.pop("db_getter", None)   # may be async or sync callable
+        db_session       = kwargs.pop("db_session", None)  # optional pre-built session
+
+        # Hand only what the base expects
+        super().__init__(db_session)
+
+        # If caller gave us a getter but no session, prep for lazy init
+        self._pending_db_coro = None
+        if self.db is None and self._db_getter is not None:
+            maybe = self._db_getter()
+            # don't block here; store coroutine for later
+            if inspect.isawaitable(maybe):
+                self._pending_db_coro = maybe
+            else:
+                self.db = maybe  # sync factory returned a ready session
+
+    async def ensure_ready(self):
+        """Initialize DB session lazily in the event loop."""
+        if self.db is None and self._pending_db_coro is not None:
+            self.db = await self._pending_db_coro
+            self._pending_db_coro = None
 
     async def retrieve_memories(self, user_id, agent_name, context=None, top_n=10):
         key = self._cache_key(user_id, agent_name)

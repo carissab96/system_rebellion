@@ -6,27 +6,28 @@ import redis.asyncio as aioredis
 
 from app.models.agent_memory_banks import CentralMemoryBank
 
-def __init__(self, db: AsyncSession, redis_url="redis://localhost:6379", cache_ttl=300):
+class AgentMemoryService:
+    def __init__(self, db: AsyncSession, redis_url="redis://localhost:6379", cache_ttl=300):
         self.db = db
         self.redis_url = redis_url
         self.cache_ttl = cache_ttl
         self.redis = None
 
-async def _get_redis(self):
+    async def _get_redis(self):
         if not self.redis:
             self.redis = await aioredis.from_url(self.redis_url, decode_responses=True)
         return self.redis
 
-def _cache_key(self, user_id, agent_name):
+    def _cache_key(self, user_id, agent_name):
         return f"memory:topN:{user_id}:{agent_name}"
 
-def _global_key(self, agent_name):
+    def _global_key(self, agent_name):
         return f"memory:global:{agent_name}"
 
 # ----------------------
 # MEMORY STORAGE
 # ----------------------
-async def store_memory(self, user_id, agent_name, memory_type, content, importance=5):
+    async def store_memory(self, user_id, agent_name, memory_type, content, importance=5):
         """Store a new memory in the database and invalidate cache"""
         memory = CentralMemoryBank(
             user_id=user_id,
@@ -47,7 +48,7 @@ async def store_memory(self, user_id, agent_name, memory_type, content, importan
 # ----------------------
 # MEMORY RETRIEVAL
 # ----------------------
-async def retrieve_memories(self, user_id, agent_name, context=None, top_n=10):
+    async def retrieve_memories(self, user_id, agent_name, context=None, top_n=10):
         """Retrieve relevant memories for an agent with cache first"""
         redis = await self._get_redis()
         cache_key = self._cache_key(user_id, agent_name)
@@ -74,7 +75,7 @@ async def retrieve_memories(self, user_id, agent_name, context=None, top_n=10):
 # ----------------------
 # CLEANUP / PRUNING
 # ----------------------
-async def cleanup_old_memories(self, user_id, retention_days=30, max_memories=1000):
+    async def cleanup_old_memories(self, user_id, retention_days=30, max_memories=1000):
         cutoff = datetime.now(timezone.utc) - timedelta(days=retention_days)
 
         # Delete old memories
@@ -95,7 +96,7 @@ async def cleanup_old_memories(self, user_id, retention_days=30, max_memories=10
 # ----------------------
 # GLOBAL PATTERN STORAGE
 # ----------------------
-async def store_global_pattern(self, agent_name, pattern_key, value):
+    async def store_global_pattern(self, agent_name, pattern_key, value):
         """Upsert a global pattern for The Stick's cross-agent learning"""
         # Simplest upsert — replace if exists
         stmt = delete(agent_global_pattern).where(
@@ -124,7 +125,7 @@ async def store_global_pattern(self, agent_name, pattern_key, value):
         patterns[pattern_key] = value
         await redis.set(global_key, json.dumps(patterns), ex=self.cache_ttl)
 
-async def get_global_patterns(self, agent_name):
+    async def get_global_patterns(self, agent_name):
         """Retrieve cached global patterns"""
         redis = await self._get_redis()
         global_key = self._global_key(agent_name)
@@ -144,6 +145,6 @@ async def get_global_patterns(self, agent_name):
 # ----------------------
 # CACHE HELPERS
 # ----------------------
-async def _invalidate_cache(self, user_id, agent_name):
+    async def _invalidate_cache(self, user_id, agent_name):
         redis = await self._get_redis()
         await redis.delete(self._cache_key(user_id, agent_name))
