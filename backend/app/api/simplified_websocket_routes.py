@@ -206,7 +206,7 @@ async def system_metrics_socket(websocket: WebSocket):
                         }
                         
                         # Process metrics through all AI agents
-                        enhanced_metrics = await agent_manager.process_metrics_through_agents(
+                        enhanced_metrics = await agent_manager.process_metrics_through_triage_engine(
                             metrics, 
                             user_context
                         )

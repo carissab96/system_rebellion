@@ -151,7 +151,7 @@ async def run_realtime_optimization():
                             }
                             
                         # Process through agents (Meth Snail will analyze if registered)
-                        enhanced_metrics = await agent_manager.process_metrics_through_agents(
+                        enhanced_metrics = await agent_manager.process_metrics_through_triage_engine(
                             metrics_data,
                             user_context
                         )

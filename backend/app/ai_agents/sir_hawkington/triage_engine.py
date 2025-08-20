@@ -166,7 +166,7 @@ class SirHawkingtonTriageEngine(TriageEngineWithRedisMixin):
         """
         THE MASTER TRIAGE METHOD - NO FAKE DATA ALLOWED
         
-        This replaces agent_manager.process_metrics_through_agents() as the 
+        This replaces agent_manager.process_metrics_through_triage_engine() as the 
         primary entry point for ALL system metrics.
         
         Args:
@@ -421,7 +421,7 @@ class SirHawkingtonTriageEngine(TriageEngineWithRedisMixin):
             
             # Process through ALL agents except Sir Hawkington (he's already processed via triage)
             # The agent manager will handle The Stick, Meth Snail, Hamsters, etc.
-            agent_results = await agent_manager.process_metrics_through_agents(
+            agent_results = await agent_manager.process_metrics_through_triage_engine(
                 metrics_data, 
                 user_context={'routed_by': 'sir_hawkington_triage', 'triage_severity': 'normal'}
             )
@@ -728,7 +728,7 @@ async def process_metrics_through_triage(
     """
     THE NEW MASTER ENTRY POINT FOR ALL SYSTEM METRICS
     
-    This function replaces agent_manager.process_metrics_through_agents()
+    This function replaces agent_manager.process_metrics_through_triage_engine()
     in the SimplifiedMetricsService.
     
     🧐 "One does not simply process metrics - one triages them with aristocratic precision"

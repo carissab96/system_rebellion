@@ -273,11 +273,8 @@ class AIAgentManager:
         
         return False, None, last_error
     
-    async def process_metrics_through_agents(
-        self, 
-        metrics: Dict[str, Any], 
-        user_context: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+async def process_metrics_through_triage_engine(metrics: dict, user_context: dict | None = None) -> dict
+
         """
         Process metrics through specialist agents.
         
@@ -599,7 +596,7 @@ async def process_specialist_agents(
         Enhanced metrics with specialist agent processing
     """
     agent_manager = await get_agent_manager()
-    return await agent_manager.process_metrics_through_agents(metrics, user_context)
+    return await agent_manager.process_metrics_through_triage_engine(metrics, user_context)
 
 async def get_specialist_agent_status() -> Dict[str, Any]:
     """
@@ -708,7 +705,7 @@ async def test_agent_manager():
         
         active_agents = await agent_manager.get_active_agents()
         print(f"   Processing test metrics through {len(active_agents)} active agents...")
-        enhanced_metrics = await agent_manager.process_metrics_through_agents(test_metrics, user_context)
+        enhanced_metrics = await agent_manager.process_metrics_through_triage_engine(test_metrics, user_context)
         
         # Show results
         if 'agent_processing' in enhanced_metrics:
