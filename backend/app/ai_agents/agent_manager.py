@@ -21,6 +21,7 @@ from app.services.memory_redis_patch.agent_memory_service_with_cache import (
 )
 
 logger = logging.getLogger(__name__)
+SEVERITY: Dict[str, int] = {"LOW": 0, "MEDIUM": 1, "HIGH": 2, "CRITICAL": 3}
 
 _initialization_lock = asyncio.Lock()
 _agent_manager_instance = None
@@ -505,6 +506,13 @@ async def initialize_agents(self):
     async def process_metrics_through_triage_engine(self, metrics: dict, user_context: dict | None = None) -> dict:
         """Single entry: Hawk triages, then route to VIC-20 or Stick."""
         user_id = (user_context or {}).get("user_id") or "system"
+        
+        
+        if "sir_hawkington" not in self.agents:
+            raise RuntimeError("sir_hawkington (triage) no initializaed")
+        if "vic_20_sage" not in self.agents or "the_stick" not in self.agents:
+            raise RuntimeError("Required agents not initialized (vic_20_sage, the_stick)")
+        
         ts = metrics.get("timestamp")
 
         # 1) TRIAGE (Hawk)
