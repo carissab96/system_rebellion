@@ -4,8 +4,7 @@ from sqlalchemy.types import TypeDecorator
 from datetime import datetime
 import uuid
 from app.core.base import Base
-from sqlalchemy.ext.declarative import declarative_base
-Base = declarative_base()
+
 import json
 
 class JSONType(TypeDecorator):
@@ -25,7 +24,7 @@ class JSONType(TypeDecorator):
 class User(Base):
     __tablename__ = "users"
     
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id = Column(String(36), primary_key=True, default=lambda: uuid_str(uuid.uuid4()))
     email = Column(String(100), unique=True, nullable=False, index=True)
     hashed_password = Column(String(255), nullable=False)
     
