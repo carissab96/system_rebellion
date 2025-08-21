@@ -1,4 +1,26 @@
 agents:
+      
+  - name: sir_hawkington
+    module: app.ai_agents.sir_hawkington.decision_engine
+    class: SirHawkingtonBrainV2
+    role: triage and insights
+    retry_attempts: 2
+    config: {}
+
+  - name: vic_20_sage
+    module: app.ai_agents.vic_20_sage.decision_engine
+    class: VIC20SageBrainV2
+    role: Auto-Tuner and Orchestrator
+    retry_attempts: 2
+    config: {}  
+  
+  - name: the_stick
+    module: app.ai_agents.the_stick.decision_engine
+    class: TheStickBrainV3
+    role: Compliance and Learning Coordinator
+    retry_attempts: 1
+    config: {}
+  
   - name: meth_snail
     module: app.ai_agents.meth_snail.decision_engine
     class: MethSnailBrainV2
@@ -20,16 +42,7 @@ agents:
     retry_attempts: 3
     config: {}
 
-  - name: the_stick
-    module: app.ai_agents.the_stick.decision_engine
-    class: TheStickBrainV3
-    role: Compliance and Learning Coordinator
-    retry_attempts: 1
-    config: {}
 
-  - name: vic_20_sage
-    module: app.ai_agents.vic_20_sage.decision_engine
-    class: VIC20SageBrainV2
-    role: Auto-Tuner and Orchestrator
-    retry_attempts: 2
-    config: {}
+
+
+
