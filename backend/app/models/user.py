@@ -180,30 +180,7 @@ class User(Base):
     updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
     
     # Relationships - all using string references and consistent lazy loading
-    system_configurations = relationship(
-        "SystemConfiguration", 
-        back_populates="user", 
-        cascade="all, delete-orphan",
-        lazy="selectin"
-    )
-    optimization_profiles = relationship(
-        "OptimizationProfile", 
-        back_populates="user", 
-        cascade="all, delete-orphan",
-        lazy="selectin"
-    )
-    alerts = relationship(
-        "SystemAlert", 
-        back_populates="user", 
-        cascade="all, delete-orphan",
-        lazy="selectin"
-    )
-    tuning_history = relationship(
-        "TuningHistory",
-        back_populates="user",
-        cascade="all, delete-orphan",
-        lazy="selectin"
-    )
+    
     metrics = relationship(
         "SystemMetrics",
         back_populates="user",
@@ -211,9 +188,69 @@ class User(Base):
         lazy="selectin"
     )
     
-    # New relationship for persistent AI memory
-    # agent_memories = relationship(
-    #     "AgentMemory",
-    #     back_populates="user",
-    #     cascade="all, delete-orphan"
-    # )
+    # Relationships to agent memory banks
+    agent_memories = relationship(
+        "AgentMemory",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="selectin"
+    )
+
+    # Central memory bank relationship
+    central_memories = relationship(
+        "CentralMemoryBank",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="selectin"
+    )
+    
+    # Agent-specific memory bank relationships
+    sir_hawkington_memories = relationship(
+        "SirHawkingtonMemoryBank",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="selectin"
+    )
+    
+    meth_snail_memories = relationship(
+        "MethSnailMemoryBank",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="selectin"
+    )
+    
+    hamsters_memories = relationship(
+        "HamstersMemoryBank",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="selectin"
+    )
+    
+    quantum_sp_memories = relationship(
+        "QuantumShadowPeopleMemoryBank",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="selectin"
+    )
+    
+    vic20_memories = relationship(
+        "VIC20MemoryBank",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="selectin"
+    )
+    
+    # Cross-agent learning relationships
+    learning_interactions = relationship(
+        "AgentLearningInteractions",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="selectin"
+    )
+    
+    learning_patterns = relationship(
+        "UserLearningPatterns",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="selectin"
+    )

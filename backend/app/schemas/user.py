@@ -1,7 +1,15 @@
 # app/schemas/user.py
-from pydantic import BaseModel, EmailStr, Field
-from typing import Optional, Dict, Any
-from datetime import datetime
+from pydantic import BaseModel, EmailStr, Field, validator
+from typing import Optional, Dict, Any, List, Union
+from datetime import datetime, timedelta
+from enum import Enum
+
+class UserRole(str, Enum):
+    """User roles for access control"""
+    USER = "user"
+    ADMIN = "admin"
+    SYSTEM = "system"
+    SERVICE_ACCOUNT = "service_account"
 
 
 class UserProfileData(BaseModel):
@@ -35,11 +43,50 @@ class UserCreate(BaseModel):
     profile_picture: Optional[str] = None
 
 
-class UserResponse(BaseModel):
-    id: str
+class UserBase(BaseModel):
+    """Base user model with common fields"""
     email: EmailStr
     first_name: Optional[str] = None
     last_name: Optional[str] = None
+    is_active: bool = True
+    is_verified: bool = False
+    role: UserRole = UserRole.USER
+
+class UserCreate(UserBase):
+    """Schema for creating a new user"""
+    password: str = Field(..., min_length=8)
+    company_name: Optional[str] = None
+    job_title: Optional[str] = None
+    bio: Optional[str] = None
+    profile_picture: Optional[str] = None
+
+class UserUpdate(BaseModel):
+    """Schema for updating user information"""
+    email: Optional[EmailStr] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    company_name: Optional[str] = None
+    job_title: Optional[str] = None
+    bio: Optional[str] = None
+    profile_picture: Optional[str] = None
+    is_active: Optional[bool] = None
+    role: Optional[UserRole] = None
+
+class UserInDB(UserBase):
+    """User model as stored in the database"""
+    id: str
+    hashed_password: str
+    created_at: datetime
+    updated_at: datetime
+    last_login: Optional[datetime] = None
+    failed_login_attempts: int = 0
+    
+    class Config:
+        orm_mode = True
+
+class UserResponse(UserBase):
+    """User model for API responses"""
+    id: str
     company_name: Optional[str] = None
     job_title: Optional[str] = None
     bio: Optional[str] = None
@@ -49,15 +96,58 @@ class UserResponse(BaseModel):
     cpu_cores: Optional[int] = None
     total_memory: Optional[int] = None
     avatar: Optional[str] = None
-    is_onboarded: Optional[bool] = False,
+    is_onboarded: bool = False
     profile: Optional[Dict[str, Any]] = None
     preferences: Optional[Dict[str, Any]] = None
     created_at: datetime
-    is_active: bool
+    updated_at: datetime
+    last_login: Optional[datetime] = None
+    
+    class Config:
+        orm_mode = True
 
+
+class TokenPayload(BaseModel):
+    """Payload included in JWT tokens"""
+    sub: str  # Subject (user ID)
+    exp: datetime  # Expiration time
+    iat: datetime  # Issued at
+    type: str  # Token type (access, refresh, etc.)
+    scopes: List[str] = []  # List of permissions/roles
+    
+    @validator('exp', 'iat', pre=True)
+    def parse_datetime(cls, v):
+        if isinstance(v, int):
+            return datetime.utcfromtimestamp(v)
+        return v
 
 class Token(BaseModel):
-    access_token: str
-    refresh_token: str
-    token_type: str
-    user: UserResponse
+    """Authentication token response"""
+    access_token: str = Field(..., description="JWT access token")
+    refresh_token: str = Field(..., description="JWT refresh token")
+    token_type: str = Field("bearer", description="Token type (always 'bearer')")
+    expires_in: int = Field(
+        3600,
+        description="Number of seconds until the access token expires"
+    )
+    user: UserResponse = Field(..., description="Authenticated user information")
+
+class TokenData(BaseModel):
+    """Data extracted from a token"""
+    user_id: str
+    scopes: List[str] = []
+    expires: Optional[datetime] = None
+
+class PasswordResetRequest(BaseModel):
+    """Request to reset a password"""
+    email: EmailStr
+
+class PasswordResetConfirm(BaseModel):
+    """Confirm password reset with token and new password"""
+    token: str = Field(..., description="Password reset token from email")
+    new_password: str = Field(..., min_length=8, description="New password")
+
+class ChangePassword(BaseModel):
+    """Change password while authenticated"""
+    current_password: str = Field(..., description="Current password")
+    new_password: str = Field(..., min_length=8, description="New password")

@@ -6,14 +6,14 @@ from sqlalchemy import Column, String, DateTime, Boolean, Integer, Float, Text, 
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
-from app.core.base import Base
+
 from sqlalchemy import func
 
-class TuningHistory(Base):
+class TuningHistory():
     """
     Enhanced model to store system tuning history with Hamsters engineering tracking
     """
-    __tablename__ = "tuning_history"
+
     
     # Original fields
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
@@ -49,9 +49,7 @@ class TuningHistory(Base):
     learned_from_patterns = Column(Boolean, default=False)
     historical_data_points = Column(Integer, default=0)
     
-    # Relationships
-    user = relationship("User", back_populates="tuning_history", lazy="selectin")
-    
+     
     def to_dict(self):
         """Convert to dictionary for API response with Hamsters engineering data"""
         return {

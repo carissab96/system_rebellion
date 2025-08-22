@@ -14,37 +14,72 @@ from app.core.base import Base
 
 class CentralMemoryBank(Base):
     """
-    The Stick's Eidetic Memory - Central hub for all agent learning
+    Central hub for all agent memories and learnings.
     
-    This is where all agents contribute their learnings and can access
-    cross-agent insights. The Stick's anxiety-driven hypervigilance makes
-    it the perfect central coordinator for persistent memory.
+    This table serves as the single source of truth for all agent memories,
+    with appropriate indexing and partitioning for efficient querying.
     """
     __tablename__ = 'central_memory_bank'
+    __table_args__ = (
+        # Composite index for common agent+type+time queries
+        Index('idx_agent_event_time', 'agent_name', 'event_type', 'occurred_at'),
+        # User-focused queries
+        Index('idx_user_events', 'user_id', 'occurred_at'),
+        # For metrics and analytics
+        Index('idx_metric_queries', 'event_type', 'occurred_at', 'subject_kind'),
+        # For agent-specific metadata queries
+        Index('idx_agent_metadata', 'agent_name', 'metadata'),
+        # For event correlation
+        Index('idx_correlation', 'correlation_id', 'trace_id')
+    )
     
+    # Core identifiers
     id = Column(Integer, primary_key=True)
     memory_id = Column(String(36), default=lambda: str(uuid.uuid4()), unique=True, nullable=False)
-    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
     
-    # Source information
-    contributing_agent = Column(String(50), nullable=False, index=True)  # Which agent contributed this
-    user_id = Column(String(255), nullable=False, index=True)
+    # Temporal tracking
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    occurred_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)  # When the event actually happened
     
-    # Memory classification
-    memory_type = Column(String(100), nullable=False, index=True)  # pattern, optimization, failure, success, etc.
-    importance_level = Column(String(20), nullable=False, index=True)  # LOW, MEDIUM, HIGH, CRITICAL, EIDETIC
-    confidence_score = Column(Float, default=0.0)  # How confident the agent is about this learning
+    # Source and ownership
+    agent_name = Column(String(50), nullable=False, index=True)  # Which agent created this
+    user_id = Column(String(255), nullable=True, index=True)     # Which user this belongs to (nullable for system events)
     
-    # Memory content
-    title = Column(String(255), nullable=False)
-    description = Column(Text, nullable=False)
-    context = Column(JSON)  # System context when this was learned
-    metrics_snapshot = Column(JSON)  # Relevant metrics at the time
+    # Event classification
+    event_type = Column(String(100), nullable=False, index=True)  # e.g., 'monocle_yeet', 'shell_spin', 'wisdom_shared'
+    subject_kind = Column(String(50), index=True)  # What this event is about (e.g., 'data_quality', 'performance')
+    subject_id = Column(String(36), index=True)     # ID of the subject in its domain
+    priority = Column(Integer, default=2, index=True)  # 1=Low, 2=Normal, 3=High, 4=Critical
     
-    # Learning metadata
-    pattern_data = Column(JSON)  # Structured pattern information
-    optimization_impact = Column(Float)  # Measured improvement from this learning
-    failure_prevention = Column(JSON)  # What this prevents from happening again
+    # Event content
+    title = Column(String(255))
+    description = Column(Text)
+    details = Column(JSON)  # Structured event details (primary payload)
+    metadata_ = Column('metadata', JSON)  # Additional metadata (using _ to avoid Python keyword)
+    
+    # Alias for backward compatibility
+    @property
+    def content(self):
+        """Alias for details to maintain backward compatibility"""
+        return self.details
+    
+    # Relationships and references
+    correlation_id = Column(String(36))  # For grouping related events
+    trace_id = Column(String(36))       # For distributed tracing
+    parent_memory_id = Column(String(36), ForeignKey('central_memory_bank.memory_id'))
+    
+    # Metrics and measurements
+    numeric_value = Column(Float)
+    string_value = Column(Text)
+    tags = Column(ARRAY(String))  # For flexible filtering
+    
+    # Agent-specific metadata
+    agent_metadata = Column(JSON)  # For any agent-specific fields that don't fit the common schema
+    
+    # Relationships
+    parent_memory = relationship("CentralMemoryBank", remote_side=[memory_id], 
+                               backref=backref('related_memories', lazy='dynamic'))
     
     # Cross-agent relevance
     relevant_agents = Column(String(255))  # Comma-separated list of agents this applies to
@@ -61,10 +96,14 @@ class CentralMemoryBank(Base):
     successful_applications = Column(Integer, default=0)
     
     __table_args__ = (
-        Index('idx_memory_importance', 'importance_level', 'never_forget'),
-        Index('idx_agent_memories', 'contributing_agent', 'memory_type'),
-        Index('idx_user_memories', 'user_id', 'timestamp'),
+        Index('idx_memory_importance', 'priority', 'never_forget'),
+        Index('idx_agent_memories', 'agent_name', 'event_type'),
+        Index('idx_user_memories', 'user_id', 'occurred_at'),
         Index('idx_cross_agent', 'relevant_agents', 'cross_agent_validated'),
+        Index('idx_subject_reference', 'subject_kind', 'subject_id'),
+        Index('idx_priority_access', 'priority', 'last_referenced'),
+        Index('idx_event_timestamp', 'event_type', 'occurred_at'),
+        Index('idx_agent_user', 'agent_name', 'user_id')
     )
 
 # ============================================================================
@@ -90,9 +129,21 @@ class SirHawkingtonMemoryBank(Base):
     data_quality_pattern = Column(JSON)  # Patterns in data quality issues
     triage_decision_context = Column(JSON)  # Context for triage routing decisions
     
-    # Aristocratic insights
-    monitoring_refinement = Column(JSON)  # How monitoring was improved
-    monocle_yeet_trigger = Column(JSON)  # What caused the monocle yeet
+    # Cross-references to other tables
+    monitoring_stats_id = Column(Integer, ForeignKey('hawkington_monitoring_stats.id'), index=True)
+    monitoring_stats = relationship(
+        "HawkingtonMonitoringStats", 
+        back_populates="memory_entries",
+        foreign_keys=[monitoring_stats_id]
+    )
+    
+    # Relationship to user model
+    user = relationship(
+        "User", 
+        back_populates="sir_hawkington_memories",
+        foreign_keys=[user_id]
+    )
+    
     quality_threshold_adjustment = Column(JSON)  # Learned threshold adjustments
     
     # Performance tracking
@@ -109,6 +160,11 @@ class SirHawkingtonMemoryBank(Base):
     )
 
 class MethSnailMemoryBank(Base):
+    """Meth Snail's Caffeinated Memory Bank
+    
+    Tracks optimization patterns, energy drink effectiveness, and shell-spinning
+    insights. Learns from caffeine-fueled optimization sessions.
+    """
     """
     Meth Snail's Caffeinated Memory Bank
     
@@ -151,6 +207,11 @@ class MethSnailMemoryBank(Base):
     )
 
 class HamstersMemoryBank(Base):
+    """Hamsters Collective Memory Bank (Steve, Bob, and Carl)
+    
+    Tracks infrastructure patterns, duct tape solutions, and beer-fueled
+    engineering insights. Includes individual and collective learnings.
+    """
     """
     Hamsters Collective Memory Bank (Steve, Bob, and Carl)
     
@@ -194,6 +255,11 @@ class HamstersMemoryBank(Base):
     )
 
 class QuantumShadowPeopleMemoryBank(Base):
+    """Quantum Shadow People's Incomprehensible Memory Bank
+    
+    Tracks network security patterns, phase-shift insights, and quantum
+    threat detection. Deliberately cryptic but functionally effective.
+    """
     """
     Quantum Shadow People's Incomprehensible Memory Bank
     
@@ -236,6 +302,11 @@ class QuantumShadowPeopleMemoryBank(Base):
     )
 
 class VIC20MemoryBank(Base):
+    """VIC-20's Ancient Wisdom Memory Bank
+    
+    Tracks coordination patterns, mediation insights, and ancient computing
+    wisdom. Learns from conflicts and successful coordinations.
+    """
     """
     VIC-20's Ancient Wisdom Memory Bank
     

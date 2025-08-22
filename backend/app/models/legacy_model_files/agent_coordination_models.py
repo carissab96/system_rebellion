@@ -3,10 +3,9 @@ from sqlalchemy import Column, String, DateTime, Boolean, Integer, Float, Text, 
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
-from app.core.base import Base
-# from sqlalchemy.ext.declarative import declarative_base
+
 from sqlalchemy import func
-# Base = declarative_base()
+
 
 # NOTE: AgentPerformanceSummary is now centralized in agent_decision_models.py
 

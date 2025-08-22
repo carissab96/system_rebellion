@@ -4,7 +4,6 @@ from sqlalchemy import Column, String, DateTime, Boolean, Integer, Float, Text, 
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
-from app.core.base import Base
 from sqlalchemy import Index, func
 
 
