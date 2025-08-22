@@ -7,10 +7,8 @@ from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, or_
 
-from app.models.hamsters_model import (
-    HamstersInfrastructureIntervention,
-    HamstersCommunicationLog,
-    HamstersDuctTapeUsage,
+from app.models.agent_memory_banks import CentralMemoryBank
+from app.schemas.agent_memory import MemoryType, MemoryPriority
     HamstersBeerConsumption,
     HamstersSupplyClosetRaid,
     HamstersIndividualStats,

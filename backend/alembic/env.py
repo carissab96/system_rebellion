@@ -12,22 +12,10 @@ from alembic import context
 
 # Import all your models so alembic can see them
 from app.models import user
-from app.models.system import SystemConfiguration
-from app.models.system import OptimizationProfile
-from app.models.alerts import SystemAlert
-from app.models.metrics import SystemMetrics
-from app.models.tuning_history import TuningHistory
-from app.models.agent_coordination_models import CrossAgentCoordination
-from app.models.agent_decision_models import HawkingtonDecisionLog, StickDecisionLog,MethSnailDecisionLog, HamstersDecisionLog, AgentPerformanceSummary
-from app.models.ai_agent_tracking import AIAgentMetrics, MethSnailShellSpins, SirHawkingtonMonocleYeets, TheStickHyperventilations, QuantumShadowPhasings, VIC20Wisdom
-from app.models.hamsters_model import  HamstersIndividualStats, HamstersInfrastructureIntervention, HamstersCommunicationLog, HamstersDuctTapeUsage, HamstersBeerConsumption, HamstersSupplyClosetRaid, HamstersEngineeringStats
-from app.models.meth_snail_model import MethSnailOptimizationStats
-from app.models.metrics_aggregates import MetricsHourly, MetricsDaily
-from app.models.qsp_models import QSPNetworkMetrics, QSPDecisionLog, QSPQuantumStats, QSPNetworkPatterns
-from app.models.sir_hawkington_model import HawkingtonMonitoringStats
-from app.models.the_stick_model import StickUserPatterns, StickComplianceHistory, StickConfigurationProfiles, StickAnxietyLog, StickHamsterEncounters, StickPaperBagUsage, StickMemoryBank, StickSqueakTranslations, StickEmergencyProtocols
-from app.models.vic20_sage_model import VIC20CoordinationLog, VIC20SystemSynthesis, VIC20AgentHarmony, VIC20AncientWisdom, VIC20PartnershipMetrics, VIC20DecisionOrchestration, VIC20AgentInteractionLog
-from app.models.triage_decision_models import TriageDecisionLog, TriageStatistics
+from app.models import agent_memory_banks
+from app.models import metrics
+from app.models import metrics_aggregates
+from app.models import agent_memory
 
 
 # this is the Alembic Config object, which provides

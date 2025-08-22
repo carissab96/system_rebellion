@@ -14,7 +14,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.websockets import websocket_manager
 from app.core.database import get_async_db
-from app.models.meth_snail_model import MethSnailJitterLevels, MethSnailOptimizationStats
+from app.models.agent_memory_banks import CentralMemoryBank
+from app.schemas.agent_memory import MemoryPriority, MemoryType
 from app.schemas.websocket import WebSocketMessage, MessageType
 
 logger = logging.getLogger(__name__)

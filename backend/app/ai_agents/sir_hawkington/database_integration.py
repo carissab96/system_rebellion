@@ -5,8 +5,8 @@ from datetime import datetime, timedelta
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy import select, func, desc
-from app.models.agent_decision_models import HawkingtonDecisionLog
-from app.models.sir_hawkington_model import HawkingtonMonitoringStats
+from app.models.agent_memory_banks import CentralMemoryBank
+from app.schemas.agent_memory import MemoryType, MemoryPriority
 from .data_types import HawkingtonDecision
 import inspect
 

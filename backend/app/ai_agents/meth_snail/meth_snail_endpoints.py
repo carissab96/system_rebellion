@@ -10,7 +10,8 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db
-from app.models.meth_snail_model import MethSnailJitterLevels, MethSnailOptimizationStats
+from app.models.agent_memory_banks import CentralMemoryBank
+from app.schemas.agent_memory import MemoryType, MemoryPriority
 
 # Enums and Models for API
 class TimeRange(str, Enum):

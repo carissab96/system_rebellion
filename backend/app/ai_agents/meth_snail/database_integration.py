@@ -13,8 +13,8 @@ from sqlalchemy import select, func, desc, and_
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
-from app.models.agent_decision_models import MethSnailDecisionLog
-from app.models.meth_snail_model import MethSnailOptimizationStats, MethSnailJitterLevels
+from app.models.agent_memory_banks import CentralMemoryBank
+from app.schemas.agent_memory import MemoryType, MemoryPriority
 from .data_types import OptimizationDecision, JitterLevel
 
 logger = logging.getLogger("MethSnail.Database")
