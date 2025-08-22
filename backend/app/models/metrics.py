@@ -3,8 +3,6 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
 from app.core.base import Base
-from sqlalchemy.ext.declarative import declarative_base
-Base = declarative_base()
 from sqlalchemy import func
 class SystemMetrics(Base):
     __tablename__ = "system_metrics"
@@ -20,4 +18,4 @@ class SystemMetrics(Base):
     additional_metrics = Column(JSON, nullable=True)  # Optional Dict in MetricCreate
     
     # Relationships
-    user = relationship("User", back_populates="metrics")
+    user = relationship("User", back_populates="metrics", lazy="selectin")

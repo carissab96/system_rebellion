@@ -1,10 +1,9 @@
 from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, JSON, Text, ForeignKey
 from sqlalchemy.orm import relationship
-from sqlalchemy.ext.declarative import declarative_base
 from app.core.base import Base
 from datetime import datetime
 from sqlalchemy import Index 
-Base = declarative_base()
+
 
 class StickUserPatterns(Base):
     __tablename__ = 'stick_user_patterns'
@@ -60,7 +59,7 @@ class StickAnxietyLog(Base):
     __tablename__ = 'stick_anxiety_log'
     
     id = Column(Integer, primary_key=True)
-    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    timestamp = Column(DateTime, default=datetime.now(), index=True)
     trigger = Column(String(255), nullable=False)
     anxiety_level_before = Column(Float, nullable=False)
     anxiety_level_after = Column(Float, nullable=False)
@@ -74,7 +73,7 @@ class StickHamsterEncounters(Base):
     
     id = Column(Integer, primary_key=True)
     user_id = Column(String(255), nullable=False, index=True)
-    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    timestamp = Column(DateTime, default=datetime.now(), index=True)
     hamsters_present = Column(String(100))  # Comma-separated: Steve,Bob,Carl
     steve_location = Column(String(255))
     bob_location = Column(String(255))
@@ -89,7 +88,7 @@ class StickPaperBagUsage(Base):
     __tablename__ = 'stick_paper_bag_usage'
     
     id = Column(Integer, primary_key=True)
-    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    timestamp = Column(DateTime, default=datetime.now(), index=True)
     bags_consumed = Column(Integer, default=0)
     bags_added = Column(Integer, default=0)  # For resupply tracking
     reason = Column(String(255))
@@ -100,7 +99,7 @@ class StickMemoryBank(Base):
     __tablename__ = 'stick_memory_bank'
     
     id = Column(Integer, primary_key=True)
-    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    timestamp = Column(DateTime, default=datetime.now(), index=True)
     event_type = Column(String(100), nullable=False)
     details = Column(JSON)
     anxiety_level = Column(Float)
@@ -119,7 +118,7 @@ class StickSqueakTranslations(Base):
     __tablename__ = 'stick_squeak_translations'
     
     id = Column(Integer, primary_key=True)
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=datetime.now(), index=True)
     hamster_source = Column(String(50))  # Steve, Bob, or Carl
     original_squeak = Column(String(255))
     translation = Column(Text)

@@ -7,8 +7,6 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
 from app.core.base import Base
-from sqlalchemy.ext.declarative import declarative_base
-Base = declarative_base()
 from sqlalchemy import func
 
 class TuningHistory(Base):
@@ -52,7 +50,7 @@ class TuningHistory(Base):
     historical_data_points = Column(Integer, default=0)
     
     # Relationships
-    user = relationship("User", back_populates="tuning_history")
+    user = relationship("User", back_populates="tuning_history", lazy="selectin")
     
     def to_dict(self):
         """Convert to dictionary for API response with Hamsters engineering data"""

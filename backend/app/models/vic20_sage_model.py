@@ -5,9 +5,8 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
 from app.core.base import Base
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Index, func
-Base = declarative_base()
+
 
 class VIC20CoordinationLog(Base):
     """

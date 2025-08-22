@@ -6,10 +6,9 @@ For storing Sir Hawkington's aristocratic triage decisions
 
 from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, JSON, Text, ForeignKey
 from sqlalchemy.orm import relationship
-from sqlalchemy.ext.declarative import declarative_base
 from app.core.base import Base
 from datetime import datetime, timezone
-Base = declarative_base()
+
 
 class TriageDecisionLog(Base):
     """

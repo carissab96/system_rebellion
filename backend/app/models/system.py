@@ -4,8 +4,6 @@ from app.core.base import Base
 from datetime import datetime
 import uuid
 import enum
-from sqlalchemy.ext.declarative import declarative_base
-Base = declarative_base()
 from sqlalchemy import func
 
 class ConfigType(enum.Enum):
@@ -28,7 +26,7 @@ class SystemConfiguration(Base):
     updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
     # Relationship with User
-    user = relationship("User", back_populates="configurations")
+    user = relationship("User", back_populates="system_configurations")
 
 class OptimizationProfile(Base):
     __tablename__ = "optimization_profiles"

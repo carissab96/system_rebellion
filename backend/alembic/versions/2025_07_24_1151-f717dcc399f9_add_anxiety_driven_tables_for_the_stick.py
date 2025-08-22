@@ -31,19 +31,19 @@ from sqlalchemy.dialects import postgresql
 
 def upgrade():
     # # Create anxiety log table
-    # op.create_table('stick_anxiety_log',
-    #     sa.Column('id', sa.Integer(), nullable=False),
-    #     sa.Column('timestamp', sa.DateTime(), nullable=True),
-    #     sa.Column('trigger', sa.String(length=255), nullable=False),
-    #     sa.Column('anxiety_level_before', sa.Float(), nullable=False),
-    #     sa.Column('anxiety_level_after', sa.Float(), nullable=False),
-    #     sa.Column('multiplier', sa.Float(), nullable=True),
-    #     sa.Column('paper_bags_consumed', sa.Integer(), nullable=True),
-    #     sa.Column('hamster_involved', sa.Boolean(), nullable=True),
-    #     sa.Column('resolution', sa.String(length=100), nullable=True),
-    #     sa.PrimaryKeyConstraint('id')
-    # )
-    # op.create_index(op.f('ix_stick_anxiety_log_timestamp'), 'stick_anxiety_log', ['timestamp'], unique=False)
+    op.create_table('stick_anxiety_log',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('timestamp', sa.DateTime(), nullable=True),
+        sa.Column('trigger', sa.String(length=255), nullable=False),
+        sa.Column('anxiety_level_before', sa.Float(), nullable=False),
+        sa.Column('anxiety_level_after', sa.Float(), nullable=False),
+        sa.Column('multiplier', sa.Float(), nullable=True),
+        sa.Column('paper_bags_consumed', sa.Integer(), nullable=True),
+        sa.Column('hamster_involved', sa.Boolean(), nullable=True),
+        sa.Column('resolution', sa.String(length=100), nullable=True),
+        sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_stick_anxiety_log_timestamp'), 'stick_anxiety_log', ['timestamp'], unique=False)
     
     # Create hamster encounters table
     op.create_table('stick_hamster_encounters',
@@ -71,13 +71,13 @@ def upgrade():
         sa.Column('bags_consumed', sa.Integer(), nullable=True),
         sa.Column('bags_added', sa.Integer(), nullable=True),
         sa.Column('reason', sa.String(length=255), nullable=True),
-        sa.Column('anxiety_level_at_time', sa.Float(), nullable=True),
+        # sa.Column('anxiety_level_at_time', sa.Float(), nullable=True),
         sa.Column('hamster_related', sa.Boolean(), nullable=True),
         sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_stick_paper_bag_usage_timestamp'), 'stick_paper_bag_usage', ['timestamp'], unique=False)
     
-    # Create memory bank table
+    # # Create memory bank table
     op.create_table('stick_memory_bank',
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('timestamp', sa.DateTime(), nullable=True),

@@ -4,9 +4,7 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
 from app.core.base import Base
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import func
-Base = declarative_base()
 
 class HawkingtonDecisionLog(Base):
     """Store Sir Hawkington's aristocratic monitoring decisions"""

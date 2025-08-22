@@ -4,8 +4,6 @@ from app.core.base import Base
 from datetime import datetime
 import enum
 import uuid
-from sqlalchemy.ext.declarative import declarative_base
-Base = declarative_base()
 from sqlalchemy import func
 
 class AlertSeverity(enum.Enum):
@@ -29,4 +27,4 @@ class SystemAlert(Base):
     updated_at = Column(DateTime, default=datetime.now(), onupdate=datetime.now())
     
     # Relationship with User
-    user = relationship("User", back_populates="alerts")
+    user = relationship("User", back_populates="alerts", lazy="selectin")

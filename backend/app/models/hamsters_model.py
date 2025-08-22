@@ -4,8 +4,7 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
 from app.core.base import Base
-from sqlalchemy.ext.declarative import declarative_base
-Base = declarative_base()
+
 
 # NOTE: HamstersDecisionLog remains in agent_decision_models.py
 

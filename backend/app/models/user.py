@@ -4,6 +4,7 @@ from sqlalchemy.types import TypeDecorator
 from datetime import datetime
 import uuid
 from app.core.base import Base
+from sqlalchemy import func
 
 import json
 
@@ -178,31 +179,36 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.now)
     updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
     
-    # Relationships
-    configurations = relationship(
+    # Relationships - all using string references and consistent lazy loading
+    system_configurations = relationship(
         "SystemConfiguration", 
         back_populates="user", 
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
+        lazy="selectin"
     )
     optimization_profiles = relationship(
         "OptimizationProfile", 
         back_populates="user", 
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
+        lazy="selectin"
     )
     alerts = relationship(
         "SystemAlert", 
         back_populates="user", 
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
+        lazy="selectin"
     )
     tuning_history = relationship(
         "TuningHistory",
         back_populates="user",
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
+        lazy="selectin"
     )
     metrics = relationship(
         "SystemMetrics",
         back_populates="user",
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
+        lazy="selectin"
     )
     
     # New relationship for persistent AI memory

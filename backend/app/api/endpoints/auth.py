@@ -1,5 +1,5 @@
 from posix import EX_TEMPFAIL
-from fastapi import APIRouter, Depends, HTTPException, status, Response, Request, Header
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Request, Header, Body
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -148,27 +148,18 @@ async def is_async_session(session) -> bool:
     return isinstance(session, AsyncSession)
 
 async def find_user_by_email(db, email=None):
-    """Find a user by email or email, handling both async and sync sessions"""
+    """Find a user by email, handling both async and sync sessions"""
     if await is_async_session(db):
         # Async session
         query = select(User)
-        if email and email:
-            query = query.where((User.email == email) | (User.email == email))
-        elif email:
+        if email:
             query = query.where(User.email == email)
-        elif email:
-            query = query.where(User.email == email)
-        
         result = await db.execute(query)
         return result.scalar_one_or_none()
     else:
         # Sync session
         query = db.query(User)
-        if email and email:
-            return query.filter((User.email == email) | (User.email == email)).first()
-        elif email:
-            return query.filter(User.email == email).first()
-        elif email:
+        if email:
             return query.filter(User.email == email).first()
         return None
 
@@ -333,15 +324,12 @@ async def login_for_access_token(
     # Get the system log service
     log_service = await LogService.get_instance()
     
-    if not user or not verify_password(form_data.password, user.hashed_password):
-        logging.error(f"❌ Invalid credentials for email: {form_data.username}")
-        
-        # Log failed authentication attempt
+    if not user:
+        logging.error(f"❌ User not found: {form_data.username}")
         log_service.add_auth_log(
-            username=form_data.email,
+            email=form_data.username,
             success=False
         )
-        
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
@@ -352,7 +340,11 @@ async def login_for_access_token(
     
     # Validate password
     if not verify_password(form_data.password, user.hashed_password):
-        logging.error(f"❌ Invalid password for user: {form_data.email}")
+        logging.error(f"❌ Invalid password for user: {user.email}")
+        log_service.add_auth_log(
+            email=user.email,
+            success=False
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
@@ -371,8 +363,8 @@ async def login_for_access_token(
     
     # Log successful authentication
     log_service.add_auth_log(
-       email=user.email,
-       success=True
+        email=user.email,
+        success=True
     )
     
     # Update last login

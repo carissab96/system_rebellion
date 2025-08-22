@@ -5,9 +5,8 @@ from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, JSON, 
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
-from sqlalchemy.ext.declarative import declarative_base
 from app.core.base import Base
-Base = declarative_base() 
+
 
 # ============================================================================
 # CENTRAL MEMORY BANK - The Stick's Eidetic Memory Hub
