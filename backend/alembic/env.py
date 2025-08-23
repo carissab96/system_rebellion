@@ -28,7 +28,7 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 # Set target_metadata to use your imported models
-from app.models.user import Base
+from app.core.base import Base
 target_metadata = Base.metadata
 print(f"DEBUG: Found {len(Base.metadata.tables)} tables in metadata:")
 for table_name in sorted(Base.metadata.tables.keys()):

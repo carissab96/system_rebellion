@@ -205,40 +205,40 @@ class User(Base):
     )
     
     # Agent-specific memory bank relationships
-    sir_hawkington_memories = relationship(
-        "SirHawkingtonMemoryBank",
-        back_populates="user",
-        cascade="all, delete-orphan",
-        lazy="selectin"
-    )
+    # sir_hawkington_memories = relationship(
+    #     "SirHawkingtonMemoryBank",
+    #     back_populates="user",
+    #     cascade="all, delete-orphan",
+    #     lazy="selectin"
+    # )
     
-    meth_snail_memories = relationship(
-        "MethSnailMemoryBank",
-        back_populates="user",
-        cascade="all, delete-orphan",
-        lazy="selectin"
-    )
+    # meth_snail_memories = relationship(
+    #     "MethSnailMemoryBank",
+    #     back_populates="user",
+    #     cascade="all, delete-orphan",
+    #     lazy="selectin"
+    # )
     
-    hamsters_memories = relationship(
-        "HamstersMemoryBank",
-        back_populates="user",
-        cascade="all, delete-orphan",
-        lazy="selectin"
-    )
+    # hamsters_memories = relationship(
+    #     "HamstersMemoryBank",
+    #     back_populates="user",
+    #     cascade="all, delete-orphan",
+    #     lazy="selectin"
+    # )
     
-    quantum_sp_memories = relationship(
-        "QuantumShadowPeopleMemoryBank",
-        back_populates="user",
-        cascade="all, delete-orphan",
-        lazy="selectin"
-    )
+    # quantum_sp_memories = relationship(
+    #     "QuantumShadowPeopleMemoryBank",
+    #     back_populates="user",
+    #     cascade="all, delete-orphan",
+    #     lazy="selectin"
+    # )
     
-    vic20_memories = relationship(
-        "VIC20MemoryBank",
-        back_populates="user",
-        cascade="all, delete-orphan",
-        lazy="selectin"
-    )
+    # vic20_memories = relationship(
+    #     "VIC20MemoryBank",
+    #     back_populates="user",
+    #     cascade="all, delete-orphan",
+    #     lazy="selectin"
+    # )
     
     # Cross-agent learning relationships
     learning_interactions = relationship(
