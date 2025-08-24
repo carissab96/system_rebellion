@@ -35,7 +35,7 @@ class QSPNetworkMetricsRead(QSPNetworkMetricsBase):
     timestamp: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # ===================== Decision Log =====================
 
@@ -60,7 +60,7 @@ class QSPDecisionLogRead(QSPDecisionLogBase):
     timestamp: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # ===================== Quantum Stats =====================
 
@@ -87,7 +87,7 @@ class QSPQuantumStatsRead(QSPQuantumStatsBase):
     timestamp: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # ===================== Network Patterns =====================
 
@@ -112,4 +112,4 @@ class QSPNetworkPatternsRead(QSPNetworkPatternsBase):
     last_updated: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True

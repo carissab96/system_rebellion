@@ -28,7 +28,7 @@ class TriageDecision(BaseModel):
     suggested_action: str
     notes: Optional[str] = None
 
-class SirHawkingtonMemoryBase(BaseModel):
+class SirHawkingtonMemoryType(BaseModel):
     """Base memory schema for Sir Hawkington's aristocratic data oversight"""
     title: str
     description: str
@@ -48,11 +48,11 @@ class SirHawkingtonMemoryBase(BaseModel):
             v += '.'
         return v
 
-class SirHawkingtonMemoryCreate(SirHawkingtonMemoryBase):
+class SirHawkingtonMemoryCreate(SirHawkingtonMemoryType):
     """Schema for creating new aristocratic memories"""
     pass
 
-class SirHawkingtonMemoryRead(SirHawkingtonMemoryBase):
+class SirHawkingtonMemoryRead(SirHawkingtonMemoryType):
     """Schema for reading memories with system fields"""
     id: str
     created_at: datetime
@@ -61,7 +61,7 @@ class SirHawkingtonMemoryRead(SirHawkingtonMemoryBase):
     review_count: int = 0
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class SirHawkingtonMemoryUpdate(BaseModel):
     """Schema for updating existing aristocratic memories"""

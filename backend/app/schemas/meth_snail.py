@@ -32,7 +32,7 @@ class MethSnailEnergyConsumptionRead(MethSnailEnergyConsumptionBase):
     authorization_response_timestamp: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # ===================== Jitter Levels =====================
 
@@ -65,7 +65,7 @@ class MethSnailJitterLevelsRead(MethSnailJitterLevelsBase):
     timestamp: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # ===================== Optimization Stats =====================
 
@@ -90,4 +90,4 @@ class MethSnailOptimizationStatsRead(MethSnailOptimizationStatsBase):
     timestamp: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True

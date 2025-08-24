@@ -32,7 +32,7 @@ class StickMemoryRead(StickMemoryBase):
     last_accessed: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class StickMemoryUpdate(BaseModel):
     """Schema for updating existing memories"""

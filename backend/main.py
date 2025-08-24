@@ -1,13 +1,10 @@
-from fastapi import FastAPI, Depends, Request, HTTPException
+from fastapi import FastAPI, Request, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 from app.core.database import async_engine as engine, Base, init_models, log_registered_models
 from app.core.middleware import setup_middleware
 from app.api.endpoints import auth
-from app.api.endpoints import optimization
-from app.api.endpoints import configuration
-from app.api.endpoints import alerts
 from app.api.endpoints import users
 from app.api.endpoints import system_logs
 from app.api.endpoints import health
@@ -253,27 +250,6 @@ def create_application() -> FastAPI:
         metrics_router,
         prefix="/api/metrics",
         tags=["Metrics"]
-    )
-    
-    # Add optimization profiles router
-    app.include_router(
-        optimization.router,
-        prefix="/api/optimization-profiles",
-        tags=["Optimization"]
-    )
-    
-    # Add system configuration router
-    app.include_router(
-        configuration.router,
-        prefix="/api/system-configurations",
-        tags=["Configuration"]
-    )
-    
-    # Add system alerts router
-    app.include_router(
-        alerts.router,
-        prefix="/api/system-alerts",
-        tags=["Alerts"]
     )
     
     # Add Hamsters API Router   

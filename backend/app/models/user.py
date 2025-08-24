@@ -1,26 +1,11 @@
 from sqlalchemy import Column, String, DateTime, Boolean, Integer, JSON, ForeignKey, TEXT
-from sqlalchemy.orm import relationship
-from sqlalchemy.types import TypeDecorator
+from sqlalchemy.orm import relationship, backref
 from datetime import datetime
 import uuid
 from app.core.base import Base
+from app.core.types import JSONType
 from sqlalchemy import func
-
-import json
-
-class JSONType(TypeDecorator):
-    impl = TEXT
-
-    def process_bind_param(self, value, dialect):
-        if value is not None:
-            return json.dumps(value)
-        return value
-
-    def process_result_value(self, value, dialect):
-        if value is not None:
-            return json.loads(value)
-        return value
-
+from app.models.agent_memory import AgentMemory
 
 class User(Base):
     __tablename__ = "users"
@@ -188,7 +173,7 @@ class User(Base):
         lazy="selectin"
     )
     
-    # Relationships to agent memory banks
+    # Relationships to agent memory banks - using string reference to avoid circular imports
     agent_memories = relationship(
         "AgentMemory",
         back_populates="user",
@@ -197,7 +182,7 @@ class User(Base):
     )
 
     # Central memory bank relationship
-    central_memories = relationship(
+    central_memory_bank = relationship(
         "CentralMemoryBank",
         back_populates="user",
         cascade="all, delete-orphan",
@@ -241,14 +226,14 @@ class User(Base):
     # )
     
     # Cross-agent learning relationships
-    learning_interactions = relationship(
-        "AgentLearningInteractions",
-        back_populates="user",
-        cascade="all, delete-orphan",
-        lazy="selectin"
-    )
+    # learning_interactions = relationship(
+    #     "AgentLearningInteractions",
+    #     back_populates="user",
+    #     cascade="all, delete-orphan",
+    #     lazy="selectin"
+    # )
     
-    learning_patterns = relationship(
+    user_learning_patterns = relationship(
         "UserLearningPatterns",
         back_populates="user",
         cascade="all, delete-orphan",

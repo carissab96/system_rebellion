@@ -39,7 +39,7 @@ class AIAgentMetricsRead(AIAgentMetricsBase):
     timestamp: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # ===================== Agent-Specific Incident Tracking =====================
 
@@ -79,7 +79,7 @@ class MethSnailShellSpinsRead(AgentIncidentBase):
     error_message: Optional[str] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Sir Hawkington Monocle Yeets
 class SirHawkingtonMonocleYeetsCreate(AgentIncidentBase):
@@ -102,7 +102,7 @@ class SirHawkingtonMonocleYeetsRead(AgentIncidentBase):
     concern_level: Optional[str] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # The Stick Hyperventilations
 class TheStickHyperventilationsCreate(AgentIncidentBase):
@@ -129,7 +129,7 @@ class TheStickHyperventilationsRead(AgentIncidentBase):
     recovery_time_seconds: Optional[int] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Quantum Shadow Phasings
 class QuantumShadowPhasingsCreate(AgentIncidentBase):
@@ -156,7 +156,7 @@ class QuantumShadowPhasingsRead(AgentIncidentBase):
     effectiveness_rating: Optional[float] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # VIC20 Wisdom
 class VIC20WisdomCreate(AgentIncidentBase):
@@ -181,4 +181,4 @@ class VIC20WisdomRead(AgentIncidentBase):
     outcome_success: Optional[bool] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True

@@ -27,7 +27,7 @@ class HamstersIndividualStatsRead(HamstersIndividualStatsBase):
     timestamp: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # ===================== Infrastructure Interventions =====================
 
@@ -60,7 +60,7 @@ class HamstersInfrastructureInterventionRead(HamstersInfrastructureInterventionB
     started_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # ===================== Communication Logs =====================
 
@@ -84,7 +84,7 @@ class HamstersCommunicationLogRead(HamstersCommunicationLogBase):
     timestamp: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # ===================== Duct Tape Usage =====================
 
@@ -107,7 +107,7 @@ class HamstersDuctTapeUsageRead(HamstersDuctTapeUsageBase):
     timestamp: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # ===================== Beer Consumption =====================
 
@@ -128,7 +128,7 @@ class HamstersBeerConsumptionRead(HamstersBeerConsumptionBase):
     timestamp: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # ===================== Supply Closet Raids =====================
 
@@ -149,7 +149,7 @@ class HamstersSupplyClosetRaidRead(HamstersSupplyClosetRaidBase):
     timestamp: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # ===================== Engineering Stats =====================
 
@@ -184,4 +184,4 @@ class HamstersEngineeringStatsRead(HamstersEngineeringStatsBase):
     timestamp: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True

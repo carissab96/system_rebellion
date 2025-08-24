@@ -9,6 +9,7 @@ from app.models.agent_memory_banks import CentralMemoryBank
 from app.schemas.agent_memory import MemoryType, MemoryPriority
 from .data_types import HawkingtonDecision
 import inspect
+import logging
 
 class HawkingtonDatabaseIntegration:
     """Database integration for Sir Hawkington's aristocratic monitoring"""
@@ -27,20 +28,18 @@ class HawkingtonDatabaseIntegration:
     async def initialize(self):
         """Initialize database connection with aristocratic dignity."""
         if not callable(self.db_getter):
-            raise ValueError("db_getter must be a callable that returns the database URL.")
+            raise ValueError("db_getter must be a callable that returns an async database session generator.")
 
         try:
-            if inspect.iscoroutinefunction(self.db_getter):
-                db_url = await self.db_getter()
-            else:
-                db_url = self.db_getter()
-        except Exception as e:
-            raise RuntimeError(f"Failed to obtain database URL from db_getter: {e}") from e
-
-        if not isinstance(db_url, str) or not db_url.strip():
-            raise ValueError(f"Invalid database URL returned by db_getter: {db_url!r}")
-
-        try:
+            # Get the async generator
+            db_gen = self.db_getter()
+            # Get the first (and only) session from the generator
+            session = await anext(db_gen)
+            
+            # Get the bind URL from the session
+            db_url = str(session.get_bind().url)
+            await session.close()  # Close the session as we only needed the URL
+            
             self.engine = create_async_engine(
                 db_url,
                 future=True

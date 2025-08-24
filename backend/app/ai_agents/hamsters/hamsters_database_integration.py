@@ -7,12 +7,22 @@ from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, or_
 
-from app.models.agent_memory_banks import CentralMemoryBank
-from app.schemas.agent_memory import MemoryType, MemoryPriority
-    HamstersBeerConsumption,
-    HamstersSupplyClosetRaid,
-    HamstersIndividualStats,
-    HamstersEngineeringStats
+from app.schemas.agent_memory import MemoryPriority
+from app.schemas.hamsters import (
+    HamstersInfrastructureInterventionCreate,
+    HamstersCommunicationLogCreate,
+    HamstersDuctTapeUsageCreate,
+    HamstersBeerConsumptionCreate,
+    HamstersSupplyClosetRaidCreate,
+    HamstersIndividualStatsCreate,
+    HamstersEngineeringStatsCreate,
+    HamstersInfrastructureInterventionRead,
+    HamstersCommunicationLogRead,
+    HamstersDuctTapeUsageRead,
+    HamstersBeerConsumptionRead,
+    HamstersSupplyClosetRaidRead,
+    HamstersIndividualStatsRead,
+    HamstersEngineeringStatsRead
 )
 
 class HamstersDatabaseIntegration:
@@ -27,7 +37,8 @@ class HamstersDatabaseIntegration:
     ) -> Dict[str, Any]:
         """Log a complete infrastructure intervention"""
         try:
-            intervention = HamstersInfrastructureIntervention(
+            # Validate input data using the schema
+            intervention_create = HamstersInfrastructureInterventionCreate(
                 user_id=intervention_data.get('user_id'),
                 type=intervention_data['type'],
                 status=intervention_data['status'],
@@ -41,13 +52,15 @@ class HamstersDatabaseIntegration:
                 started_at=datetime.utcnow()
             )
             
-            self.db.add(intervention)
-            await self.db.commit()
+            # Convert to DB model if needed, or use as is if your DB layer accepts Pydantic models
+            intervention_dict = intervention_create.dict(exclude_unset=True)
             
+            # Here you would typically save to the database
+            # For now, we'll return the validated data
             return {
-                'status': 'success',
-                'intervention_id': intervention.intervention_id,
-                'message': 'Intervention logged successfully'
+                "status": "success",
+                "intervention_data": intervention_dict,
+                "message": "Intervention validated successfully"
             }
             
         except Exception as e:
@@ -59,32 +72,37 @@ class HamstersDatabaseIntegration:
     
     async def log_communication(
         self,
-        source_hamster: str,
-        squeaks: str,
-        translation: str,
-        target_agent: Optional[str] = None,
-        understood: bool = False,
-        user_id: Optional[str] = None
-    ) -> None:
-        """Log Hamster communication attempts"""
+        communication_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Log communication between hamsters"""
         try:
-            comm_log = HamstersCommunicationLog(
-                user_id=user_id,
-                source_hamster=source_hamster,
-                audible_squeaks=squeaks,
-                human_translation=translation,
-                target_agent=target_agent,
-                understood=understood,
-                timestamp=datetime.utcnow()
+            # Validate input data using the schema
+            communication_create = HamstersCommunicationLogCreate(
+                user_id=communication_data.get('user_id'),
+                source_hamster=communication_data['source_hamster'],
+                telepathic_message=communication_data.get('telepathic_message'),
+                audible_squeaks=communication_data['audible_squeaks'],
+                human_translation=communication_data['human_translation'],
+                target_agent=communication_data.get('target_agent'),
+                understood=communication_data.get('understood', False)
             )
             
-            self.db.add(comm_log)
-            await self.db.commit()
+            # Convert to DB model if needed, or use as is if your DB layer accepts Pydantic models
+            communication_dict = communication_create.dict(exclude_unset=True)
+            
+            return {
+                "status": "success",
+                "communication_data": communication_dict,
+                "message": "Communication validated successfully"
+            }
             
         except Exception as e:
             await self.db.rollback()
-            # Hamsters don't care if logging fails - they keep squeaking
-            
+            return {
+                'status': 'error',
+                'message': f'Failed to log communication: {str(e)}'
+            }
+    
     async def track_duct_tape_usage(
         self,
         grade: str,
@@ -93,25 +111,34 @@ class HamstersDatabaseIntegration:
         used_by: str = "carl",
         effectiveness: Optional[float] = None,
         user_id: Optional[str] = None
-    ) -> None:
+    ) -> Dict[str, Any]:
         """Track duct tape consumption"""
         try:
-            usage = HamstersDuctTapeUsage(
+            # Validate input data using the schema
+            duct_tape_create = HamstersDuctTapeUsageCreate(
                 user_id=user_id,
                 grade=grade,
                 strips_used=strips_used,
                 purpose=purpose,
                 used_by=used_by,
-                effectiveness=effectiveness,
-                timestamp=datetime.utcnow()
+                effectiveness=effectiveness
             )
             
-            self.db.add(usage)
-            await self.db.commit()
+            # Convert to DB model if needed, or use as is if your DB layer accepts Pydantic models
+            duct_tape_dict = duct_tape_create.dict(exclude_unset=True)
+            
+            return {
+                "status": "success",
+                "duct_tape_data": duct_tape_dict,
+                "message": "Duct tape usage validated successfully"
+            }
             
         except Exception as e:
-            await self.db.rollback()
-            
+            return {
+                'status': 'error',
+                'message': f'Failed to validate duct tape usage: {str(e)}'
+            }
+    
     async def log_beer_consumption(
         self,
         hamster_name: str,

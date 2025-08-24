@@ -31,4 +31,4 @@ Each schema file should include **3 main classes**:
 Always include:
 ```python
 class Config:
-    orm_mode = True
+    from_attributes = True

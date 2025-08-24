@@ -26,6 +26,18 @@ class MemoryPriority(int, Enum):
     HIGH = 3
     CRITICAL = 4
 
+class MemoryType(str, Enum):
+    """Types of memories used by agents"""
+    OBSERVATION = "observation"
+    DECISION = "decision"
+    ACTION = "action"
+    FEEDBACK = "feedback"
+    ERROR = "error"
+    PERFORMANCE = "performance"
+    DEBUG = "debug"
+    COORDINATION = "coordination"
+    USER_INTERACTION = "user_interaction"
+
 class AgentMemoryBase(BaseModel):
     """Base model for all agent memories"""
     user_id: str = Field(..., description="ID of the user this memory belongs to")
@@ -83,7 +95,7 @@ class AgentMemoryInDB(AgentMemoryBase):
     )
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class AgentMemoryResponse(AgentMemoryInDB):
     """Schema for memory as returned in API responses"""
@@ -139,7 +151,7 @@ class MemoryBankInDB(MemoryBankBase):
     )
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class MemoryBankResponse(MemoryBankInDB):
     """Schema for memory bank as returned in API responses"""
@@ -182,4 +194,4 @@ class CentralMemoryResponse(AgentMemoryResponse):
     relevance_score: float
     
     class Config:
-        orm_mode = True
+        from_attributes = True

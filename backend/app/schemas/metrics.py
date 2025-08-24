@@ -25,6 +25,6 @@ class MetricUpdate(BaseModel):
     cpu_usage: Optional[float] = None
     memory_usage: Optional[float] = None
     disk_usage: Optional[float] = None
-    network: Optional[float] = None
+    network: Optional[Dict] = None
     process_count: Optional[int] = None
     additional_metrics: Optional[Dict] = None

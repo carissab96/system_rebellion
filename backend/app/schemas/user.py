@@ -11,6 +11,14 @@ class UserRole(str, Enum):
     SYSTEM = "system"
     SERVICE_ACCOUNT = "service_account"
 
+class User(BaseModel):
+    """Base user model with common fields"""
+    email: EmailStr
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    is_active: bool = True
+    is_verified: bool = False
+    role: UserRole = UserRole.USER
 
 class UserProfileData(BaseModel):
     operating_system: Optional[str] = None
@@ -21,38 +29,15 @@ class UserProfileData(BaseModel):
     linux_distro_version: Optional[str] = None
     avatar: Optional[str] = None
 
-
 class UserPreferencesData(BaseModel):
     optimization_level: Optional[str] = None
     theme_preferences: Optional[Dict[str, Any]] = None
-
 
 class UserProfileUpdate(BaseModel):
     profile: Optional[UserProfileData] = None
     preferences: Optional[UserPreferencesData] = None
 
-
-class UserCreate(BaseModel):
-    email: EmailStr
-    password: str = Field(..., min_length=8)
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
-    company_name: Optional[str] = None
-    job_title: Optional[str] = None
-    bio: Optional[str] = None
-    profile_picture: Optional[str] = None
-
-
-class UserBase(BaseModel):
-    """Base user model with common fields"""
-    email: EmailStr
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
-    is_active: bool = True
-    is_verified: bool = False
-    role: UserRole = UserRole.USER
-
-class UserCreate(UserBase):
+class UserCreate(User):
     """Schema for creating a new user"""
     password: str = Field(..., min_length=8)
     company_name: Optional[str] = None
@@ -72,7 +57,7 @@ class UserUpdate(BaseModel):
     is_active: Optional[bool] = None
     role: Optional[UserRole] = None
 
-class UserInDB(UserBase):
+class UserInDB(User):
     """User model as stored in the database"""
     id: str
     hashed_password: str
@@ -82,9 +67,9 @@ class UserInDB(UserBase):
     failed_login_attempts: int = 0
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
-class UserResponse(UserBase):
+class UserResponse(User):
     """User model for API responses"""
     id: str
     company_name: Optional[str] = None
@@ -104,7 +89,7 @@ class UserResponse(UserBase):
     last_login: Optional[datetime] = None
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class TokenPayload(BaseModel):

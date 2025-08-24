@@ -97,6 +97,7 @@ class TriageResult:
     errors: List[str]
 
 from .hawk_redis_patch.triage_engine_redis_patch import TriageEngineWithRedisMixin
+from .decision_engine import sir_hawkington_brain
 class SirHawkingtonTriageEngine(TriageEngineWithRedisMixin):
     """
     THE ARISTOCRATIC TRIAGE COMMANDER
@@ -146,17 +147,20 @@ class SirHawkingtonTriageEngine(TriageEngineWithRedisMixin):
     async def initialize(self):
         """Initialize the triage engine with aristocratic precision"""
         # Initialize database
-        if not self.db:
+        if self.db is None:
+            from .database_integration import HawkingtonDatabaseIntegration
             self.db = HawkingtonDatabaseIntegration(self.db_getter)
             await self.db.initialize()
             
-            await super().initialize()
-            
-        # Initialize Sir Hawkington's brain
-        await sir_hawkington_brain.initialize_database()
-            
+        await super().initialize()
+                    # Initialize Sir Hawkington's brain
+        if hasattr(sir_hawkington_brain, 'initialize_database'):
+            if asyncio.iscoroutinefunction(sir_hawkington_brain.initialize_database):
+                await sir_hawkington_brain.initialize_database()
+            else:
+                sir_hawkington_brain.initialize_database()
+        
         self.logger.info("🧐✨ Triage Engine initialization complete - Ready for aristocratic command")
-    
     async def process_system_metrics(
             self, 
             metrics_data: Dict[str, Any], 
@@ -713,7 +717,8 @@ async def get_triage_engine():
         async with _triage_lock:
             # Double-check pattern for thread safety
             if _triage_engine is None:
-                _triage_engine = SirHawkingtonTriageEngine()  # Fixed: removed self.db_getter
+                from app.core.database import get_async_db
+                _triage_engine = SirHawkingtonTriageEngine(db_getter=get_async_db)
                 await _triage_engine.initialize()
     
     return _triage_engine

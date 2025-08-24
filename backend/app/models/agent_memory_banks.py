@@ -7,7 +7,7 @@ from datetime import datetime
 import uuid
 from app.core.base import Base
 from sqlalchemy import func
-
+from sqlalchemy.dialects.postgresql import JSONB
 
 # ============================================================================
 # CENTRAL MEMORY BANK - The Stick's Eidetic Memory Hub
@@ -30,8 +30,10 @@ class CentralMemoryBank(Base):
         Index('idx_metric_queries', 'event_type', 'occurred_at', 'subject_kind'),
         # For agent-specific metadata queries
         Index('idx_agent_metadata', 'agent_name', 'metadata'),
+        postgresql_using='gin',
         # For event correlation
         Index('idx_correlation', 'correlation_id', 'trace_id')
+        postgresql_using='gin',
     )
     
     # Core identifiers
@@ -45,8 +47,9 @@ class CentralMemoryBank(Base):
     
     # Source and ownership
     agent_name = Column(String(50), nullable=False, index=True)  # Which agent created this
-    user_id = Column(String(255), nullable=True, index=True)     # Which user this belongs to (nullable for system events)
-    
+    user_id = Column(String, ForeignKey('users.id', ondelete='CASCADE'), index=True, nullable=True)
+    user = relationship("User", back_populates="central_memory_bank", lazy="joined")
+   
     # Event classification
     event_type = Column(String(100), nullable=False, index=True)  # e.g., 'monocle_yeet', 'shell_spin', 'wisdom_shared'
     subject_kind = Column(String(50), index=True)  # What this event is about (e.g., 'data_quality', 'performance')
@@ -56,8 +59,8 @@ class CentralMemoryBank(Base):
     # Event content
     title = Column(String(255))
     description = Column(Text)
-    details = Column(JSON)  # Structured event details (primary payload)
-    metadata_ = Column('metadata', JSON)  # Additional metadata (using _ to avoid Python keyword)
+    details = Column(JSONB, nullable=True)  # Structured event details (primary payload)
+    metadata_ = Column('metadata', JSONB, nullable=True)  # Additional metadata (using _ to avoid Python keyword)
     
     # Alias for backward compatibility
     @property
@@ -73,10 +76,10 @@ class CentralMemoryBank(Base):
     # Metrics and measurements
     numeric_value = Column(Float)
     string_value = Column(Text)
-    tags = Column(JSON)  # For flexible filtering
-    
+    tags = Column(JSONB, nullable=True)  # For flexible filtering
+
     # Agent-specific metadata
-    agent_metadata = Column(JSON)  # For any agent-specific fields that don't fit the common schema
+    agent_metadata = Column(JSONB, nullable=True)  # For any agent-specific fields that don't fit the common schema
     
     # Relationships
     parent_memory = relationship("CentralMemoryBank", remote_side=[memory_id], 
@@ -356,8 +359,8 @@ class AgentLearningInteractions(Base):
     
     # Transfer details
     learning_type = Column(String(100), nullable=False)  # pattern, optimization, failure, etc.
-    adaptation_method = Column(JSON)  # How the learning was adapted
-    application_context = Column(JSON)  # Context where it was applied
+    adaptation_method = Column(JSONB, nullable=True)  # How the learning was adapted
+    application_context = Column(JSONB, nullable=True)  # Context where it was applied
     
     # Effectiveness tracking
     transfer_success = Column(Boolean, default=False)
@@ -384,27 +387,28 @@ class UserLearningPatterns(Base):
     
     id = Column(Integer, primary_key=True)
     pattern_id = Column(String(36), default=lambda: str(uuid.uuid4()), unique=True)
-    user_id = Column(String(255), nullable=False, index=True)
+    user_id = Column(String, ForeignKey('users.id', ondelete='CASCADE'), index=True, nullable=False)
+    user = relationship("User", back_populates="user_learning_patterns", lazy="joined")
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
     
     # User behavior patterns
-    interaction_pattern = Column(JSON)  # How user interacts with agents
-    learning_preference = Column(JSON)  # User's learning preferences
-    response_patterns = Column(JSON)  # How user responds to different approaches
+    interaction_pattern = Column(JSONB, nullable=True)  # How user interacts with agents
+    learning_preference = Column(JSONB, nullable=True)  # User's learning preferences
+    response_patterns = Column(JSONB, nullable=True)  # How user responds to different approaches
     
     # Agent adaptation
-    most_effective_agent = Column(String(50))  # Which agent works best for this user
-    communication_style_preference = Column(JSON)  # Preferred communication style
-    complexity_tolerance = Column(Float)  # User's tolerance for complexity
+    most_effective_agent = Column(String(50), nullable=True)  # Which agent works best for this user
+    communication_style_preference = Column(JSONB, nullable=True)  # Preferred communication style
+    complexity_tolerance = Column(Float, nullable=True)  # User's tolerance for complexity
     
     # Learning outcomes
-    skill_improvement_areas = Column(JSON)  # Areas where user is improving
-    knowledge_gaps = Column(JSON)  # Identified knowledge gaps
-    success_patterns = Column(JSON)  # What leads to user success
+    skill_improvement_areas = Column(JSONB, nullable=True)  # Areas where user is improving
+    knowledge_gaps = Column(JSONB, nullable=True)  # Identified knowledge gaps
+    success_patterns = Column(JSONB, nullable=True)  # What leads to user success
     
     # Cross-agent insights
-    agent_effectiveness_ranking = Column(JSON)  # How effective each agent is for this user
-    collaborative_preferences = Column(JSON)  # Preferred agent collaborations
+    agent_effectiveness_ranking = Column(JSONB, nullable=True)  # How effective each agent is for this user
+    collaborative_preferences = Column(JSONB, nullable=True)  # Preferred agent collaborations
     
     __table_args__ = (
         Index('idx_user_patterns', 'user_id', 'most_effective_agent'),

@@ -35,7 +35,7 @@ class SageWisdomRead(SageWisdomBase):
     effectiveness: Optional[float] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class SageWisdomUpdate(BaseModel):
     """Schema for updating wisdom entries"""

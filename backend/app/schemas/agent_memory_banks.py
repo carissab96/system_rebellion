@@ -34,7 +34,7 @@ class CentralMemoryBankRead(CentralMemoryBankBase):
     timestamp: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # ===================== Agent-Specific Memory Banks =====================
 
@@ -57,7 +57,7 @@ class AgentMemoryBankRead(AgentMemoryBankBase):
     central_memory_id: Optional[UUID] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Sir Hawkington Memory Bank
 class SirHawkingtonMemoryBankCreate(AgentMemoryBankCreate):
@@ -225,7 +225,7 @@ class AgentLearningInteractionsRead(AgentLearningInteractionsBase):
     timestamp: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # ===================== User Learning Patterns =====================
 
@@ -255,7 +255,7 @@ class UserLearningPatternsRead(UserLearningPatternsBase):
     timestamp: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # ===================== Memory Bank Metadata =====================
 
@@ -289,4 +289,4 @@ class MemoryBankMetadataRead(MemoryBankMetadataBase):
     timestamp: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True

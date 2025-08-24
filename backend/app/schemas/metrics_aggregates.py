@@ -51,7 +51,7 @@ class MetricsHourlyRead(MetricsHourlyBase):
     id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # ===================== Daily Metrics =====================
 
@@ -96,4 +96,4 @@ class MetricsDailyRead(MetricsDailyBase):
     id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True

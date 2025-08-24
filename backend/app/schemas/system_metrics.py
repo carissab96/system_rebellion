@@ -39,7 +39,7 @@ class MetricUnit(str, Enum):
     MILLIWATTS = "mW"
     NONE = ""  # For unitless metrics
 
-class SystemMetricsBase(BaseModel):
+class SystemMetrics(BaseModel):
     """Base model for system metrics"""
     metric_type: MetricType = Field(..., description="Type of the metric")
     value: Union[float, int, Dict[str, float], List[float]] = Field(
@@ -84,17 +84,17 @@ class SystemMetricsBase(BaseModel):
             return v
         raise ValueError("Value must be a number, list of numbers, or dict of numbers")
 
-class SystemMetricsCreate(SystemMetricsBase):
+class SystemMetricsCreate(SystemMetrics):
     """Schema for creating a new system metric"""
     pass
 
-class SystemMetricsUpdate(BaseModel):
+class SystemMetricsUpdate(SystemMetrics):
     """Schema for updating an existing system metric"""
     value: Optional[Union[float, int, Dict[str, float], List[float]]] = None
     unit: Optional[MetricUnit] = None
     tags: Optional[Dict[str, str]] = None
 
-class SystemMetricsInDB(SystemMetricsBase):
+class SystemMetricsInDB(SystemMetrics):
     """Schema for system metric as stored in the database"""
     id: int = Field(..., description="Database primary key")
     user_id: str = Field(..., description="ID of the user this metric belongs to")
@@ -102,7 +102,7 @@ class SystemMetricsInDB(SystemMetricsBase):
     updated_at: datetime = Field(..., description="When the metric was last updated")
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class SystemMetricsResponse(SystemMetricsInDB):
     """Schema for system metric as returned in API responses"""
