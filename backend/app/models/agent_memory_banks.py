@@ -9,6 +9,7 @@ from app.core.base import Base
 from sqlalchemy import func
 from app.core.types import PG_JSONB, SA_JSON
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import JSON
 
 # ============================================================================
 # CENTRAL MEMORY BANK - The Stick's Eidetic Memory Hub
@@ -26,15 +27,15 @@ class CentralMemoryBank(Base):
     memory_id = Column(String(36), default=lambda: str(uuid.uuid4()), unique=True, nullable=False)
 
     # --- timestamps
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
-    occurred_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    created_at = Column(DateTime, default=datetime.now(), nullable=False, index=True)
+    updated_at = Column(DateTime, default=datetime.now(), onupdate=datetime.now(), nullable=False)
+    occurred_at = Column(DateTime, default=datetime.now(), nullable=False, index=True)
 
     # --- source / ownership
     agent_name = Column(String(50), nullable=False, index=True)
     user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=True)
     # NOTE: ensure User model has: central_memories = relationship("CentralMemoryBank", back_populates="user", ...)
-    user = relationship("User", back_populates="central_memories", lazy="joined")
+    user = relationship("User", back_populates="central_memory_bank", lazy="joined")
 
     # --- classification
     event_type = Column(String(100), nullable=False, index=True)
@@ -45,8 +46,8 @@ class CentralMemoryBank(Base):
     # --- content
     title = Column(String(255))
     description = Column(Text)
-    details = Column(PG_JSONB, nullable=True)          # primary payload
-    metadata_ = Column("metadata", PG_JSONB, nullable=True)  # extra payload (column name is "metadata")
+    details = Column(JSON, nullable=True)          # primary payload
+    metadata_ = Column("metadata", JSON, nullable=True)  # extra payload (column name is "metadata")
 
     @property
     def content(self):
@@ -67,10 +68,10 @@ class CentralMemoryBank(Base):
     # --- measurements
     numeric_value = Column(Float)
     string_value = Column(Text)
-    tags = Column(PG_JSONB, nullable=True)             # flexible filtering (labels, facets)
+    tags = Column(JSON, nullable=True)             # flexible filtering (labels, facets)
 
     # --- agent-specific metadata
-    agent_metadata = Column(PG_JSONB, nullable=True)
+    agent_metadata = Column(JSON, nullable=True)
 
     # --- cross-agent flags
     relevant_agents = Column(String(255))
@@ -353,7 +354,7 @@ class AgentLearningInteractions(Base):
 
     id = Column(Integer, primary_key=True)
     interaction_id = Column(String(36), default=lambda: str(uuid.uuid4()), unique=True)
-    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    timestamp = Column(DateTime, default=datetime.now(), nullable=False, index=True)
 
     # Learning transfer
     source_agent = Column(String(50), nullable=False, index=True)
@@ -362,8 +363,8 @@ class AgentLearningInteractions(Base):
 
     # Transfer details
     learning_type = Column(String(100), nullable=False)
-    adaptation_method = Column(PG_JSONB, nullable=True)       # JSONBCompat
-    application_context = Column(PG_JSONB, nullable=True)     # JSONBCompat
+    adaptation_method = Column(JSON, nullable=True)       # JSONBCompat
+    application_context = Column(JSON, nullable=True)     # JSONBCompat
 
     # Effectiveness tracking
     transfer_success = Column(Boolean, default=False)
@@ -400,26 +401,26 @@ class UserLearningPatterns(Base):
     user_id = Column(String, ForeignKey('users.id', ondelete='CASCADE'), index=True, nullable=False)
     user = relationship("User", back_populates="user_learning_patterns", lazy="joined")
 
-    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    timestamp = Column(DateTime, default=datetime.now(), nullable=False, index=True)
 
     # User behavior patterns (JSONBCompat)
-    interaction_pattern = Column(PG_JSONB, nullable=True)
-    learning_preference = Column(PG_JSONB, nullable=True)  # JSONB -> GIN
-    response_patterns = Column(PG_JSONB, nullable=True)
+    interaction_pattern = Column(JSON, nullable=True)
+    learning_preference = Column(JSON, nullable=True)  # JSONB -> GIN
+    response_patterns = Column(JSON, nullable=True)
 
     # Agent adaptation
     most_effective_agent = Column(String(50), nullable=True)
-    communication_style_preference = Column(PG_JSONB, nullable=True)
+    communication_style_preference = Column(JSON, nullable=True)
     complexity_tolerance = Column(Float, nullable=True)
 
     # Learning outcomes
-    skill_improvement_areas = Column(PG_JSONB, nullable=True)
-    knowledge_gaps = Column(PG_JSONB, nullable=True)
-    success_patterns = Column(PG_JSONB, nullable=True)
+    skill_improvement_areas = Column(JSON, nullable=True)
+    knowledge_gaps = Column(JSON, nullable=True)
+    success_patterns = Column(JSON, nullable=True)
 
     # Cross-agent insights
-    agent_effectiveness_ranking = Column(PG_JSONB, nullable=True)
-    collaborative_preferences = Column(PG_JSONB, nullable=True)
+    agent_effectiveness_ranking = Column(JSON, nullable=True)
+    collaborative_preferences = Column(JSON, nullable=True)
 
     __table_args__ = (
         # BTREE on scalars
@@ -442,7 +443,7 @@ class MemoryBankMetadata(Base):
     __tablename__ = 'memory_bank_metadata'
 
     id = Column(Integer, primary_key=True)
-    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    timestamp = Column(DateTime, default=datetime.now(), nullable=False, index=True)
 
     # System-wide statistics
     total_memories = Column(Integer, default=0)

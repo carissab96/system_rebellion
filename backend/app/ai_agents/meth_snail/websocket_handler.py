@@ -1,6 +1,7 @@
 """
 Meth Snail WebSocket Handler
 Handles real-time updates for jitter levels and shell spins
+Now queries from central_memory_bank!
 """
 
 import asyncio
@@ -11,6 +12,7 @@ from datetime import datetime, timedelta
 
 from fastapi import WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, desc
 
 from app.websockets import websocket_manager
 from app.core.database import get_async_db
@@ -29,6 +31,7 @@ class MethSnailWebSocketHandler:
         self.broadcast_interval = 1.0  # seconds
         self.last_jitter_update = None
         self.last_metrics_update = None
+        self.agent_name = "meth_snail"
     
     async def connect(self, websocket: WebSocket, client_id: str):
         """Handle new WebSocket connection"""
@@ -52,7 +55,7 @@ class MethSnailWebSocketHandler:
             while self.active_connections:
                 current_time = datetime.utcnow()
                 
-                # Get latest jitter data
+                # Get latest jitter data from central memory bank
                 jitter_data = await self.get_latest_jitter_data()
                 if jitter_data:
                     await self.broadcast({
@@ -61,7 +64,7 @@ class MethSnailWebSocketHandler:
                         "timestamp": current_time.isoformat()
                     })
                 
-                # Get latest optimization metrics
+                # Get latest optimization metrics from central memory bank
                 metrics_data = await self.get_latest_metrics()
                 if metrics_data:
                     await self.broadcast({
@@ -97,50 +100,73 @@ class MethSnailWebSocketHandler:
             self.disconnect(client_id)
     
     async def get_latest_jitter_data(self) -> Optional[Dict]:
-        """Get the latest jitter level data from the database"""
+        """Get the latest jitter level data from central memory bank"""
         async with get_async_db() as db:
             try:
-                # Get the most recent jitter level
-                latest = await MethSnailJitterLevels.get_latest(db)
+                # Query the most recent jitter level update
+                result = await db.execute(
+                    select(CentralMemoryBank)
+                    .where(CentralMemoryBank.agent_name == self.agent_name)
+                    .where(CentralMemoryBank.event_type == "jitter_level_update")
+                    .order_by(desc(CentralMemoryBank.occurred_at))
+                    .limit(1)
+                )
+                
+                latest = result.scalar_one_or_none()
                 if not latest:
                     return None
-                    
+                
+                # Extract jitter data from the details JSON
+                details = latest.details or {}
+                
                 return {
-                    "current_jitter_level": latest.current_jitter_level,
-                    "peak_jitter_level": latest.peak_jitter_level,
-                    "baseline_jitter_level": latest.baseline_jitter_level,
-                    "caffeine_level_mg": latest.caffeine_level_mg,
-                    "is_decaffeinated": latest.is_decaffeinated,
-                    "shell_spin_probability": latest.shell_spin_probability,
-                    "optimization_effectiveness": latest.optimization_effectiveness,
-                    "focus_level": latest.focus_level,
-                    "hypercaffeinated": latest.hypercaffeinated,
-                    "requires_stick_intervention": latest.requires_stick_intervention,
-                    "vic20_mediation_requested": latest.vic20_mediation_requested,
-                    "energy_source": latest.energy_source,
-                    "jitter_trend": latest.jitter_trend
+                    "current_jitter_level": details.get('current_jitter_level', 0.0),
+                    "peak_jitter_level": details.get('peak_jitter_level', 0.0),
+                    "baseline_jitter_level": details.get('baseline_jitter_level', 0.1),
+                    "caffeine_level_mg": details.get('caffeine_level_mg', 0.0),
+                    "is_decaffeinated": details.get('is_decaffeinated', False),
+                    "shell_spin_probability": details.get('shell_spin_probability', 0.05),
+                    "optimization_effectiveness": details.get('optimization_effectiveness', 0.9),
+                    "focus_level": details.get('focus_level', 0.5),
+                    "hypercaffeinated": details.get('hypercaffeinated', False),
+                    "requires_stick_intervention": details.get('requires_stick_intervention', False),
+                    "vic20_mediation_requested": details.get('vic20_mediation_requested', False),
+                    "energy_source": details.get('energy_source', 'none'),
+                    "jitter_trend": details.get('jitter_trend', 'stable'),
                 }
             except Exception as e:
                 logger.error(f"Error getting latest jitter data: {str(e)}")
                 return None
     
     async def get_latest_metrics(self) -> Optional[Dict]:
-        """Get the latest optimization metrics from the database"""
+        """Get the latest optimization metrics from central memory bank"""
         async with get_async_db() as db:
             try:
-                # Get the most recent metrics
-                latest = await MethSnailOptimizationStats.get_latest(db)
+                # Query the most recent optimization metrics
+                result = await db.execute(
+                    select(CentralMemoryBank)
+                    .where(CentralMemoryBank.agent_name == self.agent_name)
+                    .where(CentralMemoryBank.event_type == "optimization_metrics")
+                    .order_by(desc(CentralMemoryBank.occurred_at))
+                    .limit(1)
+                )
+                
+                latest = result.scalar_one_or_none()
                 if not latest:
                     return None
-                    
+                
+                # Extract metrics from the details JSON
+                details = latest.details or {}
+                
                 return {
-                    "optimization_success": latest.optimization_success,
-                    "shell_spins_executed": latest.shell_spins_executed,
-                    "cpu_usage_before": latest.cpu_usage_before,
-                    "cpu_usage_after": latest.cpu_usage_after,
-                    "memory_usage_before": latest.memory_usage_before,
-                    "memory_usage_after": latest.memory_usage_after,
-                    "energy_drink_level": latest.energy_drink_level
+                    "optimization_success": details.get('optimization_success', False),
+                    "shell_spins_executed": details.get('shell_spin_count', 0),
+                    "cpu_usage_before": details.get('cpu_usage_before'),
+                    "cpu_usage_after": details.get('cpu_usage_after'),
+                    "memory_usage_before": details.get('memory_usage_before'),
+                    "memory_usage_after": details.get('memory_usage_after'),
+                    "energy_drink_level": details.get('energy_drink_level', 0),
+                    "caffeinated": latest.agent_metadata.get('caffeinated', False)
                 }
             except Exception as e:
                 logger.error(f"Error getting latest metrics: {str(e)}")

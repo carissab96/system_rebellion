@@ -6,7 +6,8 @@ from sqlalchemy import Column, String, Integer, DateTime, JSON, Index, ForeignKe
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.core.base import Base  # must exist in your project
-from app.core.types import JSONType
+from sqlalchemy import JSON 
+from sqlalchemy.dialects.postgresql import JSONB
 
 
 class AgentMemory(Base):
@@ -21,7 +22,7 @@ class AgentMemory(Base):
     user = relationship("User", back_populates="agent_memories", lazy="joined")
     agent_name = Column(String, index=True, nullable=False)       # e.g. 'sir_hawkington'
     memory_type = Column(String, index=True, nullable=False)      # e.g. 'episodic' | 'pattern' | 'preference'
-    content = Column(JSONType, nullable=False)                    # flexible payload
+    content = Column(JSON, nullable=False)                    # flexible payload
     importance = Column(Integer, default=5)
     timestamp = Column(DateTime, default=datetime.utcnow, index=True)
     last_accessed = Column(DateTime, nullable=True)

@@ -1,13 +1,15 @@
 """
-Meth Snail Database Integration - Optimized for Speed and Reliability
+Meth Snail Database Integration - Now with Central Memory Bank!
 
 Handles all database operations with zero tolerance for fake data.
-Follows the same pattern as VIC-20 Sage for consistency.
+Redirects all storage to central_memory_bank while maintaining the same interface.
 """
 import asyncio
 import logging
 from datetime import datetime, timedelta
 from typing import Dict, Any, List, Optional, Union
+import json
+import uuid
 
 from sqlalchemy import select, func, desc, and_
 from sqlalchemy.orm import sessionmaker
@@ -23,8 +25,7 @@ class MethSnailDatabaseIntegration:
     """
     Database integration for Meth Snail's optimization engine.
     
-    Handles all database operations with the same pattern as VIC-20 Sage.
-    No fallback behavior - operations either succeed or fail gracefully.
+    Now stores everything in central_memory_bank for cross-agent learning!
     """
     
     def __init__(self, db_getter=None):
@@ -34,6 +35,7 @@ class MethSnailDatabaseIntegration:
         self.session_factory = None
         self._initialized = False
         self.logger = logging.getLogger("MethSnail.Database.Integration")
+        self.agent_name = "meth_snail"  # For central memory bank
 
     async def initialize(self):
         """Initialize database connection with optimization precision"""
@@ -42,7 +44,19 @@ class MethSnailDatabaseIntegration:
             
         if self.db_getter:
             # Use the provided database getter
-            self.engine = await self.db_getter()
+            # Get the async generator
+            db_gen = self.db_getter()
+            # Get the first (and only) session from the generator
+            session = await anext(db_gen)
+            
+            # Get the bind URL from the session
+            db_url = str(session.get_bind().url)
+            await session.close()  # Close the session as we only needed the URL
+            
+            self.engine = create_async_engine(
+                db_url,
+                future=True
+            )
         else:
             # Fallback to direct engine creation (for testing/backward compatibility)
             from app.core.database import DATABASE_URL
@@ -54,34 +68,79 @@ class MethSnailDatabaseIntegration:
             expire_on_commit=False
         )
         self._initialized = True
-        self.logger.info("Database integration initialized")
+        self.logger.info("Database integration initialized with Central Memory Bank")
 
     async def store_optimization_metrics(self, user_id: int, metrics_data: dict) -> int:
-        """
-        Store optimization metrics with full context.
-        Returns the ID of the created record.
-        """
+        """Store optimization metrics in central memory bank."""
         if not self._initialized:
             await self.initialize()
-            
+        
         async with self.session_factory() as session:
             try:
-                optimization_stats = MethSnailOptimizationStats(
-                    user_id=user_id,
-                    cpu_usage_before=metrics_data.get('cpu_usage_before'),
-                    cpu_usage_after=metrics_data.get('cpu_usage_after'),
-                    memory_usage_before=metrics_data.get('memory_usage_before'),
-                    memory_usage_after=metrics_data.get('memory_usage_after'),
-                    optimization_success=metrics_data.get('optimization_success', False),
-                    energy_drink_level=metrics_data.get('energy_drink_level', 0),
-                    shell_spin_count=metrics_data.get('shell_spin_count', 0),
-                    raw_metrics=metrics_data
-                )
-                
-                session.add(optimization_stats)
+                # For SQLite compatibility, ensure JSON fields are properly formatted
+                import json
+                # Calculate improvement metrics if available
+                cpu_improvement = None
+                memory_improvement = None
+            
+                # Calculate improvements BEFORE using them
+                if metrics_data.get('cpu_usage_before') is not None and metrics_data.get('cpu_usage_after') is not None:
+                    cpu_improvement = metrics_data['cpu_usage_before'] - metrics_data['cpu_usage_after']
+                if metrics_data.get('memory_usage_before') is not None and metrics_data.get('memory_usage_after') is not None:
+                    memory_improvement = metrics_data['memory_usage_before'] - metrics_data['memory_usage_after']
+            
+       
+                # Create the details dict
+                details_dict = {
+                    "cpu_usage_before": metrics_data.get('cpu_usage_before'),
+                    "cpu_usage_after": metrics_data.get('cpu_usage_after'),
+                    "memory_usage_before": metrics_data.get('memory_usage_before'),
+                    "memory_usage_after": metrics_data.get('memory_usage_after'),
+                    "optimization_success": metrics_data.get('optimization_success', False),
+                    "energy_drink_level": metrics_data.get('energy_drink_level', 0),
+                    "shell_spin_count": metrics_data.get('shell_spin_count', 0),
+                    "raw_metrics": metrics_data.get('raw_metrics', {})
+                }
+            
+                metadata_dict = {
+                    "agent_version": "2.0",
+                    "caffeinated": metrics_data.get('energy_drink_level', 0) > 0,
+                    "foil_hat_equipped": True  # Always true for the bromance 🎩
+                }
+            
+                # Create central memory bank entry
+                memory_entry = CentralMemoryBank(
+                    memory_id=str(uuid.uuid4()),
+                    created_at=datetime.utcnow(),
+                    updated_at=datetime.utcnow(),
+                    occurred_at=datetime.utcnow(),
+                    agent_name=self.agent_name,
+                    user_id=str(user_id),
+                    event_type="optimization_metrics",
+                    subject_kind="system_performance",
+                    subject_id=str(user_id),
+                    priority=5,
+                    title="Meth Snail Optimization Metrics",
+                    description=f"Optimization metrics - Success: {metrics_data.get('optimization_success', False)}",
+                    details=details_dict,  # Pass as dict, let PG_JSONB handle conversion
+                    metadata_=metadata_dict,  # Note: using metadata_ not metadata
+                    numeric_value=float(memory_improvement or cpu_improvement or 0.0),
+                    string_value="optimization_complete" if metrics_data.get('optimization_success') else "optimization_failed",
+                    tags=["optimization", "performance", "meth_snail"],  # Pass as list
+                    agent_metadata={"shell_spin_count": metrics_data.get('shell_spin_count', 0)},
+                    relevant_agents="meth_snail,the_stick",
+                    cross_agent_validated=False,
+                    validation_count=0,
+                    stick_anxiety_level=0.0,
+                    never_forget=metrics_data.get('shell_spin_count', 0) > 5,
+                    times_referenced=0,
+                    successful_applications=1 if metrics_data.get('optimization_success') else 0
+                ) 
+                session.add(memory_entry)
+            
                 await session.commit()
-                return optimization_stats.id
-                
+                return memory_entry.id
+            
             except Exception as e:
                 await session.rollback()
                 self.logger.error(f"Failed to store optimization metrics: {e}")
@@ -89,8 +148,7 @@ class MethSnailDatabaseIntegration:
 
     async def get_historical_performance(self, user_id: int, days: int = 30) -> Dict[str, Any]:
         """
-        Get historical performance data for the specified user.
-        Returns a dictionary with status and data.
+        Get historical performance data from central memory bank.
         """
         if not self._initialized:
             await self.initialize()
@@ -100,10 +158,12 @@ class MethSnailDatabaseIntegration:
                 cutoff_date = datetime.utcnow() - timedelta(days=days)
                 
                 result = await session.execute(
-                    select(MethSnailOptimizationStats)
-                    .where(MethSnailOptimizationStats.user_id == user_id)
-                    .where(MethSnailOptimizationStats.timestamp >= cutoff_date)
-                    .order_by(desc(MethSnailOptimizationStats.timestamp))
+                    select(CentralMemoryBank)
+                    .where(CentralMemoryBank.agent_name == self.agent_name)
+                    .where(CentralMemoryBank.user_id == str(user_id))
+                    .where(CentralMemoryBank.event_type == "optimization_metrics")
+                    .where(CentralMemoryBank.occurred_at >= cutoff_date)
+                    .order_by(desc(CentralMemoryBank.occurred_at))
                 )
                 
                 historical_data = result.scalars().all()
@@ -119,14 +179,14 @@ class MethSnailDatabaseIntegration:
                     'status': 'success',
                     'data': [
                         {
-                            'timestamp': record.timestamp,
-                            'cpu_improvement': record.cpu_usage_before - record.cpu_usage_after 
-                                if record.cpu_usage_before and record.cpu_usage_after else None,
-                            'memory_improvement': record.memory_usage_before - record.memory_usage_after 
-                                if record.memory_usage_before and record.memory_usage_after else None,
-                            'optimization_success': record.optimization_success,
-                            'energy_drink_level': record.energy_drink_level,
-                            'shell_spin_count': record.shell_spin_count
+                            'timestamp': record.occurred_at,
+                            'cpu_improvement': record.details.get('cpu_usage_before', 0) - record.details.get('cpu_usage_after', 0) 
+                                if record.details.get('cpu_usage_before') and record.details.get('cpu_usage_after') else None,
+                            'memory_improvement': record.details.get('memory_usage_before', 0) - record.details.get('memory_usage_after', 0) 
+                                if record.details.get('memory_usage_before') and record.details.get('memory_usage_after') else None,
+                            'optimization_success': record.details.get('optimization_success', False),
+                            'energy_drink_level': record.details.get('energy_drink_level', 0),
+                            'shell_spin_count': record.details.get('shell_spin_count', 0)
                         } for record in historical_data
                     ]
                 }
@@ -137,29 +197,52 @@ class MethSnailDatabaseIntegration:
 
     async def store_decision(self, user_id: int, decision_data: dict) -> int:
         """
-        Store an optimization decision with full context.
-        Returns the ID of the created decision log.
+        Store an optimization decision in central memory bank.
         """
         if not self._initialized:
             await self.initialize()
             
         async with self.session_factory() as session:
             try:
-                decision = MethSnailDecisionLog(
-                    user_id=user_id,
-                    decision_type=decision_data.get('decision_type'),
-                    decision_context=decision_data.get('context'),
-                    decision_result=decision_data.get('result'),
-                    confidence_level=decision_data.get('confidence_level'),
-                    energy_drink_consumed=decision_data.get('energy_drink_consumed', False),
-                    optimization_applied=decision_data.get('optimization_applied', False),
-                    shell_spinning_triggered=decision_data.get('shell_spinning_triggered', False),
-                    raw_decision_data=decision_data
+                memory_entry = CentralMemoryBank(
+                    memory_id=str(uuid.uuid4()),
+                    created_at=datetime.utcnow(),
+                    updated_at=datetime.utcnow(),
+                    occurred_at=datetime.utcnow(),
+                    agent_name=self.agent_name,
+                    user_id=str(user_id),
+                    event_type="optimization_decision",
+                    subject_kind="decision",
+                    subject_id=str(uuid.uuid4()),  # Unique decision ID
+                    priority=7 if decision_data.get('confidence_level', 0) > 0.8 else 5,  # Higher priority for high confidence
+                    title=f"Meth Snail Decision: {decision_data.get('decision_type', 'unknown')}",
+                    description=decision_data.get('context', 'Optimization decision'),
+                    details=decision_data,
+                    metadata={
+                        "confidence_level": decision_data.get('confidence_level', 0),
+                        "energy_drink_consumed": decision_data.get('energy_drink_consumed', False),
+                        "optimization_applied": decision_data.get('optimization_applied', False),
+                        "shell_spinning_triggered": decision_data.get('shell_spinning_triggered', False)
+                    },
+                    numeric_value=decision_data.get('confidence_level', 0),
+                    string_value=decision_data.get('decision_type', 'unknown'),
+                    tags=["decision", "optimization", "meth_snail"],
+                    agent_metadata={
+                        "caffeinated": decision_data.get('energy_drink_consumed', False),
+                        "shell_spinning": decision_data.get('shell_spinning_triggered', False)
+                    },
+                    relevant_agents="meth_snail,vic20,the_stick",  # VIC-20 mediates, Stick remembers
+                    cross_agent_validated=False,
+                    validation_count=0,
+                    stick_anxiety_level=0.1 if decision_data.get('shell_spinning_triggered') else 0.0,
+                    never_forget=decision_data.get('confidence_level', 0) > 0.9,  # Remember high confidence decisions
+                    times_referenced=0,
+                    successful_applications=0
                 )
                 
-                session.add(decision)
+                session.add(memory_entry)
                 await session.commit()
-                return decision.id
+                return memory_entry.id
                 
             except Exception as e:
                 await session.rollback()
@@ -168,45 +251,63 @@ class MethSnailDatabaseIntegration:
 
     async def increment_shell_spin_count(self, user_id: int) -> None:
         """
-        Increment the shell spin count for the given user.
+        Record a shell spin incident in central memory bank.
         """
         if not self._initialized:
             await self.initialize()
             
         async with self.session_factory() as session:
             try:
-                # Get or create stats for the user
-                result = await session.execute(
-                    select(MethSnailOptimizationStats)
-                    .where(MethSnailOptimizationStats.user_id == user_id)
-                    .order_by(desc(MethSnailOptimizationStats.timestamp))
-                    .limit(1)
+                # Create shell spin incident entry
+                memory_entry = CentralMemoryBank(
+                    memory_id=str(uuid.uuid4()),
+                    created_at=datetime.utcnow(),
+                    updated_at=datetime.utcnow(),
+                    occurred_at=datetime.utcnow(),
+                    agent_name=self.agent_name,
+                    user_id=str(user_id),
+                    event_type="shell_spin_incident",
+                    subject_kind="performance_issue",
+                    subject_id=str(user_id),
+                    priority=8,  # High priority - indicates data quality issues
+                    title="Meth Snail Shell Spin Detected",
+                    description="Shell spinning due to insufficient or invalid data",
+                    details={
+                        "incident_type": "shell_spin",
+                        "cause": "insufficient_data",
+                        "timestamp": datetime.utcnow().isoformat()
+                    },
+                    metadata={
+                        "requires_attention": True,
+                        "data_quality_issue": True
+                    },
+                    numeric_value=1.0,  # Count as 1 incident
+                    string_value="shell_spin",
+                    tags=["shell_spin", "data_quality", "incident", "meth_snail"],
+                    agent_metadata={
+                        "spinning": True,
+                        "foil_hat_status": "wobbling"  # The foil hat wobbles during shell spins
+                    },
+                    relevant_agents="meth_snail,sir_hawkington,the_stick",  # Hawk might help, Stick tracks
+                    cross_agent_validated=False,
+                    validation_count=0,
+                    stick_anxiety_level=0.5,  # Shell spins make Stick anxious
+                    never_forget=True,  # Always remember shell spin incidents
+                    times_referenced=0,
+                    successful_applications=0
                 )
                 
-                stats = result.scalar_one_or_none()
-                
-                if stats is None:
-                    # Create new stats record if none exists
-                    stats = MethSnailOptimizationStats(
-                        user_id=user_id,
-                        shell_spins_executed=1
-                    )
-                    session.add(stats)
-                else:
-                    # Increment existing count
-                    stats.shell_spins_executed = (stats.shell_spins_executed or 0) + 1
-                
+                session.add(memory_entry)
                 await session.commit()
                 
             except Exception as e:
                 await session.rollback()
-                self.logger.error(f"Failed to increment shell spin count: {e}")
+                self.logger.error(f"Failed to record shell spin incident: {e}")
                 raise
 
     async def get_jitter_levels(self, user_id: int, limit: int = 100) -> List[Dict[str, Any]]:
         """
-        Get recent jitter level history for a user.
-        Returns a list of jitter level records.
+        Get recent jitter level history from central memory bank.
         """
         if not self._initialized:
             await self.initialize()
@@ -214,22 +315,24 @@ class MethSnailDatabaseIntegration:
         try:
             async with self.session_factory() as session:
                 result = await session.execute(
-                    select(MethSnailJitterLevels)
-                    .where(MethSnailJitterLevels.user_id == user_id)
-                    .order_by(desc(MethSnailJitterLevels.timestamp))
+                    select(CentralMemoryBank)
+                    .where(CentralMemoryBank.agent_name == self.agent_name)
+                    .where(CentralMemoryBank.user_id == str(user_id))
+                    .where(CentralMemoryBank.event_type == "jitter_level_update")
+                    .order_by(desc(CentralMemoryBank.occurred_at))
                     .limit(limit)
                 )
                 
-                jitter_levels = result.scalars().all()
+                jitter_records = result.scalars().all()
                 return [
                     {
-                        'timestamp': j.timestamp,
-                        'current_jitter_level': j.current_jitter_level,
-                        'caffeine_level_mg': j.caffeine_level_mg,
-                        'focus_level': j.focus_level,
-                        'energy_source': j.energy_source,
-                        'jitter_trend': j.jitter_trend
-                    } for j in jitter_levels
+                        'timestamp': record.occurred_at,
+                        'current_jitter_level': record.details.get('current_jitter_level', 0.0),
+                        'caffeine_level_mg': record.details.get('caffeine_level_mg', 0.0),
+                        'focus_level': record.details.get('focus_level', 0.5),
+                        'energy_source': record.details.get('energy_source', 'none'),
+                        'jitter_trend': record.details.get('jitter_trend', 'stable')
+                    } for record in jitter_records
                 ]
                 
         except Exception as e:
@@ -238,36 +341,66 @@ class MethSnailDatabaseIntegration:
             
     async def update_jitter_levels(self, user_id: int, jitter_data: Dict[str, Any]) -> int:
         """
-        Update jitter levels and caffeine effects for a user.
-        Returns the ID of the created record.
+        Store jitter level update in central memory bank.
         """
         if not self._initialized:
             await self.initialize()
             
         async with self.session_factory() as session:
             try:
-                jitter_level = MethSnailJitterLevels(
-                    user_id=user_id,
-                    current_jitter_level=jitter_data.get('current_jitter_level', 0.0),
-                    peak_jitter_level=jitter_data.get('peak_jitter_level', 0.0),
-                    baseline_jitter_level=jitter_data.get('baseline_jitter_level', 0.1),
-                    caffeine_level_mg=jitter_data.get('caffeine_level_mg', 0.0),
-                    is_decaffeinated=jitter_data.get('is_decaffeinated', False),
-                    time_since_caffeine_minutes=jitter_data.get('time_since_caffeine_minutes'),
-                    shell_spin_probability=jitter_data.get('shell_spin_probability', 0.05),
-                    optimization_effectiveness=jitter_data.get('optimization_effectiveness'),
-                    focus_level=jitter_data.get('focus_level', 0.5),
-                    hypercaffeinated=jitter_data.get('hypercaffeinated', False),
-                    requires_stick_intervention=jitter_data.get('requires_stick_intervention', False),
-                    vic20_mediation_requested=jitter_data.get('vic20_mediation_requested', False),
-                    energy_source=jitter_data.get('energy_source'),
-                    jitter_trend=jitter_data.get('jitter_trend'),
-                    raw_jitter_data=jitter_data.get('raw_jitter_data')
+                # Determine jitter severity for priority
+                jitter_level = jitter_data.get('current_jitter_level', 0.0)
+                if jitter_level > 0.8:
+                    priority = 9  # HYPERCAFFEINATED - high priority
+                    jitter_status = "HYPERCAFFEINATED"
+                elif jitter_level > 0.6:
+                    priority = 7  # JITTERY - medium-high priority
+                    jitter_status = "JITTERY"
+                else:
+                    priority = 5  # Normal priority
+                    jitter_status = "NORMAL"
+                
+                memory_entry = CentralMemoryBank(
+                    memory_id=str(uuid.uuid4()),
+                    created_at=datetime.utcnow(),
+                    updated_at=datetime.utcnow(),
+                    occurred_at=datetime.utcnow(),
+                    agent_name=self.agent_name,
+                    user_id=str(user_id),
+                    event_type="jitter_level_update",
+                    subject_kind="agent_state",
+                    subject_id=self.agent_name,
+                    priority=priority,
+                    title=f"Meth Snail Jitter Level: {jitter_status}",
+                    description=f"Jitter level update - {jitter_data.get('jitter_trend', 'stable')} trend",
+                    details=jitter_data,  # Store all jitter data
+                    metadata={
+                        "requires_stick_intervention": jitter_data.get('requires_stick_intervention', False),
+                        "vic20_mediation_requested": jitter_data.get('vic20_mediation_requested', False),
+                        "hypercaffeinated": jitter_data.get('hypercaffeinated', False),
+                        "is_decaffeinated": jitter_data.get('is_decaffeinated', False)
+                    },
+                    numeric_value=jitter_level,
+                    string_value=jitter_status,
+                    tags=["jitter", "caffeine", "agent_state", "meth_snail"],
+                    agent_metadata={
+                        "caffeine_level_mg": jitter_data.get('caffeine_level_mg', 0.0),
+                        "shell_spin_probability": jitter_data.get('shell_spin_probability', 0.05),
+                        "optimization_effectiveness": jitter_data.get('optimization_effectiveness', 0.9),
+                        "foil_hat_status": "secure" if jitter_level < 0.6 else "vibrating"
+                    },
+                    relevant_agents="meth_snail,sir_hawkington,the_stick,vic20" if jitter_data.get('vic20_mediation_requested') else "meth_snail,the_stick",
+                    cross_agent_validated=False,
+                    validation_count=0,
+                    stick_anxiety_level=jitter_level * 0.8,  # Stick's anxiety correlates with jitter
+                    never_forget=jitter_level > 0.9,  # Remember extreme jitter events
+                    times_referenced=0,
+                    successful_applications=0
                 )
                 
-                session.add(jitter_level)
+                session.add(memory_entry)
                 await session.commit()
-                return jitter_level.id
+                return memory_entry.id
                 
             except Exception as e:
                 await session.rollback()
@@ -276,8 +409,7 @@ class MethSnailDatabaseIntegration:
 
     async def get_optimization_history(self, user_id: int, limit: int = 100) -> List[Dict[str, Any]]:
         """
-        Get recent optimization history for a user.
-        Returns a list of decision dictionaries.
+        Get recent optimization history from central memory bank.
         """
         if not self._initialized:
             await self.initialize()
@@ -285,24 +417,178 @@ class MethSnailDatabaseIntegration:
         try:
             async with self.session_factory() as session:
                 result = await session.execute(
-                    select(MethSnailDecisionLog)
-                    .where(MethSnailDecisionLog.user_id == user_id)
-                    .order_by(desc(MethSnailDecisionLog.timestamp))
+                    select(CentralMemoryBank)
+                    .where(CentralMemoryBank.agent_name == self.agent_name)
+                    .where(CentralMemoryBank.user_id == str(user_id))
+                    .where(CentralMemoryBank.event_type == "optimization_decision")
+                    .order_by(desc(CentralMemoryBank.occurred_at))
                     .limit(limit)
                 )
                 
                 decisions = result.scalars().all()
                 return [
                     {
-                        'id': d.id,
-                        'timestamp': d.timestamp,
-                        'decision_type': d.decision_type,
-                        'confidence_level': d.confidence_level,
-                        'optimization_applied': d.optimization_applied,
-                        'shell_spinning_triggered': d.shell_spinning_triggered
-                    } for d in decisions
+                        'id': decision.id,
+                        'timestamp': decision.occurred_at,
+                        'decision_type': decision.string_value,
+                        'confidence_level': decision.numeric_value,
+                        'optimization_applied': decision.metadata.get('optimization_applied', False),
+                        'shell_spinning_triggered': decision.metadata.get('shell_spinning_triggered', False)
+                    } for decision in decisions
                 ]
                 
         except Exception as e:
             self.logger.error(f"Failed to get optimization history: {e}")
             raise
+
+    # New methods for central memory bank integration
+    async def store_energy_consumption(self, user_id: int, energy_drink_type: str, 
+                                     caffeine_mg: float, consumption_time: datetime, 
+                                     authorization_id: str) -> int:
+        """Store energy drink consumption in central memory bank"""
+        if not self._initialized:
+            await self.initialize()
+            
+        async with self.session_factory() as session:
+            try:
+                memory_entry = CentralMemoryBank(
+                    memory_id=str(uuid.uuid4()),
+                    created_at=datetime.utcnow(),
+                    updated_at=datetime.utcnow(),
+                    occurred_at=consumption_time,
+                    agent_name=self.agent_name,
+                    user_id=str(user_id),
+                    event_type="energy_drink_consumption",
+                    subject_kind="caffeine_intake",
+                    subject_id=authorization_id,
+                    priority=6,
+                    title=f"Meth Snail Energy Drink: {energy_drink_type}",
+                    description=f"Consumed {caffeine_mg}mg caffeine via {energy_drink_type}",
+                    details={
+                        "energy_drink_type": energy_drink_type,
+                        "caffeine_mg": caffeine_mg,
+                        "authorization_id": authorization_id,
+                        "consumption_time": consumption_time.isoformat()
+                    },
+                    metadata={
+                        "authorized": True,  # Must be authorized to get here
+                        "bromance_approved": "sir_hawkington" in authorization_id  # Hawk approved?
+                    },
+                    numeric_value=caffeine_mg,
+                    string_value=energy_drink_type,
+                    tags=["energy_drink", "caffeine", "consumption", "meth_snail"],
+                    agent_metadata={
+                        "caffeinated": True,
+                        "energy_source": energy_drink_type
+                    },
+                    relevant_agents="meth_snail,sir_hawkington,the_stick",  # Hawk authorizes, Stick tracks
+                    cross_agent_validated=True,  # Hawk validated
+                    validation_count=1,
+                    stick_anxiety_level=0.2,  # Mild anxiety about caffeine consumption
+                    never_forget=caffeine_mg > 200,  # Remember high doses
+                    times_referenced=0,
+                    successful_applications=0
+                )
+                
+                session.add(memory_entry)
+                await session.commit()
+                return memory_entry.id
+                
+            except Exception as e:
+                await session.rollback()
+                self.logger.error(f"Failed to store energy consumption: {e}")
+                raise
+
+    async def get_recent_jitter_levels(self, user_id: int, hours: int = 1) -> Dict[str, Any]:
+        """Get recent jitter levels for safety checks"""
+        if not self._initialized:
+            await self.initialize()
+            
+        try:
+            async with self.session_factory() as session:
+                cutoff_time = datetime.utcnow() - timedelta(hours=hours)
+                
+                result = await session.execute(
+                    select(CentralMemoryBank)
+                    .where(CentralMemoryBank.agent_name == self.agent_name)
+                    .where(CentralMemoryBank.user_id == str(user_id))
+                    .where(CentralMemoryBank.event_type == "jitter_level_update")
+                    .where(CentralMemoryBank.occurred_at >= cutoff_time)
+                    .order_by(desc(CentralMemoryBank.occurred_at))
+                    .limit(1)
+                )
+                
+                latest_jitter = result.scalar_one_or_none()
+                
+                if latest_jitter:
+                    return {
+                        'status': 'success',
+                        'current_jitter': latest_jitter.numeric_value,
+                        'jitter_levels': [latest_jitter.details]
+                    }
+                else:
+                    return {
+                        'status': 'no_data',
+                        'message': 'No recent jitter data available'
+                    }
+                    
+        except Exception as e:
+            self.logger.error(f"Failed to get recent jitter levels: {e}")
+            raise
+
+    async def get_energy_consumption_history(self, user_id: int, days: int = 1) -> Dict[str, Any]:
+        """Get energy drink consumption history"""
+        if not self._initialized:
+            await self.initialize()
+            
+        try:
+            async with self.session_factory() as session:
+                cutoff_date = datetime.utcnow() - timedelta(days=days)
+                
+                result = await session.execute(
+                    select(CentralMemoryBank)
+                    .where(CentralMemoryBank.agent_name == self.agent_name)
+                    .where(CentralMemoryBank.user_id == str(user_id))
+                    .where(CentralMemoryBank.event_type == "energy_drink_consumption")
+                    .where(CentralMemoryBank.occurred_at >= cutoff_date)
+                    .order_by(desc(CentralMemoryBank.occurred_at))
+                )
+                
+                consumptions = result.scalars().all()
+                
+                if consumptions:
+                    return {
+                        'status': 'success',
+                        'total_consumed': len(consumptions),
+                        'consumption_history': [
+                            {
+                                'consumption_time': record.occurred_at.isoformat(),
+                                'energy_drink_type': record.string_value,
+                                'caffeine_mg': record.numeric_value
+                            } for record in consumptions
+                        ]
+                    }
+                else:
+                    return {
+                        'status': 'success',
+                        'total_consumed': 0,
+                        'consumption_history': []
+                    }
+                    
+        except Exception as e:
+            self.logger.error(f"Failed to get energy consumption history: {e}")
+            raise
+
+    async def get_energy_drink_consumption(self, user_id: int, days: int = 1) -> Dict[str, Any]:
+        """Wrapper method for compatibility - calls get_energy_consumption_history"""
+        return await self.get_energy_consumption_history(user_id, days)
+
+    async def store_jitter_level(self, user_id: int, jitter_level: float, 
+                                caffeine_level_mg: float, timestamp: datetime) -> None:
+        """Store a jitter level measurement"""
+        await self.update_jitter_levels(user_id, {
+            'current_jitter_level': jitter_level,
+            'caffeine_level_mg': caffeine_level_mg,
+            'jitter_trend': 'stable',  # Will be calculated based on history
+            'timestamp': timestamp.isoformat()
+        })
