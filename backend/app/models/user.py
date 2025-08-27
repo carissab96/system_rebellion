@@ -4,6 +4,7 @@ from datetime import datetime
 import uuid
 from app.core.base import Base
 from app.core.types import JSONType
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy import func
 from app.models.agent_memory import AgentMemory
 

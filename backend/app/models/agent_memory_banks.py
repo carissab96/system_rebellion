@@ -7,6 +7,7 @@ from datetime import datetime
 import uuid
 from app.core.base import Base
 from sqlalchemy import func
+from app.core.types import PG_JSONB, SA_JSON
 from sqlalchemy.dialects.postgresql import JSONB
 
 # ============================================================================
@@ -16,100 +17,106 @@ from sqlalchemy.dialects.postgresql import JSONB
 class CentralMemoryBank(Base):
     """
     Central hub for all agent memories and learnings.
-    
-    This table serves as the single source of truth for all agent memories,
-    with appropriate indexing and partitioning for efficient querying.
+    Single source of truth with mixed BTREE (filters/sorts) + GIN (JSONBCompat) indexes.
     """
-    __tablename__ = 'central_memory_bank'
-    __table_args__ = (
-        # Composite index for common agent+type+time queries
-        Index('idx_agent_event_time', 'agent_name', 'event_type', 'occurred_at'),
-        # User-focused queries
-        Index('idx_user_events', 'user_id', 'occurred_at'),
-        # For metrics and analytics
-        Index('idx_metric_queries', 'event_type', 'occurred_at', 'subject_kind'),
-        # For agent-specific metadata queries
-        Index('idx_agent_metadata', 'agent_name', 'metadata'),
-        postgresql_using='gin',
-        # For event correlation
-        Index('idx_correlation', 'correlation_id', 'trace_id')
-        postgresql_using='gin',
-    )
-    
-    # Core identifiers
+    __tablename__ = "central_memory_bank"
+
+    # --- identifiers
     id = Column(Integer, primary_key=True)
     memory_id = Column(String(36), default=lambda: str(uuid.uuid4()), unique=True, nullable=False)
-    
-    # Temporal tracking
+
+    # --- timestamps
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
-    occurred_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)  # When the event actually happened
-    
-    # Source and ownership
-    agent_name = Column(String(50), nullable=False, index=True)  # Which agent created this
-    user_id = Column(String, ForeignKey('users.id', ondelete='CASCADE'), index=True, nullable=True)
-    user = relationship("User", back_populates="central_memory_bank", lazy="joined")
-   
-    # Event classification
-    event_type = Column(String(100), nullable=False, index=True)  # e.g., 'monocle_yeet', 'shell_spin', 'wisdom_shared'
-    subject_kind = Column(String(50), index=True)  # What this event is about (e.g., 'data_quality', 'performance')
-    subject_id = Column(String(36), index=True)     # ID of the subject in its domain
-    priority = Column(Integer, default=2, index=True)  # 1=Low, 2=Normal, 3=High, 4=Critical
-    
-    # Event content
+    occurred_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+    # --- source / ownership
+    agent_name = Column(String(50), nullable=False, index=True)
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=True)
+    # NOTE: ensure User model has: central_memories = relationship("CentralMemoryBank", back_populates="user", ...)
+    user = relationship("User", back_populates="central_memories", lazy="joined")
+
+    # --- classification
+    event_type = Column(String(100), nullable=False, index=True)
+    subject_kind = Column(String(50), index=True)
+    subject_id = Column(String(36), index=True)
+    priority = Column(Integer, default=2, index=True)
+
+    # --- content
     title = Column(String(255))
     description = Column(Text)
-    details = Column(JSONB, nullable=True)  # Structured event details (primary payload)
-    metadata_ = Column('metadata', JSONB, nullable=True)  # Additional metadata (using _ to avoid Python keyword)
-    
-    # Alias for backward compatibility
+    details = Column(PG_JSONB, nullable=True)          # primary payload
+    metadata_ = Column("metadata", PG_JSONB, nullable=True)  # extra payload (column name is "metadata")
+
     @property
     def content(self):
-        """Alias for details to maintain backward compatibility"""
+        """Alias for details (back-compat)."""
         return self.details
-    
-    # Relationships and references
-    correlation_id = Column(String(36))  # For grouping related events
-    trace_id = Column(String(36))       # For distributed tracing
-    parent_memory_id = Column(String(36), ForeignKey('central_memory_bank.memory_id'))
-    
-    # Metrics and measurements
+
+    # --- references / tracing
+    correlation_id = Column(String(36))
+    trace_id = Column(String(36))
+    parent_memory_id = Column(String(36), ForeignKey("central_memory_bank.memory_id"))
+
+    parent_memory = relationship(
+        "CentralMemoryBank",
+        remote_side=[memory_id],
+        backref=backref("related_memories", lazy="dynamic"),
+    )
+
+    # --- measurements
     numeric_value = Column(Float)
     string_value = Column(Text)
-    tags = Column(JSONB, nullable=True)  # For flexible filtering
+    tags = Column(PG_JSONB, nullable=True)             # flexible filtering (labels, facets)
 
-    # Agent-specific metadata
-    agent_metadata = Column(JSONB, nullable=True)  # For any agent-specific fields that don't fit the common schema
-    
-    # Relationships
-    parent_memory = relationship("CentralMemoryBank", remote_side=[memory_id], 
-                               backref=backref('related_memories', lazy='dynamic'))
-    
-    # Cross-agent relevance
-    relevant_agents = Column(String(255))  # Comma-separated list of agents this applies to
-    cross_agent_validated = Column(Boolean, default=False)  # Has another agent confirmed this?
+    # --- agent-specific metadata
+    agent_metadata = Column(PG_JSONB, nullable=True)
+
+    # --- cross-agent flags
+    relevant_agents = Column(String(255))
+    cross_agent_validated = Column(Boolean, default=False)
     validation_count = Column(Integer, default=0)
-    
-    # Stick's anxiety tracking
-    stick_anxiety_level = Column(Float)  # The Stick's anxiety when this was recorded
-    never_forget = Column(Boolean, default=False)  # Eidetic memory flag
-    
-    # Usage tracking
+
+    # --- retention / usage
+    stick_anxiety_level = Column(Float)
+    never_forget = Column(Boolean, default=False)
     times_referenced = Column(Integer, default=0)
     last_referenced = Column(DateTime)
     successful_applications = Column(Integer, default=0)
-    
-    __table_args__ = (
-        Index('idx_memory_importance', 'priority', 'never_forget'),
-        Index('idx_agent_memories', 'agent_name', 'event_type'),
-        Index('idx_user_memories', 'user_id', 'occurred_at'),
-        Index('idx_cross_agent', 'relevant_agents', 'cross_agent_validated'),
-        Index('idx_subject_reference', 'subject_kind', 'subject_id'),
-        Index('idx_priority_access', 'priority', 'last_referenced'),
-        Index('idx_event_timestamp', 'event_type', 'occurred_at'),
-        Index('idx_agent_user', 'agent_name', 'user_id')
-    )
 
+    # --- indexes (BTREE + GIN split)
+    __table_args__ = (
+        # Common filters / sorts (BTREE)
+        Index("idx_agent_event_time", "agent_name", "event_type", "occurred_at", postgresql_using="btree"),
+        Index("idx_user_events", "user_id", "occurred_at", postgresql_using="btree"),
+        Index("idx_metric_queries", "event_type", "occurred_at", "subject_kind", postgresql_using="btree"),
+        Index("idx_event_timestamp", "event_type", "occurred_at", postgresql_using="btree"),
+        Index("idx_agent_user", "agent_name", "user_id", postgresql_using="btree"),
+        Index("idx_subject_reference", "subject_kind", "subject_id", postgresql_using="btree"),
+        Index("idx_priority_access", "priority", "last_referenced", postgresql_using="btree"),
+        Index("idx_memory_importance", "priority", "never_forget", postgresql_using="btree"),
+        Index("idx_correlation", "correlation_id", "trace_id", postgresql_using="btree"),
+
+        # JSONBCompat search (GIN). You can choose 'jsonb_path_ops' if you mostly do containment/exists queries.
+        Index(
+            "idx_cmb_details_gin",
+            "details",
+            postgresql_using="gin",
+            postgresql_ops={"details": "jsonb_path_ops"},
+        ),
+        Index(
+            "idx_cmb_metadata_gin",
+            "metadata",
+            postgresql_using="gin",
+            postgresql_ops={"metadata": "jsonb_path_ops"},
+        ),
+        Index(
+            "idx_cmb_tags_gin",
+            "tags",
+            postgresql_using="gin",
+            postgresql_ops={"tags": "jsonb_path_ops"},
+        ),
+    )
 # ============================================================================
 # INDIVIDUAL AGENT MEMORY BANKS
 # ============================================================================
@@ -341,128 +348,133 @@ class CentralMemoryBank(Base):
 class AgentLearningInteractions(Base):
     """
     Track how agents learn from each other's experiences
-    
-    This table captures when one agent's learning influences another agent's
-    behavior, creating the cross-pollination of insights that makes the
-    system truly intelligent.
     """
     __tablename__ = 'agent_learning_interactions'
-    
+
     id = Column(Integer, primary_key=True)
     interaction_id = Column(String(36), default=lambda: str(uuid.uuid4()), unique=True)
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
-    
+
     # Learning transfer
-    source_agent = Column(String(50), nullable=False, index=True)  # Agent that shared knowledge
-    target_agent = Column(String(50), nullable=False, index=True)  # Agent that learned
-    source_memory_id = Column(String(36), nullable=False)  # Original memory
-    
+    source_agent = Column(String(50), nullable=False, index=True)
+    target_agent = Column(String(50), nullable=False, index=True)
+    source_memory_id = Column(String(36), nullable=False)
+
     # Transfer details
-    learning_type = Column(String(100), nullable=False)  # pattern, optimization, failure, etc.
-    adaptation_method = Column(JSONB, nullable=True)  # How the learning was adapted
-    application_context = Column(JSONB, nullable=True)  # Context where it was applied
-    
+    learning_type = Column(String(100), nullable=False)
+    adaptation_method = Column(PG_JSONB, nullable=True)       # JSONBCompat
+    application_context = Column(PG_JSONB, nullable=True)     # JSONBCompat
+
     # Effectiveness tracking
     transfer_success = Column(Boolean, default=False)
-    effectiveness_score = Column(Float)  # How effective the transferred learning was
-    improvement_measured = Column(Float)  # Measured improvement from the transfer
-    
+    effectiveness_score = Column(Float)
+    improvement_measured = Column(Float)
+
     # Validation
-    validated_by_stick = Column(Boolean, default=False)  # The Stick's validation
-    cross_validation_count = Column(Integer, default=0)  # How many agents confirmed this
-    
+    validated_by_stick = Column(Boolean, default=False)
+    cross_validation_count = Column(Integer, default=0)
+
     __table_args__ = (
-        Index('idx_learning_transfer', 'source_agent', 'target_agent', 'learning_type'),
-        Index('idx_learning_effectiveness', 'effectiveness_score', 'transfer_success'),
+        # BTREE (simple scalars)
+        Index('idx_learning_transfer', 'source_agent', 'target_agent', 'learning_type', postgresql_using='btree'),
+        Index('idx_learning_effectiveness', 'effectiveness_score', 'transfer_success', postgresql_using='btree'),
+
+        # GIN on JSONBCompat payloads (optional but recommended if you query into these)
+        Index('idx_ali_adaptation_gin', 'adaptation_method',  # <- typo? use the correct column name below
+              postgresql_using='gin',
+              postgresql_ops={'adaptation_method': 'jsonb_path_ops'}),  # if you mostly do containment
+        Index('idx_ali_appctx_gin', 'application_context',
+              postgresql_using='gin',
+              postgresql_ops={'application_context': 'jsonb_path_ops'}),
     )
 
 class UserLearningPatterns(Base):
     """
-    Track patterns in how users interact with agents and learn from the system
-    
-    This enables the agents to adapt their behavior based on user learning
-    patterns and preferences, creating truly personalized AI interactions.
+    Patterns in how users interact/learn so agents can adapt.
     """
     __tablename__ = 'user_learning_patterns'
-    
+
     id = Column(Integer, primary_key=True)
     pattern_id = Column(String(36), default=lambda: str(uuid.uuid4()), unique=True)
+
     user_id = Column(String, ForeignKey('users.id', ondelete='CASCADE'), index=True, nullable=False)
     user = relationship("User", back_populates="user_learning_patterns", lazy="joined")
-    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
-    
-    # User behavior patterns
-    interaction_pattern = Column(JSONB, nullable=True)  # How user interacts with agents
-    learning_preference = Column(JSONB, nullable=True)  # User's learning preferences
-    response_patterns = Column(JSONB, nullable=True)  # How user responds to different approaches
-    
-    # Agent adaptation
-    most_effective_agent = Column(String(50), nullable=True)  # Which agent works best for this user
-    communication_style_preference = Column(JSONB, nullable=True)  # Preferred communication style
-    complexity_tolerance = Column(Float, nullable=True)  # User's tolerance for complexity
-    
-    # Learning outcomes
-    skill_improvement_areas = Column(JSONB, nullable=True)  # Areas where user is improving
-    knowledge_gaps = Column(JSONB, nullable=True)  # Identified knowledge gaps
-    success_patterns = Column(JSONB, nullable=True)  # What leads to user success
-    
-    # Cross-agent insights
-    agent_effectiveness_ranking = Column(JSONB, nullable=True)  # How effective each agent is for this user
-    collaborative_preferences = Column(JSONB, nullable=True)  # Preferred agent collaborations
-    
-    __table_args__ = (
-        Index('idx_user_patterns', 'user_id', 'most_effective_agent'),
-        Index('idx_user_learning', 'learning_preference', 'complexity_tolerance'),
-    )
 
-# ============================================================================
-# MEMORY BANK MANAGEMENT
-# ============================================================================
+    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+    # User behavior patterns (JSONBCompat)
+    interaction_pattern = Column(PG_JSONB, nullable=True)
+    learning_preference = Column(PG_JSONB, nullable=True)  # JSONB -> GIN
+    response_patterns = Column(PG_JSONB, nullable=True)
+
+    # Agent adaptation
+    most_effective_agent = Column(String(50), nullable=True)
+    communication_style_preference = Column(PG_JSONB, nullable=True)
+    complexity_tolerance = Column(Float, nullable=True)
+
+    # Learning outcomes
+    skill_improvement_areas = Column(PG_JSONB, nullable=True)
+    knowledge_gaps = Column(PG_JSONB, nullable=True)
+    success_patterns = Column(PG_JSONB, nullable=True)
+
+    # Cross-agent insights
+    agent_effectiveness_ranking = Column(PG_JSONB, nullable=True)
+    collaborative_preferences = Column(PG_JSONB, nullable=True)
+
+    __table_args__ = (
+        # BTREE on scalars
+        Index('idx_user_patterns', 'user_id', 'most_effective_agent', postgresql_using='btree'),
+        Index('idx_user_complexity', 'user_id', 'complexity_tolerance', postgresql_using='btree'),
+
+        # GIN on JSONBCompat fields you actually query into
+        Index('idx_ulp_learning_pref_gin', 'learning_preference',
+              postgresql_using='gin',
+              postgresql_ops={'learning_preference': 'jsonb_path_ops'}),
+        # add others if you filter on them:
+        # Index('idx_ulp_interaction_pattern_gin', 'interaction_pattern', postgresql_using='gin',
+        #       postgresql_ops={'interaction_pattern': 'jsonb_path_ops'}),
+    )
 
 class MemoryBankMetadata(Base):
     """
-    Metadata about the memory bank system itself
-    
-    Tracks system-wide learning statistics, memory bank health,
-    and cross-agent learning effectiveness.
+    Metadata about the memory system (health, effectiveness).
     """
     __tablename__ = 'memory_bank_metadata'
-    
+
     id = Column(Integer, primary_key=True)
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
-    
+
     # System-wide statistics
     total_memories = Column(Integer, default=0)
     central_bank_memories = Column(Integer, default=0)
     cross_agent_learnings = Column(Integer, default=0)
-    
-    # Per-agent statistics
+
+    # Per-agent counts
     hawkington_memories = Column(Integer, default=0)
     snail_memories = Column(Integer, default=0)
     hamsters_memories = Column(Integer, default=0)
     qsp_memories = Column(Integer, default=0)
     vic20_memories = Column(Integer, default=0)
-    stick_memories = Column(Integer, default=0)  # From existing stick_memory_bank
-    
+    stick_memories = Column(Integer, default=0)
+
     # Learning effectiveness
     successful_transfers = Column(Integer, default=0)
     failed_transfers = Column(Integer, default=0)
     average_effectiveness_score = Column(Float, default=0.0)
-    
+
     # Memory bank health
     memory_bank_health_score = Column(Float, default=100.0)
-    stick_anxiety_level = Column(Float)  # The Stick's current anxiety about memory integrity
-    
+    stick_anxiety_level = Column(Float)
+
     # Performance metrics
     memory_retrieval_speed_ms = Column(Float)
     cross_agent_query_speed_ms = Column(Float)
     learning_application_success_rate = Column(Float)
-    
-    # agent_memory_bank_base = CentralMemoryBank
 
     __table_args__ = (
-        Index('idx_memory_health', 'memory_bank_health_score', 'timestamp'),
-        Index('idx_memory_effectiveness', 'average_effectiveness_score', 'successful_transfers'),
+        Index('idx_memory_health', 'memory_bank_health_score', 'timestamp', postgresql_using='btree'),
+        # renamed to avoid collisions with other tables’ names:
+        Index('idx_mb_effectiveness', 'average_effectiveness_score', 'successful_transfers', postgresql_using='btree'),
     )
 # DEPRECATED: compatibility shim to ease migration away from per-agent memory tables.
 # Remove this file after all imports are updated.

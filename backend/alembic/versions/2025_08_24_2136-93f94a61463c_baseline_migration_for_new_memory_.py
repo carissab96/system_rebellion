@@ -1,8 +1,8 @@
-"""baseline system reset for database
+"""baseline migration for new memory structure
 
-Revision ID: 1e391d411e2a
+Revision ID: 93f94a61463c
 Revises: 
-Create Date: 2025-08-24 07:11:42.468986
+Create Date: 2025-08-24 21:36:46.489733
 """
 
 from typing import Sequence, Union
@@ -11,8 +11,16 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
+def is_postgres():
+    bind = op.get_bind()
+    return bind.dialect.name == "postgresql"
+
+def JSON_like():
+    # Use JSONB on PG, JSON elsewhere
+    return postgresql.JSONB() if is_postgres() else sa.JSON()
+
 # revision identifiers, used by Alembic.
-revision: str = '1e391d411e2a'
+revision: str = '93f94a61463c'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -24,7 +32,7 @@ def upgrade() -> None:
     op.create_table('agent_global_patterns',
     sa.Column('id', sa.String(), nullable=False),
     sa.Column('pattern_key', sa.String(), nullable=False),
-    sa.Column('value', sa.JSON(), nullable=False),
+    sa.Column('value', JSON_like(), nullable=False),
     sa.Column('updated_at', sa.DateTime(), nullable=True),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_agent_global_patterns'))
     )
@@ -37,8 +45,8 @@ def upgrade() -> None:
     sa.Column('target_agent', sa.String(length=50), nullable=False),
     sa.Column('source_memory_id', sa.String(length=36), nullable=False),
     sa.Column('learning_type', sa.String(length=100), nullable=False),
-    sa.Column('adaptation_method', postgresql.JSONB(astext_type=Text()), nullable=True),
-    sa.Column('application_context', postgresql.JSONB(astext_type=Text()), nullable=True),
+    sa.Column('adaptation_method', JSON_like(), nullable=True),
+    sa.Column('application_context', JSON_like(), nullable=True),
     sa.Column('transfer_success', sa.Boolean(), nullable=True),
     sa.Column('effectiveness_score', sa.Float(), nullable=True),
     sa.Column('improvement_measured', sa.Float(), nullable=True),
@@ -47,8 +55,10 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id', name=op.f('pk_agent_learning_interactions')),
     sa.UniqueConstraint('interaction_id', name=op.f('uq_agent_learning_interactions_interaction_id'))
     )
-    op.create_index('idx_learning_effectiveness', 'agent_learning_interactions', ['effectiveness_score', 'transfer_success'], unique=False)
-    op.create_index('idx_learning_transfer', 'agent_learning_interactions', ['source_agent', 'target_agent', 'learning_type'], unique=False)
+    op.create_index('idx_ali_adaptation_gin', 'agent_learning_interactions', ['adaptation_method'], unique=False, postgresql_using='gin', postgresql_ops={'adaptation_method': 'jsonb_path_ops'})
+    op.create_index('idx_ali_appctx_gin', 'agent_learning_interactions', ['application_context'], unique=False, postgresql_using='gin', postgresql_ops={'application_context': 'jsonb_path_ops'})
+    op.create_index('idx_learning_effectiveness', 'agent_learning_interactions', ['effectiveness_score', 'transfer_success'], unique=False, postgresql_using='btree')
+    op.create_index('idx_learning_transfer', 'agent_learning_interactions', ['source_agent', 'target_agent', 'learning_type'], unique=False, postgresql_using='btree')
     op.create_index(op.f('ix_agent_learning_interactions_source_agent'), 'agent_learning_interactions', ['source_agent'], unique=False)
     op.create_index(op.f('ix_agent_learning_interactions_target_agent'), 'agent_learning_interactions', ['target_agent'], unique=False)
     op.create_index(op.f('ix_agent_learning_interactions_timestamp'), 'agent_learning_interactions', ['timestamp'], unique=False)
@@ -74,8 +84,8 @@ def upgrade() -> None:
     sa.Column('learning_application_success_rate', sa.Float(), nullable=True),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_memory_bank_metadata'))
     )
-    op.create_index('idx_memory_effectiveness', 'memory_bank_metadata', ['average_effectiveness_score', 'successful_transfers'], unique=False)
-    op.create_index('idx_memory_health', 'memory_bank_metadata', ['memory_bank_health_score', 'timestamp'], unique=False)
+    op.create_index('idx_mb_effectiveness', 'memory_bank_metadata', ['average_effectiveness_score', 'successful_transfers'], unique=False, postgresql_using='btree')
+    op.create_index('idx_memory_health', 'memory_bank_metadata', ['memory_bank_health_score', 'timestamp'], unique=False, postgresql_using='btree')
     op.create_index(op.f('ix_memory_bank_metadata_timestamp'), 'memory_bank_metadata', ['timestamp'], unique=False)
     op.create_table('metrics_daily',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -145,20 +155,20 @@ def upgrade() -> None:
     sa.Column('hashed_password', sa.String(length=255), nullable=False),
     sa.Column('is_onboarded', sa.Boolean(), nullable=True),
     sa.Column('onboarding_progress', sa.Integer(), nullable=True),
-    sa.Column('onboarding_data', app.core.types.JSONType(), nullable=True),
+    sa.Column('onboarding_data', JSON_like(), nullable=True),
     sa.Column('onboarding_started_at', sa.DateTime(), nullable=True),
     sa.Column('onboarding_last_step_at', sa.DateTime(), nullable=True),
     sa.Column('onboarding_abandoned_count', sa.Integer(), nullable=False),
-    sa.Column('onboarding_step_timestamps', app.core.types.JSONType(), nullable=True),
-    sa.Column('onboarding_abandonment_reasons', app.core.types.JSONType(), nullable=True),
-    sa.Column('onboarding_device_info', app.core.types.JSONType(), nullable=True),
+    sa.Column('onboarding_step_timestamps', JSON_like(), nullable=True),
+    sa.Column('onboarding_abandonment_reasons', JSON_like(), nullable=True),
+    sa.Column('onboarding_device_info', JSON_like(), nullable=True),
     sa.Column('onboarding_referral_source', sa.String(length=100), nullable=True),
     sa.Column('preview_agent_selected', sa.String(length=20), nullable=True),
     sa.Column('preview_started_at', sa.DateTime(), nullable=True),
     sa.Column('preview_expires_at', sa.DateTime(), nullable=True),
-    sa.Column('preview_conversion_emails_sent', app.core.types.JSONType(), nullable=True),
+    sa.Column('preview_conversion_emails_sent', JSON_like(), nullable=True),
     sa.Column('preview_converted_at', sa.DateTime(), nullable=True),
-    sa.Column('email_campaign_responses', app.core.types.JSONType(), nullable=True),
+    sa.Column('email_campaign_responses', JSON_like(), nullable=True),
     sa.Column('last_engagement_at', sa.DateTime(), nullable=True),
     sa.Column('first_name', sa.String(length=50), nullable=True),
     sa.Column('last_name', sa.String(length=50), nullable=True),
@@ -192,7 +202,7 @@ def upgrade() -> None:
     sa.Column('user_id', sa.String(), nullable=False),
     sa.Column('agent_name', sa.String(), nullable=False),
     sa.Column('memory_type', sa.String(), nullable=False),
-    sa.Column('content', app.core.types.JSONType(), nullable=False),
+    sa.Column('content', JSON_like(), nullable=False),
     sa.Column('importance', sa.Integer(), nullable=True),
     sa.Column('timestamp', sa.DateTime(), nullable=True),
     sa.Column('last_accessed', sa.DateTime(), nullable=True),
@@ -219,15 +229,15 @@ def upgrade() -> None:
     sa.Column('priority', sa.Integer(), nullable=True),
     sa.Column('title', sa.String(length=255), nullable=True),
     sa.Column('description', sa.Text(), nullable=True),
-    sa.Column('details', postgresql.JSONB(astext_type=Text()), nullable=True),
-    sa.Column('metadata', postgresql.JSONB(astext_type=Text()), nullable=True),
+    sa.Column('details', JSON_like(), nullable=True),
+    sa.Column('metadata', JSON_like(), nullable=True),
     sa.Column('correlation_id', sa.String(length=36), nullable=True),
     sa.Column('trace_id', sa.String(length=36), nullable=True),
     sa.Column('parent_memory_id', sa.String(length=36), nullable=True),
     sa.Column('numeric_value', sa.Float(), nullable=True),
     sa.Column('string_value', sa.Text(), nullable=True),
-    sa.Column('tags', postgresql.JSONB(astext_type=Text()), nullable=True),
-    sa.Column('agent_metadata', postgresql.JSONB(astext_type=Text()), nullable=True),
+    sa.Column('tags', JSON_like(), nullable=True),
+    sa.Column('agent_metadata', JSON_like(), nullable=True),
     sa.Column('relevant_agents', sa.String(length=255), nullable=True),
     sa.Column('cross_agent_validated', sa.Boolean(), nullable=True),
     sa.Column('validation_count', sa.Integer(), nullable=True),
@@ -241,14 +251,18 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id', name=op.f('pk_central_memory_bank')),
     sa.UniqueConstraint('memory_id', name=op.f('uq_central_memory_bank_memory_id'))
     )
-    op.create_index('idx_agent_memories', 'central_memory_bank', ['agent_name', 'event_type'], unique=False)
-    op.create_index('idx_agent_user', 'central_memory_bank', ['agent_name', 'user_id'], unique=False)
-    op.create_index('idx_cross_agent', 'central_memory_bank', ['relevant_agents', 'cross_agent_validated'], unique=False)
-    op.create_index('idx_event_timestamp', 'central_memory_bank', ['event_type', 'occurred_at'], unique=False)
-    op.create_index('idx_memory_importance', 'central_memory_bank', ['priority', 'never_forget'], unique=False)
-    op.create_index('idx_priority_access', 'central_memory_bank', ['priority', 'last_referenced'], unique=False)
-    op.create_index('idx_subject_reference', 'central_memory_bank', ['subject_kind', 'subject_id'], unique=False)
-    op.create_index('idx_user_memories', 'central_memory_bank', ['user_id', 'occurred_at'], unique=False)
+    op.create_index('idx_agent_event_time', 'central_memory_bank', ['agent_name', 'event_type', 'occurred_at'], unique=False, postgresql_using='btree')
+    op.create_index('idx_agent_user', 'central_memory_bank', ['agent_name', 'user_id'], unique=False, postgresql_using='btree')
+    op.create_index('idx_cmb_details_gin', 'central_memory_bank', ['details'], unique=False, postgresql_using='gin', postgresql_ops={'details': 'jsonb_path_ops'})
+    op.create_index('idx_cmb_metadata_gin', 'central_memory_bank', ['metadata'], unique=False, postgresql_using='gin', postgresql_ops={'metadata': 'jsonb_path_ops'})
+    op.create_index('idx_cmb_tags_gin', 'central_memory_bank', ['tags'], unique=False, postgresql_using='gin', postgresql_ops={'tags': 'jsonb_path_ops'})
+    op.create_index('idx_correlation', 'central_memory_bank', ['correlation_id', 'trace_id'], unique=False, postgresql_using='btree')
+    op.create_index('idx_event_timestamp', 'central_memory_bank', ['event_type', 'occurred_at'], unique=False, postgresql_using='btree')
+    op.create_index('idx_memory_importance', 'central_memory_bank', ['priority', 'never_forget'], unique=False, postgresql_using='btree')
+    op.create_index('idx_metric_queries', 'central_memory_bank', ['event_type', 'occurred_at', 'subject_kind'], unique=False, postgresql_using='btree')
+    op.create_index('idx_priority_access', 'central_memory_bank', ['priority', 'last_referenced'], unique=False, postgresql_using='btree')
+    op.create_index('idx_subject_reference', 'central_memory_bank', ['subject_kind', 'subject_id'], unique=False, postgresql_using='btree')
+    op.create_index('idx_user_events', 'central_memory_bank', ['user_id', 'occurred_at'], unique=False, postgresql_using='btree')
     op.create_index(op.f('ix_central_memory_bank_agent_name'), 'central_memory_bank', ['agent_name'], unique=False)
     op.create_index(op.f('ix_central_memory_bank_created_at'), 'central_memory_bank', ['created_at'], unique=False)
     op.create_index(op.f('ix_central_memory_bank_event_type'), 'central_memory_bank', ['event_type'], unique=False)
@@ -276,23 +290,24 @@ def upgrade() -> None:
     sa.Column('pattern_id', sa.String(length=36), nullable=True),
     sa.Column('user_id', sa.String(), nullable=False),
     sa.Column('timestamp', sa.DateTime(), nullable=False),
-    sa.Column('interaction_pattern', postgresql.JSONB(astext_type=Text()), nullable=True),
-    sa.Column('learning_preference', postgresql.JSONB(astext_type=Text()), nullable=True),
-    sa.Column('response_patterns', postgresql.JSONB(astext_type=Text()), nullable=True),
+    sa.Column('interaction_pattern', JSON_like(), nullable=True),
+    sa.Column('learning_preference', JSON_like(), nullable=True),
+    sa.Column('response_patterns', JSON_like(), nullable=True),
     sa.Column('most_effective_agent', sa.String(length=50), nullable=True),
-    sa.Column('communication_style_preference', postgresql.JSONB(astext_type=Text()), nullable=True),
+    sa.Column('communication_style_preference', JSON_like(), nullable=True),
     sa.Column('complexity_tolerance', sa.Float(), nullable=True),
-    sa.Column('skill_improvement_areas', postgresql.JSONB(astext_type=Text()), nullable=True),
-    sa.Column('knowledge_gaps', postgresql.JSONB(astext_type=Text()), nullable=True),
-    sa.Column('success_patterns', postgresql.JSONB(astext_type=Text()), nullable=True),
-    sa.Column('agent_effectiveness_ranking', postgresql.JSONB(astext_type=Text()), nullable=True),
-    sa.Column('collaborative_preferences', postgresql.JSONB(astext_type=Text()), nullable=True),
+    sa.Column('skill_improvement_areas', JSON_like(), nullable=True),
+    sa.Column('knowledge_gaps', JSON_like(), nullable=True),
+    sa.Column('success_patterns', JSON_like(), nullable=True),
+    sa.Column('agent_effectiveness_ranking', JSON_like(), nullable=True),
+    sa.Column('collaborative_preferences', JSON_like(), nullable=True),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], name=op.f('fk_user_learning_patterns_user_id_users'), ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_user_learning_patterns')),
     sa.UniqueConstraint('pattern_id', name=op.f('uq_user_learning_patterns_pattern_id'))
     )
-    op.create_index('idx_user_learning', 'user_learning_patterns', ['learning_preference', 'complexity_tolerance'], unique=False)
-    op.create_index('idx_user_patterns', 'user_learning_patterns', ['user_id', 'most_effective_agent'], unique=False)
+    op.create_index('idx_ulp_learning_pref_gin', 'user_learning_patterns', ['learning_preference'], unique=False, postgresql_using='gin', postgresql_ops={'learning_preference': 'jsonb_path_ops'})
+    op.create_index('idx_user_complexity', 'user_learning_patterns', ['user_id', 'complexity_tolerance'], unique=False, postgresql_using='btree')
+    op.create_index('idx_user_patterns', 'user_learning_patterns', ['user_id', 'most_effective_agent'], unique=False, postgresql_using='btree')
     op.create_index(op.f('ix_user_learning_patterns_timestamp'), 'user_learning_patterns', ['timestamp'], unique=False)
     op.create_index(op.f('ix_user_learning_patterns_user_id'), 'user_learning_patterns', ['user_id'], unique=False)
     # ### end Alembic commands ###
@@ -303,8 +318,9 @@ def downgrade() -> None:
     # ### commands auto generated by Alembic - please adjust! ###
     op.drop_index(op.f('ix_user_learning_patterns_user_id'), table_name='user_learning_patterns')
     op.drop_index(op.f('ix_user_learning_patterns_timestamp'), table_name='user_learning_patterns')
-    op.drop_index('idx_user_patterns', table_name='user_learning_patterns')
-    op.drop_index('idx_user_learning', table_name='user_learning_patterns')
+    op.drop_index('idx_user_patterns', table_name='user_learning_patterns', postgresql_using='btree')
+    op.drop_index('idx_user_complexity', table_name='user_learning_patterns', postgresql_using='btree')
+    op.drop_index('idx_ulp_learning_pref_gin', table_name='user_learning_patterns', postgresql_using='gin', postgresql_ops={'learning_preference': 'jsonb_path_ops'})
     op.drop_table('user_learning_patterns')
     op.drop_index(op.f('ix_system_metrics_id'), table_name='system_metrics')
     op.drop_table('system_metrics')
@@ -316,14 +332,18 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_central_memory_bank_event_type'), table_name='central_memory_bank')
     op.drop_index(op.f('ix_central_memory_bank_created_at'), table_name='central_memory_bank')
     op.drop_index(op.f('ix_central_memory_bank_agent_name'), table_name='central_memory_bank')
-    op.drop_index('idx_user_memories', table_name='central_memory_bank')
-    op.drop_index('idx_subject_reference', table_name='central_memory_bank')
-    op.drop_index('idx_priority_access', table_name='central_memory_bank')
-    op.drop_index('idx_memory_importance', table_name='central_memory_bank')
-    op.drop_index('idx_event_timestamp', table_name='central_memory_bank')
-    op.drop_index('idx_cross_agent', table_name='central_memory_bank')
-    op.drop_index('idx_agent_user', table_name='central_memory_bank')
-    op.drop_index('idx_agent_memories', table_name='central_memory_bank')
+    op.drop_index('idx_user_events', table_name='central_memory_bank', postgresql_using='btree')
+    op.drop_index('idx_subject_reference', table_name='central_memory_bank', postgresql_using='btree')
+    op.drop_index('idx_priority_access', table_name='central_memory_bank', postgresql_using='btree')
+    op.drop_index('idx_metric_queries', table_name='central_memory_bank', postgresql_using='btree')
+    op.drop_index('idx_memory_importance', table_name='central_memory_bank', postgresql_using='btree')
+    op.drop_index('idx_event_timestamp', table_name='central_memory_bank', postgresql_using='btree')
+    op.drop_index('idx_correlation', table_name='central_memory_bank', postgresql_using='btree')
+    op.drop_index('idx_cmb_tags_gin', table_name='central_memory_bank', postgresql_using='gin', postgresql_ops={'tags': 'jsonb_path_ops'})
+    op.drop_index('idx_cmb_metadata_gin', table_name='central_memory_bank', postgresql_using='gin', postgresql_ops={'metadata': 'jsonb_path_ops'})
+    op.drop_index('idx_cmb_details_gin', table_name='central_memory_bank', postgresql_using='gin', postgresql_ops={'details': 'jsonb_path_ops'})
+    op.drop_index('idx_agent_user', table_name='central_memory_bank', postgresql_using='btree')
+    op.drop_index('idx_agent_event_time', table_name='central_memory_bank', postgresql_using='btree')
     op.drop_table('central_memory_bank')
     op.drop_index('ix_mem_user_agent_type_time', table_name='agent_memories')
     op.drop_index(op.f('ix_agent_memories_user_id'), table_name='agent_memories')
@@ -345,14 +365,16 @@ def downgrade() -> None:
     op.drop_index('idx_ai_incident_count', table_name='metrics_daily')
     op.drop_table('metrics_daily')
     op.drop_index(op.f('ix_memory_bank_metadata_timestamp'), table_name='memory_bank_metadata')
-    op.drop_index('idx_memory_health', table_name='memory_bank_metadata')
-    op.drop_index('idx_memory_effectiveness', table_name='memory_bank_metadata')
+    op.drop_index('idx_memory_health', table_name='memory_bank_metadata', postgresql_using='btree')
+    op.drop_index('idx_mb_effectiveness', table_name='memory_bank_metadata', postgresql_using='btree')
     op.drop_table('memory_bank_metadata')
     op.drop_index(op.f('ix_agent_learning_interactions_timestamp'), table_name='agent_learning_interactions')
     op.drop_index(op.f('ix_agent_learning_interactions_target_agent'), table_name='agent_learning_interactions')
     op.drop_index(op.f('ix_agent_learning_interactions_source_agent'), table_name='agent_learning_interactions')
-    op.drop_index('idx_learning_transfer', table_name='agent_learning_interactions')
-    op.drop_index('idx_learning_effectiveness', table_name='agent_learning_interactions')
+    op.drop_index('idx_learning_transfer', table_name='agent_learning_interactions', postgresql_using='btree')
+    op.drop_index('idx_learning_effectiveness', table_name='agent_learning_interactions', postgresql_using='btree')
+    op.drop_index('idx_ali_appctx_gin', table_name='agent_learning_interactions', postgresql_using='gin', postgresql_ops={'application_context': 'jsonb_path_ops'})
+    op.drop_index('idx_ali_adaptation_gin', table_name='agent_learning_interactions', postgresql_using='gin', postgresql_ops={'adaptation_method': 'jsonb_path_ops'})
     op.drop_table('agent_learning_interactions')
     op.drop_index(op.f('ix_agent_global_patterns_pattern_key'), table_name='agent_global_patterns')
     op.drop_table('agent_global_patterns')
