@@ -93,7 +93,7 @@ class SystemMetricsService:
                     
                 # Extract and format metrics for frontend
                 formatted_metrics = {
-                    'timestamp': raw_metrics.get('timestamp', datetime.now().isoformat()),
+                    'timestamp': raw_metrics.get('timestamp', utc_now().isoformat()),
                     'cpu_usage': raw_metrics.get('cpu_usage', 0),
                     'memory_usage': raw_metrics.get('memory_usage', 0),
                     'disk_usage': raw_metrics.get('disk_usage', 0),
@@ -162,7 +162,7 @@ class SystemMetricsService:
     def _get_empty_metrics(self, error_msg: str = None) -> Dict[str, Any]:
         """Return empty metrics structure with optional error"""
         metrics = {
-            'timestamp': datetime.now().isoformat(),
+            'timestamp': utc_now().isoformat(),
             'cpu_usage': 0,
             'memory_usage': 0,
             'disk_usage': 0,

@@ -29,7 +29,7 @@ async def test_websocket_metrics():
     print("="*60)
     
     # Get timestamp
-    print(f"\nTimestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"\nTimestamp: {utc_now().strftime('%Y-%m-%d %H:%M:%S')}")
     
     # Create a mock user for authentication
     mock_user = User(

@@ -10,7 +10,7 @@ class PatternAnalyzer:
 
     async def analyze_metrics(self, metrics: Dict) -> Optional[Dict]:
         """Analyze system metrics for patterns"""
-        timestamp = datetime.now()
+        timestamp = utc_now()
         pattern_key = self._generate_pattern_key(metrics)
         
         if pattern_key in self.patterns:

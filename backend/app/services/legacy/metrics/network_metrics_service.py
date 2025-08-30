@@ -161,7 +161,7 @@ class NetworkMetricsService:
         try:
             # Get current network I/O counters
             io_counters = psutil.net_io_counters()
-            current_time = datetime.now().timestamp()
+            current_time = utc_now().timestamp()
             
             # Initialize rates
             sent_rate = 0
@@ -504,7 +504,7 @@ class NetworkMetricsService:
             quality_metrics['connection_stability'] = max(0, 100 - quality_metrics['packet_loss_percent'] - latency_penalty)
             
             # Store history for trending
-            current_time = datetime.now().isoformat()
+            current_time = utc_now().isoformat()
             
             # Latency history
             latency_entry = {
@@ -736,7 +736,7 @@ class NetworkMetricsService:
                     continue
             
             # Get per-process network I/O if available
-            current_time = datetime.now().timestamp()
+            current_time = utc_now().timestamp()
             
             for process_name, info in process_connections.items():
                 try:

@@ -106,7 +106,7 @@ class MetricsService:
                 
                 # Build combined metrics dictionary with real system data
                 metrics = {
-                    'timestamp': datetime.now().isoformat(),
+                    'timestamp': utc_now()ormat(),
                     'system_info': system_info,
                     
                     # CPU metrics directly from cpu_metrics
@@ -145,7 +145,7 @@ class MetricsService:
                 
                 # Otherwise, return None for all metrics
                 return {
-                    'timestamp': datetime.now().isoformat(),
+                    'timestamp': utc_now().isoformat(),
                     'system_info': {
                         'hostname': socket.gethostname(),
                         'os': platform.system(),

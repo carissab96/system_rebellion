@@ -23,7 +23,7 @@ class TestSirHawkingtonRealIntegration:
                 "bytes_recv": 1024
             },
             "process_count": 156,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": utc_now()
         }
     
     async def test_real_websocket_integration(self, handler, mock_websocket_data):
@@ -49,7 +49,7 @@ class TestSirHawkingtonRealIntegration:
         incomplete_data = {
             "memory_usage": 67.8,
             "disk_usage": 34.1,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": utc_now().isoformat()
         }
         
         result = await handler.process_metrics(incomplete_data)

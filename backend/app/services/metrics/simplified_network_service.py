@@ -107,7 +107,7 @@ class SimplifiedNetworkService:
             
             # PHASE 4: COMPILE COMPREHENSIVE NETWORK METRICS
             network_metrics = {
-                'timestamp': datetime.now().isoformat(),
+                'timestamp': utc_now()ormat(),
                 'type': 'network',
                 'data': final_metrics
             }
@@ -435,7 +435,7 @@ class SimplifiedNetworkService:
     async def health_check(self) -> Dict[str, Any]:
         """Perform comprehensive health check of the network metrics service."""
         try:
-            start_time = datetime.now()
+            start_time = utc_now()
             
             # Test basic network usage
             network_usage = await self.get_network_usage_only()
@@ -458,7 +458,7 @@ class SimplifiedNetworkService:
             except Exception:
                 pass
             
-            collection_time = (datetime.now() - start_time).total_seconds()
+            collection_time = (utc_now() - start_time).total_seconds()
             
             return {
                 'status': 'OPERATIONAL',
@@ -478,7 +478,7 @@ class SimplifiedNetworkService:
                     'real_measurements_only',
                     'resource_monitor_integration'
                 ],
-                'last_health_check': datetime.now().isoformat()
+                'last_health_check': utc_now().isoformat()
             }
             
         except Exception as e:
@@ -487,7 +487,7 @@ class SimplifiedNetworkService:
                 'service_type': 'network_metrics_collection',
                 'psutil_available': False,
                 'error': str(e),
-                'last_health_check': datetime.now().isoformat()
+                'last_health_check': utc_now()ormat()
             }
 
 # Test function to run the service directly
@@ -497,7 +497,7 @@ async def test_simplified_network_service():
     print(" 🧐🌐 SIMPLIFIED NETWORK SERVICE TEST - ARISTOCRATIC PRECISION")
     print("="*80)
     
-    print(f"\n🕐 Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"\n🕐 Timestamp: {utc_now()time('%Y-%m-%d %H:%M:%S')}")
     
     try:
         # Initialize service

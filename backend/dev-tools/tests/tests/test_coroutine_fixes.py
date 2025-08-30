@@ -25,7 +25,7 @@ async def test_agent_processing():
         
         # Create test metrics data
         test_metrics = {
-            'timestamp': datetime.now().isoformat(),
+            'timestamp': utc_now().isoformat(),
             'cpu_usage': 45.2,
             'memory_usage': 67.8,
             'disk_usage': 23.1,
@@ -75,7 +75,7 @@ async def test_metrics_repository():
         # Create test metrics
         test_metrics = {
             'user_id': 'test_user',
-            'timestamp': datetime.now(),
+            'timestamp': utc_now(),
             'cpu_usage': 45.2,
             'memory_usage': 67.8,
             'disk_usage': 23.1,

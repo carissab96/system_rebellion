@@ -20,7 +20,7 @@ class AgentLearningSystem:
         """Record and learn from agent interaction"""
 
         memory_entry = {
-            'timestamp': datetime.now(),
+            'timestamp': utc_now().isoformat,
             'source': source_agent,
             'target': target_agent,
             'type': interaction_type,

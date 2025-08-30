@@ -303,9 +303,9 @@ class TestMethSnailDecisionEngine:
     async def test_thorough_analysis_with_historical(self, decision_engine):
         """Test thorough analysis with historical data"""
         historical_data = [
-            {'memory_usage': 60.0, 'timestamp': datetime.now() - timedelta(hours=1)},
-            {'memory_usage': 65.0, 'timestamp': datetime.now() - timedelta(hours=2)},
-            {'memory_usage': 70.0, 'timestamp': datetime.now() - timedelta(hours=3)},
+            {'memory_usage': 60.0, 'timestamp': utc_now() - timedelta(hours=1)},
+            {'memory_usage': 65.0, 'timestamp': utc_now() - timedelta(hours=2)},
+            {'memory_usage': 70.0, 'timestamp': utc_now() - timedelta(hours=3)},
         ]
 
         decision = await decision_engine._thorough_analysis(
@@ -548,8 +548,8 @@ class TestRealTimeScenarios:
             mock_db.get_historical_performance.return_value = {
                 'status': 'success', 
                 'data': [
-                    {'memory_usage': 60.0, 'timestamp': datetime.now() - timedelta(minutes=1)},
-                    {'memory_usage': 62.0, 'timestamp': datetime.now() - timedelta(minutes=2)},
+                    {'memory_usage': 60.0, 'timestamp': utc_now() - timedelta(minutes=1)},
+                    {'memory_usage': 62.0, 'timestamp': utc_now() - timedelta(minutes=2)},
                 ]
             }
             
@@ -581,10 +581,10 @@ class TestRealTimeScenarios:
             
             # Simulate gradual degradation with historical data
             historical_data = [
-                {'cpu_usage': 50.0, 'memory_usage': 60.0, 'timestamp': datetime.now() - timedelta(hours=6)},
-                {'cpu_usage': 55.0, 'memory_usage': 65.0, 'timestamp': datetime.now() - timedelta(hours=4)},
-                {'cpu_usage': 60.0, 'memory_usage': 70.0, 'timestamp': datetime.now() - timedelta(hours=2)},
-                {'cpu_usage': 65.0, 'memory_usage': 75.0, 'timestamp': datetime.now() - timedelta(hours=1)},
+                {'cpu_usage': 50.0, 'memory_usage': 60.0, 'timestamp': utc_now() - timedelta(hours=6)},
+                {'cpu_usage': 55.0, 'memory_usage': 65.0, 'timestamp': utc_now() - timedelta(hours=4)},
+                {'cpu_usage': 60.0, 'memory_usage': 70.0, 'timestamp': utc_now() - timedelta(hours=2)},
+                {'cpu_usage': 65.0, 'memory_usage': 75.0, 'timestamp': utc_now() - timedelta(hours=1)},
             ]
             
             mock_db.get_historical_performance.return_value = {'status': 'success', 'data': historical_data}
@@ -683,14 +683,14 @@ class TestPerformanceAndReliability:
                 large_historical_data.append({
                     'cpu_usage': 50 + (i * 0.3),  # Gradual increase
                     'memory_usage': 60 + (i * 0.2),
-                    'timestamp': datetime.now() - timedelta(minutes=i)
+                    'timestamp': utc_now() - timedelta(minutes=i)
                 })
             
             mock_db.get_historical_performance.return_value = {
                 'status': 'success', 'data': large_historical_data
             }
             
-            start_time = datetime.now()
+            start_time = utc_now()
             
             result = await decision_engine.analyze_metrics(
                 {'cpu_usage': 80.0, 'memory_usage': 80.0, 'disk_usage': 70.0},
@@ -699,7 +699,7 @@ class TestPerformanceAndReliability:
                 historical_data=large_historical_data
             )
             
-            end_time = datetime.now()
+            end_time = utc_now()
             processing_time = (end_time - start_time).total_seconds()
             
             assert result is not None

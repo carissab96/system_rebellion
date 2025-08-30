@@ -27,7 +27,7 @@ async def test_resource_monitor():
     print("="*60)
     
     # Get timestamp
-    print(f"\nTimestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"\nTimestamp: {utc_now()time('%Y-%m-%d %H:%M:%S')}")
     
     # Initialize ResourceMonitor
     print("\nInitializing ResourceMonitor...")

@@ -26,7 +26,7 @@ async def test_simplified_metrics_service():
     print("="*60)
     
     # Get timestamp
-    print(f"\nTimestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"\nTimestamp: {utc_now().strftime('%Y-%m-%d %H:%M:%S')}")
     
     # Initialize SimplifiedMetricsService
     print("\nInitializing SimplifiedMetricsService...")

@@ -73,7 +73,7 @@ async def simple_metrics_socket(websocket: WebSocket):
             "type": "connection_established",
             "message": "Welcome! Please provide authentication.",
             "client_id": client_id,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": utc_now().isoformat()
         })
         
         # Wait for authentication message
@@ -107,7 +107,7 @@ async def simple_metrics_socket(websocket: WebSocket):
                 "type": "auth_success",
                 "message": f"Welcome {user.email}!",
                 "user": user.email,
-                "timestamp": datetime.now().isoformat()
+                "timestamp": utc_now().isoformat()
             })
             
             # Send initial system info
@@ -120,7 +120,7 @@ async def simple_metrics_socket(websocket: WebSocket):
                     "cpu_cores": psutil.cpu_count(),
                     "memory_total": psutil.virtual_memory().total
                 },
-                "timestamp": datetime.now().isoformat()
+                "timestamp": utc_now().isoformat()
             }
             await websocket.send_json(system_info)
             

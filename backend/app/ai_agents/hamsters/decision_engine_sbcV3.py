@@ -271,7 +271,7 @@ class HamstersBrainV3:
         
         try:
             # Check if it's beer o'clock (3am is prime time)
-            current_hour = datetime.now().hour
+            current_hour = utc_now().hour
             is_prime_time = 2 <= current_hour <= 5
             
             # Extract infrastructure metrics
@@ -286,7 +286,7 @@ class HamstersBrainV3:
             
             # Log their telepathic conversation
             self.telepathic_log.append({
-                'timestamp': datetime.now(),
+                'timestamp': utc_now(),
                 'steve': steve_thought,
                 'bob': bob_thought,
                 'carl': carl_thought
@@ -321,7 +321,7 @@ class HamstersBrainV3:
             
             # Store squeak history
             self.squeak_history.append({
-                'timestamp': datetime.now(),
+                'timestamp': utc_now(),
                 'squeaks': actual_squeaks,
                 'translation': human_translation
             })
@@ -767,8 +767,8 @@ class HamstersBrainV3:
                 'total_interventions': self.total_interventions,
                 'successful_fixes': self.successful_fixes,
                 'supply_closet_raids': self.supply_closet_raids_today,
-                'current_time': datetime.now().strftime("%H:%M"),
-                'is_prime_time': 2 <= datetime.now().hour <= 5
+                'current_time': utc_now().strftime("%H:%M"),
+                'is_prime_time': 2 <= utc_now().hour <= 5
             },
             'communication_stats': {
                 'squeak_count': len(self.squeak_history),
@@ -790,7 +790,7 @@ class HamstersBrainV3:
         """
         result = {
             'intervention': intervention_type,
-            'start_time': datetime.now(),
+            'start_time': utc_now(),
             'hamster_actions': {},
             'success': False,
             'space_freed': 0,
@@ -834,7 +834,7 @@ class HamstersBrainV3:
         # Apply Carl's duct tape wisdom
         result['carl_duct_tape_application'] = carl_note
         result['beer_consumed'] = beer_required
-        result['end_time'] = datetime.now()
+        result['end_time'] = utc_now()
         
         # Generate summary
         squeaks = "*SQUEAK SQUEAK* DONE! *happy chirping*"

@@ -25,6 +25,7 @@ from datetime import datetime, timezone
 from dataclasses import dataclass, asdict
 from enum import Enum
 import json
+from .database_integration import HawkingtonDatabaseIntegration
 
 # Import agent manager at module level to avoid circular imports
 from ..agent_manager import get_agent_manager
@@ -39,7 +40,6 @@ from .decision_engine import (
 )
 
 # Database integration
-from .database_integration import HawkingtonDatabaseIntegration
 # VIC-20 Sage coordination functions
 from ..vic_20_sage.decision_engine import (
     coordinate_agents as vic20_coordinate_agents,
@@ -148,7 +148,6 @@ class SirHawkingtonTriageEngine(TriageEngineWithRedisMixin):
         """Initialize the triage engine with aristocratic precision"""
         # Initialize database
         if self.db is None:
-            from .database_integration import HawkingtonDatabaseIntegration
             self.db = HawkingtonDatabaseIntegration(self.db_getter)
             await self.db.initialize()
             
@@ -181,7 +180,7 @@ class SirHawkingtonTriageEngine(TriageEngineWithRedisMixin):
         Returns:
             Enhanced metrics with triage decision and agent results
         """
-        start_time = datetime.now()
+        start_time = utc_now()
         self.total_triage_decisions += 1
         
         try:
@@ -196,7 +195,7 @@ class SirHawkingtonTriageEngine(TriageEngineWithRedisMixin):
             )
             
             # PHASE 3: COMPILE TRIAGE RESULT
-            processing_time = (datetime.now() - start_time).total_seconds()
+            processing_time = (utc_now() - start_time).total_seconds()
             
             triage_result = TriageResult(
                 triage_decision=triage_decision,
@@ -558,43 +557,40 @@ class SirHawkingtonTriageEngine(TriageEngineWithRedisMixin):
             'routing_reason': 'CPU-specific issue routed back to Sir Hawkington\'s specialist knowledge'
         }
     
-    async def _store_triage_decision(
-            self, 
-            user_id: str, 
-            triage_result: TriageResult
-        ):
-        """Store triage decision in database for pattern analysis"""
+    async def _store_triage_decision(self, user_id: str, triage_result: TriageResult):
+        """Store triage decision in central memory bank"""
         try:
             if self.db:
-                # Prepare triage data for storage
+                # Prepare triage data for central memory bank storage
                 triage_data = {
-                    'triage_severity': triage_result.triage_decision.severity.value,
-                    'routing_decision': triage_result.triage_decision.routing.value,
-                    'target_agents': triage_result.triage_decision.target_agents,
-                    'reasoning': triage_result.triage_decision.reasoning,
-                    'monocle_yeeted': triage_result.triage_decision.monocle_yeeted,
-                    'confidence': triage_result.triage_decision.confidence,
-                    'processing_time': triage_result.processing_time,
-                    'success': triage_result.success,
-                    'timestamp': triage_result.triage_decision.timestamp,
-                    'routing_results': triage_result.routing_results,
-                    'hawkington_decision_id': None  # Will be set if we store the decision
-                }
-                
-                # If Sir Hawkington made a decision, store that too
-                if triage_result.triage_decision.hawkington_decision:
-                    hawkington_decision_id = await self.db.store_decision(
-                        user_id, 
-                        triage_result.triage_decision.hawkington_decision
-                    )
-                    triage_data['hawkington_decision_id'] = hawkington_decision_id
-                
-                # Store triage decision
-                triage_id = await self.db.store_triage_decision(user_id, triage_data)
-                self.logger.info(f"🧐📊 Triage Decision #{triage_id} stored successfully")
-                
+                'triage_severity': triage_result.triage_decision.severity.value,
+                'routing_decision': triage_result.triage_decision.routing.value,
+                'target_agents': triage_result.triage_decision.target_agents,
+                'reasoning': triage_result.triage_decision.reasoning,
+                'monocle_yeeted': triage_result.triage_decision.monocle_yeeted,
+                'confidence': triage_result.triage_decision.confidence,
+                'processing_time': triage_result.processing_time,
+                'success': triage_result.success,
+                'timestamp': triage_result.triage_decision.timestamp,
+                'routing_results': triage_result.routing_results,
+                'hawkington_decision_id': None  # Will be set if we store the decision
+            }
+            
+            # If Sir Hawkington made a decision, store that first
+            if triage_result.triage_decision.hawkington_decision:
+                hawkington_decision_id = await self.db.store_hawkington_decision(
+                    user_id, 
+                    triage_result.triage_decision.hawkington_decision
+                )
+                triage_data['hawkington_decision_id'] = hawkington_decision_id
+            
+            # Store triage decision in central memory bank
+            triage_memory_id = await self.db.store_triage_decision(user_id, triage_data)
+            self.logger.info(f"🧐📊 Triage Decision stored in central memory bank: {triage_memory_id}")
+            
         except Exception as e:
             self.logger.error(f"🧐💥 Failed to store triage decision: {str(e)}")
+
     
     async def _enhance_metrics_with_triage(
             self, 
@@ -789,7 +785,7 @@ async def test_triage_engine():
         'disk_usage': 45.8,
         'network_sent_rate': 1024,
         'network_recv_rate': 2048,
-        'timestamp': datetime.now().isoformat()
+        'timestamp': utc_now().isoformat()
     }
     
     print(f"\n🧐 Testing with metrics: CPU {test_metrics['cpu_usage']}%, Memory {test_metrics['memory_usage']}%, Disk {test_metrics['disk_usage']}%")

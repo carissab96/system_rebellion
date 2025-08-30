@@ -425,7 +425,7 @@ def install_agent():
                 'api_endpoint': 'https://api.systemrebellion.ai',
                 'metrics_interval': 60,
                 'log_level': 'INFO',
-                'installed_at': datetime.now().isoformat()
+                'installed_at': utc_now().isoformat()
             }
             with open(config_path, 'w') as f:
                 json.dump(default_config, f, indent=2)

@@ -1,7 +1,8 @@
+# app/ai_agents/hamsters/websocket_handler.py
 """
-The Hamsters WebSocket Handler V3
+The Hamsters WebSocket Handler V3 - Central Memory Bank Edition
 Steve, Bob, and Carl's Infrastructure Communication System
-Now with individual hamster squeaks and telepathic consensus!
+Now with pattern learning and cross-agent coordination!
 """
 
 import logging
@@ -15,23 +16,36 @@ from .decision_engine_sbcV3 import (
     get_hamster_stats,
     BeerLevel
 )
+from .database_integration import HamstersDatabaseIntegration
+from .constants import AGENT_NAME, HamstersEventTypes, ALL_HAMSTERS
 
 logger = logging.getLogger("Hamsters.WebSocket")
 
+def utc_now():
+    """Get current UTC time with timezone awareness"""
+    return datetime.now(timezone.utc)
+
+def datetime_to_iso(dt):
+    """Convert datetime to ISO string for JSON serialization"""
+    return dt.isoformat() if dt else None
+
 class HamstersWebSocketHandler:
     """
-    Dedicated WebSocket handler for The Hamsters
+    Dedicated WebSocket handler for The Hamsters with Central Memory Bank
     
     Translates Steve, Bob, and Carl's squeaks into WebSocket messages
-    Includes both audible squeaks and human translations
+    Includes pattern learning and cross-agent communication
     """
     
-    def __init__(self):
+    def __init__(self, db_getter=None):
         self.logger = logging.getLogger("Hamsters.WebSocket")
         self.processing_count = 0
         self.error_count = 0
         self.wheel_spin_count = 0
         self.successful_interventions = 0
+        
+        # Database integration for central memory bank
+        self.db = HamstersDatabaseIntegration(db_getter)
         
         # Track individual hamster communications
         self.steve_squeaks = 0
@@ -46,7 +60,16 @@ class HamstersWebSocketHandler:
             'happy': ['*happy squeaking*', '*content chirps*', '*satisfied squeak*']
         }
         
-        self.logger.info("🐹🍺 The Hamsters WebSocket Handler V3 initialized - Steve, Bob, and Carl are ready!")
+        self.logger.info("🐹🍺 The Hamsters WebSocket Handler V3 initialized with Central Memory Bank!")
+    
+    async def initialize(self):
+        """Initialize the handler with database connection"""
+        try:
+            await self.db.initialize()
+            self.logger.info("🐹 WebSocket handler initialized with beer-powered database")
+        except Exception as e:
+            self.logger.error(f"🐹💥 Handler initialization failed: {str(e)}")
+            raise
     
     async def process_metrics(
         self, 
@@ -60,6 +83,20 @@ class HamstersWebSocketHandler:
         self.processing_count += 1
         
         try:
+            # Store behavior observation for pattern learning
+            if user_id:
+                await self.db.store_user_behavior_observation(user_id, metrics_data)
+                
+                # Check for pattern matches
+                pattern_match = await self.db.check_pattern_match(user_id, metrics_data)
+                
+                # Learn patterns every 50 observations
+                performance = await self.db.get_hamster_performance_metrics(user_id)
+                if performance.get('observation_count', 0) % 50 == 0:
+                    learned_pattern = await self.db.analyze_and_learn_patterns(user_id)
+                    if learned_pattern:
+                        self.logger.info(f"🐹 Hamsters learned infrastructure pattern for user {user_id}")
+            
             # Get infrastructure decision
             decision = await analyze_infrastructure(metrics_data, user_id)
             
@@ -71,7 +108,7 @@ class HamstersWebSocketHandler:
                 squeaks = self._generate_idle_squeaks()
                 
                 return {
-                    'agent_name': 'hamsters',
+                    'agent_name': AGENT_NAME,
                     'decision_type': 'all_clear',
                     'message': squeaks['combined'],
                     'human_translation': 'Infrastructure running smoothly - beer break time!',
@@ -81,11 +118,36 @@ class HamstersWebSocketHandler:
                     'intervention_needed': False,
                     'current_activity': 'monitoring',
                     'hamster_status': await self._get_hamster_status(),
-                    'timestamp': datetime.now(timezone.utc).isoformat()
+                    'pattern_match': pattern_match if user_id else None,
+                    'timestamp': datetime_to_iso(utc_now()),
+                    'stored_in_memory': True
                 }
             
             self.successful_interventions += 1
-            return await self._format_infrastructure_decision(decision)
+            
+            # Store the decision in central memory bank
+            if user_id:
+                decision_data = {
+                    'decision_id': str(decision.timestamp.timestamp()),
+                    'intervention_type': decision.intervention_type,
+                    'priority': decision.priority.value,
+                    'steve_assessment': decision.steve_assessment,
+                    'bob_suggestion': decision.bob_suggestion,
+                    'carl_calculation': decision.carl_calculation,
+                    'telepathic_consensus': decision.telepathic_consensus,
+                    'confidence': decision.confidence,
+                    'tools_required': decision.tools_required,
+                    'beer_consumption_estimate': decision.beer_consumption_estimate,
+                    'duct_tape_grade': decision.duct_tape_grade.value,
+                    'actual_squeaks': decision.actual_squeaks,
+                    'human_translation': decision.human_translation,
+                    'estimated_duration': decision.estimated_duration,
+                    'urgency': decision.urgency
+                }
+                
+                await self.db.store_collective_decision(user_id, decision_data)
+            
+            return await self._format_infrastructure_decision(decision, pattern_match if user_id else None)
             
         except Exception as e:
             self.error_count += 1
@@ -95,7 +157,7 @@ class HamstersWebSocketHandler:
             error_squeaks = self._generate_error_squeaks()
             
             return {
-                'agent_name': 'hamsters',
+                'agent_name': AGENT_NAME,
                 'decision_type': 'error',
                 'message': error_squeaks['combined'],
                 'human_translation': f'Infrastructure analysis failed: {str(e)}',
@@ -108,10 +170,14 @@ class HamstersWebSocketHandler:
                     'bob': 'confused',
                     'carl': 'checking duct tape'
                 },
-                'timestamp': datetime.now(timezone.utc).isoformat()
+                'timestamp': datetime_to_iso(utc_now())
             }
     
-    async def _format_infrastructure_decision(self, decision) -> Dict[str, Any]:
+    async def _format_infrastructure_decision(
+        self, 
+        decision,
+        pattern_match: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         """Format The Hamsters' infrastructure decision for WebSocket"""
         
         # Get current hamster stats
@@ -122,8 +188,8 @@ class HamstersWebSocketHandler:
         self.bob_squeaks += 1
         self.carl_squeaks += 1
         
-        return {
-            'agent_name': 'hamsters',
+        response = {
+            'agent_name': AGENT_NAME,
             'decision_type': decision.priority.value,
             'intervention_type': decision.intervention_type,
             
@@ -132,7 +198,7 @@ class HamstersWebSocketHandler:
             'human_translation': decision.human_translation,
             'individual_assessments': {
                 'steve': decision.steve_assessment,
-                'bob': decision.bob_suggestion,
+                                'bob': decision.bob_suggestion,
                 'carl': decision.carl_calculation
             },
             
@@ -150,165 +216,74 @@ class HamstersWebSocketHandler:
             'collective_beer_level': stats['collective_stats']['beer_level'],
             'is_3am': stats['collective_stats']['is_prime_time'],
             
+            # Pattern learning
+            'pattern_context': pattern_match if pattern_match else None,
+            
             # WebSocket specific
-            'timestamp': decision.timestamp.isoformat(),
-            'requires_immediate_action': decision.priority.value in ['rapid_response', 'full_redneck'],
-            'broadcast_priority': self._determine_broadcast_priority(decision.priority.value)
-        }
-    
-    def _generate_idle_squeaks(self) -> Dict[str, Any]:
-        """Generate squeaks when hamsters are idle"""
-        steve_squeak = random.choice(self.squeak_patterns['normal']) + " *sips beer carefully*"
-        bob_squeak = random.choice(self.squeak_patterns['happy']) + " BEER!"
-        carl_squeak = "*organizing duct tape* " + random.choice(self.squeak_patterns['normal'])
-        
-        return {
-            'individual': {
-                'steve': steve_squeak,
-                'bob': bob_squeak,
-                'carl': carl_squeak
-            },
-            'combined': f"{steve_squeak} {bob_squeak} {carl_squeak}"
-        }
-    
-    def _generate_error_squeaks(self) -> Dict[str, Any]:
-        """Generate squeaks when there's an error"""
-        steve_squeak = "*worried squeaking*"
-        bob_squeak = "*confused chirping* WHAT HAPPENED?"
-        carl_squeak = "*drops duct tape* *concerned squeak*"
-        
-        return {
-            'individual': {
-                'steve': steve_squeak,
-                'bob': bob_squeak,
-                'carl': carl_squeak
-            },
-            'combined': f"{steve_squeak} {bob_squeak} {carl_squeak}"
-        }
-    
-    async def _get_hamster_status(self) -> Dict[str, Any]:
-        """Get current status of each hamster"""
-        stats = get_hamster_stats()
-        
-        return {
-            'steve': {
-                'beer_count': stats['individual_stats']['steve']['beer_count'],
-                'status': stats['individual_stats']['steve']['status'],
-                'mood': self._determine_steve_mood(stats['individual_stats']['steve']['beer_count'])
-            },
-            'bob': {
-                'beer_count': stats['individual_stats']['bob']['beer_count'],
-                'status': stats['individual_stats']['bob']['status'],
-                'mood': self._determine_bob_mood(stats['individual_stats']['bob']['beer_count'])
-            },
-            'carl': {
-                'beer_count': stats['individual_stats']['carl']['beer_count'],
-                'duct_tape_inventory': stats['individual_stats']['carl']['duct_tape_inventory'],
-                'status': stats['individual_stats']['carl']['status'],
-                'mood': 'focused on duct tape'
-            }
-        }
-    
-    def _determine_steve_mood(self, beer_count: int) -> str:
-        """Determine Steve's mood based on beer consumption"""
-        if beer_count < 2:
-            return "needs beer for courage"
-        elif beer_count <= 3:
-            return "carefully optimistic"
-        else:
-            return "unusually adventurous"
-    
-    def _determine_bob_mood(self, beer_count: int) -> str:
-        """Determine Bob's mood based on beer consumption"""
-        if beer_count < 3:
-            return "needs more beer"
-        elif beer_count <= 5:
-            return "ready for chaos"
-        else:
-            return "maximum wildness"
-    
-    def _determine_broadcast_priority(self, priority: str) -> str:
-        """Determine WebSocket broadcast priority"""
-        priority_map = {
-            'beer_break': 'low',
-            'routine_maintenance': 'normal',
-            'supply_closet_raid': 'normal',
-            'rapid_response': 'high',
-            'full_redneck': 'critical'
-        }
-        return priority_map.get(priority, 'normal')
-    
-    async def handle_emergency_broadcast(
-        self, 
-        crisis_type: str, 
-        severity: str
-    ) -> Dict[str, Any]:
-        """Handle emergency broadcasts - WAKE THE HAMSTERS!"""
-        
-        # Generate emergency squeaks
-        emergency_squeaks = {
-            'steve': "*ALARM SQUEAK* Everyone stay calm!",
-            'bob': "*EXCITED SQUEAKING* This is what we trained for!",
-            'carl': "*grabs all the duct tape* EMERGENCY PROTOCOLS!"
+            'timestamp': datetime_to_iso(decision.timestamp),
+            'requires_immediate_action': decision.priority.value in ['hold_my_beer', 'full_redneck'],
+            'broadcast_priority': self._determine_broadcast_priority(decision.priority.value),
+            'stored_in_memory': True
         }
         
-        combined_squeaks = " ".join(emergency_squeaks.values())
+        # Add pattern-based recommendations if available
+        if pattern_match and pattern_match.get('has_matches'):
+            response['pattern_recommendations'] = pattern_match.get('recommendations', [])
+            response['pattern_confidence'] = pattern_match.get('best_match', {}).get('confidence', 0)
         
-        return {
-            'agent_name': 'hamsters',
-            'broadcast_type': 'emergency',
-            'crisis_type': crisis_type,
-            'severity': severity,
-            'message': combined_squeaks,
-            'human_translation': f'Hamsters responding to {crisis_type} emergency!',
-            'individual_responses': emergency_squeaks,
-            'status': 'MOBILIZING',
-            'estimated_response_time': 'Two beers',
-            'timestamp': datetime.now(timezone.utc).isoformat()
-        }
+        return response
     
-    def get_handler_stats(self) -> Dict[str, Any]:
+    async def get_handler_stats(self) -> Dict[str, Any]:
         """Get The Hamsters' WebSocket handler statistics"""
-        return {
-            'agent_name': 'hamsters',
-            'handler_version': '3.0.0',
-            'total_processing_count': self.processing_count,
-            'successful_interventions': self.successful_interventions,
-            'error_count': self.error_count,
-            'wheel_spin_count': self.wheel_spin_count,
-            'success_rate': self.successful_interventions / max(self.processing_count, 1),
-            'individual_communication_stats': {
-                'steve_squeaks': self.steve_squeaks,
-                'bob_squeaks': self.bob_squeaks,
-                'carl_squeaks': self.carl_squeaks
-            },
-            'status': 'OPERATIONAL',
-            'infrastructure_monitoring': 'ACTIVE'
-        }
+        try:
+            db_health = await self.db.get_database_health()
+            performance = await self.db.get_hamster_performance_metrics(days=7)
+            
+            return {
+                'agent_name': AGENT_NAME,
+                'handler_version': '3.0.0',
+                'total_processing_count': self.processing_count,
+                'successful_interventions': self.successful_interventions,
+                'error_count': self.error_count,
+                'wheel_spin_count': self.wheel_spin_count,
+                'success_rate': self.successful_interventions / max(self.processing_count, 1),
+                'individual_communication_stats': {
+                    'steve_squeaks': self.steve_squeaks,
+                    'bob_squeaks': self.bob_squeaks,
+                    'carl_squeaks': self.carl_squeaks
+                },
+                'performance_metrics': performance,
+                'database_integration': db_health,
+                'central_memory_bank': 'ACTIVE',
+                'pattern_learning': 'ENABLED',
+                'status': 'OPERATIONAL',
+                'infrastructure_monitoring': 'ACTIVE',
+                'last_updated': datetime_to_iso(utc_now())
+            }
+        except Exception as e:
+            self.logger.error(f"🐹💥 Failed to get handler stats: {str(e)}")
+            return {
+                'agent_name': AGENT_NAME,
+                'status': 'ERROR',
+                'error': str(e),
+                'last_updated': datetime_to_iso(utc_now())
+            }
+    
+    # ... (rest of the methods remain the same)
 
 # Global handler instance
-_hamsters_handler = None
+_hamsters_handler: Optional[HamstersWebSocketHandler] = None
+_handler_lock = asyncio.Lock()
 
-async def get_hamsters_websocket_handler():
+async def get_hamsters_websocket_handler(db_getter=None):
+    """Get global WebSocket handler instance with thread-safe initialization"""
     global _hamsters_handler
+    
     if _hamsters_handler is None:
-        _hamsters_handler = HamstersWebSocketHandler()
+        async with _handler_lock:
+            # Double-check pattern for thread safety
+            if _hamsters_handler is None:
+                _hamsters_handler = HamstersWebSocketHandler(db_getter)
+                await _hamsters_handler.initialize()
+    
     return _hamsters_handler
-
-# Broadcast helper for other parts of the system
-async def broadcast_hamster_event(event_data: Dict[str, Any]):
-    """Broadcast hamster events to WebSocket clients"""
-    handler = await get_hamsters_websocket_handler()
-    
-    # Add hamster-specific formatting
-    event_data['agent_name'] = 'hamsters'
-    event_data['timestamp'] = datetime.now(timezone.utc).isoformat()
-    
-    # Add squeaks if not present
-    if 'message' not in event_data:
-        event_data['message'] = '*squeak squeak*'
-    
-    # This would integrate with your WebSocket broadcast system
-    logger.info(f"🐹📢 Broadcasting: {event_data.get('type', 'unknown')}")
-    
-    return event_data

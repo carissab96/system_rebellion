@@ -44,7 +44,7 @@ class ErrorContext:
         self.component = component
         self.operation = operation
         self.severity = severity
-        self.timestamp = timestamp or datetime.now()
+        self.timestamp = timestamp or utc_now()
         self.metadata = metadata or {}
         self.traceback = traceback.format_exc()
     

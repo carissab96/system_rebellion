@@ -86,7 +86,7 @@ class DiskMetricsService:
         try:
             # Get current disk I/O counters
             io_counters = psutil.disk_io_counters()
-            current_time = datetime.now().timestamp()
+            current_time = utc_now()stamp()
             
             # Initialize with available values
             io_stats = {}

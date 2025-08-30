@@ -29,7 +29,7 @@ async def test_different_scenarios():
         'disk_usage': 35.0,
         'network_sent_rate': 512,
         'network_recv_rate': 1024,
-        'timestamp': datetime.now().isoformat()
+        'timestamp': utc_now().isoformat()
     }
     
     result1 = await process_metrics_through_triage(normal_metrics, user_id="test_user_1")
@@ -45,7 +45,7 @@ async def test_different_scenarios():
         'disk_usage': 55.0,
         'network_sent_rate': 2048,
         'network_recv_rate': 4096,
-        'timestamp': datetime.now().isoformat()
+        'timestamp': utc_now().isoformat()
     }
     
     result2 = await process_metrics_through_triage(medium_metrics, user_id="test_user_2")
@@ -61,7 +61,7 @@ async def test_different_scenarios():
         'disk_usage': 78.0,
         'network_sent_rate': 8192,
         'network_recv_rate': 16384,
-        'timestamp': datetime.now().isoformat()
+        'timestamp': utc_now().isoformat()
     }
     
     result3 = await process_metrics_through_triage(high_metrics, user_id="test_user_3")
@@ -77,7 +77,7 @@ async def test_different_scenarios():
         'memory_usage': None,  # Missing!
         'disk_usage': 45.0,
         'network_sent_rate': 1024,
-        'timestamp': datetime.now().isoformat()
+        'timestamp': utc_now().isoformat()
     }
     
     result4 = await process_metrics_through_triage(bad_metrics, user_id="test_user_4")

@@ -17,7 +17,7 @@ class PatternLearner:
         
     def learn_temporal_patterns(self, user_id: str, context_vector: np.ndarray) -> Dict[str, float]:
         """Learn patterns from temporal context data"""
-        now = datetime.now()
+        now = utc_now()
         
         # Add new observation to pattern cache
         if user_id not in self._pattern_cache:

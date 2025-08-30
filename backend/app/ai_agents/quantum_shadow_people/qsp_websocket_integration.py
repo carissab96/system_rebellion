@@ -64,7 +64,7 @@ class QSPWebSocketHandler:
             # Track the quantum fix
             self.quantum_fixes_in_progress[user_id] = {
                 'decision': qsp_decision,
-                'timestamp': datetime.now()
+                'timestamp': utc_now()
             }
             
         else:
@@ -77,7 +77,7 @@ class QSPWebSocketHandler:
         recommendation = {
             'type': 'qsp_recommendation',
             'user_id': user_id,
-            'timestamp': datetime.now().isoformat(),
+            'timestamp': utc_now().isoformat(),
             'quantum_state': decision.quantum_state.value,
             'decision_type': decision.decision_type.value,
             'network_target': decision.network_target,
@@ -124,7 +124,7 @@ class QSPWebSocketHandler:
         status_update = {
             'type': 'qsp_status',
             'user_id': user_id,
-            'timestamp': datetime.now().isoformat(),
+            'timestamp': utc_now().isoformat(),
             'status': status,
             'message': status_messages.get(status, 'Unknown quantum status'),
             'quantum_state': self.qsp_brain.quantum_state.value,
@@ -141,7 +141,7 @@ class QSPWebSocketHandler:
         stats_response = {
             'type': 'qsp_stats',
             'user_id': user_id,
-            'timestamp': datetime.now().isoformat(),
+            'timestamp': utc_now().isoformat(),
             'stats': stats,
             'quantum_icon': '👻📊'
         }
@@ -154,7 +154,7 @@ class QSPWebSocketHandler:
         phase_check = {
             'type': 'quantum_phase_status',
             'user_id': user_id,
-            'timestamp': datetime.now().isoformat(),
+            'timestamp': utc_now().isoformat(),
             'quantum_state': self.qsp_brain.quantum_state.value,
             'tequila_jello_shots_available': self.qsp_brain.tequila_jello_shots,
             'quantum_fixes_applied': self.qsp_brain.quantum_fixes_applied,
@@ -170,7 +170,7 @@ class QSPWebSocketHandler:
         
         error_response = {
             'type': 'qsp_error',
-            'timestamp': datetime.now().isoformat(),
+            'timestamp': utc_now().isoformat(),
             'error': error_message,
             'quantum_state': 'error_dimension',
             'quantum_icon': '👻❌'
@@ -186,7 +186,7 @@ class QSPWebSocketHandler:
         welcome_message = {
             'type': 'qsp_connection_established',
             'user_id': user_id,
-            'timestamp': datetime.now().isoformat(),
+            'timestamp': utc_now().isoformat(),
             'message': 'QSP quantum network monitoring active',
             'quantum_state': self.qsp_brain.quantum_state.value,
             'quantum_icon': '👻🔗'

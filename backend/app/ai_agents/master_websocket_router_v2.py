@@ -487,7 +487,7 @@ async def test_websocket_router():
     print(" 🚀⚡ WEBSOCKET ROUTER TEST - TRIAGE ARCHITECTURE COMPATIBILITY")
     print("="*80)
     
-    print(f"\n🕐 Test Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"\n🕐 Test Started: {utc_now().strftime('%Y-%m-%d %H:%M:%S')}")
     
     try:
         # Initialize WebSocket router
@@ -617,7 +617,7 @@ async def test_websocket_router():
         print(f"\n💥 WEBSOCKET ROUTER TEST FAILED: {str(e)}")
         print("This indicates WebSocket handler initialization or routing issues")
     
-    print(f"\n🕐 Test Completed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"\n🕐 Test Completed: {utc_now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("\n" + "="*80)
     print(" 🚀✨ WEBSOCKET ROUTER TEST COMPLETE")
     print("="*80)

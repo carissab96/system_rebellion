@@ -148,7 +148,7 @@ class TheStickBrainV3:
         
         self.anxiety_triggers.append({
             'trigger': trigger,
-            'timestamp': datetime.now(),
+            'timestamp': utc_now(),
             'anxiety_level': self.current_anxiety_percentage,
             'multiplier': multiplier
         })
@@ -162,7 +162,7 @@ class TheStickBrainV3:
         if self.paper_bag_inventory > 0:
             self.paper_bag_inventory -= 1
             self.paper_bags_consumed_today += 1
-            self.last_paper_bag_time = datetime.now()
+            self.last_paper_bag_time = utc_now()
             
             # Paper bag reduces anxiety by 20%
             self.current_anxiety_percentage = max(20, self.current_anxiety_percentage - 20)
@@ -171,7 +171,7 @@ class TheStickBrainV3:
             # Log the consumption
             self.everything_ever_seen.append({
                 'event': 'paper_bag_consumed',
-                'timestamp': datetime.now(),
+                'timestamp': utc_now(),
                 'remaining_inventory': self.paper_bag_inventory,
                 'anxiety_before': self.current_anxiety_percentage + 20,
                 'anxiety_after': self.current_anxiety_percentage
@@ -236,7 +236,7 @@ class TheStickBrainV3:
             
             # Store proximity alert
             self.hamster_proximity_alerts.append({
-                'timestamp': datetime.now(),
+                'timestamp': utc_now(),
                 'alert': proximity_alert,
                 'anxiety_level': self.current_anxiety_percentage
             })
@@ -283,7 +283,7 @@ class TheStickBrainV3:
             await self._update_anxiety("Bob squeak detected", 2.0)
         
         self.last_hamster_squeak = {
-            'timestamp': datetime.now(),
+            'timestamp': utc_now(),
             'source': squeak_source,
             'pattern': squeak_pattern,
             'translation': translation,
@@ -336,7 +336,7 @@ class TheStickBrainV3:
             
             # The Stick remembers EVERYTHING due to anxiety
             self.everything_ever_seen.append({
-                'timestamp': datetime.now(),
+                'timestamp': utc_now(),
                 'system_state': system_metrics,
                 'anxiety_level': self.current_anxiety_percentage,
                 'analysis': behavior_analysis
@@ -378,7 +378,7 @@ class TheStickBrainV3:
                 expected_improvement=0.0,
                 confidence_level=0.0,
                 paper_bags_consumed=3,  # Errors need multiple bags
-                timestamp=datetime.now()
+                timestamp=utc_now()
             )
         
         finally:
@@ -395,7 +395,7 @@ class TheStickBrainV3:
         # Document the learning session start
         self.panic_documentation_queue.append({
             'event': 'learning_mode_entered',
-            'timestamp': datetime.now(),
+            'timestamp': utc_now(),
             'anxiety_level': self.current_anxiety_percentage,
             'session_number': self.pattern_learning_sessions
         })
@@ -591,7 +591,7 @@ class TheStickBrainV3:
             'threads_active': system_metrics.get('thread_count', 0),
             'context_switches': system_metrics.get('context_switches', 0),
             'interrupts': system_metrics.get('interrupts', 0),
-            'stick_observation_timestamp': datetime.now().isoformat(),
+            'stick_observation_timestamp': utc_now().isoformat(),
             'anxiety_level_during_analysis': self.current_anxiety_percentage
         }
         
@@ -689,7 +689,7 @@ class TheStickBrainV3:
         # Store in eidetic memory
         if user_id:
             self.user_patterns[user_id] = pattern_analysis
-            self.user_patterns[user_id]['last_updated'] = datetime.now()
+            self.user_patterns[user_id]['last_updated'] = utc_now()
             self.user_patterns[user_id]['total_observations'] = len(self.everything_ever_seen)
         
         return pattern_analysis
@@ -768,7 +768,7 @@ class TheStickBrainV3:
             expected_improvement=-0.5,  # Things will get worse before better
             confidence_level=1.0,  # 100% certain of panic
             paper_bags_consumed=len(active_hamsters),  # One bag per hamster
-            timestamp=datetime.now()
+            timestamp=utc_now()
         )
     
     async def _create_anxious_compliance_enforcement(self, violation: Dict[str, Any], user_id: str) -> StickDecision:
@@ -807,7 +807,7 @@ class TheStickBrainV3:
             expected_improvement=0.3,
             confidence_level=1.0,
             paper_bags_consumed=1 if violation['severity'] == 'critical' else 0,
-            timestamp=datetime.now()
+            timestamp=utc_now()
         )
     
     async def _create_anxiety_driven_optimization(self, analysis: Dict[str, Any], user_id: str) -> StickDecision:
@@ -835,7 +835,7 @@ class TheStickBrainV3:
             expected_improvement=0.1,
             confidence_level=0.8,
             paper_bags_consumed=0,
-            timestamp=datetime.now()
+            timestamp=utc_now()
         )
     
     async def _apply_configuration_anxiously(self, decision: StickDecision):
@@ -935,7 +935,7 @@ class TheStickBrainV3:
         """Get The Stick's anxiety history"""
         
         if time_period:
-            cutoff = datetime.now() - time_period
+            cutoff = utc_now() - time_period
             relevant_triggers = [t for t in self.anxiety_triggers if t['timestamp'] > cutoff]
         else:
             relevant_triggers = self.anxiety_triggers
@@ -993,7 +993,7 @@ class TheStickBrainV3:
         self.everything_ever_seen.append({
             'event': 'resupply_requested',
             'request': request,
-            'timestamp': datetime.now()
+            'timestamp': utc_now()
         })
         
         return request

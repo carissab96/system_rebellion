@@ -221,7 +221,7 @@ class VIC20DatabaseIntegration:
                     average_coordination_confidence=stats.get('average_coordination_confidence', 0.0),
                     average_system_improvement=stats.get('average_system_improvement', 0.0),
                     coordination_mastery_level=stats.get('coordination_mastery_level', 'LEARNING'),
-                    timestamp=datetime.now()
+                    timestamp=utc_now()
                 )
                 
                 session.add(coordination_stats)
@@ -241,7 +241,7 @@ class VIC20DatabaseIntegration:
         
         async with self.session_factory() as session:
             try:
-                cutoff_date = datetime.now() - timedelta(days=days)
+                cutoff_date = utc_now() - timedelta(days=days)
                 
                 query = select(VIC20CoordinationLog).where(
                     and_(
@@ -283,7 +283,7 @@ class VIC20DatabaseIntegration:
         
         async with self.session_factory() as session:
             try:
-                cutoff_date = datetime.now() - timedelta(days=days)
+                cutoff_date = utc_now() - timedelta(days=days)
                 
                 query = select(VIC20SystemSynthesis).where(
                     and_(
@@ -332,7 +332,7 @@ class VIC20DatabaseIntegration:
         
         async with self.session_factory() as session:
             try:
-                cutoff_date = datetime.now() - timedelta(days=days)
+                cutoff_date = utc_now() - timedelta(days=days)
                 
                 query = select(VIC20AgentHarmony).where(
                     and_(
@@ -420,7 +420,7 @@ class VIC20DatabaseIntegration:
         
         async with self.session_factory() as session:
             try:
-                cutoff_date = datetime.now() - timedelta(days=days)
+                cutoff_date = utc_now() - timedelta(days=days)
                 
                 query = select(VIC20PartnershipMetrics).where(
                     and_(
@@ -489,7 +489,7 @@ class VIC20DatabaseIntegration:
         
         async with self.session_factory() as session:
             try:
-                cutoff_date = datetime.now() - timedelta(days=days)
+                cutoff_date = utc_now() - timedelta(days=days)
                 
                 query = select(VIC20DecisionOrchestration).where(
                     and_(
@@ -551,7 +551,7 @@ class VIC20DatabaseIntegration:
             # Generate comprehensive report
             comprehensive_report = {
                 'report_period': f'{days}_days',
-                'generated_timestamp': datetime.now().isoformat(),
+                'generated_timestamp': utc_now().isoformat(),
                 'coordination_summary': {
                 'total_coordination_decisions': len(coordination_history),
                 'coordination_success_rate': performance_metrics.get('coordination_success_rate', 0),
@@ -1159,10 +1159,10 @@ class VIC20DatabaseIntegration:
         
         async with self.session_factory() as session:
             try:
-                cutoff_date = datetime.now() - timedelta(days=days_to_keep)
+                cutoff_date = utc_now() - timedelta(days=days_to_keep)
                 
                 # Clean up very old coordination logs (keep longer for analysis)
-                very_old_cutoff = datetime.now() - timedelta(days=days_to_keep * 2)
+                very_old_cutoff = utc_now() - timedelta(days=days_to_keep * 2)
                 
                 # Clean up old system synthesis records
                 old_synthesis_query = select(VIC20SystemSynthesis).where(
@@ -1191,7 +1191,7 @@ class VIC20DatabaseIntegration:
                 await session.commit()
                 
                 cleanup_log = {
-                    'cleanup_timestamp': datetime.now().isoformat(),
+                    'cleanup_timestamp': utc_now().isoformat(),
                     'days_cleaned': days_to_keep,
                     'ancient_wisdom_applied': 'Like efficient memory management - keep essential data, clean efficiently',
                     'coordination_precision': 'Surgical cleanup maintaining data integrity'

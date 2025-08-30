@@ -101,7 +101,7 @@ class SimplifiedCPUService:
             
             # PHASE 6: COMPILE REAL METRICS
             cpu_metrics = {
-                'timestamp': datetime.now().isoformat(),
+                'timestamp': utc_now().isoformat(),
                 'type': 'cpu',
                 'data': {
                     'usage_percent': round(overall_percent, 2),
@@ -321,7 +321,7 @@ class SimplifiedCPUService:
             Health check results
         """
         try:
-            start_time = datetime.now()
+            start_time = utc_now()
             
             # Test basic CPU usage measurement
             cpu_usage = await self.get_cpu_usage_only()
@@ -335,7 +335,7 @@ class SimplifiedCPUService:
             # Test temperature availability
             temperature = await self._get_cpu_temperature()
             
-            collection_time = (datetime.now() - start_time).total_seconds()
+            collection_time = (utc_now() - start_time).total_seconds()
             
             return {
                 'status': 'OPERATIONAL',
@@ -352,7 +352,7 @@ class SimplifiedCPUService:
                     'honest_failure_handling',
                     'real_measurements_only'
                 ],
-                'last_health_check': datetime.now().isoformat()
+                'last_health_check': utc_now().isoformat()
             }
             
         except Exception as e:
@@ -361,7 +361,7 @@ class SimplifiedCPUService:
                 'service_type': 'cpu_metrics_collection',
                 'psutil_available': False,
                 'error': str(e),
-                'last_health_check': datetime.now().isoformat()
+                'last_health_check': utc_now().isoformat()
             }
 
 # Test function to run the service directly
@@ -371,7 +371,7 @@ async def test_simplified_cpu_service():
     print(" 🧐💻 SIMPLIFIED CPU SERVICE TEST - ARISTOCRATIC PRECISION")
     print("="*80)
     
-    print(f"\n🕐 Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"\n🕐 Timestamp: {utc_now().strftime('%Y-%m-%d %H:%M:%S')}")
     
     try:
         # Initialize service

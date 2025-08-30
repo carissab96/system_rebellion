@@ -67,7 +67,7 @@ class SystemRebellionDebugDashboard:
     
     def log_event(self, source: str, message: str, severity: str = "info"):
         """Add event to recent logs"""
-        timestamp = datetime.now().strftime("%H:%M:%S")
+        timestamp = utc_now().strftime("%H:%M:%S")
         self.recent_logs.append({
             'time': timestamp,
             'source': source,
@@ -241,7 +241,7 @@ class SystemRebellionDebugDashboard:
         """Render header panel"""
         header_text = Text()
         header_text.append("🚨 SYSTEM REBELLION DEBUG DASHBOARD 🚨\n", style="bold red")
-        header_text.append(f"Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} | ", style="dim")
+        header_text.append(f"Time: {utc_now()time('%Y-%m-%d %H:%M:%S')} | ", style="dim")
         header_text.append(f"DB: {os.path.basename(self.db_path)}", style="dim cyan")
         
         return Panel(header_text, border_style="red")
@@ -378,7 +378,7 @@ Python Procs: {self.count_python_processes()}
     def get_uptime(self) -> str:
         """Get system uptime as readable string"""
         boot_time = datetime.fromtimestamp(psutil.boot_time())
-        uptime = datetime.now() - boot_time
+        uptime = utc_now() - boot_time
         
         days = uptime.days
         hours = uptime.seconds // 3600

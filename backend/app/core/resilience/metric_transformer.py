@@ -62,7 +62,7 @@ class MetricTransformer:
                 self.network_history.pop(0)
         
         # Add timestamp
-        now = datetime.now()
+        now = utc_now()
         self.timestamps.append(now)
         if len(self.timestamps) > self.history_size:
             self.timestamps.pop(0)
@@ -382,7 +382,7 @@ class MetricTransformer:
         transformed['system_analysis'] = self._analyze_system_state(transformed)
         
         # Add timestamp
-        transformed['timestamp'] = datetime.now().isoformat()
+        transformed['timestamp'] = utc_now().isoformat()
         
         return transformed
     

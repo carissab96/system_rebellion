@@ -39,7 +39,7 @@ class PatternValidator:
         # Add new sample
         pattern_data['samples'].append({
             'metrics': metrics,
-            'timestamp': datetime.now()
+            'timestamp': utc_now()
         })
 
         # Remove old samples
@@ -52,7 +52,7 @@ class PatternValidator:
             confidence = 0.0
 
         pattern_data['confidence'] = confidence
-        pattern_data['last_validated'] = datetime.now()
+        pattern_data['last_validated'] = utc_now()
 
         return {
             'confidence': confidence,
@@ -70,7 +70,7 @@ class PatternValidator:
 
     def _clean_old_samples(self, pattern_data: Dict):
         """Remove samples outside validation window"""
-        cutoff_time = datetime.now() - self.validation_window
+        cutoff_time = utc_now()lf.validation_window
         pattern_data['samples'] = [
             sample for sample in pattern_data['samples']
             if sample['timestamp'] > cutoff_time

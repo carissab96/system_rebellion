@@ -29,7 +29,7 @@ class BaseAIAgent(ABC):
         self.agent_role = agent_role  # NEW: Agent specialization
         self.is_active = True
         self.logger = logging.getLogger(f"Agent.{agent_name}")
-        self.initialization_time = datetime.now()
+        self.initialization_time = utc_now().isoformat
         self.processing_count = 0
         self.error_count = 0
         self.last_processing_time = None
@@ -129,19 +129,19 @@ class BaseAIAgent(ABC):
             'agent_name': self.agent_name,
             'emergency_support': False,
             'message': f'{self.agent_name} does not support emergency operations',
-            'timestamp': datetime.now().isoformat()
+            'timestamp': utc_now().isoformat()
         }
     
     # === STATISTICS AND MONITORING ===
     
     def start_processing_timer(self):
         """Start timing a processing operation"""
-        self.last_processing_time = datetime.now()
+        self.last_processing_time = utc_now()
     
     def end_processing_timer(self):
         """End timing and record processing duration"""
         if self.last_processing_time:
-            duration = (datetime.now() - self.last_processing_time).total_seconds()
+            duration = (utc_now().isoformat() - self.last_processing_time).total_seconds()
             self.total_processing_time += duration
             self.last_processing_time = None
             return duration
@@ -157,7 +157,7 @@ class BaseAIAgent(ABC):
     
     def get_base_status(self) -> Dict[str, Any]:
         """Get base status information common to all agents"""
-        uptime = datetime.now() - self.initialization_time
+        uptime = utc_now().isoformat() - self.initialization_time
         avg_processing_time = (
             self.total_processing_time / max(self.processing_count, 1) 
             if self.processing_count > 0 else 0.0
@@ -210,7 +210,7 @@ class BaseAIAgent(ABC):
                 'is_active': self.is_active,
                 'error_rate': self.error_rate,
                 'processing_count': self.processing_count,
-                'last_health_check': datetime.now().isoformat(),
+                'last_health_check': utc_now().isoformat(),
                 'detailed_status': status
             }
             
@@ -219,7 +219,7 @@ class BaseAIAgent(ABC):
                 'agent_name': self.agent_name,
                 'health_status': 'ERROR',
                 'error': str(e),
-                'last_health_check': datetime.now().isoformat()
+                'last_health_check': utc_now().isoformat()
             }
     
     # === UTILITY METHODS ===
@@ -310,13 +310,13 @@ class MockAgent(BaseAIAgent):
         self.test_processing_calls.append({
             'metrics': metrics,
             'user_context': user_context,
-            'timestamp': datetime.now().isoformat()
+            'timestamp': utc_now().isoformat()
         })
         
         # Add mock agent processing
         enhanced_metrics = metrics.copy()
         enhanced_metrics['mock_agent_processed'] = True
-        enhanced_metrics['mock_processing_time'] = datetime.now().isoformat()
+        enhanced_metrics['mock_processing_time'] = utc_now().isoformat()
         
         self.log_processing_success("test_processing")
         return enhanced_metrics
@@ -337,7 +337,7 @@ def test_base_agent_interface():
     print(" 🤖⚡ BASE AGENT INTERFACE TEST - TRIAGE ARCHITECTURE COMPATIBILITY")
     print("="*80)
     
-    print(f"\n🕐 Test Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"\n🕐 Test Started: {utc_now().strftime('%Y-%m-%d %H:%M:%S')}")
     
     try:
         # Test agent validation
@@ -396,7 +396,7 @@ def test_base_agent_interface():
     except Exception as e:
         print(f"\n💥 BASE AGENT INTERFACE TEST FAILED: {str(e)}")
     
-    print(f"\n🕐 Test Completed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"\n🕐 Test Completed: {utc_now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("\n" + "="*80)
     print(" 🤖✨ BASE AGENT INTERFACE TEST COMPLETE")
     print("="*80)

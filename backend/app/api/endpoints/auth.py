@@ -220,7 +220,7 @@ async def register_user(
             hashed_password=hashed_password,
             is_active=True,
             is_onboarded=False,  
-            created_at=datetime.now()
+            created_at=utc_now()
         )
         
         # Save user to database
@@ -293,7 +293,7 @@ async def create_test_user(db: Union[Session, AsyncSession] = Depends(get_db)):
             email="test@example.com",
             hashed_password=hash_password("password123"),
             is_active=True,
-            created_at=datetime.now()
+            created_at=utc_now()
         )
         
         await save_user(db, test_user)
@@ -368,7 +368,7 @@ async def login_for_access_token(
     )
     
     # Update last login
-    user.last_login = datetime.now()
+    user.last_login = utc_now()
     user.failed_login_attempts = 0  # Reset failed attempts
     user.lockout_until = None  # Clear any lockouts
     
@@ -439,7 +439,7 @@ async def test_database_operations(db: Union[Session, AsyncSession] = Depends(ge
             email=test_email,
             hashed_password=test_password,
             is_active=True,
-            created_at=datetime.now()
+            created_at=utc_now()
         )
         
         # Add to session
@@ -590,7 +590,7 @@ async def auth_status(request: Request, db: AsyncSession = Depends(get_db)):
             "auth_service": "active",
             "is_authenticated": is_authenticated,
             "email": email,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": utc_now().isoformat()
         }
         
         # Include user data if available
@@ -605,7 +605,7 @@ async def auth_status(request: Request, db: AsyncSession = Depends(get_db)):
             "status": "operational",
             "auth_service": "active",
             "is_authenticated": False,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": utc_now().isoformat()
         }
 
 @router.get("/me")

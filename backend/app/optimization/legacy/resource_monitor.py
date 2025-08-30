@@ -65,7 +65,7 @@ class ResourceMonitor:
             self.logger.error("Complete metrics collection timed out")
             # Return minimal metrics
             return {
-                'timestamp': datetime.now().isoformat(),
+                'timestamp': utc_now()ormat(),
                 'cpu_usage': self._last_cpu_percent,
                 'memory_usage': self._get_memory_usage(),
                 'disk_usage': self._get_disk_usage(),
@@ -83,7 +83,7 @@ class ResourceMonitor:
             self.logger.error(f"Error collecting metrics: {str(e)}")
             # Return minimal metrics on any error
             return {
-                'timestamp': datetime.now().isoformat(),
+                'timestamp': utc_now().isoformat(),
                 'error': str(e),
                 'cpu_usage': self._last_cpu_percent,
                 'memory_usage': self._get_memory_usage(),
@@ -94,7 +94,7 @@ class ResourceMonitor:
         """Collect metrics in priority order"""
         # Essential metrics - fast and lightweight
         metrics = {
-            'timestamp': datetime.now().isoformat(),
+            'timestamp': utc_now().isoformat(),
             'cpu_usage': await self._get_cpu_usage(),
             'memory_usage': self._get_memory_usage(),
             'disk_usage': self._get_disk_usage(),
@@ -986,7 +986,7 @@ class ResourceMonitor:
                     start_time = None
                     
             if isinstance(start_time, datetime):
-                status['monitoring_duration'] = (datetime.now() - start_time).total_seconds()
+                status['monitoring_duration'] = (utc_now() - start_time).total_seconds()
         
         return status
 
@@ -1152,7 +1152,7 @@ class ResourceMonitor:
 
 #     #         # The Meth Snail's Comprehensive Metrics Package
 #     #         metrics = {
-#     #             'timestamp': datetime.now(),
+#     #             'timestamp': utc_now(),
 #     #             'cpu_usage': await self._get_cpu_usage(),
 #     #             'memory_usage': self._get_memory_usage(),
 #     #             'disk_usage': self._get_disk_usage(),
@@ -1180,7 +1180,7 @@ class ResourceMonitor:
 #         # Create a task with timeout
 #         async def _collect_metrics_impl():
 #             metrics = {
-#                 'timestamp': datetime.now(),
+#                 'timestamp': utc_now(),
 #                 'cpu_usage': await self._get_cpu_usage(),
 #                 'memory_usage': self._get_memory_usage(),
 #                 'disk_usage': self._get_disk_usage(),
@@ -1216,7 +1216,7 @@ class ResourceMonitor:
 #         self.logger.error("Complete metrics collection timed out")
 #         # Return minimal metrics
 #         return {
-#             'timestamp': datetime.now(),
+#             'timestamp': utc_now(),
 #             'cpu_usage': 0,
 #             'memory_usage': self._get_memory_usage(),
 #             'disk_usage': 0,
@@ -1227,7 +1227,7 @@ class ResourceMonitor:
 #         self.logger.error(f"Error collecting metrics: {str(e)}")
 #         # Return minimal metrics on any error
 #         return {
-#             'timestamp': datetime.now(),
+#             'timestamp': utc_now(),
 #             'error': str(e),
 #             'cpu_usage': 0,
 #             'memory_usage': 0,
@@ -2011,7 +2011,7 @@ class ResourceMonitor:
 #         if self.is_monitoring and self.last_metrics and 'timestamp' in self.last_metrics:
 #             start_time = self.last_metrics['timestamp']
 #             if isinstance(start_time, datetime):
-#                 status['monitoring_duration'] = (datetime.now() - start_time).total_seconds()
+#                 status['monitoring_duration'] = (utc_now() - start_time).total_seconds()
         
 #         return status
 
@@ -2072,7 +2072,7 @@ class ResourceMonitor:
 #             self.logger.info(f"Network metrics collected: {network_data.keys()}")
 
 #             metrics = {
-#                 'timestamp': datetime.now(),
+#                 'timestamp': utc_now(),
 #                 'cpu_usage': await self._get_cpu_usage(),
 #                 'memory_usage': self._get_memory_usage(),
 #                 'disk_usage': self._get_disk_usage(),

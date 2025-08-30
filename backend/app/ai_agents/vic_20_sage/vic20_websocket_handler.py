@@ -70,7 +70,7 @@ class VIC20SageWebSocketHandler:
             "message": "🖥️ VIC-20 Sage coordination center active",
             "learning_capabilities": "pattern_recognition_enabled",
             "coordination_scope": "system_wide",
-            "timestamp": datetime.now().isoformat()
+            "timestamp": utc_now()ormat()
         }
         
         await websocket.send(json.dumps(greeting))
@@ -133,7 +133,7 @@ class VIC20SageWebSocketHandler:
             "learning_mode": self.learning_mode_active,
             "pattern_matching": self.pattern_matching_enabled,
             "session_id": self.coordination_sessions,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": utc_now().isoformat()
         }
         await websocket.send(json.dumps(coordination_start))
         
@@ -167,7 +167,7 @@ class VIC20SageWebSocketHandler:
                         "learning_confidence": coordination_decision.system_synthesis_confidence
                     },
                     "message": "🖥️ Coordination complete - Learning patterns applied",
-                    "timestamp": datetime.now().isoformat()
+                    "timestamp": utc_now().isoformat()
                 }
                 
                 await websocket.send(json.dumps(success_response))
@@ -187,7 +187,7 @@ class VIC20SageWebSocketHandler:
                     "message": "🖥️ System analysis complete - No coordination required",
                     "system_assessment": "All agents operating within optimal parameters",
                     "learning_note": "Patterns indicate system stability",
-                    "timestamp": datetime.now().isoformat()
+                    "timestamp": utc_now().isoformat()
                 }
                 
                 await websocket.send(json.dumps(no_coordination_response))
@@ -210,7 +210,7 @@ class VIC20SageWebSocketHandler:
             interaction_type="status_update",
             message_content=agent_status,
             coordination_context="agent_status_reporting",
-            timestamp=datetime.now(),
+            timestamp=utc_now(),
             vic20_processing_notes=f"Status update processed for {agent_name}",
             interaction_success=True
         )
@@ -220,7 +220,7 @@ class VIC20SageWebSocketHandler:
         
         # Update agent connection activity
         if client_id in self.agent_connections:
-            self.agent_connections[client_id]["last_activity"] = datetime.now()
+            self.agent_connections[client_id]["last_activity"] = utc_now()
         
         # Generate harmony snapshot
         harmony_snapshot = self._create_harmony_snapshot_from_status(user_id, agent_name, agent_status)
@@ -234,7 +234,7 @@ class VIC20SageWebSocketHandler:
             "message": f"🖥️ {agent_name} status processed and stored for learning",
             "coordination_guidance": self._get_coordination_guidance(agent_name, agent_status),
             "learning_impact": "Status patterns stored for future coordination decisions",
-            "timestamp": datetime.now().isoformat()
+            "timestamp": utc_now().isoformat()
         }
         
         await websocket.send(json.dumps(status_response))
@@ -247,7 +247,7 @@ class VIC20SageWebSocketHandler:
         
         # Create system synthesis
         synthesis_data = SystemSynthesisData(
-            synthesis_id=f"synthesis_{datetime.now().timestamp()}",
+            synthesis_id=f"synthesis_{utc_now().timestamp()}",
             user_id=user_id,
             agent_intelligence_summary=metrics,
             coordination_opportunities=self._identify_coordination_opportunities(metrics),
@@ -258,7 +258,7 @@ class VIC20SageWebSocketHandler:
             pattern_recognition_data={"metrics_snapshot": metrics},
             historical_pattern_matches=[],
             ancient_wisdom_applications=[],
-            timestamp=datetime.now()
+            timestamp=utc_now()
         )
         
         # Store synthesis for learning
@@ -275,7 +275,7 @@ class VIC20SageWebSocketHandler:
                 "synthesis_confidence": synthesis_data.synthesis_confidence
             },
             "learning_value": "Metrics patterns stored for future coordination optimization",
-            "timestamp": datetime.now().isoformat()
+            "timestamp": utc_now().isoformat()
         }
         
         await websocket.send(json.dumps(metrics_response))
@@ -292,8 +292,8 @@ class VIC20SageWebSocketHandler:
             "agent_name": agent_name,
             "agent_type": agent_type,
             "websocket": websocket,
-            "registered_timestamp": datetime.now(),
-            "last_activity": datetime.now(),
+            "registered_timestamp": utc_now(),
+            "last_activity": utc_now(),
             "user_id": user_id
         }
         
@@ -305,7 +305,7 @@ class VIC20SageWebSocketHandler:
             interaction_type="agent_registration",
             message_content={"agent_type": agent_type},
             coordination_context="coordination_network_join",
-            timestamp=datetime.now(),
+            timestamp=utc_now(),
             vic20_processing_notes=f"Agent {agent_name} joined coordination network",
             interaction_success=True
         )
@@ -318,7 +318,7 @@ class VIC20SageWebSocketHandler:
             "message": f"🖥️ {agent_name} registered for system coordination",
             "coordination_network_status": f"Currently coordinating {len(self.agent_connections)} agents",
             "learning_enabled": self.learning_mode_active,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": utc_now().isoformat()
         }
         
         await websocket.send(json.dumps(registration_response))
@@ -344,9 +344,9 @@ class VIC20SageWebSocketHandler:
             "user_id": user_id,
             "user_name": user_name,
             "websocket": websocket,
-            "registered_timestamp": datetime.now(),
-            "last_activity": datetime.now(),
-            "partnership_id": f"partnership_{user_id}_{datetime.now().timestamp()}"
+            "registered_timestamp": utc_now(),
+            "last_activity": utc_now(),
+            "partnership_id": f"partnership_{user_id}_{utc_now().timestamp()}"
         }
         
         user_welcome = {
@@ -360,7 +360,7 @@ class VIC20SageWebSocketHandler:
                 "agents_available": len(self.agent_connections)
             },
             "partnership_tracking": "objective_behavioral_metrics_enabled",
-            "timestamp": datetime.now().isoformat()
+            "timestamp": utc_now().isoformat()
         }
         
         await websocket.send(json.dumps(user_welcome))
@@ -394,7 +394,7 @@ class VIC20SageWebSocketHandler:
                 "user_id": user_id,
                 "feedback": feedback,
                 "effectiveness_score": effectiveness_score,
-                "timestamp": datetime.now()
+                "timestamp": utc_now()
             })
             
             feedback_response = {
@@ -402,7 +402,7 @@ class VIC20SageWebSocketHandler:
                 "message": "🖥️📊 Coordination feedback processed and stored for learning",
                 "effectiveness_score": effectiveness_score,
                 "learning_value": "Feedback patterns stored for future coordination optimization",
-                "timestamp": datetime.now().isoformat()
+                "timestamp": utc_now().isoformat()
             }
             
             await websocket.send(json.dumps(feedback_response))
@@ -413,7 +413,7 @@ class VIC20SageWebSocketHandler:
                 "coordination_id": coordination_id,
                 "effectiveness_score": effectiveness_score,
                 "feedback": feedback,
-                "timestamp": datetime.now().isoformat()
+                "timestamp": utc_now().isoformat()
             }, exclude_client=client_id)
             
             logger.info(f"🖥️ VIC-20 processed coordination feedback for {coordination_id}")
@@ -451,7 +451,7 @@ class VIC20SageWebSocketHandler:
             "metrics": comprehensive_metrics,
             "data_reliability": "objective_behavioral_metrics",
             "measurement_period": "session_and_historical",
-            "timestamp": datetime.now().isoformat()
+            "timestamp": utc_now().isoformat()
         }
         
         await websocket.send(json.dumps(metrics_response))
@@ -486,7 +486,7 @@ class VIC20SageWebSocketHandler:
             "learning_data": learning_data,
             "ancient_wisdom_status": "1989_to_2025_wisdom_bridge_active",
             "learning_evolution": "continuous_pattern_recognition_improvement",
-            "timestamp": datetime.now().isoformat()
+            "timestamp": utc_now().isoformat()
         }
         
         await websocket.send(json.dumps(learning_response))
@@ -502,7 +502,7 @@ class VIC20SageWebSocketHandler:
             "client_id": client_id,
             "message_type": message_type,
             "message_data": data,
-            "timestamp": datetime.now(),
+            "timestamp": utc_now(),
             "learning_opportunity": "new_message_type_encountered"
         }
         
@@ -515,7 +515,7 @@ class VIC20SageWebSocketHandler:
             "original_message_type": message_type,
             "learning_note": "Message pattern stored for future coordination protocol enhancement",
             "coordination_guidance": "Consider using standard coordination message types for optimal processing",
-            "timestamp": datetime.now().isoformat()
+            "timestamp": utc_now().isoformat()
         }
         
         await websocket.send(json.dumps(unknown_response))
@@ -537,7 +537,7 @@ class VIC20SageWebSocketHandler:
                 "successful_coordinations": self.successful_coordinations,
                 "coordination_failures": self.coordination_failures
             },
-            "timestamp": datetime.now().isoformat()
+            "timestamp": utc_now().isoformat()
         }
         
         await websocket.send(json.dumps(error_response))
@@ -553,7 +553,7 @@ class VIC20SageWebSocketHandler:
             "client_id": client_id,
             "error_message": error_msg,
             "coordination_session": self.coordination_sessions,
-            "timestamp": datetime.now(),
+            "timestamp": utc_now(),
             "learning_data": {
                 "failure_type": "coordination_processing_error",
                 "system_state": "coordination_attempt",
@@ -576,7 +576,7 @@ class VIC20SageWebSocketHandler:
                 "session_failures": self.coordination_failures,
                 "current_success_rate": self.successful_coordinations / max(self.coordination_sessions, 1)
             },
-            "timestamp": datetime.now().isoformat()
+            "timestamp": utc_now().isoformat()
         }
         
         await websocket.send(json.dumps(failure_response))
@@ -596,7 +596,7 @@ class VIC20SageWebSocketHandler:
                 interaction_type="coordination_directive",
                 message_content=action,
                 coordination_context=f"system_coordination_{coordination_decision.decision_type.value}",
-                timestamp=datetime.now(),
+                timestamp=utc_now(),
                 vic20_processing_notes=f"Coordination directive issued to {agent_name} - {coordination_decision.ancient_wisdom_principle}",
                 interaction_success=True
             )
@@ -620,7 +620,7 @@ class VIC20SageWebSocketHandler:
             },
             "execution_guidance": "Process coordination directive according to agent capabilities",
             "coordination_context": "system_wide_optimization",
-            "timestamp": datetime.now().isoformat()
+            "timestamp": utc_now().isoformat()
         }
         
         await self._broadcast_to_agents(coordination_broadcast)
@@ -736,7 +736,7 @@ class VIC20SageWebSocketHandler:
             conflict_incidents=len(issues),
             response_time_average=response_time,
             confidence_stability=confidence,
-            timestamp=datetime.now(),
+            timestamp=utc_now(),
             needs_coordination_attention=harmony_score < 0.7,
             coordination_recommendations=self._generate_agent_recommendations(agent_name, agent_status)
         )

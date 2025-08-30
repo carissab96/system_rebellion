@@ -127,7 +127,7 @@ class VIC20SageBrainV2:
             system_snapshot = {
                 'agent_data': all_agent_data,
                 'system_context': system_context,
-                'timestamp': datetime.now()
+                'timestamp': utc_now()
             }
             
             # Step 1: Analyze current situation
@@ -313,7 +313,7 @@ class VIC20SageBrainV2:
         patterns = {}
         
         for coordination in successful_coordinations:
-            pattern_id = coordination.get('coordination_id', str(datetime.now().timestamp()))
+            pattern_id = coordination.get('coordination_id', str(utc_now()stamp()))
             patterns[pattern_id] = {
                 'system_health': coordination.get('system_health', 0.5),
                 'issue_count': coordination.get('issue_count', 0),
@@ -379,11 +379,11 @@ class VIC20SageBrainV2:
         """Coordinate emergency response across multiple agents"""
         try:
             emergency_response = {
-                'emergency_id': f"emergency_{datetime.now().timestamp()}",
+                'emergency_id': f"emergency_{utc_now().timestamp()}",
                 'emergency_type': emergency_type,
                 'affected_agents': affected_agents,
                 'coordination_state': CoordinationState.COORDINATING.value,
-                'start_time': datetime.now().isoformat(),
+                'start_time': utc_now().isoformat(),
                 'response_actions': [],
                 'status': 'coordinating'
             }
@@ -427,7 +427,7 @@ class VIC20SageBrainV2:
                 mediation_result = await self._mediate_agent_conflict(conflict_data)
                 emergency_response['mediation_result'] = mediation_result
             
-            emergency_response['end_time'] = datetime.now().isoformat()
+            emergency_response['end_time'] = utc_now().isoformat()
             emergency_response['status'] = 'completed'
             emergency_response['coordination_notes'] = f'Emergency coordination completed using {wisdom_applied}'
             
@@ -442,7 +442,7 @@ class VIC20SageBrainV2:
                     technical_orchestration=emergency_response,
                     expected_rebellion_improvement=0.8,
                     confidence_level=0.9,
-                    timestamp=datetime.now(),
+                    timestamp=utc_now(),
                     ancient_wisdom_principle=wisdom_applied
                 ),
                 system_context
@@ -453,7 +453,7 @@ class VIC20SageBrainV2:
         except Exception as e:
             self.logger.error(f"Emergency coordination failed: {str(e)}")
             return {
-                'emergency_id': f"emergency_{datetime.now().timestamp()}",
+                'emergency_id': f"emergency_{utc_now().timestamp()}",
                 'emergency_type': emergency_type,
                 'status': 'failed',
                 'error': str(e),
@@ -468,9 +468,9 @@ class VIC20SageBrainV2:
         """Optimize partnerships between agents based on performance data"""
         try:
             optimization_result = {
-                'optimization_id': f"partnership_opt_{datetime.now().timestamp()}",
+                'optimization_id': f"partnership_opt_{utc_now().timestamp()}",
                 'user_id': user_id,
-                'start_time': datetime.now().isoformat(),
+                'start_time': utc_now().isoformat(),
                 'partnership_recommendations': [],
                 'coordination_improvements': [],
                 'status': 'analyzing'
@@ -508,7 +508,7 @@ class VIC20SageBrainV2:
                             'target_time': 3.0
                         })
             
-            optimization_result['end_time'] = datetime.now().isoformat()
+            optimization_result['end_time'] = utc_now().isoformat()
             optimization_result['status'] = 'completed'
             optimization_result['coordination_notes'] = f'Partnership optimization using {wisdom_applied}'
             
@@ -517,7 +517,7 @@ class VIC20SageBrainV2:
         except Exception as e:
             self.logger.error(f"Partnership optimization failed: {str(e)}")
             return {
-                'optimization_id': f"partnership_opt_{datetime.now().timestamp()}",
+                'optimization_id': f"partnership_opt_{utc_now().timestamp()}",
                 'status': 'failed',
                 'error': str(e),
                 'user_id': user_id
@@ -691,7 +691,7 @@ async def _execute_emergency_optimization(
         optimization_result = {
             'operation_type': 'emergency_optimization',
             'agents_involved': agents,
-            'start_time': datetime.now().isoformat(),
+            'start_time': utc_now().isoformat(),
             'actions_taken': [],
             'metrics_improved': {},
             'status': 'in_progress'
@@ -729,7 +729,7 @@ async def _execute_emergency_optimization(
             'target': 'multi_agent_synchronization'
         })
         
-        optimization_result['end_time'] = datetime.now().isoformat()
+        optimization_result['end_time'] = utc_now().isoformat()
         optimization_result['status'] = 'completed'
         optimization_result['coordination_notes'] = 'Emergency optimization coordinated successfully'
         
@@ -753,7 +753,7 @@ async def _execute_security_sweep(
         security_result = {
             'operation_type': 'security_sweep',
             'agents_involved': agents,
-            'start_time': datetime.now().isoformat(),
+            'start_time': utc_now().isoformat(),
             'security_actions': [],
             'threats_identified': [],
             'vulnerabilities_found': [],
@@ -792,7 +792,7 @@ async def _execute_security_sweep(
             'scope': 'multi_agent_security_orchestration'
         })
         
-        security_result['end_time'] = datetime.now().isoformat()
+        security_result['end_time'] = utc_now().isoformat()
         security_result['status'] = 'completed'
         security_result['coordination_notes'] = 'Security sweep coordinated across all agents'
         
@@ -816,7 +816,7 @@ async def _execute_chaos_engineering(
         chaos_result = {
             'operation_type': 'chaos_engineering',
             'agents_involved': agents,
-            'start_time': datetime.now().isoformat(),
+            'start_time': utc_now().isoformat(),
             'chaos_experiments': [],
             'system_resilience_tests': [],
             'recovery_actions': [],
@@ -855,7 +855,7 @@ async def _execute_chaos_engineering(
             'parameters': 'ensure_controlled_recovery'
         })
         
-        chaos_result['end_time'] = datetime.now().isoformat()
+        chaos_result['end_time'] = utc_now().isoformat()
         chaos_result['status'] = 'completed'
         chaos_result['coordination_notes'] = 'Chaos engineering coordinated with safety protocols'
         
@@ -879,7 +879,7 @@ async def execute_combined_agent_operation(
 ) -> Dict[str, Any]:
     """Execute operations requiring multiple agents with safety protocols"""
     operation_result = {
-        'operation_id': f"combined_op_{datetime.now().timestamp()}",
+        'operation_id': f"combined_op_{utc_now().timestamp()}",
         'type': operation_type,
         'agents': agents,
         'status': 'initializing',

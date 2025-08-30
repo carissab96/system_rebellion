@@ -27,7 +27,7 @@ async def test_metrics_service():
     print("="*60)
     
     # Get timestamp
-    print(f"\nTimestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"\nTimestamp: {utc_now()m-%d %H:%M:%S')}")
     
     # Initialize MetricsService using the singleton pattern
     print("\nInitializing MetricsService using get_instance()...")

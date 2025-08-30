@@ -15,7 +15,7 @@ async def test_all_purified_services():
     print(" 🧐⚡ COMPREHENSIVE PURIFIED SERVICES TEST - ZERO FAKE DATA VERIFICATION")
     print("="*100)
     
-    print(f"\n🕐 Test Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"\n🕐 Test Started: {utc_now()time('%Y-%m-%d %H:%M:%S')}")
     
     test_results = {}
     
@@ -135,7 +135,7 @@ async def test_all_purified_services():
         print(f"\n🧐💥 SOME SERVICES REQUIRE ATTENTION!")
         print(f"   Check failed services above for issues")
     
-    print(f"\n🕐 Test Completed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"\n🕐 Test Completed: {utc_now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("="*100)
 
 if __name__ == "__main__":

@@ -83,7 +83,7 @@ class QSPDatabaseIntegration:
         
         async with self.session_factory() as session:
             try:
-                cutoff_date = datetime.now() - timedelta(days=days)
+                cutoff_date = utc_now() - timedelta(days=days)
                 
                 query = select(QSPNetworkMetrics).where(
                     QSPNetworkMetrics.user_id == user_id,
@@ -155,7 +155,7 @@ class QSPDatabaseIntegration:
                 if pattern:
                     # Update existing pattern
                     pattern.pattern_data = pattern_data
-                    pattern.last_updated = datetime.now()
+                    pattern.last_updated = utc_now()
                     pattern.optimization_count += 1
                 else:
                     # Create new pattern
@@ -226,7 +226,7 @@ class QSPDatabaseIntegration:
         
         async with self.session_factory() as session:
             try:
-                cutoff_date = datetime.now() - timedelta(days=days_to_keep)
+                cutoff_date = utc_now() - timedelta(days=days_to_keep)
                 
                 # Clean up old metrics
                 await session.execute(
@@ -237,7 +237,7 @@ class QSPDatabaseIntegration:
                 
                 # Clean up old decisions (keep for audit trail)
                 # Only clean up very old decisions
-                old_cutoff = datetime.now() - timedelta(days=days_to_keep * 2)
+                old_cutoff = utc_now() - timedelta(days=days_to_keep * 2)
                 await session.execute(
                     delete(QSPDecisionLog).where(
                         QSPDecisionLog.timestamp < old_cutoff

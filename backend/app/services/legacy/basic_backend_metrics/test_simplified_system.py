@@ -25,7 +25,7 @@ async def test_all_services():
     print("="*80)
     
     # Get timestamp
-    print(f"\nTimestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"\nTimestamp: {utc_now().strftime('%Y-%m-%d %H:%M:%S')}")
     
     # Test CPU service
     print("\n" + "="*60)

@@ -88,7 +88,7 @@ class SimplifiedDiskService:
             
             # PHASE 4: COMPILE REAL DISK METRICS
             disk_metrics = {
-                'timestamp': datetime.now().isoformat(),
+                'timestamp': utc_now().isoformat(),
                 'type': 'disk',
                 'data': {
                     'percent': round(root_usage['percent'], 2),
@@ -426,7 +426,7 @@ class SimplifiedDiskService:
             Health check results
         """
         try:
-            start_time = datetime.now()
+            start_time = utc_now()
             
             # Test basic disk usage measurement
             root_usage = await self.get_disk_usage_only('/')
@@ -438,7 +438,7 @@ class SimplifiedDiskService:
             # Test I/O counters availability
             io_data = await self._get_disk_io_metrics()
             
-            collection_time = (datetime.now() - start_time).total_seconds()
+            collection_time = (utc_now() - start_time).total_seconds()
             
             return {
                 'status': 'OPERATIONAL',
@@ -456,7 +456,7 @@ class SimplifiedDiskService:
                     'honest_failure_handling', 
                     'real_measurements_only'
                 ],
-                'last_health_check': datetime.now().isoformat()
+                'last_health_check': utc_now().isoformat()
             }
             
         except Exception as e:
@@ -465,7 +465,7 @@ class SimplifiedDiskService:
                 'service_type': 'disk_metrics_collection',
                 'psutil_available': False,
                 'error': str(e),
-                'last_health_check': datetime.now().isoformat()
+                'last_health_check': utc_now().isoformat()
             }
 
 # Test function to run the service directly
@@ -475,7 +475,7 @@ async def test_simplified_disk_service():
     print(" 🧐💾 SIMPLIFIED DISK SERVICE TEST - ARISTOCRATIC PRECISION")
     print("="*80)
     
-    print(f"\n🕐 Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"\n🕐 Timestamp: {utc_now().strftime('%Y-%m-%d %H:%M:%S')}")
     
     try:
         # Initialize service

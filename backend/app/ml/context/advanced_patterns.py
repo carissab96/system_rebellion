@@ -184,7 +184,7 @@ class OptimizationPlanner:
         # Add current observation
         self.workload_predictor.add_observation(
             user_id=user_id,
-            timestamp=datetime.now(),
+            timestamp=utc_now()
             activity=current_context.get('current_activity', 'unknown'),
             resources={
                 'cpu': np.mean(current_context.get('cpu_usage', [0])),
@@ -218,7 +218,7 @@ class OptimizationPlanner:
         # Plan based on activity patterns
         activity_patterns = predictions.get('activity_patterns', {})
         for activity, peak_hour in activity_patterns.get('peak_hours', {}).items():
-            current_hour = datetime.now().hour
+            current_hour = utc_now().hour
             if abs(current_hour - peak_hour) <= 2:  # Near peak hour
                 optimizations.append({
                     'type': 'scheduled',

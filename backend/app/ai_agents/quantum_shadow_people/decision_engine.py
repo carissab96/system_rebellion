@@ -610,7 +610,7 @@ class QuantumShadowPeopleBrainV2:
             if isinstance(record, dict) and 'latency' in record and record['latency'] is not None:
                 latency_data.append({
                     'value': record['latency'],
-                    'timestamp': record.get('timestamp', datetime.now())
+                    'timestamp': record.get('timestamp', utc_now())
                 })
         
         if len(latency_data) >= 5:
@@ -640,7 +640,7 @@ class QuantumShadowPeopleBrainV2:
             if isinstance(record, dict) and 'bandwidth_utilization' in record:
                 bandwidth_data.append({
                     'value': record['bandwidth_utilization'],
-                    'timestamp': record.get('timestamp', datetime.now())
+                    'timestamp': record.get('timestamp', utc_now())
                 })
         
         if len(bandwidth_data) >= 5:
@@ -822,7 +822,7 @@ class QuantumShadowPeopleBrainV2:
             },
             expected_improvement=(current_latency - target_latency) / current_latency,
             confidence_level=0.89,
-            timestamp=datetime.now()
+            timestamp=utc_now()
         )
     
     async def _create_tequila_jello_optimization(self, bottleneck: Dict, user_id: str) -> QSPDecision:
@@ -861,7 +861,7 @@ class QuantumShadowPeopleBrainV2:
             },
             expected_improvement=(current_utilization - target_utilization) / current_utilization,
             confidence_level=0.92,
-            timestamp=datetime.now()
+            timestamp=utc_now()
         )
     
     async def _create_phantom_packet_recovery(self, analysis: Dict, user_id: str) -> QSPDecision:
@@ -891,7 +891,7 @@ class QuantumShadowPeopleBrainV2:
             },
             expected_improvement=0.9,  # Can recover 90% of lost packets
             confidence_level=0.85,
-            timestamp=datetime.now()
+            timestamp=utc_now()
         )
     
     async def _create_network_dimension_shift(self, anomaly: Dict, user_id: str) -> QSPDecision:
@@ -923,7 +923,7 @@ class QuantumShadowPeopleBrainV2:
             },
             expected_improvement=0.75,  # Major improvement expected
             confidence_level=0.78,
-            timestamp=datetime.now()
+            timestamp=utc_now()
         )
     
     async def _create_security_intervention(self, security_data: Dict, user_id: str) -> QSPDecision:
@@ -964,7 +964,7 @@ class QuantumShadowPeopleBrainV2:
             },
             expected_improvement=0.95,  # High effectiveness against threats
             confidence_level=0.91,
-            timestamp=datetime.now()
+            timestamp=utc_now()
         )
     
     async def _apply_quantum_fixes(self, decision: QSPDecision):
@@ -1009,7 +1009,7 @@ class QuantumShadowPeopleBrainV2:
             'tequila_jello_shots': self.tequila_jello_shots,
             'dimensional_shifts': self.dimensional_shifts_performed,
             'network_patterns_stored': len(self.network_patterns),
-            'last_phase_shift': datetime.now().isoformat()
+            'last_phase_shift': utc_now().isoformat()
         }
     
     def health_check(self) -> Dict[str, Any]:

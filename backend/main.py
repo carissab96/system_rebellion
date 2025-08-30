@@ -164,7 +164,7 @@ def create_application() -> FastAPI:
         return JSONResponse(
             content={
                 "status": "operational",
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": utc_now().isoformat.isoformat(),
                 "version": "1.0.0",
                 "ai_agents": {
                     "active": active_agents,

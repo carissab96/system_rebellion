@@ -125,7 +125,7 @@ class AutoTuner:
                     'error': None,
                     'metrics_before': None,
                     'metrics_after': None,
-                    'timestamp': datetime.now().isoformat()
+                    'timestamp': utc_now().isoformat()
                 }
             else:
                 tuning_data = {
@@ -136,7 +136,7 @@ class AutoTuner:
                     'error': None,
                     'metrics_before': None,
                     'metrics_after': None,
-                    'timestamp': datetime.now().isoformat()
+                    'timestamp': utc_now().isoformat()
                 }
                 
             # Get metrics before applying the change
@@ -287,7 +287,7 @@ class AutoTuner:
             self.logger.info(f"Generating recommendations based on metrics")
             
             # Current time for all recommendations
-            current_time = datetime.now()
+            current_time = utc_now()
             
             # List to store recommendations
             recommendations = []

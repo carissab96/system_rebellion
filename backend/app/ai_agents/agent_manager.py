@@ -472,7 +472,7 @@ async def initialize_agents(self):
         self.agents[agent_name] = agent
 
     self.initialized = True
-    self.initialization_time = datetime.now()
+    self.initialization_time = utc_now().isoformat
     self.logger.info("🤖 Initialized %d agents: %s", len(self.agents), list(self.agents.keys()))
 
 

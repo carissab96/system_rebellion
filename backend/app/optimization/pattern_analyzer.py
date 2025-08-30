@@ -129,7 +129,7 @@ class PatternAnalyzer:
 
     def _update_pattern_history(self, patterns: List[Dict]):
         """Update pattern history for trend analysis"""
-        current_time = datetime.now()
+        current_time = utc_now()
         
         # Add new patterns
         for pattern in patterns:
@@ -154,7 +154,7 @@ class PatternAnalyzer:
                 pattern_type: len(patterns)
                 for pattern_type, patterns in self.pattern_history.items()
             },
-            'latest_analysis': datetime.now()
+            'latest_analysis': utc_now()
         }
 
     async def get_recurring_patterns(self) -> List[Dict]:

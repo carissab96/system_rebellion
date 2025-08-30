@@ -25,7 +25,7 @@ class ContextManager:
             memory_usage=context_data.get('memory_usage', []),
             active_processes=context_data.get('active_processes', []),
             current_activity=context_data.get('current_activity', ''),
-            timestamp=datetime.now()
+            timestamp=utc_now()
         )
         
         # Get or create shared context

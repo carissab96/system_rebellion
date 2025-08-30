@@ -40,7 +40,7 @@ async def test_sir_hawkington():
         'disk_usage': 39.2,
         'network_usage': {'bytes_sent': 1000, 'bytes_recv': 2000},
         'process_count': 125,
-        'timestamp': datetime.now().isoformat()
+        'timestamp': utc_now().isoformat()
     }
     
     decision1 = hawk.analyze_system_health(normal_metrics)
@@ -53,7 +53,7 @@ async def test_sir_hawkington():
         'disk_usage': 45.0,
         'network_usage': {'bytes_sent': 5000, 'bytes_recv': 8000},
         'process_count': 200,
-        'timestamp': datetime.now().isoformat()
+        'timestamp': utc_now().isoformat()
     }
     
     decision2 = hawk.analyze_system_health(concern_metrics)
@@ -66,7 +66,7 @@ async def test_sir_hawkington():
         'disk_usage': 91.5,
         'network_usage': {'bytes_sent': 50000, 'bytes_recv': 80000},
         'process_count': 500,
-        'timestamp': datetime.now().isoformat()
+        'timestamp': utc_now().isoformat()
     }
     
     decision3 = hawk.analyze_system_health(alert_metrics)
@@ -79,7 +79,7 @@ async def test_sir_hawkington():
         'disk_usage': 30.0,
         'network_usage': {'bytes_sent': 2000, 'bytes_recv': 3000},
         'process_count': 150,
-        'timestamp': datetime.now().isoformat()
+        'timestamp': utc_now().isoformat()
     }
     
     decision4 = hawk.analyze_system_health(memory_hog_metrics)

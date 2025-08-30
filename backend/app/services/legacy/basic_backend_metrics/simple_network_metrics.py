@@ -128,7 +128,7 @@ def display_metrics():
     print("="*60)
     
     # Get timestamp
-    print(f"\nTimestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"\nTimestamp: {utc_now().strftime('%Y-%m-%d %H:%M:%S')}")
     
     # Network interfaces
     interfaces = get_network_interfaces()

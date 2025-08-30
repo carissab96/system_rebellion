@@ -87,7 +87,7 @@ def display_metrics():
     print("="*50)
     
     # Get timestamp
-    print(f"\nTimestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"\nTimestamp: {utc_now()time('%Y-%m-%d %H:%M:%S')}")
     
     # Virtual memory
     vm = get_virtual_memory()

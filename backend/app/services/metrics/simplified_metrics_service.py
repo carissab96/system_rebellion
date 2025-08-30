@@ -179,7 +179,7 @@ class SimplifiedMetricsService:
             
             # PHASE 2: COMPILE RAW METRICS
             raw_metrics = {
-                'timestamp': datetime.now().isoformat(),
+                'timestamp': utc_now().isoformat(),
                 'cpu_usage': cpu_data.get('usage_percent'),
                 'memory_usage': memory_data.get('percent'),
                 'disk_usage': disk_data.get('percent'),
@@ -234,14 +234,14 @@ class SimplifiedMetricsService:
             }
             
             # Try a quick metrics collection
-            start_time = datetime.now()
+            start_time = utc_now()
             try:
                 test_metrics = await self.get_metrics()
-                collection_time = (datetime.now() - start_time).total_seconds()
+                collection_time = (utc_now() - start_time).total_seconds()
                 metrics_collection_status = 'OPERATIONAL'
                 has_triage_data = 'triage_decision' in test_metrics
             except Exception as e:
-                collection_time = (datetime.now() - start_time).total_seconds()
+                collection_time = (utc_now() - start_time).total_seconds()
                 metrics_collection_status = f'FAILED: {str(e)}'
                 has_triage_data = False
             
@@ -252,14 +252,14 @@ class SimplifiedMetricsService:
                 'circuit_breakers': circuit_breaker_status,
                 'triage_integration': has_triage_data,
                 'aristocratic_authority': 'MAINTAINED',
-                'last_check': datetime.now().isoformat()
+                'last_check': utc_now().isoformat()
             }
             
         except Exception as e:
             return {
                 'service_status': 'FAILED',
                 'error': str(e),
-                'last_check': datetime.now().isoformat()
+                'last_check': utc_now().isoformat()
             }
 
 # Test function to run the service directly
@@ -270,7 +270,7 @@ async def test_simplified_metrics_service():
     print("="*80)
     
     # Get timestamp
-    print(f"\n🕐 Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"\n🕐 Timestamp: {utc_now().strftime('%Y-%m-%d %H:%M:%S')}")
     
     # Initialize service
     service = await SimplifiedMetricsService.get_instance()

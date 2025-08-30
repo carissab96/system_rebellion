@@ -3,7 +3,7 @@
 
 from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, JSON, Text, ForeignKey, Index
 from sqlalchemy.orm import relationship, backref
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 import uuid
 from app.core.base import Base
 from sqlalchemy import func
@@ -27,9 +27,9 @@ class CentralMemoryBank(Base):
     memory_id = Column(String(36), default=lambda: str(uuid.uuid4()), unique=True, nullable=False)
 
     # --- timestamps
-    created_at = Column(DateTime, default=datetime.now(), nullable=False, index=True)
-    updated_at = Column(DateTime, default=datetime.now(), onupdate=datetime.now(), nullable=False)
-    occurred_at = Column(DateTime, default=datetime.now(), nullable=False, index=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+    occurred_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
 
     # --- source / ownership
     agent_name = Column(String(50), nullable=False, index=True)
@@ -354,7 +354,7 @@ class AgentLearningInteractions(Base):
 
     id = Column(Integer, primary_key=True)
     interaction_id = Column(String(36), default=lambda: str(uuid.uuid4()), unique=True)
-    timestamp = Column(DateTime, default=datetime.now(), nullable=False, index=True)
+    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
 
     # Learning transfer
     source_agent = Column(String(50), nullable=False, index=True)
@@ -401,7 +401,7 @@ class UserLearningPatterns(Base):
     user_id = Column(String, ForeignKey('users.id', ondelete='CASCADE'), index=True, nullable=False)
     user = relationship("User", back_populates="user_learning_patterns", lazy="joined")
 
-    timestamp = Column(DateTime, default=datetime.now(), nullable=False, index=True)
+    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
 
     # User behavior patterns (JSONBCompat)
     interaction_pattern = Column(JSON, nullable=True)
@@ -443,7 +443,7 @@ class MemoryBankMetadata(Base):
     __tablename__ = 'memory_bank_metadata'
 
     id = Column(Integer, primary_key=True)
-    timestamp = Column(DateTime, default=datetime.now(), nullable=False, index=True)
+    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
 
     # System-wide statistics
     total_memories = Column(Integer, default=0)

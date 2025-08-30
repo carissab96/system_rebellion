@@ -85,7 +85,7 @@ class HawkingtonMonitoringStats(Base):
         """Create monitoring stats from a memory entry"""
         stats = cls(
             user_id=user_id,
-            timestamp=memory.timestamp or datetime.now(),
+            timestamp=memory.timestamp or utc_now(),
             monocle_yeets_performed=1 if memory.monocle_yeet_trigger else 0,
             raw_stats={
                 "memory_id": memory.memory_id,

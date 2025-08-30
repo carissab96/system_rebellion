@@ -513,7 +513,7 @@ class MethSnailBrainV2:
                     recommended_caffeine_mg=None,
                     recommended_type=None,
                     safety_warnings=["Current jitter level unknown - safety assessment impossible"],
-                    timestamp=datetime.now()
+                    timestamp=utc_now()
                 )
             
             # Try to get time since last drink
@@ -533,7 +533,7 @@ class MethSnailBrainV2:
                 energy_drinks_consumed_today=energy_drinks_today,
                 time_since_last_drink_minutes=time_since_last_drink,
                 optimization_urgency=optimization_urgency,
-                timestamp=datetime.now()
+                timestamp=utc_now()
             )
             
             # Route to Sir Hawkington's triage engine
@@ -556,7 +556,7 @@ class MethSnailBrainV2:
                 recommended_caffeine_mg=None,
                 recommended_type=None,
                 safety_warnings=["System error during authorization - manual intervention required"],
-                timestamp=datetime.now()
+                timestamp=utc_now()
             )
     
     async def consume_energy_drink(
@@ -586,7 +586,7 @@ class MethSnailBrainV2:
                 user_id=int(user_id),
                 energy_drink_type=authorization.recommended_type.value if authorization.recommended_type else 'unknown',
                 caffeine_mg=actual_caffeine_mg,
-                consumption_time=datetime.now(),
+                consumption_time=utc_now(),
                 authorization_id=authorization.request_id
             )
             
@@ -595,7 +595,7 @@ class MethSnailBrainV2:
                 user_id=int(user_id),
                 jitter_level=new_jitter_level,
                 caffeine_level_mg=new_caffeine_level,
-                timestamp=datetime.now()
+                timestamp=utc_now()
             )
             
             # Check if decaffeination warning needed
@@ -656,7 +656,7 @@ class MethSnailBrainV2:
                 'caffeine_level_mg': caffeine_level,
                 'recommendation': recommendation,
                 'suggested_action': action,
-                'timestamp': datetime.now().isoformat()
+                'timestamp': utc_now().isoformat()
             }
             
         except Exception as e:
@@ -694,7 +694,7 @@ class MethSnailBrainV2:
                 recommended_caffeine_mg=min(request.caffeine_mg, 200.0),  # Cap at 200mg
                 recommended_type=request.energy_drink_type,
                 safety_warnings=[],
-                timestamp=datetime.now()
+                timestamp=utc_now()
             )
         else:
             warnings = []
@@ -713,7 +713,7 @@ class MethSnailBrainV2:
                 recommended_caffeine_mg=None,
                 recommended_type=None,
                 safety_warnings=warnings,
-                timestamp=datetime.now()
+                timestamp=utc_now()
             )
     
     def _emergency_energy_drink_override(
@@ -732,7 +732,7 @@ class MethSnailBrainV2:
             recommended_caffeine_mg=min(caffeine_mg, 100.0),  # Conservative limit
             recommended_type=EnergyDrinkType.COFFEE,  # Safest option
             safety_warnings=["Emergency override - reduced caffeine limit applied"],
-            timestamp=datetime.now()
+            timestamp=utc_now()
         )
     
     async def _calculate_current_jitter_level(self, user_id: str) -> float:
@@ -762,7 +762,7 @@ class MethSnailBrainV2:
                 # Get the most recent consumption timestamp
                 most_recent = consumption_data['consumption_history'][0]  # Already sorted by desc
                 last_consumption_time = datetime.fromisoformat(most_recent['consumption_time'])
-                minutes_since = int((datetime.now() - last_consumption_time).total_seconds() / 60)
+                minutes_since = int((utc_now() - last_consumption_time).total_seconds() / 60)
                 return minutes_since
             else:
                 # No consumption history found - return None
@@ -795,7 +795,7 @@ class MethSnailBrainV2:
                 # No consumption data available
                 return 0.0
             
-            current_time = datetime.now()
+            current_time = utc_now()
             total_current_caffeine = 0.0
             
             # Calculate remaining caffeine based on half-life (5.5 hours average)
@@ -856,7 +856,7 @@ class MethSnailBrainV2:
                                 invalid_metrics: List[str] = None, user_id: str = None):
         """Record a shell spin incident"""
         incident = ShellSpinIncident(
-            timestamp=datetime.now(),
+            timestamp=utc_now(),
             missing_metrics=missing_metrics or [],
             invalid_metrics=invalid_metrics or [],
             reason=reason,
@@ -874,7 +874,7 @@ class MethSnailBrainV2:
         return {
             'total_incidents': len(self.shell_spin_incidents),
             'recent_incidents': len([i for i in self.shell_spin_incidents 
-                                   if (datetime.now() - i.timestamp).days < 1])
+                                   if (utc_now() - i.timestamp).days < 1])
         }
     
     def get_metrics_quality_report(self) -> Dict[str, Any]:

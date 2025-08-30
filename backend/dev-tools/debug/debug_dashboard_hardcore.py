@@ -133,7 +133,7 @@ class HardcoreDebugDashboard:
             while True:
                 # Update header with current time
                 layout["header"].update(Panel(
-                    f"[bold red]HARDCORE DEBUG MODE[/bold red]\n{datetime.now()}\nNO FAKE DATA",
+                    f"[bold red]HARDCORE DEBUG MODE[/bold red]\n{utc_now() DATA",
                     border_style="red"
                 ))
                 

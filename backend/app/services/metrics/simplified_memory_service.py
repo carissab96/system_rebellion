@@ -84,7 +84,7 @@ class SimplifiedMemoryService:
             
             # PHASE 4: COMPILE REAL MEMORY METRICS
             memory_metrics = {
-                'timestamp': datetime.now().isoformat(),
+                'timestamp': utc_now().isoformat(),
                 'type': 'memory',
                 'data': {
                     'total': virtual_memory_data['total'],
@@ -357,7 +357,7 @@ class SimplifiedMemoryService:
             Health check results
         """
         try:
-            start_time = datetime.now()
+            start_time = utc_now()
             
             # Test basic memory usage measurement
             memory_usage = await self.get_memory_usage_only()
@@ -371,7 +371,7 @@ class SimplifiedMemoryService:
             # Test detailed breakdown
             breakdown = await self.get_memory_breakdown()
             
-            collection_time = (datetime.now() - start_time).total_seconds()
+            collection_time = (utc_now() - start_time).total_seconds()
             
             return {
                 'status': 'OPERATIONAL',
@@ -390,7 +390,7 @@ class SimplifiedMemoryService:
                     'honest_failure_handling',
                     'real_measurements_only'
                 ],
-                'last_health_check': datetime.now().isoformat()
+                'last_health_check': utc_now().isoformat()
             }
             
         except Exception as e:
@@ -399,7 +399,7 @@ class SimplifiedMemoryService:
                 'service_type': 'memory_metrics_collection',
                 'psutil_available': False,
                 'error': str(e),
-                'last_health_check': datetime.now().isoformat()
+                'last_health_check': utc_now().isoformat()
             }
 
 # Test function to run the service directly
@@ -409,7 +409,7 @@ async def test_simplified_memory_service():
     print(" 🧐🧠 SIMPLIFIED MEMORY SERVICE TEST - ARISTOCRATIC PRECISION")
     print("="*80)
     
-    print(f"\n🕐 Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"\n🕐 Timestamp: {utc_now().strftime('%Y-%m-%d %H:%M:%S')}")
     
     try:
         # Initialize service

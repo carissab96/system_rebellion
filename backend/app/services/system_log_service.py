@@ -17,7 +17,7 @@ class LogEntry:
         self.message = message
         self.level = level  # "info", "warning", "error", "success", "command"
         self.source = source  # "auth", "system", "command", "tuner", etc.
-        self.timestamp = timestamp or datetime.now()
+        self.timestamp = timestamp or utc_now()
     
     def to_dict(self) -> Dict[str, Any]:
         return {
