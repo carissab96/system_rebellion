@@ -10,23 +10,44 @@ from typing import Dict, Any, List, Optional, Union
 from datetime import datetime, timezone, timedelta
 from uuid import uuid4
 import json
+import asyncio
 
 from sqlalchemy import text, select, and_, or_, func
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import NullPool, QueuePool
-
-from app.models.central_memory_bank import CentralMemoryBank
+from app.ai_agents.hamsters.data_types import (
+    InfrastructureIntervention, HamsterCommunication, DuctTapeUsage
+)
+from app.models.agent_memory_banks import CentralMemoryBank
 from app.core.learning_helpers import (
     GlobalPattern, UserLearningPattern, LearningInteraction, PinnedMemory,
     upsert_global_pattern, upsert_user_pattern, record_learning_interaction,
     pin_memory, get_user_patterns, LearningTypes, MemoryTypes
 )
 from .constants import HamstersEventTypes, AGENT_NAME, ALL_HAMSTERS, PRIORITY_MAP
-from .datatypes import InfrastructureIntervention, HamsterCommunication, DuctTapeUsage
+# REMOVED: from .datatypes import InfrastructureIntervention, HamsterCommunication, DuctTapeUsage
+# These are imported where the methods are called, not at module level
 
 logger = logging.getLogger("Hamsters.Database")
+def datetime_to_iso(dt):
+    """Convert datetime to ISO string for JSON serialization"""
+    return dt.isoformat() if dt else None
 
+def serialize_for_json(obj):
+    """Recursively convert datetime objects to ISO strings in nested structures"""
+    if isinstance(obj, datetime):
+        return obj.isoformat()
+    elif isinstance(obj, dict):
+        return {k: serialize_for_json(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [serialize_for_json(item) for item in obj]
+    elif hasattr(obj, '__dict__'):
+        # Handle dataclass objects
+        return serialize_for_json(obj.__dict__)
+    else:
+        return obj
+        
 def utc_now():
     """Get current UTC time with timezone awareness"""
     return datetime.now(timezone.utc)
@@ -79,6 +100,9 @@ class HamstersDatabaseIntegration:
             
             self._initialized = True
             self.logger.info("🐹 Database integration initialized with beer-powered efficiency")
+
+            await self.engine.dispose()
+            self.logger.info("Database connection closed")
             
         except Exception as e:
             self.logger.error(f"🐹💥 Failed to initialize database: {str(e)}")
@@ -148,7 +172,17 @@ class HamstersDatabaseIntegration:
                         'bob_action': intervention.bob_action,
                         'carl_action': intervention.carl_action,
                         'beer_consumed': intervention.beer_consumed,
-                        'duct_tape_used': [tape.__dict__ for tape in intervention.duct_tape_used],
+                        'duct_tape_used': [
+                            {
+                                'timestamp': tape.timestamp.isoformat(),  # Convert to ISO string
+                                'grade': tape.grade,
+                                'amount_strips': tape.amount_strips,
+                                'purpose': tape.purpose,
+                                'applied_by': tape.applied_by,
+                                'effectiveness': tape.effectiveness
+                            }
+                            for tape in intervention.duct_tape_used
+                        ],
                         'tools_used': intervention.tools_used,
                         'space_freed_gb': intervention.space_freed_gb,
                         'fragmentation_reduced_percent': intervention.fragmentation_reduced_percent,
@@ -160,7 +194,7 @@ class HamstersDatabaseIntegration:
                     metadata={
                         'squeaks_emitted': intervention.squeaks_emitted,
                         'completed_at': intervention.completed_at.isoformat() if intervention.completed_at else None,
-                                                'duration': str(intervention.completed_at - intervention.started_at) if intervention.completed_at else None,
+                        'duration': str(intervention.completed_at - intervention.started_at) if intervention.completed_at else None,
                         'is_3am_intervention': 2 <= intervention.started_at.hour <= 5
                     },
                     numeric_value=float(intervention.space_freed_gb),
@@ -173,6 +207,8 @@ class HamstersDatabaseIntegration:
                 session.add(memory_entry)
                 await session.commit()
                 
+                await session.close()
+                
                 # Pin important interventions
                 if priority >= 4:  # HIGH or CRITICAL
                     await self._pin_intervention_memory(user_id, memory_id, intervention)
@@ -184,6 +220,8 @@ class HamstersDatabaseIntegration:
                 self.logger.info(f"🐹 Stored intervention {memory_id}: {intervention.type.value}")
                 return memory_id
                 
+                
+
         except Exception as e:
             self.logger.error(f"🐹💥 Failed to store intervention: {str(e)}")
             raise
@@ -203,7 +241,7 @@ class HamstersDatabaseIntegration:
                     occurred_at=communication.timestamp,
                     agent_name=AGENT_NAME,
                     user_id=user_id,
-                    event_type=HamstersEventTypes.HAMSTER_SQUEAK,
+                    event_type=HamstersEventTypes.HAMSTER_SQUEAK.value,
                     subject_kind="communication",
                     subject_id=f"{communication.source_hamster}_{communication.timestamp.timestamp()}",
                     priority=2,  # MEDIUM
@@ -228,6 +266,7 @@ class HamstersDatabaseIntegration:
                 session.add(memory_entry)
                 await session.commit()
                 
+                await session.close()
                 return memory_id
                 
         except Exception as e:
@@ -249,7 +288,7 @@ class HamstersDatabaseIntegration:
                     occurred_at=usage.timestamp,
                     agent_name=AGENT_NAME,
                     user_id=user_id,
-                    event_type=HamstersEventTypes.DUCT_TAPE_USAGE,
+                    event_type=HamstersEventTypes.DUCT_TAPE_USAGE.value,
                     subject_kind="resource_consumption",
                     subject_id=f"duct_tape_{usage.timestamp.timestamp()}",
                     priority=1,  # LOW
@@ -278,6 +317,7 @@ class HamstersDatabaseIntegration:
                 if usage.effectiveness > 0.8:
                     await self._update_carl_duct_tape_patterns(user_id, usage)
                 
+                await session.close()
                 return memory_id
                 
         except Exception as e:
@@ -301,7 +341,7 @@ class HamstersDatabaseIntegration:
                     occurred_at=utc_now(),
                     agent_name=AGENT_NAME,
                     user_id=user_id,
-                    event_type=HamstersEventTypes.BEER_CONSUMPTION,
+                    event_type=HamstersEventTypes.BEER_CONSUMPTION.value,
                     subject_kind="resource_consumption",
                     subject_id=f"beer_{hamster_name}_{utc_now().timestamp()}",
                     priority=1,  # LOW
@@ -325,8 +365,9 @@ class HamstersDatabaseIntegration:
                 session.add(memory_entry)
                 await session.commit()
                 
+                await session.close()
                 return memory_id
-                
+            
         except Exception as e:
             self.logger.error(f"🐹💥 Failed to log beer consumption: {str(e)}")
             raise
@@ -348,7 +389,7 @@ class HamstersDatabaseIntegration:
                     occurred_at=utc_now(),
                     agent_name=AGENT_NAME,
                     user_id=user_id,
-                    event_type=HamstersEventTypes.SUPPLY_CLOSET_RAID,
+                    event_type=HamstersEventTypes.SUPPLY_CLOSET_RAID.value,
                     subject_kind="resource_acquisition",
                     subject_id=f"raid_{utc_now().timestamp()}",
                     priority=2,  # MEDIUM
@@ -372,8 +413,8 @@ class HamstersDatabaseIntegration:
                 session.add(memory_entry)
                 await session.commit()
                 
+                await session.close()
                 return memory_id
-                
         except Exception as e:
             self.logger.error(f"🐹💥 Failed to log supply closet raid: {str(e)}")
             raise
@@ -390,12 +431,12 @@ class HamstersDatabaseIntegration:
             async with await self.get_session() as session:
                 priority = PRIORITY_MAP.get(decision_data.get('priority', 'routine_maintenance'), 2)
                 
-                                memory_entry = CentralMemoryBank(
+                memory_entry = CentralMemoryBank(
                     memory_id=memory_id,
                     occurred_at=utc_now(),
                     agent_name=AGENT_NAME,
                     user_id=user_id,
-                    event_type=HamstersEventTypes.COLLECTIVE_DECISION,
+                    event_type=HamstersEventTypes.COLLECTIVE_DECISION.value,
                     subject_kind="collective_decision",
                     subject_id=decision_data.get('decision_id', str(uuid4())),
                     priority=priority,
@@ -431,8 +472,8 @@ class HamstersDatabaseIntegration:
                 # Record individual hamster contributions
                 await self._record_individual_contributions(user_id, memory_id, decision_data)
                 
+                await session.close()
                 return memory_id
-                
         except Exception as e:
             self.logger.error(f"🐹💥 Failed to store collective decision: {str(e)}")
             raise
@@ -447,33 +488,36 @@ class HamstersDatabaseIntegration:
             async with await self.get_session() as session:
                 since = utc_now() - timedelta(hours=hours)
                 
-                query = select(CentralMemoryBank).where(
-                    and_(
-                        CentralMemoryBank.agent_name == AGENT_NAME,
-                        CentralMemoryBank.event_type.in_([
-                            HamstersEventTypes.DISK_CLEANUP,
-                            HamstersEventTypes.DEFRAGMENTATION,
-                            HamstersEventTypes.LOG_ROTATION,
-                            HamstersEventTypes.EMERGENCY_SPACE,
-                            HamstersEventTypes.PARTITION_MANAGEMENT,
-                            HamstersEventTypes.THERMAL_EVENT,
-                            HamstersEventTypes.MYSTERY_NOISE,
-                            HamstersEventTypes.CABLE_MANAGEMENT
-                        ]),
-                        CentralMemoryBank.occurred_at >= since
-                    )
+                # Convert enums to strings for the query
+                event_types = [
+                HamstersEventTypes.DISK_CLEANUP.value,  # Use .value
+                HamstersEventTypes.DEFRAGMENTATION.value,
+                HamstersEventTypes.LOG_ROTATION.value,
+                HamstersEventTypes.EMERGENCY_SPACE.value,
+                HamstersEventTypes.PARTITION_MANAGEMENT.value,
+                HamstersEventTypes.THERMAL_EVENT.value,
+                HamstersEventTypes.MYSTERY_NOISE.value,
+                HamstersEventTypes.CABLE_MANAGEMENT.value
+            ]
+            
+            query = select(CentralMemoryBank).where(
+                and_(
+                    CentralMemoryBank.agent_name == AGENT_NAME,
+                    CentralMemoryBank.event_type.in_(event_types),  # Now using string values
+                    CentralMemoryBank.occurred_at >= since
                 )
-                
-                if user_id:
-                    query = query.where(CentralMemoryBank.user_id == user_id)
-                
-                query = query.order_by(CentralMemoryBank.occurred_at.desc())
-                
-                result = await session.execute(query)
-                interventions = result.scalars().all()
-                
-                return [self._format_intervention_memory(i) for i in interventions]
-                
+            )
+            
+            if user_id:
+                query = query.where(CentralMemoryBank.user_id == user_id)
+            
+            query = query.order_by(CentralMemoryBank.occurred_at.desc())
+            
+            result = await session.execute(query)
+            interventions = result.scalars().all()
+            
+            return [self._format_intervention_memory(i) for i in interventions]
+            
         except Exception as e:
             self.logger.error(f"🐹💥 Failed to get recent interventions: {str(e)}")
             return []
@@ -646,7 +690,7 @@ class HamstersDatabaseIntegration:
                     occurred_at=utc_now(),
                     agent_name=AGENT_NAME,
                     user_id=user_id,
-                    event_type=HamstersEventTypes.USER_BEHAVIOR_OBSERVATION,
+                    event_type=HamstersEventTypes.USER_BEHAVIOR_OBSERVATION.value,
                     subject_kind="behavior_observation",
                     subject_id=f"obs_{utc_now().timestamp()}",
                     priority=1,  # LOW
@@ -669,8 +713,9 @@ class HamstersDatabaseIntegration:
                 session.add(memory_entry)
                 await session.commit()
                 
+                await session.close()
                 return memory_id
-                
+
         except Exception as e:
             self.logger.error(f"🐹💥 Failed to store behavior observation: {str(e)}")
             raise
@@ -688,7 +733,7 @@ class HamstersDatabaseIntegration:
                     and_(
                         CentralMemoryBank.agent_name == AGENT_NAME,
                         CentralMemoryBank.user_id == user_id,
-                        CentralMemoryBank.event_type == HamstersEventTypes.USER_BEHAVIOR_OBSERVATION,
+                        CentralMemoryBank.event_type == HamstersEventTypes.USER_BEHAVIOR_OBSERVATION.value,
                         CentralMemoryBank.occurred_at >= utc_now() - timedelta(days=30)
                     )
                 ).order_by(CentralMemoryBank.occurred_at.desc()).limit(min_observations)
@@ -777,6 +822,7 @@ class HamstersDatabaseIntegration:
                     'hamster_approved': True
                 }
                 
+                await session.close()
         except Exception as e:
             return {
                 'status': 'unhealthy',
@@ -983,6 +1029,7 @@ class HamstersDatabaseIntegration:
                 session.add_all([steve_memory, bob_memory, carl_memory])
                 await session.commit()
                 
+                await session.close()
         except Exception as e:
             self.logger.error(f"🐹💥 Failed to record individual contributions: {str(e)}")
     
@@ -1028,9 +1075,9 @@ class HamstersDatabaseIntegration:
                     CentralMemoryBank.agent_name == AGENT_NAME,
                     CentralMemoryBank.user_id == user_id,
                     CentralMemoryBank.event_type.in_([
-                        HamstersEventTypes.DISK_CLEANUP,
-                        HamstersEventTypes.DEFRAGMENTATION,
-                        HamstersEventTypes.EMERGENCY_SPACE
+                        HamstersEventTypes.DISK_CLEANUP.value,
+                        HamstersEventTypes.DEFRAGMENTATION.value,
+                        HamstersEventTypes.EMERGENCY_SPACE.value
                     ]),
                     CentralMemoryBank.occurred_at >= observation_time,
                     CentralMemoryBank.occurred_at <= observation_time + timedelta(hours=1)
@@ -1038,6 +1085,9 @@ class HamstersDatabaseIntegration:
             ).limit(1)
             
             result = await session.execute(query)
+            
+            await session.close()
+            
             return result.scalar_one_or_none()
             
         except Exception as e:
@@ -1057,7 +1107,7 @@ class HamstersDatabaseIntegration:
                     occurred_at=utc_now(),
                     agent_name=AGENT_NAME,
                     user_id=user_id,
-                    event_type=HamstersEventTypes.PATTERN_LEARNED,
+                    event_type=HamstersEventTypes.PATTERN_LEARNED.value,
                     subject_kind="pattern_discovery",
                     subject_id=pattern.pattern_id,
                     priority=3,  # MEDIUM-HIGH
@@ -1082,15 +1132,16 @@ class HamstersDatabaseIntegration:
                 # Notify other agents about the pattern
                 await self._notify_agents_about_pattern(user_id, pattern)
                 
+                await session.close()
         except Exception as e:
             self.logger.error(f"🐹💥 Failed to store pattern learned event: {str(e)}")
     
-        async def _notify_agents_about_pattern(
+    async def _notify_agents_about_pattern(
         self,
         user_id: str,
         pattern: UserLearningPattern
     ):
-            """Notify other agents about discovered patterns"""
+        """Notify other agents about discovered patterns"""
         try:
             # Create a learning interaction for The Stick (anxiety about disk space)
             if 'disk_cleanup_trigger' in pattern.interaction_pattern:

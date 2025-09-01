@@ -592,3 +592,6 @@ class MethSnailDatabaseIntegration:
             'jitter_trend': 'stable',  # Will be calculated based on history
             'timestamp': timestamp.isoformat()
         })
+
+        # Need cleanup method here...see Hawk or Stick database_integration file for context
+        

@@ -1,16 +1,18 @@
 # app/ai_agents/hamsters/test_database_integration.py
-"""
-Test The Hamsters' Central Memory Bank Integration
-Real data, real beer, real duct tape!
-"""
+# test_hamsters_database_integration.py
 
-import pytest
+import sys
+import os
+# Add the backend directory to Python path
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 import asyncio
 from datetime import datetime, timezone, timedelta
 from uuid import uuid4
 
-from app.ai_agents.hamsters.database_integration import HamstersDatabaseIntegration
-from app.ai_agents.hamsters.datatypes import (
+# Now the imports should work
+from app.ai_agents.hamsters.hamsters_database_integration import HamstersDatabaseIntegration
+from app.ai_agents.hamsters.data_types import (
     InfrastructureIntervention, HamsterCommunication, DuctTapeUsage,
     InfrastructureEventType, HamsterInterventionStatus
 )
