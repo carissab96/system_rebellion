@@ -12,12 +12,34 @@ import asyncio
 import json
 import logging
 import statistics
-from datetime import datetime, timedelta
+from datetime import datetime, timezone
 import psutil
+import uuid
 import socket
 from collections import defaultdict
 
 logger = logging.getLogger("QuantumShadowPeople")
+def datetime_to_iso(dt):
+    """Convert datetime to ISO string for JSON serialization"""
+    return dt.isoformat() if dt else None
+
+def serialize_for_json(obj):
+    """Recursively convert datetime objects to ISO strings in nested structures"""
+    if isinstance(obj, datetime):
+        return obj.isoformat()
+    elif isinstance(obj, dict):
+        return {k: serialize_for_json(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [serialize_for_json(item) for item in obj]
+    elif hasattr(obj, '__dict__'):
+        # Handle dataclass objects
+        return serialize_for_json(obj.__dict__)
+    else:
+        return obj
+        
+def utc_now():
+    """Get current UTC time with timezone awareness"""
+    return datetime.now(timezone.utc)
 
 class QuantumPhaseState(Enum):
     """QSP's dimensional states"""

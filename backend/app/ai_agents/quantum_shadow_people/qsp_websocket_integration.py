@@ -1,211 +1,163 @@
-# /agents/qsp/qsp_websocket_integration.py
+# app/ai_agents/qsp/websocket_handler.py
+"""
+WebSocket handler for Quantum Shadow People
+Integrates with complete database architecture
+"""
+
 import asyncio
 import json
 from typing import Dict, Any, Optional
-from datetime import datetime
-from .decision_engine import QuantumShadowPeopleBrainV2, QSPDecision, QuantumPhaseState
+from datetime import datetime, timezone, timedelta
+
+from .decision_engine import QuantumShadowPeopleBrainV2, QSPDecision
+from .database_integration import QSPDatabaseIntegration
+from .constants import AGENT_NAME
+
+def datetime_to_iso(dt):
+    """Convert datetime to ISO string for JSON serialization"""
+    return dt.isoformat() if dt else None
+
+def serialize_for_json(obj):
+    """Recursively convert datetime objects to ISO strings in nested structures"""
+    if isinstance(obj, datetime):
+        return obj.isoformat()
+    elif isinstance(obj, dict):
+        return {k: serialize_for_json(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [serialize_for_json(item) for item in obj]
+    elif hasattr(obj, '__dict__'):
+        # Handle dataclass objects
+        return serialize_for_json(obj.__dict__)
+    else:
+        return obj
+
+def utc_now():
+    """Get current UTC time with timezone awareness"""
+    return datetime.now(timezone.utc)
 
 class QSPWebSocketHandler:
     """
-    Quantum Shadow People WebSocket Handler
-    Network optimization with mysterious tequila jello shots
+    Quantum Shadow People WebSocket Handler with full database integration
     """
     
-    def __init__(self):
-        self.qsp_brain = QuantumShadowPeopleBrainV2()
+    def __init__(self, db_getter=None):
+        self.db = QSPDatabaseIntegration(db_getter)
+        self.qsp_brain = QuantumShadowPeopleBrainV2(db_getter)
         self.active_connections = {}
         self.quantum_fixes_in_progress = {}
         
-    async def handle_websocket_message(self, websocket, user_id: str, message: Dict[str, Any]):
-        """Handle incoming WebSocket messages for network optimization"""
+    async def initialize(self):
+        """Initialize database connections"""
+        await self.db.initialize()
+        await self.qsp_brain.initialize_database()
         
-        try:
-            message_type = message.get('type')
-            
-            if message_type == 'network_metrics':
-                await self._handle_network_metrics(websocket, user_id, message)
-            elif message_type == 'get_qsp_stats':
-                await self._handle_get_qsp_stats(websocket, user_id)
-            elif message_type == 'quantum_phase_check':
-                await self._handle_quantum_phase_check(websocket, user_id)
-            else:
-                await self._send_error(websocket, f"Unknown message type: {message_type}")
-                
-        except Exception as e:
-            await self._send_error(websocket, f"QSP processing error: {str(e)}")
-    
-    async def _handle_network_metrics(self, websocket, user_id: str, message: Dict[str, Any]):
-        """Process network metrics and provide quantum recommendations"""
+    async def process_metrics(self, metrics_data: Dict[str, Any], user_id: Optional[str] = None) -> Dict[str, Any]:
+        """Process metrics with full database integration"""
         
-        network_data = message.get('data', {})
+        # Store observation for pattern learning
+        if user_id:
+            await self.db.store_user_behavior_observation(user_id, metrics_data)
         
-        # Validate network data
-        if not network_data:
-            await self._send_error(websocket, "No network data provided")
-            return
+        # Check for pattern matches
+        pattern_match = None
+        if user_id:
+            pattern_match = await self.db.check_pattern_match(user_id, metrics_data)
         
-        # Get historical data (would come from database in full implementation)
-        historical_data = message.get('historical_data', [])
+        # Get historical data for analysis
+        historical_data = None
+        if user_id:
+            historical_data = await self.db.get_historical_network_data(user_id, days=7)
         
-        # Phase into quantum analysis
-        await self._send_quantum_status(websocket, user_id, "phasing_into_quantum_dimension")
-        
-        # Analyze network metrics with QSP brain
-        qsp_decision = await self.qsp_brain.analyze_network_metrics(
-            network_data=network_data,
+        # Analyze with QSP brain
+        decision = await self.qsp_brain.analyze_network_metrics(
+            network_data=metrics_data,
             historical_data=historical_data,
             user_id=user_id
         )
         
-        if qsp_decision:
-            # Send quantum recommendation
-            await self._send_quantum_recommendation(websocket, user_id, qsp_decision)
+        # Store decision if made
+        if decision and user_id:
+            memory_id = await self.db.store_decision(user_id, decision)
             
-            # Track the quantum fix
-            self.quantum_fixes_in_progress[user_id] = {
-                'decision': qsp_decision,
-                'timestamp': utc_now()
+            # Share insight with other agents if significant
+            if decision.expected_improvement > 0.7:
+                # app/ai_agents/qsp/websocket_handler.py (continued)
+
+                await self.db.share_quantum_insight(
+                    target_agent='vic_20',
+                    insight={
+                        'type': 'network_optimization',
+                        'metric': decision.decision_type.value,
+                        'improvement': decision.expected_improvement,
+                        'quantum_state': decision.quantum_state.value,
+                        'confidence': decision.confidence_level
+                    },
+                    source_memory_id=memory_id
+                )
+        
+        # Check for pattern learning opportunity
+        if user_id:
+            # Every 50 observations, try to learn patterns
+            observation_count = await self._get_observation_count(user_id)
+            if observation_count % 50 == 0:
+                learned_pattern = await self.db.analyze_and_learn_patterns(user_id)
+                if learned_pattern:
+                    # Pattern learned - already stored in database
+                    pass
+        
+        # Format response
+        return self._format_response(decision, pattern_match, metrics_data)
+    
+    async def _get_observation_count(self, user_id: str) -> int:
+        """Get count of observations for pattern learning trigger"""
+        # In production, this would query CMB
+        # For now, return a reasonable number
+        return 50
+    
+    def _format_response(self, decision: Optional[QSPDecision], pattern_match: Optional[Dict], 
+                        metrics_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Format response with quantum insights"""
+        response = {
+            'agent': AGENT_NAME,
+            'timestamp': utc_now().isoformat(),
+            'quantum_state': self.qsp_brain.quantum_state.value,
+            'network_status': self._determine_network_status(metrics_data)
+        }
+        
+        if decision:
+            response['decision'] = {
+                'type': decision.decision_type.value,
+                'target': decision.network_target,
+                'expected_improvement': decision.expected_improvement,
+                'mysterious_explanation': decision.mysterious_explanation,
+                'tequila_shots_required': decision.tequila_jello_shots_required,
+                'comprehensibility': decision.comprehensibility_score
             }
-            
+            response['status'] = 'quantum_intervention_applied'
         else:
-            # Network is quantum-stable, no intervention needed
-            await self._send_quantum_status(websocket, user_id, "network_quantum_stable")
+            response['status'] = 'monitoring_from_shadows'
+            response['message'] = 'Network operating within quantum parameters'
+        
+        if pattern_match and pattern_match['matched']:
+            response['pattern_detected'] = {
+                'type': pattern_match['pattern_type'],
+                'confidence': pattern_match['confidence'],
+                'recommendation': pattern_match['recommended_action']
+            }
+        
+        return response
     
-    async def _send_quantum_recommendation(self, websocket, user_id: str, decision: QSPDecision):
-        """Send quantum network recommendation to client"""
+    def _determine_network_status(self, metrics: Dict[str, Any]) -> str:
+        """Determine overall network status"""
+        latency = metrics.get('latency', 0)
+        packet_loss = metrics.get('packet_loss', 0)
+        bandwidth = metrics.get('bandwidth_utilization', 0)
         
-        recommendation = {
-            'type': 'qsp_recommendation',
-            'user_id': user_id,
-            'timestamp': utc_now().isoformat(),
-            'quantum_state': decision.quantum_state.value,
-            'decision_type': decision.decision_type.value,
-            'network_target': decision.network_target,
-            'mysterious_explanation': decision.mysterious_explanation,
-            'technical_details': decision.technical_details,
-            'expected_improvement': f"{decision.expected_improvement:.1%}",
-            'confidence_level': f"{decision.confidence_level:.1%}",
-            'tequila_jello_shots_required': decision.tequila_jello_shots_required,
-            'quantum_icon': self._get_quantum_icon(decision.decision_type.value),
-            'status': 'quantum_optimization_active'
-        }
-        
-        await websocket.send(json.dumps(recommendation))
-        
-        # Send follow-up quantum status
-        await asyncio.sleep(0.5)  # Brief quantum processing delay
-        await self._send_quantum_status(websocket, user_id, "quantum_fix_applied")
-    
-    def _get_quantum_icon(self, decision_type: str) -> str:
-        """Get appropriate icon for quantum decision type"""
-        
-        quantum_icons = {
-            'quantum_phase_router': '👻🔄',
-            'tequila_jello_optimization': '🍹🟢',
-            'phantom_packet_recovery': '👻📦',
-            'network_dimension_shift': '🌀🔄',
-            'mysterious_latency_fix': '⚡👻',
-            'spectral_bandwidth_boost': '🌈📡'
-        }
-        
-        return quantum_icons.get(decision_type, '👻🔧')
-    
-    async def _send_quantum_status(self, websocket, user_id: str, status: str):
-        """Send quantum status update"""
-        
-        status_messages = {
-            'phasing_into_quantum_dimension': 'Phasing into quantum network dimension...',
-            'quantum_fix_applied': 'Quantum network optimization applied successfully',
-            'network_quantum_stable': 'Network is quantum-stable, no intervention needed',
-            'tequila_jello_dimension_active': 'Operating in tequila jello dimension',
-            'phantom_packets_recovered': 'Phantom packets successfully recovered'
-        }
-        
-        status_update = {
-            'type': 'qsp_status',
-            'user_id': user_id,
-            'timestamp': utc_now().isoformat(),
-            'status': status,
-            'message': status_messages.get(status, 'Unknown quantum status'),
-            'quantum_state': self.qsp_brain.quantum_state.value,
-            'quantum_icon': '👻'
-        }
-        
-        await websocket.send(json.dumps(status_update))
-    
-    async def _handle_get_qsp_stats(self, websocket, user_id: str):
-        """Send QSP performance statistics"""
-        
-        stats = self.qsp_brain.get_quantum_stats()
-        
-        stats_response = {
-            'type': 'qsp_stats',
-            'user_id': user_id,
-            'timestamp': utc_now().isoformat(),
-            'stats': stats,
-            'quantum_icon': '👻📊'
-        }
-        
-        await websocket.send(json.dumps(stats_response))
-    
-    async def _handle_quantum_phase_check(self, websocket, user_id: str):
-        """Check current quantum phase state"""
-        
-        phase_check = {
-            'type': 'quantum_phase_status',
-            'user_id': user_id,
-            'timestamp': utc_now().isoformat(),
-            'quantum_state': self.qsp_brain.quantum_state.value,
-            'tequila_jello_shots_available': self.qsp_brain.tequila_jello_shots,
-            'quantum_fixes_applied': self.qsp_brain.quantum_fixes_applied,
-            'dimensional_shifts_performed': self.qsp_brain.dimensional_shifts_performed,
-            'status': 'quantum_phase_stable',
-            'quantum_icon': '👻🔍'
-        }
-        
-        await websocket.send(json.dumps(phase_check))
-    
-    async def _send_error(self, websocket, error_message: str):
-        """Send error message via WebSocket"""
-        
-        error_response = {
-            'type': 'qsp_error',
-            'timestamp': utc_now().isoformat(),
-            'error': error_message,
-            'quantum_state': 'error_dimension',
-            'quantum_icon': '👻❌'
-        }
-        
-        await websocket.send(json.dumps(error_response))
-    
-    async def register_connection(self, websocket, user_id: str):
-        """Register new WebSocket connection"""
-        self.active_connections[user_id] = websocket
-        
-        # Send quantum connection established message
-        welcome_message = {
-            'type': 'qsp_connection_established',
-            'user_id': user_id,
-            'timestamp': utc_now().isoformat(),
-            'message': 'QSP quantum network monitoring active',
-            'quantum_state': self.qsp_brain.quantum_state.value,
-            'quantum_icon': '👻🔗'
-        }
-        
-        await websocket.send(json.dumps(welcome_message))
-    
-    async def unregister_connection(self, user_id: str):
-        """Unregister WebSocket connection"""
-        if user_id in self.active_connections:
-            del self.active_connections[user_id]
-        
-        # Clean up any in-progress quantum fixes
-        if user_id in self.quantum_fixes_in_progress:
-            del self.quantum_fixes_in_progress[user_id]
-
-# Global QSP handler instance
-qsp_websocket_handler = QSPWebSocketHandler()
-
-def get_qsp_websocket_handler():
-    """Get the global QSP WebSocket handler"""
-    return qsp_websocket_handler
+        if latency > 200 or packet_loss > 0.1 or bandwidth > 0.95:
+            return 'critical'
+        elif latency > 100 or packet_loss > 0.05 or bandwidth > 0.85:
+            return 'degraded'
+        elif latency > 50 or packet_loss > 0.01 or bandwidth > 0.7:
+            return 'moderate'
+        else:
+            return 'optimal'

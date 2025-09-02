@@ -107,7 +107,7 @@ class SimplifiedNetworkService:
             
             # PHASE 4: COMPILE COMPREHENSIVE NETWORK METRICS
             network_metrics = {
-                'timestamp': utc_now()ormat(),
+                'timestamp': utc_now().isoformat(),
                 'type': 'network',
                 'data': final_metrics
             }
@@ -487,7 +487,7 @@ class SimplifiedNetworkService:
                 'service_type': 'network_metrics_collection',
                 'psutil_available': False,
                 'error': str(e),
-                'last_health_check': utc_now()ormat()
+                'last_health_check': utc_now().isoformat()
             }
 
 # Test function to run the service directly
@@ -497,7 +497,7 @@ async def test_simplified_network_service():
     print(" 🧐🌐 SIMPLIFIED NETWORK SERVICE TEST - ARISTOCRATIC PRECISION")
     print("="*80)
     
-    print(f"\n🕐 Timestamp: {utc_now()time('%Y-%m-%d %H:%M:%S')}")
+    print(f"\n🕐 Timestamp: {utc_now().isoformat()}")
     
     try:
         # Initialize service

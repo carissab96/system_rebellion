@@ -62,9 +62,12 @@ from .agent_memory_banks import (
     AgentMemoryBankBase,
     AgentMemoryBankCreate,
     AgentMemoryBankRead,
-    AgentLearningInteractionsBase,
-    AgentLearningInteractionsCreate,
-    AgentLearningInteractionsRead
+    # AgentLearningInteractionsBase,
+    # AgentLearningInteractionsCreate,
+    # AgentLearningInteractionsRead,
+    # UserLearningPatternsBase,
+    # UserLearningPatternsCreate,
+    # UserLearningPatternsRead
 )
 
 from .sir_hawkington import (

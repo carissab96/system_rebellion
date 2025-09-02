@@ -36,6 +36,7 @@ from app.ai_agents.meth_snail import router as meth_snail_router
 from rich.console import Console
 from rich.table import Table
 from rich.live import Live
+from app.core.learning_helpers import run_metadata_scheduler
 
 # Global reference to background tasks for cleanup
 background_tasks = []
@@ -99,10 +100,17 @@ async def lifespan(app: FastAPI):
         
         # Start background tasks (Meth Snail's optimization, aggregation, etc.)
         background_tasks = await start_all_background_tasks()
+
+        metadata_task = asyncio.create_task(
+            run_metadata_scheduler(engine, every_seconds=300)
+        )
+        background_tasks.append(metadata_task)
+
         logger.info("🔄 Background tasks started:")
         logger.info("  🐌 Metrics aggregation engine running")
         logger.info("  🐌💨 Real-time optimization engine engaged")
         logger.info("  🏥 System health monitor active")
+        logger.info(" Memory bank metadata scheduler running")
         
     except Exception as e:
         logger.error(f"❌ Failed during startup: {str(e)}")

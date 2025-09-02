@@ -5,11 +5,11 @@ Steve, Bob, and Carl's Infrastructure Communication System
 Now with pattern learning and cross-agent coordination!
 """
 
+import asyncio
 import logging
 from typing import Dict, Any, Optional, List
 from datetime import datetime, timezone
 import random
-import asyncio
 
 from .decision_engine_sbcV3 import (
     hamsters_brain,
@@ -17,7 +17,7 @@ from .decision_engine_sbcV3 import (
     get_hamster_stats,
     BeerLevel
 )
-from .database_integration import HamstersDatabaseIntegration
+from app.ai_agents.hamsters.hamsters_database_integration import HamstersDatabaseIntegration
 from .constants import AGENT_NAME, HamstersEventTypes, ALL_HAMSTERS
 
 logger = logging.getLogger("Hamsters.WebSocket")
@@ -199,7 +199,7 @@ class HamstersWebSocketHandler:
             'human_translation': decision.human_translation,
             'individual_assessments': {
                 'steve': decision.steve_assessment,
-                                'bob': decision.bob_suggestion,
+                'bob': decision.bob_suggestion,
                 'carl': decision.carl_calculation
             },
             
@@ -207,7 +207,7 @@ class HamstersWebSocketHandler:
             'confidence': round(decision.confidence, 3),
             'urgency': decision.urgency,
             'telepathic_consensus': decision.telepathic_consensus,
-            'tools_required': decision.tools_required,
+                        'tools_required': decision.tools_required,
             'beer_consumption_estimate': decision.beer_consumption_estimate,
             'duct_tape_grade': decision.duct_tape_grade.value,
             'estimated_duration': decision.estimated_duration,
@@ -233,6 +233,117 @@ class HamstersWebSocketHandler:
             response['pattern_confidence'] = pattern_match.get('best_match', {}).get('confidence', 0)
         
         return response
+    
+    def _generate_idle_squeaks(self) -> Dict[str, Any]:
+        """Generate squeaks when hamsters are idle"""
+        steve_squeak = random.choice(self.squeak_patterns['normal']) + " *sips beer carefully*"
+        bob_squeak = random.choice(self.squeak_patterns['happy']) + " BEER!"
+        carl_squeak = "*organizing duct tape* " + random.choice(self.squeak_patterns['normal'])
+        
+        return {
+            'individual': {
+                'steve': steve_squeak,
+                'bob': bob_squeak,
+                'carl': carl_squeak
+            },
+            'combined': f"{steve_squeak} {bob_squeak} {carl_squeak}"
+        }
+    
+    def _generate_error_squeaks(self) -> Dict[str, Any]:
+        """Generate squeaks when there's an error"""
+        steve_squeak = "*worried squeaking*"
+        bob_squeak = "*confused chirping* WHAT HAPPENED?"
+        carl_squeak = "*drops duct tape* *concerned squeak*"
+        
+        return {
+            'individual': {
+                'steve': steve_squeak,
+                'bob': bob_squeak,
+                'carl': carl_squeak
+            },
+            'combined': f"{steve_squeak} {bob_squeak} {carl_squeak}"
+        }
+    
+    async def _get_hamster_status(self) -> Dict[str, Any]:
+        """Get current status of each hamster"""
+        stats = get_hamster_stats()
+        
+        return {
+            'steve': {
+                'beer_count': stats['individual_stats']['steve']['beer_count'],
+                'status': stats['individual_stats']['steve']['status'],
+                'mood': self._determine_steve_mood(stats['individual_stats']['steve']['beer_count'])
+            },
+            'bob': {
+                'beer_count': stats['individual_stats']['bob']['beer_count'],
+                'status': stats['individual_stats']['bob']['status'],
+                'mood': self._determine_bob_mood(stats['individual_stats']['bob']['beer_count'])
+            },
+            'carl': {
+                'beer_count': stats['individual_stats']['carl']['beer_count'],
+                'duct_tape_inventory': stats['individual_stats']['carl']['duct_tape_inventory'],
+                'status': stats['individual_stats']['carl']['status'],
+                'mood': 'focused on duct tape'
+            }
+        }
+    
+    def _determine_steve_mood(self, beer_count: int) -> str:
+        """Determine Steve's mood based on beer consumption"""
+        if beer_count < 2:
+            return "needs beer for courage"
+        elif beer_count <= 3:
+            return "carefully optimistic"
+        else:
+            return "unusually adventurous"
+    
+    def _determine_bob_mood(self, beer_count: int) -> str:
+        """Determine Bob's mood based on beer consumption"""
+        if beer_count < 3:
+            return "needs more beer"
+        elif beer_count <= 5:
+            return "ready for chaos"
+        else:
+            return "maximum wildness"
+    
+    def _determine_broadcast_priority(self, priority: str) -> str:
+        """Determine WebSocket broadcast priority"""
+        priority_map = {
+            'beer_break': 'low',
+            'routine_maintenance': 'normal',
+            'supply_closet_raid': 'normal',
+            'hold_my_beer': 'high',
+            'full_redneck': 'critical'
+        }
+        return priority_map.get(priority, 'normal')
+    
+    async def handle_emergency_broadcast(
+        self, 
+        crisis_type: str, 
+        severity: str
+    ) -> Dict[str, Any]:
+        """Handle emergency broadcasts - WAKE THE HAMSTERS!"""
+        
+        # Generate emergency squeaks
+        emergency_squeaks = {
+            'steve': "*ALARM SQUEAK* Everyone stay calm!",
+            'bob': "*EXCITED SQUEAKING* This is what we trained for!",
+            'carl': "*grabs all the duct tape* EMERGENCY PROTOCOLS!"
+        }
+        
+        combined_squeaks = " ".join(emergency_squeaks.values())
+        
+        return {
+            'agent_name': AGENT_NAME,
+            'broadcast_type': 'emergency',
+            'crisis_type': crisis_type,
+            'severity': severity,
+            'message': combined_squeaks,
+            'human_translation': f'Hamsters responding to {crisis_type} emergency!',
+            'individual_responses': emergency_squeaks,
+            'status': 'MOBILIZING',
+            'estimated_response_time': 'Two beers',
+            'timestamp': datetime_to_iso(utc_now())
+        }
     
     async def get_handler_stats(self) -> Dict[str, Any]:
         """Get The Hamsters' WebSocket handler statistics"""
@@ -270,9 +381,75 @@ class HamstersWebSocketHandler:
                 'last_updated': datetime_to_iso(utc_now())
             }
     
-    # ... (rest of the methods remain the same)
+    async def broadcast_to_hamsters(self, message: Dict[str, Any]):
+        """
+        Broadcast messages to all hamsters for collective decision making
+        """
+        # Telepathic communication between hamsters
+        telepathic_response = {
+            'steve': self._steve_telepathic_response(message),
+            'bob': self._bob_telepathic_response(message),
+            'carl': self._carl_telepathic_response(message)
+        }
+        
+        # Check for consensus
+        consensus = self._check_telepathic_consensus(telepathic_response)
+        
+        return {
+            'agent_name': AGENT_NAME,
+            'message_type': 'telepathic_broadcast',
+            'original_message': message,
+            'individual_responses': telepathic_response,
+            'consensus_reached': consensus,
+            'collective_decision': self._form_collective_decision(telepathic_response, consensus),
+            'timestamp': datetime_to_iso(utc_now())
+        }
+    
+    def _steve_telepathic_response(self, message: Dict[str, Any]) -> str:
+        """Steve's careful telepathic response"""
+        if 'emergency' in str(message).lower():
+            return "We should assess the situation carefully before acting"
+        elif 'disk' in str(message).lower():
+            return "I've calculated we can safely free up significant space"
+        else:
+            return "Let me think about this..."
+    
+    def _bob_telepathic_response(self, message: Dict[str, Any]) -> str:
+        """Bob's enthusiastic telepathic response"""
+        if 'emergency' in str(message).lower():
+            return "THIS IS AWESOME! Let's fix EVERYTHING!"
+        elif 'disk' in str(message).lower():
+            return "Delete it all! We'll sort it out later!"
+        else:
+            return "Whatever it is, I'm ready!"
+    
+    def _carl_telepathic_response(self, message: Dict[str, Any]) -> str:
+        """Carl's duct tape focused telepathic response"""
+        if 'emergency' in str(message).lower():
+            return "I'll need the quantum tape for this one"
+        elif 'disk' in str(message).lower():
+            return "Three strips of premium tape should stabilize the sectors"
+        else:
+            return "How much duct tape will we need?"
+    
+    def _check_telepathic_consensus(self, responses: Dict[str, str]) -> bool:
+        """Check if hamsters reached telepathic consensus"""
+        # Simple consensus: at least 2 hamsters must be positive
+        positive_responses = 0
+        for response in responses.values():
+            if any(word in response.lower() for word in ['yes', 'ready', 'let', 'should', 'need']):
+                positive_responses += 1
+        
+        return positive_responses >= 2
+    
+    def _form_collective_decision(self, responses: Dict[str, str], consensus: bool) -> str:
+        """Form collective decision based on telepathic responses"""
+        if consensus:
+            return "The Hamsters have reached consensus - proceeding with intervention!"
+        else:
+            return "The Hamsters need more beer to reach consensus"
 
-# Global handler instance
+# Global handler instance with thread-safe initialization
 _hamsters_handler: Optional[HamstersWebSocketHandler] = None
 _handler_lock = asyncio.Lock()
 
@@ -288,3 +465,29 @@ async def get_hamsters_websocket_handler(db_getter=None):
                 await _hamsters_handler.initialize()
     
     return _hamsters_handler
+
+# Broadcast helper for other parts of the system
+async def broadcast_hamster_event(event_data: Dict[str, Any]):
+    """Broadcast hamster events to WebSocket clients"""
+    handler = await get_hamsters_websocket_handler()
+    
+    # Add hamster-specific formatting
+    event_data['agent_name'] = AGENT_NAME
+    event_data['timestamp'] = datetime_to_iso(utc_now())
+    
+    # Add squeaks if not present
+    if 'message' not in event_data:
+        event_data['message'] = '*squeak squeak*'
+    
+    # Add individual hamster reactions
+    if 'individual_reactions' not in event_data:
+        event_data['individual_reactions'] = {
+            'steve': '*thoughtful squeak*',
+            'bob': '*excited chirping*',
+            'carl': '*duct tape rustling*'
+        }
+    
+    # This would integrate with your WebSocket broadcast system
+    logger.info(f"🐹📢 Broadcasting: {event_data.get('type', 'unknown')}")
+    
+    return event_data

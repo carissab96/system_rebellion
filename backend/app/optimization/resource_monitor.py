@@ -67,7 +67,7 @@ class ResourceMonitor:
             self.logger.error("Complete metrics collection timed out")
             # Return minimal metrics
             return {
-                'timestamp': utc_now()ormat(),
+                'timestamp': utc_now().isoformat(),
                 'cpu_usage': self._last_cpu_percent,
                 'memory_usage': self._get_memory_usage(),
                 'disk_usage': self._get_disk_usage(),

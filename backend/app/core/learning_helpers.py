@@ -313,7 +313,370 @@ async def get_user_patterns(
         
         return patterns
 
-# ... (rest of the functions remain the same)
+async def get_global_patterns(
+    engine: AsyncEngine,
+    pattern_keys: Optional[List[str]] = None
+) -> Dict[str, Any]:
+    """Get global patterns, optionally filtered by keys"""
+    if pattern_keys:
+        query = text("""
+            SELECT pattern_key, value, updated_at
+            FROM agent_global_patterns
+            WHERE pattern_key = ANY(:keys)
+            ORDER BY updated_at DESC
+        """)
+        params = {"keys": pattern_keys}
+    else:
+        query = text("""
+            SELECT pattern_key, value, updated_at
+            FROM agent_global_patterns
+            ORDER BY updated_at DESC
+        """)
+        params = {}
+    
+    async with engine.begin() as conn:
+        result = await conn.execute(query, params)
+        return {
+            row['pattern_key']: {
+                'value': row['value'],
+                'updated_at': row['updated_at']
+            }
+            for row in result.mappings()
+        }
+
+# --- Learning Analytics Functions ---------------------------------------------
+
+async def get_learning_effectiveness(
+    engine: AsyncEngine,
+    agent_name: Optional[str] = None,
+    days: int = 7
+) -> Dict[str, Any]:
+    """Analyze learning effectiveness for an agent or the whole system"""
+    since = datetime.now(UTC) - timedelta(days=days)
+    
+    if agent_name:
+        query = text("""
+            SELECT 
+                COUNT(*) as total_interactions,
+                COUNT(*) FILTER (WHERE transfer_success = true) as successful_transfers,
+                AVG(effectiveness_score) as avg_effectiveness,
+                AVG(improvement_measured) as avg_improvement,
+                COUNT(DISTINCT source_agent) as learned_from_agents,
+                COUNT(DISTINCT learning_type) as learning_types_used
+            FROM agent_learning_interactions
+            WHERE target_agent = :agent_name
+                AND timestamp >= :since
+        """)
+        params = {"agent_name": agent_name, "since": since}
+    else:
+        query = text("""
+            SELECT 
+                target_agent,
+                COUNT(*) as total_interactions,
+                COUNT(*) FILTER (WHERE transfer_success = true) as successful_transfers,
+                AVG(effectiveness_score) as avg_effectiveness,
+                AVG(improvement_measured) as avg_improvement
+            FROM agent_learning_interactions
+            WHERE timestamp >= :since
+            GROUP BY target_agent
+            ORDER BY avg_effectiveness DESC NULLS LAST
+        """)
+        params = {"since": since}
+    
+    async with engine.begin() as conn:
+        result = await conn.execute(query, params)
+        
+        if agent_name:
+            row = result.mappings().one_or_none()
+            if not row:
+                return {
+                    "agent_name": agent_name,
+                    "total_interactions": 0,
+                    "successful_transfers": 0,
+                    "success_rate": 0.0,
+                    "avg_effectiveness": 0.0,
+                    "avg_improvement": 0.0,
+                    "learned_from_agents": 0,
+                    "learning_types_used": 0
+                }
+            
+            data = dict(row)
+            total = data['total_interactions']
+            data['success_rate'] = (
+                data['successful_transfers'] / total if total > 0 else 0.0
+            )
+            data['agent_name'] = agent_name
+            return data
+        else:
+            results = []
+            for row in result.mappings():
+                data = dict(row)
+                total = data['total_interactions']
+                data['success_rate'] = (
+                    data['successful_transfers'] / total if total > 0 else 0.0
+                )
+                results.append(data)
+            return {"agents": results, "period_days": days}
+# --- Metadata Rollup Functions ------------------------------------------------
+
+AGENT_COLUMN_MAP = {
+    # central_memory_bank.agent_name -> memory_bank_metadata column
+    "hawkington": "hawkington_memories",
+    "meth_snail": "snail_memories",
+    "hamsters": "hamsters_memories",
+    "quantum_shadow_people": "qsp_memories",
+    "vic_20_sage": "vic20_memories",
+    "the_stick": "stick_memories",
+}
+
+async def hydrate_memory_bank_metadata(
+    engine: AsyncEngine,
+    window_minutes: int = 5
+) -> None:
+    """
+    Insert one roll-up row into memory_bank_metadata for the recent window
+    Uses occurred_at/timestamp windows to keep work bounded
+    """
+    now = datetime.now(UTC)
+    start = now - timedelta(minutes=window_minutes)
+
+    # 1) Totals from central_memory_bank
+    total_q = text("""
+        SELECT COUNT(*) AS total
+        FROM central_memory_bank
+        WHERE occurred_at >= :start AND occurred_at < :end
+    """)
+
+    per_agent_q = text("""
+        SELECT agent_name, COUNT(*) AS c
+        FROM central_memory_bank
+        WHERE occurred_at >= :start AND occurred_at < :end
+        GROUP BY agent_name
+    """)
+
+    # 2) Learning stats from agent_learning_interactions
+    li_q = text("""
+        SELECT
+          COUNT(*) FILTER (WHERE transfer_success IS TRUE) AS succ,
+          COUNT(*) FILTER (WHERE transfer_success IS FALSE) AS fail,
+          AVG(effectiveness_score) AS avg_eff
+        FROM agent_learning_interactions
+        WHERE timestamp >= :start AND timestamp < :end
+    """)
+
+    # 3) Stick anxiety snapshot from CMB
+    anxiety_q = text("""
+        SELECT AVG(CAST(details->>'current_anxiety' AS FLOAT)) AS avg_anx
+        FROM central_memory_bank
+        WHERE agent_name = 'the_stick'
+          AND occurred_at >= :start AND occurred_at < :end
+          AND details->>'current_anxiety' IS NOT NULL
+    """)
+
+    async with engine.begin() as conn: 
+        total = (await conn.execute(total_q, {"start": start, "end": now})).scalar() or 0
+        per_agent_rows = (await conn.execute(per_agent_q, {"start": start, "end": now})).mappings().all()
+        li_row = (await conn.execute(li_q, {"start": start, "end": now})).mappings().one()
+        anx = (await conn.execute(anxiety_q, {"start": start, "end": now})).scalar()
+
+        # Map per-agent counts into the metadata columns
+        per_agent_counts: Dict[str, int] = {row["agent_name"]: int(row["c"]) for row in per_agent_rows}
+        meta_cols: Dict[str, Any] = {col: 0 for col in AGENT_COLUMN_MAP.values()}
+        for agent, col in AGENT_COLUMN_MAP.items():
+            meta_cols[col] = per_agent_counts.get(agent, 0)
+
+        succ = int(li_row.get("succ") or 0)
+        fail = int(li_row.get("fail") or 0)
+        avg_eff = float(li_row.get("avg_eff") or 0.0)
+
+        # Simple health heuristic
+        denom = succ + fail
+        success_rate = (succ / denom) if denom else None
+        eff_norm = None
+        if avg_eff:
+            eff_norm = avg_eff if avg_eff <= 1 else min(avg_eff / 100.0, 1.0)
+        health = None
+        if success_rate is not None and eff_norm is not None:
+            health = round((success_rate * 0.5 + eff_norm * 0.5), 4)
+
+        insert_stmt = text("""
+            INSERT INTO memory_bank_metadata (
+              timestamp,
+              total_memories,
+              central_bank_memories,
+              cross_agent_learnings,
+              hawkington_memories,
+              snail_memories,
+              hamsters_memories,
+              qsp_memories,
+              vic20_memories,
+              stick_memories,
+              successful_transfers,
+              failed_transfers,
+              average_effectiveness_score,
+              memory_bank_health_score,
+              stick_anxiety_level,
+              memory_retrieval_speed_ms,
+              cross_agent_query_speed_ms,
+              learning_application_success_rate
+            ) VALUES (
+              :timestamp,
+              :total_memories,
+              :central_bank_memories,
+              :cross_agent_learnings,
+              :hawkington_memories,
+              :snail_memories,
+              :hamsters_memories,
+              :qsp_memories,
+              :vic20_memories,
+              :stick_memories,
+              :successful_transfers,
+              :failed_transfers,
+              :average_effectiveness_score,
+              :memory_bank_health_score,
+              :stick_anxiety_level,
+              :memory_retrieval_speed_ms,
+              :cross_agent_query_speed_ms,
+              :learning_application_success_rate
+            )
+        """)
+
+        payload = {
+            "timestamp": now,
+            "total_memories": total,
+            "central_bank_memories": total,
+            "cross_agent_learnings": denom,
+            **meta_cols,
+            "successful_transfers": succ,
+            "failed_transfers": fail,
+            "average_effectiveness_score": avg_eff if denom else None,
+            "memory_bank_health_score": health,
+            "stick_anxiety_level": float(anx) if anx is not None else None,
+            "memory_retrieval_speed_ms": None,  # To be implemented with timing
+            "cross_agent_query_speed_ms": None,  # To be implemented with timing
+            "learning_application_success_rate": success_rate,
+        }
+
+        await conn.execute(insert_stmt, payload)
+
+# --- Scheduler for Automated Rollups ------------------------------------------
+
+async def run_metadata_scheduler(
+    engine: AsyncEngine,
+    every_seconds: int = 300
+) -> None:
+    """
+    Fire-and-forget loop for metadata rollups
+    Call with asyncio.create_task(...) on startup
+    """
+    interval = max(60, every_seconds)
+    while True:
+        try:
+            await hydrate_memory_bank_metadata(engine)
+        except Exception as e:
+            # Log but don't crash the scheduler
+            import logging
+            logger = logging.getLogger("learning_helpers.scheduler")
+            logger.error(f"Metadata rollup failed: {e}")
+        await asyncio.sleep(interval)
+
+# --- Helper Functions for Common Patterns -------------------------------------
+
+async def check_and_promote_pattern(
+    engine: AsyncEngine,
+    user_pattern_id: str,
+    confidence_threshold: float = 0.9,
+    cross_validation_count: int = 5
+) -> bool:
+    """
+    Check if a user pattern should be promoted to a global pattern
+    
+    Returns True if pattern was promoted
+    """
+    # Get the user pattern
+    query = text("""
+        SELECT 
+            ulp.*,
+            COUNT(DISTINCT ali.source_agent) as validation_sources
+        FROM user_learning_patterns ulp
+        LEFT JOIN agent_learning_interactions ali 
+            ON ali.adaptation_method->>'pattern_id' = ulp.pattern_id
+            AND ali.transfer_success = true
+        WHERE ulp.pattern_id = :pattern_id
+        GROUP BY ulp.pattern_id
+    """)
+    
+    async with engine.begin() as conn:
+        result = await conn.execute(query, {"pattern_id": user_pattern_id})
+        row = result.mappings().one_or_none()
+        
+        if not row:
+            return False
+        
+        # Check promotion criteria
+        success_patterns = row.get('success_patterns', {})
+        avg_confidence = success_patterns.get('average_confidence', 0)
+        validation_sources = row['validation_sources']
+        
+        if avg_confidence >= confidence_threshold and validation_sources >= cross_validation_count:
+            # Promote to global pattern
+            global_pattern = GlobalPattern(
+                pattern_key=f"promoted.{user_pattern_id}",
+                value={
+                    'original_pattern_id': user_pattern_id,
+                    'interaction_pattern': row['interaction_pattern'],
+                    'success_patterns': success_patterns,
+                    'promoted_at': datetime.now(UTC).isoformat(),
+                    'confidence': avg_confidence,
+                    'validation_count': validation_sources
+                }
+            )
+            
+            await upsert_global_pattern(engine, global_pattern)
+            return True
+    
+    return False
+
+async def get_pinned_memories(
+    engine: AsyncEngine,
+    user_id: str,
+    agent_name: Optional[str] = None,
+    memory_type: Optional[str] = None,
+    limit: int = 100
+) -> List[Dict[str, Any]]:
+    """Get pinned memories for a user, optionally filtered by agent or type"""
+    query_parts = ["SELECT * FROM agent_memories WHERE user_id = :user_id"]
+    params = {"user_id": user_id, "limit": limit}
+    
+    if agent_name:
+        query_parts.append("AND agent_name = :agent_name")
+        params["agent_name"] = agent_name
+    
+    if memory_type:
+        query_parts.append("AND memory_type = :memory_type")
+        params["memory_type"] = memory_type
+    
+    query_parts.append("ORDER BY importance DESC, timestamp DESC")
+    query_parts.append("LIMIT :limit")
+    
+    query = text(" ".join(query_parts))
+    
+    async with engine.begin() as conn:
+        result = await conn.execute(query, params)
+        memories = []
+        
+        for row in result.mappings():
+            memory = dict(row)
+            # Update access tracking
+            update_q = text("""
+                UPDATE agent_memories 
+                SET last_accessed = :now, access_count = access_count + 1
+                WHERE id = :id
+            """)
+            await conn.execute(update_q, {"now": datetime.now(UTC), "id": memory['id']})
+            memories.append(memory)
+        
+        return memories
 
 # --- Constants for Learning Types ---------------------------------------------
 
