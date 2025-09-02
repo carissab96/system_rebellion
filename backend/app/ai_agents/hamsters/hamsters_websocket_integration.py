@@ -129,20 +129,21 @@ class HamstersWebSocketHandler:
             # Store the decision in central memory bank
             if user_id:
                 decision_data = {
-                    'decision_id': str(decision.timestamp.timestamp()),
-                    'intervention_type': decision.intervention_type,
-                    'priority': decision.priority.value,
-                    'steve_assessment': decision.steve_assessment,
-                    'bob_suggestion': decision.bob_suggestion,
-                    'carl_calculation': decision.carl_calculation,
-                    'telepathic_consensus': decision.telepathic_consensus,
-                    'confidence': decision.confidence,
-                    'tools_required': decision.tools_required,
-                    'beer_consumption_estimate': decision.beer_consumption_estimate,
-                    'duct_tape_grade': decision.duct_tape_grade.value,
-                    'actual_squeaks': decision.actual_squeaks,
+                    "decision_id": uuid4().hex,         # unique
+                    "decision_timestamp": decision.timestamp.isoformat(),
+                    "intervention_type": decision.intervention_type,
+                    "priority": decision.priority.value,
+                    "steve_assessment": decision.steve_assessment,
+                    "bob_suggestion": decision.bob_suggestion,
+                    "carl_calculation": decision.carl_calculation,
+                    "telepathic_consensus": decision.telepathic_consensus,
+                    "confidence": decision.confidence,
+                    "tools_required": decision.tools_required,
+                    "beer_consumption_estimate": decision.beer_consumption_estimate,
+                    "duct_tape_grade": decision.duct_tape_grade.value,
+                    "actual_squeaks": decision.actual_squeaks,
                     'human_translation': decision.human_translation,
-                    'estimated_duration': decision.estimated_duration,
+                    "estimated_duration": int(decision.estimated_duration) if isinstance(decision.estimated_duration, (int, float)) else str(decision.estimated_duration),
                     'urgency': decision.urgency
                 }
                 
@@ -240,6 +241,11 @@ class HamstersWebSocketHandler:
         bob_squeak = random.choice(self.squeak_patterns['happy']) + " BEER!"
         carl_squeak = "*organizing duct tape* " + random.choice(self.squeak_patterns['normal'])
         
+        # Increment individual squeak counters
+        self.steve_squeaks += 1
+        self.bob_squeaks += 1
+        self.carl_squeaks += 1
+        
         return {
             'individual': {
                 'steve': steve_squeak,
@@ -254,6 +260,11 @@ class HamstersWebSocketHandler:
         steve_squeak = "*worried squeaking*"
         bob_squeak = "*confused chirping* WHAT HAPPENED?"
         carl_squeak = "*drops duct tape* *concerned squeak*"
+        
+        # Increment individual squeak counters
+        self.steve_squeaks += 1
+        self.bob_squeaks += 1
+        self.carl_squeaks += 1
         
         return {
             'individual': {
@@ -350,7 +361,6 @@ class HamstersWebSocketHandler:
         try:
             db_health = await self.db.get_database_health()
             performance = await self.db.get_hamster_performance_metrics(days=7)
-            
             return {
                 'agent_name': AGENT_NAME,
                 'handler_version': '3.0.0',
@@ -488,6 +498,6 @@ async def broadcast_hamster_event(event_data: Dict[str, Any]):
         }
     
     # This would integrate with your WebSocket broadcast system
-    logger.info(f"🐹📢 Broadcasting: {event_data.get('type', 'unknown')}")
+    logger.info(f"🐹📢 Broadcasting: {event_data.get('message_type', event_data.get('type', unknown))}")
     
     return event_data
