@@ -57,7 +57,7 @@ class VIC20DatabaseIntegration:
     async def initialize(self):
         """Initialize database connection"""
         if not self._initialized:
-            db_url = await get_db_url()
+            db_url = get_db_url()
             self.engine = create_async_engine(db_url)
             self._initialized = True
     

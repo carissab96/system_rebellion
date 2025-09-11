@@ -1,42 +1,47 @@
-// API Configuration - Using Vite environment variables
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-// WebSocket URL - automatically use wss:// for HTTPS sites, ws:// for HTTP
-const getWebSocketBaseUrl = () => {
-  if (import.meta.env.VITE_WS_URL) {
-    return import.meta.env.VITE_WS_URL;
+// config/constants.ts
+
+// ----- Base URLs (Vite) -----
+const rawApi = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:8000';
+export const API_BASE_URL = rawApi.replace(/\/+$/, ''); // strip trailing slash
+
+function computeWsBase(): string {
+  const envWs = import.meta.env.VITE_WS_URL as string | undefined;
+  if (envWs) return envWs.replace(/\/+$/, '');
+
+  // Derive from API_BASE_URL so HTTP and WS hit the same host:port
+  try {
+    const u = new URL(API_BASE_URL);
+    const proto = u.protocol === 'https:' ? 'wss:' : 'ws:';
+    return `${proto}//${u.host}`; // host includes port
+  } catch {
+    // Absolute worst-case fallback: current page origin
+    const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    return `${proto}//${window.location.host}`;
   }
-  
-  // Auto-detect protocol based on current page protocol
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const host = window.location.hostname;
-  const port = import.meta.env.DEV ? ':8000' : '';
-  
-  return `${protocol}//${host}${port}`;
-};
+}
+export const WS_BASE_URL = computeWsBase();
 
-export const WS_BASE_URL = getWebSocketBaseUrl();
-
-// Local Storage Keys
+// ----- Storage keys -----
 export const AUTH_TOKEN_KEY = 'access_token';
 export const REFRESH_TOKEN_KEY = 'refresh_token';
 
-// API Endpoints
+// ----- API endpoints (align with FastAPI include_router(prefix="/api")) -----
 export const API_ENDPOINTS = {
   AUTH: {
-    LOGIN: '/auth/token',
-    REGISTER: '/auth/register',
-    REFRESH_TOKEN: '/auth/refresh-token',
-    PROFILE: '/auth/me',
-    LOGOUT: '/auth/logout',
+    LOGIN: '/api/auth/token',
+    REGISTER: '/api/auth/register',
+    REFRESH_TOKEN: '/api/auth/refresh-token',
+    PROFILE: '/api/auth/me',
+    LOGOUT: '/api/auth/logout',
   },
   SYSTEM: {
-    METRICS: '/system/metrics',
-    STATUS: '/system/status',
-    CONFIG: '/system/config',
+    METRICS: '/api/metrics/system',
+    STATUS: '/api/system/status',  // keep if you actually have it
+    CONFIG: '/api/system/config',  // same here
   },
   AI_AGENTS: {
-    STATUS: '/ai-agents/status',
-    CONTROL: '/ai-agents/control',
+    STATUS: '/api/ai-agents/status',
+    CONTROL: '/api/ai-agents/control',
   },
   WEBSOCKET: {
     SYSTEM_METRICS: '/api/ws/system-metrics',
@@ -44,9 +49,11 @@ export const API_ENDPOINTS = {
   },
 } as const;
 
-// Default request timeout (in milliseconds)
+// ----- Timeouts / WS backoff -----
 export const DEFAULT_TIMEOUT = 10000;
 
-// WebSocket configuration
-export const WS_RECONNECT_INTERVAL = 3000; // 3 seconds
-export const WS_MAX_RECONNECT_ATTEMPTS = 5;
+export const WS_RECONNECT_INTERVAL =
+  Number(import.meta.env.VITE_WS_RECONNECT_INTERVAL ?? 1000); // ms
+
+export const WS_MAX_RECONNECT_ATTEMPTS =
+  Number(import.meta.env.VITE_WS_MAX_RECONNECT_ATTEMPTS ?? 20);

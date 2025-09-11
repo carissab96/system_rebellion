@@ -36,8 +36,17 @@ from app.ai_agents.meth_snail import router as meth_snail_router
 from rich.console import Console
 from rich.table import Table
 from rich.live import Live
+from app.services.metrics_repository import get_metrics_repository
 from app.core.learning_helpers import run_metadata_scheduler
-
+from app.core.websockets import get_websocket_manager
+from app.core.resilience import (
+    error_recovery,
+    RecoveryAction,
+    RecoveryStrategy,
+    ErrorSeverity,
+    get_circuit_breaker,
+    get_backpressure_handler
+)
 # Global reference to background tasks for cleanup
 background_tasks = []
 
@@ -94,6 +103,18 @@ async def lifespan(app: FastAPI):
         await init_db()
         logger.info("✅ Database initialization successful")
         
+        await get_metrics_repository()  # warms the singleton
+        logger.info("🟡 MetricsRepository initialized")
+        
+        # Initialize WebSocket manager
+        ws_manager = get_websocket_manager()
+        await ws_manager.start()
+        logger.info("Sir Hawkington websocket manager startup complete")
+        
+        # Initialize resilience components
+        await initialize_websocket_resilience()
+        logger.info("🛡️  WebSocket resilience system activated")
+
         # Initialize AI Agents ONCE through AgentManager
         agent_manager = await get_agent_manager()
         logger.info("🤖 AI Agents initialized and ready")
@@ -216,6 +237,7 @@ def create_application() -> FastAPI:
         return {"csrf_token": csrf_token}
 
     # Include websocket routes if they exist
+
     if hasattr(simplified_websocket_routes, 'router'):
         app.include_router(
             simplified_websocket_routes.router,
@@ -312,6 +334,51 @@ def create_application() -> FastAPI:
 
 
         
+async def initialize_websocket_resilience():
+    """Initialize WebSocket resilience components"""
+    # Register WebSocket error recovery strategies
+    error_recovery.register_strategy(
+        component="websocket",
+        error_type="ConnectionError",
+        recovery_action=RecoveryAction(
+            strategy=RecoveryStrategy.RETRY,
+            max_retries=3,
+            retry_delay=1.0,
+            exponential_backoff=True
+        )
+    )
+    
+    error_recovery.register_strategy(
+        component="websocket",
+        error_type="RuntimeError",
+        recovery_action=RecoveryAction(
+            strategy=RecoveryStrategy.CIRCUIT_BREAK,
+            max_retries=2,
+            retry_delay=5.0
+        )
+    )
+    
+    # Initialize circuit breaker for WebSocket connections
+    ws_circuit_breaker = get_circuit_breaker(
+        name="websocket_connection",
+        max_failures=5,
+        reset_timeout=30,
+        exponential_backoff_factor=2.0
+    )
+    
+    # Initialize backpressure handler for WebSocket messages
+    ws_backpressure = get_backpressure_handler(
+        name="websocket_messages",
+        max_buffer_size=1000,
+        sampling_strategy="latest"
+    )
+    
+    logger.info("🔄 WebSocket resilience components initialized")
+    return {
+        "circuit_breaker": ws_circuit_breaker,
+        "backpressure_handler": ws_backpressure
+    }
+
 # Create the app
 app = create_application()
 

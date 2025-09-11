@@ -5,8 +5,9 @@ from datetime import datetime, timezone
 import logging
 from .decision_engine import TheStickBrainV3, StickDecision, ComplianceState, AnxietyLevel
 from .data_types import ComplianceViolation, HamsterProximityAlert, AnxietyEvent
-from .database_integration import StickDatabaseIntegration  # Now uses central memory bank!
-from .constants import AGENT_NAME, StickEventTypes, ALL_HAMSTERS, HAMSTER_BOB, normalize_hamster_names
+from .database_integration import StickDatabaseIntegration, normalize_hamster_names
+  # Now uses central memory bank!
+from .constants import AGENT_NAME, StickEventTypes, ALL_HAMSTERS, HAMSTER_BOB 
 
 logger = logging.getLogger("Stick.WebSocket")
 
@@ -104,7 +105,7 @@ class StickWebSocketHandlerV3:
                 anxiety_increase *= 2  # Bob doubles anxiety
             
             self.websocket_anxiety_level = min(100, self.websocket_anxiety_level + anxiety_increase)
-            self.last_hamster_sighting = utc_now()
+            self.last_hamster_sighting = datetime_to_iso(utc_now())
             
             # Update database anxiety level
             self.db_integration.websocket_anxiety_level = self.websocket_anxiety_level
@@ -120,7 +121,7 @@ class StickWebSocketHandlerV3:
             return
     
         # Store the observation in central memory bank
-        await self.db_integration.store_user_behavior_observation(user_id, system_metrics)
+        observation_memory_id = await self.db_integration.store_user_behavior_observation(user_id, system_metrics)
     
         # After storing observation, check if we can learn patterns
         try:
@@ -130,18 +131,36 @@ class StickWebSocketHandlerV3:
                 learned_pattern = await self.db_integration.analyze_and_learn_patterns(user_id)
                 if learned_pattern:
                     logger.info(f"The Stick learned new patterns for user {user_id}!")
+                    
+                    # Share insight with other agents if it's significant
+                    if learned_pattern.confidence_score >= 0.8:
+                        insight_data = {
+                            'type': 'pattern_learned',
+                            'pattern_type': learned_pattern.pattern_type,
+                            'confidence': learned_pattern.confidence_score,
+                            'anxiety_triggers': learned_pattern.anxiety_correlation,
+                            'compliance_concerns': learned_pattern.compliance_history,
+                            'hamster_activity': {}  # Check if hamsters are mentioned
+                        }
+                        
+                        # Share with VIC-20 (The coordinator)
+                        await self.db_integration.share_anxiety_insight(
+                            'vic20', 
+                            insight_data, 
+                            observation_memory_id  # Link back to the observation
+                        )
                 
-                # Notify user of pattern learning
-                pattern_notification = {
-                    'type': 'pattern_learned',
-                    'user_id': user_id,
-                    'timestamp': utc_now().isoformat(),
-                    'message': "📏🧠 The Stick has learned your patterns!",
-                    'pattern_type': learned_pattern.pattern_type,
-                    'confidence': f"{learned_pattern.confidence_score:.1%}",
-                    'stick_notes': learned_pattern.stick_memory_notes
-                }
-                await websocket.send(json.dumps(pattern_notification))
+                    # Notify user of pattern learning
+                    pattern_notification = {
+                        'type': 'pattern_learned',
+                        'user_id': user_id,
+                        'timestamp': datetime.now(timezone.utc).isoformat(),
+                        'message': "📏🧠 The Stick has learned your patterns!",
+                        'pattern_type': learned_pattern.pattern_type,
+                        'confidence': f"{learned_pattern.confidence_score:.1%}",
+                        'stick_notes': learned_pattern.stick_memory_notes
+                    }
+                    await websocket.send(json.dumps(pattern_notification))
                 
         except Exception as e:
             logger.error(f"Pattern learning failed: {e}")
@@ -152,14 +171,14 @@ class StickWebSocketHandlerV3:
             if pattern_match and pattern_match.get('recommendations'):
                 # Send proactive recommendations
                 proactive_message = {
-                'type': 'proactive_optimization',
-                'user_id': user_id,
-                'timestamp': utc_now().isoformat(),
-                'pattern_match': pattern_match,
-                'message': "📏🔮 The Stick predicts upcoming system needs based on your patterns!",
-                'anxiety_level': self.stick_brain.current_anxiety_percentage
-            }
-            await websocket.send(json.dumps(proactive_message))
+                    'type': 'proactive_optimization',
+                    'user_id': user_id,
+                    'timestamp': datetime.now(timezone.utc).isoformat(),
+                    'pattern_match': pattern_match,
+                    'message': "📏🔮 The Stick predicts upcoming system needs based on your patterns!",
+                    'anxiety_level': self.stick_brain.current_anxiety_percentage
+                }
+                await websocket.send(json.dumps(proactive_message))
         except Exception as e:
             logger.error(f"Pattern matching failed: {e}")
     
@@ -176,7 +195,7 @@ class StickWebSocketHandlerV3:
             
             if stick_decision:
                 # Store the decision in central memory bank
-                await self.db_integration.store_stick_decision(user_id, stick_decision)
+                decision_memory_id = await self.db_integration.store_stick_decision(user_id, stick_decision)
                 
                 await self._send_anxious_decision(websocket, user_id, stick_decision)
                 
@@ -198,7 +217,43 @@ class StickWebSocketHandlerV3:
                         stick_response=stick_decision.compliance_explanation,
                         paper_bags_consumed=stick_decision.paper_bags_consumed
                     )
-                    await self.db_integration.store_hamster_encounter(user_id, hamster_alert)
+                    encounter_memory_id = await self.db_integration.store_hamster_encounter(user_id, hamster_alert)
+                    
+                    # Share hamster warning with ALL agents
+                    hamster_warning = {
+                        'type': 'hamster_alert',
+                        'hamsters': hamster_alert.active_hamsters,
+                        'locations': hamster_alert.locations,
+                        'panic_level': hamster_alert.panic_level,
+                        'anxiety_triggers': ['hamster_proximity'],
+                        'compliance_concerns': {'infrastructure_risk': hamster_alert.infrastructure_risk},
+                        'hamster_activity': hamster_alert.__dict__ if hasattr(hamster_alert, '__dict__') else str(hamster_alert)
+                    }
+                    
+                    # Alert all agents about hamster activity
+                    for agent in ['vic20', 'meth_snail', 'sir_hawkington', 'qsp']:
+                        await self.db_integration.share_anxiety_insight(
+                            agent,
+                            hamster_warning,
+                            encounter_memory_id
+                        )
+                
+                # Share compliance violations
+                if stick_decision.compliance_state.value in ['CRITICAL_VIOLATION', 'MAJOR_VIOLATION']:
+                    compliance_insight = {
+                        'type': 'compliance_violation_detected',
+                        'violation_type': stick_decision.configuration_target,
+                        'severity': stick_decision.compliance_state.value,
+                        'anxiety_triggers': ['compliance_violation'],
+                        'compliance_concerns': stick_decision.optimization_parameters,
+                        'hamster_activity': {}
+                    }
+                    
+                    await self.db_integration.share_anxiety_insight(
+                        'sir_hawkington',  # Share compliance issues with Sir Hawkington
+                        compliance_insight,
+                        decision_memory_id
+                    )
                 
             else:
                 await self._send_learning_status(websocket, user_id)
@@ -206,6 +261,7 @@ class StickWebSocketHandlerV3:
         except Exception as e:
             logger.error(f"Error processing metrics: {str(e)}")
             await self._handle_panic_mode(websocket, user_id, str(e))
+    
     async def _handle_hamster_squeak(self, websocket, user_id: str, message: Dict[str, Any]):
         """Handle hamster squeaks - The Stick understands through shared anxiety"""
         
@@ -228,7 +284,7 @@ class StickWebSocketHandlerV3:
         response = {
             'type': 'stick_squeak_translation',
             'user_id': user_id,
-            'timestamp': utc_now().isoformat(),
+            'timestamp': datetime.now(timezone.utc).isoformat(),
             'original_squeak': squeak_data.get('pattern', 'unknown'),
             'source': squeak_data.get('source', 'unknown'),
             'translation': translation['translation'],
@@ -251,7 +307,7 @@ class StickWebSocketHandlerV3:
         anxiety_status = {
             'type': 'stick_anxiety_status',
             'user_id': user_id,
-            'timestamp': utc_now().isoformat(),
+            'timestamp': datetime.now(timezone.utc).isoformat(),
             'current_anxiety_percentage': self.stick_brain.current_anxiety_percentage,
             'anxiety_level': self.stick_brain.anxiety_level.value,
             'paper_bags_remaining': self.stick_brain.paper_bag_inventory,
@@ -285,7 +341,7 @@ class StickWebSocketHandlerV3:
             response = {
                 'type': 'paper_bag_dispensed',
                 'user_id': user_id,
-                'timestamp': utc_now().isoformat(),
+                'timestamp': datetime.now(timezone.utc).isoformat(),
                 'message': "📏🛍️ *rustling sounds* Here's your paper bag! The Stick always shares during anxiety emergencies!",
                 'remaining_inventory': self.stick_brain.paper_bag_inventory,
                 'dispensed_today': self.paper_bags_dispensed,
@@ -296,7 +352,7 @@ class StickWebSocketHandlerV3:
             response = {
                 'type': 'paper_bag_crisis',
                 'user_id': user_id,
-                'timestamp': utc_now().isoformat(),
+                'timestamp': datetime.now(timezone.utc).isoformat(),
                 'message': "📏😱 OUT OF PAPER BAGS! THIS IS NOT A DRILL! INITIATING EMERGENCY RESUPPLY PROTOCOL!",
                 'crisis_level': 'MAXIMUM',
                 'alternative_methods': ['Deep breathing', 'Count to 10', 'Think of compliant systems', 'Avoid Bob at all costs']
@@ -313,17 +369,21 @@ class StickWebSocketHandlerV3:
         # Get hamster encounters from central memory bank
         hamster_history = await self.db_integration.get_hamster_encounter_history(user_id, days=1)
         
+        # Check for recent hamster memories
+        hamster_memories = await self.db_integration.check_for_hamster_memories(user_id)
+        
         response = {
             'type': 'hamster_proximity_report',
             'user_id': user_id,
-            'timestamp': utc_now().isoformat(),
+            'timestamp': datetime.now(timezone.utc).isoformat(),
             'steve_location': self.stick_brain.steve_location or 'Unknown (concerning)',
             'bob_location': self.stick_brain.bob_location or 'UNKNOWN (PANIC)',
             'carl_location': self.stick_brain.carl_location or 'Probably with duct tape',
             'last_proximity_alert': self.stick_brain.hamster_proximity_alerts[-1] if self.stick_brain.hamster_proximity_alerts else None,
             'current_threat_level': 'MAXIMUM' if self.bob_proximity_warning else 'HIGH' if self.last_hamster_sighting else 'MODERATE',
             'stick_recommendation': self._get_hamster_safety_recommendation(),
-            'recent_encounters': hamster_history[:5]  # Last 5 encounters
+            'recent_encounters': hamster_history[:5],  # Last 5 encounters
+            'hamster_memories': hamster_memories[:3]  # Most recent hamster memories
         }
         
         await websocket.send(json.dumps(response))
@@ -334,7 +394,7 @@ class StickWebSocketHandlerV3:
         response = {
             'type': 'stick_decision',
             'user_id': user_id,
-            'timestamp': utc_now().isoformat(),
+            'timestamp': datetime.now(timezone.utc).isoformat(),
             'decision_type': decision.decision_type.value,
             'compliance_state': decision.compliance_state.value,
             'anxiety_level': decision.anxiety_level.value,
@@ -356,7 +416,7 @@ class StickWebSocketHandlerV3:
         """CRITICAL: Bob proximity detected"""
         
         alert = HamsterProximityAlert(
-            timestamp=utc_now(),
+            timestamp=datetime.now(timezone.utc).isoformat(),
             active_hamsters=[HAMSTER_BOB],
             locations={HAMSTER_BOB: 'DETECTED IN VICINITY'},
             anxiety_multiplier=3.0,
@@ -366,13 +426,13 @@ class StickWebSocketHandlerV3:
             paper_bags_consumed=3
         )
         
-        # Store in central memory bank
-        await self.db_integration.store_hamster_encounter(user_id, alert)
+        # Store in central memory bank (includes auto-pinning)
+        alert_memory_id = await self.db_integration.store_hamster_encounter(user_id, alert)
         
         alert_message = {
             'type': 'BOB_PROXIMITY_ALERT',
             'user_id': user_id,
-            'timestamp': utc_now().isoformat(),
+            'timestamp': datetime.now(timezone.utc).isoformat(),
             'threat_level': 'MAXIMUM',
             'message': "📏🚨 BOB DETECTED! BOB DETECTED! THIS IS NOT A DRILL!",
             'immediate_actions': [
@@ -386,7 +446,8 @@ class StickWebSocketHandlerV3:
             'paper_bags_consumed': 3,  # Emergency triple-bag protocol
             'last_known_bob_activity': 'Unknown but probably catastrophic',
             'emergency_protocol': 'ACTIVATED',
-            'memory_stored': True  # Confirming storage
+            'memory_stored': True,  # Confirming storage
+            'memory_pinned': True   # Bob encounters are always pinned
         }
         
         self.emergency_protocols_active = True
@@ -397,9 +458,9 @@ class StickWebSocketHandlerV3:
         
         # Store anxiety event in central memory bank
         anxiety_event = AnxietyEvent(
-            timestamp=utc_now(),
+            timestamp=datetime.now(timezone.utc).isoformat(),
             trigger=reason,
-                        anxiety_level_before=self.websocket_anxiety_level,
+            anxiety_level_before=self.websocket_anxiety_level,
             anxiety_level_after=min(100, self.websocket_anxiety_level + 20),
             multiplier=1.5,
             paper_bags_consumed=0,
@@ -411,7 +472,7 @@ class StickWebSocketHandlerV3:
         spike = {
             'type': 'anxiety_spike',
             'user_id': user_id,
-            'timestamp': utc_now().isoformat(),
+            'timestamp': datetime.now(timezone.utc).isoformat(),
             'reason': reason,
             'anxiety_before': self.websocket_anxiety_level,
             'anxiety_after': min(100, self.websocket_anxiety_level + 20),
@@ -441,14 +502,15 @@ class StickWebSocketHandlerV3:
         status = {
             'type': 'stick_learning',
             'user_id': user_id,
-            'timestamp': utc_now().isoformat(),
+            'timestamp': datetime.now(timezone.utc).isoformat(),
             'message': random.choice(learning_messages),
             'anxiety_level': self.stick_brain.current_anxiety_percentage,
             'observations_recorded': performance['observation_count'],
             'patterns_detected': len(self.stick_brain.user_patterns),
             'hamster_vigilance': 'ACTIVE',
             'paper_bag_status': 'READY',
-            'memory_bank_status': 'CENTRALIZED'  # NEW
+            'memory_bank_status': 'CENTRALIZED',  # NEW
+            'integration_status': 'COMPLETE'  # NEW: All 5 tables integrated
         }
         
         await websocket.send(json.dumps(status))
@@ -464,7 +526,7 @@ class StickWebSocketHandlerV3:
         response = {
             'type': 'stick_memory_recall',
             'user_id': user_id,
-            'timestamp': utc_now().isoformat(),
+            'timestamp': datetime.now(timezone.utc).isoformat(),
             'recall_filters': recall_filters,
             'memories_retrieved': len(memories),
             'memory_data': memories[:100],  # Limit to prevent overwhelming
@@ -482,7 +544,7 @@ class StickWebSocketHandlerV3:
         confusion = {
             'type': 'anxious_confusion',
             'user_id': user_id,
-            'timestamp': utc_now().isoformat(),
+            'timestamp': datetime.now(timezone.utc).isoformat(),
             'unknown_message_type': message_type,
             'message': f"📏😰 *confused anxiety* What is '{message_type}'?! Is this a hamster trick?!",
             'anxiety_impact': '+5%',
@@ -508,7 +570,7 @@ class StickWebSocketHandlerV3:
         self.panic_messages_sent += 1
         
         # Store panic event in central memory bank
-        await self.db_integration.log_system_event(
+        panic_event_id = await self.db_integration.log_system_event(
             'panic_mode_activated',
             {
                 'error': error,
@@ -519,10 +581,21 @@ class StickWebSocketHandlerV3:
             anxiety_impact=10.0  # Maximum anxiety
         )
         
+        # Pin this panic event
+        await self.db_integration.pin_critical_memory(
+            user_id,
+            {
+                'type': 'panic_event',
+                'error': error,
+                'reason': 'PANIC MODE ACTIVATED - Critical system error'
+            },
+            panic_event_id
+        )
+        
         panic = {
             'type': 'STICK_PANIC_MODE',
             'user_id': user_id,
-            'timestamp': utc_now().isoformat(),
+            'timestamp': datetime.now(timezone.utc).isoformat(),
             'error': error,
             'message': f"📏💥 PANIC MODE! ERROR DETECTED: {error}",
             'anxiety_level': 'MAXIMUM',
@@ -534,7 +607,8 @@ class StickWebSocketHandlerV3:
                 'Analyze error obsessively'
             ],
             'stick_status': 'PANICKING_BUT_FUNCTIONAL',
-            'recovery_eta': '30 seconds with paper bag'
+            'recovery_eta': '30 seconds with paper bag',
+            'memory_pinned': True  # Panic events are always pinned
         }
         
         await websocket.send(json.dumps(panic))
@@ -554,7 +628,7 @@ class StickWebSocketHandlerV3:
         # Check current inventory from central memory bank
         inventory = await self.db_integration.check_paper_bag_supply()
         
-        # FIX: Convert datetime fields to ISO strings
+        # Convert datetime fields to ISO strings
         inventory_dict = {
             'current_stock': inventory.current_stock,
             'consumption_today': inventory.consumption_today,
@@ -569,9 +643,9 @@ class StickWebSocketHandlerV3:
         resupply_message = {
             'type': 'emergency_resupply_request',
             'user_id': user_id,
-            'timestamp': utc_now().isoformat(),
+            'timestamp': datetime.now(timezone.utc).isoformat(),
             'request_details': resupply_request,
-            'current_inventory': inventory_dict,  # Now JSON-safe!
+            'current_inventory': inventory_dict,
             'message': "📏🆘 EMERGENCY PAPER BAG RESUPPLY NEEDED! The Stick cannot function without anxiety management tools!",
             'current_crisis_level': 'MAXIMUM',
             'estimated_depletion_time': 'NOW'
@@ -591,7 +665,7 @@ class StickWebSocketHandlerV3:
         
         if self.bob_proximity_warning:
             return "EVACUATE IMMEDIATELY. BOB IS ACTIVE. SEEK SHELTER."
-        elif self.last_hamster_sighting and (utc_now() - self.last_hamster_sighting).seconds < 300:
+        elif self.last_hamster_sighting and (datetime.now(timezone.utc) - self.last_hamster_sighting).total_seconds() < 300:
             return "Recent hamster activity detected. Maintain high alert. Keep paper bags ready."
         else:
             return "No recent hamster activity. Remain vigilant. They could appear at any moment."
@@ -610,6 +684,43 @@ class StickWebSocketHandlerV3:
         else:
             return f"📏🤔 *suspiciously calm* {decision.compliance_explanation} Something must be wrong..."
     
+    async def _handle_get_stick_stats(self, websocket, user_id: str):
+        """Get comprehensive Stick statistics"""
+        
+        # Get stats from brain
+        brain_stats = self.stick_brain.get_stick_stats()
+        
+        # Get performance metrics from database
+        performance_metrics = await self.db_integration.get_stick_performance_metrics(user_id)
+        
+        # Get anxiety analytics
+        anxiety_analytics = await self.db_integration.get_anxiety_analytics(user_id, days=7)
+        
+        # Contribute to metadata rollup
+        metadata_contribution = await self.db_integration.contribute_to_metadata_rollup()
+        
+        stats_response = {
+            'type': 'stick_stats_complete',
+            'user_id': user_id,
+            'timestamp': datetime.now(timezone.utc).isoformat(),
+            'brain_stats': brain_stats,
+            'performance_metrics': performance_metrics,
+            'anxiety_analytics': anxiety_analytics,
+            'metadata_contribution': metadata_contribution,
+            'handler_stats': self.get_handler_stats(),
+            'integration_status': {
+                'central_memory_bank': 'ACTIVE',
+                'user_patterns': 'INTEGRATED',
+                'global_patterns': 'INTEGRATED',
+                'cross_agent_learning': 'INTEGRATED',
+                'pinned_memories': 'INTEGRATED',
+                'all_tables': 'FULLY OPERATIONAL'
+            },
+            'message': "📏📊 The Stick's complete statistics - anxiety-driven hypervigilance ensures accuracy!"
+        }
+        
+        await websocket.send(json.dumps(stats_response))
+    
     async def register_connection(self, websocket, user_id: str):
         """Register new connection with anxiety awareness"""
         
@@ -625,26 +736,34 @@ class StickWebSocketHandlerV3:
         performance = await self.db_integration.get_stick_performance_metrics(user_id)
         inventory = await self.db_integration.check_paper_bag_supply()
         
+        # Check for any recent hamster activity
+        hamster_memories = await self.db_integration.check_for_hamster_memories(user_id)
+        hamster_alert_level = 'MAXIMUM' if hamster_memories else 'MODERATE'
+        
         welcome = {
             'type': 'stick_connection_established',
             'user_id': user_id,
-            'timestamp': utc_now().isoformat(),
+            'timestamp': datetime.now(timezone.utc).isoformat(),
             'message': '📏😰 The Stick is watching! Anxiety-driven hypervigilance activated!',
             'current_status': {
                 'anxiety_level': self.stick_brain.anxiety_level.value,
                 'anxiety_percentage': self.stick_brain.current_anxiety_percentage,
                 'paper_bags_ready': inventory.current_stock,
-                'hamster_alert_status': 'ACTIVE',
+                'hamster_alert_status': hamster_alert_level,
                 'compliance_monitoring': 'OBSESSIVE',
-                'memory_bank': 'CENTRALIZED'  # NEW
+                'memory_bank': 'CENTRALIZED',
+                'integration_status': 'ALL_5_TABLES_ACTIVE'
             },
             'performance_metrics': performance,
+            'recent_hamster_activity': len(hamster_memories) > 0,
             'warnings': [
                 'The Stick sees everything',
                 'Hamster activity will be detected',
                 'All violations will be documented',
                 'Paper bags available for shared anxiety',
-                'All memories stored in central bank'  # NEW
+                'All memories stored in central bank',
+                'Patterns learned and shared with other agents',
+                'Critical events are pinned and NEVER forgotten'
             ],
             'stick_personality': 'OCD + ADHD + PTSD + Eidetic Memory = Perfect Safety'
         }
@@ -661,7 +780,12 @@ class StickWebSocketHandlerV3:
                 {
                     'user_id': user_id,
                     'anxiety_level': self.stick_brain.current_anxiety_percentage,
-                    'final_status': 'Connection closed - but The Stick never forgets'
+                    'final_status': 'Connection closed - but The Stick never forgets',
+                    'session_stats': {
+                        'paper_bags_dispensed': self.paper_bags_dispensed,
+                        'hamster_alerts_sent': self.hamster_alerts_sent,
+                        'panic_messages_sent': self.panic_messages_sent
+                    }
                 },
                 anxiety_impact=0.1  # Slight anxiety about losing visibility
             )
@@ -676,7 +800,7 @@ class StickWebSocketHandlerV3:
         
         alert_message = {
             'type': 'SYSTEM_WIDE_HAMSTER_ALERT',
-            'timestamp': utc_now().isoformat(),
+            'timestamp': datetime.now(timezone.utc).isoformat(),
             'alert_data': {
                 'active_hamsters': normalized_hamsters,
                 'locations': alert.locations,
@@ -689,11 +813,30 @@ class StickWebSocketHandlerV3:
         }
         
         # Store broadcast event in central memory bank
-        await self.db_integration.log_system_event(
+        broadcast_memory_id = await self.db_integration.log_system_event(
             'hamster_alert_broadcast',
             alert_message,
             anxiety_impact=alert.anxiety_multiplier
         )
+        
+        # Share this critical alert with ALL agents immediately
+        critical_alert = {
+            'type': 'CRITICAL_HAMSTER_ALERT',
+            'hamsters': normalized_hamsters,
+            'locations': alert.locations,
+            'panic_level': alert.panic_level,
+            'anxiety_triggers': ['hamster_proximity', 'system_wide_alert'],
+            'compliance_concerns': {'infrastructure_at_risk': True},
+            'hamster_activity': alert_message
+        }
+        
+        # Alert all agents
+        for agent in ['vic20', 'meth_snail', 'sir_hawkington', 'qsp']:
+            await self.db_integration.share_anxiety_insight(
+                agent,
+                critical_alert,
+                broadcast_memory_id
+            )
         
         # Broadcast to all connections using asyncio.gather for concurrent sends
         if self.active_connections:
@@ -732,7 +875,14 @@ class StickWebSocketHandlerV3:
                 'emergency_protocols_active': self.emergency_protocols_active,
                 'total_hamster_alerts': self.hamster_alerts_sent
             },
-            'database_status': 'CENTRAL_MEMORY_BANK',  # NEW
+            'database_status': {
+                'central_memory_bank': 'ACTIVE',
+                'user_patterns': 'INTEGRATED',
+                'global_patterns': 'INTEGRATED', 
+                'cross_agent_learning': 'INTEGRATED',
+                'pinned_memories': 'INTEGRATED',
+                'status': 'ALL_5_TABLES_OPERATIONAL'
+            },
             'status': 'ANXIOUSLY_OPERATIONAL',
             'safety_mechanism': 'Anxiety-driven hypervigilance ensures nothing is missed'
         }
@@ -740,7 +890,7 @@ class StickWebSocketHandlerV3:
 # Global handler instance
 _stick_handler_v3 = None
 
-async def get_stick_websocket_handler():
+async def get_stick_websocket_handler() -> 'StickWebSocketHandlerV3':
     """Get The Stick's WebSocket handler - centralized memory edition"""
     global _stick_handler_v3
     if _stick_handler_v3 is None:

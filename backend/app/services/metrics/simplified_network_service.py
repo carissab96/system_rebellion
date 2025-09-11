@@ -20,9 +20,15 @@ import psutil
 import time
 import logging
 import socket
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional
 import asyncio
+
+UTC = timezone.utc
+
+def utc_now() -> datetime:
+    """Get current UTC time"""
+    return datetime.now(UTC)
 
 from app.optimization.resource_monitor import ResourceMonitor
 

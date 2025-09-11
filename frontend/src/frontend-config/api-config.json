@@ -9,36 +9,6 @@
         "handler": "get_csrf_token"
       },
       {
-        "method": "POST",
-        "path": "/register",
-        "handler": "register_user"
-      },
-      {
-        "method": "POST",
-        "path": "/token",
-        "handler": "login_for_access_token"
-      },
-      {
-        "method": "GET",
-        "path": "/csrf_token",
-        "handler": "get_csrf_token"
-      },
-      {
-        "method": "POST",
-        "path": "/refresh-token",
-        "handler": "refresh_access_token"
-      },
-      {
-        "method": "POST",
-        "path": "/login",
-        "handler": "login"
-      },
-      {
-        "method": "GET",
-        "path": "/validate-token",
-        "handler": "validate_token"
-      },
-      {
         "method": "GET",
         "path": "/csrf_token",
         "handler": "get_csrf_token"
@@ -60,31 +30,6 @@
       }
     ],
     "users": [
-      {
-        "method": "POST",
-        "path": "/profile",
-        "handler": "update_user_profile"
-      },
-      {
-        "method": "GET",
-        "path": "/{profile_id}",
-        "handler": "get_optimization_profile"
-      },
-      {
-        "method": "PUT",
-        "path": "/{profile_id}",
-        "handler": "update_optimization_profile"
-      },
-      {
-        "method": "DELETE",
-        "path": "/{profile_id}",
-        "handler": "delete_optimization_profile"
-      },
-      {
-        "method": "POST",
-        "path": "/{profile_id}/activate",
-        "handler": "activate_profile"
-      },
       {
         "method": "POST",
         "path": "/profiles/{profile_id}/apply",
@@ -167,7 +112,12 @@
       {
         "method": "GET",
         "path": "/system",
-        "handler": "get_metrics"
+        "handler": "get_system_snapshot"
+      },
+      {
+        "method": "POST",
+        "path": "/metrics",
+        "handler": "post_metrics"
       },
       {
         "method": "GET",
@@ -193,16 +143,17 @@
         "method": "POST",
         "path": "/disk-cleanup",
         "handler": "request_disk_cleanup"
+      },
+      {
+        "method": "GET",
+        "path": "/optimization-metrics",
+        "handler": "get_optimization_metrics"
       }
     ],
     "websockets": [
       {
         "path": "/simple-metrics",
         "handler": "simple_metrics_socket"
-      },
-      {
-        "path": "/ws/system-metrics",
-        "handler": "system_metrics_socket"
       },
       {
         "path": "/ws/system-metrics",

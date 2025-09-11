@@ -14,10 +14,10 @@ from datetime import datetime, timezone
 
 # Import individual handlers for non-metrics operations
 from .sir_hawkington.hawks_websocket_integration import get_hawkington_websocket_handler
-from .meth_snail.methys_websocket_integration import get_meth_snail_websocket_handler
+from .meth_snail.websocket_handler import get_meth_snail_ws_handler
 from .hamsters.hamsters_websocket_integration import get_hamsters_websocket_handler
-from .the_stick.stick_websocket_integration import get_stick_websocket_handler
-from .vic_20_sage.vic20_websocket_integration import get_vic20_sage_websocket_handler
+from .the_stick.sticks_websocket_integration import get_stick_websocket_handler
+from .vic_20_sage.vic20_websocket_handler import get_vic20_sage_websocket_handler
 from .quantum_shadow_people.qsp_websocket_integration import get_qsp_websocket_handler
 
 logger = logging.getLogger("SystemRebellion.WebSocketRouter")
@@ -49,12 +49,12 @@ class SystemRebellionWebSocketRouter:
         try:
             # Initialize handlers for non-metrics operations
             self.agent_handlers = {
-                'sir_hawkington': await get_hawkington_websocket_handler(),
-                'meth_snail': await get_meth_snail_websocket_handler(),
-                'hamsters': await get_hamsters_websocket_handler(),
-                'the_stick': await get_stick_websocket_handler(),
-                'quantum_shadow_people': await get_qsp_websocket_handler(),
-                'vic_20_sage': await get_vic20_sage_websocket_handler()
+                'sir_hawkington': get_hawkington_websocket_handler(),
+                'meth_snail': get_meth_snail_ws_handler(),
+                'hamsters': get_hamsters_websocket_handler(),
+                'the_stick': get_stick_websocket_handler(),
+                'quantum_shadow_people': get_qsp_websocket_handler(),
+                'vic_20_sage': get_vic20_sage_websocket_handler()
             }
             
             self._initialized = True
@@ -487,7 +487,7 @@ async def test_websocket_router():
     print(" 🚀⚡ WEBSOCKET ROUTER TEST - TRIAGE ARCHITECTURE COMPATIBILITY")
     print("="*80)
     
-    print(f"\n🕐 Test Started: {utc_now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"\n🕐 Test Started: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}")
     
     try:
         # Initialize WebSocket router
@@ -617,7 +617,7 @@ async def test_websocket_router():
         print(f"\n💥 WEBSOCKET ROUTER TEST FAILED: {str(e)}")
         print("This indicates WebSocket handler initialization or routing issues")
     
-    print(f"\n🕐 Test Completed: {utc_now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"\n🕐 Test Completed: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}")
     print("\n" + "="*80)
     print(" 🚀✨ WEBSOCKET ROUTER TEST COMPLETE")
     print("="*80)

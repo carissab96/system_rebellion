@@ -99,39 +99,34 @@ export const useLoginForm = (isOpen: boolean, onClose: () => void) => {
       await dispatch(authSlice.fetchCsrfToken()).unwrap();
 
       // Make login request
+      const body = new URLSearchParams({
+        username: formData.email.trim(),
+        password: formData.password.trim(),
+        grant_type: 'password',
+        scope: ''
+      })
       const response = await fetch('/api/auth/token', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
           'X-CSRFToken': csrfToken!
         },
-        body: new URLSearchParams({
-          username: formData.email,
-          password: formData.password,
-          grant_type: 'password'
-        })
+        body: body
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Login failed');
+        let msg = '';
+        try { msg = JSON.stringify(await response.json()); } catch { msg = await response.text();}
+        throw new Error(`Login failed: ${response.status} ${msg}`);
       }
-
-      const data: LoginResponse = await response.json();
-      
-      // Transform backend response to frontend User type
-      const userData = {
-        id: data.user.id,
-        email: data.user.email,
-        first_name: data.user.first_name,
-        last_name: data.user.last_name,
-        token: data.access_token,
-        is_onboarded: data.user.is_onboarded
-      };
+      const data = await response.json();
+      dispatch(authSlice.loginSuccess({ user: data.user, token: data.access_token }));
+      localStorage.setItem('access_token', data.access_token);
+      localStorage.setItem('user', JSON.stringify(data.user));
       
       // Dispatch login success
       dispatch(authSlice.loginSuccess({ 
-        user: userData, 
+        user: data.user, 
         token: data.access_token 
       }));
       

@@ -726,3 +726,27 @@ async def initialize_agents(self):
         except Exception as e:
             self.logger.error("Error shutting down agent '%s': %s", name, e, exc_info=True)
             return {"status": "error", "name": name, "error": str(e)}
+# --- test shim for harness (no side effects, no fake data) ---
+async def test_agent_manager() -> dict:
+    """
+    Returns lightweight status of the agent manager for test harness.
+    No writes, no fake data.
+    """
+    try:
+        mgr = await get_agent_manager()
+        active = []
+        try:
+            active = await mgr.get_active_agents()
+        except Exception:
+            # Older managers may not have get_active_agents; best-effort.
+            pass
+        return {
+            "ok": True,
+            "manager": type(mgr).__name__,
+            "active_agents": active,
+        }
+    except Exception as e:
+        return {
+            "ok": False,
+            "error": str(e),
+        }

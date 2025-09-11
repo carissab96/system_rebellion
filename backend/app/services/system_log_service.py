@@ -9,7 +9,7 @@ import logging
 import asyncio
 from typing import List, Dict, Optional, Any
 from datetime import datetime
-import time
+from datetime import timezone
 from collections import deque
 
 class LogEntry:
@@ -17,7 +17,7 @@ class LogEntry:
         self.message = message
         self.level = level  # "info", "warning", "error", "success", "command"
         self.source = source  # "auth", "system", "command", "tuner", etc.
-        self.timestamp = timestamp or utc_now()
+        self.timestamp = timestamp or datetime.now(timezone.utc)
     
     def to_dict(self) -> Dict[str, Any]:
         return {

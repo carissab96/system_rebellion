@@ -157,7 +157,7 @@ class BaseAIAgent(ABC):
     
     def get_base_status(self) -> Dict[str, Any]:
         """Get base status information common to all agents"""
-        uptime = utc_now().isoformat() - self.initialization_time
+        uptime = (utc_now() - datetime.fromisoformat(self.initialization_time.rstrip('()'))).total_seconds()
         avg_processing_time = (
             self.total_processing_time / max(self.processing_count, 1) 
             if self.processing_count > 0 else 0.0

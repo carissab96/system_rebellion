@@ -10,8 +10,8 @@ issues, just pure data routed through Sir Hawkington's Triage Engine.
 
 import asyncio
 import logging
-from datetime import datetime
-from typing import Dict, Any
+from datetime import datetime, timezone
+from typing import Dict, Any, Optional
 
 from app.core.resilience import get_circuit_breaker
 
@@ -20,6 +20,15 @@ from app.services.metrics.simplified_memory_service import SimplifiedMemoryServi
 from app.services.metrics.simplified_disk_service import SimplifiedDiskService
 from app.services.metrics.simplified_network_service import SimplifiedNetworkService
 
+UTC = timezone.utc
+
+# def datetime_to_iso(dt: Optional[datetime]) -> Optional[str]:
+#     """Convert datetime to ISO format string"""
+#     return dt.isoformat() if dt else None
+
+def utc_now() -> datetime:
+    """Get current UTC time"""
+    return datetime.now(UTC)
 class SimplifiedMetricsService:
     """
     Simplified metrics service that combines all individual metrics services.

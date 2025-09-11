@@ -930,6 +930,16 @@ async def run_vic20_websocket_server(port: Optional[int] = None):
     handler = VIC20SageWebSocketHandler(port)
     await handler.start_server()
 
+# Singleton instance
+_vic20_ws_handler = None
+
+async def get_vic20_sage_websocket_handler() -> VIC20SageWebSocketHandler:
+    """Get the singleton instance of VIC20SageWebSocketHandler"""
+    global _vic20_ws_handler
+    if _vic20_ws_handler is None:
+        _vic20_ws_handler = VIC20SageWebSocketHandler()
+    return _vic20_ws_handler
+
 if __name__ == "__main__":
     import sys
     

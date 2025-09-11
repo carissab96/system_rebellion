@@ -1,7 +1,7 @@
 # app/ai_agents/sir_hawkington/websocket_handler.py
 """
-Sir Hawkington WebSocket Handler - Central Memory Bank Edition
-Aristocratic WebSocket communication with proper central memory integration
+Sir Hawkington WebSocket Handler - Full 5-Table Architecture Edition
+Aristocratic WebSocket communication with pattern learning
 """
 
 import asyncio
@@ -11,7 +11,10 @@ from datetime import datetime, timezone
 
 from .decision_engine import sir_hawkington_brain, HawkingtonDecision
 from .database_integration import HawkingtonDatabaseIntegration
-from .constants import HawkingtonEventTypes, AGENT_NAME
+from .constants import (
+    AGENT_NAME, HawkingtonEventTypes, LEARNING_THRESHOLDS,
+    ARISTOCRATIC_RESPONSES
+)
 
 # Production-ready UTC helper
 def utc_now():
@@ -27,8 +30,8 @@ logger = logging.getLogger("SirHawkington.WebSocket")
 
 class SirHawkingtonWebSocketHandler:
     """
-    Sir Hawkington's WebSocket handler with central memory bank integration
-    Production-ready with proper error handling and pattern learning
+    Sir Hawkington's WebSocket handler with full 5-table integration
+    Pattern learning, cross-agent sharing, and aristocratic precision
     """
     
     def __init__(self, db_getter=None):
@@ -37,16 +40,18 @@ class SirHawkingtonWebSocketHandler:
         self.error_count = 0
         self.monocle_yeet_count = 0
         self.successful_analyses = 0
+        self.observations_count = 0
         
-        # Database integration for central memory bank
+        # Database integration with 5-table architecture
         self.db = HawkingtonDatabaseIntegration(db_getter)
         
-        self.logger.info("🧐✨ Sir Hawkington WebSocket Handler with Central Memory Bank initialized")
+        self.logger.info("🧐✨ Sir Hawkington WebSocket Handler initialized with 5-table architecture")
 
     async def initialize(self):
         """Initialize the handler with database connection"""
         try:
             await self.db.initialize()
+            await sir_hawkington_brain.initialize_database()
             self.logger.info("🧐 WebSocket handler initialized with aristocratic precision")
         except Exception as e:
             self.logger.error(f"🧐💥 Handler initialization failed: {str(e)}")
@@ -58,7 +63,7 @@ class SirHawkingtonWebSocketHandler:
         user_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """
-        Process metrics through Sir Hawkington's aristocratic analysis with central memory
+        Process metrics through Sir Hawkington's aristocratic analysis with learning
         
         Args:
             metrics_data: Raw system metrics
@@ -71,15 +76,27 @@ class SirHawkingtonWebSocketHandler:
         analysis_start = utc_now()
         
         try:
-            # Get user patterns for enhanced analysis
-            user_patterns = {}
+            # Store observation for pattern learning
             if user_id:
-                user_patterns = await self.db.check_pattern_match(user_id, metrics_data)
+                await self.db.store_user_behavior_observation(user_id, {
+                    "metrics": metrics_data,
+                    "timestamp": datetime_to_iso(utc_now()),
+                    "processing_count": self.processing_count
+                })
+                self.observations_count += 1
+            
+            # Check for pattern matches
+            pattern_match = None
+            if user_id:
+                pattern_match = await self.db.check_pattern_match(user_id, {
+                    "metrics": metrics_data,
+                    "severity": self._estimate_severity(metrics_data)
+                })
             
             # Perform Sir Hawkington's analysis
             decision = await sir_hawkington_brain.analyze_metrics(
                 metrics_data=metrics_data,
-                user_context={'patterns': user_patterns},
+                user_context={'pattern_match': pattern_match} if pattern_match else None,
                 user_id=user_id
             )
             
@@ -96,7 +113,7 @@ class SirHawkingtonWebSocketHandler:
                 return {
                     'agent_name': AGENT_NAME,
                     'decision_type': 'monocle_yeeted',
-                    'message': '🧐💥 I say! The data quality is most unsatisfactory. *yeets monocle*',
+                    'message': ARISTOCRATIC_RESPONSES["data_quality_poor"],
                     'confidence': 0.0,
                     'monocle_state': 'yeeted',
                     'data_quality_issue': True,
@@ -105,25 +122,29 @@ class SirHawkingtonWebSocketHandler:
                     'reasoning': 'Insufficient data quality for aristocratic analysis',
                     'timestamp': datetime_to_iso(utc_now()),
                     'aristocratic_seal': False,
-                    'user_patterns': user_patterns,
+                    'pattern_match': pattern_match,
                     'processing_time': (utc_now() - analysis_start).total_seconds()
                 }
             
             self.successful_analyses += 1
             
-            # Store successful decision in central memory bank
+            # Store successful decision in CMB
             if user_id:
-                await self._store_successful_analysis(user_id, decision, metrics_data)
+                memory_id = await self.db.store_decision(user_id, decision)
                 
-                # Learn from this interaction
-                await self._learn_from_interaction(user_id, decision, user_patterns)
+                # Check if we should trigger pattern learning
+                if self.observations_count % LEARNING_THRESHOLDS["min_observations"] == 0:
+                    asyncio.create_task(self._trigger_pattern_learning(user_id))
             
             # Format response with enhanced data
             response = self._format_hawkington_decision(decision)
             response.update({
-                'user_patterns': user_patterns,
+                'pattern_match': pattern_match,
                 'processing_time': (utc_now() - analysis_start).total_seconds(),
-                'pattern_matches': len(user_patterns) > 0
+                'learning_progress': {
+                    'observations': self.observations_count,
+                    'next_learning_at': LEARNING_THRESHOLDS["min_observations"] - (self.observations_count % LEARNING_THRESHOLDS["min_observations"])
+                }
             })
             
             return response
@@ -157,20 +178,22 @@ class SirHawkingtonWebSocketHandler:
             'timestamp': datetime_to_iso(decision.timestamp),
             'aristocratic_seal': True,
             'metrics_analyzed': self._sanitize_metrics_for_websocket(decision.metrics),
-            'user_id': decision.user_id
+            'user_id': decision.user_id,
+            'monocle_state': sir_hawkington_brain.current_monocle_state.value
         }
 
     def _create_aristocratic_message(self, decision: HawkingtonDecision) -> str:
         """Create an aristocratic message based on decision type"""
-        message_templates = {
-            'normal': '🧐 Sir Hawkington observes with aristocratic satisfaction - all systems operating within acceptable parameters.',
-            'concern': f'🧐 Sir Hawkington adjusts his monocle with measured concern - system requires attention (Confidence: {decision.confidence:.1%}).',
-            'alert': f'🧐⚠️ Sir Hawkington\'s monocle has fogged with serious concern! System alert detected (Confidence: {decision.confidence:.1%}).',
-            'critical': f'🧐🚨 Sir Hawkington has YEETED his monocle in aristocratic horror! CRITICAL SYSTEM ISSUE (Confidence: {decision.confidence:.1%}).'
-        }
-        
-        return message_templates.get(decision.decision_type, 
-            f'🧐 Sir Hawkington renders judgment: {decision.decision_type} (Confidence: {decision.confidence:.1%})')
+        if decision.decision_type == 'normal':
+            return ARISTOCRATIC_RESPONSES["system_normal"]
+        elif decision.decision_type == 'concern':
+            return ARISTOCRATIC_RESPONSES["concern_raised"]
+        elif decision.decision_type == 'alert':
+            return ARISTOCRATIC_RESPONSES["alert_triggered"]
+        elif decision.decision_type == 'critical':
+            return ARISTOCRATIC_RESPONSES["critical_state"]
+        else:
+            return f'🧐 Sir Hawkington renders judgment: {decision.decision_type} (Confidence: {decision.confidence:.1%})'
 
     def _sanitize_metrics_for_websocket(self, metrics: Dict[str, Any]) -> Dict[str, Any]:
         """Sanitize metrics for WebSocket transmission with JSON-safe serialization"""
@@ -202,31 +225,36 @@ class SirHawkingtonWebSocketHandler:
         except Exception as e:
             self.logger.error(f"🧐💥 Failed to store monocle yeet incident: {str(e)}")
 
-    async def _store_successful_analysis(self, user_id: str, decision: HawkingtonDecision, metrics_data: Dict[str, Any]):
-        """Store successful analysis in central memory bank"""
+    async def _trigger_pattern_learning(self, user_id: str):
+        """Trigger pattern learning analysis"""
         try:
-            # Store the decision directly - no intermediate types needed
-            await self.db.store_decision(user_id, decision)
+            self.logger.info(f"🧐 Triggering pattern learning for user {user_id}")
             
-        except Exception as e:
-            self.logger.error(f"🧐💥 Failed to store successful analysis: {str(e)}")
-
-    async def _learn_from_interaction(self, user_id: str, decision: HawkingtonDecision, user_patterns: Dict[str, Any]):
-        """Learn patterns from user interactions"""
-        try:
-            # Store pattern observation with metrics data
-            await self.db.store_user_behavior_observation(user_id, decision.metrics)
+            pattern_analysis = await self.db.analyze_and_learn_patterns(
+                user_id,
+                min_observations=LEARNING_THRESHOLDS["min_observations"]
+            )
             
-            # Try to learn patterns every 25 observations
-            performance_metrics = await self.db.get_hawkington_performance_metrics(user_id)
-            if performance_metrics.get('observation_count', 0) % 25 == 0:
-                learned_pattern = await self.db.analyze_and_learn_patterns(user_id)
+            if pattern_analysis:
+                self.logger.info(
+                    f"🧐 Pattern learned with {pattern_analysis['confidence']:.2f} confidence"
+                )
                 
-                if learned_pattern:
-                    self.logger.info(f"🧐 Sir Hawkington has discerned new patterns for user {user_id}")
-            
+                # Share triage wisdom if high confidence
+                if pattern_analysis['confidence'] > 0.8:
+                    await self.db.share_triage_wisdom(
+                        target_agent="vic_20_sage",
+                        wisdom_type="triage_pattern",
+                        wisdom_data={
+                            "approach": "aristocratic_analysis",
+                            "thresholds": pattern_analysis.get("thresholds"),
+                            "reason": "High confidence triage pattern discovered"
+                        },
+                        source_memory_id=str(pattern_analysis.get("pattern_id", ""))
+                    )
+                    
         except Exception as e:
-            self.logger.error(f"🧐💥 Failed to learn from interaction: {str(e)}")
+            self.logger.error(f"🧐💥 Pattern learning failed: {str(e)}")
 
     def _identify_missing_metrics(self, metrics_data: Dict[str, Any]) -> List[str]:
         """Identify missing critical metrics"""
@@ -250,56 +278,52 @@ class SirHawkingtonWebSocketHandler:
         
         return invalid
 
-    def _determine_analysis_priority(self, decision_type: str) -> int:
-        """Determine priority based on decision type - returns integer for central memory bank"""
-        priority_map = {
-            'critical': 5,  # CRITICAL
-            'alert': 4,     # HIGH
-            'concern': 3,   # MEDIUM
-            'normal': 2     # LOW
-        }
-        return priority_map.get(decision_type, 3)  # Default to MEDIUM
-
-    def _create_metrics_snapshot(self, metrics_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Create a clean metrics snapshot for storage"""
-        snapshot = {}
-        key_metrics = ['cpu_usage', 'memory_usage', 'disk_usage', 'process_count']
+    def _estimate_severity(self, metrics_data: Dict[str, Any]) -> float:
+        """Estimate severity for pattern matching"""
+        cpu = metrics_data.get('cpu_usage', 0)
+        memory = metrics_data.get('memory_usage', 0)
+        disk = metrics_data.get('disk_usage', 0)
         
-        for metric in key_metrics:
-            if metric in metrics_data:
-                snapshot[metric] = metrics_data[metric]
+        # Simple severity calculation
+        max_usage = max(cpu, memory, disk)
         
-        # Add network data if available
-        if 'network' in metrics_data:
-            snapshot['network_available'] = True
-            network_data = metrics_data['network']
-            if isinstance(network_data, dict):
-                snapshot['network_bytes_sent'] = network_data.get('bytes_sent')
-                snapshot['network_bytes_recv'] = network_data.get('bytes_recv')
-        
-        snapshot['snapshot_timestamp'] = datetime_to_iso(utc_now())
-        return snapshot
+        if max_usage >= 90:
+            return 4  # Emergency
+        elif max_usage >= 80:
+            return 3  # High
+        elif max_usage >= 65:
+            return 2  # Medium
+        else:
+            return 1  # Normal
 
     async def get_handler_stats(self) -> Dict[str, Any]:
         """Get comprehensive WebSocket handler statistics"""
         try:
             db_health = await self.db.get_database_health()
+            performance_metrics = await self.db.get_hawkington_performance_metrics("system")
             
             return {
                 'agent_name': AGENT_NAME,
-                'handler_version': '2.0.0',
+                'handler_version': '2.1.0',
                 'total_processing_count': self.processing_count,
                 'successful_analyses': self.successful_analyses,
                 'error_count': self.error_count,
                 'monocle_yeet_count': self.monocle_yeet_count,
-                                'success_rate': self.successful_analyses / max(self.processing_count, 1),
+                'success_rate': self.successful_analyses / max(self.processing_count, 1),
                 'monocle_yeet_rate': self.monocle_yeet_count / max(self.processing_count, 1),
                 'current_monocle_state': sir_hawkington_brain.current_monocle_state.value,
+                'observations_count': self.observations_count,
+                'learning_status': {
+                    'enabled': True,
+                    'observations_until_next_learning': LEARNING_THRESHOLDS["min_observations"] - (self.observations_count % LEARNING_THRESHOLDS["min_observations"]),
+                    'total_patterns_learned': performance_metrics.get('patterns_learned', 0)
+                },
                 'status': 'OPERATIONAL',
                 'aristocratic_status': 'DISTINGUISHED',
                 'database_integration': db_health,
                 'central_memory_bank': 'ACTIVE',
                 'pattern_learning': 'ENABLED',
+                'cross_agent_sharing': 'ENABLED',
                 'last_updated': datetime_to_iso(utc_now())
             }
         except Exception as e:
@@ -342,6 +366,10 @@ class SirHawkingtonWebSocketHandler:
             *[process_user_data(user_data) for user_data in user_data_list],
             return_exceptions=True
         )
+
+    async def contribute_to_metadata_rollup(self) -> Dict[str, int]:
+        """Contribute to metadata rollup"""
+        return await self.db.contribute_to_metadata_rollup()
 
 # Global handler instance
 _hawkington_handler: Optional[SirHawkingtonWebSocketHandler] = None

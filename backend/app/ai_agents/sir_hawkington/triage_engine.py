@@ -18,6 +18,7 @@ Monocle yeeting authority: SUPREME
 Aristocratic standards: MAINTAINED
 """
 
+
 import logging
 import asyncio
 from typing import Dict, Any, Optional, List
@@ -45,6 +46,17 @@ from ..vic_20_sage.decision_engine import (
     coordinate_agents as vic20_coordinate_agents,
     coordinate_emergency_response as vic20_emergency_response,
 )
+from app.utils.json_safety import to_json_safe
+
+UTC = timezone.utc
+
+def utc_now():
+    """Get current UTC time with timezone awareness"""
+    return datetime.now(timezone.utc)
+
+def datetime_to_iso(dt):
+    """Convert datetime to ISO string for JSON serialization"""
+    return dt.isoformat() if dt else None
 
 logger = logging.getLogger("SirHawkington.TriageEngine")
 
@@ -72,17 +84,44 @@ class TriageDecision:
     monocle_yeeted: bool
     hawkington_decision: Optional[HawkingtonDecision]
     confidence: float
-    timestamp: datetime
+    timestamp: datetime = None
+    
+    def __post_init__(self):
+        if self.timestamp is None:
+            self.timestamp = utc_now()
+    
+    @property
+    def metrics(self) -> Optional[Dict[str, Any]]:
+        """Get metrics from hawkington_decision"""
+        return self.hawkington_decision.metrics if self.hawkington_decision else None
+    
+    @property
+    def stress_score(self) -> float:
+        """Get stress score directly"""
+        return self.metrics.get('stress_score', 0.0) if self.metrics else 0.0
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for storage/transmission"""
+        hawkington_dict = None
+        if self.hawkington_decision:
+            hawkington_dict = {
+                'decision_id': self.hawkington_decision.decision_id,
+                'decision_type': self.hawkington_decision.decision_type,
+                'confidence': self.hawkington_decision.confidence,
+                'reasoning': self.hawkington_decision.reasoning,
+                'metrics': self.hawkington_decision.metrics,
+                'timestamp': self.hawkington_decision.timestamp.isoformat() if hasattr(self.hawkington_decision.timestamp, 'isoformat') else str(self.hawkington_decision.timestamp),
+                'user_id': self.hawkington_decision.user_id,
+                'system_impact': self.hawkington_decision.system_impact
+            }
+    
         return {
             'severity': self.severity.value,
             'routing': self.routing.value,
             'target_agents': self.target_agents,
             'reasoning': self.reasoning,
             'monocle_yeeted': self.monocle_yeeted,
-            'hawkington_decision': self.hawkington_decision.to_dict() if self.hawkington_decision else None,
+            'hawkington_decision': hawkington_dict,
             'confidence': self.confidence,
             'timestamp': self.timestamp.isoformat()
         }
@@ -272,7 +311,7 @@ class SirHawkingtonTriageEngine(TriageEngineWithRedisMixin):
             )
         
         # Determine severity and routing from Sir Hawkington's stress score
-        severity = self._determine_triage_severity(hawkington_decision.stress_score)
+        severity = self._determine_triage_severity(hawkington_decision.metrics.get('stress_score', 0))
         routing = self._determine_triage_routing(severity, hawkington_decision)
         target_agents = self._determine_target_agents(routing, hawkington_decision)
         
@@ -344,7 +383,7 @@ class SirHawkingtonTriageEngine(TriageEngineWithRedisMixin):
             hawkington_decision: HawkingtonDecision
         ) -> str:
         """Create aristocratic reasoning for triage decision"""
-        base_reasoning = f"🧐 Aristocratic triage assessment: System stress {hawkington_decision.stress_score:.3f} indicates {severity.value} severity"
+        base_reasoning = f"🧐 Aristocratic triage assessment: System stress {hawkington_decision.metrics.get('stress_score', 0):.3f} indicates {severity.value} severity"
         
         if routing == TriageRouting.STICK_DIRECT:
             return f"{base_reasoning}. Normal operations - routing to The Stick for baseline learning."
@@ -460,9 +499,22 @@ class SirHawkingtonTriageEngine(TriageEngineWithRedisMixin):
         
         try:
             # Prepare data for VIC-20 coordination
+            hawkington_data = {}
+            if triage_decision.hawkington_decision:
+                hd = triage_decision.hawkington_decision
+                hawkington_data = {
+                    'decision_id': hd.decision_id,
+                    'decision_type': hd.decision_type,
+            'confidence': hd.confidence,
+            'reasoning': hd.reasoning,
+            'metrics': hd.metrics,
+            'timestamp': hd.timestamp.isoformat() if hasattr(hd.timestamp, 'isoformat') else str(hd.timestamp),
+            'user_id': hd.user_id,
+            'system_impact': hd.system_impact
+        }
+    
             all_agent_data = {
-                'sir_hawkington': triage_decision.hawkington_decision.to_dict()
-                if triage_decision.hawkington_decision else {},
+                'sir_hawkington': hawkington_data,
                 'system_metrics': metrics_data,
             }
             system_context = {
@@ -558,40 +610,67 @@ class SirHawkingtonTriageEngine(TriageEngineWithRedisMixin):
         }
     
     async def _store_triage_decision(self, user_id: str, triage_result: TriageResult):
-        """Store triage decision in central memory bank"""
+        """Store triage decision in central memory bank (JSON-safe, no fake data)."""
         try:
-            if self.db:
-                # Prepare triage data for central memory bank storage
-                triage_data = {
-                'triage_severity': triage_result.triage_decision.severity.value,
-                'routing_decision': triage_result.triage_decision.routing.value,
-                'target_agents': triage_result.triage_decision.target_agents,
-                'reasoning': triage_result.triage_decision.reasoning,
-                'monocle_yeeted': triage_result.triage_decision.monocle_yeeted,
-                'confidence': triage_result.triage_decision.confidence,
-                'processing_time': triage_result.processing_time,
-                'success': triage_result.success,
-                'timestamp': triage_result.triage_decision.timestamp,
-                'routing_results': triage_result.routing_results,
-                'hawkington_decision_id': None  # Will be set if we store the decision
-            }
-            
-            # If Sir Hawkington made a decision, store that first
-            if triage_result.triage_decision.hawkington_decision:
-                hawkington_decision_id = await self.db.store_hawkington_decision(
-                    user_id, 
-                    triage_result.triage_decision.hawkington_decision
-                )
-                triage_data['hawkington_decision_id'] = hawkington_decision_id
-            
-            # Store triage decision in central memory bank
-            triage_memory_id = await self.db.store_triage_decision(user_id, triage_data)
-            self.logger.info(f"🧐📊 Triage Decision stored in central memory bank: {triage_memory_id}")
-            
-        except Exception as e:
-            self.logger.error(f"🧐💥 Failed to store triage decision: {str(e)}")
+            if not self.db:
+                self.logger.warning("🧐 Skipping triage store: DB not initialized")
+                return
 
-    
+            # --- Required DB datetime (keep as datetime, NOT string) ---
+            occurred_at_dt = triage_result.triage_decision.timestamp  # real datetime
+
+
+            # --- Build payload (truthful); DO NOT JSON-sanitize the whole dict ---
+            # Only sanitize nested structures that will go into JSON/JSONB columns.
+            routing_results_safe = to_json_safe(triage_result.routing_results)
+
+            triage_data = {
+                # simple scalars (safe as-is)
+                "triage_severity": triage_result.triage_decision.severity.value,
+                "routing_decision": triage_result.triage_decision.routing.value,
+                "target_agents": triage_result.triage_decision.target_agents,
+                "reasoning": triage_result.triage_decision.reasoning,
+                "monocle_yeeted": triage_result.triage_decision.monocle_yeeted,
+                "confidence": triage_result.triage_decision.confidence,
+                "processing_time": triage_result.processing_time,
+                "success": triage_result.success,
+
+                # keep a real datetime for the DB layer to map to occurred_at/created_at/etc.
+                # some DB integrations expect this key to be used for DateTime columns
+                "timestamp": occurred_at_dt,
+
+                # JSON field(s): **already sanitized**
+                "routing_results": routing_results_safe,
+
+                # will be filled if we persist the Hawkington decision first
+                "hawkington_decision_id": None,
+            }
+
+            # Persist Sir Hawkington's decision first (existing code path)
+            if triage_result.triage_decision.hawkington_decision:
+                hawk_decision_id = await self.db.store_hawkington_decision(
+                    user_id,
+                    triage_result.triage_decision.hawkington_decision,
+                )
+                triage_data["hawkington_decision_id"] = hawk_decision_id
+
+            # Some integrations prefer a separate ISO string for UI/JSON-only fields.
+            # That's optional, but harmless and often useful:
+            triage_data["timestamp_iso"] = occurred_at_dt.isoformat()
+
+            # 🚫 IMPORTANT: Do NOT call to_json_safe(triage_data) here.
+            # We only sanitized routing_results; the 'timestamp' remains a real datetime.
+
+            triage_memory_id = await self.db.store_triage_decision(user_id, triage_data)
+
+            self.logger.info("🧐📊 Triage Decision stored in central memory bank: %s", triage_memory_id)
+
+        except Exception as e:
+            # Loud and honest; do not fake success.
+            self.logger.error("🧐💥 Failed to store triage decision: %s", str(e), exc_info=True)
+            # If you want hard fail, re-raise:
+            # raise
+            
     async def _enhance_metrics_with_triage(
             self, 
             original_metrics: Dict[str, Any], 
@@ -631,8 +710,17 @@ class SirHawkingtonTriageEngine(TriageEngineWithRedisMixin):
         
         # Add Sir Hawkington's individual assessment if available
         if triage_result.triage_decision.hawkington_decision:
-            enhanced_metrics['sir_hawkington'] = triage_result.triage_decision.hawkington_decision.to_dict()
-        
+            hd = triage_result.triage_decision.hawkington_decision
+            enhanced_metrics['sir_hawkington'] = {
+                'decision_id': hd.decision_id,
+                'decision_type': hd.decision_type,
+                'confidence': hd.confidence,
+                'reasoning': hd.reasoning,
+                'metrics': hd.metrics,
+                'timestamp': hd.timestamp.isoformat() if hasattr(hd.timestamp, 'isoformat') else str(hd.timestamp),
+                'user_id': hd.user_id,
+                'system_impact': hd.system_impact
+            }   
         # Add triage statistics
         enhanced_metrics['triage_stats'] = {
             'total_triage_decisions': self.total_triage_decisions,
@@ -692,7 +780,7 @@ class SirHawkingtonTriageEngine(TriageEngineWithRedisMixin):
             },
             'sir_hawkington_brain_status': sir_hawkington_brain.health_check(),
             'triage_thresholds': self.triage_thresholds,
-            'last_update': datetime.now(timezone.utc).isoformat()
+            'last_update': datetime.now(timezone.utc)
         }
 
 # === GLOBAL TRIAGE ENGINE INSTANCE ===

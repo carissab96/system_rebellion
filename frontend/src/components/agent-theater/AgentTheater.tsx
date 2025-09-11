@@ -1,6 +1,6 @@
 // components/agent-theater/AgentTheater.tsx
-import React, { useEffect, useState } from 'react';
-
+import React, { useMemo, useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import HamstersCard from '../../components/agent-theater/agents/HamstersCard/HamstersCard.tsx';
 import MethSnailCard from '../../components/agent-theater/agents/MethSnailCard/MethSnailCard.tsx';
 import QuantumShadowCard from '../../components/agent-theater/agents/QuantumShadowPeopleCard/QSPCard.tsx';
@@ -9,128 +9,109 @@ import { MissingAgentsIndicator } from '../../components/agent-theater/agents/sh
 import SirHawkingtonCard from '../../components/agent-theater/agents/SirHawingtonCard/SirHawkingtonCard.tsx';
 import TheStickCard from '../../components/agent-theater/agents/TheStickCard/TheStickCard.tsx';
 import VIC20Card from '../../components/agent-theater/agents/VIC20Card/VIC20Card.tsx';
-import { useAgentTheater } from '../../hooks/useAgentTheater';
-
 import './AgentTheater.css';
-import { useDispatch, useSelector } from 'react-redux';
 
-import { logout } from '../../store/slices/authSlice.ts';
 import type { RootState } from '../../store/store';
+import { logout } from '../../store/slices/authSlice.ts';
+
+// Use the ingestion hook that dispatches to Redux.
+// If your hook file is `useSystemMetricWebSocket.ts`, keep the singular name below.
+import { useSystemMetricsWebSocket } from '../../hooks/useSystemMetricsWebSocket.ts';
+
+import { AGENT_KEYS } from '../../store/slices/metricsSlice.ts'
 
 export const AgentTheater: React.FC = () => {
-  const { metricsData, connectionStatus, error, lastUpdate } = useAgentTheater();
-  console.log('AgentTheater Debug:', {
-    metricsData,
+  useSystemMetricsWebSocket({}); // spins up the socket and dispatches setAllAgents etc.
+
+  const dispatch = useDispatch();
+
+  // Single source of truth: the metrics slice
+  const {
+    agents,
     connectionStatus,
     error,
-    lastUpdate
-  });
-  const activeAgentCount = Object.keys(metricsData || {}).length;
-  const totalAgents = 6;
-  const dispatch = useDispatch();
-  const auth = useSelector((state: RootState) => state.auth);
+    lastUpdate,
+    activeAgentCount,
+  } = useSelector((s: RootState) => s.metrics);
+
+  const auth = useSelector((s: RootState) => s.auth);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  
-  const handleLogout = () => {
-    dispatch(logout());
-  };
+
+  // optional backend ping in dev
   useEffect(() => {
-    const testBackend = async () => {
+    if (import.meta.env?.MODE !== 'development') return;
+    (async () => {
       try {
-        console.log('Testing backend connectivitiy...');
-        const response = await fetch('/api/auth/csrf_token');
-        console.log('backend CSRF test:', response.status);
-      } catch (error) {
-        console.error('Error testing backend:', error);
+        const res = await fetch('/api/auth/csrf_token');
+        console.log('backend CSRF test:', res.status);
+      } catch (e) {
+        console.error('Backend connectivity check failed:', e);
       }
-    }
-    testBackend();
+    })();
   }, []);
-  
+
+  const handleLogout = () => dispatch(logout());
+
   return (
     <div className="agent-theater">
       <nav className="theater-nav">
         <div className="nav-left">
-          <button
-            onClick={() => window.location.href = '/'}
-            className="logo-button"
-            >System Rebellion</button>
+          <button onClick={() => (window.location.href = '/')} className="logo-button">
+            System Rebellion
+          </button>
         </div>
         <div className="nav-right">
           <div className="profile-dropdown">
-            <button
-              onClick={() => setShowProfileMenu(!showProfileMenu)}
-              className="profile-button"
-              >{auth.user?.first_name}</button>
+            <button onClick={() => setShowProfileMenu(!showProfileMenu)} className="profile-button">
+              {auth.user?.first_name}
+            </button>
             {showProfileMenu && (
               <div className="dropdown-menu">
                 <button onClick={() => console.log('Settings')}>Settings</button>
                 <button onClick={() => console.log('Profile')}>Profile</button>
                 <hr />
-                <button onClick={handleLogout} className="logout-btn">
-                  Logout</button>
+                <button onClick={handleLogout} className="logout-btn">Logout</button>
               </div>
             )}
           </div>
         </div>
       </nav>
+
       <div className="theater-header">
         <div className="theater-title-section">
           <h1 className="theater-title">Agent Theater</h1>
-          <div className="theater-subtitle">
-            Real-time AI Agent Performance Dashboard
-          </div>
+          <div className="theater-subtitle">Real-time AI Agent Performance Dashboard</div>
         </div>
-        
+
         <div className="theater-status">
-          <ConnectionStatus 
-            status={connectionStatus} 
-            error={error} 
+          <ConnectionStatus
+            status={connectionStatus}
+            error={error}
             lastUpdate={lastUpdate}
-            metricsData={metricsData}
-                />
+            metricsData={agents}
+          />
           <div className="agent-count">
             <span className="active-count">{activeAgentCount}</span>
-            <span className="total-count">/{totalAgents}</span>
+            <span className="total-count">/{AGENT_KEYS.length}</span>
             <span className="count-label">Agents Active</span>
           </div>
         </div>
       </div>
-      
+
       <div className="theater-grid">
-        <SirHawkingtonCard 
-          data={metricsData?.sir_hawkington} 
-          is_active={!!metricsData?.sir_hawkington}
-        />
-        <MethSnailCard 
-          data={metricsData?.meth_snail} 
-          is_active={!!metricsData?.meth_snail}
-        />
-        <HamstersCard 
-          data={metricsData?.hamsters} 
-          is_active={!!metricsData?.hamsters}
-        />
-        <QuantumShadowCard 
-          data={metricsData?.quantum_shadow} 
-          is_active={!!metricsData?.quantum_shadow}
-        />
-        <TheStickCard 
-          data={metricsData?.the_stick} 
-          is_active={!!metricsData?.the_stick}
-        />
-        <VIC20Card 
-          data={metricsData?.vic20_sage} 
-          is_active={!!metricsData?.vic20_sage}
-        />
+        <SirHawkingtonCard data={agents.sir_hawkington} is_active={!!agents.sir_hawkington} />
+        <MethSnailCard      data={agents.meth_snail}     is_active={!!agents.meth_snail} />
+        <HamstersCard       data={agents.hamsters}       is_active={!!agents.hamsters} />
+        <QuantumShadowCard  data={agents.quantum_shadow} is_active={!!agents.quantum_shadow} />
+        <TheStickCard       data={agents.the_stick}      is_active={!!agents.the_stick} />
+        <VIC20Card          data={agents.vic20_sage}     is_active={!!agents.vic20_sage} />
       </div>
-      
-      {activeAgentCount < totalAgents && (
-        <MissingAgentsIndicator 
-          metricsData={metricsData} 
-          connectionStatus={connectionStatus}
-        />
+
+      {activeAgentCount < AGENT_KEYS.length && (
+        <MissingAgentsIndicator metricsData={agents} connectionStatus={connectionStatus} />
       )}
     </div>
   );
 };
+
 export default AgentTheater;

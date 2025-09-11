@@ -161,3 +161,14 @@ class QSPWebSocketHandler:
             return 'moderate'
         else:
             return 'optimal'
+
+# Singleton instance
+_qsp_ws_handler = None
+
+async def get_qsp_websocket_handler() -> QSPWebSocketHandler:
+    """Get the singleton instance of QSPWebSocketHandler"""
+    global _qsp_ws_handler
+    if _qsp_ws_handler is None:
+        _qsp_ws_handler = QSPWebSocketHandler()
+        await _qsp_ws_handler.initialize()
+    return _qsp_ws_handler

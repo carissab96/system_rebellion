@@ -5,6 +5,8 @@ from collections import deque
 from typing import Dict, List, Any, Optional, Callable, TypeVar, Generic, Deque
 import numpy as np
 from datetime import datetime, timedelta
+import os
+import random
 
 logger = logging.getLogger(__name__)
 
@@ -23,9 +25,14 @@ class BackpressureHandler(Generic[T]):
         name: str = "default",
         max_buffer_size: int = 1000,
         sampling_strategy: str = "priority",  # Options: random, priority, latest
-        processing_rate_window: int = 10,  # Calculate processing rate over this many items
+        processing_rate_window: int = 10,
         adaptive_sampling: bool = True,
-        priority_func: Optional[Callable[[T], float]] = None
+        priority_func: Optional[Callable[[T], float]] = None,
+        
+        # NEW: throttle tunables (env override-friendly)
+        throttle_threshold: float = float(os.getenv("BP_THROTTLE_THRESHOLD", "0.75")),
+        min_sleep_ms: int = int(os.getenv("BP_MIN_SLEEP_MS", "50")),
+        max_sleep_ms: int = int(os.getenv("BP_MAX_SLEEP_MS", "1200")),
     ):
         self.name = name
         self.buffer: Deque[T] = deque(maxlen=max_buffer_size)
@@ -33,19 +40,29 @@ class BackpressureHandler(Generic[T]):
         self.sampling_strategy = sampling_strategy
         self.adaptive_sampling = adaptive_sampling
         self.priority_func = priority_func
-        
+
         # Performance tracking
         self.processing_times: Deque[float] = deque(maxlen=processing_rate_window)
-        self.incoming_rate = 0  # items per second
-        self.processing_rate = 0  # items per second
+        self.incoming_rate = 0.0  # items per second
+        self.processing_rate = 0.0  # items per second
         self.last_incoming_time = time.time()
         self.incoming_count = 0
         self.processed_count = 0
         self.dropped_count = 0
         self.last_rate_calculation = time.time()
         self.rate_calculation_interval = 5.0  # seconds
+
+        # NEW: throttle settings
+        self.throttle_threshold = throttle_threshold
+        self.min_sleep_ms = min_sleep_ms
+        self.max_sleep_ms = max_sleep_ms
         
-        logger.info(f"Backpressure Handler '{name}' initialized with buffer size={max_buffer_size}, strategy={sampling_strategy}")
+        logger.info(
+            f"Backpressure Handler '{name}' initialized "
+            f"buffer={max_buffer_size}, strategy={sampling_strategy}, "
+            f"threshold={self.throttle_threshold}, sleep=[{self.min_sleep_ms},{self.max_sleep_ms}]ms"
+        )
+
     
     def _update_rates(self) -> None:
         """Update the incoming and processing rates"""
@@ -80,19 +97,100 @@ class BackpressureHandler(Generic[T]):
     
     def get_rate_pressure(self) -> float:
         """
-        Get the current rate pressure as a value between 0.0 and 1.0
-        0.0 = processing faster than incoming, 1.0 = incoming much faster than processing
+        0.0 = no pressure, 1.0 = incoming >> processing.
+        If both rates are unknown/zero, assume no pressure (not max!).
         """
-        if self.processing_rate <= 0:
-            return 1.0  # Nothing being processed, maximum pressure
-        
+        # NEW: don't punish startup with max pressure
+        if self.processing_rate <= 0 and self.incoming_rate <= 0:
+            return 0.0
+        if self.processing_rate <= 0 and self.incoming_rate > 0:
+            return 1.0
         if self.incoming_rate <= 0:
-            return 0.0  # Nothing coming in, no pressure
-        
-        ratio = self.incoming_rate / self.processing_rate
-        # Cap at 1.0 for values above 1.0 (incoming > processing)
+            return 0.0
+        ratio = self.incoming_rate / max(self.processing_rate, 1e-9)
         return min(1.0, ratio)
+
+    # ... keep get_overall_pressure, should_sample, add_item, get_batch, get_stats ...
+
+    # NEW: the API your WS code expects
+    def should_throttle(self) -> bool:
+        """
+        True when overall pressure exceeds threshold.
+        Safe at startup when rates are zero.
+        """
+        pressure = self.get_overall_pressure()
+        return pressure >= self.throttle_threshold
+
+    def get_wait_time(self) -> float:
+        """
+        Return sleep time in seconds based on pressure.
+        Maps [threshold..1.0] -> [min_sleep..max_sleep].
+        """
+        pressure = self.get_overall_pressure()
+        if pressure < self.throttle_threshold or self.max_sleep_ms <= 0:
+            return 0.0
+
+        # normalize pressure between threshold and 1.0
+        span = max(1e-6, 1.0 - self.throttle_threshold)
+        norm = (pressure - self.throttle_threshold) / span  # 0..1
+
+        # quadratic curve: small at first, steeper near 1.0
+        sleep_ms = self.min_sleep_ms + int((self.max_sleep_ms - self.min_sleep_ms) * (norm ** 2))
+
+        # add a little jitter to prevent stampeding herds
+        sleep_ms = int(sleep_ms * (0.9 + 0.2 * random.random()))
+        return max(0.0, sleep_ms / 1000.0)
+
+    # Aliases some callers expect
+    def get_delay(self) -> float:
+        return self.get_wait_time()
+
+    def backoff_time(self) -> float:
+        return self.get_wait_time()
+    def get_batch(self, max_batch_size: int) -> List[T]:
+        """
+        Get a batch of items from the buffer
+        
+        Args:
+            max_batch_size: Maximum number of items to retrieve
+            
+        Returns:
+            List of items, may be empty if buffer is empty
+        """
+        start_time = time.time()
+        batch_size = min(max_batch_size, len(self.buffer))
+        
+        if batch_size == 0:
+            return []
+            
+        batch = []
+        for _ in range(batch_size):
+            if not self.buffer:
+                break
+            batch.append(self.buffer.popleft())
+        
+        # Update processing stats
+        self.processed_count += len(batch)
+        processing_time = time.time() - start_time
+        self.processing_times.append(processing_time)
+        
+        self._update_rates()
+        return batch
     
+    def get_stats(self) -> Dict[str, Any]:
+        """Get current statistics about the backpressure handler"""
+        return {
+            "name": self.name,
+            "buffer_size": len(self.buffer),
+            "max_buffer_size": self.max_buffer_size,
+            "buffer_usage_percent": len(self.buffer) / self.max_buffer_size * 100 if self.max_buffer_size > 0 else 0,
+            "incoming_rate": self.incoming_rate,
+            "processing_rate": self.processing_rate,
+            "dropped_count": self.dropped_count,
+            "buffer_pressure": self.get_buffer_pressure(),
+            "rate_pressure": self.get_rate_pressure(),
+            "overall_pressure": self.get_overall_pressure(),
+        }
     def get_overall_pressure(self) -> float:
         """
         Get the overall system pressure as a value between 0.0 and 1.0
@@ -171,52 +269,6 @@ class BackpressureHandler(Generic[T]):
         # Item was dropped
         self.dropped_count += 1
         return False
-    
-    def get_batch(self, max_batch_size: int) -> List[T]:
-        """
-        Get a batch of items from the buffer
-        
-        Args:
-            max_batch_size: Maximum number of items to retrieve
-            
-        Returns:
-            List of items, may be empty if buffer is empty
-        """
-        start_time = time.time()
-        batch_size = min(max_batch_size, len(self.buffer))
-        
-        if batch_size == 0:
-            return []
-            
-        batch = []
-        for _ in range(batch_size):
-            if not self.buffer:
-                break
-            batch.append(self.buffer.popleft())
-        
-        # Update processing stats
-        self.processed_count += len(batch)
-        processing_time = time.time() - start_time
-        self.processing_times.append(processing_time)
-        
-        self._update_rates()
-        return batch
-    
-    def get_stats(self) -> Dict[str, Any]:
-        """Get current statistics about the backpressure handler"""
-        return {
-            "name": self.name,
-            "buffer_size": len(self.buffer),
-            "max_buffer_size": self.max_buffer_size,
-            "buffer_usage_percent": len(self.buffer) / self.max_buffer_size * 100 if self.max_buffer_size > 0 else 0,
-            "incoming_rate": self.incoming_rate,
-            "processing_rate": self.processing_rate,
-            "dropped_count": self.dropped_count,
-            "buffer_pressure": self.get_buffer_pressure(),
-            "rate_pressure": self.get_rate_pressure(),
-            "overall_pressure": self.get_overall_pressure(),
-        }
-
 
 # Global registry of backpressure handlers
 _backpressure_handlers: Dict[str, BackpressureHandler] = {}

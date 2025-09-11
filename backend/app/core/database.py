@@ -2,6 +2,8 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy import create_engine
 from app.core.base import Base
+import os
+
 
 # Database URLs
 ASYNC_DATABASE_URL = "sqlite+aiosqlite:///./system_rebellion.db"
@@ -69,6 +71,16 @@ def get_db():
     finally:
         db.close()
 
+def get_db_url() -> str:
+    url = (
+        os.getenv("DATABASE_URL")
+        or os.getenv("DB_URL")
+        or "sqlite+aiosqlite:///./system_rebellion.db"
+    )
+    if url.startswith("sqlite://") and "+aiosqlite" not in url:
+        url = url.replace("sqlite://", "sqlite+aiosqlite://", 1)
+    return url
+    
 # For backwards compatibility, make get_db the default
 # This allows existing code to work without changes
 get_db_dependency = get_db

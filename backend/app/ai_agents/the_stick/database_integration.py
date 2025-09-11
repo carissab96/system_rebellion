@@ -7,13 +7,27 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy import select, func, desc, and_, delete
 import json
 import uuid
-from app.models.agent_memory_banks import CentralMemoryBank
+import logging
+
+from app.models.agent_memory_banks import CentralMemoryBank, UserLearningPatterns, AgentLearningInteractions
+from app.models.agent_memory import AgentGlobalPattern, AgentMemory
+from app.core.learning_helpers import (
+    upsert_user_pattern, upsert_global_pattern, 
+    record_learning_interaction, LearningInteraction,
+    UserLearningPattern, GlobalPattern
+)
+
 from .data_types import (
     StickDecision, UserPattern, ComplianceViolation, 
     ConfigurationProfile, AnxietyEvent, HamsterProximityAlert,
     PaperBagInventory, StickMemoryEntry
 )
-from .constants import AGENT_NAME, StickEventTypes, ALL_HAMSTERS, HAMSTER_BOB
+from .constants import (
+    AGENT_NAME, StickEventTypes, ALL_HAMSTERS, HAMSTER_BOB,
+    ANXIETY_THRESHOLD_PANIC, PRIORITY_THRESHOLD_PIN, PATTERN_CONFIDENCE_PROMOTE
+)
+
+logger = logging.getLogger("Stick.Database")
 
 def utc_now():
     """Get current UTC time with timezone awareness"""
@@ -134,6 +148,18 @@ class StickDatabaseIntegration:
                 
                 session.add(memory_entry)
                 await session.commit()
+                
+                # Pin this critical memory
+                await self.pin_critical_memory(
+                    user_id,
+                    {
+                        'type': 'hamster_encounter',
+                        'alert': alert.__dict__ if hasattr(alert, '__dict__') else str(alert),
+                        'reason': f"HAMSTER ENCOUNTER: {', '.join(normalized_hamsters)}"
+                    },
+                    memory_entry.memory_id
+                )
+                
                 return memory_entry.memory_id
                 
             except Exception as e:
@@ -410,7 +436,6 @@ class StickDatabaseIntegration:
             except Exception as e:
                 await session.rollback()
                 raise Exception(f"The Stick failed to store decision (anxiety spike!): {str(e)}")
-    # Add these methods to StickDatabaseIntegration class:
 
     async def store_user_pattern(self, user_id: str, pattern: UserPattern):
         """Store learned user pattern in central memory bank - The Stick NEVER forgets patterns!"""
@@ -422,36 +447,35 @@ class StickDatabaseIntegration:
                     memory_id=str(uuid.uuid4()),
                     agent_name=AGENT_NAME,
                     user_id=user_id,
-                    event_type="user_pattern_learned",  # New event type!
+                    event_type=StickEventTypes.USER_PATTERN_LEARNED,
                     occurred_at=current_time,
                     created_at=current_time,
                     updated_at=current_time,
                     details={
                         'pattern_type': pattern.pattern_type,
-                    'time_based_patterns': pattern.time_based_patterns,
-                    'activity_patterns': pattern.activity_patterns,
-                    'compliance_history': pattern.compliance_history,
-                    'anxiety_correlation': pattern.anxiety_correlation,
-                    'confidence_score': pattern.confidence_score,
-                    'learning_sessions': pattern.learning_sessions,
-                    'stick_memory_notes': pattern.stick_memory_notes  # The Stick's obsessive notes!
-                },
+                        'time_based_patterns': pattern.time_based_patterns,
+                        'activity_patterns': pattern.activity_patterns,
+                        'compliance_history': pattern.compliance_history,
+                        'anxiety_correlation': pattern.anxiety_correlation,
+                        'confidence_score': pattern.confidence_score,
+                        'learning_sessions': pattern.learning_sessions,
+                        'stick_memory_notes': pattern.stick_memory_notes  # The Stick's obsessive notes!
+                    },
                     stick_anxiety_level=self.websocket_anxiety_level,
                     numeric_value=pattern.confidence_score,  # For quick confidence queries
                     string_value=pattern.pattern_type,
                     never_forget=True,  # The Stick NEVER forgets learned patterns
                     priority=9,  # High priority - patterns are critical
                     agent_metadata={
-                    'pattern_complexity': len(pattern.time_based_patterns) + len(pattern.activity_patterns),
-                    'anxiety_inducing': max(pattern.anxiety_correlation.values()) > 0.5 if pattern.anxiety_correlation else False,
-                    'requires_monitoring': True
-                }
-            )
+                        'pattern_complexity': len(pattern.time_based_patterns) + len(pattern.activity_patterns),
+                        'anxiety_inducing': max(pattern.anxiety_correlation.values()) > 0.5 if pattern.anxiety_correlation else False,
+                        'requires_monitoring': True
+                    }
+                )
             
                 session.add(memory_entry)
                 await session.commit()
             
-                # Log pattern learning event
                 logger.info(f"The Stick learned new pattern for user {user_id}: {pattern.pattern_type}")
             
                 return memory_entry.memory_id
@@ -459,6 +483,298 @@ class StickDatabaseIntegration:
             except Exception as e:
                 await session.rollback()
                 raise Exception(f"The Stick panicked while storing user pattern: {str(e)}")
+
+    async def store_user_pattern_v2(self, user_id: str, pattern: UserPattern):
+        """Store learned user pattern using the dedicated user patterns table"""
+        try:
+            # First store in CMB as usual
+            memory_id = await self.store_user_pattern(user_id, pattern)
+            
+            # Convert to learning helper format
+            learning_pattern = UserLearningPattern(
+                user_id=user_id,
+                interaction_pattern={
+                    'pattern_type': pattern.pattern_type,
+                    'time_based': pattern.time_based_patterns,
+                    'activity_based': pattern.activity_patterns,
+                    'compliance_history': pattern.compliance_history
+                },
+                learning_preference={
+                    'anxiety_correlation': pattern.anxiety_correlation,
+                    'stick_observations': pattern.stick_memory_notes,
+                    'monitoring_intensity': 'HYPERVIGILANT'
+                },
+                response_patterns={
+                    'panic_triggers': [k for k, v in pattern.anxiety_correlation.items() if v > 0.7],
+                    'paper_bag_consumption_patterns': pattern.time_based_patterns
+                },
+                most_effective_agent=AGENT_NAME,  # The Stick is always effective through anxiety!
+                communication_style_preference={
+                    'style': 'anxious_detailed',
+                    'verbosity': 'obsessive',
+                    'documentation_level': 'everything'
+                },
+                complexity_tolerance=pattern.confidence_score,
+                skill_improvement_areas=['compliance', 'pattern_detection', 'anxiety_management'],
+                knowledge_gaps=[],  # The Stick knows everything through anxiety
+                success_patterns=pattern.activity_patterns,
+                agent_effectiveness_ranking={
+                    AGENT_NAME: 1.0,  # The Stick is #1 at anxiety-driven detection
+                    'meth_snail': 0.8,
+                    'sir_hawkington': 0.7,
+                    'qsp': 0.6,
+                    'vic20': 0.9  # VIC-20 is almost as good
+                },
+                collaborative_preferences={
+                    'prefers_solo': False,  # Anxiety is better shared
+                    'best_partners': ['vic20', 'meth_snail'],
+                    'avoid_during_panic': ['bob', 'carl', 'steve']
+                }
+            )
+            
+            # Store in user patterns table
+            await upsert_user_pattern(self.engine, learning_pattern)
+            
+            # Check if pattern should be promoted globally
+            if pattern.confidence_score >= PATTERN_CONFIDENCE_PROMOTE:
+                await self._promote_pattern_globally(pattern, memory_id)
+            
+            logger.info(f"The Stick stored user pattern with confidence {pattern.confidence_score}")
+            return memory_id
+            
+        except Exception as e:
+            raise Exception(f"The Stick panicked while storing user pattern v2: {str(e)}")
+
+    async def _promote_pattern_globally(self, pattern: UserPattern, source_memory_id: str):
+        """Promote high-confidence patterns to global patterns - The Stick's wisdom for all!"""
+        try:
+            global_pattern = GlobalPattern(
+                pattern_key=f"stick_{pattern.pattern_type}_{pattern.user_id[:8]}",
+                value={
+                    'pattern_type': pattern.pattern_type,
+                    'pattern_data': {
+                        'time_patterns': pattern.time_based_patterns,
+                        'activity_patterns': pattern.activity_patterns,
+                        'anxiety_triggers': pattern.anxiety_correlation
+                    },
+                    'confidence': pattern.confidence_score,
+                    'learned_by': AGENT_NAME,
+                    'anxiety_validated': True,  # The Stick's anxiety validates everything
+                    'promoted_at': utc_now().isoformat(),
+                    'source_memory_id': source_memory_id,
+                    'stick_notes': [
+                        f"Pattern validated through {pattern.learning_sessions} anxiety-filled sessions",
+                        f"Confidence: {pattern.confidence_score:.1%}",
+                        "The Stick's hypervigilance confirms this pattern"
+                    ]
+                }
+            )
+            
+            await upsert_global_pattern(self.engine, global_pattern)
+            
+            # Log promotion in CMB
+            promotion_memory = CentralMemoryBank(
+                memory_id=str(uuid.uuid4()),
+                agent_name=AGENT_NAME,
+                event_type=StickEventTypes.GLOBAL_PATTERN_PROMOTED,
+                occurred_at=utc_now(),
+                created_at=utc_now(),
+                updated_at=utc_now(),
+                details={
+                    'pattern_key': global_pattern.pattern_key,
+                    'pattern_type': pattern.pattern_type,
+                    'confidence': pattern.confidence_score,
+                    'promotion_reason': 'High confidence through anxious observation'
+                },
+                stick_anxiety_level=self.websocket_anxiety_level,
+                numeric_value=pattern.confidence_score,
+                string_value=global_pattern.pattern_key,
+                never_forget=True,  # Global patterns are never forgotten
+                priority=9,
+                agent_metadata={
+                    'global_wisdom': True,
+                    'anxiety_validated': True,
+                    'stick_approved': True
+                }
+            )
+            
+            async with self.session_factory() as session:
+                session.add(promotion_memory)
+                await session.commit()
+                
+            logger.info(f"The Stick promoted pattern {global_pattern.pattern_key} to global wisdom!")
+            
+        except Exception as e:
+            raise Exception(f"The Stick failed to promote pattern globally: {str(e)}")
+
+    async def share_anxiety_insight(self, target_agent: str, insight_data: Dict[str, Any], source_memory_id: str):
+        """Share The Stick's anxiety-driven insights with other agents"""
+        try:
+            learning = LearningInteraction(
+                source_agent=AGENT_NAME,
+                target_agent=target_agent,
+                source_memory_id=source_memory_id,
+                learning_type='anxiety_insight',
+                adaptation_method={
+                    'method': 'hypervigilance_transfer',
+                    'anxiety_level': self.websocket_anxiety_level,
+                    'observation_detail': 'obsessive'
+                },
+                application_context={
+                    'insight_type': insight_data.get('type', 'general'),
+                    'anxiety_triggers': insight_data.get('triggers', []),
+                    'compliance_concerns': insight_data.get('compliance', {}),
+                    'hamster_warnings': insight_data.get('hamster_activity', {})
+                },
+                effectiveness_score=0.9 if self.websocket_anxiety_level > 60 else 0.7  # Higher anxiety = better insights
+            )
+            
+            await record_learning_interaction(self.engine, learning)
+            
+            # Log the sharing in CMB
+            share_memory = CentralMemoryBank(
+                memory_id=str(uuid.uuid4()),
+                agent_name=AGENT_NAME,
+                event_type=StickEventTypes.CROSS_AGENT_INSIGHT,
+                occurred_at=utc_now(),
+                created_at=utc_now(),
+                updated_at=utc_now(),
+                details={
+                    'target_agent': target_agent,
+                    'insight_shared': insight_data,
+                    'anxiety_context': self.websocket_anxiety_level,
+                    'effectiveness': learning.effectiveness_score
+                },
+                stick_anxiety_level=self.websocket_anxiety_level,
+                string_value=f"{AGENT_NAME}_to_{target_agent}",
+                relevant_agents=target_agent,
+                priority=7,
+                agent_metadata={
+                    'knowledge_transfer': True,
+                    'anxiety_enhanced': True
+                }
+            )
+            
+            async with self.session_factory() as session:
+                session.add(share_memory)
+                await session.commit()
+                
+            logger.info(f"The Stick shared anxiety insight with {target_agent}")
+            
+        except Exception as e:
+            raise Exception(f"The Stick failed to share insight (anxiety spike!): {str(e)}")
+
+    async def pin_critical_memory(self, user_id: str, memory_data: Dict[str, Any], source_memory_id: str):
+        """Pin critical memories that must NEVER be forgotten"""
+        async with self.session_factory() as session:
+            try:
+                # Determine memory type and importance
+                memory_type = 'anxiety_pattern'
+                importance = 10 if 'hamster' in str(memory_data).lower() else 8
+                
+                pinned_memory = AgentMemory(
+                    id=str(uuid.uuid4()),
+                    user_id=user_id,
+                    agent_name=AGENT_NAME,
+                    memory_type=memory_type,
+                    content={
+                        'original_data': memory_data,
+                        'source_memory_id': source_memory_id,
+                        'pinned_reason': memory_data.get('reason', 'Critical importance detected'),
+                        'anxiety_level_at_pin': self.websocket_anxiety_level,
+                        'stick_notes': [
+                            'This memory is CRITICAL',
+                            'The Stick will NEVER forget this',
+                            f'Pinned during anxiety level: {self.websocket_anxiety_level:.1f}%'
+                        ]
+                    },
+                    importance=importance,
+                    timestamp=utc_now(),
+                    last_accessed=utc_now(),
+                    access_count=1
+                )
+                
+                session.add(pinned_memory)
+                
+                # Also log the pinning in CMB
+                pin_log = CentralMemoryBank(
+                    memory_id=str(uuid.uuid4()),
+                    agent_name=AGENT_NAME,
+                    user_id=user_id,
+                    event_type=StickEventTypes.CRITICAL_MEMORY_PINNED,
+                    occurred_at=utc_now(),
+                    created_at=utc_now(),
+                    updated_at=utc_now(),
+                    details={
+                        'pinned_memory_id': pinned_memory.id,
+                        'source_memory_id': source_memory_id,
+                        'importance': importance,
+                        'reason': memory_data.get('reason', 'Critical importance')
+                    },
+                    stick_anxiety_level=self.websocket_anxiety_level,
+                    numeric_value=float(importance),
+                    string_value=memory_type,
+                    never_forget=True,
+                    priority=10,  # Pinning is maximum priority
+                    agent_metadata={
+                        'pinned': True,
+                        'critical': True
+                    }
+                )
+                
+                session.add(pin_log)
+                await session.commit()
+                
+                logger.info(f"The Stick pinned critical memory: {pinned_memory.id}")
+                return pinned_memory.id
+                
+            except Exception as e:
+                await session.rollback()
+                raise Exception(f"The Stick PANICKED while pinning critical memory: {str(e)}")
+
+    async def contribute_to_metadata_rollup(self) -> Dict[str, int]:
+        """Contribute The Stick's metrics to the metadata rollup"""
+        async with self.session_factory() as session:
+            try:
+                # Get counts for the last hour
+                hour_ago = utc_now() - timedelta(hours=1)
+                
+                # Count different event types
+                event_counts = await session.execute(
+                    select(
+                        CentralMemoryBank.event_type,
+                        func.count(CentralMemoryBank.memory_id)
+                    ).where(
+                        and_(
+                            CentralMemoryBank.agent_name == AGENT_NAME,
+                            CentralMemoryBank.created_at >= hour_ago
+                        )
+                    ).group_by(CentralMemoryBank.event_type)
+                )
+                
+                counts = {}
+                for event_type, count in event_counts:
+                    counts[f"stick_{event_type}"] = count
+                
+                # Add special anxiety metrics
+                anxiety_events = await session.execute(
+                    select(func.count(CentralMemoryBank.memory_id)).where(
+                        and_(
+                            CentralMemoryBank.agent_name == AGENT_NAME,
+                            CentralMemoryBank.stick_anxiety_level > ANXIETY_THRESHOLD_PANIC,
+                            CentralMemoryBank.created_at >= hour_ago
+                        )
+                    )
+                )
+                
+                counts['stick_panic_events'] = anxiety_events.scalar() or 0
+                counts['stick_memories'] = sum(counts.values())
+                
+                return counts
+                
+            except Exception as e:
+                logger.error(f"The Stick failed metadata rollup: {e}")
+                return {'stick_memories': 0, 'stick_errors': 1}
 
     async def get_user_patterns(self, user_id: str, min_confidence: float = 0.7) -> List[UserPattern]:
         """Retrieve learned user patterns from central memory bank"""
@@ -468,7 +784,7 @@ class StickDatabaseIntegration:
                     and_(
                         CentralMemoryBank.agent_name == AGENT_NAME,
                         CentralMemoryBank.user_id == user_id,
-                        CentralMemoryBank.event_type == "user_pattern_learned",
+                        CentralMemoryBank.event_type == StickEventTypes.USER_PATTERN_LEARNED,
                         CentralMemoryBank.numeric_value >= min_confidence  # Confidence threshold
                     )
                 ).order_by(desc(CentralMemoryBank.numeric_value))  # Highest confidence first
@@ -494,7 +810,7 @@ class StickDatabaseIntegration:
                     patterns.append(pattern)
                 
                 return patterns
-            
+                        
             except Exception as e:
                 raise Exception(f"The Stick failed to recall user patterns: {str(e)}")
 
@@ -512,7 +828,7 @@ class StickDatabaseIntegration:
                         CentralMemoryBank.event_type == StickEventTypes.USER_PATTERN_OBSERVATION,
                         CentralMemoryBank.occurred_at >= cutoff
                     )
-                    ).order_by(desc(CentralMemoryBank.occurred_at))
+                ).order_by(desc(CentralMemoryBank.occurred_at))
             
                 result = await session.execute(observations_query)
                 observations = result.scalars().all()
@@ -532,59 +848,59 @@ class StickDatabaseIntegration:
                     activity = details.get('detected_activity', 'unknown')
                     anxiety_triggers = details.get('anxiety_triggers', [])
                 
-                # Time-based patterns
-                if hour not in time_patterns:
-                    time_patterns[hour] = {
-                        'activities': [],
-                        'avg_anxiety': [],
-                        'common_triggers': []
-                    }
+                    # Time-based patterns
+                    if hour not in time_patterns:
+                        time_patterns[hour] = {
+                            'activities': [],
+                            'avg_anxiety': [],
+                            'common_triggers': []
+                        }
                 
                     time_patterns[hour]['activities'].append(activity)
                     time_patterns[hour]['avg_anxiety'].append(obs.stick_anxiety_level)
                     time_patterns[hour]['common_triggers'].extend(anxiety_triggers)
                 
-            # Activity patterns
-                if activity not in activity_patterns:
-                    activity_patterns[activity] = {
-                        'count': 0,
-                        'avg_anxiety': [],
-                        'time_distribution': []
-                    }
+                    # Activity patterns
+                    if activity not in activity_patterns:
+                        activity_patterns[activity] = {
+                            'count': 0,
+                            'avg_anxiety': [],
+                            'time_distribution': []
+                        }
                 
                     activity_patterns[activity]['count'] += 1
                     activity_patterns[activity]['avg_anxiety'].append(obs.stick_anxiety_level)
                     activity_patterns[activity]['time_distribution'].append(hour)
                 
-            # Anxiety correlations
-                for trigger in anxiety_triggers:
-                    if trigger not in anxiety_correlations:
-                        anxiety_correlations[trigger] = []
-                    anxiety_correlations[trigger].append(obs.stick_anxiety_level)
+                    # Anxiety correlations
+                    for trigger in anxiety_triggers:
+                        if trigger not in anxiety_correlations:
+                            anxiety_correlations[trigger] = []
+                        anxiety_correlations[trigger].append(obs.stick_anxiety_level)
             
-        # Process patterns
-            processed_time_patterns = {}
+                # Process patterns
+                processed_time_patterns = {}
                 for hour, data in time_patterns.items():
-            # Most common activity at this hour
-            activity_counts = {}
-                for act in data['activities']:
-                    activity_counts[act] = activity_counts.get(act, 0) + 1
+                    # Most common activity at this hour
+                    activity_counts = {}
+                    for act in data['activities']:
+                        activity_counts[act] = activity_counts.get(act, 0) + 1
                 
-                most_common = max(activity_counts, key=activity_counts.get) if activity_counts else 'unknown'
+                    most_common = max(activity_counts, key=activity_counts.get) if activity_counts else 'unknown'
                 
-                processed_time_patterns[hour] = {
-                    'most_common_activity': most_common,
-                    'confidence': activity_counts.get(most_common, 0) / len(data['activities']),
-                    'avg_anxiety': sum(data['avg_anxiety']) / len(data['avg_anxiety']) if data['avg_anxiety'] else 0,
-                    'frequency': len(data['activities'])
-                }
+                    processed_time_patterns[hour] = {
+                        'most_common_activity': most_common,
+                        'confidence': activity_counts.get(most_common, 0) / len(data['activities']),
+                        'avg_anxiety': sum(data['avg_anxiety']) / len(data['avg_anxiety']) if data['avg_anxiety'] else 0,
+                        'frequency': len(data['activities'])
+                    }
             
-            # Calculate confidence
+                # Calculate confidence
                 total_observations = len(observations)
                 pattern_consistency = sum(1 for p in processed_time_patterns.values() if p['confidence'] > 0.7)
                 confidence_score = pattern_consistency / max(len(processed_time_patterns), 1)
             
-            # Create pattern
+                # Create pattern
                 new_pattern = UserPattern(
                     user_id=user_id,
                     pattern_type="weekly_behavior_pattern",
@@ -596,85 +912,85 @@ class StickDatabaseIntegration:
                     learning_sessions=1,
                     last_updated=utc_now(),
                     stick_memory_notes=[
-                    f"Learned from {total_observations} observations",
-                    f"Peak anxiety triggers: {list(anxiety_correlations.keys())[:3]}",
-                                        f"Most consistent hours: {[h for h, p in processed_time_patterns.items() if p['confidence'] > 0.7]}",
-                    f"The Stick is {confidence_score*100:.1f}% confident in these patterns"
-                ]
-            )
+                        f"Learned from {total_observations} observations",
+                        f"Peak anxiety triggers: {list(anxiety_correlations.keys())[:3]}",
+                        f"Most consistent hours: {[h for h, p in processed_time_patterns.items() if p['confidence'] > 0.7]}",
+                        f"The Stick is {confidence_score*100:.1f}% confident in these patterns"
+                    ]
+                )
             
-        # Store the learned pattern
-            await self.store_user_pattern(user_id, new_pattern)
+                # Store the learned pattern using v2 method (includes user patterns table)
+                await self.store_user_pattern_v2(user_id, new_pattern)
             
-            return new_pattern
+                return new_pattern
             
-        except Exception as e:
-            raise Exception(f"The Stick's pattern learning failed (ANXIETY SPIKE!): {str(e)}")
+            except Exception as e:
+                raise Exception(f"The Stick's pattern learning failed (ANXIETY SPIKE!): {str(e)}")
 
     async def check_pattern_match(self, user_id: str, current_metrics: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Check if current behavior matches learned patterns - for proactive optimization"""
-        
-        # Get user patterns
-        patterns = await self.get_user_patterns(user_id, min_confidence=0.7)
+        try:
+            # Get user patterns
+            patterns = await self.get_user_patterns(user_id, min_confidence=0.7)
     
-        if not patterns:
-            return None
+            if not patterns:
+                return None
     
-        # Get the most confident pattern
-        best_pattern = patterns[0] if patterns else None
+            # Get the most confident pattern
+            best_pattern = patterns[0] if patterns else None
     
-        if not best_pattern:
-            return None
+            if not best_pattern:
+                return None
     
-        current_hour = utc_now().hour
-        current_activity = current_metrics.get('detected_activity', 'unknown')
+            current_hour = utc_now().hour
+            current_activity = current_metrics.get('detected_activity', 'unknown')
     
-        # Check time-based pattern match
-        hour_pattern = best_pattern.time_based_patterns.get(str(current_hour), {})
-        expected_activity = hour_pattern.get('most_common_activity')
-        expected_anxiety = hour_pattern.get('avg_anxiety', 0)
+            # Check time-based pattern match
+            hour_pattern = best_pattern.time_based_patterns.get(str(current_hour), {})
+            expected_activity = hour_pattern.get('most_common_activity')
+            expected_anxiety = hour_pattern.get('avg_anxiety', 0)
     
-        # Pattern deviation detection
-        pattern_match = {
-            'matches_pattern': current_activity == expected_activity,
-            'expected_activity': expected_activity,
-            'actual_activity': current_activity,
-            'expected_anxiety': expected_anxiety,
-            'pattern_confidence': hour_pattern.get('confidence', 0),
-            'recommendations': []
-        }
+            # Pattern deviation detection
+            pattern_match = {
+                'matches_pattern': current_activity == expected_activity,
+                'expected_activity': expected_activity,
+                'actual_activity': current_activity,
+                'expected_anxiety': expected_anxiety,
+                'pattern_confidence': hour_pattern.get('confidence', 0),
+                'recommendations': []
+            }
     
-        # Proactive recommendations based on patterns
-        if expected_activity == 'gaming' and current_activity != 'gaming':
-            # User usually games at this time but isn't
-            pattern_match['recommendations'].append({
-            'type': 'PATTERN_DEVIATION',
-                'message': 'User typically games at this hour',
-                'suggested_action': 'Prepare gaming optimization profile',
-                'anxiety_note': 'Deviation from pattern detected - monitoring closely'
-            })
+            # Proactive recommendations based on patterns
+            if expected_activity == 'gaming' and current_activity != 'gaming':
+                # User usually games at this time but isn't
+                pattern_match['recommendations'].append({
+                    'type': 'PATTERN_DEVIATION',
+                    'message': 'User typically games at this hour',
+                    'suggested_action': 'Prepare gaming optimization profile',
+                    'anxiety_note': 'Deviation from pattern detected - monitoring closely'
+                })
     
-        elif expected_activity == current_activity and expected_anxiety > 60:
-            # This activity typically causes high anxiety
-            pattern_match['recommendations'].append({
-                'type': 'ANXIETY_PREVENTION',
-                'message': f'{current_activity} historically causes anxiety spikes',
-                'suggested_action': 'Pre-emptive paper bag allocation',
-                'anxiety_note': 'Preparing for expected anxiety increase'
-            })
+            elif expected_activity == current_activity and expected_anxiety > 60:
+                # This activity typically causes high anxiety
+                pattern_match['recommendations'].append({
+                    'type': 'ANXIETY_PREVENTION',
+                    'message': f'{current_activity} historically causes anxiety spikes',
+                    'suggested_action': 'Pre-emptive paper bag allocation',
+                    'anxiety_note': 'Preparing for expected anxiety increase'
+                })
     
-        # Check anxiety correlation
-        if best_pattern.anxiety_correlation:
-            for trigger, avg_anxiety in best_pattern.anxiety_correlation.items():
-                if avg_anxiety > 70 and trigger in str(current_metrics).lower():
-                    pattern_match['recommendations'].append({
-                        'type': 'ANXIETY_TRIGGER_DETECTED',
-                        'message': f'{trigger} detected - historically causes {avg_anxiety:.1f}% anxiety',
-                        'suggested_action': 'Immediate anxiety mitigation protocols',
-                        'anxiety_note': 'KNOWN ANXIETY TRIGGER ACTIVE!'
-                    })
+            # Check anxiety correlation
+            if best_pattern.anxiety_correlation:
+                for trigger, avg_anxiety in best_pattern.anxiety_correlation.items():
+                    if avg_anxiety > 70 and trigger in str(current_metrics).lower():
+                        pattern_match['recommendations'].append({
+                            'type': 'ANXIETY_TRIGGER_DETECTED',
+                            'message': f'{trigger} detected - historically causes {avg_anxiety:.1f}% anxiety',
+                            'suggested_action': 'Immediate anxiety mitigation protocols',
+                            'anxiety_note': 'KNOWN ANXIETY TRIGGER ACTIVE!'
+                        })
     
-        return pattern_match
+            return pattern_match
     
         except Exception as e:
             raise Exception(f"The Stick failed to check pattern match: {str(e)}")
@@ -732,6 +1048,18 @@ class StickDatabaseIntegration:
                         resolution='violation_documented'
                     )
                     await self.store_anxiety_event(anxiety_event)
+                
+                # Pin if critical
+                if violation.severity == 'critical':
+                    await self.pin_critical_memory(
+                        user_id,
+                        {
+                            'type': 'compliance_violation',
+                            'violation': violation.__dict__,
+                            'reason': f"CRITICAL VIOLATION: {violation.violation_type}"
+                        },
+                        memory_entry.memory_id
+                    )
                 
                 await session.commit()
                 return memory_entry.memory_id
@@ -895,7 +1223,7 @@ class StickDatabaseIntegration:
                             'carl': enc.details.get('carl_location')
                         },
                         'panic_level': enc.string_value,  # Stored panic level in string_value
-                        'anxiety_multiplier': enc.numeric_value,  # Stored multiplier in numeric_value
+                                                'anxiety_multiplier': enc.numeric_value,  # Stored multiplier in numeric_value
                         'infrastructure_risk': enc.details.get('infrastructure_risk'),
                         'paper_bags_consumed': enc.details.get('paper_bags_consumed', 0),
                         'stick_response': enc.details.get('stick_response')
@@ -1171,8 +1499,8 @@ class StickDatabaseIntegration:
                         and_(
                             CentralMemoryBank.agent_name == AGENT_NAME,
                             CentralMemoryBank.occurred_at < cutoff_date,
-                                                        CentralMemoryBank.priority < 5,  # Only low priority
-                            CentralMemoryBank.never_forget.is_(False),  # FIX: Proper boolean check
+                            CentralMemoryBank.priority < 5,  # Only low priority
+                            CentralMemoryBank.never_forget.is_(False),  # Proper boolean check
                             CentralMemoryBank.relevant_agents.is_(None),  # No hamsters
                             CentralMemoryBank.event_type != StickEventTypes.COMPLIANCE_VIOLATION  # Keep all violations
                         )
@@ -1197,3 +1525,38 @@ class StickDatabaseIntegration:
             except Exception as e:
                 await session.rollback()
                 raise Exception(f"The Stick's memory cleanup failed (very concerning!): {str(e)}")
+
+    async def check_for_hamster_memories(self, user_id: str) -> List[Dict[str, Any]]:
+        """Quick check for any hamster-related memories - The Stick's primary concern!"""
+        async with self.session_factory() as session:
+            try:
+                # Look for hamster memories in both CMB and pinned memories
+                cmb_hamsters = await session.execute(
+                    select(CentralMemoryBank).where(
+                        and_(
+                            CentralMemoryBank.agent_name == AGENT_NAME,
+                            CentralMemoryBank.user_id == user_id,
+                            or_(
+                                CentralMemoryBank.relevant_agents.ilike('%bob%'),
+                                CentralMemoryBank.relevant_agents.ilike('%steve%'),
+                                CentralMemoryBank.relevant_agents.ilike('%carl%')
+                            )
+                        )
+                    ).order_by(desc(CentralMemoryBank.occurred_at)).limit(10)
+                )
+                
+                hamster_memories = []
+                for memory in cmb_hamsters.scalars().all():
+                    hamster_memories.append({
+                        'memory_id': memory.memory_id,
+                        'timestamp': memory.occurred_at.isoformat(),
+                        'hamsters': memory.relevant_agents,
+                        'anxiety_level': memory.stick_anxiety_level,
+                        'event_type': memory.event_type,
+                        'details': memory.details
+                    })
+                
+                return hamster_memories
+                
+            except Exception as e:
+                raise Exception(f"The Stick failed to check hamster memories: {str(e)}")

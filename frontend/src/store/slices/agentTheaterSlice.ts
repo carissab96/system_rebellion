@@ -2,13 +2,14 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 interface AgentTheaterState {
+  agents: any;
   sirHawkington: any;
   methSnail: any;
   hamsters: any;
   quantumShadow: any;
   theStick: any;
   vic20: any;
-  connectionStatus: 'connecting' | 'connected' | 'disconnected';
+  connectionStatus: 'connecting' | 'connected' | 'disconnected' | 'error';
   lastUpdate: string | null;
   error: string | null;
   activeAgentCount: number;
@@ -18,11 +19,12 @@ interface AgentTheaterState {
 }
 
 const initialState: AgentTheaterState = {
+  agents: {},
   connectionStatus: 'connecting',
   lastUpdate: null,
   error: null,
   activeAgentCount: 0,
-  totalAgents: 6,
+  totalAgents: 0,
   systemInfo: null,
   circuitBreakerStatus: 'closed',
   sirHawkington: undefined,
@@ -37,7 +39,7 @@ export const agentTheaterSlice = createSlice({
   name: 'agentTheater',
   initialState,
   reducers: {
-    setConnectionStatus: (state, action: PayloadAction<'connecting' | 'connected' | 'disconnected'>) => {
+    setConnectionStatus: (state, action: PayloadAction<'connecting' | 'connected' | 'disconnected' | 'error'>) => {
       state.connectionStatus = action.payload;
       if (action.payload === 'connected') {
         state.error = null;

@@ -84,7 +84,7 @@ class TestMethSnailDatabaseIntegration:
     async def test_store_optimization_metrics_success(self, db_integration, mock_session):
         """Test successful metrics storage"""
         # Mock the log_agent_event_async function
-        with patch('app.agents.meth_snail.database_integration.log_agent_event_async') as mock_log:
+        with patch('app.ai_agents.meth_snail.database_integration.log_agent_event_async') as mock_log:
             mock_record = MagicMock()
             mock_record.memory_id = 12345
             mock_log.return_value = mock_record
@@ -158,7 +158,7 @@ class TestMethSnailDatabaseIntegration:
     @pytest.mark.asyncio
     async def test_store_decision_success(self, db_integration, mock_session):
         """Test successful decision storage"""
-        with patch('app.agents.meth_snail.database_integration.log_agent_event_async') as mock_log:
+        with patch('app.ai_agents.meth_snail.database_integration.log_agent_event_async') as mock_log:
             mock_record = MagicMock()
             mock_record.memory_id = 67890
             mock_log.return_value = mock_record
@@ -200,7 +200,7 @@ class TestMethSnailDatabaseIntegration:
     @pytest.mark.asyncio
     async def test_jitter_level_methods(self, db_integration, mock_session):
         """Test jitter level storage and retrieval"""
-        with patch('app.agents.meth_snail.database_integration.log_agent_event_async') as mock_log:
+        with patch('app.ai_agents.meth_snail.database_integration.log_agent_event_async') as mock_log:
             mock_record = MagicMock()
             mock_record.memory_id = 11111
             mock_log.return_value = mock_record

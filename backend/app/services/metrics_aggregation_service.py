@@ -1,5 +1,5 @@
 # app/services/metrics_aggregation_service.py
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Dict
 import asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,6 +7,13 @@ from sqlalchemy import select, func
 import logging
 
 logger = logging.getLogger(__name__)
+
+UTC = timezone.utc
+
+
+def utc_now() -> datetime:
+    """Get current UTC time with timezone awareness"""
+    return datetime.now(UTC)
 
 class MetricsAggregationService:
     """The Meth Snail's data optimization engine"""
@@ -28,10 +35,12 @@ class MetricsAggregationService:
             end_hour = start_hour + timedelta(hours=1)
             
             # Query raw metrics for this hour
-            query = select(system_metrics).filter(
-                system_metrics.user_id == user_id,
-                system_metrics.timestamp >= start_hour,
-                system_metrics.timestamp < end_hour
+            from backend.app.models.metrics import SystemMetrics
+            
+            query = select(SystemMetrics).filter(
+                SystemMetrics.user_id == user_id,
+                SystemMetrics.timestamp >= start_hour,
+                SystemMetrics.timestamp < end_hour
             )
             
             result = await db.execute(query)

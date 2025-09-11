@@ -220,7 +220,7 @@ async def register_user(
             hashed_password=hashed_password,
             is_active=True,
             is_onboarded=False,  
-            created_at=utc_now()
+            created_at=datetime.now(timezone.utc)
         )
         
         # Save user to database
@@ -241,11 +241,11 @@ async def register_user(
         
         # Generate tokens for immediate login
         access_token = create_access_token(
-            data={"sub": new_user.email, "user_id": new_user.id}
+            data={"sub": str(user.id), "user_id": str(user.id)}
         )
         
         refresh_token = create_refresh_token(
-            data={"sub": new_user.email, "user_id": new_user.id}
+            data={"sub": str(user.id), "user_id": str(user.id)}
         )
         
         logging.info(f"🎟️ Tokens generated successfully")
@@ -293,7 +293,7 @@ async def create_test_user(db: Union[Session, AsyncSession] = Depends(get_db)):
             email="test@example.com",
             hashed_password=hash_password("password123"),
             is_active=True,
-            created_at=utc_now()
+            created_at=datetime.now(timezone.utc)
         )
         
         await save_user(db, test_user)
@@ -368,9 +368,12 @@ async def login_for_access_token(
     )
     
     # Update last login
-    user.last_login = utc_now()
+    
     user.failed_login_attempts = 0  # Reset failed attempts
     user.lockout_until = None  # Clear any lockouts
+    user.last_login = datetime.now(timezone.utc) 
+    user.updated_at = datetime.now(timezone.utc)
+    user.is_onboarded = True
     
     # Save changes using helper function
     if await is_async_session(db):
@@ -378,6 +381,11 @@ async def login_for_access_token(
     else:
         db.commit()
     
+    def iso(dt):
+        if not dt: return None
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)  # or decide a policy
+        return dt.isoformat()
     # Return full token with complete user information
     # Replace the problematic section with just the fields you need:
     return {
@@ -391,11 +399,11 @@ async def login_for_access_token(
             "last_name": user.last_name,
             "is_onboarded": user.is_onboarded,
             "is_active": user.is_active,
-            "created_at": user.created_at.isoformat() if isinstance(user.created_at, datetime) else None,
-            "updated_at": user.updated_at.isoformat() if isinstance(user.updated_at, datetime) else None,
-            "last_login": user.last_login.isoformat() if isinstance(user.last_login, datetime) else None,
+            "created_at": iso(user.created_at),
+            "updated_at": iso(user.updated_at),
+            "last_login": iso(user.last_login),
             "failed_login_attempts": user.failed_login_attempts,
-            "lockout_until": user.lockout_until.isoformat() if isinstance(user.lockout_until, datetime) else None
+            "lockout_until": iso(user.lockout_until)
         }
     }
 
@@ -439,7 +447,7 @@ async def test_database_operations(db: Union[Session, AsyncSession] = Depends(ge
             email=test_email,
             hashed_password=test_password,
             is_active=True,
-            created_at=utc_now()
+            created_at=datetime.now(timezone.utc)
         )
         
         # Add to session
@@ -590,7 +598,7 @@ async def auth_status(request: Request, db: AsyncSession = Depends(get_db)):
             "auth_service": "active",
             "is_authenticated": is_authenticated,
             "email": email,
-            "timestamp": utc_now().isoformat()
+            "timestamp": datetime.now(timezone.utc)
         }
         
         # Include user data if available
@@ -605,7 +613,7 @@ async def auth_status(request: Request, db: AsyncSession = Depends(get_db)):
             "status": "operational",
             "auth_service": "active",
             "is_authenticated": False,
-            "timestamp": utc_now().isoformat()
+            "timestamp": datetime.now(timezone.utc)
         }
 
 @router.get("/me")

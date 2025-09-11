@@ -2,7 +2,6 @@
 
 // Shared User interface to avoid repetition
 export interface User {
-    token: any;
     id: string;
     email: string;
     first_name: string;

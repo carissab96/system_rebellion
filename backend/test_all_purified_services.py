@@ -6,7 +6,6 @@ Verifies ZERO FAKE DATA compliance across all services
 
 import asyncio
 import sys
-from datetime import datetime
 
 async def test_all_purified_services():
     """Test all purified services to verify NO FAKE DATA"""
@@ -15,8 +14,9 @@ async def test_all_purified_services():
     print(" 🧐⚡ COMPREHENSIVE PURIFIED SERVICES TEST - ZERO FAKE DATA VERIFICATION")
     print("="*100)
     
-    print(f"\n🕐 Test Started: {utc_now()time('%Y-%m-%d %H:%M:%S')}")
+    from datetime import datetime, timezone
     
+    print(f"\n🕐 Test Started: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}")
     test_results = {}
     
     # Test CPU Service
@@ -135,7 +135,7 @@ async def test_all_purified_services():
         print(f"\n🧐💥 SOME SERVICES REQUIRE ATTENTION!")
         print(f"   Check failed services above for issues")
     
-    print(f"\n🕐 Test Completed: {utc_now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"\n🕐 Test Completed: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}")
     print("="*100)
 
 if __name__ == "__main__":

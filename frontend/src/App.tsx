@@ -82,7 +82,7 @@ function App() {
   useEffect(() => {
     // Initialize auth with token validation
     dispatch(initializeAuth());
-  }, [dispatch]);
+  }, [dispatch]);  
 
   // Show loading while initializing authentication
   if (isInitializing) {
@@ -171,4 +171,4 @@ function App() {
   );
 }
 
-export default App;
+export default App; 

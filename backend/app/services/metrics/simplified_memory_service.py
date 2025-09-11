@@ -16,7 +16,18 @@ CORE PRINCIPLES:
 import psutil
 import time
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
+
+UTC = timezone.utc
+
+# def datetime_to_iso(dt: Optional[datetime]) -> Optional[str]:
+#     """Convert datetime to ISO format string"""
+#     return dt.isoformat() if dt else None
+
+def utc_now() -> datetime:
+    """Get current UTC time"""
+    return datetime.now(UTC)
+
 from typing import Dict, Any, List, Optional
 import asyncio
 

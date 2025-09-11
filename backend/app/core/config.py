@@ -1,51 +1,82 @@
-import secrets
+# app/core/config.py
+from __future__ import annotations
+
 import os
 from typing import List, Union
 
-from pydantic import AnyHttpUrl, field_validator
-from pydantic_settings import BaseSettings
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
+from pydantic import field_validator, ValidationInfo
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    # Pydantic v2 settings config
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,   # env var keys are chill
+        extra="ignore",
+    )
+
+    # API
     API_V1_STR: str = "/api"
-    # Use a fixed SECRET_KEY for consistent token validation
-    # In production, this should be set via environment variable
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "system-rebellion-fixed-secret-key-for-development-only")
-    # 60 minutes * 24 hours * 8 days = 8 days
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
+    PROJECT_NAME: str = "System Rebellion"
+
+    # Server
     SERVER_NAME: str = "System Rebellion"
-    SERVER_HOST: AnyHttpUrl = "http://127.0.0.1:8000"
-    # BACKEND_CORS_ORIGINS is a JSON-formatted list of origins
-    # e.g: ["http://localhost", "http://localhost:4200", "http://localhost:3000"]
-    BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = [
+    SERVER_HOST: str = os.getenv("SERVER_HOST", "http://127.0.0.1:8000")
+
+    # CORS: can be JSON list or comma-separated string
+    BACKEND_CORS_ORIGINS: Union[str, List[str]] = [
         "http://127.0.0.1:8000",
         "http://localhost:8000",
         "http://127.0.0.1:5173",
         "http://localhost:5173",
     ]
 
+    # Database
+    DATABASE_URL: str | None = None
+    SQLALCHEMY_DATABASE_URI: str = ""  # derived below
+
+    # Security / JWT
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "system-rebellion-fixed-secret-key-for-development-only")
+    ALGORITHM: str = os.getenv("ALGORITHM", "HS256")
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))  # 1h default
+    REFRESH_TOKEN_EXPIRE_DAYS: int = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
+
+    # Environment flags
+    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
+    DEBUG: bool = os.getenv("DEBUG", "true").lower() in {"1", "true", "yes", "on"}
+
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
-    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[str], str]:
-        if isinstance(v, str) and not v.startswith("["):
-            return [i.strip() for i in v.split(",")]
-        elif isinstance(v, (list, str)):
+    @classmethod
+    def parse_cors(cls, v: Union[str, List[str]]) -> List[str]:
+        # Accept either JSON-style list or plain comma-separated string
+        if isinstance(v, list):
             return v
-        raise ValueError(v)
+        if isinstance(v, str):
+            s = v.strip()
+            if s.startswith("["):
+                import json
+                try:
+                    parsed = json.loads(s)
+                    if isinstance(parsed, list):
+                        return [str(i).strip() for i in parsed]
+                except Exception:
+                    pass
+            # Fallback: comma separated
+            return [i.strip() for i in s.split(",") if i.strip()]
+        return []
 
-    PROJECT_NAME: str = "System Rebellion"
-    
-    # Database settings
-    SQLALCHEMY_DATABASE_URI: str = "sqlite+aiosqlite:///./system_rebellion.db"
-    
-    # JWT settings
-    ALGORITHM: str = "HS256"
-
-    class Config:
-        case_sensitive = True
+    @field_validator("SQLALCHEMY_DATABASE_URI", mode="before")
+    @classmethod
+    def derive_db_uri(cls, v: str, info: ValidationInfo) -> str:
+        # Prefer explicit DATABASE_URL; otherwise default sqlite aiosqlite
+        data = info.data or {}
+        db_url = data.get("DATABASE_URL") or os.getenv("DATABASE_URL")
+        if db_url and db_url.strip():
+            return db_url.strip()
+        return "sqlite+aiosqlite:///./system_rebellion.db"
 
 
 settings = Settings()
+
