@@ -49,10 +49,12 @@ export const useSystemMetricsWebSocket = (
     console.log('[useSystemMetricsWebSocket] Initializing WebSocket connection...');
     const ws = new WebSocketService(API_ENDPOINTS.WEBSOCKET.SYSTEM_METRICS); // no token here;
     svcRef.current = ws;
-
+    // in useSystemMetricsWebSocket handleMessage, before the switch
+    
     // single subscriber with the app-level switch(msg.type)
     const handleMessage = (msg: any) => {
       try {
+        if (msg?.type === 'metrics_update') console.log('[ws] metrics_update payload:', msg.data);
         switch (msg?.type) {
           case 'connection_established':
             dispatch(setConnectionStatus('connecting'));
@@ -107,8 +109,8 @@ export const useSystemMetricsWebSocket = (
     });
 
     // wire error/close into optional callbacks
-    ws.onerror = (evt: Event) => callbacksRef.current.onError?.(evt);
-    ws.onclose = () => callbacksRef.current.onClose?.();
+    ws.onError = (evt: Event) => callbacksRef.current.onError?.(evt);
+    ws.onClose = () => callbacksRef.current.onClose?.();
 
     return () => {
       ws.unsubscribe(handleMessage);

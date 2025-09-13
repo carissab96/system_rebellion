@@ -40,8 +40,8 @@ export const useWebSocket = (
     });
 
     // Optional: basic close/error wiring (service will reconnect anyway)
-    ws.onerror = (evt: Event) => callbacksRef.current.onError?.(evt);
-    ws.onclose = () => callbacksRef.current.onClose?.();
+    // ws.onerror = (evt: Event) => callbacksRef.current.onError?.(evt);
+    // ws.onclose = () => callbacksRef.current.onClose?.();
 
     return () => {
       ws.unsubscribe(handleMessage);
