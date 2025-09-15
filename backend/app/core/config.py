@@ -1,82 +1,100 @@
-# app/core/config.py
+# backend/app/core/config.py
 from __future__ import annotations
 
-import os
-from typing import List, Union
+from functools import lru_cache
+from typing import List, Any
+from pathlib import Path
+import json
 
-from pydantic import field_validator, ValidationInfo
+from pydantic import Field, field_validator, AliasChoices
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+def _find_env_file() -> str | None:
+    """Walk upward from this file until we find a .env. Stop after 8 levels."""
+    here = Path(__file__).resolve()
+    for parent in [here.parent] + list(here.parents):
+        candidate = parent / ".env"
+        if candidate.exists():
+            return str(candidate)
+        # look for common names too
+        for name in (".env.development", ".env.dev", ".env.local", ".env.production"):
+            c2 = parent / name
+            if c2.exists():
+                return str(c2)
+    return None
+
+
 class Settings(BaseSettings):
-    # Pydantic v2 settings config
+    # Security
+    SECRET_KEY: str
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+
+    # CORS
+    CORS_ORIGINS: List[str] = ["http://localhost:5173", "http://localhost:8000"]
+
+    # App
+    ENV: str = Field(
+        default="dev",
+        validation_alias=AliasChoices("ENV", "ENVIRONMENT"),
+    )
+    DEBUG: bool = False
+
+    # Database (accept both names)
+    DB_URL: str = Field(
+        default="sqlite+aiosqlite:///./dev.db",
+        validation_alias=AliasChoices("DB_URL", "DATABASE_URL"),
+    )
+
+    # Misc
+    RENDER_API_KEY: str | None = None
+    REDIS_URL: str | None = None
+
+    # Pydantic v2 config: load .env no matter where uvicorn is run from
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=_find_env_file(),
         env_file_encoding="utf-8",
-        case_sensitive=False,   # env var keys are chill
         extra="ignore",
     )
 
-    # API
-    API_V1_STR: str = "/api"
-    PROJECT_NAME: str = "System Rebellion"
-
-    # Server
-    SERVER_NAME: str = "System Rebellion"
-    SERVER_HOST: str = os.getenv("SERVER_HOST", "http://127.0.0.1:8000")
-
-    # CORS: can be JSON list or comma-separated string
-    BACKEND_CORS_ORIGINS: Union[str, List[str]] = [
-        "http://127.0.0.1:8000",
-        "http://localhost:8000",
-        "http://127.0.0.1:5173",
-        "http://localhost:5173",
-    ]
-
-    # Database
-    DATABASE_URL: str | None = None
-    SQLALCHEMY_DATABASE_URI: str = ""  # derived below
-
-    # Security / JWT
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "system-rebellion-fixed-secret-key-for-development-only")
-    ALGORITHM: str = os.getenv("ALGORITHM", "HS256")
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))  # 1h default
-    REFRESH_TOKEN_EXPIRE_DAYS: int = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
-
-    # Environment flags
-    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
-    DEBUG: bool = os.getenv("DEBUG", "true").lower() in {"1", "true", "yes", "on"}
-
-    @field_validator("BACKEND_CORS_ORIGINS", mode="before")
+    @field_validator("SECRET_KEY")
     @classmethod
-    def parse_cors(cls, v: Union[str, List[str]]) -> List[str]:
-        # Accept either JSON-style list or plain comma-separated string
+    def _require_secret(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("SECRET_KEY is required and cannot be empty")
+        return v
+
+    @field_validator("CORS_ORIGINS", mode="before")
+    @classmethod
+    def _parse_cors(cls, v: Any) -> List[str]:
+        # Accept JSON array or comma-separated string
         if isinstance(v, list):
-            return v
+            return [s.strip() for s in v]
         if isinstance(v, str):
             s = v.strip()
+            # Try JSON first
             if s.startswith("["):
-                import json
                 try:
-                    parsed = json.loads(s)
-                    if isinstance(parsed, list):
-                        return [str(i).strip() for i in parsed]
+                    data = json.loads(s)
+                    if isinstance(data, list):
+                        return [str(x).strip() for x in data]
                 except Exception:
                     pass
-            # Fallback: comma separated
-            return [i.strip() for i in s.split(",") if i.strip()]
-        return []
-
-    @field_validator("SQLALCHEMY_DATABASE_URI", mode="before")
-    @classmethod
-    def derive_db_uri(cls, v: str, info: ValidationInfo) -> str:
-        # Prefer explicit DATABASE_URL; otherwise default sqlite aiosqlite
-        data = info.data or {}
-        db_url = data.get("DATABASE_URL") or os.getenv("DATABASE_URL")
-        if db_url and db_url.strip():
-            return db_url.strip()
-        return "sqlite+aiosqlite:///./system_rebellion.db"
+            # Fallback: comma-separated
+            return [part.strip() for part in s.split(",") if part.strip()]
+        return ["http://localhost:5173", "http://localhost:8000"]
 
 
-settings = Settings()
+@lru_cache
+def get_settings() -> Settings:
+    s = Settings()
+    print(f"[config] Loaded settings: ENV={s.ENV} DEBUG={s.DEBUG} ENV_FILE={Settings.model_config.get('env_file')}")
+    return s
 
+
+# Legacy module-level export
+settings = get_settings()
+
+__all__ = ["Settings", "get_settings", "settings"]

@@ -9,13 +9,14 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 import uuid
 
-from app.core.config import settings
+from app.core.config import get_settings
+s=get_settings()
 from app.core.database import get_async_db
 from app.models.user import User  # adjust import if your model path differs
 
 # ----- Config / crypto -----
-SECRET_KEY = settings.SECRET_KEY
-ALGORITHM = settings.ALGORITHM
+SECRET_KEY = s.SECRET_KEY
+ALGORITHM = s.ALGORITHM
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 REFRESH_TOKEN_EXPIRE_DAYS = 7
 

@@ -37,46 +37,68 @@ try:
 except Exception:
     get_metrics_repository = None  # type: ignore
 
+logger = logging.getLogger(__name__)
+router = APIRouter()
+
 # --- Persistence policy toggles ---
-PERSISTENCE_POLICY = os.getenv("WS_PERSISTENCE_POLICY", "soft")  # soft | hard | hybrid
+# Per prompt: default is SOFT, and soft means "do not close on DB failure".
+PERSISTENCE_POLICY = os.getenv("WS_PERSISTENCE_POLICY", "soft").lower()  # soft | hard | hybrid
 FAIL_THRESHOLD = int(os.getenv("WS_PERSISTENCE_FAIL_THRESHOLD", "3"))
 FAIL_WINDOW_SEC = int(os.getenv("WS_PERSISTENCE_FAIL_WINDOW_SEC", "60"))
+
 async def _apply_backpressure(bp) -> None:
     """
-    Tolerant backpressure shim. Supports multiple handler APIs.
-    Never throws. Sleeps if a positive wait is indicated.
+    Backpressure shim with preference for v2-style get_overall_pressure().
+    Falls back to older should_throttle/get_wait_time signatures if needed.
+    Never throws.
     """
     if not bp:
         return
     try:
-        wait = 0.0
+        # Preferred: a single pressure scalar
+        gop = getattr(bp, "get_overall_pressure", None)
+        if callable(gop):
+            try:
+                pressure = float(gop() or 0)
+            except Exception:
+                pressure = 0.0
+            if pressure > 0:
+                # gentle linear sleep; cap small
+                await asyncio.sleep(min(0.5, 0.01 * pressure))
+                return
 
-        # Common pattern: should_* + get_wait_time()
+        # Legacy APIs
+        wait = 0.0
         fn = getattr(bp, "should_throttle", None)
         if callable(fn) and fn():
             getter = getattr(bp, "get_wait_time", None)
             if callable(getter):
-                wait = float(getter() or 0)
+                try:
+                    wait = float(getter() or 0)
+                except Exception:
+                    wait = 0.0
 
-        # Alternate names
         if wait <= 0:
             fn = getattr(bp, "should_backoff", None)
             if callable(fn) and fn():
                 getter = getattr(bp, "backoff_time", None)
                 if callable(getter):
-                    wait = float(getter() or 0)
+                    try:
+                        wait = float(getter() or 0)
+                    except Exception:
+                        wait = 0.0
 
-        # “Just tell me the wait” style APIs
         if wait <= 0:
-            getter = getattr(bp, "get_wait_time", None)
-            if callable(getter):
-                wait = float(getter() or 0)
+            for name in ("get_wait_time", "get_delay"):
+                getter = getattr(bp, name, None)
+                if callable(getter):
+                    try:
+                        wait = float(getter() or 0)
+                        break
+                    except Exception:
+                        wait = 0.0
+
         if wait <= 0:
-            getter = getattr(bp, "get_delay", None)
-            if callable(getter):
-                wait = float(getter() or 0)
-        if wait <= 0:
-            # Some folks store a field
             val = getattr(bp, "wait_time", 0) or getattr(bp, "delay", 0)
             try:
                 wait = float(val or 0)
@@ -85,11 +107,9 @@ async def _apply_backpressure(bp) -> None:
 
         if wait > 0:
             await asyncio.sleep(wait)
+
     except Exception as e:
         logger.error("Backpressure handler error: %s", e, exc_info=True)
-
-logger = logging.getLogger(__name__)
-router = APIRouter()
 
 async def get_system_info() -> Dict[str, Any]:
     """Return real host info. On failure, return explicit error object."""
@@ -111,7 +131,7 @@ async def get_system_info() -> Dict[str, Any]:
         logger.error("Error getting system info: %s", str(e), exc_info=True)
         return {"error": True, "message": "Failed to retrieve system information"}
 
-# Resilience components
+# Resilience components (names are part of the public contract)
 metrics_circuit_breaker = get_circuit_breaker("websocket_connection")
 metrics_backpressure = get_backpressure_handler("websocket_messages")
 
@@ -184,7 +204,7 @@ def _now_iso() -> str:
 async def system_metrics_socket(websocket: WebSocket):
     """
     System Metrics WebSocket:
-      - authenticate first (query ?token= or one-time message),
+      - authenticate via query ?token=... only (do NOT accept token in first message),
       - register once (breaker-guarded),
       - persist metrics with a single ACK/NACK,
       - no fake data, no duplicate sends.
@@ -219,26 +239,16 @@ async def system_metrics_socket(websocket: WebSocket):
         await websocket.accept()
         logger.info("WebSocket connection accepted for %s", client_id)
 
-        # Authenticate: prefer query param ?token=; otherwise prompt once for {"token": "..."}
+        # Authenticate strictly via query param
         token = (websocket.query_params.get("token") or "").replace("Bearer ", "").strip()
         if not token:
             await websocket.send_json({
-                "type": "connection_established",
-                "message": "Please authenticate by sending {'token': '...'}",
-                "client_id": client_id,
-                "timestamp": _now_iso(),
+                "type": "error",
+                "message": "Missing authentication token in query string (?token=...)",
+                "code": "missing_token",
             })
-            try:
-                auth_message = await asyncio.wait_for(websocket.receive_json(), timeout=10.0)
-                if not isinstance(auth_message, dict) or "token" not in auth_message:
-                    await websocket.send_json({"type": "error", "message": "Invalid authentication message", "code": "invalid_auth_format"})
-                    await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-                    return
-                token = (auth_message.get("token") or "").replace("Bearer ", "").strip()
-            except asyncio.TimeoutError:
-                await websocket.send_json({"type": "error", "message": "Authentication timeout", "code": "auth_timeout"})
-                await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-                return
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            return
 
         try:
             user = await get_current_user_from_token(token)
@@ -252,7 +262,7 @@ async def system_metrics_socket(websocket: WebSocket):
 
         logger.info("WebSocket authenticated for user %s (%s)", getattr(user, "email", None), client_id)
 
-         # Register the connection under the circuit breaker
+        # Register the connection under the circuit breaker
         try:
             if hasattr(metrics_circuit_breaker, "execute"):
                 await metrics_circuit_breaker.execute(ws_manager.connect, websocket)
@@ -268,8 +278,8 @@ async def system_metrics_socket(websocket: WebSocket):
             try:
                 await websocket.send_json({
                     "type": "registration_error",
-                    "message": str(e)[:500],   # enough to see signature/args
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "message": str(e)[:500],
+                    "timestamp": _now_iso(),
                 })
             except Exception:
                 pass
@@ -289,7 +299,12 @@ async def system_metrics_socket(websocket: WebSocket):
             logger.error("Failed to initialize AI Agent Manager: %s", str(e))
             agent_manager = None
 
-        # Initial system info
+        # Initial handshake + system info
+        await websocket.send_json({
+            "type": "connection_established",
+            "client_id": client_id,
+            "timestamp": _now_iso(),
+        })
         await websocket.send_json({
             "type": "system_info",
             "data": await get_system_info(),
@@ -309,7 +324,7 @@ async def system_metrics_socket(websocket: WebSocket):
             if hasattr(metrics_circuit_breaker, "can_attempt_connection") and not metrics_circuit_breaker.can_attempt_connection():
                 wait_time = int(getattr(metrics_circuit_breaker, "get_wait_time", lambda: 5)())
                 await websocket.send_json({
-                    "type": "circuit_breaker",
+                    "type": "circuit_open",
                     "status": "open",
                     "message": f"Cooling down for {wait_time}s",
                     "retry_after": wait_time,
@@ -347,8 +362,6 @@ async def system_metrics_socket(websocket: WebSocket):
                         if missing:
                             err_msg = f"Missing required metrics: {', '.join(missing)}"
                             dd_inc("rebellion.ws.persist.failure", route="system_metrics", reason="missing_required")
-                            consec_failures += 1
-                            first_fail_ts = first_fail_ts or time.time()
                         else:
                             repo = await get_metrics_repository()
                             saved = await repo.create_metric(
@@ -364,15 +377,11 @@ async def system_metrics_socket(websocket: WebSocket):
                             saved_id = str(getattr(saved, "id", ""))
                             ok = True
                             dd_inc("rebellion.ws.persist.success", route="system_metrics")
-                            consec_failures = 0
-                            first_fail_ts = None
                             logger.debug("💾 Metrics saved for user %s", getattr(user, "email", None))
 
                     except Exception as db_error:
                         err_msg = str(db_error)
                         dd_inc("rebellion.ws.persist.failure", route="system_metrics", reason="exception")
-                        consec_failures += 1
-                        first_fail_ts = first_fail_ts or time.time()
                         logger.error("DB save failed: %s", err_msg, exc_info=True)
 
                     # One send, always
@@ -387,36 +396,47 @@ async def system_metrics_socket(websocket: WebSocket):
                         payload["error"] = err_msg
                     await websocket.send_json(payload)
 
-                    # Optional cutoff logic AFTER sending the result
-                    recent_burst = (time.time() - first_fail_ts) <= FAIL_WINDOW_SEC if first_fail_ts else False
-                    should_cutoff = (
-                        (PERSISTENCE_POLICY == "soft") or
-                        (PERSISTENCE_POLICY == "hybrid" and consec_failures >= FAIL_THRESHOLD and recent_burst)
-                    )
-                    if should_cutoff:
-                        try:
-                            await websocket.send_json({
-                                "type": "ingest_down",
-                                "message": "DB persistence failing; closing socket",
-                                "failures": consec_failures,
-                                "window_sec": FAIL_WINDOW_SEC,
-                                "policy": PERSISTENCE_POLICY,
-                                "timestamp": _now_iso(),
-                            })
-                        except Exception:
-                            pass
-                        await websocket.close(code=1011)
-                        break
+                    # SOFT policy: do NOT close on persist failure. Ever.
+                    if PERSISTENCE_POLICY in ("hard", "hybrid"):
+                        # failure counting only applies to non-soft modes
+                        if not ok:
+                            nonlocal_fail_ts = locals().get("first_fail_ts")
+                            nonlocal_consec = locals().get("consec_failures")
+                            # bump counters in outer scope
+                        consec_failures += (0 if ok else 1)
+                        first_fail_ts = first_fail_ts or (0 if ok else time.time())
+
+                        recent_burst = (time.time() - first_fail_ts) <= FAIL_WINDOW_SEC if first_fail_ts else False
+                        should_cutoff = (
+                            (PERSISTENCE_POLICY == "hard") or
+                            (PERSISTENCE_POLICY == "hybrid" and consec_failures >= FAIL_THRESHOLD and recent_burst)
+                        )
+                        if (not ok) and should_cutoff:
+                            try:
+                                await websocket.send_json({
+                                    "type": "ingest_down",
+                                    "message": "DB persistence failing; closing socket",
+                                    "failures": consec_failures,
+                                    "window_sec": FAIL_WINDOW_SEC,
+                                    "policy": PERSISTENCE_POLICY,
+                                    "timestamp": _now_iso(),
+                                })
+                            except Exception:
+                                pass
+                            await websocket.close(code=1011)
+                            break
+                    else:
+                        # soft: reset failure counters on success, ignore otherwise
+                        if ok:
+                            consec_failures = 0
+                            first_fail_ts = None
 
                 # transport/compute path success for this iteration
                 if hasattr(metrics_circuit_breaker, "record_success"):
                     metrics_circuit_breaker.record_success()
 
-                # Backpressure for outbound stream
-                if metrics_backpressure.should_throttle():
-                    wait = metrics_backpressure.get_wait_time()
-                    if wait > 0:
-                        await asyncio.sleep(wait)
+                # Preferred backpressure model with compatibility fallback
+                await _apply_backpressure(metrics_backpressure)
 
                 # Send latest metrics update to client
                 try:
@@ -431,7 +451,7 @@ async def system_metrics_socket(websocket: WebSocket):
                     # Prevent accidental coroutine leakage in the payload
                     logger.error("Serialization error: %s", str(e))
                     await websocket.send_json({
-                        "type": "metrics_error",
+                        "type": "error",
                         "timestamp": _now_iso(),
                         "message": "Metrics processing error",
                     })

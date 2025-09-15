@@ -18,7 +18,8 @@ from app.schemas.user import UserCreate, UserResponse
 from app.schemas.token import Token
 from app.core.security import hash_password, verify_password, create_access_token, create_refresh_token, decode_token, SECRET_KEY, ALGORITHM
 from app.core.security import ACCESS_TOKEN_EXPIRE_MINUTES
-from app.core.config import settings
+from app.core.config import get_settings
+s=get_settings()
 from app.services.system_log_service import LogService
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -497,7 +498,8 @@ async def debug_db_config():
     """
     Sir Hawkington's Database Configuration Inspection
     """
-    from app.core.config import settings
+    from app.core.config import get_settings
+    
     
     # Don't expose actual credentials
     db_config = {
@@ -505,8 +507,7 @@ async def debug_db_config():
         "database_name": settings.DATABASE_URL.split("/")[-1] if hasattr(settings, "DATABASE_URL") else "unknown",
         "connection_pool_size": getattr(settings, "DATABASE_POOL_SIZE", "unknown"),
         "echo": getattr(settings, "DATABASE_ECHO", "unknown"),
-    }
-    
+    }   
     return db_config
 
 @router.get("/health-check/")

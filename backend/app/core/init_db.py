@@ -2,7 +2,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.models.user import User
 from app.models.optimization import OptimizationProfile
-from app.core.config import settings
+from app.core.config import get_settings
+s=get_settings()
 from app.core.security import get_password_hash
 
 async def init_db(db: AsyncSession) -> None:

@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useAgentTheater } from '../../hooks/useAgentTheater';
 import { AgentPattern } from '../../components/onboarding/components/AgentPattern';
-import { getSystemMetricsWebSocket } from '../../services/websocket';
+import { WebSocketService } from '../../services/websocket';
 import './AgentTestingPage.css';
 
 interface ConsoleLog {
@@ -94,7 +94,7 @@ export const AgentTestingPage: React.FC = () => {
     };
 
     // Subscribe to WebSocket messages
-    const ws = getSystemMetricsWebSocket();
+    const ws = WebSocketService.getInstance();
     const unsubscribe = ws.subscribe(handleTestResponse);
 
     return () => {

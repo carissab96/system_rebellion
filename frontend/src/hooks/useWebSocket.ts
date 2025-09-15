@@ -34,18 +34,18 @@ export const useWebSocket = (
     ws.subscribe(handleMessage);
 
     // Ensure a connection now, and notify on open
-    ws.ensureConnected();
-    ws.waitUntilOpen(4000).then(ok => {
-      if (ok) callbacksRef.current.onOpen?.();
+    ws.ensureConnected(path);
+    ws.waitUntilOpen(4000).then(() => {
+      callbacksRef.current.onOpen?.();
     });
 
-    // Optional: basic close/error wiring (service will reconnect anyway)
-    // ws.onerror = (evt: Event) => callbacksRef.current.onError?.(evt);
-    // ws.onclose = () => callbacksRef.current.onClose?.();
+    // Wire error/close callbacks
+    ws.onError = (evt: Event) => callbacksRef.current.onError?.(evt);
+    ws.onClose = () => callbacksRef.current.onClose?.();
 
     return () => {
       ws.unsubscribe(handleMessage);
-      ws.close(); // this hook owns this socket instance
+      ws.close();
       wsRef.current = null;
     };
   }, [path, enabled]);
@@ -56,11 +56,7 @@ export const useWebSocket = (
       console.warn('WebSocket is not initialized');
       return;
     }
-    const ok = await ws.waitUntilOpen(4000);
-    if (!ok) {
-      console.warn('WebSocket did not open in time; skipping send');
-      return;
-    }
+    await ws.waitUntilOpen(4000);
     ws.send(data);
   }, []);
 
@@ -74,6 +70,6 @@ export const useWebSocket = (
   return {
     send,
     close,
-    connected: wsRef.current?.connected || false,
+    connected: wsRef.current?.isConnected() || false,
   };
 };

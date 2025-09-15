@@ -21,10 +21,32 @@ async def test_websocket():
             print(f"📨 Received: {data}")
             
             if data.get('type') == 'connection_established':
-                print("🔐 Sending fake authentication token...")
-                # Send fake token to test auth flow
-                auth_message = {"token": "fake_token_for_testing"}
-                await websocket.send(json.dumps(auth_message))
+                print("🔐 Sending authentication token...")
+                # Get a real JWT token by making a login request
+                import requests
+                login_url = "http://localhost:8000/api/auth/token"
+                login_data = {
+                    "username": "testuser@hawkington-tech.com",
+                    "password": "Garfield7734!"
+                }
+                
+                try:
+                    response = requests.post(login_url, data=login_data)
+                    if response.status_code == 200:
+                        token_data = response.json()
+                        access_token = token_data.get("access_token")
+                        if access_token:
+                            auth_message = {"token": access_token}
+                            await websocket.send(json.dumps(auth_message))
+                        else:
+                            print("❌ No access token in response")
+                            return False
+                    else:
+                        print(f"❌ Login failed: {response.status_code}")
+                        return False
+                except Exception as e:
+                    print(f"❌ Failed to get auth token: {e}")
+                    return False
                 
                 # Wait for response
                 response = await websocket.recv()

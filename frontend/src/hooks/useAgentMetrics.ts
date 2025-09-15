@@ -1,6 +1,6 @@
 import { useSelector } from 'react-redux';
 import { selectAgentData } from '../store/selectors/metrics';
-import type { AgentKey } from '../store/slices/metricsSlice';
+import type { AgentKey } from '../store/slices/metricsSliceLegacy';
 
 export function useAgentMetrics(key: AgentKey) {
   const data = useSelector(selectAgentData(key));

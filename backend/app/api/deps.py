@@ -7,7 +7,8 @@ from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from app.core.config import settings
+from app.core.config import get_settings
+s=get_settings()
 from app.core.database import AsyncSessionLocal
 from app.models.user import User
 from app.schemas.token import TokenPayload

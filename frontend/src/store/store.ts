@@ -9,7 +9,7 @@ import quantumShadowSReducer  from './slices/quantumShadowPeopleSlice';
 import sirHawkingtonReducer from './slices/sirHawkingtonSlice';
 import theStickReducer from './slices/theStickSlice';
 import vic20Reducer from './slices/vic20Slice';
-import metricsReducer from './slices/metricsSlice';
+import metricsReducer from './slices/metricSlice';
 
 export const store = configureStore({
   reducer: {

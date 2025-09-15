@@ -5,7 +5,8 @@ import platform
 import logging
 from typing import Dict, Any
 
-from app.core.config import settings
+from app.core.config import get_settings
+s=get_settings()
 from app.core.auth import get_current_user
 from app.models.user import User
 from app.ai_agents.agent_manager import get_agent_manager

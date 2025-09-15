@@ -1,6 +1,7 @@
 from typing import Dict, Any
 from app.models.user import User
-from app.core.config import settings
+from app.core.config import get_settings
+s=get_settings()
 import logging
 
 logger = logging.getLogger(__name__)

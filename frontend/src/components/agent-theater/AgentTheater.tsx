@@ -16,9 +16,9 @@ import { logout } from '../../store/slices/authSlice.ts';
 
 // Use the ingestion hook that dispatches to Redux.
 // If your hook file is `useSystemMetricWebSocket.ts`, keep the singular name below.
-import { useSystemMetricsWebSocket } from '../../hooks/useSystemMetricsWebSocket.ts';
+import { useSystemMetricsWebSocket } from '../../hooks/useSystemMetricsWebSocketLegacy.ts';
 
-import { AGENT_KEYS } from '../../store/slices/metricsSlice.ts'
+import { AGENT_KEYS } from '../../store/slices/metricsSliceLegacy.ts'
 
 export const AgentTheater: React.FC = () => {
   useSystemMetricsWebSocket({}); // spins up the socket and dispatches setAllAgents etc.

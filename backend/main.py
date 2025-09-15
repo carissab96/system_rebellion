@@ -278,8 +278,8 @@ def create_application() -> FastAPI:
     )
     app.include_router(
         metrics_router,
-        prefix="/api/metrics",
-        tags=["Metrics"]
+        prefix="/api/system-metrics",
+        tags=["System-Metrics"]
     )
     
     # Add Hamsters API Router   
