@@ -1,82 +1,67 @@
 // components/AgentTheater/agents/HamstersCard/HamstersMetrics.tsx
 import React from 'react';
+import { useSelector } from 'react-redux';
+import { selectHamsters } from '../../../../store/selectors/metrics';
 
-interface HamstersMetricsProps {
-  data: any;
+// Define the shape of the raw data from the Redux store
+interface HamstersState {
+  name?: string;
+  status?: string;
+  throughput?: number;
+  qps?: number;
+  latency_ms?: number;
+  latency?: number;
+  notes?: string;
+  [key: string]: unknown; // Allow for additional unknown properties
 }
 
-export const HamstersMetrics: React.FC<HamstersMetricsProps> = ({ data }) => {
-  if (!data) {
-    return (
-      <div className="metrics-unavailable">
-        <p className="metrics-error">No Hamsters data available</p>
-        <p className="metrics-reason">Engineering team handler not streaming data</p>
-      </div>
-    );
-  }
+// This is the API your HamstersCard expects.
+// Keep this stable so the card doesn’t care where data comes from.
+export interface HamstersCardProps {
+  online: boolean;
+  name: string;
+  status: "ok" | "warn" | "error" | "idle";
+  throughput?: number;     // whatever your backend actually sends
+  latencyMs?: number;
+  notes?: string;
+  raw?: HamstersState;
+  data?: any;  // For backward compatibility with existing code
+  is_active?: boolean;  // For backward compatibility with existing code
+}
 
-  return (
-    <div className="hamsters-metrics">
-      <div className="hamster-metric">
-        <div className="hamster-metric-label">Wheel State</div>
-        <div className="hamster-metric-value">
-          {data.wheel_state || 'Unknown'}
-        </div>
-      </div>
-      
-      <div className="hamster-metric">
-        <div className="hamster-metric-label">Wheel Spins</div>
-        <div className="hamster-metric-value">
-          {data.wheel_spin_count !== undefined ? data.wheel_spin_count : 'N/A'}
-        </div>
-      </div>
-      
-      <div className="hamster-metric">
-        <div className="hamster-metric-label">Actions Count</div>
-        <div className="hamster-metric-value">
-          {data.actions_count !== undefined ? data.actions_count : 'N/A'}
-        </div>
-      </div>
-      
-      <div className="hamster-metric">
-        <div className="hamster-metric-label">Redneck Ingenuity</div>
-        <div className="hamster-metric-value">
-          {data.redneck_ingenuity || 'Unknown'}
-        </div>
-      </div>
-      
-      <div className="hamster-metric">
-        <div className="hamster-metric-label">Supply Closet</div>
-        <div className="hamster-metric-value">
-          {data.supply_closet_status || 'Unknown'}
-        </div>
-      </div>
-      
-      <div className="hamster-metric">
-        <div className="hamster-metric-label">Data Quality</div>
-        <div className="hamster-metric-value">
-          {data.data_quality_score !== undefined ? 
-            `${Math.round(data.data_quality_score * 100)}%` : 'N/A'}
-        </div>
-      </div>
-      
-      {data.estimated_impact && (
-        <div className="hamster-metric">
-          <div className="hamster-metric-label">Estimated Impact</div>
-          <div className="hamster-metric-value">
-            {data.estimated_impact}
-          </div>
-        </div>
-      )}
-      
-      {data.analysis_depth && (
-        <div className="hamster-metric">
-          <div className="hamster-metric-label">Analysis Depth</div>
-          <div className="hamster-metric-value">
-            {data.analysis_depth}
-          </div>
-        </div>
-      )}
-    </div>
-  );
+const coerceNumber = (v: unknown): number | undefined => {
+  if (typeof v === "number" && Number.isFinite(v)) return v;
+  if (typeof v === "string") {
+    const n = Number(v.replace(/,/g, ""));
+    if (Number.isFinite(n)) return n;
+  }
+  return undefined;
 };
+
+const coerceStatus = (v: unknown): HamstersCardProps["status"] => {
+  const s = String(v ?? "").toLowerCase();
+  if (s === "ok" || s === "warn" || s === "error" || s === "idle") return s as any;
+  return "idle";
+};
+
+// Hook that adapts slice -> props for this specific agent.
+export function useHamstersMetrics(): HamstersCardProps {
+  const raw = useSelector(selectHamsters) as HamstersState || {};
+  // Your backend shape may differ; map fields here, not in the card.
+  const name = (raw["name"] as string) || "Hamsters";
+  const online = Boolean(raw && Object.keys(raw).length > 0);
+  const status = coerceStatus(raw["status"]);
+  const throughput = coerceNumber(raw["throughput"] ?? raw["qps"]);
+  const latencyMs = coerceNumber(raw["latency_ms"] ?? raw["latency"]);
+  const notes = (raw["notes"] as string) || undefined;
+
+  return { 
+    online, 
+    name, 
+    status, 
+    throughput, 
+    latencyMs, 
+    notes, 
+    raw 
+  };
+}

@@ -5,16 +5,20 @@ import { useNavigate } from 'react-router-dom';
 
 import { Chart3D } from '../shared/Chart3D';
 
-import { HamstersMetrics } from './HamstersMetrics';
+import { useHamstersMetrics } from './HamstersMetrics';
 import './HamstersCard.css';
 
-interface HamstersCardProps {
+interface HamstersCardComponentProps {
   data?: any;
   is_active: boolean;
 }
 
-export const HamstersCard: React.FC<HamstersCardProps> = ({ data, is_active }) => {
+export const HamstersCard: React.FC<HamstersCardComponentProps> = ({ data, is_active }) => {
   const navigate = useNavigate();
+  const metrics = useHamstersMetrics();
+  
+  // Use the metrics from the hook if available, otherwise use the passed-in data
+  const cardData = metrics.raw || data;
   
   const handleDetailsClick = () => {
     navigate('/agents/hamsters');
@@ -89,23 +93,48 @@ export const HamstersCard: React.FC<HamstersCardProps> = ({ data, is_active }) =
           </div>
           <div className="supply-item">
             <span className="supply-label">Duct Tape:</span>
-            <span className={`supply-value ${data.duct_tape_available ? 'available' : 'unavailable'}`}>
-              {data.duct_tape_available ? 'Available' : 'Unavailable'}
+            <span className={`supply-value ${cardData?.duct_tape_available ? 'available' : 'unavailable'}`}>
+              {cardData?.duct_tape_available ? 'Available' : 'Unavailable'}
             </span>
           </div>
         </div>
       </div>
       
       <div className="metrics-section">
-        <HamstersMetrics data={data} />
+        <div className="metrics-container">
+          <div className="metric-item">
+            <span className="metric-label">Status:</span>
+            <span className={`status-indicator ${metrics.status}`}>
+              {metrics.status.toUpperCase()}
+            </span>
+          </div>
+          {metrics.throughput !== undefined && (
+            <div className="metric-item">
+              <span className="metric-label">Throughput:</span>
+              <span className="metric-value">{metrics.throughput} ops/s</span>
+            </div>
+          )}
+          {metrics.latencyMs !== undefined && (
+            <div className="metric-item">
+              <span className="metric-label">Latency:</span>
+              <span className="metric-value">{metrics.latencyMs}ms</span>
+            </div>
+          )}
+          {metrics.notes && (
+            <div className="metric-notes">
+              <span className="notes-label">Notes:</span>
+              <span className="notes-text">{metrics.notes}</span>
+            </div>
+          )}
+        </div>
       </div>
       
       <div className="chart-section">
         <Chart3D
           data={[
-            { label: 'Redneck Ingenuity', value: data.redneck_ingenuity === 'MAXIMUM' ? 1 : 0 },
-            { label: 'Rapid Response', value: data.rapid_response_possible ? 1 : 0 },
-            { label: 'Engineering Readiness', value: data.confidence || 0 }
+            { label: 'Redneck Ingenuity', value: cardData?.redneck_ingenuity === 'MAXIMUM' ? 1 : 0 },
+            { label: 'Rapid Response', value: cardData?.rapid_response_possible ? 1 : 0 },
+            { label: 'Engineering Readiness', value: cardData?.confidence || 0 }
           ]}
           color="#ff6b35"
           height={120}

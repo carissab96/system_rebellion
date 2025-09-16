@@ -1,17 +1,20 @@
-// import { StrictMode } from 'react' - TEMPORARILY DISABLED
-import { createRoot } from 'react-dom/client'
-import './index.css'
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { Provider } from "react-redux";
+import { store } from "./store/store";
+import App from "./App";
 
-import { Provider } from 'react-redux'
+const container = document.getElementById("root");
+if (!container) {
+  // eslint-disable-next-line no-console
+  console.error("No #root element found in index.html");
+  throw new Error("Missing #root");
+}
 
-import App from './App.tsx'
-import { store } from './store/store.ts'
-
-
-createRoot(document.getElementById('root')!).render(
-  // <StrictMode> - TEMPORARILY DISABLED: Causing modal state reset on first click
+ReactDOM.createRoot(container).render(
+  <React.StrictMode>
     <Provider store={store}>
-      <App />
+          <App />
     </Provider>
-  // </StrictMode>
+  </React.StrictMode>
 );

@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { getSystemMetricsWebSocket } from '../services/websocket';
+import { WebSocketService } from '../services/websocket';
 
 import {
   setConnectionStatus,
@@ -34,6 +34,7 @@ import {
 } from '../store/slices/vic20Slice';
 
 import type { RootState } from '../store/store';
+import { WS_BASE_URL } from '../config/constants';
 
 type MetricsPayload = Record<string, any>;
 
@@ -67,7 +68,7 @@ export const useAgentTheater = () => {
       return;
     }
 
-    const ws = getSystemMetricsWebSocket();
+    const ws = WebSocketService.getInstance(WS_BASE_URL);
 
     // If you added ensureConnected/waitUntilOpen to the service, use them.
     // Otherwise this still works; we’ll infer connection from data messages.
@@ -164,7 +165,7 @@ export const useAgentTheater = () => {
   }, [token, isAuthenticated, dispatch]);
 
   const sendMessage = (payload: any) => {
-    const ws = getSystemMetricsWebSocket();
+    const ws = WebSocketService.getInstance(WS_BASE_URL);
     ws.send(payload);
   };
 

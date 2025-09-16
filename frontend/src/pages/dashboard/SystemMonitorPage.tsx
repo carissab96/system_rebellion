@@ -4,12 +4,48 @@ import { useSelector } from 'react-redux';
 import type { RootState } from '../../store/store';
 import './SystemMonitorPage.css';
 
+interface CpuInfo {
+  current?: {
+    load_avg?: number[];
+    process_count?: number;
+    usage_percent?: number;
+  };
+}
+
+interface MemoryInfo {
+  current?: {
+    total?: number;
+    available?: number;
+    used?: number;
+    usage_percent?: number;
+  };
+}
+
+interface DiskInfo {
+  current?: {
+    total?: number;
+    used?: number;
+    free?: number;
+    usage_percent?: number;
+  };
+}
+
+interface NetworkInfo {
+  current?: {
+    bytes_sent?: number;
+    bytes_recv?: number;
+  };
+}
+
 export const SystemMonitorPage: React.FC = () => {
   const metrics = useSelector((state: RootState) => state.metrics);
-  const cpu = useSelector((state: RootState) => state.cpu);
-  const memory = useSelector((state: RootState) => state.memory);
-  const disk = useSelector((state: RootState) => state.disk);
-  const network = useSelector((state: RootState) => state.network);
+  const systemInfo = metrics.systemInfo || {};
+  
+  // Get CPU, memory, and disk info from metrics.systemInfo if available
+  const cpu: CpuInfo = systemInfo.cpu || {};
+  const memory: MemoryInfo = systemInfo.memory || {};
+  const disk: DiskInfo = systemInfo.disk || {};
+  const network: NetworkInfo = systemInfo.network || {};
 
   const formatBytes = (bytes: number) => {
     if (bytes === 0) return '0 B';
@@ -41,22 +77,22 @@ export const SystemMonitorPage: React.FC = () => {
         <div className="metric-panel">
           <div className="panel-header">
             <h2>◆ CPU Usage</h2>
-            <span className="metric-value">{cpu.current?.percent?.toFixed(1) || '0.0'}%</span>
+            <span className="metric-value">{cpu.current?.usage_percent?.toFixed(1) || '0.0'}%</span>
           </div>
           <div className="metric-bar">
             <div 
               className="metric-fill cpu-fill"
-              style={{ width: `${cpu.current?.percent || 0}%` }}
+              style={{ width: `${cpu.current?.usage_percent || 0}%` }}
             ></div>
           </div>
           <div className="metric-details">
             <div className="detail-item">
               <span>Load Average:</span>
-              <span>{cpu.current?.load_avg?.map(l => l.toFixed(2)).join(', ') || 'N/A'}</span>
+              <span>{cpu?.current?.load_avg ? cpu.current.load_avg.map(l => l.toFixed(2)).join(', ') : 'N/A'}</span>
             </div>
             <div className="detail-item">
               <span>Process Count:</span>
-              <span>{cpu.current?.process_count || 'N/A'}</span>
+              <span>{cpu?.current?.process_count ?? 'N/A'}</span>
             </div>
           </div>
         </div>
@@ -65,12 +101,12 @@ export const SystemMonitorPage: React.FC = () => {
         <div className="metric-panel">
           <div className="panel-header">
             <h2>🧠 Memory Usage</h2>
-            <span className="metric-value">{memory.current?.percent?.toFixed(1) || '0.0'}%</span>
+            <span className="metric-value">{memory.current?.usage_percent?.toFixed(1) || '0.0'}%</span>
           </div>
           <div className="metric-bar">
             <div 
               className="metric-fill memory-fill"
-              style={{ width: `${memory.current?.percent || 0}%` }}
+              style={{ width: `${memory.current?.usage_percent || 0}%` }}
             ></div>
           </div>
           <div className="metric-details">
@@ -93,12 +129,12 @@ export const SystemMonitorPage: React.FC = () => {
         <div className="metric-panel">
           <div className="panel-header">
             <h2>💾 Disk Usage</h2>
-            <span className="metric-value">{disk.current?.percent?.toFixed(1) || '0.0'}%</span>
+            <span className="metric-value">{disk.current?.usage_percent?.toFixed(1) || '0.0'}%</span>
           </div>
           <div className="metric-bar">
             <div 
               className="metric-fill disk-fill"
-              style={{ width: `${disk.current?.percent || 0}%` }}
+              style={{ width: `${disk.current?.usage_percent || 0}%` }}
             ></div>
           </div>
           <div className="metric-details">
@@ -122,7 +158,7 @@ export const SystemMonitorPage: React.FC = () => {
           <div className="panel-header">
             <h2>🌐 Network Activity</h2>
             <span className="metric-value">
-              ↓{formatRate(network.current?.recv_rate || 0)} ↑{formatRate(network.current?.sent_rate || 0)}
+              ↓ {formatRate(network.current?.bytes_recv || 0)}/s ↑ {formatRate(network.current?.bytes_sent || 0)}/s
             </span>
           </div>
           <div className="network-bars">
@@ -131,7 +167,7 @@ export const SystemMonitorPage: React.FC = () => {
               <div className="metric-bar">
                 <div 
                   className="metric-fill network-recv-fill"
-                  style={{ width: `${Math.min((network.current?.recv_rate || 0) / 1000000 * 100, 100)}%` }}
+                  style={{ width: `${Math.min((network.current?.bytes_recv || 0) / 1000000 * 100, 100)}%` }}
                 ></div>
               </div>
             </div>
@@ -140,7 +176,7 @@ export const SystemMonitorPage: React.FC = () => {
               <div className="metric-bar">
                 <div 
                   className="metric-fill network-sent-fill"
-                  style={{ width: `${Math.min((network.current?.sent_rate || 0) / 1000000 * 100, 100)}%` }}
+                  style={{ width: `${Math.min((network.current?.bytes_sent || 0) / 1000000 * 100, 100)}%` }}
                 ></div>
               </div>
             </div>
@@ -168,7 +204,7 @@ export const SystemMonitorPage: React.FC = () => {
               <div className="overview-content">
                 <h3>CPU Health</h3>
                 <div className="overview-status">
-                  {(cpu.current?.percent || 0) < 80 ? '✅ Good' : '⚠️ High'}
+                  {(cpu.current?.usage_percent || 0) < 80 ? '✅ Good' : '⚠️ High'}
                 </div>
               </div>
             </div>
@@ -177,7 +213,7 @@ export const SystemMonitorPage: React.FC = () => {
               <div className="overview-content">
                 <h3>Memory Health</h3>
                 <div className="overview-status">
-                  {(memory.current?.percent || 0) < 85 ? '✅ Good' : '⚠️ High'}
+                  {(memory.current?.usage_percent || 0) < 85 ? '✅ Good' : '⚠️ High'}
                 </div>
               </div>
             </div>
@@ -186,7 +222,7 @@ export const SystemMonitorPage: React.FC = () => {
               <div className="overview-content">
                 <h3>Disk Health</h3>
                 <div className="overview-status">
-                  {(disk.current?.percent || 0) < 90 ? '✅ Good' : '⚠️ High'}
+                  {(disk.current?.usage_percent || 0) < 90 ? '✅ Good' : '⚠️ High'}
                 </div>
               </div>
             </div>

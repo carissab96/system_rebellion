@@ -1,58 +1,70 @@
 // components/agent-theater/AgentTheater.tsx
-import React, { useMemo, useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import HamstersCard from '../../components/agent-theater/agents/HamstersCard/HamstersCard.tsx';
-import MethSnailCard from '../../components/agent-theater/agents/MethSnailCard/MethSnailCard.tsx';
-import QuantumShadowCard from '../../components/agent-theater/agents/QuantumShadowPeopleCard/QSPCard.tsx';
-import ConnectionStatus from '../../components/agent-theater/agents/shared/ConnectionStatus';
-import { MissingAgentsIndicator } from '../../components/agent-theater/agents/shared/MissingAgentsIndicator';
-import SirHawkingtonCard from '../../components/agent-theater/agents/SirHawingtonCard/SirHawkingtonCard.tsx';
-import TheStickCard from '../../components/agent-theater/agents/TheStickCard/TheStickCard.tsx';
-import VIC20Card from '../../components/agent-theater/agents/VIC20Card/VIC20Card.tsx';
-import './AgentTheater.css';
+import React, { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
-import type { RootState } from '../../store/store';
-import { logout } from '../../store/slices/authSlice.ts';
+import HamstersCard from "../../components/agent-theater/agents/HamstersCard/HamstersCard.tsx";
+import MethSnailCard from "../../components/agent-theater/agents/MethSnailCard/MethSnailCard.tsx";
+import QuantumShadowCard from "../../components/agent-theater/agents/QuantumShadowPeopleCard/QSPCard.tsx";
+import SirHawkingtonCard from "../../components/agent-theater/agents/SirHawingtonCard/SirHawkingtonCard.tsx";
+import TheStickCard from "../../components/agent-theater/agents/TheStickCard/TheStickCard.tsx";
+import VIC20Card from "../../components/agent-theater/agents/VIC20Card/VIC20Card.tsx";
 
-// Use the ingestion hook that dispatches to Redux.
-// If your hook file is `useSystemMetricWebSocket.ts`, keep the singular name below.
-import { useSystemMetricsWebSocket } from '../../hooks/useSystemMetricsWebSocketLegacy.ts';
+import "./AgentTheater.css";
 
-import { AGENT_KEYS } from '../../store/slices/metricsSliceLegacy.ts'
+import type { RootState } from "../../store/store";
+import { logout } from "../../store/slices/authSlice.ts";
+import { useSystemMetricsWebSocket } from "../../hooks/useSystemMetricsWebsocket.ts";
+import {
+  selectAgents,
+  selectConnectionStatus,
+  selectError,
+  selectLastUpdate,
+  selectActiveAgentCount,
+  AGENT_KEYS,
+} from "../../store/selectors/metrics";
+import ConnectionStatus from "./agents/shared/ConnectionStatus.tsx";
+import MissingAgentsIndicator from "./agents/shared/MissingAgentsIndicator.tsx";
+
+const WS_BASE_URL =
+  (location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/api";
 
 export const AgentTheater: React.FC = () => {
-  useSystemMetricsWebSocket({}); // spins up the socket and dispatches setAllAgents etc.
+  // Spin up the metrics socket; it dispatches into the slice
+  useSystemMetricsWebSocket(WS_BASE_URL);
 
   const dispatch = useDispatch();
-
-  // Single source of truth: the metrics slice
-  const {
-    agents,
-    connectionStatus,
-    error,
-    lastUpdate,
-    activeAgentCount,
-  } = useSelector((s: RootState) => s.metrics);
-
   const auth = useSelector((s: RootState) => s.auth);
+
+  const agents = useSelector(selectAgents);
+  const connectionStatus = useSelector(selectConnectionStatus);
+  const error = useSelector(selectError);
+  const lastUpdate = useSelector(selectLastUpdate);
+  const activeAgentCount = useSelector(selectActiveAgentCount);
+
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
-  // optional backend ping in dev
   useEffect(() => {
-    if (import.meta.env?.MODE !== 'development') return;
+    if (import.meta.env?.MODE !== "development") return;
     (async () => {
       try {
-        const res = await fetch('/api/auth/csrf_token');
-        console.log('backend CSRF test:', res.status);
+        const res = await fetch("/api/auth/csrf_token");
+        console.log("backend CSRF test:", res.status);
       } catch (e) {
-        console.error('Backend connectivity check failed:', e);
+        console.error("Backend connectivity check failed:", e);
       }
     })();
   }, []);
 
-  const handleLogout = () => dispatch(logout());
+  const handleLogout = () => {
+    dispatch(logout());
+  };
+
+  // ...leave your existing JSX; when feeding cards, pass the exact props they expect:
+  // <HamstersCard data={agents.hamsters} is_active={!!agents.hamsters?.is_active} />
+  // etc.
 
   return (
+
     <div className="agent-theater">
       <nav className="theater-nav">
         <div className="nav-left">
@@ -87,7 +99,7 @@ export const AgentTheater: React.FC = () => {
           <ConnectionStatus
             status={connectionStatus}
             error={error}
-            lastUpdate={lastUpdate}
+            lastUpdate={lastUpdate?.toISOString()}
             metricsData={agents}
           />
           <div className="agent-count">

@@ -1,14 +1,17 @@
 // frontend/src/store/metricsSlice.ts
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import type { RootState } from "../store";
 
-type AgentKey = "sir_hawkington" | "meth_snail" | "hamsters" | "quantum_shadow" | "the_stick" | "vic20_sage";
+export type AgentKey = "sir_hawkington" | "meth_snail" | "hamsters" | "quantum_shadow" | "the_stick" | "vic20_sage";
 
 type AgentsState = Partial<Record<AgentKey, unknown>>;
 
 interface MetricsState {
+  [x: string]: any;
   status: "disconnected" | "connected" | "closed" | "error";
   systemInfo: Record<string, unknown> | null;
   agents: AgentsState;
+  lastUpdate: Date | null;
   lastError: string | null;
 }
 
@@ -16,6 +19,7 @@ const initialState: MetricsState = {
   status: "disconnected",
   systemInfo: null,
   agents: {},
+  lastUpdate: null,
   lastError: null,
 };
 
@@ -60,6 +64,22 @@ const metricsSlice = createSlice({
     },
   },
 });
+
+export const selectAgents = (s: RootState) => s.metrics.agents;
+export const selectAgent = (key: "sir_hawkington" | "meth_snail" | "hamsters" | "quantum_shadow" | "the_stick" | "vic20_sage") => (s: RootState) => s.metrics.agents[key] as Record<string, unknown> | undefined;
+
+export const selectHamsters = selectAgent("hamsters");
+export const selectMethSnail = selectAgent("meth_snail");
+export const selectQuantumShadow = selectAgent("quantum_shadow");
+export const selectTheStick = selectAgent("the_stick");
+export const selectVIC20 = selectAgent("vic20_sage");
+export const selectSirHawkington = selectAgent("sir_hawkington");
+
+export const selectConnectionStatus = (s: RootState) => s.metrics.status;
+export const selectError = (s: RootState) => s.metrics.lastError;
+export const selectLastUpdate = (s: RootState) => s.metrics.lastUpdate;
+export const selectActiveAgentCount = (s: RootState) => Object.keys(s.metrics.agents).length;
+
 
 export const { setConnectionStatus, setSystemInfo, setAllAgents, setError, resetErrors } = metricsSlice.actions;
 export default metricsSlice.reducer;
