@@ -1,0 +1,48 @@
+# app/services/cache_service.py
+from app.core.redis import get_redis_client
+import json
+from typing import Optional, Any
+
+class CacheService:
+    """The Meth Snail's Speed Stash - Singleton Edition"""
+    _instance = None
+    _redis_client = None
+    
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+    
+    @classmethod
+    async def get_instance(cls):
+        """Get or create singleton instance"""
+        if cls._instance is None:
+            cls._instance = cls()
+            cls._redis_client = await get_redis_client()
+        return cls._instance
+    
+    async def get_user_by_email(self, email: str) -> Optional[dict]:
+        """Check Redis for user data"""
+        data = await self._redis_client.get(f"user:email:{email}")
+        return json.loads(data) if data else None
+    
+    async def cache_user(self, email: str, user_data: dict, ttl: int = 300):
+        """Cache user data for 5 minutes"""
+        await self._redis_client.setex(
+            f"user:email:{email}", 
+            ttl, 
+            json.dumps(user_data, default=str)
+        )
+    
+    async def cache_session(self, token: str, user_data: dict, ttl: int = 3600):
+        """Cache user session for 1 hour"""
+        await self._redis_client.setex(
+            f"session:{token}", 
+            ttl, 
+            json.dumps(user_data, default=str)
+        )
+    
+    async def get_session(self, token: str) -> Optional[dict]:
+        """Get cached session"""
+        data = await self._redis_client.get(f"session:{token}")
+        return json.loads(data) if data else None

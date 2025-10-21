@@ -1,0 +1,207 @@
+/* =============================================================================
+   METH SNAIL - CAFFEINATED ENERGY
+   ============================================================================= */
+
+   .meth-snail {
+    --agent-primary: var(--snail-electric);
+    --agent-accent: rgba(0, 208, 132, 0.1);
+    --agent-border: rgba(0, 208, 132, 0.3);
+  }
+  
+  .meth-snail .agent-name {
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  
+  .meth-snail .thought-content.caffeinated {
+    font-family: var(--font-mono);
+    color: var(--snail-electric);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    animation: caffeine-pulse 0.8s ease-in-out infinite alternate;
+  }
+  
+  @keyframes caffeine-pulse {
+    0% { opacity: 1; }
+    100% { opacity: 0.8; text-shadow: 0 0 10px rgba(0, 208, 132, 0.5); }
+  }
+  
+  .meth-snail .confidence-fill {
+    background: linear-gradient(90deg, var(--snail-electric), #4ade80);
+    box-shadow: 0 0 15px rgba(0, 208, 132, 0.4);
+    animation: energy-flow 2s ease-in-out infinite;
+  }
+  
+  @keyframes energy-flow {
+    0%, 100% { transform: scaleX(1); }
+    50% { transform: scaleX(1.05); }
+  }
+  
+  .caffeine-section {
+    margin-bottom: var(--space-lg);
+    padding: var(--space-md);
+    background: var(--agent-accent);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--agent-border);
+  }
+  
+  .caffeine-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--rebellion-text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: var(--space-xs);
+  }
+  
+  .caffeine-indicator {
+    display: flex;
+    justify-content: center;
+  }
+  
+  .caffeine-level {
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    text-align: center;
+    animation: caffeine-indicator 2s ease-in-out infinite;
+  }
+  
+  .caffeine-level.maximum {
+    background: rgba(0, 208, 132, 0.3);
+    color: var(--snail-electric);
+    border: 1px solid var(--snail-electric);
+    text-shadow: 0 0 8px rgba(0, 208, 132, 0.5);
+  }
+  
+  .caffeine-level.high {
+    background: rgba(34, 197, 94, 0.3);
+    color: var(--success);
+    border: 1px solid var(--success);
+  }
+  
+  .caffeine-level.medium {
+    background: rgba(245, 158, 11, 0.3);
+    color: var(--warning);
+    border: 1px solid var(--warning);
+  }
+  
+  .caffeine-level.low {
+    background: rgba(239, 68, 68, 0.3);
+    color: var(--error);
+    border: 1px solid var(--error);
+  }
+  
+  .caffeine-level.depleted {
+    background: rgba(156, 163, 175, 0.3);
+    color: var(--rebellion-text-dim);
+    border: 1px solid var(--rebellion-text-dim);
+    animation: caffeine-depletion 1s ease-in-out infinite;
+  }
+  
+  .caffeine-level.unknown {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--rebellion-text-dim);
+    border: 1px solid var(--rebellion-border);
+  }
+  
+  @keyframes caffeine-indicator {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+  
+  @keyframes caffeine-depletion {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  
+  .snail-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-sm);
+    margin-bottom: var(--space-lg);
+  }
+  
+  .snail-metric {
+    padding: var(--space-sm);
+    background: var(--agent-accent);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--agent-border);
+    text-align: center;
+  }
+  
+  .snail-metric-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--rebellion-text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: var(--space-xs);
+  }
+  
+  .snail-metric-value {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--snail-electric);
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+  }
+  
+  /* Shell spinning animation */
+  .meth-snail .status-indicator.spinning {
+    animation: shell-spin 0.8s linear infinite;
+  }
+  
+  @keyframes shell-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  /* Optimization boost effect */
+  .meth-snail.optimizing {
+    animation: optimization-boost 1s ease-in-out;
+  }
+  
+  @keyframes optimization-boost {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); box-shadow: 0 0 20px rgba(0, 208, 132, 0.5); }
+    100% { transform: scale(1); }
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .snail-metrics {
+      grid-template-columns: 1fr;
+    }
+    
+    .caffeine-level {
+      font-size: 0.8rem;
+    }
+  }
+  
+  /* High contrast mode */
+  @media (prefers-contrast: high) {
+    .caffeine-level {
+      border-width: 2px;
+    }
+  }
+  
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .caffeine-level {
+      animation: none;
+    }
+    
+    .caffeine-level.depleted {
+      animation: none;
+    }
+    
+    .meth-snail .status-indicator.spinning {
+      animation: none;
+    }
+  }

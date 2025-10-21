@@ -1,0 +1,3512 @@
+{
+  "hamsters": [],
+  "meth_snail": [],
+  "quantum_shadow_people": [],
+  "sir_hawkington": [
+    {
+      "name": "SirHawkingtonTriageEngine",
+      "file_path": "/home/carissa/Documents/system_rebellion/backend/app/ai_agents/sir_hawkington/triage_engine.py",
+      "base_classes": [
+        "AgentInstrumentationMixin",
+        "TriageEngineWithRedisMixin"
+      ],
+      "docstring": "THE ARISTOCRATIC TRIAGE COMMANDER - UPDATED WITH STRUCTURED QUERIES\n\nSir Hawkington's evolution from simple monitoring to SYSTEM-WIDE ORCHESTRATION.\nThis is now the MASTER ENTRY POINT for all system metrics.\n\nNOW QUERIES AGENT-SPECIFIC TABLE FOR:\n- Structured triage statistics\n- Accuracy improvement trends\n- Data quality failure analysis\n\n\ud83e\uddd0 \"A gentleman does not merely observe - he commands with distinction\"",
+      "methods": [
+        {
+          "name": "__init__",
+          "is_async": false,
+          "is_abstract": false,
+          "is_private": true,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "db_getter",
+              "annotation": null
+            }
+          ],
+          "return_type": null,
+          "docstring": null,
+          "decorators": [],
+          "category": "dunder",
+          "state_changes": [
+            "_agent_handlers",
+            "agent_name",
+            "db",
+            "db_getter",
+            "logger",
+            "monocle_yeet_incidents",
+            "routing_stats",
+            "total_triage_decisions",
+            "triage_thresholds"
+          ],
+          "method_calls": [
+            {
+              "object": null,
+              "method": "__init__"
+            },
+            {
+              "object": "logging",
+              "method": "getLogger"
+            },
+            {
+              "object": null,
+              "method": "info"
+            },
+            {
+              "object": null,
+              "method": "super"
+            }
+          ],
+          "line_number": 169
+        },
+        {
+          "name": "initialize",
+          "is_async": true,
+          "is_abstract": false,
+          "is_private": false,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            }
+          ],
+          "return_type": null,
+          "docstring": "Initialize the triage engine with aristocratic precision",
+          "decorators": [],
+          "category": "initialization",
+          "state_changes": [
+            "db"
+          ],
+          "method_calls": [
+            {
+              "object": null,
+              "method": "hasattr"
+            },
+            {
+              "object": null,
+              "method": "info"
+            },
+            {
+              "object": null,
+              "method": "HawkingtonDatabaseIntegration"
+            },
+            {
+              "object": null,
+              "method": "initialize"
+            },
+            {
+              "object": "asyncio",
+              "method": "iscoroutinefunction"
+            },
+            {
+              "object": "sir_hawkington_brain",
+              "method": "initialize_database"
+            },
+            {
+              "object": null,
+              "method": "super"
+            }
+          ],
+          "line_number": 208
+        },
+        {
+          "name": "process_system_metrics",
+          "is_async": true,
+          "is_abstract": false,
+          "is_private": false,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "metrics_data",
+              "annotation": "Dict[str, Any]"
+            },
+            {
+              "name": "user_id",
+              "annotation": "Optional[str]"
+            },
+            {
+              "name": "user_context",
+              "annotation": "Optional[Dict]"
+            }
+          ],
+          "return_type": "Dict[str, Any]",
+          "docstring": "THE MASTER TRIAGE METHOD - NO FAKE DATA ALLOWED\n(No changes to this method - already correct)",
+          "decorators": [
+            "instrument_method"
+          ],
+          "category": "public",
+          "state_changes": [
+            "total_triage_decisions"
+          ],
+          "method_calls": [
+            {
+              "object": null,
+              "method": "utc_now"
+            },
+            {
+              "object": null,
+              "method": "total_seconds"
+            },
+            {
+              "object": null,
+              "method": "TriageResult"
+            },
+            {
+              "object": null,
+              "method": "info"
+            },
+            {
+              "object": "self",
+              "method": "_conduct_triage_assessment"
+            },
+            {
+              "object": "self",
+              "method": "_execute_triage_routing"
+            },
+            {
+              "object": "self",
+              "method": "_enhance_metrics_with_triage"
+            },
+            {
+              "object": null,
+              "method": "error"
+            },
+            {
+              "object": null,
+              "method": "Exception"
+            },
+            {
+              "object": "self",
+              "method": "_store_triage_decision"
+            }
+          ],
+          "line_number": 229
+        },
+        {
+          "name": "_conduct_triage_assessment",
+          "is_async": true,
+          "is_abstract": false,
+          "is_private": true,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "metrics_data",
+              "annotation": "Dict[str, Any]"
+            },
+            {
+              "name": "user_id",
+              "annotation": "Optional[str]"
+            },
+            {
+              "name": "user_context",
+              "annotation": "Optional[Dict]"
+            }
+          ],
+          "return_type": "TriageDecision",
+          "docstring": "Phase 1: Sir Hawkington conducts his aristocratic triage assessment",
+          "decorators": [],
+          "category": "private",
+          "state_changes": [
+            "monocle_yeet_incidents"
+          ],
+          "method_calls": [
+            {
+              "object": null,
+              "method": "debug"
+            },
+            {
+              "object": "self",
+              "method": "_determine_triage_severity"
+            },
+            {
+              "object": "self",
+              "method": "_determine_triage_routing"
+            },
+            {
+              "object": "self",
+              "method": "_determine_target_agents"
+            },
+            {
+              "object": null,
+              "method": "TriageDecision"
+            },
+            {
+              "object": "sir_hawkington_brain",
+              "method": "analyze_metrics"
+            },
+            {
+              "object": null,
+              "method": "get"
+            },
+            {
+              "object": "self",
+              "method": "_create_triage_reasoning"
+            },
+            {
+              "object": null,
+              "method": "utc_now"
+            },
+            {
+              "object": null,
+              "method": "get_historical_decisions"
+            }
+          ],
+          "line_number": 290
+        },
+        {
+          "name": "_determine_triage_severity",
+          "is_async": false,
+          "is_abstract": false,
+          "is_private": true,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "stress_score",
+              "annotation": "float"
+            }
+          ],
+          "return_type": "TriageSeverity",
+          "docstring": "Determine triage severity from Sir Hawkington's stress score",
+          "decorators": [],
+          "category": "private",
+          "state_changes": [],
+          "method_calls": [],
+          "line_number": 342
+        },
+        {
+          "name": "_determine_triage_routing",
+          "is_async": false,
+          "is_abstract": false,
+          "is_private": true,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "severity",
+              "annotation": "TriageSeverity"
+            },
+            {
+              "name": "hawkington_decision",
+              "annotation": "HawkingtonDecision"
+            }
+          ],
+          "return_type": "TriageRouting",
+          "docstring": "Determine routing based on severity and decision type",
+          "decorators": [],
+          "category": "private",
+          "state_changes": [],
+          "method_calls": [],
+          "line_number": 353
+        },
+        {
+          "name": "_determine_target_agents",
+          "is_async": false,
+          "is_abstract": false,
+          "is_private": true,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "routing",
+              "annotation": "TriageRouting"
+            },
+            {
+              "name": "hawkington_decision",
+              "annotation": "HawkingtonDecision"
+            }
+          ],
+          "return_type": "List[str]",
+          "docstring": "Determine which agents to target based on routing decision",
+          "decorators": [],
+          "category": "private",
+          "state_changes": [],
+          "method_calls": [],
+          "line_number": 368
+        },
+        {
+          "name": "_create_triage_reasoning",
+          "is_async": false,
+          "is_abstract": false,
+          "is_private": true,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "severity",
+              "annotation": "TriageSeverity"
+            },
+            {
+              "name": "routing",
+              "annotation": "TriageRouting"
+            },
+            {
+              "name": "hawkington_decision",
+              "annotation": "HawkingtonDecision"
+            }
+          ],
+          "return_type": "str",
+          "docstring": "Create aristocratic reasoning for triage decision",
+          "decorators": [],
+          "category": "private",
+          "state_changes": [],
+          "method_calls": [
+            {
+              "object": null,
+              "method": "get"
+            }
+          ],
+          "line_number": 385
+        },
+        {
+          "name": "_execute_triage_routing",
+          "is_async": true,
+          "is_abstract": false,
+          "is_private": true,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "triage_decision",
+              "annotation": "TriageDecision"
+            },
+            {
+              "name": "metrics_data",
+              "annotation": "Dict[str, Any]"
+            },
+            {
+              "name": "user_id",
+              "annotation": "Optional[str]"
+            }
+          ],
+          "return_type": "Dict[str, Any]",
+          "docstring": "Phase 2: Execute the triage routing decision",
+          "decorators": [],
+          "category": "private",
+          "state_changes": [],
+          "method_calls": [
+            {
+              "object": null,
+              "method": "append"
+            },
+            {
+              "object": null,
+              "method": "error"
+            },
+            {
+              "object": "self",
+              "method": "_route_to_stick"
+            },
+            {
+              "object": "self",
+              "method": "_route_to_vic20_coordination"
+            },
+            {
+              "object": null,
+              "method": "str"
+            },
+            {
+              "object": "self",
+              "method": "_route_to_vic20_emergency"
+            },
+            {
+              "object": "self",
+              "method": "_route_to_cpu_specialist"
+            }
+          ],
+          "line_number": 403
+        },
+        {
+          "name": "_route_to_stick",
+          "is_async": true,
+          "is_abstract": false,
+          "is_private": true,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "metrics_data",
+              "annotation": "Dict[str, Any]"
+            },
+            {
+              "name": "user_id",
+              "annotation": "Optional[str]"
+            }
+          ],
+          "return_type": "Dict[str, Any]",
+          "docstring": "Route normal operations to The Stick + other agents via Agent Manager",
+          "decorators": [],
+          "category": "private",
+          "state_changes": [],
+          "method_calls": [
+            {
+              "object": null,
+              "method": "debug"
+            },
+            {
+              "object": null,
+              "method": "emit_agent_insight"
+            },
+            {
+              "object": null,
+              "method": "get_agent_manager"
+            },
+            {
+              "object": "agent_manager",
+              "method": "process_metrics_through_triage_engine"
+            },
+            {
+              "object": null,
+              "method": "error"
+            },
+            {
+              "object": "agent_results",
+              "method": "get"
+            },
+            {
+              "object": null,
+              "method": "get"
+            },
+            {
+              "object": null,
+              "method": "str"
+            },
+            {
+              "object": "metrics_data",
+              "method": "get"
+            }
+          ],
+          "line_number": 449
+        },
+        {
+          "name": "_route_to_vic20_coordination",
+          "is_async": true,
+          "is_abstract": false,
+          "is_private": true,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "metrics_data",
+              "annotation": "Dict[str, Any]"
+            },
+            {
+              "name": "triage_decision",
+              "annotation": "TriageDecision"
+            },
+            {
+              "name": "user_id",
+              "annotation": "Optional[str]"
+            }
+          ],
+          "return_type": "Dict[str, Any]",
+          "docstring": "Route to VIC-20 for coordination with specialist agents",
+          "decorators": [],
+          "category": "private",
+          "state_changes": [],
+          "method_calls": [
+            {
+              "object": null,
+              "method": "debug"
+            },
+            {
+              "object": null,
+              "method": "emit_agent_insight"
+            },
+            {
+              "object": null,
+              "method": "vic20_coordinate_agents"
+            },
+            {
+              "object": null,
+              "method": "error"
+            },
+            {
+              "object": "vic20_decision",
+              "method": "to_dict"
+            },
+            {
+              "object": null,
+              "method": "str"
+            },
+            {
+              "object": null,
+              "method": "hasattr"
+            },
+            {
+              "object": null,
+              "method": "isoformat"
+            }
+          ],
+          "line_number": 502
+        },
+        {
+          "name": "_route_to_vic20_emergency",
+          "is_async": true,
+          "is_abstract": false,
+          "is_private": true,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "metrics_data",
+              "annotation": "Dict[str, Any]"
+            },
+            {
+              "name": "triage_decision",
+              "annotation": "TriageDecision"
+            },
+            {
+              "name": "user_id",
+              "annotation": "Optional[str]"
+            }
+          ],
+          "return_type": "Dict[str, Any]",
+          "docstring": "\ud83e\uddd0\ud83d\udca5 MONOCLE YEET to VIC-20 for emergency multi-agent orchestration",
+          "decorators": [],
+          "category": "private",
+          "state_changes": [],
+          "method_calls": [
+            {
+              "object": null,
+              "method": "warning"
+            },
+            {
+              "object": null,
+              "method": "emit_agent_insight"
+            },
+            {
+              "object": "triage_decision",
+              "method": "to_dict"
+            },
+            {
+              "object": null,
+              "method": "vic20_emergency_response"
+            },
+            {
+              "object": null,
+              "method": "error"
+            },
+            {
+              "object": null,
+              "method": "str"
+            },
+            {
+              "object": null,
+              "method": "hasattr"
+            }
+          ],
+          "line_number": 573
+        },
+        {
+          "name": "_route_to_cpu_specialist",
+          "is_async": true,
+          "is_abstract": false,
+          "is_private": true,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "metrics_data",
+              "annotation": "Dict[str, Any]"
+            },
+            {
+              "name": "triage_decision",
+              "annotation": "TriageDecision"
+            },
+            {
+              "name": "user_id",
+              "annotation": "Optional[str]"
+            }
+          ],
+          "return_type": "Dict[str, Any]",
+          "docstring": "Route back to Sir Hawkington's CPU specialist brain (future implementation)",
+          "decorators": [],
+          "category": "private",
+          "state_changes": [],
+          "method_calls": [
+            {
+              "object": null,
+              "method": "debug"
+            },
+            {
+              "object": null,
+              "method": "to_dict"
+            }
+          ],
+          "line_number": 636
+        },
+        {
+          "name": "_store_triage_decision",
+          "is_async": true,
+          "is_abstract": false,
+          "is_private": true,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "user_id",
+              "annotation": "str"
+            },
+            {
+              "name": "triage_result",
+              "annotation": "TriageResult"
+            }
+          ],
+          "return_type": null,
+          "docstring": "Store triage decision in dual-write architecture (agent table + CMB)",
+          "decorators": [],
+          "category": "private",
+          "state_changes": [],
+          "method_calls": [
+            {
+              "object": null,
+              "method": "to_json_safe"
+            },
+            {
+              "object": "occurred_at_dt",
+              "method": "isoformat"
+            },
+            {
+              "object": null,
+              "method": "info"
+            },
+            {
+              "object": null,
+              "method": "warning"
+            },
+            {
+              "object": null,
+              "method": "store_triage_decision"
+            },
+            {
+              "object": null,
+              "method": "error"
+            },
+            {
+              "object": null,
+              "method": "store_hawkington_decision"
+            },
+            {
+              "object": null,
+              "method": "emit_agent_memory_update"
+            },
+            {
+              "object": null,
+              "method": "str"
+            }
+          ],
+          "line_number": 655
+        },
+        {
+          "name": "_enhance_metrics_with_triage",
+          "is_async": true,
+          "is_abstract": false,
+          "is_private": true,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "original_metrics",
+              "annotation": "Dict[str, Any]"
+            },
+            {
+              "name": "triage_result",
+              "annotation": "TriageResult"
+            }
+          ],
+          "return_type": "Dict[str, Any]",
+          "docstring": "Phase 5: Enhance metrics with triage decision and agent results - NO FAKE DATA",
+          "decorators": [],
+          "category": "private",
+          "state_changes": [],
+          "method_calls": [
+            {
+              "object": "original_metrics",
+              "method": "copy"
+            },
+            {
+              "object": null,
+              "method": "to_dict"
+            },
+            {
+              "object": null,
+              "method": "values"
+            },
+            {
+              "object": null,
+              "method": "debug"
+            },
+            {
+              "object": null,
+              "method": "copy"
+            },
+            {
+              "object": null,
+              "method": "get"
+            },
+            {
+              "object": null,
+              "method": "isinstance"
+            },
+            {
+              "object": null,
+              "method": "hasattr"
+            },
+            {
+              "object": null,
+              "method": "isoformat"
+            },
+            {
+              "object": null,
+              "method": "str"
+            }
+          ],
+          "line_number": 707
+        },
+        {
+          "name": "get_triage_stats",
+          "is_async": true,
+          "is_abstract": false,
+          "is_private": false,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            }
+          ],
+          "return_type": "Dict[str, Any]",
+          "docstring": "Get comprehensive triage statistics\n\n\ud83c\udd95 WHAT'S NEW: Now queries agent-specific table for structured data\n\ud83c\udfaf WHY: 10-50x faster than JSON parsing in CMB\n\ud83d\udcca IMPACT: Real numeric metrics instead of approximations",
+          "decorators": [],
+          "category": "getter",
+          "state_changes": [],
+          "method_calls": [
+            {
+              "object": "logger",
+              "method": "warning"
+            },
+            {
+              "object": null,
+              "method": "copy"
+            },
+            {
+              "object": null,
+              "method": "get_triage_statistics"
+            },
+            {
+              "object": "logger",
+              "method": "error"
+            },
+            {
+              "object": "self",
+              "method": "_calculate_success_rate"
+            },
+            {
+              "object": "self",
+              "method": "_calculate_routing_distribution"
+            },
+            {
+              "object": "db_stats",
+              "method": "get"
+            },
+            {
+              "object": null,
+              "method": "str"
+            }
+          ],
+          "line_number": 760
+        },
+        {
+          "name": "get_user_triage_history",
+          "is_async": true,
+          "is_abstract": false,
+          "is_private": false,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "user_id",
+              "annotation": "str"
+            },
+            {
+              "name": "days",
+              "annotation": "int"
+            }
+          ],
+          "return_type": "Dict[str, Any]",
+          "docstring": "\ud83c\udd95 NEW METHOD: Get user-specific triage history from agent table\n\n\ud83c\udfaf PURPOSE: Provide structured triage analytics per user\n\ud83d\udcca RETURNS: Severity distribution, confidence trends, routing patterns\n\u26a1 PERFORMANCE: Queries indexed columns instead of parsing JSON\n\nArgs:\n    user_id: User identifier\n    days: Number of days to analyze\n    \nReturns:\n    Dictionary with structured triage history",
+          "decorators": [],
+          "category": "getter",
+          "state_changes": [],
+          "method_calls": [
+            {
+              "object": null,
+              "method": "get_triage_statistics"
+            },
+            {
+              "object": "logger",
+              "method": "error"
+            },
+            {
+              "object": null,
+              "method": "str"
+            }
+          ],
+          "line_number": 821
+        },
+        {
+          "name": "get_data_quality_report",
+          "is_async": true,
+          "is_abstract": false,
+          "is_private": false,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "user_id",
+              "annotation": "str"
+            },
+            {
+              "name": "days",
+              "annotation": "int"
+            }
+          ],
+          "return_type": "Dict[str, Any]",
+          "docstring": "\ud83c\udd95 NEW METHOD: Get data quality report from agent table\n\n\ud83c\udfaf PURPOSE: Analyze monocle yeet patterns to identify data quality issues\n\ud83d\udcca RETURNS: Most frequently missing/invalid metrics, yeet frequency, quality assessment\n\u26a1 PERFORMANCE: Queries structured JSON fields with GIN indexes\n\nArgs:\n    user_id: User identifier\n    days: Number of days to analyze\n    \nReturns:\n    Dictionary with data quality analysis",
+          "decorators": [],
+          "category": "getter",
+          "state_changes": [],
+          "method_calls": [
+            {
+              "object": null,
+              "method": "session_factory"
+            },
+            {
+              "object": "result",
+              "method": "all"
+            },
+            {
+              "object": "logger",
+              "method": "error"
+            },
+            {
+              "object": null,
+              "method": "utc_now"
+            },
+            {
+              "object": null,
+              "method": "timedelta"
+            },
+            {
+              "object": "session",
+              "method": "execute"
+            },
+            {
+              "object": "pattern",
+              "method": "get"
+            },
+            {
+              "object": null,
+              "method": "len"
+            },
+            {
+              "object": "self",
+              "method": "_assess_data_quality"
+            },
+            {
+              "object": null,
+              "method": "str"
+            }
+          ],
+          "line_number": 864
+        },
+        {
+          "name": "_assess_data_quality",
+          "is_async": false,
+          "is_abstract": false,
+          "is_private": true,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "yeet_count",
+              "annotation": "int"
+            },
+            {
+              "name": "days",
+              "annotation": "int"
+            }
+          ],
+          "return_type": "str",
+          "docstring": "Assess data quality based on yeet frequency\n\n\ud83c\udfaf PURPOSE: Provide aristocratic assessment of data quality\n\ud83d\udcca LOGIC: Calculates yeets per day and categorizes severity\n\nArgs:\n    yeet_count: Total number of monocle yeets\n    days: Period analyzed\n    \nReturns:\n    Aristocratic quality assessment string",
+          "decorators": [],
+          "category": "private",
+          "state_changes": [],
+          "method_calls": [],
+          "line_number": 961
+        },
+        {
+          "name": "get_accuracy_trend",
+          "is_async": true,
+          "is_abstract": false,
+          "is_private": false,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "user_id",
+              "annotation": "str"
+            },
+            {
+              "name": "days",
+              "annotation": "int"
+            }
+          ],
+          "return_type": "Optional[Dict[str, Any]]",
+          "docstring": "\ud83c\udd95 NEW METHOD: Get accuracy improvement trend from agent table\n\n\ud83c\udfaf PURPOSE: Track how Sir Hawkington's accuracy is improving over time\n\ud83d\udcca RETURNS: Trend direction, current vs historical average, sample size\n\u26a1 PERFORMANCE: Queries structured Float column (accuracy_improvement)\n\nArgs:\n    user_id: User identifier\n    days: Number of days to analyze\n    \nReturns:\n    Trend analysis or None if insufficient data",
+          "decorators": [],
+          "category": "getter",
+          "state_changes": [],
+          "method_calls": [
+            {
+              "object": null,
+              "method": "session_factory"
+            },
+            {
+              "object": "result",
+              "method": "all"
+            },
+            {
+              "object": "logger",
+              "method": "error"
+            },
+            {
+              "object": null,
+              "method": "utc_now"
+            },
+            {
+              "object": null,
+              "method": "timedelta"
+            },
+            {
+              "object": "session",
+              "method": "execute"
+            },
+            {
+              "object": null,
+              "method": "len"
+            },
+            {
+              "object": null,
+              "method": "sum"
+            },
+            {
+              "object": null,
+              "method": "isoformat"
+            },
+            {
+              "object": null,
+              "method": "order_by"
+            }
+          ],
+          "line_number": 986
+        },
+        {
+          "name": "_calculate_success_rate",
+          "is_async": false,
+          "is_abstract": false,
+          "is_private": true,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            }
+          ],
+          "return_type": "float",
+          "docstring": "Calculate overall triage success rate",
+          "decorators": [],
+          "category": "private",
+          "state_changes": [],
+          "method_calls": [
+            {
+              "object": null,
+              "method": "max"
+            }
+          ],
+          "line_number": 1058
+        },
+        {
+          "name": "_calculate_routing_distribution",
+          "is_async": false,
+          "is_abstract": false,
+          "is_private": true,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            }
+          ],
+          "return_type": "Dict[str, float]",
+          "docstring": "Calculate distribution of routing decisions",
+          "decorators": [],
+          "category": "private",
+          "state_changes": [],
+          "method_calls": [
+            {
+              "object": null,
+              "method": "items"
+            },
+            {
+              "object": null,
+              "method": "keys"
+            }
+          ],
+          "line_number": 1064
+        },
+        {
+          "name": "health_check",
+          "is_async": true,
+          "is_abstract": false,
+          "is_private": false,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            }
+          ],
+          "return_type": "Dict[str, Any]",
+          "docstring": "Comprehensive triage engine health check\n\n\ud83c\udd95 UPDATED: Now includes agent table health status",
+          "decorators": [],
+          "category": "monitoring",
+          "state_changes": [],
+          "method_calls": [
+            {
+              "object": "sir_hawkington_brain",
+              "method": "health_check"
+            },
+            {
+              "object": null,
+              "method": "isoformat"
+            },
+            {
+              "object": "db_health",
+              "method": "get"
+            },
+            {
+              "object": null,
+              "method": "get_database_health"
+            },
+            {
+              "object": "logger",
+              "method": "error"
+            },
+            {
+              "object": null,
+              "method": "max"
+            },
+            {
+              "object": null,
+              "method": "utc_now"
+            },
+            {
+              "object": null,
+              "method": "str"
+            }
+          ],
+          "line_number": 1074
+        }
+      ],
+      "state_variables": [],
+      "line_number": 154
+    }
+  ],
+  "the_stick": [],
+  "vic_20_sage": [
+    {
+      "name": "AgentHarmonySnapshot",
+      "file_path": "/home/carissa/Documents/system_rebellion/backend/app/ai_agents/vic_20_sage/data_types.py",
+      "base_classes": [],
+      "docstring": "Single agent harmony snapshot for flexible design",
+      "methods": [],
+      "state_variables": [
+        {
+          "name": "user_id",
+          "type": "str",
+          "has_default": false
+        },
+        {
+          "name": "agent_name",
+          "type": "str",
+          "has_default": false
+        },
+        {
+          "name": "harmony_score",
+          "type": "float",
+          "has_default": false
+        },
+        {
+          "name": "coordination_effectiveness",
+          "type": "float",
+          "has_default": false
+        },
+        {
+          "name": "conflict_incidents",
+          "type": "int",
+          "has_default": false
+        },
+        {
+          "name": "response_time_average",
+          "type": "float",
+          "has_default": false
+        },
+        {
+          "name": "confidence_stability",
+          "type": "float",
+          "has_default": false
+        },
+        {
+          "name": "timestamp",
+          "type": "datetime",
+          "has_default": false
+        },
+        {
+          "name": "improvement_trend",
+          "type": "str",
+          "has_default": true
+        },
+        {
+          "name": "coordination_patterns_learned",
+          "type": "List[Dict[str, Any]]",
+          "has_default": true
+        },
+        {
+          "name": "effectiveness_history",
+          "type": "List[float]",
+          "has_default": true
+        },
+        {
+          "name": "needs_coordination_attention",
+          "type": "bool",
+          "has_default": true
+        },
+        {
+          "name": "coordination_recommendations",
+          "type": "List[str]",
+          "has_default": true
+        }
+      ],
+      "line_number": 77
+    },
+    {
+      "name": "AgentInteractionEvent",
+      "file_path": "/home/carissa/Documents/system_rebellion/backend/app/ai_agents/vic_20_sage/data_types.py",
+      "base_classes": [],
+      "docstring": "Single agent interaction event for pattern learning",
+      "methods": [],
+      "state_variables": [
+        {
+          "name": "user_id",
+          "type": "str",
+          "has_default": false
+        },
+        {
+          "name": "source_agent",
+          "type": "str",
+          "has_default": false
+        },
+        {
+          "name": "target_agent",
+          "type": "Optional[str]",
+          "has_default": false
+        },
+        {
+          "name": "interaction_type",
+          "type": "str",
+          "has_default": false
+        },
+        {
+          "name": "message_content",
+          "type": "Dict[str, Any]",
+          "has_default": false
+        },
+        {
+          "name": "coordination_context",
+          "type": "Optional[str]",
+          "has_default": false
+        },
+        {
+          "name": "timestamp",
+          "type": "datetime",
+          "has_default": false
+        },
+        {
+          "name": "vic20_processing_notes",
+          "type": "Optional[str]",
+          "has_default": true
+        },
+        {
+          "name": "coordination_impact_assessment",
+          "type": "Optional[str]",
+          "has_default": true
+        },
+        {
+          "name": "pattern_recognition_triggered",
+          "type": "bool",
+          "has_default": true
+        },
+        {
+          "name": "interaction_success",
+          "type": "bool",
+          "has_default": true
+        },
+        {
+          "name": "coordination_triggered",
+          "type": "bool",
+          "has_default": true
+        },
+        {
+          "name": "coordination_effectiveness",
+          "type": "Optional[float]",
+          "has_default": true
+        },
+        {
+          "name": "processing_start_time",
+          "type": "Optional[datetime]",
+          "has_default": true
+        },
+        {
+          "name": "processing_end_time",
+          "type": "Optional[datetime]",
+          "has_default": true
+        },
+        {
+          "name": "response_sent_time",
+          "type": "Optional[datetime]",
+          "has_default": true
+        }
+      ],
+      "line_number": 152
+    }
+  ],
+  "_base": [
+    {
+      "name": "AgentInteractionManager",
+      "file_path": "/home/carissa/Documents/system_rebellion/backend/app/ai_agents/agent_interactions.py",
+      "base_classes": [],
+      "docstring": "Manages the complex social dynamics between our quirky agents",
+      "methods": [
+        {
+          "name": "__init__",
+          "is_async": false,
+          "is_abstract": false,
+          "is_private": true,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            }
+          ],
+          "return_type": null,
+          "docstring": null,
+          "decorators": [],
+          "category": "dunder",
+          "state_changes": [
+            "interaction_rules"
+          ],
+          "method_calls": [],
+          "line_number": 8
+        },
+        {
+          "name": "process_agent_interaction",
+          "is_async": true,
+          "is_abstract": false,
+          "is_private": false,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "source_agent",
+              "annotation": "str"
+            },
+            {
+              "name": "target_agent",
+              "annotation": "str"
+            },
+            {
+              "name": "interaction_type",
+              "annotation": "str"
+            },
+            {
+              "name": "context",
+              "annotation": "Dict[str, Any]"
+            }
+          ],
+          "return_type": "Dict[str, Any]",
+          "docstring": "Process interactions between agents with personality-aware responses",
+          "decorators": [],
+          "category": "public",
+          "state_changes": [],
+          "method_calls": [
+            {
+              "object": "self",
+              "method": "_standard_interaction"
+            },
+            {
+              "object": "self",
+              "method": "_hamsters_stick_interaction"
+            },
+            {
+              "object": "self",
+              "method": "_vic20_mediation"
+            },
+            {
+              "object": "self",
+              "method": "_aristocratic_command"
+            }
+          ],
+          "line_number": 32
+        },
+        {
+          "name": "_hamsters_stick_interaction",
+          "is_async": true,
+          "is_abstract": false,
+          "is_private": true,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "interaction_type",
+              "annotation": "str"
+            },
+            {
+              "name": "context",
+              "annotation": "Dict[str, Any]"
+            }
+          ],
+          "return_type": "Dict[str, Any]",
+          "docstring": "The Stick gets VERY anxious around the Hamsters",
+          "decorators": [],
+          "category": "private",
+          "state_changes": [],
+          "method_calls": [],
+          "line_number": 58
+        }
+      ],
+      "state_variables": [],
+      "line_number": 3
+    },
+    {
+      "name": "AgentLearningSystem",
+      "file_path": "/home/carissa/Documents/system_rebellion/backend/app/ai_agents/agent_learning.py",
+      "base_classes": [],
+      "docstring": "Agents learn from interactions and adapt their behaviours\nThis creates emergent safety patters over time",
+      "methods": [
+        {
+          "name": "__init__",
+          "is_async": false,
+          "is_abstract": false,
+          "is_private": true,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            }
+          ],
+          "return_type": null,
+          "docstring": null,
+          "decorators": [],
+          "category": "dunder",
+          "state_changes": [
+            "interaction_memory",
+            "learned_patterns",
+            "safety_adaptations"
+          ],
+          "method_calls": [
+            {
+              "object": null,
+              "method": "defacltdict"
+            }
+          ],
+          "line_number": 7
+        },
+        {
+          "name": "record_interaction_outcome",
+          "is_async": true,
+          "is_abstract": false,
+          "is_private": false,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "source_agent",
+              "annotation": "str"
+            },
+            {
+              "name": "target_agent",
+              "annotation": "str"
+            },
+            {
+              "name": "interaction_type",
+              "annotation": "str"
+            },
+            {
+              "name": "outcome",
+              "annotation": "Dict[str, Any]"
+            }
+          ],
+          "return_type": null,
+          "docstring": "Record and learn from agent interaction",
+          "decorators": [],
+          "category": "public",
+          "state_changes": [],
+          "method_calls": [
+            {
+              "object": null,
+              "method": "append"
+            },
+            {
+              "object": "self",
+              "method": "_learn_from_interaction"
+            },
+            {
+              "object": "outcome",
+              "method": "get"
+            },
+            {
+              "object": "outcomem",
+              "method": "get"
+            },
+            {
+              "object": null,
+              "method": "len"
+            },
+            {
+              "object": null,
+              "method": "utc_now"
+            },
+            {
+              "object": "self",
+              "method": "_learn_interaction_pattern"
+            }
+          ],
+          "line_number": 12
+        },
+        {
+          "name": "_learn_interaction_pattern",
+          "is_async": true,
+          "is_abstract": false,
+          "is_private": true,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "agent1",
+              "annotation": "str"
+            },
+            {
+              "name": "agent2",
+              "annotation": "str"
+            }
+          ],
+          "return_type": null,
+          "docstring": "Learn patterns from repeated interactions",
+          "decorators": [],
+          "category": "private",
+          "state_changes": [],
+          "method_calls": [
+            {
+              "object": null,
+              "method": "sum"
+            },
+            {
+              "object": null,
+              "method": "len"
+            },
+            {
+              "object": "self",
+              "method": "_apply_safety_adaptations"
+            },
+            {
+              "object": null,
+              "method": "append"
+            }
+          ],
+          "line_number": 38
+        },
+        {
+          "name": "_apply_safety_adaptations",
+          "is_async": true,
+          "is_abstract": false,
+          "is_private": true,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "agent1",
+              "annotation": "str"
+            },
+            {
+              "name": "agent2",
+              "annotation": "str"
+            },
+            {
+              "name": "pattern",
+              "annotation": "Dict"
+            }
+          ],
+          "return_type": null,
+          "docstring": "Apply learned safety adaptations",
+          "decorators": [],
+          "category": "private",
+          "state_changes": [],
+          "method_calls": [],
+          "line_number": 72
+        }
+      ],
+      "state_variables": [],
+      "line_number": 1
+    },
+    {
+      "name": "BaseAIAgent",
+      "file_path": "/home/carissa/Documents/system_rebellion/backend/app/ai_agents/base_agent.py",
+      "base_classes": [
+        "ABC"
+      ],
+      "docstring": "Abstract base class for all AI agents in the System Rebellion.\n\n\ud83e\uddd0 ENHANCED FOR TRIAGE ARCHITECTURE:\n- Consistent interfaces for all agents\n- Triage-compatible processing methods\n- Comprehensive status reporting\n- NO fake data generation capabilities",
+      "methods": [
+        {
+          "name": "__init__",
+          "is_async": false,
+          "is_abstract": false,
+          "is_private": true,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "agent_name",
+              "annotation": "str"
+            },
+            {
+              "name": "version",
+              "annotation": "str"
+            },
+            {
+              "name": "agent_role",
+              "annotation": "str"
+            }
+          ],
+          "return_type": null,
+          "docstring": null,
+          "decorators": [],
+          "category": "dunder",
+          "state_changes": [
+            "agent_name",
+            "agent_role",
+            "error_count",
+            "initialization_time",
+            "is_active",
+            "last_processing_time",
+            "logger",
+            "processing_count",
+            "total_processing_time",
+            "version"
+          ],
+          "method_calls": [
+            {
+              "object": "logging",
+              "method": "getLogger"
+            },
+            {
+              "object": null,
+              "method": "utc_now"
+            },
+            {
+              "object": null,
+              "method": "info"
+            }
+          ],
+          "line_number": 30
+        },
+        {
+          "name": "process_metrics",
+          "is_async": true,
+          "is_abstract": true,
+          "is_private": false,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "metrics",
+              "annotation": "Dict[str, Any]"
+            },
+            {
+              "name": "user_context",
+              "annotation": "Optional[Dict[str, Any]]"
+            }
+          ],
+          "return_type": "Dict[str, Any]",
+          "docstring": "Process system metrics and return enhanced metrics with agent analysis.\n\n\ud83e\uddd0 TRIAGE ARCHITECTURE: This method is called by:\n- Agent Manager for specialist processing (normal operations)\n- Direct routing from Triage Engine (specific scenarios)\n\nArgs:\n    metrics: System metrics (may be pre-processed by Triage Engine)\n    user_context: Optional context including triage routing information\n    \nReturns:\n    Enhanced metrics dictionary with agent's analysis added\n    \nRaises:\n    Exception: If processing fails critically (NO FAKE DATA GENERATED)",
+          "decorators": [
+            "abstractmethod"
+          ],
+          "category": "core_processing",
+          "state_changes": [],
+          "method_calls": [],
+          "line_number": 45
+        },
+        {
+          "name": "get_agent_status",
+          "is_async": false,
+          "is_abstract": true,
+          "is_private": false,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            }
+          ],
+          "return_type": "Dict[str, Any]",
+          "docstring": "Get current status and health information for this agent.\n\nReturns:\n    Dictionary containing agent status, performance metrics, and health info",
+          "decorators": [
+            "abstractmethod"
+          ],
+          "category": "getter",
+          "state_changes": [],
+          "method_calls": [],
+          "line_number": 70
+        },
+        {
+          "name": "activate",
+          "is_async": false,
+          "is_abstract": false,
+          "is_private": false,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            }
+          ],
+          "return_type": null,
+          "docstring": "Activate this agent for processing",
+          "decorators": [],
+          "category": "public",
+          "state_changes": [
+            "is_active"
+          ],
+          "method_calls": [
+            {
+              "object": null,
+              "method": "info"
+            }
+          ],
+          "line_number": 81
+        },
+        {
+          "name": "deactivate",
+          "is_async": false,
+          "is_abstract": false,
+          "is_private": false,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            }
+          ],
+          "return_type": null,
+          "docstring": "Deactivate this agent (it will skip processing)",
+          "decorators": [],
+          "category": "public",
+          "state_changes": [
+            "is_active"
+          ],
+          "method_calls": [
+            {
+              "object": null,
+              "method": "info"
+            }
+          ],
+          "line_number": 86
+        },
+        {
+          "name": "handle_triage_routing",
+          "is_async": true,
+          "is_abstract": false,
+          "is_private": false,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "routing_decision",
+              "annotation": "Dict[str, Any]"
+            },
+            {
+              "name": "metrics",
+              "annotation": "Dict[str, Any]"
+            },
+            {
+              "name": "user_context",
+              "annotation": "Optional[Dict[str, Any]]"
+            }
+          ],
+          "return_type": "Dict[str, Any]",
+          "docstring": "Handle specific routing from Sir Hawkington's Triage Engine.\n\n\ud83e\uddd0 OPTIONAL: Agents can override this for specialized triage handling\n\nArgs:\n    routing_decision: Triage routing decision from Sir Hawkington\n    metrics: System metrics\n    user_context: User context\n    \nReturns:\n    Agent response to triage routing",
+          "decorators": [],
+          "category": "handler",
+          "state_changes": [],
+          "method_calls": [
+            {
+              "object": "self",
+              "method": "process_metrics"
+            }
+          ],
+          "line_number": 93
+        },
+        {
+          "name": "handle_emergency_request",
+          "is_async": true,
+          "is_abstract": false,
+          "is_private": false,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "emergency_data",
+              "annotation": "Dict[str, Any]"
+            },
+            {
+              "name": "user_context",
+              "annotation": "Optional[Dict[str, Any]]"
+            }
+          ],
+          "return_type": "Dict[str, Any]",
+          "docstring": "Handle emergency requests (e.g., monocle yeet scenarios).\n\n\ud83e\uddd0 OPTIONAL: For agents that support emergency operations\n\nArgs:\n    emergency_data: Emergency request data\n    user_context: User context\n    \nReturns:\n    Emergency response",
+          "decorators": [],
+          "category": "handler",
+          "state_changes": [],
+          "method_calls": [
+            {
+              "object": null,
+              "method": "isoformat"
+            },
+            {
+              "object": null,
+              "method": "utc_now"
+            }
+          ],
+          "line_number": 115
+        },
+        {
+          "name": "start_processing_timer",
+          "is_async": false,
+          "is_abstract": false,
+          "is_private": false,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            }
+          ],
+          "return_type": null,
+          "docstring": "Start timing a processing operation",
+          "decorators": [],
+          "category": "public",
+          "state_changes": [
+            "last_processing_time"
+          ],
+          "method_calls": [
+            {
+              "object": null,
+              "method": "utc_now"
+            }
+          ],
+          "line_number": 141
+        },
+        {
+          "name": "end_processing_timer",
+          "is_async": false,
+          "is_abstract": false,
+          "is_private": false,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            }
+          ],
+          "return_type": null,
+          "docstring": "End timing and record processing duration",
+          "decorators": [],
+          "category": "public",
+          "state_changes": [
+            "last_processing_time",
+            "total_processing_time"
+          ],
+          "method_calls": [
+            {
+              "object": null,
+              "method": "total_seconds"
+            },
+            {
+              "object": null,
+              "method": "utc_now"
+            }
+          ],
+          "line_number": 145
+        },
+        {
+          "name": "increment_processing_count",
+          "is_async": false,
+          "is_abstract": false,
+          "is_private": false,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            }
+          ],
+          "return_type": null,
+          "docstring": "Track processing statistics",
+          "decorators": [],
+          "category": "public",
+          "state_changes": [
+            "processing_count"
+          ],
+          "method_calls": [],
+          "line_number": 154
+        },
+        {
+          "name": "increment_error_count",
+          "is_async": false,
+          "is_abstract": false,
+          "is_private": false,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            }
+          ],
+          "return_type": null,
+          "docstring": "Track error statistics",
+          "decorators": [],
+          "category": "public",
+          "state_changes": [
+            "error_count"
+          ],
+          "method_calls": [],
+          "line_number": 158
+        },
+        {
+          "name": "get_base_status",
+          "is_async": false,
+          "is_abstract": false,
+          "is_private": false,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            }
+          ],
+          "return_type": "Dict[str, Any]",
+          "docstring": "Get base status information common to all agents",
+          "decorators": [],
+          "category": "getter",
+          "state_changes": [],
+          "method_calls": [
+            {
+              "object": null,
+              "method": "total_seconds"
+            },
+            {
+              "object": null,
+              "method": "round"
+            },
+            {
+              "object": null,
+              "method": "isoformat"
+            },
+            {
+              "object": null,
+              "method": "hasattr"
+            },
+            {
+              "object": null,
+              "method": "max"
+            },
+            {
+              "object": "uptime",
+              "method": "total_seconds"
+            },
+            {
+              "object": null,
+              "method": "utc_now"
+            }
+          ],
+          "line_number": 162
+        },
+        {
+          "name": "health_check",
+          "is_async": true,
+          "is_abstract": false,
+          "is_private": false,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            }
+          ],
+          "return_type": "Dict[str, Any]",
+          "docstring": "Perform a health check of this agent.\n\n\ud83e\uddd0 OPTIONAL: Agents can override for specialized health checks\n\nReturns:\n    Health check results",
+          "decorators": [],
+          "category": "monitoring",
+          "state_changes": [],
+          "method_calls": [
+            {
+              "object": "self",
+              "method": "get_agent_status"
+            },
+            {
+              "object": null,
+              "method": "isoformat"
+            },
+            {
+              "object": null,
+              "method": "str"
+            },
+            {
+              "object": null,
+              "method": "utc_now"
+            }
+          ],
+          "line_number": 189
+        },
+        {
+          "name": "log_processing_start",
+          "is_async": false,
+          "is_abstract": false,
+          "is_private": false,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "operation",
+              "annotation": "str"
+            },
+            {
+              "name": "context",
+              "annotation": "Optional[Dict[str, Any]]"
+            }
+          ],
+          "return_type": null,
+          "docstring": "Log the start of a processing operation",
+          "decorators": [],
+          "category": "public",
+          "state_changes": [],
+          "method_calls": [
+            {
+              "object": null,
+              "method": "debug"
+            },
+            {
+              "object": "self",
+              "method": "start_processing_timer"
+            }
+          ],
+          "line_number": 231
+        },
+        {
+          "name": "log_processing_success",
+          "is_async": false,
+          "is_abstract": false,
+          "is_private": false,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "operation",
+              "annotation": "str"
+            },
+            {
+              "name": "duration",
+              "annotation": "Optional[float]"
+            }
+          ],
+          "return_type": null,
+          "docstring": "Log successful completion of a processing operation",
+          "decorators": [],
+          "category": "public",
+          "state_changes": [],
+          "method_calls": [
+            {
+              "object": "self",
+              "method": "increment_processing_count"
+            },
+            {
+              "object": null,
+              "method": "debug"
+            },
+            {
+              "object": "self",
+              "method": "end_processing_timer"
+            }
+          ],
+          "line_number": 237
+        },
+        {
+          "name": "log_processing_error",
+          "is_async": false,
+          "is_abstract": false,
+          "is_private": false,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "operation",
+              "annotation": "str"
+            },
+            {
+              "name": "error",
+              "annotation": "Exception"
+            },
+            {
+              "name": "duration",
+              "annotation": "Optional[float]"
+            }
+          ],
+          "return_type": null,
+          "docstring": "Log a processing error",
+          "decorators": [],
+          "category": "public",
+          "state_changes": [],
+          "method_calls": [
+            {
+              "object": "self",
+              "method": "increment_error_count"
+            },
+            {
+              "object": null,
+              "method": "error"
+            },
+            {
+              "object": "self",
+              "method": "end_processing_timer"
+            },
+            {
+              "object": null,
+              "method": "str"
+            }
+          ],
+          "line_number": 245
+        },
+        {
+          "name": "__repr__",
+          "is_async": false,
+          "is_abstract": false,
+          "is_private": true,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            }
+          ],
+          "return_type": null,
+          "docstring": "String representation of the agent",
+          "decorators": [],
+          "category": "dunder",
+          "state_changes": [],
+          "method_calls": [],
+          "line_number": 253
+        }
+      ],
+      "state_variables": [],
+      "line_number": 19
+    },
+    {
+      "name": "AgentRole",
+      "file_path": "/home/carissa/Documents/system_rebellion/backend/app/ai_agents/base_agent.py",
+      "base_classes": [],
+      "docstring": "Constants for agent roles in the triage architecture",
+      "methods": [],
+      "state_variables": [],
+      "line_number": 260
+    },
+    {
+      "name": "MockAgent",
+      "file_path": "/home/carissa/Documents/system_rebellion/backend/app/ai_agents/base_agent.py",
+      "base_classes": [
+        "BaseAIAgent"
+      ],
+      "docstring": "Mock agent for testing purposes",
+      "methods": [
+        {
+          "name": "__init__",
+          "is_async": false,
+          "is_abstract": false,
+          "is_private": true,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            }
+          ],
+          "return_type": null,
+          "docstring": null,
+          "decorators": [],
+          "category": "dunder",
+          "state_changes": [
+            "test_processing_calls"
+          ],
+          "method_calls": [
+            {
+              "object": null,
+              "method": "__init__"
+            },
+            {
+              "object": null,
+              "method": "super"
+            }
+          ],
+          "line_number": 305
+        },
+        {
+          "name": "process_metrics",
+          "is_async": true,
+          "is_abstract": false,
+          "is_private": false,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "metrics",
+              "annotation": "Dict[str, Any]"
+            },
+            {
+              "name": "user_context",
+              "annotation": "Optional[Dict[str, Any]]"
+            }
+          ],
+          "return_type": "Dict[str, Any]",
+          "docstring": "Mock implementation that records calls",
+          "decorators": [],
+          "category": "core_processing",
+          "state_changes": [],
+          "method_calls": [
+            {
+              "object": "self",
+              "method": "log_processing_start"
+            },
+            {
+              "object": null,
+              "method": "append"
+            },
+            {
+              "object": "metrics",
+              "method": "copy"
+            },
+            {
+              "object": null,
+              "method": "isoformat"
+            },
+            {
+              "object": "self",
+              "method": "log_processing_success"
+            },
+            {
+              "object": null,
+              "method": "utc_now"
+            }
+          ],
+          "line_number": 309
+        },
+        {
+          "name": "get_agent_status",
+          "is_async": false,
+          "is_abstract": false,
+          "is_private": false,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            }
+          ],
+          "return_type": "Dict[str, Any]",
+          "docstring": "Mock status implementation",
+          "decorators": [],
+          "category": "getter",
+          "state_changes": [],
+          "method_calls": [
+            {
+              "object": "self",
+              "method": "get_base_status"
+            },
+            {
+              "object": "base_status",
+              "method": "update"
+            },
+            {
+              "object": null,
+              "method": "len"
+            }
+          ],
+          "line_number": 328
+        }
+      ],
+      "state_variables": [],
+      "line_number": 302
+    },
+    {
+      "name": "AgentNames",
+      "file_path": "/home/carissa/Documents/system_rebellion/backend/app/ai_agents/constants.py",
+      "base_classes": [
+        "str",
+        "Enum"
+      ],
+      "docstring": "The official agent roster - use these EVERYWHERE",
+      "methods": [],
+      "state_variables": [],
+      "line_number": 15
+    },
+    {
+      "name": "AIAgentManager",
+      "file_path": "/home/carissa/Documents/system_rebellion/backend/app/ai_agents/agent_manager.py",
+      "base_classes": [],
+      "docstring": null,
+      "methods": [
+        {
+          "name": "__init__",
+          "is_async": false,
+          "is_abstract": false,
+          "is_private": true,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            }
+          ],
+          "return_type": "None",
+          "docstring": "Initialize the AI Agent Manager.\n\nArgs:\n    memory_service: Configured memory service instance\n    db_getter: Async callable to get database session\n    agent_config_path: Path to YAML config file\n    redis_url: Redis connection URL\n    cache_ttl: Cache TTL in seconds\n    max_parallel_agents: Maximum number of agents to run in parallel",
+          "decorators": [],
+          "category": "dunder",
+          "state_changes": [
+            "_base_parallel",
+            "_sem",
+            "agent_config_path",
+            "cache_ttl",
+            "db_getter",
+            "initialized",
+            "logger",
+            "max_parallel_agents",
+            "memory_service",
+            "redis_url",
+            "total_processing_count",
+            "triage_engine"
+          ],
+          "method_calls": [
+            {
+              "object": null,
+              "method": "Path"
+            },
+            {
+              "object": "asyncio",
+              "method": "Semaphore"
+            }
+          ],
+          "line_number": 85
+        },
+        {
+          "name": "initialize",
+          "is_async": true,
+          "is_abstract": false,
+          "is_private": false,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            }
+          ],
+          "return_type": "None",
+          "docstring": "Initialize the manager and all agents.",
+          "decorators": [],
+          "category": "initialization",
+          "state_changes": [
+            "initialization_time",
+            "initialized"
+          ],
+          "method_calls": [
+            {
+              "object": "datetime",
+              "method": "utcnow"
+            },
+            {
+              "object": null,
+              "method": "info"
+            },
+            {
+              "object": "self",
+              "method": "load_agent_configs"
+            },
+            {
+              "object": "self",
+              "method": "initialize_agents"
+            },
+            {
+              "object": null,
+              "method": "len"
+            }
+          ],
+          "line_number": 128
+        },
+        {
+          "name": "load_agent_configs",
+          "is_async": true,
+          "is_abstract": false,
+          "is_private": false,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            }
+          ],
+          "return_type": "None",
+          "docstring": "Load and validate agent configurations from YAML.\n\nExpected YAML format:\n    agents:\n      - name: sir_hawkington\n        module: app.ai_agents.sir_hawkington.agent\n        class: SirHawkington\n        role: \"Triage & insights\"\n        retry_attempts: 2\n        config:\n          some_flag: true",
+          "decorators": [],
+          "category": "public",
+          "state_changes": [],
+          "method_calls": [
+            {
+              "object": "data",
+              "method": "get"
+            },
+            {
+              "object": null,
+              "method": "clear"
+            },
+            {
+              "object": null,
+              "method": "info"
+            },
+            {
+              "object": null,
+              "method": "open"
+            },
+            {
+              "object": null,
+              "method": "isinstance"
+            },
+            {
+              "object": null,
+              "method": "ValueError"
+            },
+            {
+              "object": null,
+              "method": "len"
+            },
+            {
+              "object": null,
+              "method": "error"
+            },
+            {
+              "object": "yaml",
+              "method": "safe_load"
+            },
+            {
+              "object": "importlib",
+              "method": "import_module"
+            }
+          ],
+          "line_number": 139
+        },
+        {
+          "name": "initialize_agents",
+          "is_async": true,
+          "is_abstract": false,
+          "is_private": false,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            }
+          ],
+          "return_type": "None",
+          "docstring": "Build shared services, then construct and initialize each agent.",
+          "decorators": [],
+          "category": "public",
+          "state_changes": [
+            "agents",
+            "initialization_time",
+            "initialized",
+            "triage_engine"
+          ],
+          "method_calls": [
+            {
+              "object": null,
+              "method": "getattr"
+            },
+            {
+              "object": "temp_agents",
+              "method": "get"
+            },
+            {
+              "object": "datetime",
+              "method": "utcnow"
+            },
+            {
+              "object": null,
+              "method": "info"
+            },
+            {
+              "object": null,
+              "method": "debug"
+            },
+            {
+              "object": "asyncio",
+              "method": "iscoroutinefunction"
+            },
+            {
+              "object": null,
+              "method": "RuntimeError"
+            },
+            {
+              "object": null,
+              "method": "warning"
+            },
+            {
+              "object": null,
+              "method": "setattr"
+            },
+            {
+              "object": null,
+              "method": "get"
+            }
+          ],
+          "line_number": 200
+        },
+        {
+          "name": "ensure_agent_interface",
+          "is_async": false,
+          "is_abstract": false,
+          "is_private": false,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "agent",
+              "annotation": "Any"
+            },
+            {
+              "name": "name",
+              "annotation": "str"
+            }
+          ],
+          "return_type": "None",
+          "docstring": "Make sure minimum interface exists; provide safe fallbacks for optional bits.\nRequired: process_metrics (async), health_check (async).\nOptional: is_active, activate, deactivate, get_agent_status.",
+          "decorators": [],
+          "category": "public",
+          "state_changes": [],
+          "method_calls": [
+            {
+              "object": null,
+              "method": "hasattr"
+            },
+            {
+              "object": null,
+              "method": "info"
+            },
+            {
+              "object": null,
+              "method": "ValueError"
+            },
+            {
+              "object": null,
+              "method": "setattr"
+            },
+            {
+              "object": null,
+              "method": "getattr"
+            }
+          ],
+          "line_number": 275
+        },
+        {
+          "name": "get_active_agents",
+          "is_async": false,
+          "is_abstract": false,
+          "is_private": false,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            }
+          ],
+          "return_type": "List[str]",
+          "docstring": "Get list of active agent names.\n\nReturns:\n    List of agent names that are currently active",
+          "decorators": [],
+          "category": "getter",
+          "state_changes": [],
+          "method_calls": [
+            {
+              "object": null,
+              "method": "items"
+            },
+            {
+              "object": null,
+              "method": "getattr"
+            }
+          ],
+          "line_number": 309
+        },
+        {
+          "name": "get_agent",
+          "is_async": true,
+          "is_abstract": false,
+          "is_private": false,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "agent_name",
+              "annotation": "str"
+            }
+          ],
+          "return_type": "Optional[BaseAIAgent]",
+          "docstring": "Get an agent by name.\n\nArgs:\n    agent_name: Name of the agent to retrieve\n    \nReturns:\n    The agent instance if found, None otherwise",
+          "decorators": [],
+          "category": "getter",
+          "state_changes": [],
+          "method_calls": [
+            {
+              "object": null,
+              "method": "get"
+            }
+          ],
+          "line_number": 320
+        },
+        {
+          "name": "get_agent_status",
+          "is_async": true,
+          "is_abstract": false,
+          "is_private": false,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "agent_name",
+              "annotation": "str"
+            }
+          ],
+          "return_type": "Dict[str, Any]",
+          "docstring": "Get status of a specific agent.\n\nArgs:\n    agent_name: Name of the agent to check\n    \nReturns:\n    Dict with agent status information",
+          "decorators": [],
+          "category": "getter",
+          "state_changes": [],
+          "method_calls": [
+            {
+              "object": null,
+              "method": "get"
+            },
+            {
+              "object": null,
+              "method": "hasattr"
+            },
+            {
+              "object": "asyncio",
+              "method": "iscoroutinefunction"
+            },
+            {
+              "object": "status",
+              "method": "update"
+            },
+            {
+              "object": "agent",
+              "method": "get_status"
+            },
+            {
+              "object": null,
+              "method": "str"
+            }
+          ],
+          "line_number": 331
+        },
+        {
+          "name": "process_metrics_through_triage_engine",
+          "is_async": true,
+          "is_abstract": false,
+          "is_private": false,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "metrics",
+              "annotation": "dict"
+            },
+            {
+              "name": "user_context",
+              "annotation": "dict | None"
+            }
+          ],
+          "return_type": "dict",
+          "docstring": "Single entry: Hawk triages, then route to VIC-20 or Stick.",
+          "decorators": [],
+          "category": "public",
+          "state_changes": [],
+          "method_calls": [
+            {
+              "object": null,
+              "method": "get"
+            },
+            {
+              "object": "metrics",
+              "method": "get"
+            },
+            {
+              "object": null,
+              "method": "getattr"
+            },
+            {
+              "object": "vic20_plan",
+              "method": "get"
+            },
+            {
+              "object": null,
+              "method": "RuntimeError"
+            },
+            {
+              "object": null,
+              "method": "process_metrics"
+            },
+            {
+              "object": null,
+              "method": "store_memory"
+            },
+            {
+              "object": "SEVERITY",
+              "method": "get"
+            },
+            {
+              "object": "self",
+              "method": "_stick_log"
+            },
+            {
+              "object": "r",
+              "method": "get"
+            }
+          ],
+          "line_number": 360
+        },
+        {
+          "name": "_serialize_triage",
+          "is_async": false,
+          "is_abstract": false,
+          "is_private": true,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "triage",
+              "annotation": null
+            }
+          ],
+          "return_type": "dict",
+          "docstring": "Convert HawkingtonDecision to JSON-serializable dict.",
+          "decorators": [],
+          "category": "private",
+          "state_changes": [],
+          "method_calls": [
+            {
+              "object": null,
+              "method": "asdict"
+            },
+            {
+              "object": null,
+              "method": "hasattr"
+            },
+            {
+              "object": null,
+              "method": "isoformat"
+            }
+          ],
+          "line_number": 452
+        },
+        {
+          "name": "_stick_log",
+          "is_async": true,
+          "is_abstract": false,
+          "is_private": true,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "event",
+              "annotation": "str"
+            },
+            {
+              "name": "payload",
+              "annotation": "dict"
+            }
+          ],
+          "return_type": null,
+          "docstring": "Log events to The Stick's memory for compliance tracking.",
+          "decorators": [],
+          "category": "private",
+          "state_changes": [],
+          "method_calls": [
+            {
+              "object": null,
+              "method": "store_memory"
+            }
+          ],
+          "line_number": 460
+        },
+        {
+          "name": "_set_parallel_budget",
+          "is_async": true,
+          "is_abstract": false,
+          "is_private": true,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "n",
+              "annotation": "int"
+            }
+          ],
+          "return_type": null,
+          "docstring": "Adjust the parallelism budget for agent operations.",
+          "decorators": [],
+          "category": "setter",
+          "state_changes": [
+            "_sem"
+          ],
+          "method_calls": [
+            {
+              "object": "asyncio",
+              "method": "Semaphore"
+            },
+            {
+              "object": null,
+              "method": "max"
+            },
+            {
+              "object": null,
+              "method": "int"
+            }
+          ],
+          "line_number": 467
+        },
+        {
+          "name": "process_metrics",
+          "is_async": true,
+          "is_abstract": false,
+          "is_private": false,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "metrics",
+              "annotation": "Dict[str, Any]"
+            }
+          ],
+          "return_type": "Dict[str, Any]",
+          "docstring": "Process metrics through all agents in parallel.\n\nArgs:\n    metrics: Dictionary of metrics to process\n    \nReturns:\n    Dict containing results from all agents",
+          "decorators": [],
+          "category": "core_processing",
+          "state_changes": [
+            "total_processing_count"
+          ],
+          "method_calls": [
+            {
+              "object": null,
+              "method": "process_agent"
+            },
+            {
+              "object": "asyncio",
+              "method": "gather"
+            },
+            {
+              "object": null,
+              "method": "items"
+            },
+            {
+              "object": null,
+              "method": "error"
+            },
+            {
+              "object": "agent",
+              "method": "process_metrics"
+            },
+            {
+              "object": null,
+              "method": "str"
+            },
+            {
+              "object": "metrics",
+              "method": "copy"
+            }
+          ],
+          "line_number": 472
+        },
+        {
+          "name": "health_check",
+          "is_async": true,
+          "is_abstract": false,
+          "is_private": false,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            }
+          ],
+          "return_type": "Dict[str, Any]",
+          "docstring": "Check health of all agents.\n\nReturns:\n    Dict with health status of each agent",
+          "decorators": [],
+          "category": "monitoring",
+          "state_changes": [],
+          "method_calls": [
+            {
+              "object": null,
+              "method": "items"
+            },
+            {
+              "object": null,
+              "method": "isoformat"
+            },
+            {
+              "object": null,
+              "method": "hasattr"
+            },
+            {
+              "object": "asyncio",
+              "method": "iscoroutinefunction"
+            },
+            {
+              "object": "agent",
+              "method": "health_check"
+            },
+            {
+              "object": null,
+              "method": "str"
+            }
+          ],
+          "line_number": 499
+        },
+        {
+          "name": "shutdown",
+          "is_async": true,
+          "is_abstract": false,
+          "is_private": false,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            }
+          ],
+          "return_type": "None",
+          "docstring": "Cleanup resources and shutdown all agents.",
+          "decorators": [],
+          "category": "public",
+          "state_changes": [
+            "initialization_time",
+            "initialized"
+          ],
+          "method_calls": [
+            {
+              "object": null,
+              "method": "info"
+            },
+            {
+              "object": null,
+              "method": "items"
+            },
+            {
+              "object": null,
+              "method": "clear"
+            },
+            {
+              "object": null,
+              "method": "hasattr"
+            },
+            {
+              "object": "asyncio",
+              "method": "iscoroutinefunction"
+            },
+            {
+              "object": null,
+              "method": "debug"
+            },
+            {
+              "object": "shutdown_tasks",
+              "method": "append"
+            },
+            {
+              "object": "asyncio",
+              "method": "gather"
+            },
+            {
+              "object": "agent",
+              "method": "shutdown"
+            }
+          ],
+          "line_number": 523
+        },
+        {
+          "name": "shutdown_agent",
+          "is_async": true,
+          "is_abstract": false,
+          "is_private": false,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "name",
+              "annotation": "str"
+            }
+          ],
+          "return_type": "Dict[str, Any]",
+          "docstring": "Optional graceful shutdown per agent.",
+          "decorators": [],
+          "category": "public",
+          "state_changes": [],
+          "method_calls": [
+            {
+              "object": null,
+              "method": "get"
+            },
+            {
+              "object": null,
+              "method": "hasattr"
+            },
+            {
+              "object": "agent",
+              "method": "shutdown"
+            },
+            {
+              "object": "asyncio",
+              "method": "iscoroutine"
+            },
+            {
+              "object": null,
+              "method": "error"
+            },
+            {
+              "object": null,
+              "method": "str"
+            }
+          ],
+          "line_number": 547
+        },
+        {
+          "name": "__aenter__",
+          "is_async": true,
+          "is_abstract": false,
+          "is_private": true,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            }
+          ],
+          "return_type": "'AIAgentManager'",
+          "docstring": "Async context manager entry.",
+          "decorators": [],
+          "category": "dunder",
+          "state_changes": [],
+          "method_calls": [
+            {
+              "object": "self",
+              "method": "initialize"
+            }
+          ],
+          "line_number": 564
+        },
+        {
+          "name": "__aexit__",
+          "is_async": true,
+          "is_abstract": false,
+          "is_private": true,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "exc_type",
+              "annotation": null
+            },
+            {
+              "name": "exc_val",
+              "annotation": null
+            },
+            {
+              "name": "exc_tb",
+              "annotation": null
+            }
+          ],
+          "return_type": "None",
+          "docstring": "Async context manager exit.",
+          "decorators": [],
+          "category": "dunder",
+          "state_changes": [],
+          "method_calls": [
+            {
+              "object": "self",
+              "method": "shutdown"
+            }
+          ],
+          "line_number": 569
+        },
+        {
+          "name": "__del__",
+          "is_async": false,
+          "is_abstract": false,
+          "is_private": true,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            }
+          ],
+          "return_type": "None",
+          "docstring": "Cleanup on garbage collection.",
+          "decorators": [],
+          "category": "dunder",
+          "state_changes": [],
+          "method_calls": [
+            {
+              "object": null,
+              "method": "hasattr"
+            },
+            {
+              "object": null,
+              "method": "warning"
+            }
+          ],
+          "line_number": 573
+        }
+      ],
+      "state_variables": [],
+      "line_number": 84
+    },
+    {
+      "name": "AgentInstrumentationMixin",
+      "file_path": "/home/carissa/Documents/system_rebellion/backend/app/ai_agents/agent_instrumentation.py",
+      "base_classes": [],
+      "docstring": "Mixin for agents to automatically emit method execution events.\n\nUsage:\n    class MyAgent(AgentInstrumentationMixin, BaseAIAgent):\n        ...\n\nThis mixin provides:\n- Automatic method execution tracking\n- WebSocket event emission for method start/end/error\n- State change tracking\n- Performance metrics",
+      "methods": [
+        {
+          "name": "__init__",
+          "is_async": false,
+          "is_abstract": false,
+          "is_private": true,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            }
+          ],
+          "return_type": null,
+          "docstring": null,
+          "decorators": [],
+          "category": "dunder",
+          "state_changes": [
+            "_current_method_execution",
+            "_instrumentation_enabled",
+            "_method_error_count",
+            "_method_execution_count"
+          ],
+          "method_calls": [
+            {
+              "object": null,
+              "method": "__init__"
+            },
+            {
+              "object": null,
+              "method": "super"
+            }
+          ],
+          "line_number": 39
+        },
+        {
+          "name": "_emit_agent_event",
+          "is_async": true,
+          "is_abstract": false,
+          "is_private": true,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "event_data",
+              "annotation": "Dict[str, Any]"
+            }
+          ],
+          "return_type": null,
+          "docstring": "Emit an agent event via WebSocket manager.\n\nArgs:\n    event_data: Event data to broadcast",
+          "decorators": [],
+          "category": "private",
+          "state_changes": [],
+          "method_calls": [
+            {
+              "object": null,
+              "method": "get_websocket_manager"
+            },
+            {
+              "object": null,
+              "method": "len"
+            },
+            {
+              "object": null,
+              "method": "isoformat"
+            },
+            {
+              "object": "logger",
+              "method": "debug"
+            },
+            {
+              "object": "asyncio",
+              "method": "wait_for"
+            },
+            {
+              "object": "logger",
+              "method": "warning"
+            },
+            {
+              "object": null,
+              "method": "utc_now"
+            },
+            {
+              "object": "ws_manager",
+              "method": "broadcast_json"
+            }
+          ],
+          "line_number": 46
+        },
+        {
+          "name": "_emit_method_start",
+          "is_async": true,
+          "is_abstract": false,
+          "is_private": true,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "method_name",
+              "annotation": "str"
+            },
+            {
+              "name": "parameters",
+              "annotation": "Optional[Dict[str, Any]]"
+            }
+          ],
+          "return_type": null,
+          "docstring": "Emit method start event",
+          "decorators": [],
+          "category": "private",
+          "state_changes": [
+            "_current_method_execution"
+          ],
+          "method_calls": [
+            {
+              "object": "time",
+              "method": "time"
+            },
+            {
+              "object": null,
+              "method": "isoformat"
+            },
+            {
+              "object": null,
+              "method": "get"
+            },
+            {
+              "object": "self",
+              "method": "_emit_agent_event"
+            },
+            {
+              "object": null,
+              "method": "utc_now"
+            }
+          ],
+          "line_number": 84
+        },
+        {
+          "name": "_emit_method_end",
+          "is_async": true,
+          "is_abstract": false,
+          "is_private": true,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "method_name",
+              "annotation": "str"
+            },
+            {
+              "name": "result",
+              "annotation": "Optional[Any]"
+            },
+            {
+              "name": "state_changes",
+              "annotation": "Optional[Dict[str, Any]]"
+            }
+          ],
+          "return_type": null,
+          "docstring": "Emit method end event",
+          "decorators": [],
+          "category": "private",
+          "state_changes": [
+            "_current_method_execution"
+          ],
+          "method_calls": [
+            {
+              "object": "time",
+              "method": "time"
+            },
+            {
+              "object": "self",
+              "method": "_emit_agent_event"
+            },
+            {
+              "object": null,
+              "method": "round"
+            }
+          ],
+          "line_number": 102
+        },
+        {
+          "name": "_emit_method_error",
+          "is_async": true,
+          "is_abstract": false,
+          "is_private": true,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "method_name",
+              "annotation": "str"
+            },
+            {
+              "name": "error",
+              "annotation": "Exception"
+            }
+          ],
+          "return_type": null,
+          "docstring": "Emit method error event",
+          "decorators": [],
+          "category": "private",
+          "state_changes": [
+            "_current_method_execution"
+          ],
+          "method_calls": [
+            {
+              "object": null,
+              "method": "get"
+            },
+            {
+              "object": "self",
+              "method": "_emit_agent_event"
+            },
+            {
+              "object": "time",
+              "method": "time"
+            },
+            {
+              "object": null,
+              "method": "str"
+            },
+            {
+              "object": null,
+              "method": "round"
+            },
+            {
+              "object": null,
+              "method": "type"
+            }
+          ],
+          "line_number": 124
+        },
+        {
+          "name": "_emit_state_change",
+          "is_async": true,
+          "is_abstract": false,
+          "is_private": true,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            },
+            {
+              "name": "variable_name",
+              "annotation": "str"
+            },
+            {
+              "name": "old_value",
+              "annotation": "Any"
+            },
+            {
+              "name": "new_value",
+              "annotation": "Any"
+            }
+          ],
+          "return_type": null,
+          "docstring": "Emit state variable change event",
+          "decorators": [],
+          "category": "private",
+          "state_changes": [],
+          "method_calls": [
+            {
+              "object": "self",
+              "method": "_emit_agent_event"
+            },
+            {
+              "object": null,
+              "method": "str"
+            }
+          ],
+          "line_number": 145
+        },
+        {
+          "name": "enable_instrumentation",
+          "is_async": false,
+          "is_abstract": false,
+          "is_private": false,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            }
+          ],
+          "return_type": null,
+          "docstring": "Enable instrumentation for this agent",
+          "decorators": [],
+          "category": "public",
+          "state_changes": [
+            "_instrumentation_enabled"
+          ],
+          "method_calls": [
+            {
+              "object": "logger",
+              "method": "info"
+            }
+          ],
+          "line_number": 155
+        },
+        {
+          "name": "disable_instrumentation",
+          "is_async": false,
+          "is_abstract": false,
+          "is_private": false,
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null
+            }
+          ],
+          "return_type": null,
+          "docstring": "Disable instrumentation for this agent",
+          "decorators": [],
+          "category": "public",
+          "state_changes": [
+            "_instrumentation_enabled"
+          ],
+          "method_calls": [
+            {
+              "object": "logger",
+              "method": "info"
+            }
+          ],
+          "line_number": 160
+        }
+      ],
+      "state_variables": [],
+      "line_number": 24
+    }
+  ]
+}

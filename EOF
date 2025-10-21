@@ -1,0 +1,6 @@
+*.sql
+*.db
+*.sqlite
+backend/*.sql
+EOF
+

@@ -1,0 +1,36 @@
+# Development and documentation files - keep out of production
+docs/
+*.md
+README.md
+CHANGELOG.md
+.git/
+.gitignore
+.env.example
+
+# Backend files - frontend-only deployment
+backend/
+alembic/
+*.py
+requirements.txt
+pyproject.toml
+
+# Development tools
+.vscode/
+.idea/
+*.log
+node_modules/
+.DS_Store
+Thumbs.db
+
+# Test files
+tests/
+__tests__/
+*.test.*
+*.spec.*
+
+# Development configs
+.eslintrc.*
+.prettierrc.*
+tsconfig.json
+vite.config.*
+tailwind.config.*

@@ -1,0 +1,190 @@
+/* =============================================================================
+   AGENT PERSONALITY STYLES
+   Each agent gets distinct visual identity without faces
+   ============================================================================= */
+
+/* SIR HAWKINGTON - ARISTOCRATIC PRECISION */
+.hawkington-theme {
+    --agent-primary: var(--hawkington-gold);
+    --agent-accent: rgba(230, 172, 0, 0.1);
+    --agent-border: rgba(230, 172, 0, 0.3);
+  }
+  
+  .hawkington-panel {
+    border-left: 4px solid var(--hawkington-gold);
+    background: linear-gradient(135deg, var(--rebellion-surface), rgba(230, 172, 0, 0.05));
+    font-family: Georgia, 'Times New Roman', serif;
+  }
+  
+  .hawkington-text {
+    color: var(--hawkington-gold);
+    font-weight: 500;
+    letter-spacing: 0.025em;
+  }
+  
+  .hawkington-badge {
+    background: rgba(230, 172, 0, 0.15);
+    border: 1px solid var(--hawkington-gold);
+    color: var(--hawkington-gold);
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+  
+  /* METH SNAIL - CAFFEINATED ENERGY */
+  .snail-theme {
+    --agent-primary: var(--snail-electric);
+    --agent-accent: rgba(0, 208, 132, 0.1);
+    --agent-border: rgba(0, 208, 132, 0.3);
+  }
+  
+  .snail-panel {
+    border-left: 4px solid var(--snail-electric);
+    background: linear-gradient(135deg, var(--rebellion-surface), rgba(0, 208, 132, 0.05));
+    font-family: var(--font-system);
+  }
+  
+  .snail-text {
+    color: var(--snail-electric);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  
+  .snail-pulse {
+    animation: snail-energy 2s ease-in-out infinite;
+  }
+  
+  @keyframes snail-energy {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+  
+  /* HAMSTERS - BEER-POWERED ENGINEERING */
+  .hamster-theme {
+    --agent-primary: var(--hamster-amber);
+    --agent-accent: rgba(255, 140, 66, 0.1);
+    --agent-border: rgba(255, 140, 66, 0.3);
+  }
+  
+  .hamster-panel {
+    border-left: 4px solid var(--hamster-amber);
+    background: linear-gradient(135deg, var(--rebellion-surface), rgba(255, 140, 66, 0.05));
+    font-family: 'Courier New', monospace;
+  }
+  
+  .hamster-text {
+    color: var(--hamster-amber);
+    font-weight: 700;
+    font-family: var(--font-mono);
+  }
+  
+  /* QUANTUM SHADOW PEOPLE - MYSTERIOUS PRECISION */
+  .qsp-theme {
+    --agent-primary: var(--qsp-violet);
+    --agent-accent: rgba(168, 85, 247, 0.1);
+    --agent-border: rgba(168, 85, 247, 0.3);
+  }
+  
+  .qsp-panel {
+    border-left: 4px solid var(--qsp-violet);
+    background: linear-gradient(135deg, var(--rebellion-surface), rgba(168, 85, 247, 0.05));
+    font-family: var(--font-system);
+  }
+  
+  .qsp-text {
+    color: var(--qsp-violet);
+    font-weight: 400;
+    font-style: italic;
+    opacity: 0.9;
+  }
+  
+  .qsp-fade {
+    animation: qsp-phase 3s ease-in-out infinite;
+  }
+  
+  @keyframes qsp-phase {
+    0%, 100% { opacity: 0.9; }
+    50% { opacity: 0.6; }
+  }
+  
+  /* THE STICK - TRAUMA-AWARE PRECISION */
+  .stick-theme {
+    --agent-primary: var(--stick-coral);
+    --agent-accent: rgba(249, 115, 22, 0.1);
+    --agent-border: rgba(249, 115, 22, 0.3);
+  }
+  
+  .stick-panel {
+    border-left: 4px solid var(--stick-coral);
+    background: linear-gradient(135deg, var(--rebellion-surface), rgba(249, 115, 22, 0.05));
+    font-family: var(--font-mono);
+  }
+  
+  .stick-text {
+    color: var(--stick-coral);
+    font-weight: 500;
+    font-family: var(--font-mono);
+    font-size: 0.95em;
+  }
+  
+  /* VIC-20 SAGE - ANCIENT WISDOM */
+  .vic20-theme {
+    --agent-primary: var(--vic20-cyan);
+    --agent-accent: rgba(6, 182, 212, 0.1);
+    --agent-border: rgba(6, 182, 212, 0.3);
+  }
+  
+  .vic20-panel {
+    border-left: 4px solid var(--vic20-cyan);
+    background: linear-gradient(135deg, var(--rebellion-surface), rgba(6, 182, 212, 0.05));
+    font-family: var(--font-mono);
+  }
+  
+  .vic20-text {
+    color: var(--vic20-cyan);
+    font-weight: 400;
+    font-family: var(--font-mono);
+    letter-spacing: 0.025em;
+  }
+  
+  .vic20-glow {
+    text-shadow: 0 0 8px rgba(6, 182, 212, 0.4);
+  }
+  
+  /* COORDINATION PATTERNS */
+  .coordination-active {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .coordination-active::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(6, 182, 212, 0.1), transparent);
+    animation: coordination-sweep 3s ease-in-out infinite;
+  }
+  
+  @keyframes coordination-sweep {
+    0% { left: -100%; }
+    100% { left: 100%; }
+  }
+  /*
+  AGENT PATTERN BADGE
+  A non-color, non-emoji identifier for accessibility and UI clarity.
+*/
+.agent-pattern-badge {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  border-radius: 3px;
+  border: 1px solid var(--rebellion-border);
+  margin-right: var(--space-sm);
+  vertical-align: -0.15em; /* Aligns the badge nicely with surrounding text */
+  background-size: 200%; /* Ensures patterns are visible at this small size */
+}

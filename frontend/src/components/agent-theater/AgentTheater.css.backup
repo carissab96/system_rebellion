@@ -1,0 +1,430 @@
+/* =============================================================================
+   AGENT THEATER - MAIN ORCHESTRATOR
+   ============================================================================= */
+
+   .agent-theater {
+    padding: var(--space-xl);
+    background: var(--rebellion-void);
+    min-height: 100vh;
+  }
+  
+  .theater-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--space-2xl);
+    padding-bottom: var(--space-lg);
+    border-bottom: 1px solid var(--rebellion-border);
+  }
+  
+  .theater-title-section {
+    flex: 1;
+  }
+  
+  .theater-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--rebellion-text-bright);
+    margin-bottom: var(--space-xs);
+    background: linear-gradient(135deg, var(--rebellion-text-bright), var(--vic20-cyan));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .theater-subtitle {
+    font-size: 1.125rem;
+    color: var(--rebellion-text-dim);
+    font-weight: 400;
+  }
+  
+  .theater-status {
+    display: flex;
+    align-items: center;
+    gap: var(--space-lg);
+  }
+  
+  .agent-count {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-xs);
+    padding: var(--space-sm) var(--space-md);
+    background: rgba(6, 182, 212, 0.1);
+    border: 1px solid var(--vic20-cyan);
+    border-radius: var(--radius-md);
+  }
+  
+  .active-count {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--vic20-cyan);
+  }
+  
+  .total-count {
+    font-size: 1.125rem;
+    color: var(--rebellion-text-dim);
+  }
+  
+  .count-label {
+    font-size: 0.875rem;
+    color: var(--rebellion-text);
+    font-weight: 600;
+    margin-left: var(--space-sm);
+  }
+  
+  .theater-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: var(--space-xl);
+    margin-bottom: var(--space-2xl);
+  }
+  
+  /* =============================================================================
+     AGENT CARD BASE STYLES
+     ============================================================================= */
+  
+  .agent-card {
+    background: var(--rebellion-surface);
+    border: 1px solid var(--rebellion-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-rebellion);
+    padding: var(--space-lg);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .agent-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+  }
+  
+  .agent-card.online {
+    border-left: 4px solid var(--agent-primary);
+  }
+  
+  .agent-card.offline {
+    opacity: 0.7;
+    border-left: 4px solid var(--rebellion-text-dim);
+  }
+  
+  .agent-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--space-lg);
+  }
+  
+  .agent-identity {
+    flex: 1;
+  }
+  
+  .agent-name {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--rebellion-text-bright);
+    margin-bottom: var(--space-xs);
+  }
+  
+  .agent-title {
+    font-size: 0.875rem;
+    color: var(--rebellion-text-dim);
+    font-weight: 500;
+  }
+  
+  .agent-status {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: var(--space-xs) var(--space-sm);
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-sm);
+  }
+  
+  .status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--rebellion-text-dim);
+  }
+  
+  .status-indicator.online {
+    background: var(--success);
+    animation: pulse-success 2s infinite;
+  }
+  
+  .status-indicator.offline {
+    background: var(--rebellion-text-dim);
+  }
+  
+  .status-indicator.spinning {
+    animation: spin 1s linear infinite;
+  }
+  
+  .status-indicator.engineering {
+    animation: pulse-warning 1.5s infinite;
+    background: var(--warning);
+  }
+  
+  @keyframes pulse-success {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  
+  @keyframes pulse-warning {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  .status-text {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--rebellion-text);
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+  }
+  
+  .agent-thought {
+    margin-bottom: var(--space-lg);
+    padding: var(--space-md);
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: var(--radius-md);
+    border-left: 3px solid var(--agent-primary);
+  }
+  
+  .thought-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--rebellion-text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: var(--space-xs);
+  }
+  
+  .thought-content {
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: var(--rebellion-text);
+    font-style: italic;
+  }
+  
+  .confidence-section {
+    margin-bottom: var(--space-lg);
+  }
+  
+  .confidence-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--rebellion-text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: var(--space-xs);
+  }
+  
+  .confidence-display {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+  }
+  
+  .confidence-bar {
+    flex: 1;
+    height: 8px;
+    background: var(--rebellion-border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+  }
+  
+  .confidence-fill {
+    height: 100%;
+    background: var(--agent-primary);
+    transition: width 0.3s ease;
+    border-radius: var(--radius-sm);
+  }
+  
+  .confidence-value {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--agent-primary);
+    min-width: 40px;
+    text-align: right;
+  }
+  
+  .metrics-section {
+    margin-bottom: var(--space-lg);
+  }
+  
+  .chart-section {
+    margin-bottom: var(--space-lg);
+    padding: var(--space-md);
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: var(--radius-md);
+  }
+  
+  .card-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--rebellion-border);
+  }
+  
+  .details-button {
+    font-size: 0.875rem;
+  }
+  
+  .details-button:disabled {
+    background: var(--rebellion-border);
+    color: var(--rebellion-text-dim);
+    cursor: not-allowed;
+  }
+  
+  /* OFFLINE STATES */
+  .offline-message {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-md);
+    padding: var(--space-lg);
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-lg);
+  }
+  
+  .offline-icon {
+    font-size: 2rem;
+    opacity: 0.5;
+  }
+  
+  .offline-text {
+    flex: 1;
+  }
+  
+  .offline-text p {
+    margin-bottom: var(--space-sm);
+    color: var(--rebellion-text);
+    font-weight: 600;
+  }
+  
+  .offline-reasons {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+  }
+  
+  .offline-reasons span {
+    font-size: 0.875rem;
+    color: var(--rebellion-text-dim);
+  }
+  
+  /* MISSING AGENTS INDICATOR */
+  .missing-agents-indicator {
+    padding: var(--space-xl);
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid var(--error);
+    border-radius: var(--radius-lg);
+    margin-top: var(--space-xl);
+  }
+  
+  .missing-agents-indicator h3 {
+    color: var(--error);
+    margin-bottom: var(--space-md);
+    font-size: 1.125rem;
+  }
+  
+  .missing-agents-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--space-md);
+    margin-bottom: var(--space-md);
+  }
+  
+  .missing-agent {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-sm) var(--space-md);
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-md);
+  }
+  
+  .missing-agent .agent-name {
+    font-weight: 600;
+    color: var(--rebellion-text);
+  }
+  
+  .missing-agent .missing-reason {
+    font-size: 0.75rem;
+    color: var(--rebellion-text-dim);
+  }
+  
+  .missing-explanation {
+    font-size: 0.875rem;
+    color: var(--rebellion-text-dim);
+    margin: 0;
+  }
+  /* Add to AgentTheater.css */
+.theater-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background: var(--rebellion-void);
+  border-bottom: 1px solid var(--rebellion-border);
+}
+
+.logo-button {
+  background: none;
+  border: none;
+  color: var(--vic20-cyan);
+  font-size: 1.2rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.profile-dropdown {
+  position: relative;
+}
+
+.profile-button {
+  background: var(--rebellion-surface);
+  border: 1px solid var(--rebellion-border);
+  color: var(--rebellion-text);
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: var(--rebellion-surface);
+  border: 1px solid var(--rebellion-border);
+  border-radius: 4px;
+  padding: 0.5rem 0;
+  min-width: 150px;
+  z-index: 1000;
+}
+
+.dropdown-menu button {
+  width: 100%;
+  text-align: left;
+  padding: 0.5rem 1rem;
+  background: none;
+  border: none;
+  color: var(--rebellion-text);
+  cursor: pointer;
+}
+
+.dropdown-menu button:hover {
+  background: var(--rebellion-border);
+}
+
+.logout-btn {
+  color: var(--stick-coral) !important;
+}

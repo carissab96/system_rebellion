@@ -1,0 +1,157 @@
+/*
+  OnboardingFlow.module.css
+  The architectural blueprint for the entire onboarding experience.
+*/
+
+/* --- 1. Main Container & Layout --- */
+/* The dark void that fills the entire page */
+.onboardingFlow {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: var(--space-xl);
+    background:
+      radial-gradient(ellipse at top left, rgba(6, 182, 212, 0.05), transparent 40%),
+      radial-gradient(ellipse at bottom right, rgba(168, 85, 247, 0.05), transparent 40%),
+      var(--rebellion-void);
+  }
+  
+  /* The primary "card" that contains the entire flow.
+     We apply the global .card class to this element in JSX. */
+  .onboardingCard {
+    width: 100%;
+    max-width: 800px; /* A generous width for complex steps */
+    display: flex;
+    flex-direction: column;
+  }
+  
+  
+  /* --- 2. Progress Indicator --- */
+  .progressTracker {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 var(--space-lg);
+    margin-bottom: var(--space-xl);
+  }
+  
+  .progressStep {
+    position: relative;
+    width: 12px;
+    height: 12px;
+    background-color: var(--rebellion-surface);
+    border: 2px solid var(--rebellion-border);
+    border-radius: 50%;
+    transition: all 0.3s ease-in-out;
+  }
+  
+  .progressStep.active {
+    background-color: var(--vic20-cyan);
+    border-color: var(--vic20-cyan);
+    transform: scale(1.2);
+  }
+  
+  .progressStep.completed {
+    background-color: var(--vic20-cyan);
+    border-color: var(--vic20-cyan);
+  }
+  
+  .progressLine {
+    flex-grow: 1;
+    height: 2px;
+    background-color: var(--rebellion-border);
+  }
+  
+  
+  /* --- 3. Step Header --- */
+  /* Use this for the main title/subtitle header of the card.
+     This will use the .card-header global class in JSX. */
+  .stepHeader {
+    text-align: center;
+
+  }
+  
+  
+  /* --- 4. Content & Form Layout --- */
+  /* This is the main area where the step component's content lives.
+     It will use the .card-body global class in JSX. */
+  .contentArea {
+    min-height: 400px;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* A flexible grid for laying out form inputs */
+  .formGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-rows: repeat(auto-fit, minmax(100px, 1fr));
+    gap: var(--space-lg);
+  }
+  
+  /* Header for sections *within* a step (e.g., "System Stress Weights") */
+  .sectionHeader {
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--rebellion-text-dim);
+    margin-top: var(--space-lg);
+    margin-bottom: var(--space-md);
+    padding-bottom: var(--space-sm);
+    border-bottom: 1px solid var(--rebellion-border);
+  }
+  .sectionHeader:first-child {
+    margin-top: 0
+  }
+  
+  
+  /* --- 5. Navigation --- */
+  /* This wrapper ensures the nav buttons are always at the bottom */
+  .navigationWrapper {
+    margin-top: auto; /* Magically pushes it to the bottom of the flex container */
+    padding-top: var(--space-xl);
+    border-top: 1px solid var(--rebellion-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+  }
+  
+  /* --- 6. Step-Specific Styles --- */
+  /* Styles for the AgentsIntroStep hover cards */
+  .agentCard {
+    border: 1px solid var(--rebellion-border);
+    transition: all 0.2s ease-in-out;
+  }
+  .agentCard:hover {
+    transform: translateY(-4px);
+    border-color: var(--vic20-cyan);
+    box-shadow: 0 4px 20px rgba(6, 182, 212, 0.1);
+  }
+  .agentCard.locked {
+    border-color: var(--vic20-cyan);
+    box-shadow: 0 0 0 2px var(--vic20-cyan);
+  }
+  
+  /* Styles for the CompleteStep */
+  .completeStep {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    flex-grow: 1;
+  }
+  .completionMessage {
+    font-size: 1.1rem;
+    color: var(--rebellion-text);
+    max-width: 55ch;
+    margin: var(--space-lg) auto var(--space-2xl);
+    line-height: 1.7;
+  }
+  .highlight {
+    color: var(--vic20-cyan);
+    font-weight: 600;
+  }

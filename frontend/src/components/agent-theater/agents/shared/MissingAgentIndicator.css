@@ -1,0 +1,310 @@
+/* =============================================================================
+   MISSING AGENTS INDICATOR
+   Honest reporting of offline agents - no fake data
+   ============================================================================= */
+
+   .missing-agents-indicator {
+    padding: var(--space-xl);
+    border-radius: var(--radius-lg);
+    margin-top: var(--space-xl);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--rebellion-border);
+    animation: slide-in-up 0.3s ease-out;
+  }
+  
+  .missing-agents-indicator.info {
+    border-left: 4px solid var(--info);
+    background: rgba(59, 130, 246, 0.05);
+  }
+  
+  .missing-agents-indicator.warning {
+    border-left: 4px solid var(--warning);
+    background: rgba(245, 158, 11, 0.05);
+  }
+  
+  .missing-agents-indicator.error {
+    border-left: 4px solid var(--error);
+    background: rgba(239, 68, 68, 0.05);
+  }
+  
+  .missing-agents-header {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+  }
+  
+  .header-icon {
+    font-size: 1.5rem;
+    animation: severity-pulse 2s ease-in-out infinite;
+  }
+  
+  .header-text {
+    flex: 1;
+  }
+  
+  .header-text h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: var(--space-xs);
+    color: var(--rebellion-text-bright);
+  }
+  
+  .missing-agents-indicator.info .header-text h3 {
+    color: var(--info);
+  }
+  
+  .missing-agents-indicator.warning .header-text h3 {
+    color: var(--warning);
+  }
+  
+  .missing-agents-indicator.error .header-text h3 {
+    color: var(--error);
+  }
+  
+  .header-text p {
+    font-size: 0.875rem;
+    color: var(--rebellion-text-dim);
+    margin: 0;
+  }
+  
+  .missing-agents-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+  }
+  
+  .missing-agent-card {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-md);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--rebellion-border);
+    border-radius: var(--radius-md);
+    transition: all 0.2s ease;
+  }
+  
+  .missing-agent-card:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--rebellion-text-dim);
+    transform: translateY(-2px);
+  }
+  
+  .agent-info {
+    flex: 1;
+  }
+  
+  .agent-name {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--rebellion-text-bright);
+    margin-bottom: var(--space-xs);
+  }
+  
+  .agent-title {
+    font-size: 0.75rem;
+    color: var(--rebellion-text-dim);
+    margin-bottom: var(--space-sm);
+  }
+  
+  .missing-reason {
+    font-size: 0.75rem;
+    color: var(--rebellion-text-dim);
+    font-family: var(--font-mono);
+    line-height: 1.4;
+  }
+  
+  .missing-reason strong {
+    color: var(--rebellion-text);
+  }
+  
+  .agent-status {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: var(--space-xs) var(--space-sm);
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-sm);
+  }
+  
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--rebellion-text-dim);
+  }
+  
+  .status-dot.offline {
+    background: var(--error);
+    animation: offline-pulse 2s ease-in-out infinite;
+  }
+  
+  .status-text {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--rebellion-text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+  }
+  
+  .missing-agents-footer {
+    border-top: 1px solid var(--rebellion-border);
+    padding-top: var(--space-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+  
+  .troubleshooting-info {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--rebellion-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+  }
+  
+  .troubleshooting-info strong {
+    display: block;
+    margin-bottom: var(--space-sm);
+    color: var(--rebellion-text-bright);
+    font-size: 0.875rem;
+  }
+  
+  .troubleshooting-info ul {
+    margin: 0;
+    padding-left: var(--space-lg);
+    color: var(--rebellion-text-dim);
+  }
+  
+  .troubleshooting-info li {
+    font-size: 0.875rem;
+    margin-bottom: var(--space-xs);
+    font-family: var(--font-mono);
+  }
+  
+  .connection-note {
+    padding: var(--space-md);
+    background: rgba(6, 182, 212, 0.1);
+    border: 1px solid var(--vic20-cyan);
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    color: var(--rebellion-text);
+    line-height: 1.5;
+  }
+  
+  .connection-note strong {
+    color: var(--vic20-cyan);
+  }
+  
+  /* Animation keyframes */
+  @keyframes severity-pulse {
+    0%, 100% { 
+      opacity: 1; 
+      transform: scale(1);
+    }
+    50% { 
+      opacity: 0.7; 
+      transform: scale(1.1);
+    }
+  }
+  
+  @keyframes offline-pulse {
+    0%, 100% { 
+      opacity: 1; 
+    }
+    50% { 
+      opacity: 0.3; 
+    }
+  }
+  
+  @keyframes slide-in-up {
+    from { 
+      opacity: 0; 
+      transform: translateY(20px); 
+    }
+    to { 
+      opacity: 1; 
+      transform: translateY(0); 
+    }
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .missing-agents-indicator {
+      padding: var(--space-lg);
+    }
+    
+    .missing-agents-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .missing-agent-card {
+      padding: var(--space-sm);
+    }
+    
+    .missing-agents-footer {
+      flex-direction: column;
+    }
+    
+    .header-text h3 {
+      font-size: 1rem;
+    }
+  }
+  
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    .missing-agents-indicator {
+      border: 2px solid var(--rebellion-text);
+    }
+    
+    .missing-agent-card {
+      border: 2px solid var(--rebellion-border);
+    }
+    
+    .troubleshooting-info {
+      border: 2px solid var(--rebellion-border);
+    }
+  }
+  
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .missing-agents-indicator {
+      animation: none;
+    }
+    
+    .header-icon {
+      animation: none;
+    }
+    
+    .status-dot.offline {
+      animation: none;
+    }
+    
+    .missing-agent-card {
+      transition: none;
+    }
+    
+    .missing-agent-card:hover {
+      transform: none;
+    }
+  }
+  
+  /* Focus styles for accessibility */
+  .missing-agent-card:focus-within {
+    outline: 2px solid var(--vic20-cyan);
+    outline-offset: 2px;
+  }
+  
+  /* Print styles */
+  @media print {
+    .missing-agents-indicator {
+      border: 1px solid #000;
+      background: white;
+      color: black;
+    }
+    
+    .agent-icon {
+      filter: none;
+    }
+  }

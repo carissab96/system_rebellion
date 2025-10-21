@@ -1,0 +1,136 @@
+.agentsIntroStep {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.agentsShowcase {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.agentShowcaseCard {
+  background: var(--rebellion-surface);
+  border: 1px solid var(--rebellion-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.agentShowcaseCard:hover {
+  border-color: var(--agent-color, var(--rebellion-border));
+  box-shadow: 0 0 0 1px var(--agent-color, transparent);
+}
+
+.agentShowcaseCard.expanded {
+  border-color: var(--agent-color, var(--rebellion-border));
+  box-shadow: 0 0 0 1px var(--agent-color, transparent);
+}
+
+.agentShowcaseCard.locked {
+  border-color: var(--agent-color, var(--rebellion-border));
+  box-shadow: 0 0 0 1px var(--agent-color, transparent);
+}
+
+.agentIdentity {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--space-sm);
+}
+
+.agentPatternContainer {
+  width: 40px;
+  height: 40px;
+  margin-right: var(--space-sm);
+  flex-shrink: 0;
+}
+
+.agentBasicInfo {
+  flex: 1;
+}
+
+.agentName {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--agent-color, var(--rebellion-text));
+}
+
+.agentRole {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--rebellion-text-secondary);
+}
+
+.agentDescription {
+  margin-bottom: var(--space-md);
+  font-size: 0.95rem;
+  color: var(--rebellion-text);
+}
+
+.agentDetails {
+  border-top: 1px solid var(--rebellion-border);
+  padding-top: var(--space-sm);
+  margin-top: var(--space-sm);
+  overflow: hidden;
+}
+
+.detailItem {
+  margin-bottom: var(--space-xs);
+  display: flex;
+  flex-direction: column;
+}
+
+.detailLabel {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--rebellion-text-secondary);
+  margin-bottom: 2px;
+}
+
+.detailContent {
+  font-size: 0.9rem;
+  color: var(--rebellion-text);
+}
+
+.cardFooter {
+  margin-top: var(--space-sm);
+  font-size: 0.8rem;
+  color: var(--rebellion-text-dim);
+  text-align: center;
+}
+
+.interactionHint {
+  font-style: italic;
+}
+
+.agentsFooter {
+  margin-top: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.agentsNote {
+  font-size: 0.9rem;
+  color: var(--rebellion-text-secondary);
+  text-align: center;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.lockIndicator {
+  margin-left: var(--space-sm);
+}
+
+.lockIcon {
+  width: 16px;
+  height: 16px;
+  background-color: var(--agent-color, var(--rebellion-text-secondary));
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 17a2 2 0 100-4 2 2 0 000 4zm6-9a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V10a2 2 0 012-2h1V6a5 5 0 0110 0v2h1zm-6-5a3 3 0 00-3 3v2h6V6a3 3 0 00-3-3z'/%3E%3C/svg%3E");
+  mask-repeat: no-repeat;
+  mask-position: center;
+}
