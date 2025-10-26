@@ -32,20 +32,41 @@ class AgentMemoryService:
         if not self.db:
             raise RuntimeError("Database session not initialized. Call ensure_ready() first.")
         
-        now = datetime.now(timezone.utc)
-        memory = CentralMemoryBank(
-            user_id=user_id,
-            agent_name=agent_name,
-            occurred_at=now,  # Use occurred_at instead of timestamp
-            event_type=memory_type,  # Use event_type instead of memory_type
-            details=content,  # Use details instead of content
-            priority=importance,  # Use priority instead of importance
-        )
-        self.db.add(memory)
-        await self.db.commit()
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                now = datetime.now(timezone.utc)
+                memory = CentralMemoryBank(
+                    user_id=user_id,
+                    agent_name=agent_name,
+                    occurred_at=now,  # Use occurred_at instead of timestamp
+                    event_type=memory_type,  # Use event_type instead of memory_type
+                    details=content,  # Use details instead of content
+                    priority=importance,  # Use priority instead of importance
+                )
+                self.db.add(memory)
+                await self.db.commit()
 
-        # Invalidate cache for this agent/user
-        await self._invalidate_cache(user_id, agent_name)
+                # Invalidate cache for this agent/user
+                await self._invalidate_cache(user_id, agent_name)
+                return  # Success, exit
+                
+            except Exception as e:
+                # Rollback on any error
+                await self.db.rollback()
+                
+                # Check if it's a duplicate key error
+                if "duplicate key" in str(e).lower() or "UniqueViolationError" in str(e):
+                    logger.warning(f"Duplicate key error on attempt {attempt + 1}/{max_retries}, rolling back and retrying")
+                    if attempt < max_retries - 1:
+                        continue  # Retry
+                    else:
+                        logger.error(f"Failed to store memory after {max_retries} attempts due to duplicate key")
+                        raise
+                else:
+                    # Different error, don't retry
+                    logger.error(f"Error storing memory: {e}")
+                    raise
 
 # ----------------------
 # MEMORY RETRIEVAL

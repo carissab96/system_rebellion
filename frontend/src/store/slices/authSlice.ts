@@ -159,7 +159,7 @@ export const initializeAuth = createAsyncThunk(
       // Validate the saved token
       const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
         headers: {
-          'Authorization': `bearer ${savedToken}`,
+          'Authorization': `Bearer ${savedToken}`,
           'Content-Type': 'application/json'
         }
       });

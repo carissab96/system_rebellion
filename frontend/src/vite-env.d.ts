@@ -1,12 +1,16 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
-  readonly VITE_API_URL?: string;
-  readonly VITE_WS_URL?: string;
-  readonly VITE_WS_RECONNECT_INTERVAL?: string;
-  readonly VITE_WS_MAX_RECONNECT_ATTEMPTS?: string;
+  VITE_API_URL: string;
+  VITE_WS_URL: string;
+  VITE_WS_RECONNECT_INTERVAL: number;
+  VITE_WS_MAX_RECONNECT_ATTEMPTS: number;
 }
 
 interface ImportMeta {
-  readonly env: ImportMetaEnv;
+  env: ImportMetaEnv;
+}
+
+declare global {
+  var __DEV__: boolean;
 }

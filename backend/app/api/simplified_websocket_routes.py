@@ -1,4 +1,5 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, status
+from websockets.exceptions import ConnectionClosedError
 from app.api.websockets import get_websocket_manager
 from app.api.websocket_auth import get_current_user_from_token
 
@@ -8,6 +9,10 @@ from app.core.resilience import (
     get_circuit_breaker,
     get_backpressure_handler,
     with_error_recovery,
+    ErrorSeverity,
+    error_recovery,
+    RecoveryAction,
+    RecoveryStrategy
 )
 from app.ai_agents.agent_manager import get_agent_manager
 
@@ -52,30 +57,40 @@ from app.models.agent_memory_banks import (
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+if not getattr(error_recovery, "recovery_strategies", {}).get("websocket", {}).get("ConnectionClosedError"):
+    error_recovery.register_strategy(
+        component="websocket",
+        error_type=ConnectionClosedError,
+        recovery_action=RecoveryAction(
+            strategy=RecoveryStrategy.LOG_ONLY
+        )
+    )
+
 async def fetch_latest_agent_memories(db: AsyncSession, user_id: str) -> Dict[str, Any]:
     """
-    Fetch the latest memory bank entry for each agent.
+    Fetch the latest memory bank entry for each agent from CENTRAL memory bank.
     Returns dict with agent_name -> full memory data
     """
     agent_memories = {}
     
-    # Map agent names to their memory bank models
-    memory_models = {
-        "sir_hawkington": SirHawkingtonMemoryBank,
-        "the_stick": TheStickMemoryBank,
-        "meth_snail": MethSnailMemoryBank,
-        "hamsters": HamstersMemoryBank,
-        "quantum_shadow_people": QuantumShadowPeopleMemoryBank,
-        "vic20_sage": VIC20MemoryBank
-    }
+    # Agent names to query
+    agent_names = [
+        "sir_hawkington",
+        "the_stick", 
+        "meth_snail",
+        "hamsters",
+        "quantum_shadow_people",
+        "vic20_sage"
+    ]
     
-    for agent_name, model_class in memory_models.items():
+    for agent_name in agent_names:
         try:
-            # Query latest memory for this agent
+            # Query latest memory for this agent from CENTRAL memory bank
             stmt = (
-                select(model_class)
-                .where(model_class.user_id == user_id)
-                .order_by(model_class.timestamp.desc())
+                select(CentralMemoryBank)
+                .where(CentralMemoryBank.user_id == user_id)
+                .where(CentralMemoryBank.agent_name == agent_name)
+                .order_by(CentralMemoryBank.occurred_at.desc())
                 .limit(1)
             )
             result = await db.execute(stmt)
@@ -84,15 +99,17 @@ async def fetch_latest_agent_memories(db: AsyncSession, user_id: str) -> Dict[st
             if memory:
                 # Convert SQLAlchemy model to dict
                 memory_dict = {
-                    "memory_id": memory.memory_id,
-                    "timestamp": memory.timestamp.isoformat() if memory.timestamp else None,
+                    "memory_id": str(memory.memory_id),
+                    "timestamp": memory.occurred_at.isoformat() if memory.occurred_at else None,
                     "user_id": memory.user_id,
-                    "shared_with_central": getattr(memory, "shared_with_central", False),
-                    "central_memory_id": getattr(memory, "central_memory_id", None),
+                    "agent_name": memory.agent_name,
+                    "event_type": memory.event_type,
+                    "details": memory.details,
+                    "priority": memory.priority,
                 }
                 
-                # Add agent-specific fields
-                for column in model_class.__table__.columns:
+                # Add all other fields
+                for column in CentralMemoryBank.__table__.columns:
                     col_name = column.name
                     if col_name not in memory_dict and hasattr(memory, col_name):
                         value = getattr(memory, col_name)
@@ -102,6 +119,7 @@ async def fetch_latest_agent_memories(db: AsyncSession, user_id: str) -> Dict[st
                         memory_dict[col_name] = value
                 
                 agent_memories[agent_name] = memory_dict
+                logger.debug(f"✅ Loaded memory for {agent_name}: {memory.event_type}")
                 
         except Exception as e:
             logger.debug(f"Could not fetch memory for {agent_name}: {e}")
@@ -201,7 +219,7 @@ async def get_system_info() -> Dict[str, Any]:
         return {"error": True, "message": "Failed to retrieve system information"}
 
 # Resilience components (names are part of the public contract)
-metrics_circuit_breaker = get_circuit_breaker("websocket_connection")
+metrics_circuit_breaker = get_circuit_breaker("system_metrics_ws")
 metrics_backpressure = get_backpressure_handler("websocket_messages")
 
 def _parse_number(v: Any) -> Optional[float]:
@@ -305,19 +323,11 @@ async def system_metrics_socket(websocket: WebSocket):
     try:
         ws_start = time.time()
         
-        # Accept the connection once
-        await websocket.accept()
-        logger.info("WebSocket connection accepted for %s (%.2fms)", client_id, (time.time() - ws_start)*1000)
-
-        # Authenticate strictly via query param
+        # Authenticate FIRST via query param (before accepting connection)
         auth_start = time.time()
         token = (websocket.query_params.get("token") or "").replace("Bearer ", "").strip()
         if not token:
-            await websocket.send_json({
-                "type": "error",
-                "message": "Missing authentication token in query string (?token=...)",
-                "code": "missing_token",
-            })
+            logger.warning("WebSocket connection rejected: missing token")
             await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
             return
 
@@ -328,12 +338,16 @@ async def system_metrics_socket(websocket: WebSocket):
             user = None
 
         if not user:
-            await websocket.send_json({"type": "error", "message": "Invalid authentication token", "code": "invalid_token"})
+            logger.warning("WebSocket connection rejected: invalid token")
             await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
             return
 
         logger.info("⏱️ WebSocket authenticated for user %s (%s) - Auth took %.2fms", 
                    getattr(user, "email", None), client_id, (time.time() - auth_start)*1000)
+
+        # THEN accept the connection after successful authentication
+        await websocket.accept()
+        logger.info("WebSocket connection accepted for %s (%.2fms)", client_id, (time.time() - ws_start)*1000)
 
         # Register the connection under the circuit breaker
         # Note: websocket is already accepted above, so just add to manager

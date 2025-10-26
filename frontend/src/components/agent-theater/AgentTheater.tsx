@@ -37,6 +37,12 @@ export const AgentTheaterEnhanced: React.FC = () => {
   const dispatch = useDispatch();
   const auth = useAppSelector((state: RootState) => state.auth);
   
+  // Debug: Log when OLD component mounts
+  useEffect(() => {
+    console.log('⚠️ OLD AgentTheaterEnhanced mounted - You are on the OLD theater!');
+    return () => console.log('⚠️ OLD AgentTheaterEnhanced unmounting');
+  }, []);
+  
   // Get WebSocket connection info
   const { connectionStatus, lastError } = useWebSocketConnection();
   useAgentInsightsConnection();
@@ -155,6 +161,13 @@ export const AgentTheaterEnhanced: React.FC = () => {
         <div className="theater-title-section">
           <h1 className="theater-title">
             Agent Theater
+            <span className="mode-badge" style={{ 
+              backgroundColor: '#f97316', 
+              color: 'white',
+              marginLeft: '12px'
+            }}>
+              OLD VERSION
+            </span>
             {showIntrospection && <span className="mode-badge">Enhanced Mode</span>}
           </h1>
           <div className="theater-subtitle">

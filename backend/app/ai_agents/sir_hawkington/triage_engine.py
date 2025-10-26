@@ -192,10 +192,11 @@ class SirHawkingtonTriageEngine(AgentInstrumentationMixin, TriageEngineWithRedis
         self.monocle_yeet_incidents = 0
         
         # Triage thresholds (Sir Hawkington's aristocratic standards)
+        # LOWERED for demo/testing - more agents will be dispatched
         self.triage_thresholds = {
-            'normal_threshold': 0.30,
-            'medium_threshold': 0.65,
-            'emergency_threshold': 0.85
+            'normal_threshold': 0.10,  # Was 0.30 - now triggers at 10% stress
+            'medium_threshold': 0.40,  # Was 0.65 - now triggers at 40% stress
+            'emergency_threshold': 0.70  # Was 0.85 - now triggers at 70% stress
         }
         
         # Agent handler cache

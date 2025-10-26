@@ -35,7 +35,7 @@ class MetricsAggregationService:
             end_hour = start_hour + timedelta(hours=1)
             
             # Query raw metrics for this hour
-            from backend.app.models.metrics import SystemMetrics
+            from app.models.metrics import SystemMetrics
             
             query = select(SystemMetrics).filter(
                 SystemMetrics.user_id == user_id,

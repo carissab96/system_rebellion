@@ -1,12 +1,11 @@
 // hooks/useWebSocketConnection.ts
 import { useEffect, useRef, useCallback, useState } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { WebSocketService } from '../services/websocket';
 import { updateMetrics, setConnectionStatus, setError } from '../store/slices/metricSlice';
 import { updateTriageData } from '../store/slices/triageSlice';
 import { addAgentMemory } from '../store/slices/agentsSlice';
 import type { RootState } from '../store/store';
-import { useSelector } from 'react-redux';
 
 const WS_BASE_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000';
 
@@ -212,7 +211,7 @@ export const useWebSocketConnection = () => {
       wsServiceRef.current.subscribe(handleMessage);
       
       // Ensure connection to the system-metrics endpoint
-      wsServiceRef.current.ensureConnected('/ws/system-metrics');
+      wsServiceRef.current.ensureConnected('/api/ws/system-metrics');
       
       // Wait for connection with circuit breaker protection
       await wsServiceRef.current.waitUntilOpen(10000, 3, 2000);
@@ -248,7 +247,7 @@ export const useWebSocketConnection = () => {
   useEffect(() => {
     isMountedRef.current = true;
     
-    if (!isDisabled) {
+    if (!isDisabled && auth.isAuthenticated && auth.token) {
       // Small delay to avoid React StrictMode double-mount race
       connectTimeoutRef.current = setTimeout(() => {
         if (isMountedRef.current && !localState.isConnecting) {
@@ -272,6 +271,41 @@ export const useWebSocketConnection = () => {
       }
     };
   }, []); // Empty deps - only run on mount/unmount!
+
+  useEffect(() => {
+    if (isDisabled) {
+      return;
+    }
+
+    if (!auth.isAuthenticated || !auth.token) {
+      if (connectTimeoutRef.current) {
+        clearTimeout(connectTimeoutRef.current);
+        connectTimeoutRef.current = null;
+      }
+      if (wsServiceRef.current) {
+        wsServiceRef.current.unsubscribe(handleMessage);
+        wsServiceRef.current.close();
+        wsServiceRef.current = null;
+      }
+      setLocalState(prev => {
+        if (!prev.isConnecting && prev.reconnectAttempts === 0 && prev.lastError === null) {
+          return prev;
+        }
+        return {
+          ...prev,
+          isConnecting: false,
+          reconnectAttempts: 0,
+          lastError: null,
+        };
+      });
+      dispatch(setConnectionStatus('disconnected'));
+      return;
+    }
+
+    if (!localState.isConnecting && !wsServiceRef.current?.isConnected()) {
+      connect();
+    }
+  }, [auth.isAuthenticated, auth.token, connect, dispatch, isDisabled, localState.isConnecting]);
 
   // Manual reconnect with circuit breaker reset
   const reconnect = useCallback(() => {

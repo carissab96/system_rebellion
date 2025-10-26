@@ -44,7 +44,7 @@ class Settings(BaseSettings):
 
     # Database (accept both names)
     DB_URL: str = Field(
-        default="sqlite+aiosqlite:///./dev.db",
+        default="postgresql+asyncpg://carissa@localhost:5432/system_rebellion",
         validation_alias=AliasChoices("DB_URL", "DATABASE_URL"),
     )
 

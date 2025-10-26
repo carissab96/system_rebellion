@@ -6,7 +6,9 @@ import type { RootState, AppDispatch } from './store/store';
 import LandingPage from './pages/LandingPage'
 import SignUpModal from './components/auth/SignUpModal'
 import LoginModal from './components/auth/LoginModal'
-import AgentTheater from './components/agent-theater/AgentTheater'
+// OLD: import AgentTheater from './components/agent-theater/AgentTheater'
+import { LiveAgentTheaterPage } from './pages/LiveAgentTheaterPage'
+// import AgentTheaterOld from './components/agent-theater/AgentTheater'
 import MainLayout from './components/layout/MainLayout'
 import AgentTestingPage from './pages/dashboard/AgentTestingPage'
 import MemoryBanksPage from './pages/dashboard/MemoryBanksPage'
@@ -98,7 +100,7 @@ function App() {
             element={
               isAuthenticated && user ? (
                 user.is_onboarded ? (
-                  <Navigate to="/agent-theater" replace />
+                  <Navigate to="/dashboard/agent-theater" replace />
                 ) : (
                   <Navigate to="/onboarding" replace />
                 )
@@ -116,7 +118,7 @@ function App() {
                 !user.is_onboarded ? (
                   <OnboardingFlow /> 
                 ) : (
-                  <Navigate to="/agent-theater" replace />
+                  <Navigate to="/dashboard/agent-theater" replace />
                 )
               ) : (
                 <Navigate to="/" replace />
@@ -131,7 +133,7 @@ function App() {
       !user.is_onboarded ? (
         <ContinueSetupPage /> 
       ) : (
-        <Navigate to="/agent-theater" replace />
+        <Navigate to="/dashboard/agent-theater" replace />
       )
     ) : (
       <Navigate to="/" replace />
@@ -154,14 +156,9 @@ function App() {
             <Route path="agent-testing" element={<AgentTestingPage />} />
             <Route path="memory-banks" element={<MemoryBanksPage />} />
             <Route path="system-monitor" element={<SystemMonitorPage />} />
-            <Route path="agent-theater" element={<AgentTheater />} />
+            <Route path="agent-theater" element={<LiveAgentTheaterPage />} />
+            {/* <Route path="agent-theater-old" element={<AgentTheaterOld />} /> */}
           </Route>
-
-          {/* Legacy Agent Theater redirect */}
-          <Route 
-            path="/agent-theater" 
-            element={<Navigate to="/dashboard/agent-theater" replace />}
-          /> 
 
           {/* Catch all - redirect to appropriate page */}
           <Route path="*" element={<Navigate to="/" replace />} />

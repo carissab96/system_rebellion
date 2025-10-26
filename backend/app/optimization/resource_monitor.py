@@ -349,14 +349,14 @@ class ResourceMonitor:
         
         # Network connections and interfaces are less expensive, but still throttle them
         try:
-            # Get connections with timeout
+            # Get connections with timeout (increased to 3s for systems with many connections)
             connections = await asyncio.wait_for(
                 asyncio.to_thread(self._get_network_connections),
-                timeout=1.0
+                timeout=3.0
             )
             result["connections"] = connections
         except (asyncio.TimeoutError, Exception) as e:
-            self.logger.info(f"Skipping network connections: {str(e)}")
+            self.logger.warning(f"Skipping network connections (timeout or error): {str(e)}")
         
         # Check for cached interface data
         cached, data = self._check_cache('interfaces')
@@ -366,17 +366,17 @@ class ResourceMonitor:
             result["interface_stats"] = interface_stats
         else:
             try:
-                # Get interfaces with timeout
+                # Get interfaces with timeout (increased to 2s)
                 interfaces_data = await asyncio.wait_for(
                     asyncio.to_thread(self._get_network_interfaces),
-                    timeout=1.0
+                    timeout=2.0
                 )
                 interfaces, interface_stats = interfaces_data
                 result["interfaces"] = interfaces
                 result["interface_stats"] = interface_stats
                 self._update_cache('interfaces', interfaces_data)
             except (asyncio.TimeoutError, Exception) as e:
-                self.logger.info(f"Skipping network interfaces: {str(e)}")
+                self.logger.warning(f"Skipping network interfaces (timeout or error): {str(e)}")
         
         # Protocol breakdown - REAL DATA ONLY
         try:

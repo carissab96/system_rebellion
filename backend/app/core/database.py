@@ -12,8 +12,8 @@ if os.path.exists(env_file):
     print(f"✅ [database.py] Loaded environment from: {env_file}")
 
 # Database URLs - PostgreSQL
-ASYNC_DATABASE_URL = os.getenv("DB_URL") or os.getenv("DATABASE_URL", "postgresql+asyncpg://rebellion_user:ChangeThisPassword123!@localhost:5432/system_rebellion")
-SYNC_DATABASE_URL = os.getenv("SYNC_DATABASE_URL", "postgresql://rebellion_user:ChangeThisPassword123!@localhost:5432/system_rebellion")
+ASYNC_DATABASE_URL = os.getenv("DB_URL") or os.getenv("DATABASE_URL", "postgresql+asyncpg://carissa@localhost:5432/system_rebellion")
+SYNC_DATABASE_URL = os.getenv("SYNC_DATABASE_URL", "postgresql://carissa@localhost:5432/system_rebellion")
 
 print(f"🔗 [database.py] Using database: {ASYNC_DATABASE_URL[:50]}...")
 

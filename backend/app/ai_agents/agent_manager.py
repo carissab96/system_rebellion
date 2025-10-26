@@ -19,6 +19,7 @@ from app.ai_agents.base_agent import BaseAIAgent  # must expose process_metrics,
 from app.services.memory_redis_patch.agent_memory_service_with_cache import (
     AgentMemoryServiceWithCache,
 )
+from app.ai_agents.master_agent_database import MasterAgentDatabase
 
 logger = logging.getLogger(__name__)
 SEVERITY: Dict[str, int] = {"LOW": 0, "MEDIUM": 1, "HIGH": 2, "CRITICAL": 3}
@@ -105,15 +106,16 @@ class AIAgentManager:
         # Required services
         self.memory_service = memory_service
         self.db_getter = db_getter
-        
-        # Configuration
-        self.agent_config_path = Path(agent_config_path)
+        self.agent_config_path = agent_config_path
         self.redis_url = redis_url
         self.cache_ttl = cache_ttl
         self.max_parallel_agents = max_parallel_agents
-        self._base_parallel = max_parallel_agents
+        self.agents: Dict[str, BaseAIAgent] = {}
+        self.agent_configs: List[Dict[str, Any]] = []
         
-        # Runtime state
+        # Master database for centralized agent memory (dual-write)
+        self.master_db = MasterAgentDatabase(db_getter)
+        
         self._sem = asyncio.Semaphore(max_parallel_agents)
         self.agent_configs: Dict[str, Dict[str, Any]] = {}
         self.agents: Dict[str, BaseAIAgent] = {}
@@ -458,10 +460,13 @@ class AIAgentManager:
         return triage_dict
 
     async def _stick_log(self, event: str, payload: dict, *, user_id: str):
-        """Log events to The Stick's memory for compliance tracking."""
-        await self.memory_service.store_memory(
-            user_id=user_id, agent_name="the_stick",
-            memory_type=f"log:{event}", content=payload, importance=4
+        """Log events to The Stick's memory for compliance tracking (dual-write)."""
+        await self.master_db.store_agent_memory(
+            agent_name="the_stick",
+            user_id=user_id,
+            memory_type=f"log:{event}",
+            content=payload,
+            importance=4
         )
 
     async def _set_parallel_budget(self, n: int):

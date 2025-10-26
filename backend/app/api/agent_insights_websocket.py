@@ -40,19 +40,11 @@ async def agent_insights_websocket(websocket: WebSocket):
     try:
         ws_start = time.time()
         
-        # Accept the connection once (EXACTLY like system-metrics)
-        await websocket.accept()
-        logger.info("WebSocket connection accepted for %s (%.2fms)", client_id, (time.time() - ws_start)*1000)
-
-        # Authenticate strictly via query param (EXACTLY like system-metrics)
+        # Authenticate FIRST via query param (before accepting connection)
         auth_start = time.time()
         token = (websocket.query_params.get("token") or "").replace("Bearer ", "").strip()
         if not token:
-            await websocket.send_json({
-                "type": "error",
-                "message": "Missing authentication token in query string (?token=...)",
-                "code": "missing_token",
-            })
+            logger.warning("WebSocket connection rejected: missing token")
             await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
             return
 
@@ -63,13 +55,17 @@ async def agent_insights_websocket(websocket: WebSocket):
             user = None
 
         if not user:
-            await websocket.send_json({"type": "error", "message": "Invalid authentication token", "code": "invalid_token"})
+            logger.warning("WebSocket connection rejected: invalid token")
             await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
             return
 
         user_id = str(getattr(user, "id", None))
         logger.info("⏱️ WebSocket authenticated for user %s (%s) - Auth took %.2fms", 
                    getattr(user, "email", None), client_id, (time.time() - auth_start)*1000)
+
+        # THEN accept the connection after successful authentication
+        await websocket.accept()
+        logger.info("WebSocket connection accepted for %s (%.2fms)", client_id, (time.time() - ws_start)*1000)
 
         # Register the connection (EXACTLY like system-metrics)
         # Don't call ws_manager.connect() as it tries to accept() again

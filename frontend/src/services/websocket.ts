@@ -5,7 +5,7 @@ import { BackpressureHandler } from './backpressure';
 type ConnectionState = "idle" | "connecting" | "open" | "closed" | "error";
 type MessageHandler = (data: any) => void;
 
-const DEFAULT_PATH = "ws://localhost:8000/api/ws/system-metrics";
+export const DEFAULT_PATH = "ws://localhost:8000/api/ws/system-metrics";
 
 export class WebSocketService {
   private static instance: WebSocketService | null = null;
