@@ -1,7 +1,9 @@
 // components/agent-theater/LiveAgentCard.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MetricsChart } from './MetricsChart';
+import { AgentIntelligenceOverlay } from './AgentItelligenceOverlay';
+import type { AgentDecision } from './AgentItelligenceOverlay';
 import styles from './LiveAgentCard.module.css';
 
 interface AgentPersonality {
@@ -22,6 +24,9 @@ interface AgentData {
   memory_id?: string;
   timestamp?: string;
   [key: string]: any; // Memory bank fields vary by agent
+  intelligence?: {
+    decision?: AgentDecision | null;
+  };
 }
 
 interface LiveAgentCardProps {
@@ -40,90 +45,6 @@ export const LiveAgentCard: React.FC<LiveAgentCardProps> = ({
   onCardClick
 }) => {
   const [expanded, setExpanded] = useState(false);
-  const [recentActivity, setRecentActivity] = useState<string[]>([]);
-
-  // Track activity for visual feedback - agent-specific messages
-  useEffect(() => {
-    if (activityPulse && data) {
-      let activity = '';
-      
-      // Agent-specific activity messages based on their domain
-      switch (personality.id) {
-        case 'sir_hawkington':
-          if (data.triage) {
-            const disposition = data.triage.disposition || data.disposition || 'unknown';
-            const routed_to = data.triage.routed_to || data.routed_by || 'none';
-            if (routed_to === 'none' || !routed_to) {
-              activity = `🧐 Assessed: ${disposition.toUpperCase()} - All systems nominal`;
-            } else {
-              activity = `🧐 Dispatched to ${routed_to} - ${disposition} severity`;
-            }
-          } else if (data.monocle_yeets_count > 0) {
-            activity = `🧐💥 Monocle yeeted! Data quality unacceptable`;
-          } else {
-            activity = `🧐 Monitoring CPU: ${data.cpu_usage?.toFixed(1)}%`;
-          }
-          break;
-          
-        case 'the_stick':
-          if (data.anxiety_level && data.anxiety_level !== 'CALM') {
-            activity = `📏😰 Anxiety: ${data.anxiety_level} - Paper bags: ${data.paper_bags_remaining || 100}`;
-          } else if (data.hamster_proximity) {
-            activity = `📏🐹 HAMSTER DETECTED! Anxiety rising!`;
-          } else {
-            activity = `📏 Hypervigilant monitoring - All patterns logged`;
-          }
-          break;
-          
-        case 'meth_snail':
-          if (data.shell_spin_rate > 0) {
-            activity = `🐌💨 Shell spinning! Optimizing memory at ${data.memory_usage?.toFixed(1)}%`;
-          } else if (data.energy_drinks_consumed > 0) {
-            activity = `🐌☕ Energy drink consumed! Optimization mode ENGAGED`;
-          } else {
-            activity = `🐌 Monitoring memory: ${data.memory_usage?.toFixed(1)}%`;
-          }
-          break;
-          
-        case 'hamsters':
-          const activeHamster = data.bob_status !== 'Idle' ? 'Bob' : 
-                               data.steve_status !== 'Idle' ? 'Steve' : 
-                               data.carl_status !== 'Idle' ? 'Carl' : null;
-          if (activeHamster) {
-            activity = `🐹🍺 ${activeHamster} working on infrastructure - Beer level: ${data.beer_level || 0}`;
-          } else {
-            activity = `🐹 Monitoring disk: ${data.disk_usage?.toFixed(1)}% - All hamsters ready`;
-          }
-          break;
-          
-        case 'quantum_shadow_people':
-          const totalNetwork = ((data.network_sent_rate || 0) + (data.network_recv_rate || 0)) / 1024;
-          if (totalNetwork > 100) {
-            activity = `👻 High network activity: ${totalNetwork.toFixed(0)} KB/s - Phasing through dimensions`;
-          } else if (data.dimensional_phase !== 'Stable') {
-            activity = `👻 Dimensional phase: ${data.dimensional_phase} - Reality unstable`;
-          } else {
-            activity = `👻 Monitoring network: ${totalNetwork.toFixed(0)} KB/s`;
-          }
-          break;
-          
-        case 'vic20_sage':
-          if (data.conflicts_mediated > 0) {
-            activity = `🖥️ Mediated conflict - Wisdom from 1982 applied`;
-          } else if (data.autotuning_suggestions > 0) {
-            activity = `🖥️ Auto-tune suggestion: ${data.autotuning_suggestions} recommendations`;
-          } else {
-            activity = `🖥️ Observing agent interactions - 40 years of wisdom ready`;
-          }
-          break;
-          
-        default:
-          activity = `Updated at ${new Date().toLocaleTimeString()}`;
-      }
-      
-      setRecentActivity(prev => [activity, ...prev].slice(0, 5));
-    }
-  }, [activityPulse, data, personality.id]);
 
   // Extract key metrics based on agent type and their domain
   const getAgentMetrics = () => {
@@ -284,15 +205,14 @@ export const LiveAgentCard: React.FC<LiveAgentCardProps> = ({
         </>
       )}
 
-      {/* Recent Activity */}
-      {recentActivity.length > 0 && (
-        <div className={styles.activityLog}>
-          <span className={styles.activityLabel}>Recent Activity:</span>
-          {recentActivity.map((activity, idx) => (
-            <div key={idx} className={styles.activityItem}>
-              {activity}
-            </div>
-          ))}
+      {/* Agent Intelligence Overlay */}
+      {data?.intelligence?.decision && (
+        <div className={styles.intelligenceSection}>
+          <AgentIntelligenceOverlay
+            agentId={personality.id}
+            decision={data.intelligence.decision}
+            isVisible={expanded || isActive}
+          />
         </div>
       )}
 

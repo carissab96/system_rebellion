@@ -127,9 +127,19 @@ export const useWebSocketConnection = () => {
       return;
     }
 
+    if (auth.isInitializing) {
+      console.log('🔒 Auth still initializing, skipping websocket connect attempt');
+      return;
+    }
+
     // Check if component is still mounted
     if (!isMountedRef.current) {
       console.log('Component unmounted, skipping connection');
+      return;
+    }
+
+    if (!auth.isAuthenticated || !auth.token) {
+      console.log('🔒 No authenticated user/token available, skipping websocket connect');
       return;
     }
 
@@ -241,13 +251,13 @@ export const useWebSocketConnection = () => {
         backpressure: wsServiceRef.current?.getBackpressureStatus() || prev.backpressure
       }));
     }
-  }, [handleMessage, isDisabled, dispatch, localState.isConnecting]); // Added it back since we're using it
+  }, [auth.isAuthenticated, auth.isInitializing, auth.token, handleMessage, isDisabled, dispatch, localState.isConnecting]);
 
   // Initial connection
   useEffect(() => {
     isMountedRef.current = true;
-    
-    if (!isDisabled && auth.isAuthenticated && auth.token) {
+
+    if (!isDisabled && !auth.isInitializing && auth.isAuthenticated && auth.token) {
       // Small delay to avoid React StrictMode double-mount race
       connectTimeoutRef.current = setTimeout(() => {
         if (isMountedRef.current && !localState.isConnecting) {
@@ -274,6 +284,10 @@ export const useWebSocketConnection = () => {
 
   useEffect(() => {
     if (isDisabled) {
+      return;
+    }
+
+    if (auth.isInitializing) {
       return;
     }
 
@@ -305,7 +319,7 @@ export const useWebSocketConnection = () => {
     if (!localState.isConnecting && !wsServiceRef.current?.isConnected()) {
       connect();
     }
-  }, [auth.isAuthenticated, auth.token, connect, dispatch, isDisabled, localState.isConnecting]);
+  }, [auth.isAuthenticated, auth.isInitializing, auth.token, connect, dispatch, isDisabled, localState.isConnecting]);
 
   // Manual reconnect with circuit breaker reset
   const reconnect = useCallback(() => {

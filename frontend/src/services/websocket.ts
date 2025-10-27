@@ -21,6 +21,7 @@ export class WebSocketService {
   private circuitBreaker: CircuitBreaker;
   private backpressure: BackpressureHandler<any>;
   private messageProcessor: number | null = null;
+  private keepAliveInterval: number | null = null;
 
   // Optional external callbacks
   onError?: (evt: Event) => void;
@@ -67,6 +68,34 @@ export class WebSocketService {
     };
 
     processMessages();
+  }
+
+  private startKeepAlive(): void {
+    if (this.keepAliveInterval !== null) {
+      return;
+    }
+
+    const sendHeartbeat = () => {
+      if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+        return;
+      }
+
+      try {
+        this.socket.send(JSON.stringify({ type: "ping", timestamp: Date.now() }));
+      } catch (error) {
+        console.warn("Failed to send websocket ping", error);
+      }
+    };
+
+    sendHeartbeat();
+    this.keepAliveInterval = window.setInterval(sendHeartbeat, 15000);
+  }
+
+  private stopKeepAlive(): void {
+    if (this.keepAliveInterval !== null) {
+      window.clearInterval(this.keepAliveInterval);
+      this.keepAliveInterval = null;
+    }
   }
 
   /**
@@ -150,6 +179,7 @@ export class WebSocketService {
       const onOpen = () => {
         this.state = "open";
         this.circuitBreaker.recordSuccess(); // Record successful connection
+        this.startKeepAlive();
         cleanup();
         resolve();
       };
@@ -164,6 +194,7 @@ export class WebSocketService {
       
       const onClose = () => {
         this.state = "closed";
+        this.stopKeepAlive();
         cleanup();
         reject(new Error("WebSocket closed"));
         this.onClose?.();
@@ -308,6 +339,7 @@ export class WebSocketService {
   close(code: number = 1000, reason: string = "client_close"): void {
     if (this.socket && this.socket.readyState === WebSocket.OPEN) {
       try {
+        this.stopKeepAlive();
         this.socket.close(code, reason);
       } finally {
         this.state = "closed";

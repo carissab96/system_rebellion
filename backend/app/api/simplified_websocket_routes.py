@@ -411,12 +411,17 @@ async def system_metrics_socket(websocket: WebSocket):
 
         # Metrics service
         metrics_service = await SimplifiedMetricsService.get_instance()
-        update_interval = 1.0  # seconds
-        
+        update_interval = 5.0  # seconds (raised from 1s to reduce load)
+
         # Throttle AI triage to every 10 seconds (not every loop)
-        last_triage_time = 0
+        last_triage_time = 0.0
         triage_interval = 10.0  # Only run triage every 10 seconds
-        cached_agent_insights = {}
+        cached_agent_insights: Dict[str, Any] = {}
+
+        # Cache agent memories to avoid hammering DB each loop
+        memory_refresh_interval = 30.0
+        last_memory_sync = 0.0
+        cached_agent_memories: Dict[str, Any] = {}
 
         # === Main loop ===
         while True:
@@ -442,21 +447,39 @@ async def system_metrics_socket(websocket: WebSocket):
                 metrics = await metrics_service.get_metrics()
 
                 # Optional AI enrichment (non-fatal) - THROTTLED to every 10 seconds
-                agent_insights = {}  # ← Store agent data separately
-                
-                # Fetch latest agent memory bank data from database
+                agent_insights: Dict[str, Any] = {}
+
+                # Fetch latest agent memory bank data from database on a slower cadence
                 if db and user:
-                    try:
-                        agent_memories_from_db = await fetch_latest_agent_memories(db, str(getattr(user, "id", "")))
-                        # Start with full database data for each agent
-                        for agent_name, memory_data in agent_memories_from_db.items():
-                            agent_insights[agent_name] = {
-                                "status": "active",
-                                **memory_data  # All the rich personality/learning data
+                    should_refresh_memories = (
+                        (loop_start_time - last_memory_sync) >= memory_refresh_interval or not cached_agent_memories
+                    )
+
+                    if should_refresh_memories:
+                        try:
+                            agent_memories_from_db = await fetch_latest_agent_memories(
+                                db, str(getattr(user, "id", ""))
+                            )
+                            cached_agent_memories = {
+                                agent_name: {
+                                    "status": "active",
+                                    **memory_data
+                                }
+                                for agent_name, memory_data in agent_memories_from_db.items()
                             }
-                        logger.info("📚 Loaded %d agent memories from database", len(agent_memories_from_db))
-                    except Exception as e:
-                        logger.error("Failed to fetch agent memories: %s", str(e))
+                            last_memory_sync = loop_start_time
+                            logger.debug("📚 Refreshed agent memories (%d entries)", len(cached_agent_memories))
+                        except Exception as e:
+                            logger.error("Failed to fetch agent memories: %s", str(e))
+                    else:
+                        logger.debug("⏳ Using cached agent memories (%d entries)", len(cached_agent_memories))
+
+                # Start insights with cached memories (deep copy to avoid mutation)
+                if cached_agent_memories:
+                    agent_insights = {
+                        name: dict(data)
+                        for name, data in cached_agent_memories.items()
+                    }
                 
                 # Only run expensive triage if enough time has passed
                 should_run_triage = (loop_start_time - last_triage_time) >= triage_interval

@@ -170,7 +170,7 @@ export const useLoginForm = (isOpen: boolean, onClose: () => void) => {
       
       // Navigate based on onboarding status
       if (data.user.is_onboarded) {
-        navigate('/agent-theater');
+        navigate('/system-ready');
       } else {
         navigate('/onboarding');
       }
