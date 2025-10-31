@@ -1,10 +1,10 @@
 // frontend/src/utils/csrf.ts
-import axios from 'axios';
+import axios, { AxiosResponse } from 'axios';
 
 // Sir Hawkington's Distinguished CSRFAxios Instance
 // This prevents the circular dependency by not applying interceptors
 const csrfAxios = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: (import.meta as any).env?.VITE_API_URL,
   withCredentials: true
 });
 
@@ -29,10 +29,10 @@ export const getCsrfToken = async (forceRefresh = false): Promise<string | null>
         },
         params: { _t: Date.now() }
       }),
-      new Promise((_, reject) =>
+      new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error('CSRF fetch timeout')), 3000)
       )
-    ]);
+    ]) as AxiosResponse;
 
     console.log(`👍 Primary endpoint responded with status:`, response.status);
 
@@ -131,7 +131,7 @@ export const initializeCsrf = async (): Promise<boolean> => {
         // Let's make sure our token is valid by checking another endpoint
         try {
             console.log("🐹 Hamsters verifying token validity...");
-            await axios.get(`${import.meta.env.VITE_API_URL}/api/auth/status/`, {
+            await axios.get(`${(import.meta as any).env?.VITE_API_URL}/api/auth/status/`, {
                 withCredentials: true,
                 headers: {
                     'X-CSRFToken': token

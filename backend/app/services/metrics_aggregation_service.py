@@ -3,8 +3,9 @@ from datetime import datetime, timedelta, timezone
 from typing import List, Dict
 import asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, delete
 import logging
+from app.models.metrics_aggregates import MetricsHourly
 
 logger = logging.getLogger(__name__)
 
@@ -111,6 +112,8 @@ class MetricsAggregationService:
             cutoff_date = datetime.now(timezone.utc) - timedelta(days=retention_days)
             
             # Delete old raw metrics
+            from app.models.metrics import SystemMetrics
+            
             query = delete(SystemMetrics).where(
                 SystemMetrics.timestamp < cutoff_date
             )
@@ -129,3 +132,12 @@ class MetricsAggregationService:
             self.logger.error(f"🐌 Meth Snail cleanup failed: {str(e)}")
             await db.rollback()
             raise
+    
+    def _calculate_network_total(self, metrics):
+        """Calculate total network bytes from metrics"""
+        total = 0
+        for metric in metrics:
+            if hasattr(metric, 'network_sent_rate') and hasattr(metric, 'network_recv_rate'):
+                # Estimate bytes based on rates (this is a simple approximation)
+                total += (metric.network_sent_rate + metric.network_recv_rate) * 3600  # per hour
+        return total

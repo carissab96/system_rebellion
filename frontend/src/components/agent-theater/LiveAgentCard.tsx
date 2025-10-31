@@ -44,6 +44,7 @@ export const LiveAgentCard: React.FC<LiveAgentCardProps> = ({
   activityPulse,
   onCardClick
 }) => {
+  console.log(`🤖 CARD: Rendering ${personality.name} card`);
   const [expanded, setExpanded] = useState(false);
 
   // Extract key metrics based on agent type and their domain

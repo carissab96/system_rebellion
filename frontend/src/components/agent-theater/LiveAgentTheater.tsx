@@ -106,16 +106,20 @@ export const LiveAgentTheater: React.FC<LiveAgentTheaterProps> = ({
   agentData,
   onAgentClick
 }) => {
+  console.log('🎭 THEATER: Component render start');
   const [activeAgents, setActiveAgents] = useState<Set<string>>(new Set());
   const [activityPulses, setActivityPulses] = useState<Set<string>>(new Set());
   const previousDataRef = useRef<AgentData>({});
 
   // Detect active agents and activity changes
   useEffect(() => {
+    console.log('🎭 THEATER: Detect effect start');
     const newActiveAgents = new Set<string>();
     const newPulses = new Set<string>();
 
+    console.log('🎭 THEATER: Processing agent data');
     Object.entries(agentData).forEach(([agentId, data]) => {
+      console.log(`🎭 THEATER: Processing agent ${agentId}`);
       if (data && data.status === 'active') {
         newActiveAgents.add(agentId);
 
@@ -135,6 +139,7 @@ export const LiveAgentTheater: React.FC<LiveAgentTheaterProps> = ({
       }
     });
 
+    console.log('🎭 THEATER: Setting active agents and pulses');
     if (!setsEqual(activeAgents, newActiveAgents)) {
       setActiveAgents(newActiveAgents);
     }
@@ -144,8 +149,10 @@ export const LiveAgentTheater: React.FC<LiveAgentTheaterProps> = ({
     }
 
     previousDataRef.current = agentData;
-  }, [agentData, activeAgents, activityPulses]);
+    console.log('🎭 THEATER: Detect effect end');
+  }, [agentData]);
 
+  console.log('🎭 THEATER: Rendering component');
   return (
     <div className={styles.theaterContainer}>
       {/* Theater Header */}

@@ -18,6 +18,8 @@ interface LocalConnectionState {
   lastError: string | null;
 }
 
+const MAX_RETRIES = 5;
+
 export const useAgentEventsConnection = () => {
   const dispatch = useDispatch();
   const wsServiceRef = useRef<AgentEventsWebSocketService | null>(null);
@@ -103,6 +105,12 @@ export const useAgentEventsConnection = () => {
 
     if (localState.isConnecting) {
       console.log('🔌 Agent Events already connecting, skipping duplicate attempt');
+      return;
+    }
+
+    // Prevent infinite retry loops
+    if (localState.reconnectAttempts >= MAX_RETRIES) {
+      console.error('Max Agent Events retries exceeded, giving up');
       return;
     }
 

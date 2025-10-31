@@ -18,6 +18,8 @@ interface LocalConnectionState {
   lastError: string | null;
 }
 
+const MAX_RETRIES = 5;
+
 export const useAgentInsightsConnection = () => {
   const dispatch = useDispatch();
   const wsServiceRef = useRef<AgentInsightsWebSocketService | null>(null);
@@ -100,6 +102,12 @@ export const useAgentInsightsConnection = () => {
 
     if (localState.isConnecting) {
       console.log('🔌 Agent Insights already connecting, skipping duplicate attempt');
+      return;
+    }
+
+    // Prevent infinite retry loops
+    if (localState.reconnectAttempts >= MAX_RETRIES) {
+      console.error('Max Agent Insights retries exceeded, giving up');
       return;
     }
 

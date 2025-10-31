@@ -143,14 +143,14 @@ export const completeOnboarding = createAsyncThunk(
   }
 );
 
-// Initialize auth from localStorage with token validation
+// Initialize auth from localStorage with token validation and refresh
 export const initializeAuth = createAsyncThunk(
   'auth/initializeAuth',
   async (_, { rejectWithValue }) => {
     const savedToken = localStorage.getItem('access_token');
-    const savedUser = localStorage.getItem('user_data');
+    const savedRefreshToken = localStorage.getItem('refresh_token');
 
-    if (!savedToken || !savedUser) {
+    if (!savedToken) {
       // No saved auth data, user needs to login
       return { authenticated: false };
     }
@@ -172,8 +172,50 @@ export const initializeAuth = createAsyncThunk(
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        // Token is invalid, clear localStorage
+        // Token might be expired, try to refresh
+        if (response.status === 401 && savedRefreshToken) {
+          console.log('Token expired, attempting refresh...');
+          try {
+            const refreshResponse = await fetch(`${API_BASE_URL}/api/auth/refresh-token`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ refresh_token: savedRefreshToken })
+            });
+
+            if (refreshResponse.ok) {
+              const refreshData = await refreshResponse.json();
+              const newToken = refreshData.access_token;
+
+              // Store new token
+              localStorage.setItem('access_token', newToken);
+
+              // Retry the original request with new token
+              const retryResponse = await fetch(`${API_BASE_URL}/api/auth/me`, {
+                headers: {
+                  'Authorization': `Bearer ${newToken}`,
+                  'Content-Type': 'application/json'
+                }
+              });
+
+              if (retryResponse.ok) {
+                const userData = await retryResponse.json();
+                return {
+                  authenticated: true,
+                  token: newToken,
+                  user: userData.user
+                };
+              }
+            }
+          } catch (refreshError) {
+            console.warn('Token refresh failed:', refreshError);
+          }
+        }
+
+        // Token is invalid and refresh failed, clear localStorage
         localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
         localStorage.removeItem('user_data');
         return { authenticated: false };
       }
@@ -196,6 +238,7 @@ export const initializeAuth = createAsyncThunk(
 
       // For timeout or other errors, clear tokens
       localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
       localStorage.removeItem('user_data');
       return { authenticated: false };
     }

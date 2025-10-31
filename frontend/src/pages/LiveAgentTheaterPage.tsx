@@ -428,6 +428,65 @@ export const LiveAgentTheaterPage: React.FC = () => {
 
   // Error state
   if (error) {
+    const handleRetry = async () => {
+      console.log('🔄 Retrying WebSocket connection...');
+      setError(null);
+      setIsConnecting(true);
+
+      try {
+        // Get fresh WebSocket service instance
+        const wsService = WebSocketService.getInstance(WS_BASE_URL);
+        wsServiceRef.current = wsService;
+
+        const handleMessage = (data: any) => {
+          console.log('📨 WebSocket message received:', data);
+
+          // Handle metrics_update messages (contains agent data AND system metrics)
+          if (data.type === 'metrics_update') {
+            const systemMetrics = data.data || {};
+            const incomingAgentData = data.agents || {};
+            
+            console.log('📊 System metrics:', systemMetrics);
+            console.log('🌐 Network data:', systemMetrics.network);
+            console.log('🤖 Agent insights payload:', incomingAgentData);
+
+            const mappedAgentData = mapAgentsPayload(systemMetrics, incomingAgentData);
+            agentBufferRef.current = mappedAgentData;
+          }
+
+          // Handle connection established
+          if (data.type === 'connection_established') {
+            console.log('✅ WebSocket connected');
+            setIsConnecting(false);
+            setError(null);
+          }
+
+          // Handle errors
+          if (data.type === 'error') {
+            console.error('❌ WebSocket error:', data.message);
+            setError(data.message);
+          }
+        };
+
+        // Subscribe to messages
+        wsService.subscribe(handleMessage);
+
+        // Attempt to connect
+        console.log('🔌 Attempting WebSocket reconnection...');
+        await wsService.ensureConnected('/api/ws/system-metrics');
+        await wsService.waitUntilOpen(10000, 3, 2000);
+
+        console.log('✅ WebSocket reconnected successfully');
+        setIsConnecting(false);
+        setError(null);
+
+      } catch (err: any) {
+        console.error('❌ WebSocket reconnection failed:', err);
+        setError(err.message || 'Failed to reconnect to WebSocket');
+        setIsConnecting(false);
+      }
+    };
+
     return (
       <div style={{
         display: 'flex',
@@ -462,7 +521,7 @@ export const LiveAgentTheaterPage: React.FC = () => {
             {error}
           </p>
           <button
-            onClick={() => window.location.reload()}
+            onClick={handleRetry}
             style={{
               padding: 'var(--space-sm) var(--space-lg)',
               background: 'var(--rebellion-cyan)',

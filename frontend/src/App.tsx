@@ -8,7 +8,7 @@ import SignUpModal from './components/auth/SignUpModal'
 import LoginModal from './components/auth/LoginModal'
 // OLD: import AgentTheater from './components/agent-theater/AgentTheater'
 import { LiveAgentTheaterPage } from './pages/LiveAgentTheaterPage'
-import SystemReadyPage from './pages/SystemReadyPage'
+// import SystemReadyPage from './pages/SystemReadyPage' // TEMP: Not using
 // import AgentTheaterOld from './components/agent-theater/AgentTheater'
 import MainLayout from './components/layout/MainLayout'
 import AgentTestingPage from './pages/dashboard/AgentTestingPage'
@@ -110,16 +110,20 @@ function App() {
               )
             } 
           />
-          <Route
-            path="/system-ready"
-            element={
-              isAuthenticated && user && user.is_onboarded ? (
-                <SystemReadyPage />
-              ) : (
-                <Navigate to="/" replace />
-              )
-            }
-          />
+            <Route 
+              path="/system-ready"
+              element={
+                isAuthenticated && user ? (
+                  user.is_onboarded ? (
+                    <Navigate to="/dashboard/agent-theater" replace />
+                  ) : (
+                    <Navigate to="/onboarding" replace />
+                  )
+                ) : (
+                  <Navigate to="/" replace />
+                )
+              }
+            />
 
           {/* Onboarding - only accessible if authenticated but not onboarded */}
           <Route 
