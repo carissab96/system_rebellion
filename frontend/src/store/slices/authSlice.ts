@@ -146,31 +146,38 @@ export const completeOnboarding = createAsyncThunk(
 // Initialize auth from localStorage with token validation
 export const initializeAuth = createAsyncThunk(
   'auth/initializeAuth',
-  async () => {
+  async (_, { rejectWithValue }) => {
     const savedToken = localStorage.getItem('access_token');
     const savedUser = localStorage.getItem('user_data');
-    
+
     if (!savedToken || !savedUser) {
       // No saved auth data, user needs to login
       return { authenticated: false };
     }
-    
+
     try {
+      // Add timeout to prevent hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
       // Validate the saved token
       const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
         headers: {
           'Authorization': `Bearer ${savedToken}`,
           'Content-Type': 'application/json'
-        }
+        },
+        signal: controller.signal
       });
-      
+
+      clearTimeout(timeoutId);
+
       if (!response.ok) {
         // Token is invalid, clear localStorage
         localStorage.removeItem('access_token');
         localStorage.removeItem('user_data');
         return { authenticated: false };
       }
-      
+
       const userData = await response.json();
       return {
         authenticated: true,
@@ -178,8 +185,16 @@ export const initializeAuth = createAsyncThunk(
         user: userData.user
       };
     } catch (error) {
-      // Network error or token validation failed
-      console.error('Token validation failed during initialization:', error);
+      // Network error, timeout, or token validation failed
+      console.warn('Auth initialization failed:', error);
+
+      // Only clear tokens if it's a definitive auth failure, not network issues
+      if (error instanceof Error && error.name !== 'AbortError') {
+        // For network errors, keep tokens and try again later
+        return rejectWithValue('Auth initialization failed - will retry later');
+      }
+
+      // For timeout or other errors, clear tokens
       localStorage.removeItem('access_token');
       localStorage.removeItem('user_data');
       return { authenticated: false };

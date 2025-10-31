@@ -25,6 +25,8 @@ interface LocalConnectionState {
   };
 }
 
+const MAX_RETRIES = 5;
+
 export const useWebSocketConnection = () => {
   const dispatch = useDispatch();
   const auth = useSelector((state: RootState) => state.auth);
@@ -153,6 +155,13 @@ export const useWebSocketConnection = () => {
     // Just check isConnecting from our local state
     if (localState.isConnecting) {
       console.log('🔌 Already connecting, skipping duplicate attempt');
+      return;
+    }
+
+    // Prevent infinite retry loops
+    if (localState.reconnectAttempts >= MAX_RETRIES) {
+      console.error('Max WebSocket retries exceeded, giving up');
+      dispatch(setError('Connection failed after multiple attempts'));
       return;
     }
 
@@ -331,7 +340,7 @@ export const useWebSocketConnection = () => {
     setLocalState(prev => ({
       ...prev,
       isConnecting: false,
-      reconnectAttempts: 0,
+      reconnectAttempts: 0,  // Reset retry count on manual reconnect
       lastError: null,
       circuitBreaker: {
         state: 'CLOSED',

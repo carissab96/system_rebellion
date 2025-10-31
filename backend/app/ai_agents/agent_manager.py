@@ -27,6 +27,9 @@ SEVERITY: Dict[str, int] = {"LOW": 0, "MEDIUM": 1, "HIGH": 2, "CRITICAL": 3}
 _initialization_lock = asyncio.Lock()
 _agent_manager_instance = None
 
+_initialization_lock = asyncio.Lock()
+_agent_manager_instance = None
+
 async def get_agent_manager(
     *,
     db_getter=None,
@@ -37,12 +40,16 @@ async def get_agent_manager(
 ):
     """
     Async-safe singleton accessor. Creates and initializes once.
+    After initialization, returns instantly.
     """
     global _agent_manager_instance
+
+    # CRITICAL: Return existing instance instantly (no async work)
     if _agent_manager_instance is not None:
         return _agent_manager_instance
 
     async with _initialization_lock:
+        # Double-check after acquiring lock
         if _agent_manager_instance is not None:
             return _agent_manager_instance
 

@@ -148,6 +148,10 @@ export const useLoginForm = (isOpen: boolean, onClose: () => void) => {
         throw new Error('No access token received');
       }
       
+      // CRITICAL: Store token SYNCHRONOUSLY before any async operations
+      localStorage.setItem('access_token', data.access_token);
+      localStorage.setItem('user_data', JSON.stringify(data.user));
+      
       // Store tokens and user data
       dispatch(authSlice.loginSuccess({ 
         user: data.user, 

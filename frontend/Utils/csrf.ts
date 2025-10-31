@@ -18,9 +18,36 @@ export const getCsrfToken = async (forceRefresh = false): Promise<string | null>
     return csrfTokenCache;
   }
 
-  // Try different endpoint paths
-  const possibleEndpoints = [
-    '/api/auth/csrf_token',
+  // Try primary endpoint first with timeout
+  try {
+    console.log(`🐌 The Meth Snail: Trying primary endpoint /api/auth/csrf_token...`);
+    const response = await Promise.race([
+      csrfAxios.get('/api/auth/csrf_token', {
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        },
+        params: { _t: Date.now() }
+      }),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('CSRF fetch timeout')), 3000)
+      )
+    ]);
+
+    console.log(`👍 Primary endpoint responded with status:`, response.status);
+
+    if (response.data && response.data.csrf_token) {
+      csrfTokenCache = response.data.csrf_token;
+      console.log(`🎉 CSRF token obtained from primary endpoint`);
+      return csrfTokenCache;
+    }
+  } catch (error: any) {
+    const status = error.response?.status || 'timeout/network';
+    console.warn(`❌ Primary endpoint failed: ${status}`);
+  }
+
+  // Fallback to other endpoints if primary fails
+  const fallbackEndpoints = [
     '/api/csrf_token',
     '/api/auth/csrf',
     '/api/csrf',
@@ -28,40 +55,38 @@ export const getCsrfToken = async (forceRefresh = false): Promise<string | null>
     '/csrf'
   ];
 
-  for (const endpoint of possibleEndpoints) {
+  for (const endpoint of fallbackEndpoints) {
     try {
-      console.log(`🐌 The Meth Snail: Trying endpoint ${endpoint}...`);
+      console.log(`🐌 The Meth Snail: Trying fallback endpoint ${endpoint}...`);
       const response = await csrfAxios.get(endpoint, {
         headers: {
           'Cache-Control': 'no-cache',
           'Pragma': 'no-cache'
         },
-        params: { _t: Date.now() }
+        params: { _t: Date.now() },
+        timeout: 2000  // Shorter timeout for fallbacks
       });
 
       console.log(`👍 Endpoint ${endpoint} responded with status:`, response.status);
-      
+
       if (response.data && response.data.csrf_token) {
         csrfTokenCache = response.data.csrf_token;
         console.log(`🎉 CSRF token obtained from ${endpoint}`);
         return csrfTokenCache;
-      } else {
-        console.log(`⚠️ No csrf_token field in response from ${endpoint}`);
-        
-        // Try to find token in alternative fields
-        if (response.data) {
-          const possibleFields = ['token', 'csrfToken', 'csrf'];
-          for (const field of possibleFields) {
-            if (response.data[field]) {
-              csrfTokenCache = response.data[field];
-              console.log(`🎉 Found token in '${field}' field from ${endpoint}`);
-              return csrfTokenCache;
-            }
+      }
+
+      // Try alternative fields
+      if (response.data) {
+        const possibleFields = ['token', 'csrfToken', 'csrf'];
+        for (const field of possibleFields) {
+          if (response.data[field]) {
+            csrfTokenCache = response.data[field];
+            console.log(`🎉 Found token in '${field}' field from ${endpoint}`);
+            return csrfTokenCache;
           }
         }
       }
     } catch (error: any) {
-      // Just log the status code to keep it simple
       const status = error.response?.status || 'unknown';
       console.log(`❌ Endpoint ${endpoint} failed with status: ${status}`);
     }
