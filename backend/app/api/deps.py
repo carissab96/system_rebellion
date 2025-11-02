@@ -57,37 +57,28 @@ async def get_current_user(
         )
     
     try:
-        # Query for the user by email
+        # Query for the user by email using async session
         logger.info(f"Looking up user: {token_data.sub}")
         
-        # Use a completely different approach to avoid ChunkedIteratorResult issues
-        # Create a synchronous session and execute the query
-        from sqlalchemy.orm import Session
-        from app.core.database import sync_engine
+        # Use async query properly
+        result = await db.execute(
+            select(User).where(User.email == token_data.sub)
+        )
+        user = result.scalar_one_or_none()
         
-        # Get a synchronous session
-        sync_session = Session(sync_engine)
-        try:
-            # Execute the query synchronously
-            user = sync_session.query(User).filter(User.email == token_data.sub).first()
-            
-            if not user:
-                logger.error(f"User not found: {token_data.sub}")
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND, 
-                    detail=f"User {token_data.sub} not found"
-                )
-                
-            # Create a copy of the user object to return
-            from copy import deepcopy
-            user_copy = deepcopy(user)
-            
-            logger.info(f"User authenticated successfully: {user.email}")
-            return user_copy
-        finally:
-            # Always close the session
-            sync_session.close()
+        if not user:
+            logger.error(f"User not found: {token_data.sub}")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, 
+                detail=f"User {token_data.sub} not found"
+            )
         
+        logger.info(f"User authenticated successfully: {user.email}")
+        return user
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
     except Exception as e:
         logger.error(f"Database error: {str(e)}")
         raise HTTPException(

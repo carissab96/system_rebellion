@@ -65,6 +65,7 @@
     "@testing-library/jest-dom": "^6.1.4",
     "@testing-library/react": "^16.0.0",
     "@testing-library/user-event": "^14.5.1",
+    "@types/jest": "^30.0.0",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@types/three": "^0.178.1",
@@ -103,9 +104,12 @@
       "\\.(jpg|jpeg|png|gif|svg)$": "<rootDir>/src/__tests__/mocks/fileMock.js"
     },
     "transform": {
-      "^.+\\.(ts|tsx)$": ["ts-jest", {
-        "tsconfig": "tsconfig.test.json"
-      }],
+      "^.+\\.(ts|tsx)$": [
+        "ts-jest",
+        {
+          "tsconfig": "tsconfig.test.json"
+        }
+      ],
       "^.+\\.(js|jsx)$": "babel-jest"
     },
     "testMatch": [

@@ -51,7 +51,8 @@ from app.models.agent_memory_banks import (
     MethSnailMemoryBank,
     HamstersMemoryBank,
     QuantumShadowPeopleMemoryBank,
-    VIC20MemoryBank
+    VIC20MemoryBank,
+    CentralMemoryBank
 )
 
 logger = logging.getLogger(__name__)
@@ -62,9 +63,34 @@ if not getattr(error_recovery, "recovery_strategies", {}).get("websocket", {}).g
         component="websocket",
         error_type=ConnectionClosedError,
         recovery_action=RecoveryAction(
-            strategy=RecoveryStrategy.LOG_ONLY
+            strategy=RecoveryStrategy.RETRY,
+            max_retries=3,
+            retry_delay=2.0,
+            exponential_backoff=True
         )
     )
+
+async def safe_websocket_send(websocket: WebSocket, data: dict) -> bool:
+    """
+    Safely send data to WebSocket, handling closed connections gracefully.
+    Returns True if sent successfully, False if connection was closed.
+    """
+    try:
+        # Pre-serialize to catch any serialization errors
+        import json
+        json.dumps(data, default=str)
+        
+        await websocket.send_json(data)
+        return True
+    except (ConnectionClosedError, RuntimeError) as e:
+        logger.debug("WebSocket connection closed during send, skipping message: %s", str(e))
+        return False
+    except TypeError as e:
+        logger.error("JSON serialization error: %s. Data keys: %s", str(e), list(data.keys()))
+        return False
+    except Exception as e:
+        logger.error("Unexpected error sending WebSocket message: %s", str(e))
+        return False
 
 async def fetch_latest_agent_memories(db: AsyncSession, user_id: str) -> Dict[str, Any]:
     """
@@ -379,13 +405,18 @@ async def system_metrics_socket(websocket: WebSocket):
 
         # Send immediate handshake FIRST (don't wait for agent manager)
         handshake_start = time.time()
-        await websocket.send_json({
+        sent = await safe_websocket_send(websocket, {
             "type": "connection_established",
             "client_id": client_id,
             "timestamp": _now_iso(),
         })
-        logger.info("✅ Sent connection_established to %s (%.2fms from WS start)", 
-                   client_id, (time.time() - ws_start)*1000)
+        if not sent:
+            logger.warning("Failed to send connection_established handshake")
+        else:
+            logger.info("✅ Sent connection_established to %s (%.2fms from WS start)", 
+                       client_id, (time.time() - ws_start)*1000)
+            # Small delay to ensure message is sent before next one
+            await asyncio.sleep(0.1)
         
         # AI Agent Manager (should already be initialized at startup)
         agent_manager = None
@@ -401,13 +432,39 @@ async def system_metrics_socket(websocket: WebSocket):
             agent_manager = None
 
         # System info
-        await websocket.send_json({
+        sent = await safe_websocket_send(websocket, {
             "type": "system_info",
             "data": await get_system_info(),
             "message": "System Metrics WebSocket ready.",
             "timestamp": _now_iso(),
         })
-        logger.info("✅ Sent system_info to %s", client_id)
+        if not sent:
+            logger.warning("Failed to send system_info")
+        else:
+            logger.info("✅ Sent system_info to %s", client_id)
+            # Small delay to ensure message is sent before next one
+            await asyncio.sleep(0.1)
+
+        # Send initial agent roster (so frontend knows which agents are active)
+        if agent_manager and agent_manager.initialized:
+            try:
+                active_agents = agent_manager.get_active_agents()
+                logger.info("📋 Active agents to send: %s", active_agents)
+                
+                roster_msg = {
+                    "type": "agent_roster",
+                    "active_agents": active_agents,
+                    "count": len(active_agents),
+                    "timestamp": _now_iso(),
+                }
+                
+                sent = await safe_websocket_send(websocket, roster_msg)
+                if sent:
+                    logger.info("✅ Sent agent roster to %s: %s", client_id, active_agents)
+                else:
+                    logger.warning("Failed to send agent_roster - connection may be closed")
+            except Exception as e:
+                logger.error("Error sending agent roster: %s", str(e), exc_info=True)
 
         # Metrics service
         metrics_service = await SimplifiedMetricsService.get_instance()
@@ -430,7 +487,7 @@ async def system_metrics_socket(websocket: WebSocket):
             # Respect breaker cooling without flapping
             if hasattr(metrics_circuit_breaker, "can_attempt_connection") and not metrics_circuit_breaker.can_attempt_connection():
                 wait_time = int(getattr(metrics_circuit_breaker, "get_wait_time", lambda: 5)())
-                await websocket.send_json({
+                await safe_websocket_send(websocket, {
                     "type": "circuit_open",
                     "status": "open",
                     "message": f"Cooling down for {wait_time}s",
@@ -610,7 +667,7 @@ async def system_metrics_socket(websocket: WebSocket):
                         payload["id"] = saved_id
                     else:
                         payload["error"] = err_msg
-                    await websocket.send_json(payload)
+                    await safe_websocket_send(websocket, payload)
 
                     # SOFT policy: do NOT close on persist failure. Ever.
                     if PERSISTENCE_POLICY in ("hard", "hybrid"):
@@ -629,7 +686,7 @@ async def system_metrics_socket(websocket: WebSocket):
                         )
                         if (not ok) and should_cutoff:
                             try:
-                                await websocket.send_json({
+                                sent = await safe_websocket_send(websocket, {
                                     "type": "ingest_down",
                                     "message": "DB persistence failing; closing socket",
                                     "failures": consec_failures,
@@ -637,6 +694,8 @@ async def system_metrics_socket(websocket: WebSocket):
                                     "policy": PERSISTENCE_POLICY,
                                     "timestamp": _now_iso(),
                                 })
+                                if not sent:
+                                    logger.debug("Failed to send ingest_down message")
                             except Exception:
                                 pass
                             await websocket.close(code=1011)
@@ -654,27 +713,37 @@ async def system_metrics_socket(websocket: WebSocket):
                 # Preferred backpressure model with compatibility fallback
                 await _apply_backpressure(metrics_backpressure)
 
-                # Send latest metrics update to client (with agent data embedded)
+                # Send latest metrics update to client (with agent data, insights, and events embedded)
                 try:
+                    # Get recent insights and events from buffer
+                    recent_insights = ws_manager.get_recent_insights(limit=10)
+                    recent_events = ws_manager.get_recent_events(limit=10)
+                    
                     out_msg = {
-                        "type": "metrics_update",
+                        "type": "system_update",  # Renamed from metrics_update to reflect unified payload
                         "timestamp": _now_iso(),
-                        "data": metrics,
-                        "agents": agent_insights,  # Include agent data in metrics_update
+                        "metrics": metrics,  # Renamed from 'data' for clarity
+                        "agents": agent_insights,  # Agent memory banks and triage data
+                        "recent_insights": recent_insights,  # Last 10 inter-agent communications
+                        "recent_events": recent_events,  # Last 10 personality events
                     }
                     json.dumps(out_msg, default=str)  # ensure serializable
-                    await websocket.send_json(out_msg)
+                    sent = await safe_websocket_send(websocket, out_msg)
+                    if not sent:
+                        logger.debug("Failed to send system_update - connection likely closed")
                     
-                    # NOTE: agent_memory_update messages are sent via agent_insights_websocket
-                    # This endpoint sends metrics_update with embedded agent data
+                    # NOTE: This unified endpoint now includes all agent data, insights, and events
+                    # Separate agent-insights and agent-events endpoints are deprecated
                 except TypeError as e:
                     # Prevent accidental coroutine leakage in the payload
                     logger.error("Serialization error: %s", str(e))
-                    await websocket.send_json({
+                    sent = await safe_websocket_send(websocket, {
                         "type": "error",
                         "timestamp": _now_iso(),
                         "message": "Metrics processing error",
                     })
+                    if not sent:
+                        logger.debug("Failed to send error message - connection likely closed")
 
                 # Handle small control messages from client (non-blocking)
                 try:
@@ -686,26 +755,26 @@ async def system_metrics_socket(websocket: WebSocket):
                         msg_data = msg.get("data", {})
 
                         if msg_type == "ping":
-                            await websocket.send_json({"type": "pong", "timestamp": _now_iso()})
+                            await safe_websocket_send(websocket, {"type": "pong", "timestamp": _now_iso()})
                         elif msg_type == "set_interval":
                             try:
                                 requested = float(msg_data.get("interval", update_interval))
                                 update_interval = max(1.0, min(10.0, requested))
                             except (ValueError, TypeError):
                                 pass
-                            await websocket.send_json({
+                            await safe_websocket_send(websocket, {
                                 "type": "interval_update",
                                 "interval": update_interval,
                                 "message": f"Update interval set to {update_interval} seconds",
                             })
                         elif msg_type == "request_system_info":
-                            await websocket.send_json({"type": "system_info", "data": await get_system_info()})
+                            await safe_websocket_send(websocket, {"type": "system_info", "data": await get_system_info()})
                         elif msg_type == "reset_circuit_breaker":
                             if hasattr(metrics_circuit_breaker, "reset"):
                                 metrics_circuit_breaker.reset()
                             if hasattr(metrics_service, "reset_circuit_breakers"):
                                 await metrics_service.reset_circuit_breakers()
-                            await websocket.send_json({"type": "circuit_breaker_reset", "message": "Breakers reset"})
+                            await safe_websocket_send(websocket, {"type": "circuit_breaker_reset", "message": "Breakers reset"})
                     except json.JSONDecodeError:
                         logger.warning("Received non-JSON message from client %s", client_id)
                 except asyncio.TimeoutError:
@@ -725,7 +794,9 @@ async def system_metrics_socket(websocket: WebSocket):
                 if hasattr(metrics_circuit_breaker, "record_failure"):
                     metrics_circuit_breaker.record_failure()
                 try:
-                    await websocket.send_json({"type": "error", "message": f"Internal error: {str(e)}", "timestamp": _now_iso()})
+                    sent = await safe_websocket_send(websocket, {"type": "error", "message": f"Internal error: {str(e)}", "timestamp": _now_iso()})
+                    if not sent:
+                        logger.debug("Failed to send error message to client")
                 except Exception:
                     pass
                 await websocket.close(code=status.WS_1011_INTERNAL_ERROR)

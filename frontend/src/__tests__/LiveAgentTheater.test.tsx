@@ -1,6 +1,5 @@
 // src/__tests__/LiveAgentTheater.test.tsx
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { LiveAgentTheater } from '../components/agent-theater/LiveAgentTheater';
 
 // Mock framer-motion to avoid animation issues in tests
@@ -149,8 +148,8 @@ describe('LiveAgentTheater', () => {
     );
 
     // Check for active status indicators
-    expect(screen.getByText('ACTIVE')).toBeInTheDocument();
-    expect(screen.getByText('IDLE')).toBeInTheDocument();
+    expect(screen.getByText('Active')).toBeInTheDocument();
+    expect(screen.getByText('Idle')).toBeInTheDocument();
   });
 
   it('displays intelligence decisions when available', () => {

@@ -72,58 +72,58 @@ class MasterAgentDatabase:
             self.logger.warning(f"Unknown agent: {agent_name}, storing to central only")
             return await self._store_central_only(agent_name, user_id, memory_type, content, importance)
         
-        # db_getter is an async generator that yields database sessions
+        # db_getter is a context manager that yields database sessions
         try:
-            db = await anext(self.db_getter())
-        except StopAsyncIteration:
-            self.logger.error(f"❌ db_getter did not provide a session")
-            return await self._store_central_only(agent_name, user_id, memory_type, content, importance)
-        
-        if True:  # Indent block to match original structure
-            try:
-                occurred_at = utc_now()
-                
-                # Generate memory ID
-                import uuid
-                memory_id = str(uuid.uuid4())
-                
-                # WRITE 1: Agent-specific table
-                agent_model = self.agent_models[agent_name]
-                agent_memory = agent_model(
-                    memory_id=memory_id,
-                    user_id=user_id,
-                    timestamp=occurred_at,
-                    # Add agent-specific fields based on content
-                    **self._map_content_to_agent_fields(agent_name, content)
-                )
-                db.add(agent_memory)
-                
-                # WRITE 2: Central memory bank
-                central_memory = CentralMemoryBank(
-                    memory_id=memory_id,
-                    user_id=user_id,
-                    agent_name=agent_name,
-                    occurred_at=occurred_at,
-                    event_type=memory_type,
-                    details=content,
-                    priority=importance
-                )
-                db.add(central_memory)
-                
-                # Commit both writes
-                await db.commit()
-                
-                self.logger.info(f"✅ Dual-write complete for {agent_name}: {memory_type}")
-                return memory_id
-                
-            except Exception as e:
-                self.logger.error(f"❌ Dual-write failed for {agent_name}: {e}")
+            async with self.db_getter() as db:
                 try:
-                    await db.rollback()
-                except:
-                    pass
-                # Fallback: try central only
-                return await self._store_central_only(agent_name, user_id, memory_type, content, importance)
+                    occurred_at = utc_now()
+                    
+                    # Generate memory ID
+                    import uuid
+                    memory_id = str(uuid.uuid4())
+                    
+                    # WRITE 1: Agent-specific table
+                    agent_model = self.agent_models[agent_name]
+                    agent_memory = agent_model(
+                        memory_id=memory_id,
+                        user_id=user_id,
+                        timestamp=occurred_at,
+                        # Add agent-specific fields based on content
+                        **self._map_content_to_agent_fields(agent_name, content)
+                    )
+                    db.add(agent_memory)
+                    
+                    # WRITE 2: Central memory bank
+                    central_memory = CentralMemoryBank(
+                        memory_id=memory_id,
+                        user_id=user_id,
+                        agent_name=agent_name,
+                        occurred_at=occurred_at,
+                        event_type=memory_type,
+                        details=content,
+                        priority=importance
+                    )
+                    db.add(central_memory)
+                    
+                    # Commit both writes
+                    await db.commit()
+                    
+                    self.logger.info(f"✅ Dual-write complete for {agent_name}: {memory_type}")
+                    return memory_id
+                    
+                except Exception as e:
+                    self.logger.error(f"❌ Dual-write failed for {agent_name}: {e}")
+                    try:
+                        await db.rollback()
+                    except:
+                        pass
+                    # Fallback: try central only
+                    return await self._store_central_only(agent_name, user_id, memory_type, content, importance)
+            
+        except Exception as e:
+            self.logger.error(f"❌ Database session error for {agent_name}: {e}")
+            # Fallback: try central only
+            return await self._store_central_only(agent_name, user_id, memory_type, content, importance)
     
     async def _store_central_only(
         self,
@@ -134,8 +134,8 @@ class MasterAgentDatabase:
         importance: int
     ) -> str:
         """Fallback: store only to central memory bank"""
-        async for db in self.db_getter():
-            try:
+        try:
+            async with self.db_getter() as db:
                 import uuid
                 memory_id = str(uuid.uuid4())
                 
@@ -154,10 +154,9 @@ class MasterAgentDatabase:
                 self.logger.warning(f"⚠️ Central-only write for {agent_name}: {memory_type}")
                 return memory_id
                 
-            except Exception as e:
-                self.logger.error(f"❌ Central write failed for {agent_name}: {e}")
-                await db.rollback()
-                raise
+        except Exception as e:
+            self.logger.error(f"❌ Central write failed for {agent_name}: {e}")
+            raise
     
     def _map_content_to_agent_fields(self, agent_name: str, content: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -176,9 +175,21 @@ class MasterAgentDatabase:
             
         elif agent_name == "the_stick":
             # Extract Stick-specific fields
-            mapped['anxiety_level'] = content.get('anxiety_level', 'CALM')
-            mapped['paper_bags_consumed'] = content.get('paper_bags_consumed', 0)
-            mapped['hamster_proximity'] = content.get('hamster_proximity', False)
+            # anxiety_level must be a float (0-100), not a string
+            anxiety_val = content.get('anxiety_level')
+            if isinstance(anxiety_val, str):
+                # Convert string anxiety levels to numeric values
+                anxiety_map = {
+                    'CALM': 10.0,
+                    'NERVOUS': 30.0,
+                    'ANXIOUS': 50.0,
+                    'PANICKING': 70.0,
+                    'FULL_PANIC': 90.0
+                }
+                anxiety_val = anxiety_map.get(anxiety_val.upper(), 25.0)
+            mapped['anxiety_level'] = float(anxiety_val) if anxiety_val is not None else None
+            mapped['paper_bags_consumed_count'] = content.get('paper_bags_consumed', 0)
+            mapped['hyperventilation_count'] = content.get('hyperventilation_count', 0)
             # Add more as needed
             
         elif agent_name == "meth_snail":
@@ -215,8 +226,8 @@ class MasterAgentDatabase:
         if agent_name not in self.agent_models:
             return None
         
-        async for db in self.db_getter():
-            try:
+        try:
+            async with self.db_getter() as db:
                 agent_model = self.agent_models[agent_name]
                 stmt = (
                     select(agent_model)
@@ -237,7 +248,7 @@ class MasterAgentDatabase:
                         memory_dict[column.name] = value
                     return memory_dict
                     
-            except Exception as e:
-                self.logger.error(f"Error fetching memory for {agent_name}: {e}")
+        except Exception as e:
+            self.logger.error(f"Error fetching memory for {agent_name}: {e}")
                 
         return None

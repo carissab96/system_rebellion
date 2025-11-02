@@ -33,6 +33,7 @@ export const useWebSocketConnection = () => {
   const wsServiceRef = useRef<WebSocketService | null>(null);
   const isMountedRef = useRef(true);
   const connectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const intentionalCloseRef = useRef(false);
   
   const [localState, setLocalState] = useState<LocalConnectionState>({
     isConnecting: false,
@@ -77,10 +78,74 @@ export const useWebSocketConnection = () => {
 
     console.log('🔌 WebSocket message received:', payload.type);
     
-    if (payload.type === 'metrics_update' && payload.data) {
+    // Handle agent roster (initial message with active agents list)
+    if (payload.type === 'agent_roster') {
+      console.log('📋 Agent roster received:', payload.active_agents);
+      if (payload.active_agents && Array.isArray(payload.active_agents)) {
+        // Mark all agents as active
+        payload.active_agents.forEach((agent_name: string) => {
+          // Normalize agent name: vic_20_sage -> vic20_sage
+          const normalizedName = agent_name.replace('vic_20_sage', 'vic20_sage');
+          
+          dispatch(addAgentMemory({
+            agent_name: normalizedName as any,
+            memory: { status: 'active', initialized: true }
+          }));
+        });
+      }
+    }
+    // Handle unified system_update payload (new format)
+    else if (payload.type === 'system_update') {
+      // 1. UPDATE SYSTEM METRICS
+      if (payload.metrics) {
+        dispatch(updateMetrics({
+          timestamp: payload.metrics.timestamp,
+          cpu_usage: payload.metrics.cpu_usage,
+          memory_usage: payload.metrics.memory_usage,
+          disk_usage: payload.metrics.disk_usage,
+          network_recv_rate: payload.metrics.network_recv_rate,
+          network_sent_rate: payload.metrics.network_sent_rate,
+          process_count: payload.metrics.process_count,
+          cpu: payload.metrics.cpu,
+          memory: payload.metrics.memory,
+          disk: payload.metrics.disk,
+          network: payload.metrics.network,
+          system_info: payload.metrics.system_info
+        }));
+      }
+      
+      // 2. UPDATE AGENT DATA (includes triage, memory banks, etc.)
+      if (payload.agents) {
+        // Extract triage data from Sir Hawkington
+        const hawkington = payload.agents.sir_hawkington;
+        if (hawkington?.triage) {
+          dispatch(updateTriageData({
+            triage_decision: hawkington.triage
+          }));
+        }
+        
+        // Update agent memories for all agents
+        Object.entries(payload.agents).forEach(([agent_name, agentData]: [string, any]) => {
+          if (agentData) {
+            dispatch(addAgentMemory({
+              agent_name: agent_name as any, // Type assertion for agent name
+              memory: agentData
+            }));
+          }
+        });
+      }
+      
+      // 3. HANDLE RECENT INSIGHTS (if needed by insights slice)
+      // payload.recent_insights is available for future use
+      
+      // 4. HANDLE RECENT EVENTS (if needed by events slice)
+      // payload.recent_events is available for future use
+      
+    } 
+    // Legacy format support (metrics_update)
+    else if (payload.type === 'metrics_update' && payload.data) {
       const data = payload.data;
       
-      // 1. UPDATE SYSTEM METRICS
       dispatch(updateMetrics({
         timestamp: data.timestamp,
         cpu_usage: data.cpu_usage,
@@ -96,7 +161,6 @@ export const useWebSocketConnection = () => {
         system_info: data.system_info
       }));
       
-      // 2. UPDATE TRIAGE DATA
       if (data.triage_decision || data.triage_stats || data.triage_processing) {
         dispatch(updateTriageData({
           triage_decision: data.triage_decision,
@@ -104,18 +168,8 @@ export const useWebSocketConnection = () => {
           triage_processing: data.triage_processing
         }));
       }
-      
-    } else if (payload.type === 'agent_memory_update') {
-      // Handle new agent memory updates
-      const { agent_name, memory } = payload;
-      if (agent_name && memory) {
-        dispatch(addAgentMemory({
-          agent_name,
-          memory
-        }));
-      }
-      
-    } else if (payload.type === 'connection_established') {
+    } 
+    else if (payload.type === 'connection_established') {
       dispatch(setConnectionStatus('connected'));
     } else if (payload.type === 'error') {
       dispatch(setError(payload.message || 'Unknown error'));
@@ -211,18 +265,22 @@ export const useWebSocketConnection = () => {
       };
       
       wsServiceRef.current.onClose = () => {
-        console.log('🔌 WebSocket closed - attempting reconnection in 3s');
+        console.log('🔌 WebSocket closed');
         dispatch(setConnectionStatus('disconnected'));
         setLocalState(prev => ({ ...prev, isConnecting: false }));
         
-        // Attempt reconnection after a delay
-        if (isMountedRef.current) {
+        // Only attempt reconnection if it wasn't an intentional close
+        if (isMountedRef.current && !intentionalCloseRef.current) {
+          console.log('🔄 Unexpected close - attempting reconnection in 5s');
           connectTimeoutRef.current = setTimeout(() => {
-            if (isMountedRef.current) {
+            if (isMountedRef.current && !intentionalCloseRef.current) {
               console.log('🔄 Attempting to reconnect WebSocket...');
               connect();
             }
-          }, 3000);
+          }, 5000);
+        } else if (intentionalCloseRef.current) {
+          console.log('🔌 Intentional close - not reconnecting');
+          intentionalCloseRef.current = false;
         }
       };
       
@@ -233,7 +291,8 @@ export const useWebSocketConnection = () => {
       wsServiceRef.current.ensureConnected('/api/ws/system-metrics');
       
       // Wait for connection with circuit breaker protection
-      await wsServiceRef.current.waitUntilOpen(10000, 3, 2000);
+      // Backend auth can take ~30s, so allow 45s timeout
+      await wsServiceRef.current.waitUntilOpen(45000, 3, 2000);
       
       console.log('✅ WebSocket connected to system-metrics');
       dispatch(setConnectionStatus('connected'));
@@ -260,7 +319,7 @@ export const useWebSocketConnection = () => {
         backpressure: wsServiceRef.current?.getBackpressureStatus() || prev.backpressure
       }));
     }
-  }, [auth.isAuthenticated, auth.isInitializing, auth.token, handleMessage, isDisabled, dispatch, localState.isConnecting]);
+  }, [auth.isAuthenticated, auth.isInitializing, auth.token, handleMessage, isDisabled, dispatch]);
 
   // Initial connection
   useEffect(() => {
@@ -282,11 +341,15 @@ export const useWebSocketConnection = () => {
       // Clear any pending connection attempts
       if (connectTimeoutRef.current) {
         clearTimeout(connectTimeoutRef.current);
+        connectTimeoutRef.current = null;
       }
       
-      // Only unsubscribe, don't disconnect (let singleton manage that)
+      // Unsubscribe from messages but DON'T close the WebSocket
+      // The WebSocket is a singleton that should persist across component mounts
+      // This is especially important in React StrictMode which double-mounts components
       if (wsServiceRef.current) {
         wsServiceRef.current.unsubscribe(handleMessage);
+        // Don't close or null out the service - let it persist
       }
     };
   }, []); // Empty deps - only run on mount/unmount!
@@ -301,6 +364,7 @@ export const useWebSocketConnection = () => {
     }
 
     if (!auth.isAuthenticated || !auth.token) {
+      intentionalCloseRef.current = true;
       if (connectTimeoutRef.current) {
         clearTimeout(connectTimeoutRef.current);
         connectTimeoutRef.current = null;
@@ -324,15 +388,12 @@ export const useWebSocketConnection = () => {
       dispatch(setConnectionStatus('disconnected'));
       return;
     }
-
-    if (!localState.isConnecting && !wsServiceRef.current?.isConnected()) {
-      connect();
-    }
-  }, [auth.isAuthenticated, auth.isInitializing, auth.token, connect, dispatch, isDisabled, localState.isConnecting]);
+  }, [auth.isAuthenticated, auth.isInitializing, auth.token, dispatch, isDisabled, handleMessage]);
 
   // Manual reconnect with circuit breaker reset
   const reconnect = useCallback(() => {
     console.log('Manual reconnect requested');
+    intentionalCloseRef.current = true;
     if (wsServiceRef.current) {
       wsServiceRef.current.resetCircuitBreaker();
       wsServiceRef.current.close();
@@ -350,6 +411,7 @@ export const useWebSocketConnection = () => {
     }));
     connectTimeoutRef.current = setTimeout(() => {
       if (isMountedRef.current) {
+        intentionalCloseRef.current = false;
         connect();
       }
     }, 100);

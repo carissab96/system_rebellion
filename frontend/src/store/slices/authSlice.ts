@@ -32,10 +32,25 @@ const initialState: AuthState = {
 export const fetchCsrfToken = createAsyncThunk(
   'auth/fetchCsrfToken',
   async () => {
-    const response = await fetch('/api/auth/csrf_token');
-    if (!response.ok) throw new Error('Failed to fetch CSRF token');
-    const data = await response.json();
-    return data.csrf_token;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/csrf_token`, {
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) throw new Error('Failed to fetch CSRF token');
+      const data = await response.json();
+      return data.csrf_token;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('CSRF token request timed out');
+      }
+      throw error;
+    }
   }
 );
 export const registerUser = createAsyncThunk(
@@ -59,62 +74,90 @@ export const registerUser = createAsyncThunk(
     job_title: string;
     csrfToken: string 
   }) => {
-    const response = await fetch('/api/auth/register', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRFToken': csrfToken,
-      },
-      body: JSON.stringify({ 
-        email, 
-        username, 
-        password,
-        first_name,
-        last_name,
-        company_name,
-        job_title
-      })
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout for registration
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken,
+        },
+        body: JSON.stringify({ 
+          email, 
+          username, 
+          password,
+          first_name,
+          last_name,
+          company_name,
+          job_title
+        }),
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.detail || 'Registration failed');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Registration failed');
+      }
+
+      const data = await response.json();
+      return {
+        token: data.access_token,
+        user: data.user
+      };
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('Registration request timed out');
+      }
+      throw error;
     }
-
-    const data = await response.json();
-    return {
-      token: data.access_token,
-      user: data.user
-    };
   }
 );
 // Login with email/password (matches your OAuth flow)
 export const loginUser = createAsyncThunk(
   'auth/login',
   async ({ email, password, csrfToken }: { email: string; password: string; csrfToken: string }) => {
-    const response = await fetch('/api/auth/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'X-CSRFToken': csrfToken,
-      },
-      body: new URLSearchParams({
-        username: email, // OAuth2 expects username field but we pass email
-        password,
-        grant_type: 'password'
-      })
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout for login
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-CSRFToken': csrfToken,
+        },
+        body: new URLSearchParams({
+          username: email, // OAuth2 expects username field but we pass email
+          password,
+          grant_type: 'password'
+        }),
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.detail || 'Login failed');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Login failed');
+      }
+
+      const data = await response.json();
+      return {
+        token: data.access_token,
+        user: data.user
+      };
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('Login request timed out');
+      }
+      throw error;
     }
-
-    const data = await response.json();
-    return {
-      token: data.access_token,
-      user: data.user
-    };
   }
 );
 
@@ -155,93 +198,101 @@ export const initializeAuth = createAsyncThunk(
       return { authenticated: false };
     }
 
-    try {
-      // Add timeout to prevent hanging
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
+    // Retry logic for backend startup/restart scenarios
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        // Add timeout to prevent hanging
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-      // Validate the saved token
-      const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
-        headers: {
-          'Authorization': `Bearer ${savedToken}`,
-          'Content-Type': 'application/json'
-        },
-        signal: controller.signal
-      });
+        // Validate the saved token
+        const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
+          headers: {
+            'Authorization': `Bearer ${savedToken}`,
+            'Content-Type': 'application/json'
+          },
+          signal: controller.signal
+        });
 
-      clearTimeout(timeoutId);
+        clearTimeout(timeoutId);
 
-      if (!response.ok) {
-        // Token might be expired, try to refresh
-        if (response.status === 401 && savedRefreshToken) {
-          console.log('Token expired, attempting refresh...');
-          try {
-            const refreshResponse = await fetch(`${API_BASE_URL}/api/auth/refresh-token`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({ refresh_token: savedRefreshToken })
-            });
-
-            if (refreshResponse.ok) {
-              const refreshData = await refreshResponse.json();
-              const newToken = refreshData.access_token;
-
-              // Store new token
-              localStorage.setItem('access_token', newToken);
-
-              // Retry the original request with new token
-              const retryResponse = await fetch(`${API_BASE_URL}/api/auth/me`, {
+        if (!response.ok) {
+          // Token might be expired, try to refresh
+          if (response.status === 401 && savedRefreshToken) {
+            console.log('Token expired, attempting refresh...');
+            try {
+              const refreshResponse = await fetch(`${API_BASE_URL}/api/auth/refresh-token`, {
+                method: 'POST',
                 headers: {
-                  'Authorization': `Bearer ${newToken}`,
                   'Content-Type': 'application/json'
-                }
+                },
+                body: JSON.stringify({ refresh_token: savedRefreshToken })
               });
 
-              if (retryResponse.ok) {
-                const userData = await retryResponse.json();
-                return {
-                  authenticated: true,
-                  token: newToken,
-                  user: userData.user
-                };
+              if (refreshResponse.ok) {
+                const refreshData = await refreshResponse.json();
+                const newToken = refreshData.access_token;
+
+                // Store new token
+                localStorage.setItem('access_token', newToken);
+
+                // Retry the original request with new token
+                const retryResponse = await fetch(`${API_BASE_URL}/api/auth/me`, {
+                  headers: {
+                    'Authorization': `Bearer ${newToken}`,
+                    'Content-Type': 'application/json'
+                  }
+                });
+
+                if (retryResponse.ok) {
+                  const userData = await retryResponse.json();
+                  return {
+                    authenticated: true,
+                    token: newToken,
+                    user: userData.user
+                  };
+                }
               }
+            } catch (refreshError) {
+              console.warn('Token refresh failed:', refreshError);
             }
-          } catch (refreshError) {
-            console.warn('Token refresh failed:', refreshError);
           }
+
+          // If refresh failed or wasn't attempted, clear tokens
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
+          localStorage.removeItem('user_data');
+          return { authenticated: false };
         }
 
-        // Token is invalid and refresh failed, clear localStorage
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        localStorage.removeItem('user_data');
-        return { authenticated: false };
+        const userData = await response.json();
+        return {
+          authenticated: true,
+          token: savedToken,
+          user: userData.user
+        };
+
+      } catch (error) {
+        const isLastAttempt = attempt === 3;
+        const errorMsg = error instanceof Error ? error.message : 'Network error';
+
+        console.warn(`Auth initialization attempt ${attempt}/3 failed: ${errorMsg}`);
+
+        if (isLastAttempt) {
+          console.warn('Auth initialization failed after 3 attempts, backend may be restarting');
+          // Don't clear tokens on network errors - might be temporary
+          return rejectWithValue('Auth initialization failed - backend may be restarting');
+        }
+
+        // Wait before retrying (exponential backoff: 2s, 4s)
+        const waitTime = 2000 * attempt;
+        console.log(`Retrying auth initialization in ${waitTime}ms...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
       }
-
-      const userData = await response.json();
-      return {
-        authenticated: true,
-        token: savedToken,
-        user: userData.user
-      };
-    } catch (error) {
-      // Network error, timeout, or token validation failed
-      console.warn('Auth initialization failed:', error);
-
-      // Only clear tokens if it's a definitive auth failure, not network issues
-      if (error instanceof Error && error.name !== 'AbortError') {
-        // For network errors, keep tokens and try again later
-        return rejectWithValue('Auth initialization failed - will retry later');
-      }
-
-      // For timeout or other errors, clear tokens
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      localStorage.removeItem('user_data');
-      return { authenticated: false };
     }
+
+    // This should never be reached, but just in case
+    return rejectWithValue('Auth initialization failed unexpectedly');
   }
 );
 export const authSlice = createSlice({

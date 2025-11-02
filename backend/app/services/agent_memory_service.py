@@ -1,10 +1,13 @@
 import json
+import logging
 from datetime import datetime, timezone, timedelta
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 import redis.asyncio as aioredis
 
 from app.models.agent_memory_banks import CentralMemoryBank
+
+logger = logging.getLogger(__name__)
 
 class AgentMemoryService:
     def __init__(self, db: AsyncSession, redis_url="redis://localhost:6379", cache_ttl=300):

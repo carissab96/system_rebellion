@@ -94,102 +94,36 @@ export const useLoginForm = (isOpen: boolean, onClose: () => void) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (isLoading || !validateForm()) {
       return;
     }
 
     try {
-      const currentCsrfToken = csrfToken || "";
-
-      const response = await fetch('/api/auth/token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'X-CSRFToken': currentCsrfToken,
-          'Accept': 'application/json'
-        },
-        body: new URLSearchParams({
-          username: formData.email.trim(),
-          password: formData.password.trim(),
-          grant_type: 'password'
-        }),
-        credentials: 'include'
-      });
-      
-      if (!response.ok) {
-        let errorData;
-        const contentType = response.headers.get('content-type');
-        
-        try {
-          errorData = contentType?.includes('application/json') 
-            ? await response.json()
-            : await response.text();
-        } catch (e) {
-          errorData = response.statusText;
-        }
-        
-        console.error('Login failed:', {
-          status: response.status,
-          statusText: response.statusText,
-          error: errorData,
-          headers: Object.fromEntries(response.headers.entries())
-        });
-        
-        throw new Error(
-          typeof errorData === 'object' 
-            ? errorData.detail || 'Authentication failed'
-            : 'Authentication failed. Please try again.'
-        );
-      }
-      
-      const data = await response.json();
-      if (!data.access_token) {
-        throw new Error('No access token received');
-      }
-      
-      // CRITICAL: Store token SYNCHRONOUSLY before any async operations
-      localStorage.setItem('access_token', data.access_token);
-      localStorage.setItem('user_data', JSON.stringify(data.user));
-      
-      // Store tokens and user data
-      dispatch(authSlice.loginSuccess({ 
-        user: data.user, 
-        token: data.access_token 
+      // Use Redux thunk which handles CSRF token coordination internally
+      const resultAction = await dispatch(authSlice.loginUser({
+        email: formData.email.trim(),
+        password: formData.password.trim(),
+        csrfToken: csrfToken || ""
       }));
-      
-      // Store tokens securely (consider using httpOnly cookies instead)
-      if (data.refresh_token) {
-        localStorage.setItem('refresh_token', data.refresh_token);
-      }
-      
-      // Dispatch login success
-      // dispatch(authSlice.loginSuccess({ 
-      //   user: data.user, 
-      //   token: data.access_token 
-      // }));
-      
-      // Close modal first
-      onClose();
-      
-      // Navigate based on onboarding status
-      if (data.user.is_onboarded) {
-        navigate('/system-ready');
+
+      if (authSlice.loginUser.fulfilled.match(resultAction)) {
+        // Success - close modal and navigate
+        onClose();
+
+        // Navigate based on onboarding status
+        if (resultAction.payload.user.is_onboarded) {
+          navigate('/system-ready');
+        } else {
+          navigate('/onboarding');
+        }
       } else {
-        navigate('/onboarding');
+        // Error is handled by Redux, no need to do anything here
       }
-      
+
     } catch (error) {
       console.error('Login error:', error);
-      // Extract and display the actual error message from the backend
-      let errorMessage = 'An error occurred during login. Please try again.';
-      
-      if (error instanceof Error) {
-        // Use the error message from the backend
-        errorMessage = error.message;
-      }
-      
-      dispatch(authSlice.setError(errorMessage));
+      // Error is handled by Redux thunk
     }
   };
 

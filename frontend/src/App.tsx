@@ -6,10 +6,8 @@ import type { RootState, AppDispatch } from './store/store';
 import LandingPage from './pages/LandingPage'
 import SignUpModal from './components/auth/SignUpModal'
 import LoginModal from './components/auth/LoginModal'
-// OLD: import AgentTheater from './components/agent-theater/AgentTheater'
 import { LiveAgentTheaterPage } from './pages/LiveAgentTheaterPage'
-// import SystemReadyPage from './pages/SystemReadyPage' // TEMP: Not using
-// import AgentTheaterOld from './components/agent-theater/AgentTheater'
+import SystemReadyPage from './pages/SystemReadyPage'
 import MainLayout from './components/layout/MainLayout'
 import AgentTestingPage from './pages/dashboard/AgentTestingPage'
 import MemoryBanksPage from './pages/dashboard/MemoryBanksPage'
@@ -115,7 +113,7 @@ function App() {
               element={
                 isAuthenticated && user ? (
                   user.is_onboarded ? (
-                    <Navigate to="/dashboard/agent-theater" replace />
+                    <SystemReadyPage />
                   ) : (
                     <Navigate to="/onboarding" replace />
                   )

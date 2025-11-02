@@ -552,7 +552,7 @@ class SirHawkingtonTriageEngine(AgentInstrumentationMixin, TriageEngineWithRedis
             vic20_decision = await vic20_coordinate_agents(
                 all_agent_data,
                 system_context,
-                user_id or 'anonymous',
+                user_id,
             )
             return {
                 'agent': 'vic_20_sage',
@@ -611,7 +611,7 @@ class SirHawkingtonTriageEngine(AgentInstrumentationMixin, TriageEngineWithRedis
                 emergency_type,
                 triage_decision.target_agents,
                 system_context,
-                user_id or 'anonymous',
+                user_id,
             )
             return {
                 'agent': 'vic_20_sage',

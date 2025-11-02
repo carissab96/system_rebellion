@@ -32,6 +32,12 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           // NO REWRITE RULE - let the full path pass through
         },
+        '/api/ws': {
+          target: env.VITE_WS_URL || 'ws://localhost:8000',
+          ws: true,
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api/, ''),
+        },
         '/ws': {
           target: env.VITE_WS_URL || 'ws://localhost:8000',
           ws: true,

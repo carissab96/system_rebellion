@@ -153,78 +153,109 @@ export class WebSocketService {
     }
 
     // Close any dangling socket without nuking subscribers
-    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+    if (this.socket) {
       try {
-        this.socket.close(1000, "switching-endpoint");
-      } catch {
-        // ignore
+        if (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING) {
+          this.socket.close(1000, "switching-endpoint");
+        }
+      } catch (err) {
+        console.warn("Error closing previous socket:", err);
       }
+      this.socket = null;
     }
 
-    const url = this.buildUrl(targetPath);
+    // Build URL with error handling
+    let url: string;
+    try {
+      url = this.buildUrl(targetPath);
+    } catch (err) {
+      this.state = "error";
+      throw err;
+    }
+
     this.currentPath = targetPath;
     this.socket = new WebSocket(url);
     this.state = "connecting";
     
+    // Setup event handlers outside the promise to avoid memory leaks
+    const onOpen = () => {
+      this.state = "open";
+      this.circuitBreaker.recordSuccess();
+      this.startKeepAlive();
+    };
+    
+    const onError = (evt: Event) => {
+      this.state = "error";
+      this.circuitBreaker.recordFailure();
+      this.onError?.(evt);
+    };
+    
+    const onClose = () => {
+      this.state = "closed";
+      this.stopKeepAlive();
+      this.onClose?.();
+    };
+    
+    const onMessage = (ev: MessageEvent) => {
+      try {
+        const payload = this.parseMessage(ev.data);
+        
+        // Add to backpressure buffer instead of direct notification
+        const added = this.backpressure.addItem(payload);
+        if (!added) {
+          console.warn('🚨 Message dropped due to backpressure');
+        }
+      } catch (e) {
+        console.error("Error processing WebSocket message:", e);
+        // Still try to add error messages to buffer
+        const errorPayload = { 
+          type: "error", 
+          message: "message_processing_error",
+          error: String(e)
+        };
+        this.backpressure.addItem(errorPayload);
+      }
+    };
+    
+    // Add all event listeners
+    this.socket.addEventListener("open", onOpen);
+    this.socket.addEventListener("error", onError);
+    this.socket.addEventListener("close", onClose);
+    this.socket.addEventListener("message", onMessage);
+    
     // Prepare waiter promise for waitUntilOpen
     this.openWaiter = new Promise<void>((resolve, reject) => {
+      const socket = this.socket;
+      if (!socket) {
+        reject(new Error("Socket was cleared during connection setup"));
+        return;
+      }
+      
       const cleanup = () => {
-        if (this.socket) {
-          this.socket.removeEventListener("open", onOpen);
-          this.socket.removeEventListener("error", onError);
-          this.socket.removeEventListener("close", onClose);
-        }
+        socket.removeEventListener("open", promiseOnOpen);
+        socket.removeEventListener("error", promiseOnError);
+        socket.removeEventListener("close", promiseOnClose);
       };
       
-      const onOpen = () => {
-        this.state = "open";
-        this.circuitBreaker.recordSuccess(); // Record successful connection
-        this.startKeepAlive();
+      const promiseOnOpen = () => {
         cleanup();
         resolve();
       };
       
-      const onError = (evt: Event) => {
-        this.state = "error";
-        this.circuitBreaker.recordFailure(); // Record failure
+      const promiseOnError = () => {
         cleanup();
         reject(new Error("WebSocket error"));
-        this.onError?.(evt);
       };
       
-      const onClose = () => {
-        this.state = "closed";
-        this.stopKeepAlive();
+      const promiseOnClose = () => {
         cleanup();
         reject(new Error("WebSocket closed"));
-        this.onClose?.();
       };
-    
-      this.socket!.addEventListener("open", onOpen);
-      this.socket!.addEventListener("error", onError);
-      this.socket!.addEventListener("close", onClose);
-    
-      // Enhanced message handler with backpressure
-      this.socket!.addEventListener("message", (ev: MessageEvent) => {
-        try {
-          const payload = this.parseMessage(ev.data);
-          
-          // Add to backpressure buffer instead of direct notification
-          const added = this.backpressure.addItem(payload);
-          if (!added) {
-            console.warn('🚨 Message dropped due to backpressure');
-          }
-        } catch (e) {
-          console.error("Error processing WebSocket message:", e);
-          // Still try to add error messages to buffer
-          const errorPayload = { 
-            type: "error", 
-            message: "message_processing_error",
-            error: String(e)
-          };
-          this.backpressure.addItem(errorPayload);
-        }
-      });
+      
+      // Add temporary listeners just for the promise
+      socket.addEventListener("open", promiseOnOpen, { once: true });
+      socket.addEventListener("error", promiseOnError, { once: true });
+      socket.addEventListener("close", promiseOnClose, { once: true });
     });
     
     return this.socket;
@@ -382,7 +413,7 @@ export class WebSocketService {
     failures: number;
     waitTime: number;
   } {
-    return this.circuitBreaker.getState();
+    return this.circuitBreaker.getDetailedState();
   }
 
   // Backpressure controls

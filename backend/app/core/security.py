@@ -8,6 +8,9 @@ from fastapi import Request, HTTPException, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 import uuid
+import logging
+
+logger = logging.getLogger(__name__)
 from redis.asyncio import Redis
 from app.core.redis import get_redis_client
 from app.core.config import get_settings
@@ -23,9 +26,16 @@ REFRESH_TOKEN_EXPIRE_DAYS = get_settings().REFRESH_TOKEN_EXPIRE_DAYS
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
+    import time
+    start_time = time.time()
     try:
-        return pwd_context.verify(plain_password, hashed_password)
-    except Exception:
+        result = pwd_context.verify(plain_password, hashed_password)
+        verify_time = time.time() - start_time
+        logger.info(f"⏱️ Password verification: {verify_time:.2f}ms")
+        return result
+    except Exception as e:
+        verify_time = time.time() - start_time
+        logger.error(f"⏱️ Password verification failed after {verify_time:.2f}ms: {str(e)}")
         return False
 
 def hash_password(password: str) -> str:
@@ -64,12 +74,18 @@ async def _lookup_user_by_claims(payload: dict, db: AsyncSession) -> User:
       - legacy: sub = email, optional user_id
       - preferred: sub = user_id (UUID/str)
     """
+    import time
+    start_time = time.time()
+
     user: Optional[User] = None
 
     # Preferred path: explicit user_id claim
     uid: Optional[str] = payload.get("user_id")
     if uid:
+        lookup_start = time.time()
         user = await db.scalar(select(User).where(User.id == uid))
+        lookup_time = time.time() - lookup_start
+        logger.info(f"⏱️ User ID lookup: {lookup_time:.2f}ms (id: {uid[:8]}...)")
 
     # Fallback: infer from sub
     if user is None:
@@ -79,15 +95,27 @@ async def _lookup_user_by_claims(payload: dict, db: AsyncSession) -> User:
 
         # heuristic: if it looks like a UUID, treat as id; if it has '@', treat as email
         found: Optional[User] = None
+
+        lookup_start = time.time()
         try:
             uuid.UUID(str(sub))
             found = await db.scalar(select(User).where(User.id == str(sub)))
+            lookup_type = "UUID"
         except Exception:
             # not a UUID, try email
             if "@" in str(sub):
                 found = await db.scalar(select(User).where(User.email == str(sub)))
+                lookup_type = "email"
+            else:
+                lookup_type = "unknown"
+
+        lookup_time = time.time() - lookup_start
+        logger.info(f"⏱️ Fallback {lookup_type} lookup: {lookup_time:.2f}ms (sub: {str(sub)[:8]}...)")
 
         user = found
+
+    total_time = time.time() - start_time
+    logger.info(f"⏱️ Total user lookup: {total_time:.2f}ms")
 
     if not user:
         raise HTTPException(status_code=401, detail="User not found for token subject")

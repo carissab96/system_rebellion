@@ -5,8 +5,6 @@ import { store } from "./store/store";
 import App from "./App";
 import "./index.css";
 import { WebSocketService } from "./services/websocket";
-import { AgentInsightsWebSocketService } from "./services/agentInsightsWebSocket";
-import { AgentEventsWebSocketService } from "./services/agentEventsWebSocket";
 
 // Initialize WebSocket services when a URL is provided
 const websocketUrl = import.meta.env.VITE_WS_URL;
@@ -15,14 +13,7 @@ console.log('All env:', import.meta.env);
 if (websocketUrl) {
   // Initialize metrics WebSocket
   WebSocketService.getInstance(websocketUrl);
-  
-  // Initialize agent insights WebSocket
-  AgentInsightsWebSocketService.getInstance(websocketUrl);
-  console.log('✅ Agent Insights WebSocket service initialized');
-  
-  // Initialize agent events WebSocket
-  AgentEventsWebSocketService.getInstance(websocketUrl);
-  console.log('✅ Agent Events WebSocket service initialized');
+  console.log('✅ Metrics WebSocket service initialized');
 } else {
   // eslint-disable-next-line no-console
   console.warn("VITE_WS_URL is not defined; skipping WebSocket initialization.");

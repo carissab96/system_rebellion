@@ -26,8 +26,8 @@ from app.api import router as metrics_router
 from app.api import router as debug_router
 from app.api import system
 from app.api import simplified_websocket_routes
-from app.api import agent_events_websocket
-from app.api import agent_insights_websocket
+# Deprecated: agent_events_websocket and agent_insights_websocket
+# Now unified into simplified_websocket_routes
 from datetime import datetime, timezone 
 import uvicorn
 import logging
@@ -358,29 +358,10 @@ def create_application() -> FastAPI:
             tags=["WebSockets"]
         )
     
-    # Include agent events WebSocket route
-    if hasattr(agent_events_websocket, 'router'):
-        logger.info("✅ Registering Agent Events WebSocket route")
-        app.include_router(
-            agent_events_websocket.router,
-            prefix="/api",
-            tags=["Agent Events"]
-        )
-        logger.info("✅ Agent Events route registered")
-    else:
-        logger.error("❌ agent_events_websocket has no 'router' attribute")
-    
-    # Include agent insights WebSocket route
-    if hasattr(agent_insights_websocket, 'router'):
-        logger.info("✅ Registering Agent Insights WebSocket route")
-        app.include_router(
-            agent_insights_websocket.router,
-            prefix="/api",
-            tags=["Agent Insights"]
-        )
-        logger.info("✅ Agent Insights route registered")
-    else:
-        logger.error("❌ agent_insights_websocket has no 'router' attribute")
+    # Deprecated: Agent events and insights WebSocket routes
+    # These are now unified into the system-metrics endpoint (/api/ws/system-metrics)
+    # which sends a unified payload with metrics, agents, recent_insights, and recent_events
+    logger.info("ℹ️ Agent events and insights now served via unified /api/ws/system-metrics endpoint")
   
 
     # Include routers
@@ -469,6 +450,17 @@ async def initialize_websocket_resilience():
             strategy=RecoveryStrategy.RETRY,
             max_retries=3,
             retry_delay=1.0,
+            exponential_backoff=True
+        )
+    )
+    
+    error_recovery.register_strategy(
+        component="websocket",
+        error_type="ConnectionClosedError",
+        recovery_action=RecoveryAction(
+            strategy=RecoveryStrategy.RETRY,
+            max_retries=3,
+            retry_delay=2.0,
             exponential_backoff=True
         )
     )

@@ -404,7 +404,7 @@ async def login_for_access_token(
     user.lockout_until = None
     user.last_login = datetime.now(timezone.utc)
     user.updated_at = datetime.now(timezone.utc)
-    user.is_onboarded = True
+    # Don't auto-set is_onboarded - let the onboarding flow handle this
     
     # Flush changes to DB but don't wait for full commit (non-blocking)
     db_update_start = time.time()
