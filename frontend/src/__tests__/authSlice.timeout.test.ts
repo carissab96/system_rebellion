@@ -1,6 +1,7 @@
 // src/__tests__/authSlice.timeout.test.ts
 // Testing the timeout fixes for hung login issue
 import { configureStore } from '@reduxjs/toolkit';
+import type { AppDispatch } from '../store/store';
 import authReducer, { 
   fetchCsrfToken, 
   loginUser, 
@@ -18,6 +19,7 @@ global.fetch = jest.fn();
 
 describe('🔥 Auth Timeout & Error Handling Tests', () => {
   let store: ReturnType<typeof configureStore>;
+  let dispatch: AppDispatch;
 
   beforeEach(() => {
     store = configureStore({
@@ -25,6 +27,7 @@ describe('🔥 Auth Timeout & Error Handling Tests', () => {
         auth: authReducer,
       },
     });
+    dispatch = store.dispatch as AppDispatch;
     jest.clearAllMocks();
   });
 
@@ -37,7 +40,7 @@ describe('🔥 Auth Timeout & Error Handling Tests', () => {
         json: async () => ({ csrf_token: mockCsrfToken }),
       });
 
-      const result = await store.dispatch(fetchCsrfToken()).unwrap();
+      const result = await dispatch(fetchCsrfToken()).unwrap();
 
       expect(result).toBe(mockCsrfToken);
       expect(global.fetch).toHaveBeenCalledWith(
@@ -57,9 +60,9 @@ describe('🔥 Auth Timeout & Error Handling Tests', () => {
       );
 
       await expect(
-        store.dispatch(fetchCsrfToken()).unwrap()
+        dispatch(fetchCsrfToken()).unwrap()
       ).rejects.toThrow();
-    });
+    }, 10000); // 10 second Jest timeout
 
     it('❌ should handle network errors', async () => {
       (global.fetch as jest.Mock).mockRejectedValueOnce(
@@ -67,7 +70,7 @@ describe('🔥 Auth Timeout & Error Handling Tests', () => {
       );
 
       await expect(
-        store.dispatch(fetchCsrfToken()).unwrap()
+        dispatch(fetchCsrfToken()).unwrap()
       ).rejects.toThrow('Network error');
     });
 
@@ -79,7 +82,7 @@ describe('🔥 Auth Timeout & Error Handling Tests', () => {
       });
 
       await expect(
-        store.dispatch(fetchCsrfToken()).unwrap()
+        dispatch(fetchCsrfToken()).unwrap()
       ).rejects.toThrow();
     });
   });
@@ -106,7 +109,7 @@ describe('🔥 Auth Timeout & Error Handling Tests', () => {
         json: async () => mockResponse,
       });
 
-      const result = await store.dispatch(loginUser(mockLoginData)).unwrap();
+      const result = await dispatch(loginUser(mockLoginData)).unwrap();
 
       expect(result.token).toBe('test-token-123');
       expect(result.user.email).toBe('test@example.com');
@@ -131,7 +134,7 @@ describe('🔥 Auth Timeout & Error Handling Tests', () => {
       );
 
       await expect(
-        store.dispatch(loginUser(mockLoginData)).unwrap()
+        dispatch(loginUser(mockLoginData)).unwrap()
       ).rejects.toThrow();
     });
 
@@ -143,7 +146,7 @@ describe('🔥 Auth Timeout & Error Handling Tests', () => {
       });
 
       await expect(
-        store.dispatch(loginUser(mockLoginData)).unwrap()
+        dispatch(loginUser(mockLoginData)).unwrap()
       ).rejects.toThrow('Invalid credentials');
     });
 
@@ -155,7 +158,7 @@ describe('🔥 Auth Timeout & Error Handling Tests', () => {
       });
 
       await expect(
-        store.dispatch(loginUser(mockLoginData)).unwrap()
+        dispatch(loginUser(mockLoginData)).unwrap()
       ).rejects.toThrow('Internal server error');
     });
   });
@@ -187,7 +190,7 @@ describe('🔥 Auth Timeout & Error Handling Tests', () => {
         json: async () => mockResponse,
       });
 
-      const result = await store.dispatch(registerUser(mockRegisterData)).unwrap();
+      const result = await dispatch(registerUser(mockRegisterData)).unwrap();
 
       expect(result.token).toBe('new-token-123');
       expect(result.user.email).toBe('newuser@example.com');
@@ -209,7 +212,7 @@ describe('🔥 Auth Timeout & Error Handling Tests', () => {
       );
 
       await expect(
-        store.dispatch(registerUser(mockRegisterData)).unwrap()
+        dispatch(registerUser(mockRegisterData)).unwrap()
       ).rejects.toThrow();
     });
 
@@ -221,7 +224,7 @@ describe('🔥 Auth Timeout & Error Handling Tests', () => {
       });
 
       await expect(
-        store.dispatch(registerUser(mockRegisterData)).unwrap()
+        dispatch(registerUser(mockRegisterData)).unwrap()
       ).rejects.toThrow('Email already registered');
     });
   });
@@ -233,7 +236,7 @@ describe('🔥 Auth Timeout & Error Handling Tests', () => {
         json: async () => ({ csrf_token: 'test' }),
       });
 
-      await store.dispatch(fetchCsrfToken()).unwrap();
+      await dispatch(fetchCsrfToken()).unwrap();
 
       const fetchCall = (global.fetch as jest.Mock).mock.calls[0];
       expect(fetchCall[0]).toBe('http://localhost:8000/api/auth/csrf_token');
@@ -245,7 +248,7 @@ describe('🔥 Auth Timeout & Error Handling Tests', () => {
         json: async () => ({ csrf_token: 'test' }),
       });
 
-      await store.dispatch(fetchCsrfToken()).unwrap();
+      await dispatch(fetchCsrfToken()).unwrap();
 
       const fetchCall = (global.fetch as jest.Mock).mock.calls[0];
       expect(fetchCall[1]).toHaveProperty('signal');
@@ -257,7 +260,7 @@ describe('🔥 Auth Timeout & Error Handling Tests', () => {
     it('should set loading state during login', () => {
       store.dispatch({ type: 'auth/login/pending' });
 
-      const state = store.getState().auth;
+      const state = (store.getState() as any).auth;
       expect(state.isLoading).toBe(true);
       expect(state.error).toBeNull();
     });
@@ -269,12 +272,12 @@ describe('🔥 Auth Timeout & Error Handling Tests', () => {
         error: { message: 'Previous error' },
       });
 
-      expect(store.getState().auth.error).toBe('Previous error');
+      expect((store.getState() as any).auth.error).toBe('Previous error');
 
       // Start new login
       store.dispatch({ type: 'auth/login/pending' });
 
-      expect(store.getState().auth.error).toBeNull();
+      expect((store.getState() as any).auth.error).toBeNull();
     });
 
     it('should store token and user on successful login', async () => {
@@ -288,7 +291,7 @@ describe('🔥 Auth Timeout & Error Handling Tests', () => {
         json: async () => mockResponse,
       });
 
-      await store.dispatch(
+      await dispatch(
         loginUser({
           email: 'test@example.com',
           password: 'password',
@@ -296,7 +299,7 @@ describe('🔥 Auth Timeout & Error Handling Tests', () => {
         })
       ).unwrap();
 
-      const state = store.getState().auth;
+      const state = (store.getState() as any).auth;
       expect(state.token).toBe('test-token');
       expect(state.user?.email).toBe('test@example.com');
       expect(state.isLoading).toBe(false);

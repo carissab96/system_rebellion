@@ -73,6 +73,7 @@ app = FastAPI()
 app.state.redis_client = None
 app.state.memory_service = None
 app.state.task_queue = None
+app.state.background_tasks = []  # Store background tasks in app state for lazy init access
 
 # Global reference to background tasks for cleanup
 background_tasks = []
@@ -180,47 +181,64 @@ async def lifespan(app: FastAPI):
         await get_metrics_repository()  # warms the singleton
         logger.info("🟡 MetricsRepository initialized")
         
-        # Initialize WebSocket manager
-        _ws_manager = get_websocket_manager()
-        await _ws_manager.start()
-        logger.info("Sir Hawkington websocket manager startup complete")
+        logger.info("✅ Core services ready - authentication available")
+        logger.info("")
         
-        # Initialize resilience components
-        await initialize_websocket_resilience()
-        logger.info("🛡️  WebSocket resilience system activated")
+        # Schedule agent initialization to happen AFTER startup completes
+        # This allows auth to work immediately without waiting for agents
+        async def initialize_agents_after_startup():
+            """Initialize agents after the server is fully started and accepting requests"""
+            await asyncio.sleep(2)  # Give server time to fully start
+            
+            logger.info("=" * 80)
+            logger.info("🎭 INITIALIZING AI AGENTS AND WEBSOCKETS")
+            logger.info("=" * 80)
+            
+            try:
+                # Initialize WebSocket manager
+                _ws_manager = get_websocket_manager()
+                await _ws_manager.start()
+                logger.info("✅ Sir Hawkington websocket manager startup complete")
+                
+                # Initialize AI Agents ONCE through AgentManager
+                import time
+                from app.core.database import AsyncSessionLocal
+                
+                # Create a database session factory for the agent manager
+                def db_session_factory():
+                    """Factory to create new database sessions for agent memory service"""
+                    session = AsyncSessionLocal()
+                    return session
+                
+                agent_start = time.time()
+                agent_manager = await get_agent_manager(db_getter=db_session_factory)
+                agent_elapsed = time.time() - agent_start
+                active_agents = list(agent_manager.agents.keys()) if agent_manager.initialized else []
+                logger.info(f"🤖 AI Agents initialized in {agent_elapsed:.2f}s - Active: {active_agents}")
+                
+                # Start background tasks (Meth Snail's optimization, aggregation, etc.)
+                agent_tasks = await start_all_background_tasks()
+                background_tasks.extend(agent_tasks)
+                
+                metadata_task = asyncio.create_task(
+                    run_metadata_scheduler(engine, every_seconds=300)
+                )
+                background_tasks.append(metadata_task)
 
-        # Initialize AI Agents ONCE through AgentManager
-        import time
-        from app.core.database import AsyncSessionLocal
+                logger.info("🔄 Background tasks started:")
+                logger.info("  🐌 Metrics aggregation engine running")
+                logger.info("  🐌💨 Real-time optimization engine engaged")
+                logger.info("  🏥 System health monitor active")
+                logger.info("  📊 Memory bank metadata scheduler running")
+                logger.info("=" * 80)
+                logger.info("🎉 ALL SYSTEMS OPERATIONAL")
+                logger.info("=" * 80)
+            except Exception as e:
+                logger.error(f"❌ Failed to initialize agents: {e}", exc_info=True)
         
-        # Create a database session factory for the agent manager
-        # Note: AsyncSessionLocal is already a sessionmaker, we just need to call it
-        def db_session_factory():
-            """Factory to create new database sessions for agent memory service"""
-            # AsyncSessionLocal() returns a context manager, we need the actual session
-            session = AsyncSessionLocal()
-            return session
-        
-        agent_start = time.time()
-        agent_manager = await get_agent_manager(db_getter=db_session_factory)
-        agent_elapsed = time.time() - agent_start
-        active_agents = list(agent_manager.agents.keys()) if agent_manager.initialized else []
-        logger.info(f"🤖 AI Agents initialized in {agent_elapsed:.2f}s - Active: {active_agents}")
-        
-        # Start background tasks (Meth Snail's optimization, aggregation, etc.)
-        agent_tasks = await start_all_background_tasks()
-        background_tasks.extend(agent_tasks)
-        
-        metadata_task = asyncio.create_task(
-            run_metadata_scheduler(engine, every_seconds=300)
-        )
-        background_tasks.append(metadata_task)
-
-        logger.info("🔄 Background tasks started:")
-        logger.info("  🐌 Metrics aggregation engine running")
-        logger.info("  🐌💨 Real-time optimization engine engaged")
-        logger.info("  🏥 System health monitor active")
-        logger.info(" Memory bank metadata scheduler running")
+        # Start agent initialization in background - don't block startup
+        asyncio.create_task(initialize_agents_after_startup())
+        logger.info("⏳ Agent initialization scheduled (will complete in background)")
         
     except Exception as e:
         logger.error(f"❌ Failed to initialize Redis services: {str(e)}")
@@ -233,8 +251,9 @@ async def lifespan(app: FastAPI):
     # Shutdown logic
     logger.info("🛑 Shutting down System Rebellion application...")
     
-    # Cancel all background tasks gracefully
-    for task in background_tasks:
+    # Cancel all background tasks gracefully (from both global and app.state)
+    all_tasks = background_tasks + (app.state.background_tasks if hasattr(app.state, 'background_tasks') else [])
+    for task in all_tasks:
         try:
             task.cancel()
             await asyncio.wait_for(task, timeout=5.0)
@@ -249,8 +268,12 @@ async def lifespan(app: FastAPI):
             logger.info("🛑 Closed Redis connection")
     
     # Shutdown agent manager
-    agent_manager = await get_agent_manager()
-    await agent_manager.shutdown()
+    try:
+        agent_manager = await get_agent_manager()
+        await agent_manager.shutdown()
+        logger.info("🤖 Agent manager shut down")
+    except Exception as e:
+        logger.warning(f"⚠️ Error shutting down agent manager: {e}")
     
     logger.info("🐌 Background tasks stopped")
     logger.info("🧐 Sir Hawkington bids you farewell")

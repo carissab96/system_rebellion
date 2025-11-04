@@ -12,8 +12,8 @@ if os.path.exists(env_file):
     print(f"✅ [database.py] Loaded environment from: {env_file}")
 
 # Database URLs - PostgreSQL
-ASYNC_DATABASE_URL = os.getenv("DB_URL") or os.getenv("DATABASE_URL", "postgresql+asyncpg://carissa@localhost:5432/system_rebellion")
-SYNC_DATABASE_URL = os.getenv("SYNC_DATABASE_URL", "postgresql://carissa@localhost:5432/system_rebellion")
+ASYNC_DATABASE_URL = os.getenv("DB_URL") or os.getenv("DATABASE_URL", "postgresql+asyncpg://carissab@localhost:5432/system_rebellion")
+SYNC_DATABASE_URL = os.getenv("SYNC_DATABASE_URL", "postgresql://carissab@localhost:5432/system_rebellion")
 
 print(f"🔗 [database.py] Using database: {ASYNC_DATABASE_URL[:50]}...")
 
@@ -27,6 +27,18 @@ async_engine = create_async_engine(
     max_overflow=40,  # Allow up to 60 total connections
     pool_timeout=5,  # Fail fast if pool exhausted
     pool_recycle=3600  # Recycle connections after 1 hour
+)
+
+# Dedicated auth engine with reserved connections for critical auth operations
+auth_engine = create_async_engine(
+    ASYNC_DATABASE_URL,
+    echo=False,
+    future=True,
+    pool_pre_ping=True,
+    pool_size=5,  # Small dedicated pool for auth only
+    max_overflow=5,  # Allow up to 10 total auth connections
+    pool_timeout=2,  # Fast timeout for auth
+    pool_recycle=3600
 )
 sync_engine = create_engine(
     SYNC_DATABASE_URL,
@@ -42,6 +54,13 @@ sync_engine = create_engine(
 AsyncSessionLocal = sessionmaker(
     async_engine, 
     class_=AsyncSession, 
+    expire_on_commit=False
+)
+
+# Dedicated auth session maker
+AuthSessionLocal = sessionmaker(
+    auth_engine,
+    class_=AsyncSession,
     expire_on_commit=False
 )
 
@@ -72,6 +91,12 @@ async def init_models():
 async def get_async_db():
     async with AsyncSessionLocal() as session:
         yield session
+
+# Dedicated auth database getter with priority connection pool
+async def get_auth_db():
+    """Priority database connection for authentication - bypasses agent contention"""
+    async with AuthSessionLocal() as session:
+        yield session
 async def get_async_session():
     async with async_engine.connect() as conn:
         yield conn
@@ -88,7 +113,7 @@ def get_db_url() -> str:
     url = (
         os.getenv("DB_URL")
         or os.getenv("DATABASE_URL")
-        or "postgresql+asyncpg://rebellion_user:ChangeThisPassword123!@localhost:5432/system_rebellion"
+        or "postgresql+asyncpg://carissab:Garfield7734@localhost:5432/system_rebellion"
     )
     return url
     

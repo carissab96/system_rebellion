@@ -75,7 +75,7 @@ export const registerUser = createAsyncThunk(
     csrfToken: string 
   }) => {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout for registration
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout for registration
     
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
@@ -122,7 +122,7 @@ export const loginUser = createAsyncThunk(
   'auth/login',
   async ({ email, password, csrfToken }: { email: string; password: string; csrfToken: string }) => {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout for login
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout for login
     
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/token`, {

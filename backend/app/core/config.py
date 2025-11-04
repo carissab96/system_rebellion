@@ -44,7 +44,7 @@ class Settings(BaseSettings):
 
     # Database (accept both names)
     DB_URL: str = Field(
-        default="postgresql+asyncpg://carissa@localhost:5432/system_rebellion",
+        default="postgresql+asyncpg://carissab@localhost:5432/system_rebellion",
         validation_alias=AliasChoices("DB_URL", "DATABASE_URL"),
     )
 

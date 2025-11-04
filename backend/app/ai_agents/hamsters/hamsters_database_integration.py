@@ -65,8 +65,6 @@ class HamstersDatabaseIntegration:
     
     def __init__(self, db_getter=None):
         self.logger = logging.getLogger("Hamsters.Database")
-        self.engine = None
-        self._db_session_maker = None
         self.db_getter = db_getter
         self._initialized = False
         
@@ -74,40 +72,17 @@ class HamstersDatabaseIntegration:
         """Initialize database connection"""
         if self._initialized:
             return
+        
+        if not self.db_getter:
+            raise ValueError("db_getter is required - The Hamsters need beer AND a shared pool!")
             
         try:
-            db_config = self._get_database_config()
-            
-            if db_config['url'].startswith('postgresql'):
-                self.engine = create_async_engine(
-                    db_config['url'],
-                    echo=db_config.get('echo', False),
-                    pool_size=db_config.get('pool_size', 10),
-                    max_overflow=db_config.get('max_overflow', 20),
-                    pool_recycle=db_config.get('pool_recycle', 1800),
-                    pool_pre_ping=db_config.get('pool_pre_ping', True),
-                    poolclass=QueuePool
-                )
-            else:
-                # SQLite
-                self.engine = create_async_engine(
-                    db_config['url'],
-                    echo=db_config.get('echo', False),
-                    connect_args=db_config.get('connect_args', {}),
-                    poolclass=NullPool
-                )
-            
-            self._db_session_maker = sessionmaker(
-                self.engine, 
-                class_=AsyncSession, 
-                expire_on_commit=False
-            )
+            # Verify db_getter works
+            async for session in self.db_getter():
+                break
             
             self._initialized = True
-            self.logger.info("🐹 Database integration initialized with beer-powered efficiency")
-
-            await self.engine.dispose()
-            self.logger.info("Database connection closed")
+            self.logger.info("🐹🍺 Database integration initialized using shared connection pool (beer-powered efficiency!)")
             
         except Exception as e:
             self.logger.error(f"🐹💥 Failed to initialize database: {str(e)}")

@@ -53,16 +53,20 @@ class VIC20DatabaseIntegration:
     for patterns, learning interactions, and pinned memories
     """
     
-    def __init__(self):
-        self.engine: Optional[AsyncEngine] = None
+    def __init__(self, db_getter=None):
+        self.db_getter = db_getter
         self._initialized = False
         
     async def initialize(self):
         """Initialize database connection"""
         if not self._initialized:
-            db_url = get_db_url()
-            self.engine = create_async_engine(db_url)
+            if not self.db_getter:
+                raise ValueError("db_getter is required - VIC-20 Sage uses the shared pool!")
+            # Verify db_getter works
+            async for session in self.db_getter():
+                break
             self._initialized = True
+            logger.info("🕹️✨ Database integration initialized using shared connection pool (RETRO WISDOM!)")
     
     async def ensure_initialized(self):
         """Ensure database is initialized"""
@@ -113,7 +117,7 @@ class VIC20DatabaseIntegration:
         now = utc_now()
         
         try:
-            async with AsyncSession(self.engine) as session:
+            async for session in self.db_getter():
                 # === EXTRACT REAL DATA (NO FALLBACKS) ===
                 
                 # Build coordination pattern

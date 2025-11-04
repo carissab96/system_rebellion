@@ -58,28 +58,25 @@ def normalize_hamster_names(names):
 class StickDatabaseIntegration:
     """Database integration for The Stick's anxiety-enhanced eidetic memory - NOW CENTRALIZED"""
     
-    def __init__(self):
-        self.engine = None
-        self.session_factory = None
+    def __init__(self, db_getter=None):
+        self.db_getter = db_getter
         self.websocket_anxiety_level = 25.0  # Starting nervous
     
     async def initialize(self):
         """Initialize The Stick's database connection"""
-        db_url = os.getenv('DATABASE_URL', 'postgresql+asyncpg://stick:anxious@localhost/system_rebellion')
+        if not self.db_getter:
+            raise ValueError("db_getter is required - The Stick is too anxious to create his own engine!")
         
-        self.engine = create_async_engine(
-            db_url,
-            echo=False,  # The Stick works quietly when anxious
-            pool_size=int(os.getenv('DB_POOL_SIZE', '10')),
-            max_overflow=int(os.getenv('DB_MAX_OVERFLOW', '20')),
-            pool_recycle=int(os.getenv('DB_POOL_RECYCLE', '1800')),
-            pool_pre_ping=True
-        )
-        self.session_factory = sessionmaker(
-            bind=self.engine,
-            class_=AsyncSession,
-            expire_on_commit=False
-        )
+        # Verify db_getter works by testing a connection
+        try:
+            async for session in self.db_getter():
+                # Just verify we can get a session
+                break
+        except Exception as e:
+            logger.error(f"📏❌ Failed to verify database connection: {e}")
+            raise
+        
+        logger.info("📏✨ Database integration initialized using shared connection pool (anxiety level: manageable)")
     
     # === DUAL-WRITE METHOD 1: STORE COMPLIANCE VIOLATION ===
     
@@ -114,7 +111,7 @@ class StickDatabaseIntegration:
         if not violation.timestamp:
             raise ValueError("📋💥 Missing timestamp - cannot store without real timestamp")
         
-        async with self.session_factory() as session:
+        async for session in self.db_getter():
             try:
                 # Generate IDs
                 agent_memory_id = str(uuid.uuid4())
@@ -261,7 +258,7 @@ class StickDatabaseIntegration:
     
     async def store_anxiety_event(self, event: AnxietyEvent):
         """Store anxiety event in central memory bank - The Stick tracks EVERYTHING"""
-        async with self.session_factory() as session:
+        async for session in self.db_getter():
             try:
                 memory_entry = CentralMemoryBank(
                     memory_id=str(uuid.uuid4()),
@@ -330,7 +327,7 @@ class StickDatabaseIntegration:
         if alert.anxiety_multiplier is None:
             raise ValueError("📋💥 Missing anxiety_multiplier - cannot store without real anxiety data")
         
-        async with self.session_factory() as session:
+        async for session in self.db_getter():
             try:
                 # Generate IDs
                 agent_memory_id = str(uuid.uuid4())
@@ -477,7 +474,7 @@ class StickDatabaseIntegration:
     
     async def update_paper_bag_inventory(self, inventory_change: int, reason: str):
         """Update paper bag inventory in central memory bank - Critical for anxiety management"""
-        async with self.session_factory() as session:
+        async for session in self.db_getter():
             try:
                 memory_entry = CentralMemoryBank(
                     memory_id=str(uuid.uuid4()),
@@ -602,7 +599,7 @@ class StickDatabaseIntegration:
         if observation.get('hamster_activity', False):
             anxiety_triggers.append('HAMSTER_DETECTED')
         
-        async with self.session_factory() as session:
+        async for session in self.db_getter():
             try:
                 current_time = datetime.now(timezone.utc)
                 
@@ -661,7 +658,7 @@ class StickDatabaseIntegration:
     
     async def _get_daily_consumption(self) -> int:
         """Get today's paper bag consumption from central memory bank"""
-        async with self.session_factory() as session:
+        async for session in self.db_getter():
             try:
                 # Use UTC for consistent day boundaries
                 today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
@@ -685,7 +682,7 @@ class StickDatabaseIntegration:
     async def store_stick_decision(self, user_id: str, decision: StickDecision):
         """Store The Stick's decision in central memory bank with anxiety context"""
         
-        async with self.session_factory() as session:
+        async for session in self.db_getter():
             try:
                 current_time = datetime.now(timezone.utc)
                 
@@ -748,7 +745,7 @@ class StickDatabaseIntegration:
 
     async def store_user_pattern(self, user_id: str, pattern: UserPattern):
         """Store learned user pattern in central memory bank - The Stick NEVER forgets patterns!"""
-        async with self.session_factory() as session:
+        async for session in self.db_getter():
             try:
                 current_time = utc_now()
             
@@ -907,7 +904,7 @@ class StickDatabaseIntegration:
                 }
             )
             
-            async with self.session_factory() as session:
+            async for session in self.db_getter():
                 session.add(promotion_memory)
                 await session.commit()
                 
@@ -964,7 +961,7 @@ class StickDatabaseIntegration:
                 }
             )
             
-            async with self.session_factory() as session:
+            async for session in self.db_getter():
                 session.add(share_memory)
                 await session.commit()
                 
@@ -975,7 +972,7 @@ class StickDatabaseIntegration:
 
     async def pin_critical_memory(self, user_id: str, memory_data: Dict[str, Any], source_memory_id: str):
         """Pin critical memories that must NEVER be forgotten"""
-        async with self.session_factory() as session:
+        async for session in self.db_getter():
             try:
                 # Determine memory type and importance
                 memory_type = 'anxiety_pattern'
@@ -1043,7 +1040,7 @@ class StickDatabaseIntegration:
 
     async def contribute_to_metadata_rollup(self) -> Dict[str, int]:
         """Contribute The Stick's metrics to the metadata rollup"""
-        async with self.session_factory() as session:
+        async for session in self.db_getter():
             try:
                 # Get counts for the last hour
                 hour_ago = utc_now() - timedelta(hours=1)
@@ -1087,7 +1084,7 @@ class StickDatabaseIntegration:
 
     async def get_user_patterns(self, user_id: str, min_confidence: float = 0.7) -> List[UserPattern]:
         """Retrieve learned user patterns from central memory bank"""
-        async with self.session_factory() as session:
+        async for session in self.db_getter():
             try:
                 query = select(CentralMemoryBank).where(
                     and_(
@@ -1125,7 +1122,7 @@ class StickDatabaseIntegration:
 
     async def analyze_and_learn_patterns(self, user_id: str, min_observations: int = 10) -> Optional[UserPattern]:
         """Analyze observations and learn patterns - The Stick's obsessive pattern recognition"""
-        async with self.session_factory() as session:
+        async for session in self.db_getter():
             try:
                 # Get recent observations
                 cutoff = utc_now() - timedelta(days=7)  # Last week
@@ -1307,7 +1304,7 @@ class StickDatabaseIntegration:
     async def store_compliance_violation(self, user_id: str, violation: ComplianceViolation):
         """Store compliance violation in central memory bank with anxiety tracking"""
         
-        async with self.session_factory() as session:
+        async for session in self.db_getter():
             try:
                 current_time = datetime.now(timezone.utc)
                 
@@ -1380,7 +1377,7 @@ class StickDatabaseIntegration:
     async def get_anxiety_analytics(self, user_id: str, days: int = 7) -> Dict[str, Any]:
         """Get anxiety analytics for The Stick from central memory bank"""
         
-        async with self.session_factory() as session:
+        async for session in self.db_getter():
             try:
                 cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
                 
@@ -1506,7 +1503,7 @@ class StickDatabaseIntegration:
     async def get_hamster_encounter_history(self, user_id: str, days: int = 30) -> List[Dict[str, Any]]:
         """Get hamster encounter history from central memory bank - The Stick's nightmare log"""
         
-        async with self.session_factory() as session:
+        async for session in self.db_getter():
             try:
                 cutoff_date = utc_now() - timedelta(days=days)
                 
@@ -1546,7 +1543,7 @@ class StickDatabaseIntegration:
     async def check_paper_bag_supply(self) -> PaperBagInventory:
         """Check current paper bag inventory status from central memory bank"""
         
-        async with self.session_factory() as session:
+        async for session in self.db_getter():
             try:
                 # Get all consumption (negative values)
                 consumed_result = await session.execute(
@@ -1625,7 +1622,7 @@ class StickDatabaseIntegration:
     async def recall_everything(self, filters: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
         """The Stick's eidetic memory - recall EVERYTHING from central memory bank"""
         
-        async with self.session_factory() as session:
+        async for session in self.db_getter():
             try:
                 query = select(CentralMemoryBank).where(
                     CentralMemoryBank.agent_name == AGENT_NAME
@@ -1667,7 +1664,7 @@ class StickDatabaseIntegration:
     async def get_stick_performance_metrics(self, user_id: str) -> Dict[str, Any]:
         """Get The Stick's performance metrics from central memory bank with anxiety context"""
         
-        async with self.session_factory() as session:
+        async for session in self.db_getter():
             try:
                 # Get decision count by anxiety level
                 decisions = await session.execute(
@@ -1798,7 +1795,7 @@ class StickDatabaseIntegration:
     async def cleanup_old_observations(self, days_to_keep: int = 90):
         """Clean up old observations from central memory bank - but The Stick NEVER forgets critical events"""
         
-        async with self.session_factory() as session:
+        async for session in self.db_getter():
             try:
                 cutoff_date = datetime.now(timezone.utc) - timedelta(days=days_to_keep)
                 
@@ -1837,7 +1834,7 @@ class StickDatabaseIntegration:
 
     async def check_for_hamster_memories(self, user_id: str) -> List[Dict[str, Any]]:
         """Quick check for any hamster-related memories - The Stick's primary concern!"""
-        async with self.session_factory() as session:
+        async for session in self.db_getter():
             try:
                 # Look for hamster memories in both CMB and pinned memories
                 cmb_hamsters = await session.execute(

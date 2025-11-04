@@ -58,21 +58,38 @@ class MethSnailDatabaseIntegration:
     Now with full pattern learning capabilities!
     """
     
-    def __init__(self, session: AsyncSession = None):
-        """Initialize with an AsyncSession instance"""
-        self.session = session
-        self._initialized = bool(session)
+    def __init__(self, db_getter=None):
+        """Initialize with db_getter for shared pool"""
+        self.db_getter = db_getter
+        self._initialized = False
         self.logger = logging.getLogger("MethSnail.Database.Integration")
         self.agent_name = AGENT_NAME
 
     async def initialize(self):
         """Initialize database connection if not already done"""
-        if self._initialized and self.session:
-            self.logger.info("Database integration already initialized")
+        if self._initialized:
             return
+        
+        if not self.db_getter:
+            raise ValueError("db_getter is required - Meth Snail optimizes the SHARED pool!")
             
-        self.logger.error("No database session provided")
-        raise RuntimeError("Database session required for initialization")
+        try:
+            # Verify db_getter works
+            async for session in self.db_getter():
+                break
+            self._initialized = True
+            self.logger.info("🐌💨 Database integration initialized using shared connection pool (OPTIMIZED!)")
+        except Exception as e:
+            self.logger.error(f"🐌💥 Failed to initialize: {e}")
+            raise
+    
+    @property
+    def session(self):
+        """
+        Legacy property for backwards compatibility.
+        Methods should be refactored to use async for session in self.db_getter()
+        """
+        raise RuntimeError("Direct session access not supported - use async for session in self.db_getter()")
     
     # === DUAL-WRITE METHOD 1: STORE OPTIMIZATION DECISION ===
     

@@ -46,40 +46,41 @@ async def run_metrics_aggregation():
             
             logger.info(f"🐌 Meth Snail beginning aggregation for hour: {previous_hour}")
             
-            db_gen = get_async_db()
-            db = await db_gen.__anext__()
-            try:
-                # Get all users with metrics
-                users_query = select(User)
-                users_result = await db.execute(users_query)
-                users = users_result.scalars().all()
-                
-                aggregated_count = 0
-                for user in users:
-                    result = await aggregation_service.aggregate_hourly_metrics(
-                        db, str(user.id), previous_hour
-                    )
-                    if result:
-                        aggregated_count += 1
+            # Use proper async context manager for database session
+            async for db in get_async_db():
+                try:
+                    # Get all users with metrics
+                    users_query = select(User)
+                    users_result = await db.execute(users_query)
+                    users = users_result.scalars().all()
                     
-                    logger.info(f"🐌 Meth Snail aggregated metrics for {aggregated_count} users")
-                    
-                    # Cleanup old raw metrics (keep 7 days by default)
-                    deleted_count = await aggregation_service.cleanup_old_raw_metrics(db)
-                    logger.info(f"🐌 Meth Snail cleaned up {deleted_count} old raw metrics")
-                    
-                    # Check if we should do daily rollups
-                    if now.hour == 0:  # Midnight
-                        logger.info("🐌 Meth Snail performing daily rollups...")
-                        await aggregation_service.create_daily_rollups(
-                            db, 
-                            now.date() - timedelta(days=1)
+                    aggregated_count = 0
+                    for user in users:
+                        result = await aggregation_service.aggregate_hourly_metrics(
+                            db, str(user.id), previous_hour
                         )
-                    
-            except Exception as e:
-                logger.error(f"🐌 Meth Snail aggregation error: {str(e)}", exc_info=True)
-            finally:
-                await db_gen.aclose()  # Exit the async for loop
+                        if result:
+                            aggregated_count += 1
+                        
+                        logger.info(f"🐌 Meth Snail aggregated metrics for {aggregated_count} users")
+                        
+                        # Cleanup old raw metrics (keep 7 days by default)
+                        deleted_count = await aggregation_service.cleanup_old_raw_metrics(db)
+                        logger.info(f"🐌 Meth Snail cleaned up {deleted_count} old raw metrics")
+                        
+                        # Check if we should do daily rollups
+                        if now.hour == 0:  # Midnight
+                            logger.info("🐌 Meth Snail performing daily rollups...")
+                            await aggregation_service.create_daily_rollups(
+                                db, 
+                                now.date() - timedelta(days=1)
+                            )
+                        
+                except Exception as e:
+                    logger.error(f"🐌 Meth Snail aggregation error: {str(e)}", exc_info=True)
+                finally:
+                    # Context manager handles cleanup automatically
+                    break  # Exit the async for loop after one iteration
                     
         except asyncio.CancelledError:
             logger.info("🐌 Meth Snail received shutdown signal, cleaning up...")
@@ -106,79 +107,80 @@ async def run_realtime_optimization():
     
     while True:
         try:
-            db_gen = get_async_db()
-            db = await db_gen.__anext__()
-            try:
-                # Get all active users
-                users_query = select(User).filter(User.is_active == True)
-                users_result = await db.execute(users_query)
-                active_users = users_result.scalars().all()
-                    
-                for user in active_users:
-                    # Get recent metrics for this user (last 5 minutes)
-                    recent_metrics_query = select(SystemMetrics).filter(
-                        SystemMetrics.user_id == str(user.id),
-                        SystemMetrics.timestamp >= datetime.utcnow() - timedelta(minutes=5)
-                    ).order_by(SystemMetrics.timestamp.desc()).limit(10)
+            # Use proper async context manager for database session
+            async for db in get_async_db():
+                try:
+                    # Get all active users
+                    users_query = select(User).filter(User.is_active == True)
+                    users_result = await db.execute(users_query)
+                    active_users = users_result.scalars().all()
                         
-                    result = await db.execute(recent_metrics_query)
-                    recent_metrics = result.scalars().all()
-                        
-                    if recent_metrics:
-                        # Get the latest metric
-                        latest_metric = recent_metrics[0]
+                    for user in active_users:
+                        # Get recent metrics for this user (last 5 minutes)
+                        recent_metrics_query = select(SystemMetrics).filter(
+                            SystemMetrics.user_id == str(user.id),
+                            SystemMetrics.timestamp >= datetime.utcnow() - timedelta(minutes=5)
+                        ).order_by(SystemMetrics.timestamp.desc()).limit(10)
                             
-                        # Extract metrics data from additional_metrics JSON
-                        metrics_data = latest_metric.additional_metrics or {}
+                        result = await db.execute(recent_metrics_query)
+                        recent_metrics = result.scalars().all()
                             
-                        # Prepare historical data for pattern analysis
-                        historical_data = [
-                                {
-                                    'cpu_usage': m.cpu_usage,
-                                    'memory_usage': m.memory_usage,
-                                    'disk_usage': m.disk_usage,
-                                    'timestamp': m.timestamp
+                        if recent_metrics:
+                            # Get the latest metric
+                            latest_metric = recent_metrics[0]
+                                
+                            # Extract metrics data from additional_metrics JSON
+                            metrics_data = latest_metric.additional_metrics or {}
+                                
+                            # Prepare historical data for pattern analysis
+                            historical_data = [
+                                    {
+                                        'cpu_usage': m.cpu_usage,
+                                        'memory_usage': m.memory_usage,
+                                        'disk_usage': m.disk_usage,
+                                        'timestamp': m.timestamp
+                                    }
+                                    for m in recent_metrics
+                                ]
+                                
+                            # Let Meth Snail analyze through the agent manager
+                            # This will automatically trigger Meth Snail's decision engine
+                            user_context = {
+                                'user_id': str(user.id),
+                                'email': user.email,
+                                'historical_data': historical_data
                                 }
-                                for m in recent_metrics
-                            ]
-                            
-                        # Let Meth Snail analyze through the agent manager
-                        # This will automatically trigger Meth Snail's decision engine
-                        user_context = {
-                            'user_id': str(user.id),
-                            'email': user.email,
-                            'historical_data': historical_data
-                            }
-                            
-                        # Process through agents (Meth Snail will analyze if registered)
-                        enhanced_metrics = await agent_manager.process_metrics_through_triage_engine(
-                            metrics_data,
-                            user_context
-                        )
-                            
-                        # Check if Meth Snail made any optimization decisions
-                        if 'meth_snail' in enhanced_metrics:
-                            meth_decision = enhanced_metrics['meth_snail']
                                 
-                            # If urgent optimizations are needed, execute them
-                            if meth_decision.get('urgency') == 'immediate':
-                                logger.warning(
-                                    f"🐌⚡ Meth Snail executing IMMEDIATE optimizations "
-                                    f"for user {user.email}: {meth_decision.get('rationale')}"
-                                )
-                                # TODO: Execute optimization actions
-                                # This would interface with system optimization APIs
+                            # Process through agents (Meth Snail will analyze if registered)
+                            enhanced_metrics = await agent_manager.process_metrics_through_triage_engine(
+                                metrics_data,
+                                user_context
+                            )
                                 
-                            elif meth_decision.get('urgency') == 'soon':
-                                logger.info(
-                                    f"🐌 Meth Snail planning optimizations "
-                                    f"for user {user.email}: {meth_decision.get('rationale')}"
-                                )
-                            
-            except Exception as e:
-                logger.error(f"🐌 Error in real-time optimization for users: {str(e)}")
-            finally:
-                await db_gen.aclose()  # Exit the async for loop
+                            # Check if Meth Snail made any optimization decisions
+                            if 'meth_snail' in enhanced_metrics:
+                                meth_decision = enhanced_metrics['meth_snail']
+                                    
+                                # If urgent optimizations are needed, execute them
+                                if meth_decision.get('urgency') == 'immediate':
+                                    logger.warning(
+                                        f"🐌⚡ Meth Snail executing IMMEDIATE optimizations "
+                                        f"for user {user.email}: {meth_decision.get('rationale')}"
+                                    )
+                                    # TODO: Execute optimization actions
+                                    # This would interface with system optimization APIs
+                                    
+                                elif meth_decision.get('urgency') == 'soon':
+                                    logger.info(
+                                        f"🐌 Meth Snail planning optimizations "
+                                        f"for user {user.email}: {meth_decision.get('rationale')}"
+                                    )
+                                
+                except Exception as e:
+                    logger.error(f"🐌 Error in real-time optimization for users: {str(e)}")
+                finally:
+                    # Context manager handles cleanup automatically
+                    break  # Exit the async for loop after one iteration
             
             # Wait before next optimization check
             await asyncio.sleep(optimization_interval)

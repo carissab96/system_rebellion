@@ -9,11 +9,12 @@ import uuid
 import logging
 import secrets
 import platform
+import asyncio
 
 from jose import jwt, JWTError
 from fastapi.security import OAuth2PasswordRequestForm
 from app.api.deps import get_current_user   
-from app.core.database import get_db, get_async_db
+from app.core.database import get_db, get_async_db, get_auth_db
 from app.core.cache import auth_cache
 from app.models.user import User
 from app.schemas.user import UserCreate
@@ -189,7 +190,7 @@ async def save_user(db, user):
 @router.post("/register", response_model=Dict)
 async def register_user(
     user_data: UserCreate,
-    db: Union[Session, AsyncSession] = Depends(get_db)
+    db: Union[Session, AsyncSession] = Depends(get_auth_db)  # Use dedicated auth pool
 ):
     """
     User Registration Endpoint
@@ -326,8 +327,9 @@ class LoginRequest(BaseModel):
 
 @router.post("/token", response_model=Token)
 async def login_for_access_token(
+    request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(), 
-    db: Union[Session, AsyncSession] = Depends(get_async_db)
+    db: Union[Session, AsyncSession] = Depends(get_auth_db)  # Use dedicated auth pool
 ) -> Token:
     """
     The Meth Snail's Authentication Protocol
@@ -348,12 +350,15 @@ async def login_for_access_token(
     
     if not user:
         logging.error(f"❌ User not found: {form_data.username}")
-        # Log failed attempt
-        log_service = await LogService.get_instance()
-        log_service.add_auth_log(
-            email=form_data.username,
-            success=False
-        )
+        # Log failed attempt in background (non-blocking)
+        async def log_auth_failure():
+            try:
+                log_service = await LogService.get_instance()
+                log_service.add_auth_log(email=form_data.username, success=False)
+            except Exception as e:
+                logging.warning(f"Failed to log auth failure: {e}")
+        
+        asyncio.create_task(log_auth_failure())
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
@@ -367,12 +372,15 @@ async def login_for_access_token(
     if not verify_password(form_data.password, user.hashed_password):
         logging.info(f"⏱️ Password verification: {(time.time() - password_start)*1000:.2f}ms")
         logging.error(f"❌ Invalid password for user: {user.email}")
-        # Log failed attempt
-        log_service = await LogService.get_instance()
-        log_service.add_auth_log(
-            email=user.email,
-            success=False
-        )
+        # Log failed attempt in background (non-blocking)
+        async def log_auth_failure():
+            try:
+                log_service = await LogService.get_instance()
+                log_service.add_auth_log(email=user.email, success=False)
+            except Exception as e:
+                logging.warning(f"Failed to log auth failure: {e}")
+        
+        asyncio.create_task(log_auth_failure())
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
@@ -392,12 +400,15 @@ async def login_for_access_token(
     refresh_token = create_refresh_token(data={"sub": user.email})
     logging.info(f"⏱️ Token creation: {(time.time() - token_start)*1000:.2f}ms")
     
-    # Log successful authentication
-    log_service = await LogService.get_instance()
-    log_service.add_auth_log(
-        email=user.email,
-        success=True
-    )
+    # Log successful authentication in background (non-blocking)
+    async def log_auth_success():
+        try:
+            log_service = await LogService.get_instance()
+            log_service.add_auth_log(email=user.email, success=True)
+        except Exception as e:
+            logging.warning(f"Failed to log auth success: {e}")
+    
+    asyncio.create_task(log_auth_success())  # Run in background, don't wait
     
     # Update last login (prepare changes but don't wait for commit)
     user.failed_login_attempts = 0

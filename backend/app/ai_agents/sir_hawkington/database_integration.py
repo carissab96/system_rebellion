@@ -49,10 +49,8 @@ class HawkingtonDatabaseIntegration:
     """
     
     def __init__(self, db_getter=None):
-        self.engine = None
-        self.session_factory = None
-        self._initialized = False
         self.db_getter = db_getter
+        self._initialized = False
     
     def _get_database_config(self) -> dict:
         """Get database configuration based on environment"""
@@ -84,38 +82,21 @@ class HawkingtonDatabaseIntegration:
         """Initialize Sir Hawkington's distinguished database connection"""
         if self._initialized:
             return
-            
-        config = self._get_database_config()
-    
-        engine_kwargs = {
-            'echo': config.get('echo', False)
-        }
-    
-        # Only add pool settings if they exist (PostgreSQL only)
-        if 'pool_size' in config:
-            engine_kwargs['pool_size'] = config['pool_size']
-        if 'max_overflow' in config:
-            engine_kwargs['max_overflow'] = config['max_overflow']
-        if 'pool_recycle' in config:
-            engine_kwargs['pool_recycle'] = config['pool_recycle']
-        if 'pool_pre_ping' in config:
-            engine_kwargs['pool_pre_ping'] = config['pool_pre_ping']
-        if 'connect_args' in config:
-            engine_kwargs['connect_args'] = config['connect_args']
-    
-        self.engine = create_async_engine(
-            config['url'],
-            **engine_kwargs
-        )
-    
-        self.session_factory = sessionmaker(
-            bind=self.engine,
-            class_=AsyncSession,
-            expire_on_commit=False
-        )
+        
+        if not self.db_getter:
+            raise ValueError("db_getter is required - Sir Hawkington refuses to create his own engine!")
+        
+        # Verify db_getter works by testing a connection
+        try:
+            async for session in self.db_getter():
+                # Just verify we can get a session
+                break
+        except Exception as e:
+            logger.error(f"🧐❌ Failed to verify database connection: {e}")
+            raise
         
         self._initialized = True
-        logger.info("🧐✨ Database integration initialized with DUAL-WRITE architecture")
+        logger.info("🧐✨ Database integration initialized using shared connection pool")
 
     # === DUAL-WRITE METHOD 1: STORE DECISION ===
     
@@ -150,7 +131,7 @@ class HawkingtonDatabaseIntegration:
         if not decision.timestamp:
             raise ValueError("🧐💥 Missing timestamp - cannot store without real timestamp")
         
-        async with self.session_factory() as session:
+        async for session in self.db_getter():
             try:
                 # Generate IDs
                 agent_memory_id = str(uuid.uuid4())
@@ -324,7 +305,7 @@ class HawkingtonDatabaseIntegration:
         if not triage_data.get('routing_decision'):
             raise ValueError("🧐💥 Missing routing_decision - cannot store without real routing")
         
-        async with self.session_factory() as session:
+        async for session in self.db_getter():
             try:
                 # Generate IDs
                 agent_memory_id = str(uuid.uuid4())
@@ -507,7 +488,7 @@ class HawkingtonDatabaseIntegration:
         if not incident_data.get('reason'):
             raise ValueError("🧐💥 Missing yeet reason - cannot store monocle yeet without explanation")
         
-        async with self.session_factory() as session:
+        async for session in self.db_getter():
             try:
                 # Generate IDs
                 agent_memory_id = str(uuid.uuid4())
@@ -659,7 +640,7 @@ class HawkingtonDatabaseIntegration:
     
     async def get_historical_decisions(self, user_id: str, days: int = 7) -> List[Dict[str, Any]]:
         """Get Sir Hawkington's historical decisions from central memory bank"""
-        async with self.session_factory() as session:
+        async for session in self.db_getter():
             try:
                 cutoff_date = utc_now() - timedelta(days=days)
                 
@@ -698,7 +679,7 @@ class HawkingtonDatabaseIntegration:
         Get triage statistics from AGENT TABLE (structured queries!)
         NO FAKE DATA: Real stats or None
         """
-        async with self.session_factory() as session:
+        async for session in self.db_getter():
             try:
                 cutoff_date = utc_now() - timedelta(days=days)
                 
@@ -793,7 +774,7 @@ class HawkingtonDatabaseIntegration:
         Get Sir Hawkington's performance metrics from AGENT TABLE
         NO FAKE DATA: Real metrics or None
         """
-        async with self.session_factory() as session:
+        async for session in self.db_getter():
             try:
                 # Query agent table for all memory categories
                 query = select(SirHawkingtonMemoryBank).where(
@@ -859,7 +840,7 @@ class HawkingtonDatabaseIntegration:
         observation_data: Dict[str, Any]
     ) -> None:
         """Store user behavior observation for pattern learning"""
-        async with self.session_factory() as session:
+        async for session in self.db_getter():
             try:
                 memory_entry = CentralMemoryBank(
                     memory_id=str(uuid.uuid4()),
@@ -892,7 +873,7 @@ class HawkingtonDatabaseIntegration:
         min_observations: int = 25
     ) -> Optional[Dict[str, Any]]:
         """Analyze triage patterns and learn user preferences - NO FAKE DATA"""
-        async with self.session_factory() as session:
+        async for session in self.db_getter():
             try:
                 cutoff = utc_now() - timedelta(days=30)
                 
@@ -1159,7 +1140,7 @@ class HawkingtonDatabaseIntegration:
     
     async def contribute_to_metadata_rollup(self) -> Dict[str, int]:
         """Contribute Hawkington's memory counts for metadata rollup"""
-        async with self.session_factory() as session:
+        async for session in self.db_getter():
             try:
                 # Count from AGENT TABLE (structured!)
                 result = await session.execute(
@@ -1483,7 +1464,7 @@ class HawkingtonDatabaseIntegration:
         Clean up old data with aristocratic precision - keep important memories
         NO FAKE DATA: Only removes low-priority, non-critical REAL memories
         """
-        async with self.session_factory() as session:
+        async for session in self.db_getter():
             try:
                 cutoff_date = utc_now() - timedelta(days=days_to_keep)
                 
@@ -1531,7 +1512,7 @@ class HawkingtonDatabaseIntegration:
         NO FAKE DATA: Real connection status or error
         """
         try:
-            async with self.session_factory() as session:
+            async for session in self.db_getter():
                 # Simple health check query
                 result = await session.execute(text("SELECT 1"))
                 result.scalar()
