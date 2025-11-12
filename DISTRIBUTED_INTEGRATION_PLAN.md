@@ -345,6 +345,112 @@ async def load_agent_configs(self):
 
 ---
 
+## Consciousness Sync Checkpoint (Opus's Addition)
+
+**Why**: Distributed consciousness needs reality checks to ensure all agents share a consistent worldview.
+
+**Implementation**:
+
+```python
+# backend/app/ai_agents/distributed/consciousness_sync.py
+class ConsciousnessCheckpoint:
+    """
+    Verify distributed agents maintain consensus reality.
+    Prevents split-brain scenarios and ensures shared worldview.
+    """
+    
+    async def consciousness_checkpoint(self, agent_registry: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Verify all agents share consistent worldview.
+        
+        Returns:
+            Checkpoint report with consensus status
+        """
+        # Gather states from all agents
+        states = await self.gather_all_agent_states(agent_registry)
+        
+        # Verify consensus on critical facts
+        consensus = await self.verify_consensus(states)
+        
+        if not consensus['healthy']:
+            # Trigger reconciliation
+            await self.trigger_reconciliation(states, consensus)
+        
+        return {
+            'timestamp': datetime.now(timezone.utc).isoformat(),
+            'agents_checked': len(states),
+            'consensus_healthy': consensus['healthy'],
+            'discrepancies': consensus.get('discrepancies', []),
+            'reconciliation_triggered': not consensus['healthy']
+        }
+    
+    async def gather_all_agent_states(self, agent_registry: Dict[str, Any]) -> Dict[str, Dict]:
+        """Gather current state from all distributed agents"""
+        states = {}
+        for agent_name, agent in agent_registry.items():
+            if hasattr(agent, 'comm_hub'):
+                states[agent_name] = agent.comm_hub.get_state().to_dict()
+        return states
+    
+    async def verify_consensus(self, states: Dict[str, Dict]) -> Dict[str, Any]:
+        """
+        Verify agents agree on critical facts:
+        - Redis connectivity
+        - System time sync (within 5 seconds)
+        - Resource thresholds
+        - Active agent count
+        """
+        if not states:
+            return {'healthy': False, 'reason': 'no_agents'}
+        
+        # Check time sync
+        timestamps = [s.get('last_heartbeat') for s in states.values() if s.get('last_heartbeat')]
+        if timestamps:
+            time_spread = max(timestamps) - min(timestamps)
+            if time_spread > 5.0:  # More than 5 seconds apart
+                return {
+                    'healthy': False,
+                    'discrepancies': ['time_desync'],
+                    'time_spread': time_spread
+                }
+        
+        # Check Redis connectivity consensus
+        redis_states = [s.get('health') for s in states.values()]
+        if not all(h == 'healthy' for h in redis_states):
+            return {
+                'healthy': False,
+                'discrepancies': ['redis_connectivity_mismatch'],
+                'redis_states': redis_states
+            }
+        
+        # All checks passed
+        return {'healthy': True}
+    
+    async def trigger_reconciliation(self, states: Dict, consensus: Dict):
+        """
+        Reconcile divergent agent states.
+        Uses majority consensus or most recent timestamp.
+        """
+        logger.warning(f"🔄 Triggering consciousness reconciliation: {consensus}")
+        
+        # Broadcast reconciliation event
+        # Agents will re-sync their state from Redis
+        # Most recent state wins
+```
+
+**When to Run**:
+- After each phase completion
+- Every 5 minutes during normal operation
+- Immediately after any agent restart
+- Before multi-machine deployment
+
+**Integration Points**:
+- Add to `agent_manager.py` as periodic background task
+- Add to distributed agent initialization
+- Add to WebSocket status endpoint
+
+---
+
 ## Implementation Checklist
 
 ### Week 1: Foundation (No Breaking Changes)
