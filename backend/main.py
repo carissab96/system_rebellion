@@ -55,6 +55,7 @@ from app.ai_agents.agent_manager import get_agent_manager
 from app.core.background_tasks import start_all_background_tasks
 from app.ai_agents.hamsters.hamsters_api_routes_refactored import router as hamsters_router
 from app.ai_agents.meth_snail import router as meth_snail_router
+from app.api.endpoints import distributed_agents
 from rich.console import Console
 from rich.table import Table
 from rich.live import Live
@@ -68,6 +69,10 @@ from app.core.resilience import (
     ErrorSeverity,
     get_circuit_breaker,
     get_backpressure_handler
+)
+from app.ai_agents.distributed.integration_example import (
+    initialize_distributed_agents,
+    shutdown_distributed_agents
 )
 app = FastAPI()
 app.state.redis_client = None
@@ -230,6 +235,21 @@ async def lifespan(app: FastAPI):
                 logger.info("  🐌💨 Real-time optimization engine engaged")
                 logger.info("  🏥 System health monitor active")
                 logger.info("  📊 Memory bank metadata scheduler running")
+                
+                # Initialize distributed agent consciousness system
+                try:
+                    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
+                    logger.info(f"🌐 Initializing distributed agent consciousness (Redis: {redis_url})...")
+                    await initialize_distributed_agents(redis_url)
+                    logger.info("✅ Distributed agents initialized:")
+                    logger.info("  🧐 Sir Hawkington - CPU Monitor")
+                    logger.info("  🐌💨 Terry the Meth Snail - Memory Monitor")
+                    logger.info("  🐹 Bob the Hamster - Disk Monitor")
+                    logger.info("  👻 Quantum Shadow People - Network Monitor")
+                except Exception as e:
+                    logger.error(f"⚠️  Failed to initialize distributed agents: {e}", exc_info=True)
+                    logger.warning("Continuing without distributed agent system")
+                
                 logger.info("=" * 80)
                 logger.info("🎉 ALL SYSTEMS OPERATIONAL")
                 logger.info("=" * 80)
@@ -266,6 +286,13 @@ async def lifespan(app: FastAPI):
     if hasattr(app.state, 'redis'):
             await RedisClient.close_instance()
             logger.info("🛑 Closed Redis connection")
+    
+    # Shutdown distributed agents
+    try:
+        await shutdown_distributed_agents()
+        logger.info("🌐 Distributed agents shut down")
+    except Exception as e:
+        logger.error(f"Error shutting down distributed agents: {e}")
     
     # Shutdown agent manager
     try:
@@ -452,6 +479,14 @@ def create_application() -> FastAPI:
         prefix="/api/onboarding",
         tags=["Onboarding"]
     )
+    
+    # Add distributed agents router
+    app.include_router(
+        distributed_agents.router,
+        prefix="/api",
+        tags=["Distributed Agents"]
+    )
+    
     # Note: agent_insights and agent_events routers already registered above (lines 362-383)
     # Include API router (includes WebSocket routes)
     app.include_router(

@@ -130,10 +130,10 @@ class DecisionRecord:
     """
     decision_id: str
     agent_name: str
+    decision_type: str  # What kind of decision (required field, no default)
     timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     
     # Decision details
-    decision_type: str  # What kind of decision
     input_data: Dict[str, Any] = field(default_factory=dict)
     output_data: Dict[str, Any] = field(default_factory=dict)
     
