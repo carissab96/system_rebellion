@@ -136,14 +136,16 @@ async def lifespan(app: FastAPI):
         await init_db()
         logger.info("✅ Database initialization successful")
 
+        redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
         redis_client = await RedisClient.get_instance(
-            redis_url="redis://localhost:6379",
+            redis_url=redis_url,
             max_connections=20,
             socket_timeout=5,
             socket_connect_timeout=5,
             retry_on_timeout=True,
             health_check_interval=30
         )
+        logger.info(f"🔴 Connecting to Redis at {redis_url}")
         app.state.redis = redis_client
         logger.info("🔴 Redis connection established with circuit breaker")
         
@@ -162,7 +164,7 @@ async def lifespan(app: FastAPI):
             return session
 
         app.state.memory_service = AgentMemoryServiceWithCache(
-            redis_url="redis://localhost:6379",
+            redis_url=redis_url,
             db_getter=memory_db_session_factory,
             max_connections=20,
             socket_timeout=5,
