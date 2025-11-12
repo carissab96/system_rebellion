@@ -224,8 +224,8 @@ class HamstersDistributed(DistributedAgentMixin, HamstersBrainV3):
             "agent_name": self.agent_name,
             "agent_type": "storage_engineers",
             "is_active": self.is_active,
-            "total_analyses": self.total_analyses,
-            "successful_analyses": self.successful_analyses,
+            "total_analyses": getattr(self, 'total_analyses', 0),
+            "successful_analyses": getattr(self, 'successful_analyses', 0),
             "hamster_status": {
                 "steve": "analytical",
                 "bob": "practical",
@@ -245,7 +245,7 @@ class HamstersDistributed(DistributedAgentMixin, HamstersBrainV3):
         return (
             f"<HamstersDistributed "
             f"steve+bob+carl "
-            f"analyses={self.total_analyses} "
+            f"analyses={getattr(self, 'total_analyses', 0)} "
             f"| {dist_status} | 🐹🐹🐹>"
         )
 

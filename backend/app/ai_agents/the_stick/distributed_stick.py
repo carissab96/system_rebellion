@@ -53,6 +53,9 @@ class TheStickDistributed(DistributedAgentMixin, TheStickBrainV3):
         # Set agent name for distributed features
         self.agent_name = "the_stick"
         
+        # The Stick is always active (patient and persistent)
+        self.is_active = True
+        
         # The Stick's patient personality traits
         self.personality_traits = {
             "learning_coordinator": True,
@@ -201,10 +204,10 @@ class TheStickDistributed(DistributedAgentMixin, TheStickBrainV3):
             "agent_name": self.agent_name,
             "agent_type": "learning_coordinator",
             "is_active": self.is_active,
-            "total_analyses": self.total_analyses,
-            "successful_analyses": self.successful_analyses,
+            "total_analyses": getattr(self, 'total_analyses', 0),
+            "successful_analyses": getattr(self, 'successful_analyses', 0),
             "patience_level": "infinite",
-            "guidance_sessions": self.total_analyses,
+            "guidance_sessions": getattr(self, 'total_analyses', 0),
             "compliance_records": "comprehensive",
             "distributed": distributed_state
         }
@@ -216,7 +219,7 @@ class TheStickDistributed(DistributedAgentMixin, TheStickBrainV3):
         dist_status = "DISTRIBUTED" if self.is_distributed else "LOCAL"
         return (
             f"<TheStickDistributed "
-            f"analyses={self.total_analyses} "
+            f"analyses={getattr(self, 'total_analyses', 0)} "
             f"patience=infinite "
             f"| {dist_status} | 🪵📚>"
         )

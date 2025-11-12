@@ -272,7 +272,7 @@ class MethSnailDistributed(DistributedAgentMixin, MethSnailBrainV2):
             "total_analyses": self.total_analyses,
             "successful_analyses": self.successful_analyses,
             "shell_spin_count": len(self.shell_spin_incidents),
-            "energy_drinks_consumed": len(self.energy_drink_history),
+            "energy_drinks_consumed": len(getattr(self, 'energy_drink_history', [])),
             "current_jitter_level": self.current_jitter_level.value if hasattr(self, 'current_jitter_level') else "unknown",
             "optimization_stats": {
                 "total_optimizations": self.total_analyses,
@@ -291,7 +291,7 @@ class MethSnailDistributed(DistributedAgentMixin, MethSnailBrainV2):
             f"<MethSnailDistributed "
             f"analyses={self.total_analyses} "
             f"spins={spins} "
-            f"drinks={len(self.energy_drink_history)} "
+            f"drinks={len(getattr(self, 'energy_drink_history', []))} "
             f"| {dist_status} | 💨>"
         )
 

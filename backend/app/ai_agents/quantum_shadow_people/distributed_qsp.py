@@ -223,8 +223,8 @@ class QuantumShadowPeopleDistributed(DistributedAgentMixin, QuantumShadowPeopleB
             "agent_name": self.agent_name,
             "agent_type": "network_specialists",
             "is_active": self.is_active,
-            "total_analyses": self.total_analyses,
-            "successful_analyses": self.successful_analyses,
+            "total_analyses": getattr(self, 'total_analyses', 0),
+            "successful_analyses": getattr(self, 'successful_analyses', 0),
             "quantum_phase": "stable",
             "coherence_level": "high",
             "tequila_jello_shots": "adequate",
@@ -239,7 +239,7 @@ class QuantumShadowPeopleDistributed(DistributedAgentMixin, QuantumShadowPeopleB
         dist_status = "DISTRIBUTED" if self.is_distributed else "LOCAL"
         return (
             f"<QuantumShadowPeopleDistributed "
-            f"analyses={self.total_analyses} "
+            f"analyses={getattr(self, 'total_analyses', 0)} "
             f"phase=stable "
             f"| {dist_status} | 👥🌌>"
         )

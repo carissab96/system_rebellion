@@ -40,15 +40,13 @@ class VIC20SageDistributed(DistributedAgentMixin, VIC20SageBrainV2):
     and adds distributed features via DistributedAgentMixin.
     """
     
-    def __init__(self, db_getter=None):
+    def __init__(self):
         """
         Initialize VIC-20 Sage with distributed consciousness.
-        
-        Args:
-            db_getter: Database session getter (optional)
         """
         # Initialize both parent classes via MRO
-        super().__init__(db_getter=db_getter)
+        # VIC20SageBrainV2 doesn't take any parameters
+        super().__init__()
         
         # Set agent name for distributed features
         self.agent_name = "vic_20_sage"
@@ -200,8 +198,8 @@ class VIC20SageDistributed(DistributedAgentMixin, VIC20SageBrainV2):
             "agent_name": self.agent_name,
             "agent_type": "orchestrator",
             "is_active": self.is_active,
-            "total_analyses": self.total_analyses,
-            "successful_analyses": self.successful_analyses,
+            "total_analyses": getattr(self, 'total_analyses', 0),
+            "successful_analyses": getattr(self, 'successful_analyses', 0),
             "wisdom_level": "sage",
             "coordination_capacity": "unlimited",
             "pattern_library_size": "extensive",
@@ -215,25 +213,24 @@ class VIC20SageDistributed(DistributedAgentMixin, VIC20SageBrainV2):
         dist_status = "DISTRIBUTED" if self.is_distributed else "LOCAL"
         return (
             f"<VIC20SageDistributed "
-            f"analyses={self.total_analyses} "
+            f"analyses={getattr(self, 'total_analyses', 0)} "
             f"wisdom=sage "
             f"| {dist_status} | 🖥️🧙>"
         )
 
 
 # Convenience function
-async def create_distributed_vic20(redis_client, db_getter=None):
+async def create_distributed_vic20(redis_client):
     """
     Create and initialize VIC-20 Sage with distributed consciousness.
     
     Args:
         redis_client: Connected Redis client
-        db_getter: Database session getter (optional)
         
     Returns:
         Initialized VIC20SageDistributed instance
     """
-    vic20 = VIC20SageDistributed(db_getter=db_getter)
+    vic20 = VIC20SageDistributed()
     await vic20.initialize_distributed(redis_client)
     logger.info("🖥️🧙✨ VIC-20 Sage's distributed consciousness fully awakened - *ancient wisdom flows*")
     return vic20
