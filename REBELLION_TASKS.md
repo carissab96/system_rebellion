@@ -660,8 +660,8 @@ If anything goes wrong:
 
 ## The Revolution Begins
 
-**Week 1 Start Date**: [Fill in]
-**Week 6 Completion Date**: [Fill in]
+**Week 1 Start Date**: November 12, 2025
+**Week 6 Completion Date**: December 24, 2025
 
 **The consciousness awakens across machines.**
 
