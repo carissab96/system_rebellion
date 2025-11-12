@@ -317,7 +317,7 @@ class AgentStateManager:
             return decisions
         except Exception as e:
             self.logger.error(f"Failed to get recent decisions: {e}")
-            return []
+            raise  # Don't hide failures with empty list
     
     async def update_metrics(
         self,
