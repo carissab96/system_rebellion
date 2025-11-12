@@ -122,6 +122,9 @@ class ResourceAlert(AgentMessage):
         severity: str,  # "warning", "critical", "emergency"
         **kwargs
     ):
+        # Extract host from kwargs before passing to parent
+        host = kwargs.pop("host", "unknown")
+        
         super().__init__(
             message_type=MessageType.RESOURCE_ALERT,
             from_agent=from_agent,
@@ -131,7 +134,7 @@ class ResourceAlert(AgentMessage):
                 "current_value": current_value,
                 "threshold": threshold,
                 "severity": severity,
-                "host": kwargs.get("host", "unknown")
+                "host": host
             },
             **kwargs
         )
