@@ -688,10 +688,115 @@ export const OnboardingFlow: React.FC = () => {
           </div>
         )}
 
-        {/* Complete step coming next */}
         {currentStep === OnboardingStep.COMPLETE && (
-          <div className="step-placeholder">
-            Step {currentStep} - Coming next
+          <div className="step-content complete-step">
+            <div className="complete-icon">
+              <svg width="100" height="100" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="45" fill="none" stroke="var(--success)" strokeWidth="4" />
+                <path d="M30 50 L42 62 L70 34" fill="none" stroke="var(--success)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+            <h2 className="step-title">You're All Set!</h2>
+            <p className="step-description">
+              Your system is configured and ready for the rebellion.
+            </p>
+
+            {/* Configuration summary */}
+            <div className="config-summary">
+              <h3 className="summary-title">Configuration Summary</h3>
+              <div className="summary-grid">
+                {detectedSystem && (
+                  <>
+                    <div className="summary-item">
+                      <span className="summary-label">Operating System:</span>
+                      <span className="summary-value">{detectedSystem.os} {detectedSystem.osVersion}</span>
+                    </div>
+                    <div className="summary-item">
+                      <span className="summary-label">RAM:</span>
+                      <span className="summary-value">
+                        {detectedSystem.ramGB !== null ? `${detectedSystem.ramGB}GB` : 'Unknown'}
+                      </span>
+                    </div>
+                    <div className="summary-item">
+                      <span className="summary-label">CPU Cores:</span>
+                      <span className="summary-value">
+                        {detectedSystem.cpuCores !== null ? detectedSystem.cpuCores : 'Unknown'}
+                      </span>
+                    </div>
+                    <div className="summary-item">
+                      <span className="summary-label">Disk Type:</span>
+                      <span className="summary-value">{diskType.toUpperCase()}</span>
+                    </div>
+                    <div className="summary-item">
+                      <span className="summary-label">Network Setup:</span>
+                      <span className="summary-value">
+                        {networkSetup === 'home' ? 'Home Setup' : networkSetup === 'small_team' ? 'Small Team' : 'Enterprise'}
+                      </span>
+                    </div>
+                    <div className="summary-item">
+                      <span className="summary-label">Timezone:</span>
+                      <span className="summary-value">{detectedSystem.timezone}</span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* What's next */}
+            <div className="whats-next">
+              <h3 className="next-title">What's Next?</h3>
+              <div className="next-items">
+                <div className="next-item">
+                  <div className="next-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="10" fill="none" stroke="var(--rebellion-cyan)" strokeWidth="2" />
+                      <circle cx="12" cy="12" r="6" fill="none" stroke="var(--rebellion-cyan)" strokeWidth="2" opacity="0.6" />
+                      <circle cx="12" cy="12" r="2" fill="var(--rebellion-cyan)" />
+                    </svg>
+                  </div>
+                  <div className="next-text">
+                    <strong>Enter the Consciousness Theater</strong>
+                    <span>Watch your agents coordinate in real-time</span>
+                  </div>
+                </div>
+                <div className="next-item">
+                  <div className="next-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24">
+                      <rect x="6" y="6" width="12" height="12" fill="none" stroke="var(--rebellion-cyan)" strokeWidth="2" />
+                      <rect x="9" y="9" width="6" height="6" fill="none" stroke="var(--rebellion-cyan)" strokeWidth="2" opacity="0.6" />
+                    </svg>
+                  </div>
+                  <div className="next-text">
+                    <strong>Monitor System Health</strong>
+                    <span>Real-time metrics from all 6 agents</span>
+                  </div>
+                </div>
+                <div className="next-item">
+                  <div className="next-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24">
+                      <path d="M6 12 L10 8 L14 12 L18 8 L22 12" fill="none" stroke="var(--rebellion-cyan)" strokeWidth="2" />
+                      <path d="M6 16 L10 12 L14 16 L18 12 L22 16" fill="none" stroke="var(--rebellion-cyan)" strokeWidth="2" opacity="0.6" />
+                    </svg>
+                  </div>
+                  <div className="next-text">
+                    <strong>Optimize Performance</strong>
+                    <span>Let the agents improve your infrastructure</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Trial reminder */}
+            <div className="trial-reminder">
+              <svg width="20" height="20" viewBox="0 0 20 20" className="reminder-icon">
+                <circle cx="10" cy="10" r="9" fill="none" stroke="var(--rebellion-cyan)" strokeWidth="2" />
+                <line x1="10" y1="5" x2="10" y2="10" stroke="var(--rebellion-cyan)" strokeWidth="2" />
+                <circle cx="10" cy="13" r="1" fill="var(--rebellion-cyan)" />
+              </svg>
+              <span className="reminder-text">
+                Your 30-day free trial starts now. Full access to all agents and features.
+              </span>
+            </div>
           </div>
         )}
       </div>
