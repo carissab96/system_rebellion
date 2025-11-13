@@ -60,12 +60,26 @@ async def initialize_agents_and_websockets(app_state) -> bool:
                 session = AsyncSessionLocal()
                 return session
             
-            # Initialize AI Agents
+            # Initialize AI Agents (includes distributed features)
             agent_start = time.time()
             agent_manager = await get_agent_manager(db_getter=db_session_factory)
             agent_elapsed = time.time() - agent_start
             active_agents = list(agent_manager.agents.keys()) if agent_manager.initialized else []
             logger.info(f"✅ AI Agents initialized in {agent_elapsed:.2f}s - Active: {active_agents}")
+            
+            # Count distributed agents
+            distributed_count = sum(
+                1 for agent in agent_manager.agents.values()
+                if hasattr(agent, 'initialize_distributed')
+            )
+            if distributed_count > 0:
+                logger.info(f"🌐 Distributed consciousness active for {distributed_count}/{len(active_agents)} agents")
+                
+                # TODO: Run consciousness checkpoint after distributed initialization
+                # This will be implemented in Task 2.4
+                # from app.ai_agents.distributed.consciousness_sync import consciousness_checkpoint
+                # checkpoint_result = await consciousness_checkpoint(agent_manager)
+                # logger.info(f"✅ Consciousness checkpoint: {checkpoint_result}")
             
             # Start background tasks
             agent_tasks = await start_all_background_tasks()
