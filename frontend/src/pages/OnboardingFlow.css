@@ -282,6 +282,223 @@
   font-size: 0.875rem;
 }
 
+/* System Detection Step */
+.system-step {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+/* Validation Messages */
+.validation-errors,
+.validation-warnings {
+  padding: var(--space-lg);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-xl);
+}
+
+.validation-errors {
+  background: rgba(239, 68, 68, 0.1);
+  border: 2px solid var(--error);
+}
+
+.validation-warnings {
+  background: rgba(245, 158, 11, 0.1);
+  border: 2px solid var(--warning);
+}
+
+.error-header,
+.warning-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.error-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--error);
+}
+
+.warning-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--warning);
+}
+
+.error-list,
+.warning-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--space-md) 0;
+}
+
+.error-list li,
+.warning-list li {
+  font-size: 0.875rem;
+  line-height: 1.6;
+  padding-left: var(--space-lg);
+  position: relative;
+  margin-bottom: var(--space-xs);
+}
+
+.error-list li {
+  color: var(--error);
+}
+
+.warning-list li {
+  color: var(--warning);
+}
+
+.error-list li::before,
+.warning-list li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.5em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.error-list li::before {
+  background: var(--error);
+}
+
+.warning-list li::before {
+  background: var(--warning);
+}
+
+.error-message {
+  font-size: 0.875rem;
+  color: var(--error);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* System Info Grid */
+.system-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-md);
+  margin-bottom: var(--space-xl);
+}
+
+.info-card {
+  padding: var(--space-lg);
+  background: var(--rebellion-surface);
+  border: 1px solid var(--rebellion-border);
+  border-radius: var(--radius-md);
+  transition: all 0.3s ease;
+}
+
+.info-card:hover {
+  border-color: var(--rebellion-cyan);
+  transform: translateY(-2px);
+}
+
+.info-label {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--rebellion-text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--space-xs);
+}
+
+.info-value {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--rebellion-text-bright);
+}
+
+/* Manual Configuration */
+.manual-config {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+.config-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.config-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--rebellion-text);
+  letter-spacing: 0.025em;
+}
+
+.radio-group {
+  display: flex;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--rebellion-surface);
+  border: 2px solid var(--rebellion-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  user-select: none;
+}
+
+.radio-label:hover {
+  border-color: var(--rebellion-cyan);
+}
+
+.radio-label input[type="radio"] {
+  cursor: pointer;
+  accent-color: var(--rebellion-cyan);
+}
+
+.radio-label input[type="radio"]:checked + span {
+  color: var(--rebellion-cyan);
+  font-weight: 600;
+}
+
+.config-select {
+  padding: var(--space-md);
+  background: var(--rebellion-surface);
+  border: 2px solid var(--rebellion-border);
+  border-radius: var(--radius-md);
+  color: var(--rebellion-text-bright);
+  font-size: 1rem;
+  font-family: var(--font-system);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.config-select:hover {
+  border-color: var(--rebellion-cyan);
+}
+
+.config-select:focus {
+  outline: none;
+  border-color: var(--rebellion-cyan);
+  box-shadow: 0 0 0 3px rgba(38, 208, 206, 0.1);
+}
+
+.config-hint {
+  font-size: 0.8125rem;
+  color: var(--rebellion-text-dim);
+  font-style: italic;
+  margin-top: var(--space-xs);
+}
+
+.config-hint.warning {
+  color: var(--warning);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .onboarding-container {
@@ -312,5 +529,13 @@
 
   .feature-item {
     padding: var(--space-md);
+  }
+
+  .system-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .radio-group {
+    flex-direction: column;
   }
 }

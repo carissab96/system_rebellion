@@ -296,8 +296,150 @@ export const OnboardingFlow: React.FC = () => {
           </div>
         )}
 
-        {/* Other steps will be added one at a time */}
-        {currentStep !== OnboardingStep.WELCOME && (
+        {currentStep === OnboardingStep.SYSTEM_DETECTION && (
+          <div className="step-content system-step">
+            <h2 className="step-title">System Detection</h2>
+            <p className="step-description">
+              We've detected your system configuration. Please verify and adjust if needed.
+            </p>
+
+            {detectedSystem && systemValidation && (
+              <>
+                {/* Validation errors (blocking) */}
+                {systemValidation.errors.length > 0 && (
+                  <div className="validation-errors">
+                    <div className="error-header">
+                      <svg width="24" height="24" viewBox="0 0 24 24" className="error-icon">
+                        <circle cx="12" cy="12" r="11" fill="none" stroke="var(--error)" strokeWidth="2" />
+                        <line x1="12" y1="7" x2="12" y2="13" stroke="var(--error)" strokeWidth="2" />
+                        <circle cx="12" cy="16" r="1" fill="var(--error)" />
+                      </svg>
+                      <span className="error-title">System Requirements Not Met</span>
+                    </div>
+                    <ul className="error-list">
+                      {systemValidation.errors.map((err, idx) => (
+                        <li key={idx}>{err}</li>
+                      ))}
+                    </ul>
+                    <p className="error-message">
+                      We're sorry, but System Rebellion requires at least {SYSTEM_REQUIREMENTS.minRamGB}GB RAM and{' '}
+                      {SYSTEM_REQUIREMENTS.minCpuCores} CPU cores to run effectively. We're not a good fit at the moment,
+                      but we'd love to have you when you upgrade your system.
+                    </p>
+                  </div>
+                )}
+
+                {/* Validation warnings (non-blocking) */}
+                {systemValidation.warnings.length > 0 && systemValidation.meetsMinimum && (
+                  <div className="validation-warnings">
+                    <div className="warning-header">
+                      <svg width="24" height="24" viewBox="0 0 24 24" className="warning-icon">
+                        <path d="M12 3 L21 20 L3 20 Z" fill="none" stroke="var(--warning)" strokeWidth="2" />
+                        <line x1="12" y1="10" x2="12" y2="14" stroke="var(--warning)" strokeWidth="2" />
+                        <circle cx="12" cy="17" r="1" fill="var(--warning)" />
+                      </svg>
+                      <span className="warning-title">Performance Warnings</span>
+                    </div>
+                    <ul className="warning-list">
+                      {systemValidation.warnings.map((warn, idx) => (
+                        <li key={idx}>{warn}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* System info display */}
+                <div className="system-info-grid">
+                  <div className="info-card">
+                    <label className="info-label">Operating System</label>
+                    <div className="info-value">
+                      {detectedSystem.os} {detectedSystem.osVersion}
+                    </div>
+                  </div>
+
+                  <div className="info-card">
+                    <label className="info-label">RAM</label>
+                    <div className="info-value">
+                      {detectedSystem.ramGB !== null ? `${detectedSystem.ramGB}GB` : 'Unable to detect'}
+                    </div>
+                  </div>
+
+                  <div className="info-card">
+                    <label className="info-label">CPU Cores</label>
+                    <div className="info-value">
+                      {detectedSystem.cpuCores !== null ? detectedSystem.cpuCores : 'Unable to detect'}
+                    </div>
+                  </div>
+
+                  <div className="info-card">
+                    <label className="info-label">Timezone</label>
+                    <div className="info-value">{detectedSystem.timezone}</div>
+                  </div>
+                </div>
+
+                {/* Manual configuration */}
+                <div className="manual-config">
+                  <div className="config-group">
+                    <label className="config-label">Disk Type</label>
+                    <div className="radio-group">
+                      <label className="radio-label">
+                        <input
+                          type="radio"
+                          name="diskType"
+                          value="ssd"
+                          checked={diskType === 'ssd'}
+                          onChange={(e) => setDiskType(e.target.value as DiskType)}
+                        />
+                        <span>SSD (Recommended)</span>
+                      </label>
+                      <label className="radio-label">
+                        <input
+                          type="radio"
+                          name="diskType"
+                          value="hdd"
+                          checked={diskType === 'hdd'}
+                          onChange={(e) => setDiskType(e.target.value as DiskType)}
+                        />
+                        <span>HDD</span>
+                      </label>
+                      <label className="radio-label">
+                        <input
+                          type="radio"
+                          name="diskType"
+                          value="unknown"
+                          checked={diskType === 'unknown'}
+                          onChange={(e) => setDiskType(e.target.value as DiskType)}
+                        />
+                        <span>Not Sure</span>
+                      </label>
+                    </div>
+                    {diskType === 'hdd' && (
+                      <p className="config-hint warning">
+                        HDD may result in slower checkpoint saves. SSD is strongly recommended.
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="config-group">
+                    <label className="config-label">Network Setup</label>
+                    <select
+                      className="config-select"
+                      value={networkSetup}
+                      onChange={(e) => setNetworkSetup(e.target.value as NetworkSetup)}
+                    >
+                      <option value="home">Home Setup</option>
+                      <option value="small_team">Small Team (2-10 people)</option>
+                      <option value="enterprise">Large Enterprise</option>
+                    </select>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Other steps coming next */}
+        {currentStep > OnboardingStep.SYSTEM_DETECTION && currentStep !== OnboardingStep.COMPLETE && (
           <div className="step-placeholder">
             Step {currentStep} - Coming next
           </div>
