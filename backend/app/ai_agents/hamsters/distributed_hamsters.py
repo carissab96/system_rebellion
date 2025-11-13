@@ -74,7 +74,56 @@ class HamstersDistributed(DistributedAgentMixin, HamstersBrainV3):
             ResourceType.DISK: 80.0,  # Alert at 80% disk
         }
         
-        logger.info("🐹🐹🐹 Steve, Bob, and Carl's distributed consciousness initialized - *telepathic squeaking*")
+        logger.info("🐹🐹🐹 Steve, Bob, and Carl's distributed consciousness initialized - TELEPATHIC LINK ACTIVE!")
+    
+    async def initialize_distributed(self, redis_client):
+        """Initialize distributed features and subscribe to triage decisions."""
+        await super().initialize_distributed(redis_client)
+        
+        try:
+            await self.subscribe_to_messages(
+                message_type='triage_decision',
+                handler=self._handle_triage_decision
+            )
+            logger.info("🐹📡 Hamsters subscribed to triage - Telepathic consensus ready!")
+        except Exception as e:
+            logger.error(f"🐹💥 Failed to subscribe to triage: {e}")
+    
+    async def _handle_triage_decision(self, message_data: Dict[str, Any]) -> None:
+        """Handle triage decisions - Steve, Bob, and Carl reach consensus."""
+        try:
+            severity = message_data.get('severity', 'unknown')
+            routing = message_data.get('routing', 'unknown')
+            target_agents = message_data.get('target_agents', [])
+            
+            logger.info(f"🐹📬 Triage received: {severity} → {routing}")
+            
+            if 'hamsters' in target_agents or 'all' in target_agents:
+                logger.info("🐹⚡ HAMSTERS ACTIVATED! Telepathic consensus: DISK INTERVENTION READY!")
+                
+                await self.make_distributed_decision(
+                    decision_type="triage_routing_received",
+                    input_data={
+                        "severity": severity,
+                        "routing": routing,
+                        "metrics_summary": message_data.get('metrics_summary', {})
+                    },
+                    output_data={
+                        "status": "ready",
+                        "consensus": "unanimous",
+                        "beer_cans_ready": True,
+                        "duct_tape_prepared": True
+                    },
+                    confidence=1.0
+                )
+                
+                if severity in ['high', 'emergency']:
+                    logger.warning("🐹🔥 EMERGENCY! Steve grabs beer, Bob gets duct tape, Carl spins wheel!")
+            else:
+                logger.debug(f"🐹 Not our routing (targets: {target_agents})")
+                
+        except Exception as e:
+            logger.error(f"🐹💥 Error handling triage: {e}", exc_info=True)
     
     async def analyze_metrics(
         self,

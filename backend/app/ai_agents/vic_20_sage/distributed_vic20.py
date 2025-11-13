@@ -69,7 +69,57 @@ class VIC20SageDistributed(DistributedAgentMixin, VIC20SageBrainV2):
             ResourceType.CPU: 75.0,  # Alert at 75% CPU
         }
         
-        logger.info("🖥️🧙 VIC-20 Sage's distributed consciousness initialized - *ancient wisdom activated*")
+        logger.info("🖥️✨ VIC-20 Sage's distributed consciousness initialized - ORCHESTRATION PROTOCOLS ACTIVE!")
+    
+    async def initialize_distributed(self, redis_client):
+        """Initialize distributed features and subscribe to triage decisions."""
+        await super().initialize_distributed(redis_client)
+        
+        try:
+            await self.subscribe_to_messages(
+                message_type='triage_decision',
+                handler=self._handle_triage_decision
+            )
+            logger.info("🖥️📡 VIC-20 subscribed to triage - Coordination matrix online!")
+        except Exception as e:
+            logger.error(f"🖥️💥 Failed to subscribe to triage: {e}")
+    
+    async def _handle_triage_decision(self, message_data: Dict[str, Any]) -> None:
+        """Handle triage decisions - VIC-20 coordinates multi-agent response."""
+        try:
+            severity = message_data.get('severity', 'unknown')
+            routing = message_data.get('routing', 'unknown')
+            target_agents = message_data.get('target_agents', [])
+            
+            logger.info(f"🖥️📬 Triage received: {severity} → {routing}")
+            
+            if 'vic_20_sage' in target_agents or routing in ['vic20_coordination', 'vic20_emergency']:
+                logger.info("🖥️⚡ VIC-20 COORDINATION ACTIVATED! Orchestrating multi-agent response!")
+                
+                await self.make_distributed_decision(
+                    decision_type="triage_coordination_received",
+                    input_data={
+                        "severity": severity,
+                        "routing": routing,
+                        "target_agents": target_agents,
+                        "metrics_summary": message_data.get('metrics_summary', {})
+                    },
+                    output_data={
+                        "status": "coordinating",
+                        "pattern_match": "multi_agent_response",
+                        "orchestration_plan": "analyzing"
+                    },
+                    confidence=0.95
+                )
+                
+                if severity == 'emergency':
+                    logger.warning("🖥️🔥 EMERGENCY COORDINATION! Activating all available agents!")
+                    # VIC-20 would coordinate emergency response here
+            else:
+                logger.debug(f"🖥️ Monitoring coordination (routing: {routing})")
+                
+        except Exception as e:
+            logger.error(f"🖥️💥 Error handling triage: {e}", exc_info=True)
     
     async def analyze_metrics(
         self,

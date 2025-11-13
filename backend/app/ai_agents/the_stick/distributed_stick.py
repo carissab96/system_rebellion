@@ -74,7 +74,57 @@ class TheStickDistributed(DistributedAgentMixin, TheStickBrainV3):
             ResourceType.CPU: 80.0,  # Alert at 80% CPU
         }
         
-        logger.info("🪵📚 The Stick's distributed consciousness initialized - *patient guidance activated*")
+        logger.info("🥢✨ The Stick's distributed consciousness initialized - LEARNING PROTOCOLS ACTIVE!")
+    
+    async def initialize_distributed(self, redis_client):
+        """Initialize distributed features and subscribe to triage decisions."""
+        await super().initialize_distributed(redis_client)
+        
+        try:
+            await self.subscribe_to_messages(
+                message_type='triage_decision',
+                handler=self._handle_triage_decision
+            )
+            logger.info("🥢📡 The Stick subscribed to triage - Learning from all decisions!")
+        except Exception as e:
+            logger.error(f"🥢💥 Failed to subscribe to triage: {e}")
+    
+    async def _handle_triage_decision(self, message_data: Dict[str, Any]) -> None:
+        """Handle triage decisions - The Stick learns from every decision."""
+        try:
+            severity = message_data.get('severity', 'unknown')
+            routing = message_data.get('routing', 'unknown')
+            target_agents = message_data.get('target_agents', [])
+            
+            logger.info(f"🥢📬 Triage received: {severity} → {routing}")
+            
+            # The Stick learns from ALL triage decisions, not just when routed
+            await self.make_distributed_decision(
+                decision_type="triage_learning_observation",
+                input_data={
+                    "severity": severity,
+                    "routing": routing,
+                    "target_agents": target_agents,
+                    "metrics_summary": message_data.get('metrics_summary', {})
+                },
+                output_data={
+                    "status": "learning",
+                    "pattern_recorded": True,
+                    "guidance_level": "observing"
+                },
+                confidence=1.0
+            )
+            
+            if 'the_stick' in target_agents or routing == 'stick_direct':
+                logger.info("🥢⚡ STICK ACTIVATED! Providing guidance and learning coordination!")
+                
+                if severity in ['high', 'emergency']:
+                    logger.warning("🥢🔥 HIGH SEVERITY! Recording critical patterns for future learning!")
+            else:
+                logger.debug(f"🥢 Learning from observation (targets: {target_agents})")
+                
+        except Exception as e:
+            logger.error(f"🥢💥 Error handling triage: {e}", exc_info=True)
     
     async def analyze_metrics(
         self,

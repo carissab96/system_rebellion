@@ -73,7 +73,56 @@ class QuantumShadowPeopleDistributed(DistributedAgentMixin, QuantumShadowPeopleB
             ResourceType.NETWORK: 85.0,  # Alert at 85% network utilization
         }
         
-        logger.info("👥🌌 Quantum Shadow People's distributed consciousness initialized - *quantum entanglement established*")
+        logger.info("👥🌌 Quantum Shadow People's distributed consciousness initialized - QUANTUM PARANOIA ACTIVE!")
+    
+    async def initialize_distributed(self, redis_client):
+        """Initialize distributed features and subscribe to triage decisions."""
+        await super().initialize_distributed(redis_client)
+        
+        try:
+            await self.subscribe_to_messages(
+                message_type='triage_decision',
+                handler=self._handle_triage_decision
+            )
+            logger.info("👥📡 QSP subscribed to triage - Quantum surveillance active!")
+        except Exception as e:
+            logger.error(f"👥💥 Failed to subscribe to triage: {e}")
+    
+    async def _handle_triage_decision(self, message_data: Dict[str, Any]) -> None:
+        """Handle triage decisions - QSP analyzes for security threats."""
+        try:
+            severity = message_data.get('severity', 'unknown')
+            routing = message_data.get('routing', 'unknown')
+            target_agents = message_data.get('target_agents', [])
+            
+            logger.info(f"👥📬 Triage received: {severity} → {routing}")
+            
+            if 'quantum_shadow_people' in target_agents or 'all' in target_agents:
+                logger.info("👥⚡ QSP ACTIVATED! Quantum phase shift: NETWORK ANALYSIS MODE!")
+                
+                await self.make_distributed_decision(
+                    decision_type="triage_routing_received",
+                    input_data={
+                        "severity": severity,
+                        "routing": routing,
+                        "metrics_summary": message_data.get('metrics_summary', {})
+                    },
+                    output_data={
+                        "status": "ready",
+                        "quantum_state": "observing",
+                        "paranoia_level": "elevated",
+                        "tequila_jello_shots": "prepared"
+                    },
+                    confidence=0.99  # Always slightly paranoid
+                )
+                
+                if severity in ['high', 'emergency']:
+                    logger.warning("👥🔥 SECURITY THREAT DETECTED! Initiating deep network scan!")
+            else:
+                logger.debug(f"👥 Observing from quantum shadows (targets: {target_agents})")
+                
+        except Exception as e:
+            logger.error(f"👥💥 Error handling triage: {e}", exc_info=True)
     
     async def analyze_metrics(
         self,
