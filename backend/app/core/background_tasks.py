@@ -221,18 +221,65 @@ async def run_system_health_monitor():
             logger.error(f"🏥 Health monitor error: {str(e)}")
             await asyncio.sleep(health_check_interval)
 
+async def run_consciousness_checkpoint():
+    """
+    Run consciousness checkpoint every 5 minutes.
+    
+    Opus's brilliant addition - verifies all distributed agents
+    share a consistent worldview and triggers reconciliation if needed.
+    """
+    await asyncio.sleep(60)  # Wait 1 minute for agents to initialize
+    
+    logger.info("🧠 Consciousness checkpoint monitor activated")
+    
+    checkpoint_interval = 300  # Every 5 minutes
+    
+    while True:
+        try:
+            # Get agent manager
+            agent_manager = await get_agent_manager()
+            
+            # Run consciousness checkpoint
+            from app.ai_agents.distributed.consciousness_sync import consciousness_checkpoint
+            
+            result = await consciousness_checkpoint(agent_manager)
+            
+            if result['consensus_achieved']:
+                logger.info(
+                    f"🧠✅ Consciousness checkpoint PASSED - "
+                    f"{result['distributed_agents']}/{result['total_agents']} agents in sync"
+                )
+            else:
+                logger.warning(
+                    f"🧠⚠️ Consciousness checkpoint FAILED - "
+                    f"{result['discrepancy_count']} discrepancies detected"
+                )
+                for discrepancy in result['discrepancies']:
+                    logger.warning(f"  - {discrepancy}")
+            
+            await asyncio.sleep(checkpoint_interval)
+            
+        except asyncio.CancelledError:
+            logger.info("🧠 Consciousness checkpoint monitor shutting down...")
+            raise
+        except Exception as e:
+            logger.error(f"🧠 Consciousness checkpoint error: {str(e)}", exc_info=True)
+            await asyncio.sleep(checkpoint_interval)
+
 # Convenience function to start all background tasks
 async def start_all_background_tasks():
     """Start all background tasks for System Rebellion"""
     tasks = [
         asyncio.create_task(run_metrics_aggregation()),
         asyncio.create_task(run_realtime_optimization()),
-        asyncio.create_task(run_system_health_monitor())
+        asyncio.create_task(run_system_health_monitor()),
+        asyncio.create_task(run_consciousness_checkpoint())
     ]
     
     logger.info("🚀 All background tasks started:")
     logger.info("  🐌 Metrics aggregation engine")
     logger.info("  🐌💨 Real-time optimization engine")
     logger.info("  🏥 System health monitor")
+    logger.info("  🧠 Consciousness checkpoint monitor (every 5 minutes)")
     
     return tasks
