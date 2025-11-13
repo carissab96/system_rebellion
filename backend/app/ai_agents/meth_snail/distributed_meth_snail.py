@@ -75,6 +75,65 @@ class MethSnailDistributed(DistributedAgentMixin, MethSnailBrainV2):
         
         logger.info("🐌💨 Terry the Meth Snail's distributed consciousness initialized - GOTTA GO FAST!")
     
+    async def initialize_distributed(self, redis_client):
+        """
+        Initialize distributed features and subscribe to triage decisions.
+        """
+        # Call parent initialization
+        await super().initialize_distributed(redis_client)
+        
+        # Subscribe to triage decisions
+        try:
+            await self.subscribe_to_messages(
+                message_type='triage_decision',
+                handler=self._handle_triage_decision
+            )
+            logger.info("🐌📡 Subscribed to triage decisions - Ready to optimize on command!")
+        except Exception as e:
+            logger.error(f"🐌💥 Failed to subscribe to triage decisions: {e}")
+    
+    async def _handle_triage_decision(self, message_data: Dict[str, Any]) -> None:
+        """
+        Handle incoming triage decisions from Sir Hawkington.
+        
+        Terry prepares for memory optimization when routed.
+        """
+        try:
+            severity = message_data.get('severity', 'unknown')
+            routing = message_data.get('routing', 'unknown')
+            target_agents = message_data.get('target_agents', [])
+            
+            logger.info(f"🐌📬 Triage decision received: {severity} → {routing}")
+            
+            # Check if we're a target
+            if 'meth_snail' in target_agents or 'all' in target_agents:
+                logger.info("🐌⚡ WE'RE BEING ROUTED TO! Preparing for MAXIMUM SPEED!")
+                
+                # Record that we received a routing
+                await self.make_distributed_decision(
+                    decision_type="triage_routing_received",
+                    input_data={
+                        "severity": severity,
+                        "routing": routing,
+                        "metrics_summary": message_data.get('metrics_summary', {})
+                    },
+                    output_data={
+                        "status": "ready",
+                        "preparation": "cache_optimization_standby"
+                    },
+                    confidence=1.0
+                )
+                
+                # If HIGH or EMERGENCY, prepare aggressive optimization
+                if severity in ['high', 'emergency']:
+                    logger.warning("🐌🔥 HIGH SEVERITY! Preparing AGGRESSIVE optimization!")
+                    # Could pre-clear caches, prepare energy drinks, etc.
+            else:
+                logger.debug(f"🐌 Not our routing (targets: {target_agents})")
+                
+        except Exception as e:
+            logger.error(f"🐌💥 Error handling triage decision: {e}", exc_info=True)
+    
     async def analyze_metrics(
         self,
         metrics_data: Dict[str, Any],
