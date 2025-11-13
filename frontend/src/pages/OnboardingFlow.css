@@ -499,6 +499,121 @@
   color: var(--warning);
 }
 
+/* Network Check Step */
+.network-step {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.network-check-prompt {
+  text-align: center;
+  padding: var(--space-2xl);
+}
+
+.prompt-text {
+  font-size: 1rem;
+  color: var(--rebellion-text);
+  line-height: 1.6;
+  margin-bottom: var(--space-2xl);
+}
+
+.btn-large {
+  padding: var(--space-lg) var(--space-2xl);
+  font-size: 1.125rem;
+}
+
+.btn-small {
+  padding: var(--space-sm) var(--space-lg);
+  font-size: 0.875rem;
+  margin-top: var(--space-lg);
+}
+
+.loading-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+}
+
+.spinner-icon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Network Results */
+.network-results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.result-card {
+  padding: var(--space-xl);
+  border-radius: var(--radius-md);
+  border: 2px solid;
+  transition: all 0.3s ease;
+}
+
+.result-card.success {
+  background: rgba(34, 197, 94, 0.05);
+  border-color: var(--success);
+}
+
+.result-card.warning {
+  background: rgba(245, 158, 11, 0.05);
+  border-color: var(--warning);
+}
+
+.result-card.error {
+  background: rgba(239, 68, 68, 0.05);
+  border-color: var(--error);
+}
+
+.result-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.result-icon {
+  flex-shrink: 0;
+}
+
+.result-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--rebellion-text-bright);
+}
+
+.result-value {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: var(--space-xs);
+}
+
+.result-card.success .result-value {
+  color: var(--success);
+}
+
+.result-card.warning .result-value {
+  color: var(--warning);
+}
+
+.result-card.error .result-value {
+  color: var(--error);
+}
+
+.result-description {
+  font-size: 0.875rem;
+  color: var(--rebellion-text-dim);
+  line-height: 1.5;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .onboarding-container {

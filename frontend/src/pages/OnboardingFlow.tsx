@@ -438,8 +438,130 @@ export const OnboardingFlow: React.FC = () => {
           </div>
         )}
 
+        {currentStep === OnboardingStep.NETWORK_CHECK && (
+          <div className="step-content network-step">
+            <h2 className="step-title">Network Check</h2>
+            <p className="step-description">
+              Let's verify your connection to the System Rebellion backend.
+            </p>
+
+            {!networkCheckComplete ? (
+              <div className="network-check-prompt">
+                <p className="prompt-text">
+                  We'll test your network latency and verify the backend is accessible.
+                  This helps ensure smooth real-time communication with your agents.
+                </p>
+                <button
+                  className="btn btn-primary btn-large"
+                  onClick={runNetworkCheck}
+                  disabled={networkCheckLoading}
+                >
+                  {networkCheckLoading ? (
+                    <span className="loading-spinner">
+                      <svg width="20" height="20" viewBox="0 0 20 20" className="spinner-icon">
+                        <circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="40" strokeLinecap="round">
+                          <animateTransform
+                            attributeName="transform"
+                            type="rotate"
+                            from="0 10 10"
+                            to="360 10 10"
+                            dur="1s"
+                            repeatCount="indefinite"
+                          />
+                        </circle>
+                      </svg>
+                      Testing Connection...
+                    </span>
+                  ) : (
+                    'Run Network Check'
+                  )}
+                </button>
+              </div>
+            ) : (
+              <div className="network-results">
+                {/* Latency Result */}
+                <div className={`result-card ${networkLatency !== null && networkLatency < 200 ? 'success' : networkLatency !== null && networkLatency < 500 ? 'warning' : 'error'}`}>
+                  <div className="result-header">
+                    <svg width="24" height="24" viewBox="0 0 24 24" className="result-icon">
+                      {networkLatency !== null && networkLatency < 200 ? (
+                        <>
+                          <circle cx="12" cy="12" r="11" fill="none" stroke="var(--success)" strokeWidth="2" />
+                          <path d="M7 12 L10 15 L17 8" fill="none" stroke="var(--success)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </>
+                      ) : networkLatency !== null && networkLatency < 500 ? (
+                        <>
+                          <path d="M12 3 L21 20 L3 20 Z" fill="none" stroke="var(--warning)" strokeWidth="2" />
+                          <line x1="12" y1="10" x2="12" y2="14" stroke="var(--warning)" strokeWidth="2" />
+                          <circle cx="12" cy="17" r="1" fill="var(--warning)" />
+                        </>
+                      ) : (
+                        <>
+                          <circle cx="12" cy="12" r="11" fill="none" stroke="var(--error)" strokeWidth="2" />
+                          <line x1="8" y1="8" x2="16" y2="16" stroke="var(--error)" strokeWidth="2" />
+                          <line x1="16" y1="8" x2="8" y2="16" stroke="var(--error)" strokeWidth="2" />
+                        </>
+                      )}
+                    </svg>
+                    <span className="result-title">Network Latency</span>
+                  </div>
+                  <div className="result-value">
+                    {networkLatency !== null ? `${networkLatency}ms` : 'Failed'}
+                  </div>
+                  <div className="result-description">
+                    {networkLatency !== null && networkLatency < 200
+                      ? 'Excellent connection for real-time monitoring'
+                      : networkLatency !== null && networkLatency < 500
+                      ? 'Good connection, may have occasional delays'
+                      : 'High latency detected, real-time updates may be delayed'}
+                  </div>
+                </div>
+
+                {/* Port Accessibility Result */}
+                <div className={`result-card ${portAccessible ? 'success' : 'error'}`}>
+                  <div className="result-header">
+                    <svg width="24" height="24" viewBox="0 0 24 24" className="result-icon">
+                      {portAccessible ? (
+                        <>
+                          <circle cx="12" cy="12" r="11" fill="none" stroke="var(--success)" strokeWidth="2" />
+                          <path d="M7 12 L10 15 L17 8" fill="none" stroke="var(--success)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </>
+                      ) : (
+                        <>
+                          <circle cx="12" cy="12" r="11" fill="none" stroke="var(--error)" strokeWidth="2" />
+                          <line x1="8" y1="8" x2="16" y2="16" stroke="var(--error)" strokeWidth="2" />
+                          <line x1="16" y1="8" x2="8" y2="16" stroke="var(--error)" strokeWidth="2" />
+                        </>
+                      )}
+                    </svg>
+                    <span className="result-title">Backend Accessibility</span>
+                  </div>
+                  <div className="result-value">
+                    {portAccessible ? 'Connected' : 'Unreachable'}
+                  </div>
+                  <div className="result-description">
+                    {portAccessible
+                      ? 'Backend is accessible and ready'
+                      : 'Unable to reach backend. Check firewall settings.'}
+                  </div>
+                </div>
+
+                {/* Retry button if failed */}
+                {(networkLatency === null || !portAccessible) && (
+                  <button
+                    className="btn btn-secondary btn-small"
+                    onClick={runNetworkCheck}
+                    disabled={networkCheckLoading}
+                  >
+                    Retry Network Check
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Other steps coming next */}
-        {currentStep > OnboardingStep.SYSTEM_DETECTION && currentStep !== OnboardingStep.COMPLETE && (
+        {currentStep > OnboardingStep.NETWORK_CHECK && currentStep !== OnboardingStep.COMPLETE && (
           <div className="step-placeholder">
             Step {currentStep} - Coming next
           </div>
