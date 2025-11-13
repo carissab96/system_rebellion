@@ -9,8 +9,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import type { RootState, AppDispatch } from '../store/store';
+import { useSelector } from 'react-redux';
+import type { RootState } from '../store/store';
 import {
   detectSystem,
   validateSystem,
@@ -24,13 +24,15 @@ import './OnboardingFlow.css';
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 // Onboarding steps
-enum OnboardingStep {
-  WELCOME = 0,
-  SYSTEM_DETECTION = 1,
-  NETWORK_CHECK = 2,
-  AGENT_INTRODUCTION = 3,
-  COMPLETE = 4,
-}
+const OnboardingStep = {
+  WELCOME: 0,
+  SYSTEM_DETECTION: 1,
+  NETWORK_CHECK: 2,
+  AGENT_INTRODUCTION: 3,
+  COMPLETE: 4,
+} as const;
+
+type OnboardingStepType = typeof OnboardingStep[keyof typeof OnboardingStep];
 
 // Disk type options
 type DiskType = 'ssd' | 'hdd' | 'unknown';
@@ -96,7 +98,7 @@ export const OnboardingFlow: React.FC = () => {
   }, [isAuthenticated, navigate]);
 
   // Current step
-  const [currentStep, setCurrentStep] = useState<OnboardingStep>(OnboardingStep.WELCOME);
+  const [currentStep, setCurrentStep] = useState<OnboardingStepType>(OnboardingStep.WELCOME);
 
   // System detection state
   const [detectedSystem, setDetectedSystem] = useState<DetectedSystem | null>(null);
