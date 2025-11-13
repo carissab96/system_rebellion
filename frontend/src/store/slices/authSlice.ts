@@ -59,19 +59,19 @@ export const registerUser = createAsyncThunk(
     email, 
     username, 
     password, 
-    first_name,
-    last_name,
-    company_name,
-    job_title,
+    first_name = '',
+    last_name = '',
+    company_name = '',
+    job_title = '',
     csrfToken 
   }: { 
     email: string; 
     username: string; 
     password: string;
-    first_name: string;
-    last_name: string;
-    company_name: string;
-    job_title: string;
+    first_name?: string;
+    last_name?: string;
+    company_name?: string;
+    job_title?: string;
     csrfToken: string 
   }) => {
     const controller = new AbortController();
@@ -84,15 +84,7 @@ export const registerUser = createAsyncThunk(
           'Content-Type': 'application/json',
           'X-CSRFToken': csrfToken,
         },
-        body: JSON.stringify({ 
-          email, 
-          username, 
-          password,
-          first_name,
-          last_name,
-          company_name,
-          job_title
-        }),
+        body: JSON.stringify({ email, username, password, first_name, last_name, company_name, job_title }),
         signal: controller.signal
       });
       

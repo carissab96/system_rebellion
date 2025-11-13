@@ -360,6 +360,104 @@
   color: var(--rebellion-text);
 }
 
+/* Risk Disclaimer */
+.risk-disclaimer {
+  background: rgba(245, 158, 11, 0.05);
+  border: 2px solid var(--warning);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+  margin-bottom: var(--space-md);
+}
+
+.disclaimer-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.warning-icon {
+  flex-shrink: 0;
+}
+
+.disclaimer-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--warning);
+}
+
+.disclaimer-text {
+  font-size: 0.875rem;
+  color: var(--rebellion-text);
+  line-height: 1.6;
+  margin-bottom: var(--space-md);
+}
+
+.disclaimer-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.disclaimer-list li {
+  font-size: 0.8125rem;
+  color: var(--rebellion-text);
+  line-height: 1.6;
+  padding-left: var(--space-lg);
+  position: relative;
+  margin-bottom: var(--space-xs);
+}
+
+.disclaimer-list li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.5em;
+  width: 6px;
+  height: 6px;
+  background: var(--warning);
+  border-radius: 50%;
+}
+
+.checkbox-text-bold {
+  font-weight: 600;
+  color: var(--rebellion-text-bright);
+}
+
+/* Captcha */
+.captcha-container {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.captcha-question {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--rebellion-text-bright);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--rebellion-void);
+  border: 2px solid var(--rebellion-border);
+  border-radius: var(--radius-md);
+}
+
+.captcha-input {
+  max-width: 120px;
+  text-align: center;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.captcha-success {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  color: var(--success);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
 /* Responsive */
 @media (max-width: 480px) {
   .signup-card {
@@ -368,5 +466,14 @@
 
   .signup-title {
     font-size: 1.5rem;
+  }
+
+  .captcha-container {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .captcha-input {
+    max-width: 100%;
   }
 }

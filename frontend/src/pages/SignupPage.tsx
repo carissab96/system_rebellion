@@ -26,17 +26,38 @@ export const SignupPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [acceptedRisks, setAcceptedRisks] = useState(false);
+  const [captchaVerified, setCaptchaVerified] = useState(false);
   const [validationErrors, setValidationErrors] = useState<{
     email?: string;
     username?: string;
     password?: string;
     confirmPassword?: string;
     terms?: string;
+    risks?: string;
+    captcha?: string;
   }>({});
 
   // Email check state
   const [emailCheckLoading, setEmailCheckLoading] = useState(false);
   const [emailExists, setEmailExists] = useState(false);
+
+  // Simple math captcha (no external dependencies)
+  const [captchaQuestion, setCaptchaQuestion] = useState({ num1: 0, num2: 0, answer: 0 });
+  const [captchaInput, setCaptchaInput] = useState('');
+
+  // Generate captcha on mount
+  useEffect(() => {
+    const num1 = Math.floor(Math.random() * 10) + 1;
+    const num2 = Math.floor(Math.random() * 10) + 1;
+    setCaptchaQuestion({ num1, num2, answer: num1 + num2 });
+  }, []);
+
+  // Verify captcha answer
+  const verifyCaptcha = (input: string) => {
+    const userAnswer = parseInt(input, 10);
+    setCaptchaVerified(userAnswer === captchaQuestion.answer);
+  };
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -115,6 +136,16 @@ export const SignupPage: React.FC = () => {
     // Terms validation
     if (!acceptedTerms) {
       errors.terms = 'You must accept the terms to continue';
+    }
+
+    // Risk acceptance validation
+    if (!acceptedRisks) {
+      errors.risks = 'You must acknowledge the risks and accept responsibility';
+    }
+
+    // Captcha validation
+    if (!captchaVerified) {
+      errors.captcha = 'Please complete the verification to prove you are human';
     }
 
     setValidationErrors(errors);
@@ -318,6 +349,79 @@ export const SignupPage: React.FC = () => {
             </label>
             {validationErrors.terms && (
               <span className="field-error">{validationErrors.terms}</span>
+            )}
+          </div>
+
+          {/* Risk Acknowledgment - CRITICAL */}
+          <div className="form-group">
+            <div className="risk-disclaimer">
+              <div className="disclaimer-header">
+                <svg width="20" height="20" viewBox="0 0 20 20" className="warning-icon">
+                  <path d="M10 2 L18 17 L2 17 Z" fill="none" stroke="var(--warning)" strokeWidth="2" />
+                  <line x1="10" y1="8" x2="10" y2="12" stroke="var(--warning)" strokeWidth="2" />
+                  <circle cx="10" cy="14" r="1" fill="var(--warning)" />
+                </svg>
+                <span className="disclaimer-title">Important: AI Agent Permissions</span>
+              </div>
+              <p className="disclaimer-text">
+                System Rebellion uses AI agents that monitor and can modify your system settings to optimize performance. 
+                These agents are powered by artificial intelligence and, while designed to be helpful, can make mistakes. 
+                By proceeding, you acknowledge that:
+              </p>
+              <ul className="disclaimer-list">
+                <li>AI agents will have permission to modify system configurations</li>
+                <li>Agents may make changes that could affect system stability</li>
+                <li>You are responsible for maintaining backups of critical data</li>
+                <li>Hawkington Technologies, Inc. is not liable for any system damage or data loss</li>
+              </ul>
+            </div>
+            <label className={`checkbox-label ${validationErrors.risks ? 'label-error' : ''}`}>
+              <input
+                type="checkbox"
+                checked={acceptedRisks}
+                onChange={(e) => setAcceptedRisks(e.target.checked)}
+                disabled={isLoading}
+                className="checkbox-input"
+              />
+              <span className="checkbox-text checkbox-text-bold">
+                I understand the risks and accept full responsibility for any system changes made by the AI agents
+              </span>
+            </label>
+            {validationErrors.risks && (
+              <span className="field-error">{validationErrors.risks}</span>
+            )}
+          </div>
+
+          {/* Human Verification Captcha */}
+          <div className="form-group">
+            <label className="form-label">Verify you're human</label>
+            <div className="captcha-container">
+              <div className="captcha-question">
+                What is {captchaQuestion.num1} + {captchaQuestion.num2}?
+              </div>
+              <input
+                type="number"
+                className={`form-input captcha-input ${validationErrors.captcha ? 'input-error' : ''}`}
+                value={captchaInput}
+                onChange={(e) => {
+                  setCaptchaInput(e.target.value);
+                  verifyCaptcha(e.target.value);
+                }}
+                placeholder="Enter answer"
+                disabled={isLoading}
+              />
+              {captchaVerified && (
+                <span className="captcha-success">
+                  <svg width="16" height="16" viewBox="0 0 16 16">
+                    <circle cx="8" cy="8" r="7" fill="none" stroke="var(--success)" strokeWidth="2" />
+                    <path d="M5 8 L7 10 L11 6" fill="none" stroke="var(--success)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  Verified
+                </span>
+              )}
+            </div>
+            {validationErrors.captcha && (
+              <span className="field-error">{validationErrors.captcha}</span>
             )}
           </div>
 
