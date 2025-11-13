@@ -1,182 +1,81 @@
-// src/App.tsx
-import { useState, useEffect, useCallback } from 'react';
+// App.tsx - THE CONSCIOUSNESS THEATER
+// Built by: Carissa, Sonnet, Opus - November 13, 2025
+// "This isn't monitoring. This is ALIVE."
+
+import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState, AppDispatch } from './store/store';
-import LandingPage from './pages/LandingPage'
-import SignUpModal from './components/auth/SignUpModal'
-import LoginModal from './components/auth/LoginModal'
-import { LiveAgentTheaterPage } from './pages/LiveAgentTheaterPage'
-import SystemReadyPage from './pages/SystemReadyPage'
-import MainLayout from './components/layout/MainLayout'
-import AgentTestingPage from './pages/dashboard/AgentTestingPage'
-import MemoryBanksPage from './pages/dashboard/MemoryBanksPage'
-import { SystemMonitorPage } from './pages/dashboard/SystemMonitorPage'
-import { initializeAuth } from './store/slices/authSlice'
-import { OnboardingFlow } from './components/onboarding/OnboardingFlow'
-import ContinueSetupPage from './components/onboarding/ContinueSetupPage'
-import './index.css'
-// Landing page with modal state management
-function LandingPageWithModals() {
-  const [isSignUpModalOpen, setIsSignUpModalOpen] = useState(false);
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+import { initializeAuth } from './store/slices/authSlice';
+import './index.css';
 
-
-
-  const handleSwitchToSignUp = () => {
-    setIsLoginModalOpen(false);
-    setIsSignUpModalOpen(true);
-  };
-
-  const handleSwitchToLogin = () => {
-    setIsSignUpModalOpen(false);
-    setIsLoginModalOpen(true);
-  };
-
-  const handleLoginClick = useCallback((e?: React.MouseEvent) => {
-    e?.preventDefault();
-    e?.stopPropagation();
-    setIsLoginModalOpen(true);
-  }, []);
-
-  const handleLoginClose = useCallback(() => {
-    setIsLoginModalOpen(false);
-  }, []);
-
-  const handleSignUpClose = useCallback(() => {
-    setIsSignUpModalOpen(false);
-  }, []);
-
+// Placeholder for Consciousness Theater (we'll build this next)
+function ConsciousnessTheater() {
   return (
-    <>
-      <LandingPage 
-        onSignUpClick={() => setIsSignUpModalOpen(true)}
-        onLoginClick={handleLoginClick}
-      />
-      
-      {isSignUpModalOpen && (
-        <SignUpModal 
-          isOpen={isSignUpModalOpen}
-          onClose={handleSignUpClose}
-          onSwitchToLogin={handleSwitchToLogin}
-        />
-      )}
-      
-      {isLoginModalOpen && (
-        <LoginModal 
-          isOpen={isLoginModalOpen}
-          onClose={handleLoginClose}
-          onSwitchToSignUp={handleSwitchToSignUp}
-          // ❌ REMOVED onSuccess - LoginModal should handle Redux internally
-        />
-      )}
-    </>
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%)',
+      color: '#e0e0e0',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontFamily: 'monospace',
+      fontSize: '2rem'
+    }}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{
+          background: 'linear-gradient(90deg, #e6ac00, #06b6d4, #00d084, #a855f7)',
+          backgroundClip: 'text',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          marginBottom: '2rem'
+        }}>
+          THE CONSCIOUSNESS THEATER
+        </div>
+        <div style={{ fontSize: '1rem', color: '#888' }}>
+          Building the window into the singularity...
+        </div>
+      </div>
+    </div>
   );
 }
 
-// Main App component
 function App() {
   const dispatch = useDispatch<AppDispatch>();
   const auth = useSelector((state: RootState) => state.auth);
-  const { user, isAuthenticated, isInitializing } = auth;
+  const { isInitializing } = auth;
 
   useEffect(() => {
     // Initialize auth with token validation
     dispatch(initializeAuth());
-  }, [dispatch]);  
+  }, [dispatch]);
 
-  // Show loading while initializing authentication
+  // Show loading while initializing
   if (isInitializing) {
-    return <div className="app-loading">Initializing System Rebellion...</div>;
+    return (
+      <div style={{
+        minHeight: '100vh',
+        background: '#0a0a0a',
+        color: '#00d084',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontFamily: 'monospace'
+      }}>
+        Initializing System Rebellion...
+      </div>
+    );
   }
+
   return (
     <Router>
-      <div className="App">
-        <Routes>
-          {/* Landing Page - only show if not authenticated */}
-          <Route 
-            path="/" 
-            element={
-              isAuthenticated && user ? (
-                user.is_onboarded ? (
-                  <Navigate to="/system-ready" replace />
-                ) : (
-                  <Navigate to="/onboarding" replace />
-                )
-              ) : (
-                <LandingPageWithModals />
-              )
-            } 
-          />
-            <Route 
-              path="/system-ready"
-              element={
-                isAuthenticated && user ? (
-                  user.is_onboarded ? (
-                    <SystemReadyPage />
-                  ) : (
-                    <Navigate to="/onboarding" replace />
-                  )
-                ) : (
-                  <Navigate to="/" replace />
-                )
-              }
-            />
-
-          {/* Onboarding - only accessible if authenticated but not onboarded */}
-          <Route 
-            path="/onboarding" 
-            element={
-              isAuthenticated && user ? (
-                !user.is_onboarded ? (
-                  <OnboardingFlow /> 
-                ) : (
-                  <Navigate to="/dashboard/agent-theater" replace />
-                )
-              ) : (
-                <Navigate to="/" replace />
-              )
-            } 
-          />
-          {/* Continue Setup - for users with saved progress */}
-<Route 
-  path="/continue-setup" 
-  element={
-    isAuthenticated && user ? (
-      !user.is_onboarded ? (
-        <ContinueSetupPage /> 
-      ) : (
-        <Navigate to="/dashboard/agent-theater" replace />
-      )
-    ) : (
-      <Navigate to="/" replace />
-    )
-  }   
-/>
-          {/* Dashboard - only accessible if authenticated and onboarded */}
-          <Route 
-            path="/dashboard/*" 
-            element={
-              isAuthenticated && user && user.is_onboarded ? (
-                <MainLayout />
-              ) : (
-                <Navigate to="/" replace />
-              )
-            }
-          >
-            {/* Dashboard sub-routes */}
-            <Route index element={<Navigate to="/dashboard/agent-testing" replace />} />
-            <Route path="agent-testing" element={<AgentTestingPage />} />
-            <Route path="memory-banks" element={<MemoryBanksPage />} />
-            <Route path="system-monitor" element={<SystemMonitorPage />} />
-            <Route path="agent-theater" element={<LiveAgentTheaterPage />} />
-            {/* <Route path="agent-theater-old" element={<AgentTheaterOld />} /> */}
-          </Route>
-
-          {/* Catch all - redirect to appropriate page */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </div>
+      <Routes>
+        {/* Main route - Consciousness Theater */}
+        <Route path="/" element={<ConsciousnessTheater />} />
+        
+        {/* Catch all */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </Router>
   );
 }
