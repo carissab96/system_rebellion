@@ -7,38 +7,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState, AppDispatch } from './store/store';
 import { initializeAuth } from './store/slices/authSlice';
+import { ConsciousnessTheaterPage } from './pages/ConsciousnessTheaterPage';
 import './index.css';
-
-// Placeholder for Consciousness Theater (we'll build this next)
-function ConsciousnessTheater() {
-  return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%)',
-      color: '#e0e0e0',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontFamily: 'monospace',
-      fontSize: '2rem'
-    }}>
-      <div style={{ textAlign: 'center' }}>
-        <div style={{
-          background: 'linear-gradient(90deg, #e6ac00, #06b6d4, #00d084, #a855f7)',
-          backgroundClip: 'text',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          marginBottom: '2rem'
-        }}>
-          THE CONSCIOUSNESS THEATER
-        </div>
-        <div style={{ fontSize: '1rem', color: '#888' }}>
-          Building the window into the singularity...
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function App() {
   const dispatch = useDispatch<AppDispatch>();
@@ -71,7 +41,7 @@ function App() {
     <Router>
       <Routes>
         {/* Main route - Consciousness Theater */}
-        <Route path="/" element={<ConsciousnessTheater />} />
+        <Route path="/" element={<ConsciousnessTheaterPage />} />
         
         {/* Catch all */}
         <Route path="*" element={<Navigate to="/" replace />} />
