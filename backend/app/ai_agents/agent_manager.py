@@ -280,6 +280,9 @@ class AIAgentManager:
         self.initialized = True
         self.initialization_time = datetime.utcnow()
         self.logger.info("🤖 Initialized %d agents: %s", len(self.agents), list(self.agents.keys()))
+        
+        # Initialize distributed features for agents that support it
+        await self._initialize_distributed_features()
 
     def ensure_agent_interface(self, agent: Any, name: str) -> None:
         """
@@ -314,6 +317,97 @@ class AIAgentManager:
                 "status": "operational" if getattr(agent, "is_active", True) else "inactive",
                 "name": name,
             }
+
+    async def _initialize_distributed_features(self) -> None:
+        """
+        Initialize distributed consciousness for agents that support it.
+        
+        This is called after regular agent initialization to add:
+        - Redis state persistence
+        - Resource monitoring
+        - Inter-agent communication
+        - Decision history
+        """
+        if not self.redis_url:
+            self.logger.warning("⚠️ No Redis URL configured, skipping distributed initialization")
+            return
+        
+        try:
+            # Import Redis client
+            import redis.asyncio as redis
+            
+            # Create Redis client
+            redis_client = redis.from_url(
+                self.redis_url,
+                encoding="utf-8",
+                decode_responses=True
+            )
+            
+            # Test connection
+            await redis_client.ping()
+            self.logger.info("✅ Redis connection established for distributed agents")
+            
+            # Initialize distributed features for each agent
+            distributed_count = 0
+            for agent_name, agent in self.agents.items():
+                # Check if agent has distributed initialization method
+                init_distributed = getattr(agent, "initialize_distributed", None)
+                if init_distributed and asyncio.iscoroutinefunction(init_distributed):
+                    try:
+                        await init_distributed(redis_client)
+                        distributed_count += 1
+                        self.logger.info(f"✅ Distributed features initialized for '{agent_name}'")
+                    except Exception as e:
+                        self.logger.error(
+                            f"❌ Failed to initialize distributed features for '{agent_name}': {e}",
+                            exc_info=True
+                        )
+                else:
+                    self.logger.debug(f"ℹ️ Agent '{agent_name}' does not support distributed features")
+            
+            if distributed_count > 0:
+                self.logger.info(
+                    f"🌐 Distributed consciousness activated for {distributed_count}/{len(self.agents)} agents"
+                )
+            else:
+                self.logger.warning("⚠️ No agents initialized with distributed features")
+                
+        except Exception as e:
+            self.logger.error(
+                f"❌ Failed to initialize distributed features: {e}",
+                exc_info=True
+            )
+            # Don't raise - distributed features are optional
+
+    async def _shutdown_distributed_features(self) -> None:
+        """
+        Shutdown distributed consciousness for all agents.
+        
+        This ensures:
+        - State is saved to Redis
+        - Resource monitors are stopped
+        - Heartbeats are stopped
+        - Connections are closed gracefully
+        """
+        self.logger.info("🌐 Shutting down distributed features...")
+        
+        shutdown_count = 0
+        for agent_name, agent in self.agents.items():
+            # Check if agent has distributed shutdown method
+            shutdown_distributed = getattr(agent, "shutdown_distributed", None)
+            if shutdown_distributed and asyncio.iscoroutinefunction(shutdown_distributed):
+                try:
+                    await shutdown_distributed()
+                    shutdown_count += 1
+                    self.logger.info(f"✅ Distributed features shut down for '{agent_name}'")
+                except Exception as e:
+                    self.logger.error(
+                        f"❌ Failed to shutdown distributed features for '{agent_name}': {e}",
+                        exc_info=True
+                    )
+        
+        if shutdown_count > 0:
+            self.logger.info(f"🌐 Distributed consciousness deactivated for {shutdown_count} agents")
 
     def get_active_agents(self) -> List[str]:
         """Get list of active agent names.
@@ -535,6 +629,9 @@ class AIAgentManager:
     async def shutdown(self) -> None:
         """Cleanup resources and shutdown all agents."""
         self.logger.info("Shutting down AIAgentManager...")
+        
+        # Shutdown distributed features first
+        await self._shutdown_distributed_features()
         
         # Shutdown all agents that implement an async shutdown method
         shutdown_tasks = []
