@@ -110,13 +110,16 @@ class DistributedAgentMixin:
             # Store Redis client
             self._redis_client = redis_client
             
-            # Get agent name (from existing agent)
+            # Get agent name and role (from existing agent)
             agent_name = getattr(self, 'agent_name', 'unknown_agent')
+            agent_role = getattr(self, 'agent_role', 'AI Agent')
             
             # Initialize communication hub
             self._comm_hub = AgentCommunicationHub(
+                redis_client=redis_client,
                 agent_name=agent_name,
-                redis_client=redis_client
+                agent_role=agent_role,
+                personality_traits=self.personality_traits
             )
             await self._comm_hub.initialize()
             
