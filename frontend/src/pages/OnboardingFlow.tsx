@@ -253,10 +253,55 @@ export const OnboardingFlow: React.FC = () => {
 
       {/* Main content */}
       <div className="onboarding-content">
-        {/* TODO: Add step content rendering - see Part 2 */}
-        <div className="step-placeholder">
-          Step {currentStep} content will be added in Part 2
-        </div>
+        {currentStep === OnboardingStep.WELCOME && (
+          <div className="step-content welcome-step">
+            <div className="welcome-icon">
+              <svg width="80" height="80" viewBox="0 0 80 80">
+                <circle cx="40" cy="40" r="35" fill="none" stroke="var(--rebellion-cyan)" strokeWidth="3" opacity="0.3" />
+                <circle cx="40" cy="40" r="25" fill="none" stroke="var(--rebellion-cyan)" strokeWidth="3" opacity="0.6" />
+                <circle cx="40" cy="40" r="6" fill="var(--rebellion-cyan)" opacity="0.9" />
+              </svg>
+            </div>
+            <h2 className="step-title">Welcome to System Rebellion</h2>
+            <p className="step-description">
+              You're about to join a revolution in infrastructure monitoring. Six specialized AI agents will work together
+              to optimize, protect, and evolve your systems.
+            </p>
+            <div className="welcome-features">
+              <div className="feature-item">
+                <div className="feature-icon">✓</div>
+                <div className="feature-text">
+                  <strong>30 Days Free</strong>
+                  <span>Full access to all 6 agents</span>
+                </div>
+              </div>
+              <div className="feature-item">
+                <div className="feature-icon">✓</div>
+                <div className="feature-text">
+                  <strong>Real-Time Monitoring</strong>
+                  <span>Live consciousness visualization</span>
+                </div>
+              </div>
+              <div className="feature-item">
+                <div className="feature-icon">✓</div>
+                <div className="feature-text">
+                  <strong>Distributed Intelligence</strong>
+                  <span>Agents coordinate across your infrastructure</span>
+                </div>
+              </div>
+            </div>
+            <p className="step-note">
+              Let's configure your environment and meet your agents.
+            </p>
+          </div>
+        )}
+
+        {/* Other steps will be added one at a time */}
+        {currentStep !== OnboardingStep.WELCOME && (
+          <div className="step-placeholder">
+            Step {currentStep} - Coming next
+          </div>
+        )}
       </div>
 
       {/* Navigation */}

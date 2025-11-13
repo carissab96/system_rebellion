@@ -1,0 +1,316 @@
+/* pages/OnboardingFlow.css */
+/* SYSTEM REBELLION - Onboarding Flow Styles */
+/* "Configure your consciousness. Meet your agents." */
+/* Step 1: Welcome Step + Progress Bar */
+
+.onboarding-container {
+  min-height: 100vh;
+  background: var(--rebellion-void);
+  color: var(--rebellion-text);
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-2xl);
+}
+
+/* Progress Bar */
+.onboarding-progress {
+  max-width: 1000px;
+  margin: 0 auto var(--space-2xl);
+  width: 100%;
+}
+
+.progress-bar {
+  height: 4px;
+  background: var(--rebellion-surface);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: var(--space-xl);
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--rebellion-cyan), var(--vic20-cyan));
+  transition: width 0.5s ease;
+}
+
+.progress-steps {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.progress-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+  flex: 1;
+  position: relative;
+}
+
+.step-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--rebellion-surface);
+  border: 2px solid var(--rebellion-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: var(--rebellion-text-dim);
+  transition: all 0.3s ease;
+}
+
+.progress-step.active .step-circle {
+  border-color: var(--rebellion-cyan);
+  color: var(--rebellion-cyan);
+  box-shadow: 0 0 12px rgba(38, 208, 206, 0.3);
+}
+
+.progress-step.completed .step-circle {
+  background: var(--rebellion-cyan);
+  border-color: var(--rebellion-cyan);
+  color: var(--rebellion-void);
+}
+
+.step-label {
+  font-size: 0.8125rem;
+  color: var(--rebellion-text-dim);
+  text-align: center;
+}
+
+.progress-step.active .step-label {
+  color: var(--rebellion-text-bright);
+  font-weight: 600;
+}
+
+/* Main Content */
+.onboarding-content {
+  flex: 1;
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.step-content {
+  width: 100%;
+  animation: step-fade-in 0.5s ease-out;
+}
+
+@keyframes step-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.step-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--rebellion-text-bright);
+  margin-bottom: var(--space-md);
+  text-align: center;
+}
+
+.step-description {
+  font-size: 1.125rem;
+  color: var(--rebellion-text);
+  line-height: 1.6;
+  text-align: center;
+  margin-bottom: var(--space-2xl);
+}
+
+.step-note {
+  font-size: 1rem;
+  color: var(--rebellion-text-dim);
+  text-align: center;
+  font-style: italic;
+}
+
+.step-placeholder {
+  text-align: center;
+  padding: var(--space-2xl);
+  color: var(--rebellion-text-dim);
+  font-size: 1.125rem;
+}
+
+/* Welcome Step */
+.welcome-step {
+  text-align: center;
+}
+
+.welcome-icon {
+  display: inline-block;
+  margin-bottom: var(--space-xl);
+  animation: welcome-pulse 3s ease-in-out infinite;
+}
+
+@keyframes welcome-pulse {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 12px rgba(38, 208, 206, 0.3));
+  }
+  50% {
+    transform: scale(1.05);
+    filter: drop-shadow(0 0 24px rgba(38, 208, 206, 0.5));
+  }
+}
+
+.welcome-features {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  margin: var(--space-2xl) auto;
+  max-width: 500px;
+}
+
+.feature-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+  padding: var(--space-lg);
+  background: var(--rebellion-surface);
+  border: 1px solid var(--rebellion-border);
+  border-radius: var(--radius-md);
+  transition: all 0.3s ease;
+}
+
+.feature-item:hover {
+  border-color: var(--rebellion-cyan);
+  transform: translateX(4px);
+}
+
+.feature-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--rebellion-cyan);
+  color: var(--rebellion-void);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.feature-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  text-align: left;
+}
+
+.feature-text strong {
+  font-size: 1rem;
+  color: var(--rebellion-text-bright);
+  font-weight: 600;
+}
+
+.feature-text span {
+  font-size: 0.875rem;
+  color: var(--rebellion-text-dim);
+}
+
+/* Navigation */
+.onboarding-nav {
+  max-width: 800px;
+  margin: var(--space-2xl) auto 0;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.btn {
+  padding: var(--space-md) var(--space-2xl);
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: var(--font-system);
+  letter-spacing: 0.025em;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--rebellion-cyan), var(--vic20-cyan));
+  color: var(--rebellion-void);
+  box-shadow: 0 4px 12px rgba(38, 208, 206, 0.3);
+  margin-left: auto;
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(38, 208, 206, 0.5);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--rebellion-text);
+  border: 2px solid var(--rebellion-border);
+}
+
+.btn-secondary:hover {
+  border-color: var(--rebellion-cyan);
+  color: var(--rebellion-cyan);
+}
+
+/* Error Display */
+.onboarding-error {
+  max-width: 800px;
+  margin: var(--space-lg) auto 0;
+  padding: var(--space-md);
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid var(--error);
+  border-radius: var(--radius-md);
+  color: var(--error);
+  text-align: center;
+  font-size: 0.875rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .onboarding-container {
+    padding: var(--space-lg);
+  }
+
+  .step-title {
+    font-size: 1.5rem;
+  }
+
+  .step-description {
+    font-size: 1rem;
+  }
+
+  .progress-steps {
+    gap: var(--space-xs);
+  }
+
+  .step-circle {
+    width: 32px;
+    height: 32px;
+    font-size: 0.875rem;
+  }
+
+  .step-label {
+    font-size: 0.75rem;
+  }
+
+  .feature-item {
+    padding: var(--space-md);
+  }
+}
