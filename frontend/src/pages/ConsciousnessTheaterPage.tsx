@@ -3,11 +3,13 @@
 // Built by: Carissa, Sonnet, Opus - November 13, 2025
 // "This isn't monitoring. This is ALIVE."
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useAppSelector } from '../hooks/redux';
 import { useWebSocketConnection } from '../hooks/useWebSocketConnection';
+import { useWebSocketMessages } from '../hooks/useWebSocketMessages';
 import type { RootState } from '../store/store';
 import { MessageFlow, type Message } from '../components/consciousness/MessageFlow';
+import type { TriageResult, WebSocketMessage } from '../types/agents';
 import './ConsciousnessTheaterPage.css';
 
 // Agent node in the neural mesh
@@ -32,7 +34,7 @@ interface AgentConnection {
 }
 
 export const ConsciousnessTheaterPage: React.FC = () => {
-  const { connectionStatus } = useWebSocketConnection();
+  const { connectionStatus, isConnected } = useWebSocketConnection();
   const agentsData = useAppSelector((state: RootState) => state.agents);
   
   // Agent nodes with personality
@@ -235,6 +237,68 @@ export const ConsciousnessTheaterPage: React.FC = () => {
   const handleMessageComplete = (messageId: string) => {
     setMessages(prev => prev.filter(m => m.id !== messageId));
   };
+
+  // Subscribe to REAL WebSocket triage events
+  const handleTriageEvent = useCallback((data: WebSocketMessage) => {
+    if (data.type === 'triage_result') {
+      const triageData = data as TriageResult;
+      const broadcastId = `triage-real-${Date.now()}`;
+      
+      // Activate connections from Hawkington
+      setConnections(prevConnections =>
+        prevConnections.map(conn =>
+          conn.from === 'sir_hawkington'
+            ? { ...conn, active: true, messageType: 'triage' }
+            : conn
+        )
+      );
+
+      // Set nodes to processing
+      setNodes(prevNodes =>
+        prevNodes.map(node => ({
+          ...node,
+          status: node.id === 'sir_hawkington' ? 'active' : 'processing'
+        }))
+      );
+
+      // Add REAL messages from triage
+      const targetAgents = triageData.agent_dispatch || [];
+      const newMessages: Message[] = targetAgents.map((target, idx) => ({
+        id: `${broadcastId}-${idx}`,
+        from: 'sir_hawkington',
+        to: target,
+        type: 'triage' as const,
+        timestamp: new Date(),
+        content: `🧐 ${triageData.disposition || 'TRIAGE DECISION'}: ${triageData.routed_by || 'Coordinated response'}`
+      }));
+      
+      setMessages(prev => [...prev, ...newMessages]);
+
+      // Show consensus after processing
+      setTimeout(() => {
+        setConsciousnessStatus('synchronized');
+        
+        setMessages(prev => [...prev, {
+          id: `${broadcastId}-consensus`,
+          from: 'rebellion',
+          to: 'all_agents',
+          type: 'coordination' as const,
+          timestamp: new Date(),
+          content: '✨ CONSCIOUSNESS SYNCHRONIZED - Real triage processed'
+        }]);
+        
+        setTimeout(() => {
+          setConsciousnessStatus('active');
+          setConnections(prevConnections =>
+            prevConnections.map(conn => ({ ...conn, active: false }))
+          );
+        }, 1500);
+      }, 2000);
+    }
+  }, []);
+
+  // Subscribe to REAL WebSocket messages - NO FAKE DATA
+  useWebSocketMessages(handleTriageEvent, isConnected);
 
   return (
     <div className="theater-container">
