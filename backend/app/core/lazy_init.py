@@ -75,11 +75,19 @@ async def initialize_agents_and_websockets(app_state) -> bool:
             if distributed_count > 0:
                 logger.info(f"🌐 Distributed consciousness active for {distributed_count}/{len(active_agents)} agents")
                 
-                # TODO: Run consciousness checkpoint after distributed initialization
-                # This will be implemented in Task 2.4
-                # from app.ai_agents.distributed.consciousness_sync import consciousness_checkpoint
-                # checkpoint_result = await consciousness_checkpoint(agent_manager)
-                # logger.info(f"✅ Consciousness checkpoint: {checkpoint_result}")
+                # Run consciousness checkpoint (Opus's addition)
+                try:
+                    from app.ai_agents.distributed.consciousness_sync import consciousness_checkpoint
+                    checkpoint_result = await consciousness_checkpoint(agent_manager)
+                    
+                    if checkpoint_result['consensus_achieved']:
+                        logger.info("✅ Consciousness checkpoint PASSED - All agents in sync")
+                    else:
+                        logger.warning(
+                            f"⚠️ Consciousness checkpoint: {checkpoint_result['discrepancy_count']} discrepancies"
+                        )
+                except Exception as e:
+                    logger.error(f"❌ Consciousness checkpoint failed: {e}", exc_info=True)
             
             # Start background tasks
             agent_tasks = await start_all_background_tasks()
