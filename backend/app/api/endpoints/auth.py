@@ -1029,4 +1029,27 @@ async def update_profile(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error updating profile: {str(e)}"
         )
+
+@router.get("/check-email")
+async def check_email_exists(
+    email: str,
+    db: AsyncSession = Depends(get_auth_db)
+) -> Dict[str, bool]:
+    """
+    Check if an email address is already registered.
+    Used during signup to provide real-time feedback.
+    
+    Returns:
+        {"exists": true/false}
+    """
+    try:
+        result = await db.execute(
+            select(User).where(User.email == email.lower())
+        )
+        user = result.scalar_one_or_none()
+        return {"exists": user is not None}
+    except Exception as e:
+        logging.error(f"Error checking email: {str(e)}")
+        # On error, return false to not block signup
+        return {"exists": False}
         
