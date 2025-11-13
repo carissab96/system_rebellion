@@ -560,8 +560,136 @@ export const OnboardingFlow: React.FC = () => {
           </div>
         )}
 
-        {/* Other steps coming next */}
-        {currentStep > OnboardingStep.NETWORK_CHECK && currentStep !== OnboardingStep.COMPLETE && (
+        {currentStep === OnboardingStep.AGENT_INTRODUCTION && (
+          <div className="step-content agent-step">
+            <h2 className="step-title">Meet Your Agents</h2>
+            <p className="step-description">
+              Six specialized AI agents working together to optimize your infrastructure.
+            </p>
+
+            <div className="agent-carousel">
+              {/* Agent card */}
+              <div className="agent-card" style={{ borderColor: currentAgent.color }}>
+                {/* Agent icon - geometric pattern */}
+                <div className="agent-icon" style={{ background: `linear-gradient(135deg, ${currentAgent.color}20, ${currentAgent.color}10)` }}>
+                  {currentAgent.name === 'Sir Hawkington' && (
+                    <svg width="80" height="80" viewBox="0 0 80 80">
+                      <rect x="15" y="15" width="50" height="50" fill="none" stroke={currentAgent.color} strokeWidth="3" />
+                      <rect x="25" y="25" width="30" height="30" fill="none" stroke={currentAgent.color} strokeWidth="3" opacity="0.6" />
+                      <circle cx="40" cy="40" r="8" fill={currentAgent.color} opacity="0.8" />
+                    </svg>
+                  )}
+                  {currentAgent.name === 'Meth Snail (Terry)' && (
+                    <svg width="80" height="80" viewBox="0 0 80 80">
+                      <path d="M15 40 L25 30 L35 40 L45 30 L55 40 L65 30" fill="none" stroke={currentAgent.color} strokeWidth="3" />
+                      <path d="M15 45 L25 35 L35 45 L45 35 L55 45 L65 35" fill="none" stroke={currentAgent.color} strokeWidth="3" opacity="0.6" />
+                      <circle cx="65" cy="25" r="5" fill={currentAgent.color} />
+                    </svg>
+                  )}
+                  {currentAgent.name === 'The Hamsters' && (
+                    <svg width="80" height="80" viewBox="0 0 80 80">
+                      <rect x="20" y="20" width="40" height="40" fill="none" stroke={currentAgent.color} strokeWidth="3" />
+                      <line x1="20" y1="33" x2="60" y2="33" stroke={currentAgent.color} strokeWidth="3" opacity="0.6" />
+                      <line x1="20" y1="47" x2="60" y2="47" stroke={currentAgent.color} strokeWidth="3" opacity="0.6" />
+                    </svg>
+                  )}
+                  {currentAgent.name === 'Quantum Shadow People' && (
+                    <svg width="80" height="80" viewBox="0 0 80 80">
+                      <circle cx="40" cy="40" r="28" fill="none" stroke={currentAgent.color} strokeWidth="3" strokeDasharray="8 8" />
+                      <circle cx="40" cy="40" r="18" fill="none" stroke={currentAgent.color} strokeWidth="3" strokeDasharray="4 4" opacity="0.6" />
+                      <circle cx="40" cy="40" r="6" fill={currentAgent.color} opacity="0.8" />
+                    </svg>
+                  )}
+                  {currentAgent.name === 'The Stick' && (
+                    <svg width="80" height="80" viewBox="0 0 80 80">
+                      <line x1="20" y1="60" x2="60" y2="20" stroke={currentAgent.color} strokeWidth="3" />
+                      <circle cx="20" cy="60" r="5" fill={currentAgent.color} />
+                      <circle cx="40" cy="40" r="5" fill={currentAgent.color} opacity="0.6" />
+                      <circle cx="60" cy="20" r="5" fill={currentAgent.color} opacity="0.3" />
+                    </svg>
+                  )}
+                  {currentAgent.name === 'VIC-20 Sage' && (
+                    <svg width="80" height="80" viewBox="0 0 80 80">
+                      <polygon points="40,15 55,25 55,45 40,55 25,45 25,25" fill="none" stroke={currentAgent.color} strokeWidth="3" />
+                      <polygon points="40,23 48,28 48,42 40,47 32,42 32,28" fill="none" stroke={currentAgent.color} strokeWidth="3" opacity="0.6" />
+                      <circle cx="40" cy="40" r="5" fill={currentAgent.color} opacity="0.8" />
+                    </svg>
+                  )}
+                </div>
+
+                {/* Agent info */}
+                <div className="agent-info">
+                  <h3 className="agent-name" style={{ color: currentAgent.color }}>
+                    {currentAgent.name}
+                  </h3>
+                  <div className="agent-role">{currentAgent.role}</div>
+                  <p className="agent-personality">{currentAgent.personality}</p>
+
+                  {/* Capabilities */}
+                  <div className="agent-capabilities">
+                    <div className="capabilities-label">Capabilities:</div>
+                    <div className="capabilities-list">
+                      {currentAgent.capabilities.map((cap, idx) => (
+                        <div key={idx} className="capability-tag" style={{ borderColor: currentAgent.color }}>
+                          {cap}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Carousel navigation */}
+              <div className="carousel-nav">
+                <button
+                  className="carousel-btn"
+                  onClick={() => setCurrentAgentIndex(Math.max(0, currentAgentIndex - 1))}
+                  disabled={currentAgentIndex === 0}
+                  aria-label="Previous agent"
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24">
+                    <path d="M15 18 L9 12 L15 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+
+                {/* Agent indicators */}
+                <div className="carousel-indicators">
+                  {AGENTS.map((agent, idx) => (
+                    <button
+                      key={idx}
+                      className={`indicator ${idx === currentAgentIndex ? 'active' : ''} ${idx < currentAgentIndex ? 'completed' : ''}`}
+                      onClick={() => setCurrentAgentIndex(idx)}
+                      style={{
+                        backgroundColor: idx === currentAgentIndex ? agent.color : 'transparent',
+                        borderColor: agent.color,
+                      }}
+                      aria-label={`View ${agent.name}`}
+                    />
+                  ))}
+                </div>
+
+                <button
+                  className="carousel-btn"
+                  onClick={() => setCurrentAgentIndex(Math.min(AGENTS.length - 1, currentAgentIndex + 1))}
+                  disabled={currentAgentIndex === AGENTS.length - 1}
+                  aria-label="Next agent"
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24">
+                    <path d="M9 18 L15 12 L9 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Progress indicator */}
+              <div className="agent-progress">
+                Agent {currentAgentIndex + 1} of {AGENTS.length}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Complete step coming next */}
+        {currentStep === OnboardingStep.COMPLETE && (
           <div className="step-placeholder">
             Step {currentStep} - Coming next
           </div>
