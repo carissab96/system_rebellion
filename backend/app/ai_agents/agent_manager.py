@@ -595,7 +595,7 @@ class AIAgentManager:
                 self.logger.error("Error in agent %s: %s", agent_name, e, exc_info=True)
                 results[agent_name] = {"error": str(e)}
         
-        # Run all agents in parallel
+        # Run all agents in paralle
         tasks = [process_agent(name, agent) for name, agent in self.agents.items()]
         await asyncio.gather(*tasks, return_exceptions=True)
         
