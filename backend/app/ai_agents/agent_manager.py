@@ -626,6 +626,59 @@ class AIAgentManager:
                 
         return health
 
+    async def get_distributed_decision_history(
+        self, 
+        agent_name: Optional[str] = None,
+        limit: int = 50
+    ) -> Dict[str, Any]:
+        """
+        Get decision history from distributed agents.
+        
+        Args:
+            agent_name: Specific agent to query (None = all agents)
+            limit: Maximum number of decisions per agent
+            
+        Returns:
+            Dict with decision history per agent
+        """
+        history = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "agents": {}
+        }
+        
+        # Determine which agents to query
+        agents_to_query = {}
+        if agent_name:
+            if agent_name in self.agents:
+                agents_to_query[agent_name] = self.agents[agent_name]
+        else:
+            agents_to_query = self.agents
+        
+        # Query each agent
+        for name, agent in agents_to_query.items():
+            try:
+                # Check if agent has distributed features
+                if hasattr(agent, 'get_recent_decisions'):
+                    decisions = await agent.get_recent_decisions(limit=limit)
+                    history["agents"][name] = {
+                        "status": "success",
+                        "decision_count": len(decisions),
+                        "decisions": decisions
+                    }
+                else:
+                    history["agents"][name] = {
+                        "status": "not_distributed",
+                        "message": "Agent does not have distributed features"
+                    }
+            except Exception as e:
+                self.logger.error(f"Error getting decision history for {name}: {e}")
+                history["agents"][name] = {
+                    "status": "error",
+                    "error": str(e)
+                }
+        
+        return history
+
     async def shutdown(self) -> None:
         """Cleanup resources and shutdown all agents."""
         self.logger.info("Shutting down AIAgentManager...")
