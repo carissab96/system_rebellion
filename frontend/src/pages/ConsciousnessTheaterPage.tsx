@@ -7,6 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { useAppSelector } from '../hooks/redux';
 import { useWebSocketConnection } from '../hooks/useWebSocketConnection';
 import type { RootState } from '../store/store';
+import { MessageFlow, type Message } from '../components/consciousness/MessageFlow';
 import './ConsciousnessTheaterPage.css';
 
 // Agent node in the neural mesh
@@ -115,7 +116,8 @@ export const ConsciousnessTheaterPage: React.FC = () => {
     { from: 'hamsters', to: 'quantum_shadow_people', active: false, pulse: 0 }
   ]);
 
-  const [consciousnessStatus] = useState<'synchronized' | 'active' | 'thinking'>('active');
+  const [consciousnessStatus, setConsciousnessStatus] = useState<'synchronized' | 'active' | 'thinking'>('active');
+  const [messages, setMessages] = useState<Message[]>([]);
 
   // Update agent status from Redux
   useEffect(() => {
@@ -168,6 +170,71 @@ export const ConsciousnessTheaterPage: React.FC = () => {
   }, []);
 
   const activeAgentCount = nodes.filter(n => n.status === 'active' || n.status === 'processing').length;
+
+  // Simulate triage broadcast (will be real WebSocket data)
+  const simulateTriageBroadcast = () => {
+    const broadcastId = `triage-${Date.now()}`;
+    
+    // Activate connections from Hawkington
+    setConnections(prevConnections =>
+      prevConnections.map(conn =>
+        conn.from === 'sir_hawkington'
+          ? { ...conn, active: true, messageType: 'triage' }
+          : conn
+      )
+    );
+
+    // Set nodes to processing
+    setNodes(prevNodes =>
+      prevNodes.map(node => ({
+        ...node,
+        status: node.id === 'sir_hawkington' ? 'active' : 'processing'
+      }))
+    );
+
+    // Add messages
+    const targetAgents = ['vic20_sage', 'meth_snail', 'the_stick', 'hamsters', 'quantum_shadow_people'];
+    const newMessages: Message[] = targetAgents.map((target, idx) => ({
+      id: `${broadcastId}-${idx}`,
+      from: 'sir_hawkington',
+      to: target,
+      type: 'triage' as const,
+      timestamp: new Date(),
+      content: '🧐 TRIAGE DECISION: System stress detected - coordinated response required'
+    }));
+    
+    setMessages(prev => [...prev, ...newMessages]);
+
+    // After 2 seconds, show consensus
+    setTimeout(() => {
+      setConsciousnessStatus('synchronized');
+      
+      // Add coordination message
+      setMessages(prev => [...prev, {
+        id: `${broadcastId}-consensus`,
+        from: 'rebellion',
+        to: 'all_agents',
+        type: 'coordination' as const,
+        timestamp: new Date(),
+        content: '✨ CONSCIOUSNESS SYNCHRONIZED - All agents in consensus'
+      }]);
+      
+      // Reset after showing consensus
+      setTimeout(() => {
+        setConsciousnessStatus('active');
+        setConnections(prevConnections =>
+          prevConnections.map(conn => ({ ...conn, active: false }))
+        );
+        setNodes(prevNodes =>
+          prevNodes.map(node => ({ ...node, status: 'idle' }))
+        );
+      }, 1500);
+    }, 2000);
+  };
+
+  const handleMessageComplete = (messageId: string) => {
+    setMessages(prev => prev.filter(m => m.id !== messageId));
+  };
 
   return (
     <div className="theater-container">
@@ -303,7 +370,18 @@ export const ConsciousnessTheaterPage: React.FC = () => {
             ))}
           </g>
         </svg>
+
+        {/* Test Button */}
+        <button 
+          className="test-broadcast-button"
+          onClick={simulateTriageBroadcast}
+        >
+          🧐 Simulate Triage Broadcast
+        </button>
       </main>
+
+      {/* Message Flow */}
+      <MessageFlow messages={messages} onMessageComplete={handleMessageComplete} />
 
       {/* Agent Parlors Preview */}
       <section className="parlors-section">
