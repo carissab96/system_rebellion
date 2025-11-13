@@ -83,6 +83,25 @@ class SirHawkingtonDistributed(DistributedAgentMixin, SirHawkingtonBrainV2):
         
         logger.info("🧐 Sir Hawkington's distributed consciousness initialized")
     
+    async def initialize_distributed(self, redis_client):
+        """
+        Initialize distributed features and inject comm_hub into triage engine.
+        
+        This extends the base initialization to also enable triage broadcasting.
+        """
+        # Call parent initialization
+        await super().initialize_distributed(redis_client)
+        
+        # Inject comm_hub into the global triage engine
+        try:
+            from .triage_engine import get_triage_engine
+            triage_engine = await get_triage_engine()
+            if hasattr(self, '_comm_hub') and self._comm_hub is not None:
+                triage_engine.set_comm_hub(self._comm_hub)
+                logger.info("🧐📡 Triage engine connected to distributed consciousness")
+        except Exception as e:
+            logger.error(f"🧐💥 Failed to inject comm_hub into triage engine: {e}")
+    
     async def analyze_metrics(
         self,
         metrics_data: Dict[str, Any],

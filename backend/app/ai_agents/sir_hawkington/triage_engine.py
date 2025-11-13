@@ -191,6 +191,9 @@ class SirHawkingtonTriageEngine(AgentInstrumentationMixin, TriageEngineWithRedis
         }
         self.monocle_yeet_incidents = 0
         
+        # Communication hub for distributed broadcasting (set by distributed agent)
+        self._comm_hub = None
+        
         # Triage thresholds (Sir Hawkington's aristocratic standards)
         # LOWERED for demo/testing - more agents will be dispatched
         self.triage_thresholds = {
@@ -223,6 +226,15 @@ class SirHawkingtonTriageEngine(AgentInstrumentationMixin, TriageEngineWithRedis
                 sir_hawkington_brain.initialize_database()
         
         self.logger.info("🧐✨ Triage Engine initialization complete - Ready for aristocratic command")
+    
+    def set_comm_hub(self, comm_hub):
+        """
+        Set the communication hub for distributed broadcasting.
+        
+        This is called by the distributed agent to enable triage decision broadcasting.
+        """
+        self._comm_hub = comm_hub
+        self.logger.info("🧐📡 Communication hub connected - Triage broadcasting enabled")
     
     # === EXISTING METHODS (NO CHANGES) ===
     
@@ -401,6 +413,66 @@ class SirHawkingtonTriageEngine(AgentInstrumentationMixin, TriageEngineWithRedis
         else:
             return f"{base_reasoning}. Routing decision: {routing.value}"
     
+    async def _broadcast_triage_decision(
+        self,
+        triage_decision: TriageDecision,
+        metrics_data: Dict[str, Any],
+        user_id: Optional[str]
+    ) -> None:
+        """
+        Broadcast triage decision to all distributed agents via Redis.
+        
+        This allows all agents to be aware of system-wide triage decisions
+        and prepare for potential routing to them.
+        """
+        try:
+            # Check if we have a communication hub (distributed features enabled)
+            if not hasattr(self, '_comm_hub') or self._comm_hub is None:
+                self.logger.debug("🧐 No comm hub available, skipping triage broadcast")
+                return
+            
+            # Determine priority based on severity
+            from ..distributed.message_protocol import Priority
+            priority_map = {
+                TriageSeverity.NORMAL: Priority.LOW,
+                TriageSeverity.MEDIUM: Priority.NORMAL,
+                TriageSeverity.HIGH: Priority.HIGH,
+                TriageSeverity.EMERGENCY: Priority.CRITICAL
+            }
+            priority = priority_map.get(triage_decision.severity, Priority.NORMAL)
+            
+            # Create triage broadcast message
+            message_data = {
+                'severity': triage_decision.severity.value,
+                'routing': triage_decision.routing.value,
+                'target_agents': triage_decision.target_agents,
+                'reasoning': triage_decision.reasoning,
+                'metrics_summary': {
+                    'cpu_usage': metrics_data.get('cpu_usage'),
+                    'memory_usage': metrics_data.get('memory_usage'),
+                    'disk_usage': metrics_data.get('disk_usage'),
+                    'network_usage': metrics_data.get('network_usage'),
+                    'timestamp': metrics_data.get('timestamp')
+                },
+                'user_id': user_id
+            }
+            
+            # Broadcast to all agents
+            await self._comm_hub.broadcast_message(
+                message_type='triage_decision',
+                data=message_data,
+                priority=priority
+            )
+            
+            self.logger.info(
+                f"🧐📡 Triage decision broadcast: {triage_decision.severity.value} → "
+                f"{triage_decision.routing.value} (targets: {', '.join(triage_decision.target_agents)})"
+            )
+            
+        except Exception as e:
+            # Don't fail triage routing if broadcast fails
+            self.logger.error(f"🧐💥 Failed to broadcast triage decision: {e}", exc_info=True)
+    
     async def _execute_triage_routing(
         self, 
         triage_decision: TriageDecision, 
@@ -416,6 +488,9 @@ class SirHawkingtonTriageEngine(AgentInstrumentationMixin, TriageEngineWithRedis
         }
         
         self.routing_stats[triage_decision.routing.value] += 1
+        
+        # Broadcast triage decision to all distributed agents via Redis
+        await self._broadcast_triage_decision(triage_decision, metrics_data, user_id)
         
         try:
             if triage_decision.routing == TriageRouting.STICK_DIRECT:
