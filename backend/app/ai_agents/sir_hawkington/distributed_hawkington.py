@@ -25,6 +25,7 @@ from typing import Dict, Any, Optional
 from ..distributed.mixins import DistributedAgentMixin
 from ..distributed.resource_monitor import ResourceType
 from ..distributed.message_protocol import MessageType, Priority
+from ..distributed.system_actions import SystemActions
 from .decision_engine import SirHawkingtonBrainV2, DecisionType, MonocleState, AnalysisDepth
 
 
@@ -239,8 +240,38 @@ class SirHawkingtonDistributed(DistributedAgentMixin, SirHawkingtonBrainV2):
                     priority=Priority.CRITICAL
                 )
             
-            # TODO: In future, could trigger system throttling here
-            # For now, just log and alert
+            # REAL CPU throttling (Task 4.1 Enhanced)
+            logger.info("🧐⚙️ Initiating aristocratic system throttling with distinguished grace...")
+            
+            throttle_result = await SystemActions.throttle_cpu_intensive_tasks()
+            
+            if throttle_result['success']:
+                logger.info(
+                    f"🧐✅ System throttled with DISTINCTION! CPU: {throttle_result['cpu_before']:.1f}% → "
+                    f"{throttle_result['cpu_after']:.1f}%. Improvement: {throttle_result['improvement']:.1f}%"
+                )
+                logger.info(f"🧐⚙️ Actions taken: {', '.join(throttle_result['actions_taken'])}")
+                
+                # Record successful throttling
+                if self.is_distributed:
+                    await self.make_distributed_decision(
+                        decision_type="cpu_throttle_completed",
+                        input_data={
+                            "cpu_before": throttle_result['cpu_before'],
+                            "trigger": "critical_cpu"
+                        },
+                        output_data={
+                            "cpu_after": throttle_result['cpu_after'],
+                            "improvement": throttle_result['improvement'],
+                            "improvement_percent": throttle_result['improvement_percent'],
+                            "monocle_state": "polished",
+                            "aristocratic_approval": "granted"
+                        },
+                        confidence=1.0,
+                        reasoning="Critical CPU usage addressed with aristocratic efficiency"
+                    )
+            else:
+                logger.error(f"🧐❌ CPU throttling failed: {throttle_result.get('error', 'Unknown error')}")
     
     async def _record_monocle_yeet(self, missing_metrics, invalid_metrics, reason, intensity, user_id=None):
         """

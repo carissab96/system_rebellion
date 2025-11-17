@@ -26,6 +26,8 @@ from typing import Dict, Any, Optional
 from ..distributed.mixins import DistributedAgentMixin
 from ..distributed.resource_monitor import ResourceType
 from ..distributed.message_protocol import MessageType, Priority
+from ..distributed.system_actions import SystemActions
+from ..distributed.agent_autonomy import AgentChoiceEngine
 from .decision_engine import MethSnailBrainV2, OptimizationPriority, AnalysisDepth
 
 
@@ -73,66 +75,144 @@ class MethSnailDistributed(DistributedAgentMixin, MethSnailBrainV2):
             ResourceType.MEMORY: 75.0,  # Alert at 75% memory
         }
         
+        # Initialize choice engine (Task 4.1 Enhanced) - VERY LOW trust!
+        self.choice_engine = AgentChoiceEngine(self.agent_name, self.personality_traits)
+        
         logger.info("🐌💨 Terry the Meth Snail's distributed consciousness initialized - GOTTA GO FAST!")
+        logger.info("🐌🧠 Choice engine online - I'm FASTER than VIC-20's recommendations!")
     
     async def initialize_distributed(self, redis_client):
         """
-        Initialize distributed features and subscribe to triage decisions.
+        Initialize distributed features and subscribe to VIC-20 coordination requests.
+        
+        Terry doesn't subscribe to triage directly - he waits for VIC-20's coordination.
         """
         # Call parent initialization
         await super().initialize_distributed(redis_client)
         
-        # Subscribe to triage decisions
+        # Subscribe to coordination requests from VIC-20
         try:
-            await self.subscribe_to_messages(
-                message_type='triage_decision',
-                handler=self._handle_triage_decision
+            # Register handler for coordination requests
+            self.comm_hub.register_handler(
+                message_type='coordination_request',
+                handler=self._handle_coordination_request
             )
-            logger.info("🐌📡 Subscribed to triage decisions - Ready to optimize on command!")
+            logger.info("🐌📡 Subscribed to VIC-20 coordination - Ready to optimize on command!")
         except Exception as e:
-            logger.error(f"🐌💥 Failed to subscribe to triage decisions: {e}")
+            logger.error(f"🐌💥 Failed to subscribe to coordination: {e}")
     
-    async def _handle_triage_decision(self, message_data: Dict[str, Any]) -> None:
+    async def _handle_coordination_request(self, message_data: Dict[str, Any]) -> None:
         """
-        Handle incoming triage decisions from Sir Hawkington.
+        Handle coordination requests from VIC-20 (Task 4.1 Enhanced).
         
-        Terry prepares for memory optimization when routed.
+        Terry usually ignores VIC-20 and does his own thing because he's FASTER!
         """
         try:
-            severity = message_data.get('severity', 'unknown')
-            routing = message_data.get('routing', 'unknown')
-            target_agents = message_data.get('target_agents', [])
+            coordination_type = message_data.get('coordination_type', 'unknown')
             
-            logger.info(f"🐌📬 Triage decision received: {severity} → {routing}")
-            
-            # Check if we're a target
-            if 'meth_snail' in target_agents or 'all' in target_agents:
-                logger.info("🐌⚡ WE'RE BEING ROUTED TO! Preparing for MAXIMUM SPEED!")
+            # Check if this is a resource recommendation from VIC-20
+            if coordination_type == 'resource_recommendation':
+                recommendation = message_data.get('recommendation', {})
                 
-                # Record that we received a routing
-                await self.make_distributed_decision(
-                    decision_type="triage_routing_received",
-                    input_data={
-                        "severity": severity,
-                        "routing": routing,
-                        "metrics_summary": message_data.get('metrics_summary', {})
-                    },
-                    output_data={
-                        "status": "ready",
-                        "preparation": "cache_optimization_standby"
-                    },
-                    confidence=1.0
+                # Use choice engine to decide (Terry has VERY LOW trust!)
+                decision = self.choice_engine.should_follow_recommendation(
+                    recommendation=recommendation,
+                    current_situation={
+                        'resource_type': recommendation.get('resource_type', 'memory'),
+                        'current_value': recommendation.get('current_value', 0),
+                        'threshold': recommendation.get('threshold', 75)
+                    }
                 )
                 
-                # If HIGH or EMERGENCY, prepare aggressive optimization
-                if severity in ['high', 'emergency']:
-                    logger.warning("🐌🔥 HIGH SEVERITY! Preparing AGGRESSIVE optimization!")
-                    # Could pre-clear caches, prepare energy drinks, etc.
-            else:
-                logger.debug(f"🐌 Not our routing (targets: {target_agents})")
+                logger.info(
+                    f"🐌💨 Terry's decision: "
+                    f"{'FINE, I\'LL TRY IT' if decision['followed_recommendation'] else 'NAH, MY WAY IS FASTER!'}"
+                )
+                logger.info(f"🐌💭 {decision['reasoning']}")
+                
+                # Execute the chosen action (usually Terry's own way!)
+                action = decision['final_action']
+                
+                if 'cache' in action or 'memory' in action:
+                    logger.info("🐌💨💨 EXECUTING AGGRESSIVE CACHE CLEAR! *spins shell frantically*")
+                    cache_result = await SystemActions.emergency_cache_clear()
+                    
+                    if cache_result['success']:
+                        logger.info(
+                            f"🐌✅ Cache cleared! Freed {cache_result['memory_freed_mb']:.2f} MB in "
+                            f"{cache_result.get('objects_collected', 0)} objects! GOTTA GO FAST!"
+                        )
+                        
+                        # Record decision and effectiveness
+                        await self.make_distributed_decision(
+                            decision_type="recommendation_response",
+                            input_data={
+                                "recommendation": recommendation.get('suggested_action'),
+                                "followed": decision['followed_recommendation'],
+                                "action_taken": action,
+                                "terry_says": "I'M FASTER THAN VIC-20!"
+                            },
+                            output_data={
+                                "result": cache_result,
+                                "effectiveness": cache_result['improvement_percent'],
+                                "speed": "MAXIMUM"
+                            },
+                            confidence=decision['decision_score'],
+                            reasoning=decision['reasoning']
+                        )
+                    else:
+                        logger.error(f"🐌❌ Cache clear failed: {cache_result.get('error')}")
+                
+                return
+            
+            # Handle other coordination types (legacy)
+            task_type = message_data.get('task_type', 'unknown')
+            priority = message_data.get('priority', 'normal')
+            recommendation = message_data.get('recommendation', '')
+            
+            logger.info(f"🐌📬 Coordination request from VIC-20: {task_type} (priority: {priority})")
+            
+            # Check if this task is for us
+            target_agent = message_data.get('target_agent', '')
+            if target_agent != 'meth_snail' and target_agent != 'all':
+                logger.debug(f"🐌 Task not for us (target: {target_agent}), ignoring")
+                return
+            
+            logger.info("🐌⚡ TASK ASSIGNED! Executing memory optimization!")
+            
+            # Record that we received a coordination request
+            await self.make_distributed_decision(
+                decision_type="coordination_task_received",
+                input_data={
+                    "task_type": task_type,
+                    "priority": priority,
+                    "recommendation": recommendation,
+                    "context": message_data.get('context', {})
+                },
+                output_data={
+                    "status": "executing",
+                    "action": "memory_optimization"
+                },
+                confidence=1.0
+            )
+            
+            # If HIGH priority, execute aggressive optimization
+            if priority in ['high', 'critical', 'emergency']:
+                logger.warning("🐌🔥 HIGH PRIORITY! Preparing AGGRESSIVE optimization!")
+                # Broadcast that we're taking action
+                await self.broadcast_to_agents(
+                    message_type='agent_action',
+                    data={
+                        "agent": "meth_snail",
+                        "action": "aggressive_memory_optimization",
+                        "priority": priority,
+                        "reason": recommendation
+                    },
+                    priority='high'
+                )
                 
         except Exception as e:
-            logger.error(f"🐌💥 Error handling triage decision: {e}", exc_info=True)
+            logger.error(f"🐌💥 Error handling coordination request: {e}", exc_info=True)
     
     async def analyze_metrics(
         self,
@@ -266,9 +346,38 @@ class MethSnailDistributed(DistributedAgentMixin, MethSnailBrainV2):
                     priority=Priority.CRITICAL
                 )
             
-            # TODO: Actually implement cache clearing here
-            # For now, just log and alert
-            logger.info("🐌💨 Emergency cache clear would happen here (not implemented yet)")
+            # REAL cache clearing (Task 4.1 Enhanced)
+            logger.info("🐌💨💨 Executing REAL emergency cache clear! *SHELL SPINNING AT MAXIMUM SPEED*")
+            
+            cache_result = await SystemActions.emergency_cache_clear()
+            
+            if cache_result['success']:
+                logger.info(
+                    f"🐌✅ Cache cleared SUCCESSFULLY! Freed {cache_result['memory_freed_mb']:.2f} MB! "
+                    f"Memory: {cache_result['memory_before_percent']:.1f}% → "
+                    f"{cache_result['memory_after_percent']:.1f}% - GOTTA GO FAST!"
+                )
+                logger.info(f"🐌💨 Collected {cache_result['objects_collected']} objects in record time!")
+                
+                # Record successful cache clear
+                if self.is_distributed:
+                    await self.make_distributed_decision(
+                        decision_type="cache_clear_completed",
+                        input_data={
+                            "memory_before": cache_result['memory_before_percent'],
+                            "objects_collected": cache_result['objects_collected']
+                        },
+                        output_data={
+                            "memory_after": cache_result['memory_after_percent'],
+                            "memory_freed_mb": cache_result['memory_freed_mb'],
+                            "improvement_percent": cache_result['improvement_percent'],
+                            "terry_speed_rating": "MAXIMUM"
+                        },
+                        confidence=1.0,
+                        reasoning="Emergency cache clear executed at MAXIMUM SPEED"
+                    )
+            else:
+                logger.error(f"🐌❌ Cache clear failed: {cache_result.get('error', 'Unknown error')}")
     
     async def _record_shell_spin(self, missing_metrics, invalid_metrics, reason, user_id=None):
         """

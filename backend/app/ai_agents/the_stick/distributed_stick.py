@@ -77,17 +77,25 @@ class TheStickDistributed(DistributedAgentMixin, TheStickBrainV3):
         logger.info("🥢✨ The Stick's distributed consciousness initialized - LEARNING PROTOCOLS ACTIVE!")
     
     async def initialize_distributed(self, redis_client):
-        """Initialize distributed features and subscribe to triage decisions."""
+        """Initialize distributed features and subscribe to triage decisions and coordination updates."""
         await super().initialize_distributed(redis_client)
         
         try:
-            await self.subscribe_to_messages(
+            # Subscribe to triage decisions from Sir Hawkington
+            self.comm_hub.register_handler(
                 message_type='triage_decision',
                 handler=self._handle_triage_decision
             )
             logger.info("🥢📡 The Stick subscribed to triage - Learning from all decisions!")
+            
+            # Subscribe to coordination updates from VIC-20
+            self.comm_hub.register_handler(
+                message_type='coordination_update',
+                handler=self._handle_coordination_update
+            )
+            logger.info("🥢📡 The Stick subscribed to coordination updates - Learning from VIC-20!")
         except Exception as e:
-            logger.error(f"🥢💥 Failed to subscribe to triage: {e}")
+            logger.error(f"🥢💥 Failed to subscribe: {e}")
     
     async def _handle_triage_decision(self, message_data: Dict[str, Any]) -> None:
         """Handle triage decisions - The Stick learns from every decision."""
@@ -112,7 +120,9 @@ class TheStickDistributed(DistributedAgentMixin, TheStickBrainV3):
                     "pattern_recorded": True,
                     "guidance_level": "observing"
                 },
-                confidence=1.0
+                confidence=1.0,
+                triage_severity=severity,  # Task 3.3: Record triage severity
+                triage_routing=routing  # Task 3.3: Record triage routing
             )
             
             if 'the_stick' in target_agents or routing == 'stick_direct':
@@ -125,6 +135,40 @@ class TheStickDistributed(DistributedAgentMixin, TheStickBrainV3):
                 
         except Exception as e:
             logger.error(f"🥢💥 Error handling triage: {e}", exc_info=True)
+    
+    async def _handle_coordination_update(self, message_data: Dict[str, Any]) -> None:
+        """Handle coordination updates from VIC-20 - The Stick logs all coordination activities."""
+        try:
+            coordination_id = message_data.get('coordination_id', 'unknown')
+            severity = message_data.get('severity', 'unknown')
+            agents_involved = message_data.get('agents_involved', [])
+            status = message_data.get('status', 'unknown')
+            
+            logger.info(f"🥢📬 Coordination update received: {coordination_id} - {status}")
+            
+            # Log the coordination activity for learning
+            await self.make_distributed_decision(
+                decision_type="coordination_learning_observation",
+                input_data={
+                    "coordination_id": coordination_id,
+                    "severity": severity,
+                    "agents_involved": agents_involved,
+                    "status": status
+                },
+                output_data={
+                    "status": "logged",
+                    "pattern_recorded": True,
+                    "learning_value": "high" if severity in ['high', 'critical', 'emergency'] else "normal"
+                },
+                confidence=1.0,
+                triage_severity=severity,  # Task 3.3: Record triage severity
+                coordination_id=coordination_id  # Task 3.3: Link to coordination
+            )
+            
+            logger.debug(f"🥢📝 Coordination logged: {len(agents_involved)} agents involved")
+            
+        except Exception as e:
+            logger.error(f"🥢💥 Error handling coordination update: {e}", exc_info=True)
     
     async def analyze_metrics(
         self,
@@ -238,6 +282,71 @@ class TheStickDistributed(DistributedAgentMixin, TheStickBrainV3):
                     },
                     priority=Priority.NORMAL
                 )
+    
+    async def track_action_effectiveness(
+        self,
+        agent_name: str,
+        action_type: str,
+        recommendation_followed: bool,
+        effectiveness_data: Dict[str, Any]
+    ) -> None:
+        """
+        Track effectiveness of agent actions for learning (Task 4.1 Enhanced).
+        
+        The Stick records which actions worked and builds historical data
+        for VIC-20's recommendation engine.
+        
+        Args:
+            agent_name: Name of agent that took action
+            action_type: Type of action taken
+            recommendation_followed: Whether agent followed VIC-20's recommendation
+            effectiveness_data: Results of the action (before/after, improvement, etc.)
+        """
+        logger.info(
+            f"🪵📊 Recording action effectiveness: {agent_name} - {action_type} "
+            f"({'followed' if recommendation_followed else 'overrode'} recommendation)"
+        )
+        
+        # Record in decision history for learning
+        if self.is_distributed:
+            await self.make_distributed_decision(
+                decision_type="action_effectiveness_tracked",
+                input_data={
+                    "agent": agent_name,
+                    "action": action_type,
+                    "followed_recommendation": recommendation_followed,
+                    "timestamp": effectiveness_data.get('timestamp')
+                },
+                output_data={
+                    "effectiveness": effectiveness_data,
+                    "learning_value": "high",
+                    "pattern_detected": self._detect_pattern(agent_name, action_type, effectiveness_data)
+                },
+                confidence=1.0,
+                reasoning=f"Tracking {agent_name}'s action effectiveness for future learning"
+            )
+    
+    def _detect_pattern(
+        self,
+        agent_name: str,
+        action_type: str,
+        effectiveness_data: Dict[str, Any]
+    ) -> str:
+        """
+        Detect patterns in agent actions (simple pattern recognition).
+        
+        In future, this will use ML. For now, simple rule-based patterns.
+        """
+        improvement = effectiveness_data.get('improvement_percent', 0)
+        
+        if improvement > 20:
+            return f"{agent_name} is highly effective with {action_type}"
+        elif improvement > 10:
+            return f"{agent_name} shows moderate effectiveness with {action_type}"
+        elif improvement > 0:
+            return f"{agent_name} shows minimal effectiveness with {action_type}"
+        else:
+            return f"{agent_name}'s {action_type} needs improvement"
     
     def get_agent_status(self) -> Dict[str, Any]:
         """

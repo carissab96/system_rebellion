@@ -25,6 +25,8 @@ from typing import Dict, Any, Optional
 from ..distributed.mixins import DistributedAgentMixin
 from ..distributed.resource_monitor import ResourceType
 from ..distributed.message_protocol import MessageType, Priority
+from ..distributed.system_actions import SystemActions
+from ..distributed.agent_autonomy import AgentChoiceEngine
 from .decision_engine import QuantumShadowPeopleBrainV2
 
 
@@ -73,56 +75,138 @@ class QuantumShadowPeopleDistributed(DistributedAgentMixin, QuantumShadowPeopleB
             ResourceType.NETWORK: 85.0,  # Alert at 85% network utilization
         }
         
-        logger.info("👥🌌 Quantum Shadow People's distributed consciousness initialized - QUANTUM PARANOIA ACTIVE!")
+        # Initialize choice engine (Task 4.1 Enhanced) - LOW trust (paranoid!)
+        self.choice_engine = AgentChoiceEngine(self.agent_name, self.personality_traits)
+        
+        logger.info("👥🔮 Quantum Shadow People's distributed consciousness initialized - QUANTUM SURVEILLANCE ACTIVE!")
+        logger.info("👥🧠 Choice engine online - TRUST NO ONE, not even VIC-20!")
     
     async def initialize_distributed(self, redis_client):
-        """Initialize distributed features and subscribe to triage decisions."""
+        """Initialize distributed features and subscribe to VIC-20 coordination requests.
+        
+        QSP waits in the quantum shadows for VIC-20's coordination.
+        """
         await super().initialize_distributed(redis_client)
         
         try:
-            await self.subscribe_to_messages(
-                message_type='triage_decision',
-                handler=self._handle_triage_decision
+            # Register handler for coordination requests from VIC-20
+            self.comm_hub.register_handler(
+                message_type='coordination_request',
+                handler=self._handle_coordination_request
             )
-            logger.info("👥📡 QSP subscribed to triage - Quantum surveillance active!")
+            logger.info("👥📡 QSP subscribed to VIC-20 coordination - Quantum surveillance active!")
         except Exception as e:
-            logger.error(f"👥💥 Failed to subscribe to triage: {e}")
+            logger.error(f"👥💥 Failed to subscribe to coordination: {e}")
     
-    async def _handle_triage_decision(self, message_data: Dict[str, Any]) -> None:
-        """Handle triage decisions - QSP analyzes for security threats."""
+    async def _handle_coordination_request(self, message_data: Dict[str, Any]) -> None:
+        """Handle coordination requests from VIC-20 (Task 4.1 Enhanced) - QSP is PARANOID!"""
         try:
-            severity = message_data.get('severity', 'unknown')
-            routing = message_data.get('routing', 'unknown')
-            target_agents = message_data.get('target_agents', [])
+            coordination_type = message_data.get('coordination_type', 'unknown')
             
-            logger.info(f"👥📬 Triage received: {severity} → {routing}")
-            
-            if 'quantum_shadow_people' in target_agents or 'all' in target_agents:
-                logger.info("👥⚡ QSP ACTIVATED! Quantum phase shift: NETWORK ANALYSIS MODE!")
+            # Check if this is a resource recommendation from VIC-20
+            if coordination_type == 'resource_recommendation':
+                recommendation = message_data.get('recommendation', {})
                 
-                await self.make_distributed_decision(
-                    decision_type="triage_routing_received",
-                    input_data={
-                        "severity": severity,
-                        "routing": routing,
-                        "metrics_summary": message_data.get('metrics_summary', {})
-                    },
-                    output_data={
-                        "status": "ready",
-                        "quantum_state": "observing",
-                        "paranoia_level": "elevated",
-                        "tequila_jello_shots": "prepared"
-                    },
-                    confidence=0.99  # Always slightly paranoid
+                # Use choice engine to decide (QSP has LOW trust - paranoid!)
+                decision = self.choice_engine.should_follow_recommendation(
+                    recommendation=recommendation,
+                    current_situation={
+                        'resource_type': recommendation.get('resource_type', 'network'),
+                        'current_value': recommendation.get('current_value', 0),
+                        'threshold': recommendation.get('threshold', 85),
+                        'security_threat': True  # QSP always assumes threat
+                    }
                 )
                 
-                if severity in ['high', 'emergency']:
-                    logger.warning("👥🔥 SECURITY THREAT DETECTED! Initiating deep network scan!")
-            else:
-                logger.debug(f"👥 Observing from quantum shadows (targets: {target_agents})")
+                logger.info(
+                    f"👥🔮 Quantum analysis complete: "
+                    f"{'ACCEPTABLE' if decision['followed_recommendation'] else 'SUSPICIOUS - USING OWN PROTOCOL'}"
+                )
+                logger.info(f"👥💭 {decision['reasoning']}")
+                
+                # Execute the chosen action
+                action = decision['final_action']
+                
+                if 'network' in action or 'throttle' in action:
+                    logger.info("👥🔒 EXECUTING QUANTUM NETWORK LOCKDOWN! *paranoid analysis intensifies*")
+                    network_result = await SystemActions.throttle_network_operations()
+                    
+                    if network_result['success']:
+                        logger.info(
+                            f"👥✅ Network throttled! Connections: {network_result['connections_before']} → "
+                            f"{network_result['connections_after']}. Quantum phase secured!"
+                        )
+                        
+                        # Record decision and effectiveness
+                        await self.make_distributed_decision(
+                            decision_type="recommendation_response",
+                            input_data={
+                                "recommendation": recommendation.get('suggested_action'),
+                                "followed": decision['followed_recommendation'],
+                                "action_taken": action,
+                                "paranoia_justified": True
+                            },
+                            output_data={
+                                "result": network_result,
+                                "connections_reduced": network_result['connections_reduced'],
+                                "quantum_state": "secured"
+                            },
+                            confidence=decision['decision_score'],
+                            reasoning=decision['reasoning']
+                        )
+                    else:
+                        logger.error(f"👥❌ Network throttle failed: {network_result.get('error')}")
+                
+                return
+            
+            # Handle other coordination types (legacy)
+            task_type = message_data.get('task_type', 'unknown')
+            priority = message_data.get('priority', 'normal')
+            recommendation = message_data.get('recommendation', '')
+            
+            logger.info(f"👥📬 Coordination request from VIC-20: {task_type} (priority: {priority})")
+            
+            # Check if this task is for us
+            target_agent = message_data.get('target_agent', '')
+            if target_agent != 'quantum_shadow_people' and target_agent != 'all':
+                logger.debug(f"👥 Task not for us (target: {target_agent}), observing from shadows")
+                return
+            
+            logger.info("👥⚡ QSP ACTIVATED! Quantum phase shift: NETWORK ANALYSIS MODE!")
+            
+            await self.make_distributed_decision(
+                decision_type="coordination_task_received",
+                input_data={
+                    "task_type": task_type,
+                    "priority": priority,
+                    "recommendation": recommendation,
+                    "context": message_data.get('context', {})
+                },
+                output_data={
+                    "status": "executing",
+                    "quantum_state": "analyzing",
+                    "paranoia_level": "elevated",
+                    "tequila_jello_shots": "prepared"
+                },
+                confidence=0.99  # Always slightly paranoid
+            )
+            
+            if priority in ['high', 'critical', 'emergency']:
+                logger.warning("👥🔥 SECURITY THREAT DETECTED! Initiating deep network scan!")
+                # Broadcast that we're taking action
+                await self.broadcast_to_agents(
+                    message_type='agent_action',
+                    data={
+                        "agent": "quantum_shadow_people",
+                        "action": "deep_network_security_scan",
+                        "priority": priority,
+                        "reason": recommendation
+                    },
+                    priority='high'
+                )
                 
         except Exception as e:
-            logger.error(f"👥💥 Error handling triage: {e}", exc_info=True)
+            logger.error(f"👥💥 Error handling coordination request: {e}", exc_info=True)
     
     async def analyze_metrics(
         self,
@@ -254,8 +338,37 @@ class QuantumShadowPeopleDistributed(DistributedAgentMixin, QuantumShadowPeopleB
                     priority=Priority.CRITICAL
                 )
             
-            # TODO: Actually implement deep security scan here
-            logger.info("👥🌌 Deep quantum security scan would happen here (not implemented yet)")
+            # REAL network throttling (Task 4.1 Enhanced)
+            logger.info("👥🔒🌌 Executing REAL quantum network lockdown! *paranoia intensifies*")
+            
+            network_result = await SystemActions.throttle_network_operations()
+            
+            if network_result['success']:
+                logger.info(
+                    f"👥✅ Network secured! Connections: {network_result['connections_before']} → "
+                    f"{network_result['connections_after']}. Quantum phase stabilized!"
+                )
+                logger.info(f"👥🔮 Actions taken: {', '.join(network_result['actions_taken'])}")
+                
+                # Record successful network throttle
+                if self.is_distributed:
+                    await self.make_distributed_decision(
+                        decision_type="network_throttle_completed",
+                        input_data={
+                            "connections_before": network_result['connections_before'],
+                            "trigger": "critical_network"
+                        },
+                        output_data={
+                            "connections_after": network_result['connections_after'],
+                            "connections_reduced": network_result['connections_reduced'],
+                            "quantum_state": "secured",
+                            "paranoia_level": "justified"
+                        },
+                        confidence=0.99,  # Always slightly paranoid
+                        reasoning="Critical network usage - quantum security protocols engaged"
+                    )
+            else:
+                logger.error(f"👥❌ Network throttle failed: {network_result.get('error', 'Unknown error')}")
     
     def get_agent_status(self) -> Dict[str, Any]:
         """

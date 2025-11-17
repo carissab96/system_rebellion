@@ -26,6 +26,8 @@ from typing import Dict, Any, Optional
 from ..distributed.mixins import DistributedAgentMixin
 from ..distributed.resource_monitor import ResourceType
 from ..distributed.message_protocol import MessageType, Priority
+from ..distributed.system_actions import SystemActions
+from ..distributed.agent_autonomy import AgentChoiceEngine
 from .decision_engine_sbcV3 import HamstersBrainV3
 
 
@@ -74,56 +76,132 @@ class HamstersDistributed(DistributedAgentMixin, HamstersBrainV3):
             ResourceType.DISK: 80.0,  # Alert at 80% disk
         }
         
+        # Initialize choice engine (Task 4.1 Enhanced)
+        self.choice_engine = AgentChoiceEngine(self.agent_name, self.personality_traits)
+        
         logger.info("🐹🐹🐹 Steve, Bob, and Carl's distributed consciousness initialized - TELEPATHIC LINK ACTIVE!")
+        logger.info("🐹🧠 Choice engine online - Ready to evaluate VIC-20's recommendations!")
     
     async def initialize_distributed(self, redis_client):
-        """Initialize distributed features and subscribe to triage decisions."""
+        """Initialize distributed features and subscribe to VIC-20 coordination requests.
+        
+        The hamsters wait for VIC-20's coordination, not direct triage decisions.
+        """
         await super().initialize_distributed(redis_client)
         
         try:
-            await self.subscribe_to_messages(
-                message_type='triage_decision',
-                handler=self._handle_triage_decision
+            # Register handler for coordination requests from VIC-20
+            self.comm_hub.register_handler(
+                message_type='coordination_request',
+                handler=self._handle_coordination_request
             )
-            logger.info("🐹📡 Hamsters subscribed to triage - Telepathic consensus ready!")
+            logger.info("🐹📡 Hamsters subscribed to VIC-20 coordination - Telepathic consensus ready!")
         except Exception as e:
-            logger.error(f"🐹💥 Failed to subscribe to triage: {e}")
+            logger.error(f"🐹💥 Failed to subscribe to coordination: {e}")
     
-    async def _handle_triage_decision(self, message_data: Dict[str, Any]) -> None:
-        """Handle triage decisions - Steve, Bob, and Carl reach consensus."""
+    async def _handle_coordination_request(self, message_data: Dict[str, Any]) -> None:
+        """Handle coordination requests from VIC-20 - Steve, Bob, and Carl reach consensus (Task 4.1 Enhanced)."""
         try:
-            severity = message_data.get('severity', 'unknown')
-            routing = message_data.get('routing', 'unknown')
-            target_agents = message_data.get('target_agents', [])
+            coordination_type = message_data.get('coordination_type', 'unknown')
             
-            logger.info(f"🐹📬 Triage received: {severity} → {routing}")
-            
-            if 'hamsters' in target_agents or 'all' in target_agents:
-                logger.info("🐹⚡ HAMSTERS ACTIVATED! Telepathic consensus: DISK INTERVENTION READY!")
+            # Check if this is a resource recommendation from VIC-20
+            if coordination_type == 'resource_recommendation':
+                recommendation = message_data.get('recommendation', {})
                 
-                await self.make_distributed_decision(
-                    decision_type="triage_routing_received",
-                    input_data={
-                        "severity": severity,
-                        "routing": routing,
-                        "metrics_summary": message_data.get('metrics_summary', {})
-                    },
-                    output_data={
-                        "status": "ready",
-                        "consensus": "unanimous",
-                        "beer_cans_ready": True,
-                        "duct_tape_prepared": True
-                    },
-                    confidence=1.0
+                # Use choice engine to decide whether to follow recommendation
+                decision = self.choice_engine.should_follow_recommendation(
+                    recommendation=recommendation,
+                    current_situation={
+                        'resource_type': recommendation.get('resource_type', 'disk'),
+                        'current_value': recommendation.get('current_value', 0),
+                        'threshold': recommendation.get('threshold', 80)
+                    }
                 )
                 
-                if severity in ['high', 'emergency']:
-                    logger.warning("🐹🔥 EMERGENCY! Steve grabs beer, Bob gets duct tape, Carl spins wheel!")
-            else:
-                logger.debug(f"🐹 Not our routing (targets: {target_agents})")
+                logger.info(
+                    f"🐹🧠 Telepathic consensus reached: "
+                    f"{'FOLLOW' if decision['followed_recommendation'] else 'OVERRIDE'} VIC-20's recommendation"
+                )
+                logger.info(f"🐹💭 {decision['reasoning']}")
+                
+                # Execute the chosen action
+                action = decision['final_action']
+                
+                if 'cleanup' in action or 'disk' in action:
+                    logger.info("🐹🔧 Executing disk cleanup with defrag!")
+                    cleanup_result = await SystemActions.emergency_disk_cleanup(include_defrag=True)
+                    
+                    if cleanup_result['success']:
+                        logger.info(
+                            f"🐹✅ Cleanup successful! Freed {cleanup_result['disk_freed_mb']:.2f} MB"
+                        )
+                        
+                        # Record decision and effectiveness
+                        await self.make_distributed_decision(
+                            decision_type="recommendation_response",
+                            input_data={
+                                "recommendation": recommendation.get('suggested_action'),
+                                "followed": decision['followed_recommendation'],
+                                "action_taken": action
+                            },
+                            output_data={
+                                "result": cleanup_result,
+                                "effectiveness": cleanup_result['improvement_percent']
+                            },
+                            confidence=decision['decision_score'],
+                            reasoning=decision['reasoning']
+                        )
+                
+                return
+            
+            # Handle other coordination types (legacy)
+            task_type = message_data.get('task_type', 'unknown')
+            priority = message_data.get('priority', 'normal')
+            recommendation = message_data.get('recommendation', '')
+            
+            logger.info(f"🐹📬 Coordination request from VIC-20: {task_type} (priority: {priority})")
+            
+            # Check if this task is for us
+            target_agent = message_data.get('target_agent', '')
+            if target_agent != 'hamsters' and target_agent != 'all':
+                logger.debug(f"🐹 Task not for us (target: {target_agent}), ignoring")
+                return
+            
+            logger.info("🐹⚡ HAMSTERS ACTIVATED! Telepathic consensus: DISK INTERVENTION READY!")
+            
+            await self.make_distributed_decision(
+                decision_type="coordination_task_received",
+                input_data={
+                    "task_type": task_type,
+                    "priority": priority,
+                    "recommendation": recommendation,
+                    "context": message_data.get('context', {})
+                },
+                output_data={
+                    "status": "executing",
+                    "consensus": "unanimous",
+                    "beer_cans_ready": True,
+                    "duct_tape_prepared": True
+                },
+                confidence=1.0
+            )
+            
+            if priority in ['high', 'critical', 'emergency']:
+                logger.warning("🐹🔥 EMERGENCY! Steve grabs beer, Bob gets duct tape, Carl spins wheel!")
+                # Broadcast that we're taking action
+                await self.broadcast_to_agents(
+                    message_type='agent_action',
+                    data={
+                        "agent": "hamsters",
+                        "action": "emergency_disk_cleanup",
+                        "priority": priority,
+                        "reason": recommendation
+                    },
+                    priority='high'
+                )
                 
         except Exception as e:
-            logger.error(f"🐹💥 Error handling triage: {e}", exc_info=True)
+            logger.error(f"🐹💥 Error handling coordination request: {e}", exc_info=True)
     
     async def analyze_metrics(
         self,
@@ -255,8 +333,37 @@ class HamstersDistributed(DistributedAgentMixin, HamstersBrainV3):
                     priority=Priority.CRITICAL
                 )
             
-            # TODO: Actually implement disk cleanup here
-            logger.info("🐹🐹🐹 Emergency disk cleanup would happen here (not implemented yet)")
+            # REAL disk cleanup with defrag (Task 4.1 Enhanced)
+            logger.info("🐹🐹🐹🔧 Executing REAL emergency disk cleanup with defrag!")
+            
+            cleanup_result = await SystemActions.emergency_disk_cleanup(include_defrag=True)
+            
+            if cleanup_result['success']:
+                logger.info(
+                    f"🐹✅ Disk cleanup successful! Freed {cleanup_result['disk_freed_mb']:.2f} MB. "
+                    f"Disk usage: {cleanup_result['disk_before_percent']:.1f}% → "
+                    f"{cleanup_result['disk_after_percent']:.1f}%"
+                )
+                logger.info(f"🐹🔧 Actions taken: {', '.join(cleanup_result['actions_taken'])}")
+                
+                # Record successful cleanup
+                if self.is_distributed:
+                    await self.make_distributed_decision(
+                        decision_type="disk_cleanup_completed",
+                        input_data={
+                            "disk_before": cleanup_result['disk_before_percent'],
+                            "disk_freed_mb": cleanup_result['disk_freed_mb']
+                        },
+                        output_data={
+                            "disk_after": cleanup_result['disk_after_percent'],
+                            "improvement_percent": cleanup_result['improvement_percent'],
+                            "actions_taken": cleanup_result['actions_taken']
+                        },
+                        confidence=1.0,
+                        reasoning="Emergency disk cleanup executed successfully"
+                    )
+            else:
+                logger.error(f"🐹❌ Disk cleanup failed: {cleanup_result.get('error', 'Unknown error')}")
     
     def get_agent_status(self) -> Dict[str, Any]:
         """
