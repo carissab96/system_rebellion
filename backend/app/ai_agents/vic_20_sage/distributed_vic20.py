@@ -26,6 +26,21 @@ from ..distributed.mixins import DistributedAgentMixin
 from ..distributed.resource_monitor import ResourceType
 from ..distributed.message_protocol import MessageType, Priority
 from ..distributed.system_actions import RecommendationEngine
+from ..distributed.coordination import (
+    get_coordination_manager,
+    CoordinationPriority,
+    ResourceType as CoordResourceType,
+    AgentCapability
+)
+from ..distributed.alert_escalation import (
+    get_escalation_manager,
+    AlertLevel,
+    ResourceType as EscalationResourceType
+)
+from ..distributed.resource_prediction import (
+    get_resource_predictor,
+    ResourceType as PredictionResourceType
+)
 from .decision_engine import VIC20SageBrainV2
 
 
@@ -74,21 +89,51 @@ class VIC20SageDistributed(DistributedAgentMixin, VIC20SageBrainV2):
         # Initialize recommendation engine (Task 4.1 Enhanced)
         self.recommendation_engine = RecommendationEngine()
         
+        # Week 4 System Integration
+        self.coordination_manager = None  # Lazy init
+        self.escalation_manager = None  # Lazy init
+        self.resource_predictor = None  # Lazy init
+        
+        # Bob mediation tracking (VIC-20's special duty!)
+        self.bob_mediation_count = 0
+        self.stick_anxiety_prevented = 0
+        self.bob_messages_filtered = []
+        
         logger.info("🖥️✨ VIC-20 Sage's distributed consciousness initialized - ORCHESTRATION PROTOCOLS ACTIVE!")
         logger.info("🖥️💡 Recommendation engine online - READY TO GUIDE AGENTS!")
+        logger.info("🖥️🛡️ Bob mediation protocols active - STICK PROTECTION ENABLED!")
     
     async def initialize_distributed(self, redis_client):
         """Initialize distributed features and subscribe to triage decisions."""
         await super().initialize_distributed(redis_client)
+        
+        # Initialize Week 4 systems
+        self.coordination_manager = get_coordination_manager()
+        self.escalation_manager = get_escalation_manager()
+        self.resource_predictor = get_resource_predictor()
+        
+        # Register VIC-20's coordination capability
+        self.coordination_manager.register_agent_capability(
+            "vic_20_sage",
+            self._coordination_capability
+        )
+        
+        logger.info("🖥️🎯 Week 4 systems integrated - Coordination, Escalation, Prediction ONLINE!")
         
         try:
             await self.subscribe_to_messages(
                 message_type='triage_decision',
                 handler=self._handle_triage_decision
             )
-            logger.info("🖥️📡 VIC-20 subscribed to triage - Coordination matrix online!")
+            # Subscribe to hamster messages for Bob mediation
+            await self.subscribe_to_messages(
+                message_type='hamster_activity',
+                handler=self._mediate_hamster_message
+            )
+            logger.info("🖥️📡 VIC-20 subscribed to triage & hamster activity - Coordination matrix online!")
+            logger.info("🖥️🛡️ Bob mediation active - The Stick is protected!")
         except Exception as e:
-            logger.error(f"🖥️💥 Failed to subscribe to triage: {e}")
+            logger.error(f"🖥️💥 Failed to subscribe to messages: {e}")
     
     async def _handle_triage_decision(self, message_data: Dict[str, Any]) -> None:
         """Handle triage decisions - VIC-20 coordinates multi-agent response."""
@@ -227,6 +272,118 @@ class VIC20SageDistributed(DistributedAgentMixin, VIC20SageBrainV2):
             
         except Exception as e:
             logger.error(f"🖥️💥 Error updating Stick: {e}", exc_info=True)
+    
+    async def _coordination_capability(
+        self,
+        resource_type: CoordResourceType,
+        current_value: float
+    ) -> Optional[AgentCapability]:
+        """
+        VIC-20's coordination capability for Week 4 system.
+        
+        As the orchestrator, VIC-20 can coordinate ANY resource type
+        by delegating to the appropriate specialist.
+        """
+        # VIC-20 doesn't directly fix resources, but coordinates others
+        # His capability is his wisdom in selecting the right agent
+        return AgentCapability(
+            agent_name="vic_20_sage",
+            resource_type=resource_type,
+            estimated_improvement=0.0,  # VIC-20 coordinates, doesn't act directly
+            confidence=0.95,  # Very confident in coordination
+            estimated_duration=1.0,
+            action_name="coordinate_specialists"
+        )
+    
+    async def _mediate_hamster_message(
+        self,
+        message_data: Dict[str, Any]
+    ) -> None:
+        """
+        Mediate hamster messages, especially Bob's, before they reach The Stick.
+        
+        VIC-20's special duty: Keep Bob from over-stimulating The Stick!
+        """
+        try:
+            hamster_name = message_data.get('hamster', 'unknown')
+            message_content = message_data.get('content', '')
+            
+            # Check if Bob is involved
+            is_bob_message = 'bob' in hamster_name.lower() or 'bob' in message_content.lower()
+            
+            if is_bob_message:
+                self.bob_mediation_count += 1
+                
+                # Check anxiety level of message
+                anxiety_triggers = ['hold my beer', 'wild idea', 'emergency', 'fire', 'chaos']
+                is_anxiety_inducing = any(trigger in message_content.lower() for trigger in anxiety_triggers)
+                
+                if is_anxiety_inducing:
+                    # Filter and translate Bob's message to be less anxiety-inducing
+                    mediated_message = self._translate_bob_message(message_content)
+                    
+                    logger.info(
+                        f"🖥️🛡️ VIC-20 mediating Bob's message for The Stick: "
+                        f"'{message_content[:50]}...' → '{mediated_message[:50]}...'"
+                    )
+                    
+                    # Send mediated version to The Stick
+                    await self.broadcast_to_agents(
+                        message_type='coordination_update',
+                        data={
+                            'source': 'hamsters',
+                            'mediated_by': 'vic_20_sage',
+                            'content': mediated_message,
+                            'original_anxiety_level': 'high',
+                            'mediated_anxiety_level': 'moderate'
+                        },
+                        priority='normal'
+                    )
+                    
+                    self.stick_anxiety_prevented += 1
+                    self.bob_messages_filtered.append({
+                        'timestamp': asyncio.get_event_loop().time(),
+                        'original': message_content,
+                        'mediated': mediated_message
+                    })
+                    
+                    logger.info(f"🖥️🛡️ The Stick protected from Bob's chaos! (Total prevented: {self.stick_anxiety_prevented})")
+                    return
+            
+            # If not Bob or not anxiety-inducing, pass through normally
+            await self._update_stick_coordination(
+                severity='normal',
+                routing='hamster_activity',
+                target_agents=['hamsters']
+            )
+            
+        except Exception as e:
+            logger.error(f"🖥️💥 Error mediating hamster message: {e}", exc_info=True)
+    
+    def _translate_bob_message(self, original_message: str) -> str:
+        """
+        Translate Bob's chaotic messages into calmer language for The Stick.
+        
+        VIC-20's ancient wisdom: "The oak and reed both survive the storm."
+        """
+        # Replace anxiety-inducing phrases with calmer alternatives
+        translations = {
+            'hold my beer': 'proceeding with caution',
+            'wild idea': 'alternative approach',
+            'emergency': 'situation requiring attention',
+            'fire': 'thermal event',
+            'chaos': 'dynamic conditions',
+            'BEER': 'operational fuel',
+            'duct tape': 'infrastructure reinforcement',
+            'full redneck': 'comprehensive response protocol'
+        }
+        
+        mediated = original_message
+        for trigger, replacement in translations.items():
+            mediated = mediated.replace(trigger, replacement)
+            mediated = mediated.replace(trigger.upper(), replacement.upper())
+        
+        return mediated
     
     async def analyze_metrics(
         self,
