@@ -444,6 +444,63 @@ class AgentCommunicationHub:
             await self.state_manager.update_metrics(messages_sent=1)
         return success
     
+    async def make_decision(
+        self,
+        decision_type: str,
+        input_data: Dict[str, Any],
+        output_data: Dict[str, Any],
+        confidence: float,
+        reasoning: str = "",
+        triage_severity: Optional[str] = None,
+        triage_routing: Optional[str] = None,
+        coordination_id: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Record a decision in the agent's history (Task 3.3).
+        
+        Args:
+            decision_type: Type of decision
+            input_data: Input data for decision
+            output_data: Output/result data
+            confidence: Confidence level (0-1)
+            reasoning: Optional reasoning
+            triage_severity: Optional triage severity
+            triage_routing: Optional triage routing
+            coordination_id: Optional coordination ID
+            
+        Returns:
+            Decision record as dict
+        """
+        from .agent_state import DecisionRecord
+        import uuid
+        
+        # Create decision record
+        decision_id = f"{self.agent_name}_{uuid.uuid4().hex[:8]}"
+        
+        record = DecisionRecord(
+            decision_id=decision_id,
+            agent_name=self.agent_name,
+            decision_type=decision_type,
+            input_data=input_data,
+            output_data=output_data,
+            confidence=confidence,
+            triggered_by=reasoning,
+            triage_severity=triage_severity,
+            triage_routing=triage_routing,
+            coordination_id=coordination_id
+        )
+        
+        # Record in state manager
+        await self.state_manager.record_decision(record)
+        
+        return {
+            "decision_id": decision_id,
+            "decision_type": decision_type,
+            "confidence": confidence,
+            "triage_severity": triage_severity,
+            "triage_routing": triage_routing
+        }
+    
     def get_state(self):
         """Get current agent state"""
         return self._state

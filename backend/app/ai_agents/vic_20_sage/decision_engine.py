@@ -37,9 +37,10 @@ class VIC20SageBrainV2:
     VIC-20 Sage: streamlined for efficiency while preserving learning
     """
 
-    def __init__(self):
-        # The integration should lazily init its engine/connection internally
-        self.db = VIC20DatabaseIntegration()
+    def __init__(self, db_getter=None):
+        # Store db_getter for lazy initialization
+        self.db_getter = db_getter
+        self._db = None  # Lazy-initialized database integration
 
         self.coordination_state = CoordinationState.OBSERVING
         self.logger = logging.getLogger("VIC20Sage.Brain")
@@ -67,6 +68,20 @@ class VIC20SageBrainV2:
 
         # Default user scope for early boot (e.g., prewarm)
         self._default_user_id = "system"
+
+    @property
+    def db(self):
+        """Lazy-initialize database integration when first accessed"""
+        if self._db is None:
+            # Use the current db_getter (might be set by agent manager after __init__)
+            current_db_getter = getattr(self, 'db_getter', None)
+            self._db = VIC20DatabaseIntegration(db_getter=current_db_getter)
+        else:
+            # Update db_getter if it changed (agent manager sets it after __init__)
+            current_db_getter = getattr(self, 'db_getter', None)
+            if current_db_getter and self._db.db_getter != current_db_getter:
+                self._db.db_getter = current_db_getter
+        return self._db
 
     @property
     def is_active(self) -> bool:

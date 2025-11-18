@@ -241,7 +241,11 @@ class DistributedAgentMixin:
         decision_type: str,
         input_data: Dict[str, Any],
         confidence: float,
-        reasoning: str = ""
+        reasoning: str = "",
+        output_data: Optional[Dict[str, Any]] = None,
+        triage_severity: Optional[str] = None,
+        triage_routing: Optional[str] = None,
+        coordination_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Make a decision and record it in distributed state.
@@ -253,6 +257,10 @@ class DistributedAgentMixin:
             input_data: Input data for the decision
             confidence: Confidence level (0.0 to 1.0)
             reasoning: Optional reasoning for the decision
+            output_data: Optional output/result data
+            triage_severity: Optional triage severity (Task 3.3)
+            triage_routing: Optional triage routing (Task 3.3)
+            coordination_id: Optional coordination ID (Task 3.3)
             
         Returns:
             Decision record
@@ -263,8 +271,12 @@ class DistributedAgentMixin:
         decision = await self._comm_hub.make_decision(
             decision_type=decision_type,
             input_data=input_data,
+            output_data=output_data or {},
             confidence=confidence,
-            reasoning=reasoning
+            reasoning=reasoning,
+            triage_severity=triage_severity,
+            triage_routing=triage_routing,
+            coordination_id=coordination_id
         )
         
         self._dist_logger.info(

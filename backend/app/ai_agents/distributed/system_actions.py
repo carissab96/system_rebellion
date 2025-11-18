@@ -17,6 +17,13 @@ from typing import Dict, Any, Optional, List
 from pathlib import Path
 from datetime import datetime, timezone
 
+from .action_verification import (
+    get_verification_manager,
+    ActionType,
+    ResourceType,
+    ResourceSnapshot
+)
+
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +37,26 @@ class SystemActions:
     """
     
     @staticmethod
-    async def throttle_cpu_intensive_tasks() -> Dict[str, Any]:
+    def _create_resource_snapshot() -> ResourceSnapshot:
+        """Create a snapshot of current resource state"""
+        cpu_percent = psutil.cpu_percent(interval=0.1)
+        mem = psutil.virtual_memory()
+        disk = psutil.disk_usage('/')
+        net = psutil.net_connections()
+        
+        return ResourceSnapshot(
+            timestamp=datetime.now(),
+            cpu_percent=cpu_percent,
+            memory_percent=mem.percent,
+            disk_percent=disk.percent,
+            network_active_connections=len(net)
+        )
+    
+    @staticmethod
+    async def throttle_cpu_intensive_tasks(
+        agent_name: str = "system",
+        verify: bool = True
+    ) -> Dict[str, Any]:
         """
         Throttle CPU-intensive operations (Sir Hawkington).
         
@@ -42,9 +68,26 @@ class SystemActions:
         Returns:
             Result dict with before/after CPU usage
         """
+        verification_id = None
+        verification_manager = get_verification_manager() if verify else None
+        
         try:
+            # Take before snapshot
+            before_snapshot = SystemActions._create_resource_snapshot()
+            
+            # Start verification if enabled
+            if verification_manager:
+                action_id = f"cpu_throttle_{agent_name}_{datetime.now().timestamp()}"
+                verification_id = await verification_manager.start_action_verification(
+                    action_id=action_id,
+                    action_type=ActionType.CPU_THROTTLE,
+                    resource_type=ResourceType.CPU,
+                    agent_name=agent_name,
+                    before_snapshot=before_snapshot
+                )
+            
             # Get current CPU usage
-            cpu_before = psutil.cpu_percent(interval=0.5)
+            cpu_before = before_snapshot.cpu_percent
             
             actions_taken = []
             
@@ -69,10 +112,19 @@ class SystemActions:
             # Action 3: Brief pause to let system recover
             await asyncio.sleep(0.5)
             
-            # Measure after
-            cpu_after = psutil.cpu_percent(interval=0.5)
+            # Take after snapshot
+            after_snapshot = SystemActions._create_resource_snapshot()
+            cpu_after = after_snapshot.cpu_percent
             
-            return {
+            # Complete verification if enabled
+            verification_result = None
+            if verification_manager and verification_id:
+                verification_result = await verification_manager.complete_action_verification(
+                    verification_id=verification_id,
+                    after_snapshot=after_snapshot
+                )
+            
+            result = {
                 "action": "cpu_throttle",
                 "success": True,
                 "cpu_before": cpu_before,
@@ -82,6 +134,16 @@ class SystemActions:
                 "actions_taken": actions_taken,
                 "timestamp": datetime.now(timezone.utc).isoformat()
             }
+            
+            # Add verification data if available
+            if verification_result:
+                result["verification"] = {
+                    "effectiveness_score": verification_result.effectiveness_score,
+                    "effectiveness_level": verification_result.effectiveness_level.value,
+                    "improvement_percent": verification_result.improvement_percent
+                }
+            
+            return result
             
         except Exception as e:
             logger.error(f"🧐💥 CPU throttle failed: {e}")
@@ -93,7 +155,10 @@ class SystemActions:
             }
     
     @staticmethod
-    async def emergency_cache_clear() -> Dict[str, Any]:
+    async def emergency_cache_clear(
+        agent_name: str = "system",
+        verify: bool = True
+    ) -> Dict[str, Any]:
         """
         Emergency memory cache clearing (Meth Snail - Terry).
         
@@ -105,10 +170,27 @@ class SystemActions:
         Returns:
             Result dict with before/after memory usage
         """
+        verification_id = None
+        verification_manager = get_verification_manager() if verify else None
+        
         try:
+            # Take before snapshot
+            before_snapshot = SystemActions._create_resource_snapshot()
+            
+            # Start verification if enabled
+            if verification_manager:
+                action_id = f"cache_clear_{agent_name}_{datetime.now().timestamp()}"
+                verification_id = await verification_manager.start_action_verification(
+                    action_id=action_id,
+                    action_type=ActionType.CACHE_CLEAR,
+                    resource_type=ResourceType.MEMORY,
+                    agent_name=agent_name,
+                    before_snapshot=before_snapshot
+                )
+            
             # Get current memory usage
+            mem_before = before_snapshot.memory_percent
             mem = psutil.virtual_memory()
-            mem_before = mem.percent
             mem_before_mb = mem.used / (1024 * 1024)
             
             actions_taken = []
@@ -137,12 +219,21 @@ class SystemActions:
             # Action 3: Force memory release
             await asyncio.sleep(0.3)
             
-            # Measure after
+            # Take after snapshot
+            after_snapshot = SystemActions._create_resource_snapshot()
+            mem_after = after_snapshot.memory_percent
             mem_after_obj = psutil.virtual_memory()
-            mem_after = mem_after_obj.percent
             mem_after_mb = mem_after_obj.used / (1024 * 1024)
             
-            return {
+            # Complete verification if enabled
+            verification_result = None
+            if verification_manager and verification_id:
+                verification_result = await verification_manager.complete_action_verification(
+                    verification_id=verification_id,
+                    after_snapshot=after_snapshot
+                )
+            
+            result = {
                 "action": "emergency_cache_clear",
                 "success": True,
                 "memory_before_percent": mem_before,
@@ -155,6 +246,16 @@ class SystemActions:
                 "actions_taken": actions_taken,
                 "timestamp": datetime.now(timezone.utc).isoformat()
             }
+            
+            # Add verification data if available
+            if verification_result:
+                result["verification"] = {
+                    "effectiveness_score": verification_result.effectiveness_score,
+                    "effectiveness_level": verification_result.effectiveness_level.value,
+                    "improvement_percent": verification_result.improvement_percent
+                }
+            
+            return result
             
         except Exception as e:
             logger.error(f"🐌💥 Cache clear failed: {e}")

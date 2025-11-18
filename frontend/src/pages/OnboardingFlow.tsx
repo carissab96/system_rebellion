@@ -160,8 +160,8 @@ export const OnboardingFlow: React.FC = () => {
 
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/update-profile`, {
-        method: 'PUT',
-        headers: {
+        method: 'POST',
+        headers: { 
           'Content-Type': 'application/json',
           Authorization: `Bearer ${localStorage.getItem('access_token')}`,
         },
@@ -199,7 +199,7 @@ export const OnboardingFlow: React.FC = () => {
         setCurrentStep(OnboardingStep.COMPLETE);
       }
     } else {
-      setCurrentStep(currentStep + 1);
+      setCurrentStep((currentStep + 1) as OnboardingStepType);
     }
   };
 
@@ -207,7 +207,7 @@ export const OnboardingFlow: React.FC = () => {
     if (currentStep === OnboardingStep.AGENT_INTRODUCTION && currentAgentIndex > 0) {
       setCurrentAgentIndex(currentAgentIndex - 1);
     } else if (currentStep > OnboardingStep.WELCOME) {
-      setCurrentStep(currentStep - 1);
+      setCurrentStep((currentStep - 1) as OnboardingStepType);
     }
   };
 

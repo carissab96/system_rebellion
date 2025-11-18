@@ -76,10 +76,6 @@ async def safe_websocket_send(websocket: WebSocket, data: dict) -> bool:
     Returns True if sent successfully, False if connection was closed.
     """
     try:
-        # Pre-serialize to catch any serialization errors
-        import json
-        json.dumps(data, default=str)
-        
         await websocket.send_json(data)
         return True
     except (ConnectionClosedError, RuntimeError) as e:
@@ -87,6 +83,13 @@ async def safe_websocket_send(websocket: WebSocket, data: dict) -> bool:
         return False
     except TypeError as e:
         logger.error("JSON serialization error: %s. Data keys: %s", str(e), list(data.keys()))
+        # Log which field is problematic
+        for key, value in data.items():
+            try:
+                import json
+                json.dumps(value)
+            except TypeError:
+                logger.error(f"Field '{key}' contains non-serializable data")
         return False
     except Exception as e:
         logger.error("Unexpected error sending WebSocket message: %s", str(e))
@@ -132,6 +135,7 @@ async def fetch_latest_agent_memories(db: AsyncSession, user_id: str) -> Dict[st
                     "event_type": memory.event_type,
                     "details": memory.details,
                     "priority": memory.priority,
+                    "metadata": memory.__dict__.get('metadata'),  # Get metadata column directly from __dict__
                 }
                 
                 # Add all other fields
@@ -139,7 +143,7 @@ async def fetch_latest_agent_memories(db: AsyncSession, user_id: str) -> Dict[st
                     col_name = column.name
                     if col_name not in memory_dict and hasattr(memory, col_name):
                         value = getattr(memory, col_name)
-                        # Convert datetime to ISO string
+                        # Convest)rt datetime to ISO string
                         if isinstance(value, datetime):
                             value = value.isoformat()
                         memory_dict[col_name] = value
@@ -399,9 +403,10 @@ async def system_metrics_socket(websocket: WebSocket):
             connection_registered = False
             logger.warning("Continuing without global WS manager for %s", client_id)
 
-        # DB session
+        # DB session - use async context manager properly
         db_gen = get_async_db()
         db = await db_gen.__anext__()  # async generator
+        db_needs_cleanup = True
 
         # Send immediate handshake FIRST (don't wait for agent manager)
         handshake_start = time.time()
@@ -498,9 +503,7 @@ async def system_metrics_socket(websocket: WebSocket):
                 continue
 
             try:
-        
                 # Collect metrics (real values only)
-
                 metrics = await metrics_service.get_metrics()
 
                 # Optional AI enrichment (non-fatal) - THROTTLED to every 10 seconds
@@ -719,6 +722,12 @@ async def system_metrics_socket(websocket: WebSocket):
                     recent_insights = ws_manager.get_recent_insights(limit=10)
                     recent_events = ws_manager.get_recent_events(limit=10)
                     
+                    # Log what we're about to send
+                    logger.info(f"📊 Metrics structure: {list(metrics.keys()) if isinstance(metrics, dict) else type(metrics)}")
+                    logger.info(f"📊 Metrics size: {len(str(metrics))} chars")
+                    logger.info(f"🤖 Agent insights: {list(agent_insights.keys())}")
+                    logger.info(f"💡 Insights: {len(recent_insights)}, Events: {len(recent_events)}")
+                    
                     out_msg = {
                         "type": "system_update",  # Renamed from metrics_update to reflect unified payload
                         "timestamp": _now_iso(),
@@ -727,10 +736,11 @@ async def system_metrics_socket(websocket: WebSocket):
                         "recent_insights": recent_insights,  # Last 10 inter-agent communications
                         "recent_events": recent_events,  # Last 10 personality events
                     }
-                    json.dumps(out_msg, default=str)  # ensure serializable
                     sent = await safe_websocket_send(websocket, out_msg)
                     if not sent:
-                        logger.debug("Failed to send system_update - connection likely closed")
+                        logger.warning("❌ Failed to send system_update - connection likely closed")
+                    else:
+                        logger.info(f"✅ Successfully sent {len(str(out_msg))} char payload")
                     
                     # NOTE: This unified endpoint now includes all agent data, insights, and events
                     # Separate agent-insights and agent-events endpoints are deprecated
@@ -809,11 +819,17 @@ async def system_metrics_socket(websocket: WebSocket):
                 await get_websocket_manager().disconnect(websocket)  # idempotent
         except Exception:
             pass
+        
+        # Properly close DB session and return to pool
         try:
-            if db:
-                await db.close()
+            if db_needs_cleanup and db_gen:
+                try:
+                    await db_gen.aclose()  # Properly close the async generator
+                except Exception as e:
+                    logger.error("Error closing database generator: %s", str(e))
         except Exception:
-            logger.error("Error closing database connection", exc_info=True)
+            logger.error("Error in database cleanup", exc_info=True)
+        
         try:
             await websocket.close()
         except Exception:

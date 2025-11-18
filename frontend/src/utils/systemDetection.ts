@@ -210,7 +210,7 @@ export const validateSystem = (
 export const testNetworkLatency = async (apiUrl: string): Promise<number | null> => {
   try {
     const start = performance.now();
-    const response = await fetch(`${apiUrl}/api/health-check/ping`, {
+    const response = await fetch(`${apiUrl}/api/auth/health-check/`, {
       method: 'GET',
       cache: 'no-cache',
     });
@@ -231,7 +231,7 @@ export const testNetworkLatency = async (apiUrl: string): Promise<number | null>
  */
 export const checkPortAccessibility = async (apiUrl: string): Promise<boolean> => {
   try {
-    const response = await fetch(`${apiUrl}/api/health-check/status`, {
+    const response = await fetch(`${apiUrl}/api/auth/status/`, {
       method: 'GET',
       cache: 'no-cache',
     });

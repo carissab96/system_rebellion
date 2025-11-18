@@ -36,6 +36,11 @@ class MessageType(Enum):
     AGENT_QUERY = "agent_query"
     AGENT_RESPONSE = "agent_response"
     
+    # Triage and coordination (Task 3.4)
+    TRIAGE_DECISION = "triage_decision"
+    COORDINATION_REQUEST = "coordination_request"
+    COORDINATION_UPDATE = "coordination_update"
+    
     # Memory and learning
     MEMORY_SHARE = "memory_share"
     PATTERN_DISCOVERED = "pattern_discovered"

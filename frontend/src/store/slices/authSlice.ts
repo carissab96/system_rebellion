@@ -57,7 +57,6 @@ export const registerUser = createAsyncThunk(
   'auth/register',
   async ({ 
     email, 
-    username, 
     password, 
     first_name = '',
     last_name = '',
@@ -66,7 +65,6 @@ export const registerUser = createAsyncThunk(
     csrfToken 
   }: { 
     email: string; 
-    username: string; 
     password: string;
     first_name?: string;
     last_name?: string;
@@ -84,7 +82,7 @@ export const registerUser = createAsyncThunk(
           'Content-Type': 'application/json',
           'X-CSRFToken': csrfToken,
         },
-        body: JSON.stringify({ email, username, password, first_name, last_name, company_name, job_title }),
+        body: JSON.stringify({ email, password, first_name, last_name, company_name, job_title }),
         signal: controller.signal
       });
       

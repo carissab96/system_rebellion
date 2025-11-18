@@ -973,53 +973,55 @@ async def update_profile(
         logging.info(f"🧐 Updating profile for user: {current_user.email}")
         logging.info(f"🧐 Profile data: {profile_data}")
         
-        # Check if system_info is in the profile data (from onboarding)
-        if "system_info" in profile_data:
-            system_info = profile_data["system_info"]
-            logging.info(f"🧐 System info: {system_info}")
-            
-            # Update the user's system information from nested structure
-            if "operating_system" in system_info:
-                current_user.operating_system = system_info["operating_system"]
-            if "os_version" in system_info:
-                current_user.os_version = system_info["os_version"]
-            if "cpu_cores" in system_info:
-                current_user.cpu_cores = system_info["cpu_cores"]
-            if "total_memory" in system_info:
-                current_user.total_memory = system_info["total_memory"]
-        else:
-            # Handle direct properties (from profile updates)
-            if "operating_system" in profile_data:
-                current_user.operating_system = profile_data["operating_system"]
-            if "os_version" in profile_data:
-                current_user.os_version = profile_data["os_version"]
-            if "cpu_cores" in profile_data:
-                current_user.cpu_cores = profile_data["cpu_cores"]
-            if "total_memory" in profile_data:
-                current_user.total_memory = profile_data["total_memory"]
+        # Reload user in this session to avoid "already attached to session" error
+        result = await db.execute(select(User).where(User.id == current_user.id))
+        user = result.scalars().first()
+        
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        
+        # Initialize system_profile if it doesn't exist
+        if user.system_profile is None:
+            user.system_profile = {}
+        
+        # Update system_profile JSON field with onboarding data
+        if "operating_system" in profile_data:
+            user.system_profile['os_type'] = profile_data["operating_system"]
+        if "os_version" in profile_data:
+            user.system_profile['os_version'] = profile_data["os_version"]
+        if "cpu_cores" in profile_data:
+            user.system_profile['cpu_cores'] = profile_data["cpu_cores"]
+        if "total_memory" in profile_data:
+            user.system_profile['total_ram_gb'] = profile_data["total_memory"]
+        if "disk_type" in profile_data:
+            user.system_profile['storage_type'] = profile_data["disk_type"]
+        if "network_setup" in profile_data:
+            user.system_profile['network_type'] = profile_data["network_setup"]
+        if "timezone" in profile_data:
+            user.system_profile['timezone'] = profile_data["timezone"]
         
         # Always mark onboarding as completed when profile data is updated
         # This ensures the user won't be redirected back to onboarding
-        logging.info(f"🧐 Setting is_onboarded to True for user: {current_user.email}")
-        current_user.is_onboarded = True
+        logging.info(f"🧐 Setting is_onboarded to True for user: {user.email}")
+        user.is_onboarded = True
         
         # Save changes to database
-        db.add(current_user)
+        db.add(user)
         await db.commit()
-        await db.refresh(current_user)
+        await db.refresh(user)
         
-        logging.info(f"✅ Profile updated successfully for {current_user.email}")
+        logging.info(f"✅ Profile updated successfully for {user.email}")
         
         return {
             "message": "Profile updated successfully",
             "user": {
-                "id": current_user.id,
-                "email": current_user.email,
-                "operating_system": current_user.operating_system,
-                "os_version": current_user.os_version,
-                "cpu_cores": current_user.cpu_cores,
-                "total_memory": current_user.total_memory,
-                "is_onboarded": current_user.is_onboarded
+                "id": user.id,
+                "email": user.email,
+                "system_profile": user.system_profile,
+                "is_onboarded": user.is_onboarded
             }
         }
     except Exception as e:

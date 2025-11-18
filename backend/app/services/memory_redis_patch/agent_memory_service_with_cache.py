@@ -19,37 +19,46 @@ class AgentMemoryServiceWithCache(AgentMemoryService, MemoryCacheMixin):
         self._db_getter  = kwargs.pop("db_getter", None)   # may be async or sync callable
         db_session       = kwargs.pop("db_session", None)  # optional pre-built session
         self.task_queue = None
+        self.redis_url = redis_url or "redis://localhost:6379"
+        self._shared_redis_client = None
 
         # Initialize base classes
         AgentMemoryService.__init__(self, db_session)
-        MemoryCacheMixin.__init__(self, redis_url=redis_url or "redis://localhost:6379")
+        MemoryCacheMixin.__init__(self, redis_url=self.redis_url)
 
-        # If caller gave us a getter but no session, prep for lazy init
+        # If caller gave us a getter but no session, we'll use it in ensure_ready()
         self._pending_db_coro = None
-        if self.db is None and self._db_getter is not None:
-            logger.info(f"🔍 Calling db_getter: {self._db_getter}")
-            maybe = self._db_getter()
-            logger.info(f"🔍 db_getter returned: {type(maybe)} - {maybe}")
-            # don't block here; store coroutine for later
-            if inspect.isawaitable(maybe):
-                self._pending_db_coro = maybe
-                logger.info("🔍 Stored as pending coroutine")
-            else:
-                self.db = maybe  # sync factory returned a ready session
-                logger.info(f"🔍 Set db directly: {type(self.db)}")
+        # Don't call db_getter in __init__ - wait for ensure_ready()
+        # This prevents issues with session lifecycle
+
+    async def _get_redis(self):
+        """Override MemoryCacheMixin's _get_redis to use shared RedisClient singleton"""
+        if self._shared_redis_client is None:
+            redis_client = await RedisClient.get_instance(redis_url=self.redis_url)
+            self._shared_redis_client = redis_client.client
+        return self._shared_redis_client
 
     async def ensure_ready(self):
-        """Initialize DB session lazily in the event loop."""
-        if self.db is None and self._pending_db_coro is not None:
-            self.db = await self._pending_db_coro
-            self._pending_db_coro = None
-            logger.info(f"✅ Database session initialized: {type(self.db)}")
+        """Ensure both DB and Redis are ready"""
+        # If we don't have a session yet and have a db_getter, get one now
+        if self.db is None and self._db_getter is not None:
+            logger.info("🔍 Getting database session from db_getter")
+            maybe = self._db_getter()
+            if inspect.isawaitable(maybe):
+                self.db = await maybe
+            else:
+                self.db = maybe
+            logger.info(f"🔍 DB session acquired: {type(self.db)}")
         
+        # Log the database session state
         if self.db is None:
-            logger.error("❌ Database session is still None after ensure_ready()")
+            logger.warning("⚠️ Database session is None - operations will fail")
 
         if self.task_queue is None:
-            self.task_queue = RedisTaskQueue(await self._get_redis())
+            # Use the shared RedisClient singleton instead of creating a new connection
+            redis_client = await RedisClient.get_instance(redis_url=self.redis_url)
+            self.task_queue = RedisTaskQueue(redis_client.client)
+            logger.info("✅ Task queue initialized with shared Redis client")
     
     def _cache_key(self, user_id: str, agent_name: str) -> str:
         """Generate cache key for agent memories"""

@@ -141,6 +141,11 @@ class DecisionRecord:
     triggered_by: Optional[str] = None  # What caused this decision
     confidence: float = 0.5
     
+    # Triage-specific fields (Task 3.3)
+    triage_severity: Optional[str] = None  # normal, medium, high, critical, emergency
+    triage_routing: Optional[str] = None  # stick_direct, vic20_coordination, vic20_emergency, cpu_specialist
+    coordination_id: Optional[str] = None  # Link to coordination activities
+    
     # Outcome tracking
     was_successful: Optional[bool] = None
     outcome_notes: Optional[str] = None
@@ -318,6 +323,98 @@ class AgentStateManager:
         except Exception as e:
             self.logger.error(f"Failed to get recent decisions: {e}")
             raise  # Don't hide failures with empty list
+    
+    async def get_decisions_by_severity(
+        self,
+        severity: str,
+        count: int = 50,
+        since: Optional[datetime] = None
+    ) -> List[DecisionRecord]:
+        """
+        Get decisions filtered by triage severity (Task 3.3).
+        
+        Args:
+            severity: Triage severity (normal, medium, high, critical, emergency)
+            count: Maximum number of decisions to return
+            since: Optional datetime to filter decisions after
+            
+        Returns:
+            List of DecisionRecords matching severity, newest first
+        """
+        try:
+            # Get more decisions than requested to filter
+            all_decisions = await self.get_recent_decisions(count=count * 2, since=since)
+            
+            # Filter by severity
+            filtered = [
+                d for d in all_decisions 
+                if d.triage_severity and d.triage_severity.lower() == severity.lower()
+            ]
+            
+            return filtered[:count]
+        except Exception as e:
+            self.logger.error(f"Failed to get decisions by severity: {e}")
+            return []
+    
+    async def get_decisions_by_routing(
+        self,
+        routing: str,
+        count: int = 50,
+        since: Optional[datetime] = None
+    ) -> List[DecisionRecord]:
+        """
+        Get decisions filtered by triage routing (Task 3.3).
+        
+        Args:
+            routing: Triage routing type (stick_direct, vic20_coordination, etc.)
+            count: Maximum number of decisions to return
+            since: Optional datetime to filter decisions after
+            
+        Returns:
+            List of DecisionRecords matching routing, newest first
+        """
+        try:
+            # Get more decisions than requested to filter
+            all_decisions = await self.get_recent_decisions(count=count * 2, since=since)
+            
+            # Filter by routing
+            filtered = [
+                d for d in all_decisions 
+                if d.triage_routing and d.triage_routing.lower() == routing.lower()
+            ]
+            
+            return filtered[:count]
+        except Exception as e:
+            self.logger.error(f"Failed to get decisions by routing: {e}")
+            return []
+    
+    async def get_coordination_decisions(
+        self,
+        coordination_id: str
+    ) -> List[DecisionRecord]:
+        """
+        Get all decisions related to a specific coordination activity (Task 3.3).
+        
+        Args:
+            coordination_id: Coordination ID to filter by
+            
+        Returns:
+            List of DecisionRecords for this coordination
+        """
+        try:
+            # Get recent decisions (coordination usually happens quickly)
+            all_decisions = await self.get_recent_decisions(count=100)
+            
+            # Filter by coordination_id
+            filtered = [
+                d for d in all_decisions 
+                if d.coordination_id == coordination_id
+            ]
+            
+            return filtered
+        except Exception as e:
+            self.logger.error(f"Failed to get coordination decisions: {e}")
+            return []
     
     async def update_metrics(
         self,

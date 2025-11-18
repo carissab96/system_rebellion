@@ -22,6 +22,12 @@ from enum import Enum
 
 from .message_protocol import ResourceAlert, MessageType, Priority
 from .communication import MessageBus
+from .alert_escalation import (
+    get_escalation_manager,
+    AlertEscalationManager,
+    ResourceType as EscalationResourceType,
+    AlertLevel
+)
 
 logger = logging.getLogger(__name__)
 
@@ -132,6 +138,9 @@ class ResourceMonitor:
         # Get hostname
         import socket
         self.hostname = socket.gethostname()
+        
+        # Get escalation manager
+        self.escalation_manager = get_escalation_manager()
     
     def set_threshold(self, resource_type: ResourceType, threshold: float):
         """
@@ -259,72 +268,98 @@ class ResourceMonitor:
     
     async def _check_thresholds(self, metrics: ResourceMetrics):
         """
-        Check if any thresholds are exceeded.
+        Check if any thresholds are exceeded using escalation manager.
         
         Args:
             metrics: Current resource metrics
         """
-        alerts = []
+        # Map ResourceType to EscalationResourceType
+        resource_map = {
+            ResourceType.CPU: EscalationResourceType.CPU,
+            ResourceType.MEMORY: EscalationResourceType.MEMORY,
+            ResourceType.DISK: EscalationResourceType.DISK,
+            ResourceType.NETWORK: EscalationResourceType.NETWORK,
+        }
         
         # Check CPU
         if ResourceType.CPU in self.monitored_resources:
             threshold = self.thresholds.get(ResourceType.CPU, 80.0)
             if metrics.cpu_percent > threshold:
-                severity = self._determine_severity(metrics.cpu_percent, threshold)
-                alerts.append(
-                    self._create_alert(
+                alert_event = await self.escalation_manager.process_resource_alert(
+                    resource_type=resource_map[ResourceType.CPU],
+                    agent_name=self.agent_name,
+                    current_value=metrics.cpu_percent,
+                    threshold=threshold
+                )
+                if alert_event:
+                    # Create and send alert
+                    alert = self._create_alert(
                         ResourceType.CPU,
                         metrics.cpu_percent,
                         threshold,
-                        severity
+                        alert_event.level.value
                     )
-                )
+                    await self._send_alert(alert)
         
         # Check Memory
         if ResourceType.MEMORY in self.monitored_resources:
             threshold = self.thresholds.get(ResourceType.MEMORY, 85.0)
             if metrics.memory_percent > threshold:
-                severity = self._determine_severity(metrics.memory_percent, threshold)
-                alerts.append(
-                    self._create_alert(
+                alert_event = await self.escalation_manager.process_resource_alert(
+                    resource_type=resource_map[ResourceType.MEMORY],
+                    agent_name=self.agent_name,
+                    current_value=metrics.memory_percent,
+                    threshold=threshold
+                )
+                if alert_event:
+                    alert = self._create_alert(
                         ResourceType.MEMORY,
                         metrics.memory_percent,
                         threshold,
-                        severity
+                        alert_event.level.value
                     )
-                )
+                    await self._send_alert(alert)
         
         # Check Disk
         if ResourceType.DISK in self.monitored_resources:
             threshold = self.thresholds.get(ResourceType.DISK, 90.0)
             if metrics.disk_percent > threshold:
-                severity = self._determine_severity(metrics.disk_percent, threshold)
-                alerts.append(
-                    self._create_alert(
+                alert_event = await self.escalation_manager.process_resource_alert(
+                    resource_type=resource_map[ResourceType.DISK],
+                    agent_name=self.agent_name,
+                    current_value=metrics.disk_percent,
+                    threshold=threshold
+                )
+                if alert_event:
+                    alert = self._create_alert(
                         ResourceType.DISK,
                         metrics.disk_percent,
                         threshold,
-                        severity
+                        alert_event.level.value
                     )
-                )
+                    await self._send_alert(alert)
         
-        # Check Swap
+        # Check Swap (map to MEMORY for escalation)
         if ResourceType.SWAP in self.monitored_resources:
             threshold = self.thresholds.get(ResourceType.SWAP, 50.0)
             if metrics.swap_percent > threshold:
-                severity = self._determine_severity(metrics.swap_percent, threshold)
-                alerts.append(
-                    self._create_alert(
+                alert_event = await self.escalation_manager.process_resource_alert(
+                    resource_type=EscalationResourceType.MEMORY,  # Treat swap as memory
+                    agent_name=f"{self.agent_name}_swap",
+                    current_value=metrics.swap_percent,
+                    threshold=threshold
+                )
+                if alert_event:
+                    alert = self._create_alert(
                         ResourceType.SWAP,
                         metrics.swap_percent,
                         threshold,
-                        severity
+                        alert_event.level.value
                     )
-                )
+                    await self._send_alert(alert)
         
-        # Send alerts
-        for alert in alerts:
-            await self._send_alert(alert)
+        # Clean up old resolved alerts
+        self.escalation_manager.clear_resolved_alerts(max_age_minutes=10)
     
     def _determine_severity(self, current: float, threshold: float) -> str:
         """
@@ -430,3 +465,23 @@ class ResourceMonitor:
             "total_alerts": len(self._alert_history),
             "last_check": self._last_metrics.timestamp if self._last_metrics else None
         }
+    
+    def get_system_health(self) -> Dict[str, Any]:
+        """
+        Get overall system health summary including escalation state.
+        
+        Returns:
+            Dict with health score, active alerts, and summary
+        """
+        health_summary = self.escalation_manager.get_aggregated_alert_summary()
+        
+        # Add current metrics
+        if self._last_metrics:
+            health_summary["current_metrics"] = {
+                "cpu_percent": self._last_metrics.cpu_percent,
+                "memory_percent": self._last_metrics.memory_percent,
+                "disk_percent": self._last_metrics.disk_percent,
+                "timestamp": self._last_metrics.timestamp
+            }
+        
+        return health_summary

@@ -562,13 +562,18 @@ class AIAgentManager:
 
     async def _stick_log(self, event: str, payload: dict, *, user_id: str):
         """Log events to The Stick's memory for compliance tracking (dual-write)."""
-        await self.master_db.store_agent_memory(
-            agent_name="the_stick",
-            user_id=user_id,
-            memory_type=f"log:{event}",
-            content=payload,
-            importance=4
-        )
+        try:
+            self.logger.info(f"📝 Stick logging event '{event}' for user {user_id}")
+            await self.master_db.store_agent_memory(
+                agent_name="the_stick",
+                user_id=user_id,
+                memory_type=f"log:{event}",
+                content=payload,
+                importance=4
+            )
+            self.logger.info(f"✅ Stick logged event '{event}' successfully")
+        except Exception as e:
+            self.logger.error(f"❌ Stick log FAILED for event '{event}': {e}", exc_info=True)
 
     async def _set_parallel_budget(self, n: int):
         """Adjust the parallelism budget for agent operations."""

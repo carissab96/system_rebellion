@@ -4,6 +4,7 @@ This prevents blocking the auth connection pool during startup.
 """
 import asyncio
 import logging
+import os
 import time
 from typing import Optional
 
@@ -62,7 +63,12 @@ async def initialize_agents_and_websockets(app_state) -> bool:
             
             # Initialize AI Agents (includes distributed features)
             agent_start = time.time()
-            agent_manager = await get_agent_manager(db_getter=db_session_factory)
+            redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
+            logger.info(f"🔴 Using Redis URL: {redis_url}")
+            agent_manager = await get_agent_manager(
+                db_getter=db_session_factory,
+                redis_url=redis_url
+            )
             agent_elapsed = time.time() - agent_start
             active_agents = list(agent_manager.agents.keys()) if agent_manager.initialized else []
             logger.info(f"✅ AI Agents initialized in {agent_elapsed:.2f}s - Active: {active_agents}")

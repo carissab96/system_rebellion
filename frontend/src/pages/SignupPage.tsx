@@ -22,7 +22,8 @@ export const SignupPage: React.FC = () => {
 
   // Form state
   const [email, setEmail] = useState('');
-  const [username, setUsername] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -30,7 +31,8 @@ export const SignupPage: React.FC = () => {
   const [captchaVerified, setCaptchaVerified] = useState(false);
   const [validationErrors, setValidationErrors] = useState<{
     email?: string;
-    username?: string;
+    firstName?: string;
+    lastName?: string;
     password?: string;
     confirmPassword?: string;
     terms?: string;
@@ -93,7 +95,8 @@ export const SignupPage: React.FC = () => {
   const validateForm = (): boolean => {
     const errors: {
       email?: string;
-      username?: string;
+      firstName?: string;
+      lastName?: string;
       password?: string;
       confirmPassword?: string;
       terms?: string;
@@ -108,13 +111,18 @@ export const SignupPage: React.FC = () => {
       errors.email = 'This email is already registered. Please sign in instead.';
     }
 
-    // Username validation
-    if (!username) {
-      errors.username = 'Username is required';
-    } else if (username.length < 3) {
-      errors.username = 'Username must be at least 3 characters';
-    } else if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
-      errors.username = 'Username can only contain letters, numbers, hyphens, and underscores';
+    // First name validation
+    if (!firstName) {
+      errors.firstName = 'First name is required';
+    } else if (firstName.length < 2) {
+      errors.firstName = 'First name must be at least 2 characters';
+    }
+
+    // Last name validation
+    if (!lastName) {
+      errors.lastName = 'Last name is required';
+    } else if (lastName.length < 2) {
+      errors.lastName = 'Last name must be at least 2 characters';
     }
 
     // Password validation
@@ -175,7 +183,8 @@ export const SignupPage: React.FC = () => {
       await dispatch(
         registerUser({
           email,
-          username,
+          first_name: firstName,
+          last_name: lastName,
           password,
           csrfToken: getCsrfToken(),
         })
@@ -263,23 +272,43 @@ export const SignupPage: React.FC = () => {
             )}
           </div>
 
-          {/* Username field */}
+          {/* First Name field */}
           <div className="form-group">
-            <label htmlFor="username" className="form-label">
-              Username
+            <label htmlFor="firstName" className="form-label">
+              First Name
             </label>
             <input
               type="text"
-              id="username"
-              className={`form-input ${validationErrors.username ? 'input-error' : ''}`}
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="your_username"
+              id="firstName"
+              className={`form-input ${validationErrors.firstName ? 'input-error' : ''}`}
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              placeholder="John"
               disabled={isLoading}
-              autoComplete="username"
+              autoComplete="given-name"
             />
-            {validationErrors.username && (
-              <span className="field-error">{validationErrors.username}</span>
+            {validationErrors.firstName && (
+              <span className="field-error">{validationErrors.firstName}</span>
+            )}
+          </div>
+
+          {/* Last Name field */}
+          <div className="form-group">
+            <label htmlFor="lastName" className="form-label">
+              Last Name
+            </label>
+            <input
+              type="text"
+              id="lastName"
+              className={`form-input ${validationErrors.lastName ? 'input-error' : ''}`}
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              placeholder="Doe"
+              disabled={isLoading}
+              autoComplete="family-name"
+            />
+            {validationErrors.lastName && (
+              <span className="field-error">{validationErrors.lastName}</span>
             )}
           </div>
 
