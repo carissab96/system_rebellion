@@ -27,6 +27,17 @@ from ..distributed.resource_monitor import ResourceType
 from ..distributed.message_protocol import MessageType, Priority
 from ..distributed.system_actions import SystemActions
 from ..distributed.agent_autonomy import AgentChoiceEngine
+from ..distributed.coordination import (
+    get_coordination_manager,
+    CoordinationPriority,
+    ResourceType as CoordResourceType,
+    AgentCapability
+)
+from ..distributed.action_verification import (
+    get_verification_manager,
+    ActionType,
+    ResourceType as VerificationResourceType
+)
 from .decision_engine import QuantumShadowPeopleBrainV2
 
 
@@ -65,7 +76,8 @@ class QuantumShadowPeopleDistributed(DistributedAgentMixin, QuantumShadowPeopleB
             "security_focused": True,
             "phase_shifting": True,
             "coherence_maintenance": "critical",
-            "scan_frequency": "continuous"
+            "scan_frequency": "continuous",
+            "trust_level": 0.4  # LOW - TRUST NO ONE!
         }
         
         # Resource monitoring configuration
@@ -78,8 +90,23 @@ class QuantumShadowPeopleDistributed(DistributedAgentMixin, QuantumShadowPeopleB
         # Initialize choice engine (Task 4.1 Enhanced) - LOW trust (paranoid!)
         self.choice_engine = AgentChoiceEngine(self.agent_name, self.personality_traits)
         
+        # Week 4 System Integration
+        self.coordination_manager = None  # Lazy init
+        self.verification_manager = None  # Lazy init
+        
+        # Paranoid coordination tracking
+        self.total_security_scans = 0
+        self.threats_detected = 0
+        self.false_alarms = 0  # Paranoia sometimes justified!
+        self.quantum_phase_shifts = 0
+        
+        # Tequila jello shot tracking (fuel for paranoia!)
+        self.tequila_shots_today = 0
+        self.paranoia_level = "healthy"  # healthy, elevated, maximum, JUSTIFIED
+        
         logger.info("👥🔮 Quantum Shadow People's distributed consciousness initialized - QUANTUM SURVEILLANCE ACTIVE!")
         logger.info("👥🧠 Choice engine online - TRUST NO ONE, not even VIC-20!")
+        logger.info("👥🔒 Paranoid coordination protocols active - Security is NOT negotiable!")
     
     async def initialize_distributed(self, redis_client):
         """Initialize distributed features and subscribe to VIC-20 coordination requests.
@@ -87,6 +114,19 @@ class QuantumShadowPeopleDistributed(DistributedAgentMixin, QuantumShadowPeopleB
         QSP waits in the quantum shadows for VIC-20's coordination.
         """
         await super().initialize_distributed(redis_client)
+        
+        # Initialize Week 4 systems
+        self.coordination_manager = get_coordination_manager()
+        self.verification_manager = get_verification_manager()
+        
+        # Register QSP's paranoid coordination capability
+        self.coordination_manager.register_agent_capability(
+            "quantum_shadow_people",
+            self._coordination_capability
+        )
+        
+        logger.info("👥🎯 Week 4 systems integrated - Coordination & Verification ONLINE!")
+        logger.info("👥🔒 Paranoid security protocols active - TRUST NO ONE!")
         
         try:
             # Register handler for coordination requests from VIC-20
@@ -370,6 +410,121 @@ class QuantumShadowPeopleDistributed(DistributedAgentMixin, QuantumShadowPeopleB
             else:
                 logger.error(f"👥❌ Network throttle failed: {network_result.get('error', 'Unknown error')}")
     
+    async def _coordination_capability(
+        self,
+        resource_type: CoordResourceType,
+        current_value: float
+    ) -> Optional[AgentCapability]:
+        """
+        QSP's paranoid coordination capability for Week 4 system.
+        
+        Network security is NOT negotiable. QSP is ALWAYS suspicious.
+        Capability depends on quantum phase state and paranoia level!
+        """
+        # Only handle network resources (QSP's specialty!)
+        if resource_type != CoordResourceType.NETWORK:
+            return None
+        
+        # Base improvement estimate (paranoid but effective)
+        base_improvement = 12.0  # Can reduce network load by 12%
+        
+        # Adjust based on paranoia level
+        paranoia_multiplier = {
+            "healthy": 1.0,  # Normal paranoia
+            "elevated": 1.2,  # More aggressive!
+            "maximum": 1.5,  # LOCKDOWN MODE!
+            "JUSTIFIED": 2.0  # THREAT CONFIRMED!
+        }
+        
+        multiplier = paranoia_multiplier.get(self.paranoia_level, 1.0)
+        estimated_improvement = base_improvement * multiplier
+        
+        # Confidence is LOW (QSP is paranoid!)
+        base_confidence = 0.5  # Always suspicious
+        
+        # Tequila shots affect confidence (more shots = more paranoid = lower confidence)
+        if self.tequila_shots_today > 5:
+            base_confidence *= 0.8  # Too paranoid!
+            logger.warning(
+                f"👥🍸 {self.tequila_shots_today} tequila shots today - "
+                f"MAXIMUM PARANOIA ACHIEVED!"
+            )
+        elif self.tequila_shots_today > 3:
+            base_confidence *= 0.9  # Elevated paranoia
+        
+        # Recent threats increase confidence in paranoia
+        if self.threats_detected > 0:
+            threat_boost = min(0.3, self.threats_detected * 0.1)
+            base_confidence += threat_boost
+            logger.info(
+                f"👥❗ {self.threats_detected} threats detected - Paranoia JUSTIFIED! "
+                f"(Confidence boost: +{threat_boost:.0%})"
+            )
+        
+        confidence = min(base_confidence, 0.9)  # Cap at 90% (never 100% sure!)
+        
+        logger.info(
+            f"👥🔒 Paranoid capability: {estimated_improvement:.1f}% improvement "
+            f"(Paranoia: {self.paranoia_level}, Confidence: {confidence:.0%}, Threats: {self.threats_detected})"
+        )
+        
+        return AgentCapability(
+            agent_name="quantum_shadow_people",
+            resource_type=resource_type,
+            estimated_improvement=estimated_improvement,
+            confidence=confidence,
+            estimated_duration=4.0,  # Thorough security scan takes time
+            action_name="paranoid_network_lockdown"
+        )
+    
+    async def _update_paranoia_level(
+        self,
+        trigger: str
+    ) -> None:
+        """
+        Update QSP's paranoia level based on events.
+        
+        Paranoia levels: healthy → elevated → maximum → JUSTIFIED
+        """
+        if trigger == "threat_detected":
+            self.threats_detected += 1
+            
+            if self.threats_detected >= 5:
+                self.paranoia_level = "JUSTIFIED"
+                logger.warning(
+                    f"👥🚨 PARANOIA JUSTIFIED! {self.threats_detected} threats detected! "
+                    f"*quantum phase shift to MAXIMUM SECURITY*"
+                )
+            elif self.threats_detected >= 3:
+                self.paranoia_level = "maximum"
+                logger.warning(f"👥⚠️ Paranoia level: MAXIMUM! Threats: {self.threats_detected}")
+            elif self.threats_detected >= 1:
+                self.paranoia_level = "elevated"
+                logger.info(f"👥🔺 Paranoia level: ELEVATED! Threats: {self.threats_detected}")
+        
+        elif trigger == "false_alarm":
+            self.false_alarms += 1
+            
+            # False alarms reduce paranoia slightly
+            if self.paranoia_level == "JUSTIFIED" and self.false_alarms > 3:
+                self.paranoia_level = "maximum"
+                logger.info(f"👥🔻 Paranoia reduced to maximum (false alarms: {self.false_alarms})")
+            elif self.paranoia_level == "maximum" and self.false_alarms > 5:
+                self.paranoia_level = "elevated"
+                logger.info(f"👥🔻 Paranoia reduced to elevated (false alarms: {self.false_alarms})")
+        
+        elif trigger == "tequila_shot":
+            self.tequila_shots_today += 1
+            
+            if self.tequila_shots_today > 5:
+                logger.warning(
+                    f"👥🍸 {self.tequila_shots_today} tequila shots consumed! "
+                    f"*paranoia intensifies beyond reason*"
+                )
+        
+        # Quantum phase shift on paranoia change
+        self.quantum_phase_shifts += 1
+    
     def get_agent_status(self) -> Dict[str, Any]:
         """
         Get QSP's complete status including distributed state.
@@ -401,8 +556,9 @@ class QuantumShadowPeopleDistributed(DistributedAgentMixin, QuantumShadowPeopleB
         dist_status = "DISTRIBUTED" if self.is_distributed else "LOCAL"
         return (
             f"<QuantumShadowPeopleDistributed "
-            f"analyses={getattr(self, 'total_analyses', 0)} "
-            f"phase=stable "
+            f"scans={self.total_security_scans} "
+            f"threats={self.threats_detected} "
+            f"paranoia={self.paranoia_level} "
             f"| {dist_status} | 👥🌌>"
         )
 
