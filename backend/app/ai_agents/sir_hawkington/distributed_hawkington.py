@@ -26,6 +26,17 @@ from ..distributed.mixins import DistributedAgentMixin
 from ..distributed.resource_monitor import ResourceType
 from ..distributed.message_protocol import MessageType, Priority
 from ..distributed.system_actions import SystemActions
+from ..distributed.coordination import (
+    get_coordination_manager,
+    CoordinationPriority,
+    ResourceType as CoordResourceType,
+    AgentCapability
+)
+from ..distributed.alert_escalation import (
+    get_escalation_manager,
+    AlertLevel,
+    ResourceType as EscalationResourceType
+)
 from .decision_engine import SirHawkingtonBrainV2, DecisionType, MonocleState, AnalysisDepth
 
 
@@ -73,7 +84,8 @@ class SirHawkingtonDistributed(DistributedAgentMixin, SirHawkingtonBrainV2):
             "concern_threshold": 0.65,
             "alert_threshold": 0.85,
             "critical_threshold": 0.95,
-            "preferred_monocle_state": "polished"
+            "preferred_monocle_state": "polished",
+            "trust_level": 0.6  # MEDIUM - Aristocratic wisdom
         }
         
         # Resource monitoring configuration
@@ -82,7 +94,26 @@ class SirHawkingtonDistributed(DistributedAgentMixin, SirHawkingtonBrainV2):
             ResourceType.CPU: 70.0,  # Alert at 70% CPU
         }
         
+        # Week 4 System Integration
+        self.coordination_manager = None  # Lazy init
+        self.escalation_manager = None  # Lazy init
+        
+        # Escalation tracking (aristocratic alert management)
+        self.total_alerts_sent = 0
+        self.escalated_alerts = 0
+        self.emergency_alerts = 0
+        self.cooldown_prevented_alerts = 0
+        
+        # Monocle-yeeting escalation levels
+        self.monocle_yeets_by_severity = {
+            "mild": 0,
+            "moderate": 0,
+            "severe": 0,
+            "catastrophic": 0
+        }
+        
         logger.info("🧐 Sir Hawkington's distributed consciousness initialized")
+        logger.info("🧐📢 Alert escalation protocols active - Distinguished triage!")
     
     async def initialize_distributed(self, redis_client):
         """
@@ -92,6 +123,19 @@ class SirHawkingtonDistributed(DistributedAgentMixin, SirHawkingtonBrainV2):
         """
         # Call parent initialization
         await super().initialize_distributed(redis_client)
+        
+        # Initialize Week 4 systems
+        self.coordination_manager = get_coordination_manager()
+        self.escalation_manager = get_escalation_manager()
+        
+        # Register Sir Hawkington's coordination capability
+        self.coordination_manager.register_agent_capability(
+            "sir_hawkington",
+            self._coordination_capability
+        )
+        
+        logger.info("🧐🎯 Week 4 systems integrated - Coordination & Escalation ONLINE!")
+        logger.info("🧐📢 Alert escalation with cooldowns - Preventing alert fatigue!")
         
         # Inject comm_hub into the global triage engine
         try:
@@ -273,6 +317,129 @@ class SirHawkingtonDistributed(DistributedAgentMixin, SirHawkingtonBrainV2):
             else:
                 logger.error(f"🧐❌ CPU throttling failed: {throttle_result.get('error', 'Unknown error')}")
     
+    async def _coordination_capability(
+        self,
+        resource_type: CoordResourceType,
+        current_value: float
+    ) -> Optional[AgentCapability]:
+        """
+        Sir Hawkington's coordination capability for Week 4 system.
+        
+        As the triage commander, Sir Hawkington can handle CPU resources
+        with aristocratic precision.
+        """
+        # Only handle CPU resources (Sir Hawkington's specialty!)
+        if resource_type != CoordResourceType.CPU:
+            return None
+        
+        # Base improvement estimate (aristocratic precision)
+        base_improvement = 10.0  # Conservative but reliable
+        
+        # Adjust based on monocle state
+        monocle_multiplier = {
+            MonocleState.POLISHED: 1.0,  # Peak performance
+            MonocleState.ADJUSTED: 0.9,  # Slightly distracted
+            MonocleState.FOGGED: 0.7,  # Vision impaired
+            MonocleState.YEETED: 0.5,  # Compromised
+            MonocleState.CLEANING: 0.8  # Temporarily unavailable
+        }
+        
+        multiplier = monocle_multiplier.get(self.current_monocle_state, 0.8)
+        estimated_improvement = base_improvement * multiplier
+        
+        # Confidence based on monocle state and recent performance
+        base_confidence = 0.75  # Aristocratic confidence
+        confidence = base_confidence * multiplier
+        
+        if self.current_monocle_state == MonocleState.YEETED:
+            logger.warning(
+                f"🧐💥 Monocle YEETED! Capability compromised! "
+                f"(Confidence: {confidence:.0%})"
+            )
+        else:
+            logger.info(
+                f"🧐🎯 Aristocratic capability: {estimated_improvement:.1f}% improvement "
+                f"(Monocle: {self.current_monocle_state.value}, Confidence: {confidence:.0%})"
+            )
+        
+        return AgentCapability(
+            agent_name="sir_hawkington",
+            resource_type=resource_type,
+            estimated_improvement=estimated_improvement,
+            confidence=confidence,
+            estimated_duration=2.0,  # Aristocratic thoroughness
+            action_name="aristocratic_cpu_throttle"
+        )
+    
+    async def _check_alert_escalation(
+        self,
+        resource_type: str,
+        current_value: float,
+        severity: str
+    ) -> bool:
+        """
+        Check if alert should be sent using Week 4 escalation system.
+        
+        Returns True if alert should be sent, False if in cooldown.
+        """
+        # Map severity to AlertLevel
+        severity_map = {
+            "low": AlertLevel.INFO,
+            "normal": AlertLevel.WARNING,
+            "high": AlertLevel.CRITICAL,
+            "critical": AlertLevel.CRITICAL,
+            "emergency": AlertLevel.EMERGENCY
+        }
+        
+        alert_level = severity_map.get(severity, AlertLevel.WARNING)
+        
+        # Map resource type to EscalationResourceType
+        resource_map = {
+            "cpu": EscalationResourceType.CPU,
+            "memory": EscalationResourceType.MEMORY,
+            "disk": EscalationResourceType.DISK,
+            "network": EscalationResourceType.NETWORK
+        }
+        
+        escalation_resource = resource_map.get(resource_type, EscalationResourceType.CPU)
+        
+        # Check if we should alert
+        should_alert = self.escalation_manager.should_alert(
+            resource_type=escalation_resource,
+            current_value=current_value,
+            threshold=self.resource_thresholds.get(ResourceType.CPU, 70.0),
+            new_level=alert_level
+        )
+        
+        if should_alert:
+            self.total_alerts_sent += 1
+            
+            if alert_level == AlertLevel.EMERGENCY:
+                self.emergency_alerts += 1
+                logger.warning(
+                    f"🧐🚨 EMERGENCY ALERT! Bypassing cooldown! "
+                    f"(Total emergency: {self.emergency_alerts})"
+                )
+            elif alert_level == AlertLevel.CRITICAL:
+                self.escalated_alerts += 1
+                logger.info(
+                    f"🧐📢 Alert escalated to CRITICAL "
+                    f"(Total escalated: {self.escalated_alerts})"
+                )
+            
+            logger.info(
+                f"🧐✅ Alert approved by escalation manager "
+                f"(Total alerts: {self.total_alerts_sent})"
+            )
+        else:
+            self.cooldown_prevented_alerts += 1
+            logger.info(
+                f"🧐⏳ Alert in cooldown - Preventing spam "
+                f"(Prevented: {self.cooldown_prevented_alerts})"
+            )
+        
+        return should_alert
+    
     async def _record_monocle_yeet(self, missing_metrics, invalid_metrics, reason, intensity, user_id=None):
         """
         Override monocle yeet recording to add distributed tracking.
@@ -358,7 +525,7 @@ class SirHawkingtonDistributed(DistributedAgentMixin, SirHawkingtonBrainV2):
         return (
             f"<SirHawkingtonDistributed "
             f"monocle={monocle} "
-            f"analyses={self.total_analyses} "
+            f"alerts={self.total_alerts_sent}(prevented={self.cooldown_prevented_alerts}) "
             f"yeets={len(self.monocle_yeet_incidents)} "
             f"| {dist_status}>"
         )
