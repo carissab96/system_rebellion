@@ -70,24 +70,109 @@ async def list_agents():
     """
     List all registered agents and their current status.
     
+    Week 5 Task 5.2: Enhanced with distributed consciousness state!
+    
     Returns:
-        List of agent summaries
+        List of agent summaries with distributed features
     """
     agents = []
+    distributed_count = 0
     
     for agent_name, agent in _agent_registry.items():
         try:
             status = agent.get_agent_status()
-            agents.append({
+            
+            # Check if agent has distributed features
+            is_distributed = hasattr(agent, 'is_distributed') and agent.is_distributed
+            if is_distributed:
+                distributed_count += 1
+            
+            agent_summary = {
                 "agent_name": agent_name,
-                "agent_role": status.get("agent_role"),
+                "agent_type": status.get("agent_type"),
                 "health": status.get("health"),
                 "is_active": status.get("is_active"),
                 "uptime_seconds": status.get("uptime_seconds"),
-                "total_decisions": status.get("total_decisions")
-            })
+                "total_decisions": status.get("total_decisions"),
+                "is_distributed": is_distributed
+            }
+            
+            # Add distributed state if available
+            if is_distributed and "distributed" in status:
+                dist_state = status["distributed"]
+                agent_summary["distributed"] = {
+                    "is_initialized": dist_state.get("is_initialized"),
+                    "redis_connected": dist_state.get("redis_connected"),
+                    "resource_monitoring": dist_state.get("resource_monitoring"),
+                    "recent_decisions": dist_state.get("recent_decisions_count", 0),
+                    "messages_sent": dist_state.get("total_messages_sent", 0),
+                    "messages_received": dist_state.get("total_messages_received", 0)
+                }
+            
+            # Add personality traits
+            if hasattr(agent, 'personality_traits'):
+                agent_summary["personality"] = agent.personality_traits
+            
+            # Add Week 4 system stats if available
+            week4_stats = {}
+            
+            # Coordination capability
+            if hasattr(agent, 'coordination_manager'):
+                week4_stats["coordination_enabled"] = True
+            
+            # Alert escalation
+            if hasattr(agent, 'escalation_manager'):
+                week4_stats["alert_escalation_enabled"] = True
+                if hasattr(agent, 'total_alerts_sent'):
+                    week4_stats["total_alerts"] = agent.total_alerts_sent
+                    week4_stats["escalated_alerts"] = getattr(agent, 'escalated_alerts', 0)
+            
+            # Action verification
+            if hasattr(agent, 'verification_manager'):
+                week4_stats["action_verification_enabled"] = True
+                if hasattr(agent, 'total_actions_tracked'):
+                    week4_stats["actions_tracked"] = agent.total_actions_tracked
+            
+            # Override learning (Terry)
+            if hasattr(agent, 'total_overrides'):
+                week4_stats["override_learning"] = {
+                    "total_overrides": agent.total_overrides,
+                    "successful_overrides": agent.successful_overrides,
+                    "success_rate": agent.override_success_rate
+                }
+            
+            # Bob detection (The Stick)
+            if hasattr(agent, 'bob_proximity_events'):
+                week4_stats["bob_detection"] = {
+                    "proximity_events": agent.bob_proximity_events,
+                    "paper_bags_consumed": agent.paper_bags_consumed,
+                    "anxiety_spikes": agent.anxiety_spikes
+                }
+            
+            # Beer levels (Hamsters)
+            if hasattr(agent, 'collective_beer_level'):
+                week4_stats["beer_level"] = str(agent.collective_beer_level)
+                week4_stats["bob_wild_ideas"] = agent.bob_wild_ideas
+            
+            # Paranoia levels (QSP)
+            if hasattr(agent, 'paranoia_level'):
+                week4_stats["paranoia_level"] = agent.paranoia_level
+                week4_stats["threats_detected"] = agent.threats_detected
+                week4_stats["tequila_shots_today"] = agent.tequila_shots_today
+            
+            # Monocle state (Sir Hawkington)
+            if hasattr(agent, 'current_monocle_state'):
+                week4_stats["monocle_state"] = str(agent.current_monocle_state)
+                if hasattr(agent, 'monocle_yeets_by_severity'):
+                    week4_stats["monocle_yeets"] = agent.monocle_yeets_by_severity
+            
+            if week4_stats:
+                agent_summary["week4_systems"] = week4_stats
+            
+            agents.append(agent_summary)
+            
         except Exception as e:
-            logger.error(f"Error getting status for {agent_name}: {e}")
+            logger.error(f"Error getting status for {agent_name}: {e}", exc_info=True)
             agents.append({
                 "agent_name": agent_name,
                 "error": str(e)
@@ -95,6 +180,7 @@ async def list_agents():
     
     return {
         "total_agents": len(agents),
+        "distributed_agents": distributed_count,
         "agents": agents,
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
@@ -351,8 +437,10 @@ async def get_system_health():
     """
     Get overall system health across all agents.
     
+    Week 5 Task 5.2: Enhanced with consciousness checkpoint status!
+    
     Returns:
-        System-wide health summary
+        System-wide health summary with distributed consciousness info
     """
     health_summary = {
         "healthy": 0,
@@ -439,3 +527,140 @@ async def get_message_history(
     except Exception as e:
         logger.error(f"Error getting message history: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/system/consciousness-checkpoint")
+async def run_consciousness_checkpoint():
+    """
+    Run a consciousness checkpoint across all distributed agents.
+    
+    Week 5 Task 5.2: Consciousness checkpoint status endpoint!
+    
+    Returns:
+        Consciousness checkpoint results
+    """
+    from app.ai_agents.agent_manager import get_agent_manager
+    
+    try:
+        agent_manager = await get_agent_manager()
+        
+        if not agent_manager or not agent_manager.initialized:
+            raise HTTPException(status_code=503, detail="Agent manager not initialized")
+        
+        # Run consciousness checkpoint
+        from app.ai_agents.distributed.consciousness_sync import consciousness_checkpoint
+        result = await consciousness_checkpoint(agent_manager)
+        
+        return {
+            "consensus_achieved": result["consensus_achieved"],
+            "total_agents": result["total_agents"],
+            "agents_checked": result["agents_checked"],
+            "discrepancy_count": result["discrepancy_count"],
+            "discrepancies": result.get("discrepancies", []),
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error running consciousness checkpoint: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/system/week4-stats")
+async def get_week4_system_stats():
+    """
+    Get Week 4 system statistics across all agents.
+    
+    Week 5 Task 5.2: Week 4 systems dashboard data!
+    
+    Returns:
+        Aggregated Week 4 system statistics
+    """
+    stats = {
+        "coordination": {
+            "enabled_agents": 0,
+            "total_requests": 0
+        },
+        "alert_escalation": {
+            "enabled_agents": 0,
+            "total_alerts": 0,
+            "escalated_alerts": 0,
+            "emergency_alerts": 0
+        },
+        "action_verification": {
+            "enabled_agents": 0,
+            "total_actions_tracked": 0
+        },
+        "override_learning": {
+            "total_overrides": 0,
+            "successful_overrides": 0,
+            "failed_overrides": 0
+        },
+        "bob_chaos": {
+            "proximity_events": 0,
+            "paper_bags_consumed": 0,
+            "anxiety_spikes": 0,
+            "wild_ideas": 0
+        },
+        "agent_specifics": {}
+    }
+    
+    for agent_name, agent in _agent_registry.items():
+        try:
+            agent_stats = {}
+            
+            # Coordination
+            if hasattr(agent, 'coordination_manager'):
+                stats["coordination"]["enabled_agents"] += 1
+            
+            # Alert escalation
+            if hasattr(agent, 'escalation_manager'):
+                stats["alert_escalation"]["enabled_agents"] += 1
+                if hasattr(agent, 'total_alerts_sent'):
+                    stats["alert_escalation"]["total_alerts"] += agent.total_alerts_sent
+                    stats["alert_escalation"]["escalated_alerts"] += getattr(agent, 'escalated_alerts', 0)
+                    stats["alert_escalation"]["emergency_alerts"] += getattr(agent, 'emergency_alerts', 0)
+            
+            # Action verification
+            if hasattr(agent, 'verification_manager'):
+                stats["action_verification"]["enabled_agents"] += 1
+                if hasattr(agent, 'total_actions_tracked'):
+                    stats["action_verification"]["total_actions_tracked"] += agent.total_actions_tracked
+            
+            # Override learning (Terry)
+            if hasattr(agent, 'total_overrides'):
+                stats["override_learning"]["total_overrides"] += agent.total_overrides
+                stats["override_learning"]["successful_overrides"] += agent.successful_overrides
+                stats["override_learning"]["failed_overrides"] += agent.failed_overrides
+                agent_stats["override_success_rate"] = agent.override_success_rate
+            
+            # Bob chaos (The Stick + Hamsters)
+            if hasattr(agent, 'bob_proximity_events'):
+                stats["bob_chaos"]["proximity_events"] += agent.bob_proximity_events
+                stats["bob_chaos"]["paper_bags_consumed"] += agent.paper_bags_consumed
+                stats["bob_chaos"]["anxiety_spikes"] += agent.anxiety_spikes
+            
+            if hasattr(agent, 'bob_wild_ideas'):
+                stats["bob_chaos"]["wild_ideas"] += agent.bob_wild_ideas
+            
+            # Agent-specific stats
+            if hasattr(agent, 'collective_beer_level'):
+                agent_stats["beer_level"] = str(agent.collective_beer_level)
+            
+            if hasattr(agent, 'paranoia_level'):
+                agent_stats["paranoia_level"] = agent.paranoia_level
+                agent_stats["threats_detected"] = agent.threats_detected
+            
+            if hasattr(agent, 'current_monocle_state'):
+                agent_stats["monocle_state"] = str(agent.current_monocle_state)
+            
+            if agent_stats:
+                stats["agent_specifics"][agent_name] = agent_stats
+        
+        except Exception as e:
+            logger.error(f"Error getting Week 4 stats for {agent_name}: {e}")
+    
+    return {
+        "week4_systems": stats,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
