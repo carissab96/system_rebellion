@@ -28,6 +28,17 @@ from ..distributed.resource_monitor import ResourceType
 from ..distributed.message_protocol import MessageType, Priority
 from ..distributed.system_actions import SystemActions
 from ..distributed.agent_autonomy import AgentChoiceEngine
+from ..distributed.coordination import (
+    get_coordination_manager,
+    CoordinationPriority,
+    ResourceType as CoordResourceType,
+    AgentCapability
+)
+from ..distributed.action_verification import (
+    get_verification_manager,
+    ActionType,
+    ResourceType as VerificationResourceType
+)
 from .decision_engine import MethSnailBrainV2, OptimizationPriority, AnalysisDepth
 
 
@@ -66,7 +77,8 @@ class MethSnailDistributed(DistributedAgentMixin, MethSnailBrainV2):
             "energy_drink_powered": True,
             "no_fake_data_tolerance": 0,
             "optimization_priority": "speed",
-            "jitter_level": "moderate"
+            "jitter_level": "moderate",
+            "trust_level": 0.2  # VERY LOW - Terry thinks he's faster!
         }
         
         # Resource monitoring configuration
@@ -78,8 +90,23 @@ class MethSnailDistributed(DistributedAgentMixin, MethSnailBrainV2):
         # Initialize choice engine (Task 4.1 Enhanced) - VERY LOW trust!
         self.choice_engine = AgentChoiceEngine(self.agent_name, self.personality_traits)
         
+        # Week 4 System Integration
+        self.coordination_manager = None  # Lazy init
+        self.verification_manager = None  # Lazy init
+        
+        # Override learning tracking (Terry learns when his way is actually faster!)
+        self.total_overrides = 0
+        self.successful_overrides = 0  # When Terry's way worked better
+        self.failed_overrides = 0  # When VIC-20 was right
+        self.override_success_rate = 0.0
+        
+        # Energy drink tracking
+        self.energy_drinks_today = 0
+        self.shell_spins_today = 0
+        
         logger.info("🐌💨 Terry the Meth Snail's distributed consciousness initialized - GOTTA GO FAST!")
         logger.info("🐌🧠 Choice engine online - I'm FASTER than VIC-20's recommendations!")
+        logger.info("🐌📊 Override learning active - Tracking when I'm right!")
     
     async def initialize_distributed(self, redis_client):
         """
@@ -89,6 +116,19 @@ class MethSnailDistributed(DistributedAgentMixin, MethSnailBrainV2):
         """
         # Call parent initialization
         await super().initialize_distributed(redis_client)
+        
+        # Initialize Week 4 systems
+        self.coordination_manager = get_coordination_manager()
+        self.verification_manager = get_verification_manager()
+        
+        # Register Terry's coordination capability
+        self.coordination_manager.register_agent_capability(
+            "meth_snail",
+            self._coordination_capability
+        )
+        
+        logger.info("🐌🎯 Week 4 systems integrated - Coordination & Verification ONLINE!")
+        logger.info("🐌📊 Learning when I'm FASTER than VIC-20!")
         
         # Subscribe to coordination requests from VIC-20
         try:
@@ -143,6 +183,36 @@ class MethSnailDistributed(DistributedAgentMixin, MethSnailBrainV2):
                             f"{cache_result.get('objects_collected', 0)} objects! GOTTA GO FAST!"
                         )
                         
+                        # Track override effectiveness for learning!
+                        if not decision['followed_recommendation']:
+                            self.total_overrides += 1
+                            
+                            # Check if Terry's way was actually better
+                            improvement = cache_result['improvement_percent']
+                            if improvement > 15:  # Terry's way worked well!
+                                self.successful_overrides += 1
+                                logger.info(
+                                    f"🐌✅ TERRY WAS RIGHT! Override successful! "
+                                    f"(Success rate: {self.successful_overrides}/{self.total_overrides})"
+                                )
+                            else:
+                                self.failed_overrides += 1
+                                logger.warning(
+                                    f"🐌⚠️ Maybe VIC-20 was right this time... "
+                                    f"(Success rate: {self.successful_overrides}/{self.total_overrides})"
+                                )
+                            
+                            # Update success rate
+                            self.override_success_rate = self.successful_overrides / max(1, self.total_overrides)
+                            
+                            # Report to The Stick for compliance tracking
+                            await self._report_override_to_stick(
+                                recommendation=recommendation,
+                                action_taken=action,
+                                result=cache_result,
+                                success=improvement > 15
+                            )
+                        
                         # Record decision and effectiveness
                         await self.make_distributed_decision(
                             decision_type="recommendation_response",
@@ -150,12 +220,15 @@ class MethSnailDistributed(DistributedAgentMixin, MethSnailBrainV2):
                                 "recommendation": recommendation.get('suggested_action'),
                                 "followed": decision['followed_recommendation'],
                                 "action_taken": action,
-                                "terry_says": "I'M FASTER THAN VIC-20!"
+                                "terry_says": "I'M FASTER THAN VIC-20!",
+                                "override_success_rate": self.override_success_rate
                             },
                             output_data={
                                 "result": cache_result,
                                 "effectiveness": cache_result['improvement_percent'],
-                                "speed": "MAXIMUM"
+                                "speed": "MAXIMUM",
+                                "overrides": self.total_overrides,
+                                "successful_overrides": self.successful_overrides
                             },
                             confidence=decision['decision_score'],
                             reasoning=decision['reasoning']
@@ -379,6 +452,95 @@ class MethSnailDistributed(DistributedAgentMixin, MethSnailBrainV2):
             else:
                 logger.error(f"🐌❌ Cache clear failed: {cache_result.get('error', 'Unknown error')}")
     
+    async def _coordination_capability(
+        self,
+        resource_type: CoordResourceType,
+        current_value: float
+    ) -> Optional[AgentCapability]:
+        """
+        Terry's coordination capability for Week 4 system.
+        
+        Terry is FAST but unpredictable. His capability depends on
+        energy drink levels and shell spin frequency!
+        """
+        # Only handle memory resources (Terry's specialty!)
+        if resource_type != CoordResourceType.MEMORY:
+            return None
+        
+        # Base improvement estimate (Terry is aggressive!)
+        base_improvement = 20.0  # Can typically free 20% memory
+        
+        # Adjust based on override success rate
+        if self.override_success_rate > 0.7:
+            # Terry's been right a lot lately!
+            confidence = 0.7
+            estimated_improvement = base_improvement * 1.2  # Even more aggressive!
+            logger.info(
+                f"🐌💪 Terry's on a roll! Success rate: {self.override_success_rate:.0%} - "
+                f"MAXIMUM CONFIDENCE!"
+            )
+        elif self.override_success_rate > 0.5:
+            # Terry's doing okay
+            confidence = 0.5
+            estimated_improvement = base_improvement
+        else:
+            # Terry's been wrong a lot...
+            confidence = 0.3
+            estimated_improvement = base_improvement * 0.8
+            logger.info(
+                f"🐌😓 Terry's success rate is low: {self.override_success_rate:.0%} - "
+                f"Maybe I should listen to VIC-20 more..."
+            )
+        
+        # Energy drinks boost confidence (but not necessarily effectiveness!)
+        if self.energy_drinks_today > 3:
+            confidence *= 1.2  # Terry FEELS more confident!
+            logger.info(f"🐌☕ {self.energy_drinks_today} energy drinks today - FEELING UNSTOPPABLE!")
+        
+        logger.info(
+            f"🐌💨 Terry's capability: {estimated_improvement:.1f}% improvement "
+            f"(Confidence: {confidence:.0%}, Override rate: {self.override_success_rate:.0%})"
+        )
+        
+        return AgentCapability(
+            agent_name="meth_snail",
+            resource_type=resource_type,
+            estimated_improvement=estimated_improvement,
+            confidence=min(confidence, 1.0),  # Cap at 100%
+            estimated_duration=1.0,  # Terry is FAST!
+            action_name="aggressive_cache_clear"
+        )
+    
+    async def _report_override_to_stick(
+        self,
+        recommendation: Dict[str, Any],
+        action_taken: str,
+        result: Dict[str, Any],
+        success: bool
+    ) -> None:
+        """
+        Report override decision to The Stick for compliance tracking.
+        
+        The Stick needs to know when Terry overrides VIC-20!
+        """
+        await self.broadcast_to_agents(
+            message_type='agent_action',
+            data={
+                'agent': 'meth_snail',
+                'action_type': 'override',
+                'recommendation': recommendation.get('suggested_action'),
+                'action_taken': action_taken,
+                'result': result,
+                'success': success,
+                'override_count': self.total_overrides,
+                'success_rate': self.override_success_rate,
+                'terry_says': 'I WAS FASTER!' if success else 'Okay, maybe VIC-20 had a point...'
+            },
+            priority='normal'
+        )
+        
+        logger.info(f"🐌📡 Override report sent to The Stick for compliance tracking")
+    
     async def _record_shell_spin(self, missing_metrics, invalid_metrics, reason, user_id=None):
         """
         Override shell spin recording to add distributed tracking.
@@ -458,8 +620,8 @@ class MethSnailDistributed(DistributedAgentMixin, MethSnailBrainV2):
         return (
             f"<MethSnailDistributed "
             f"analyses={self.total_analyses} "
+            f"overrides={self.total_overrides}({self.override_success_rate:.0%}) "
             f"spins={spins} "
-            f"drinks={len(getattr(self, 'energy_drink_history', []))} "
             f"| {dist_status} | 💨>"
         )
 
