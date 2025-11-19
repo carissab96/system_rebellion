@@ -1,0 +1,305 @@
+/* ConsciousnessMonitor.css */
+/* NASA Mission Control meets Consciousness Laboratory */
+/* Using Rebellion Design System */
+
+.consciousness-monitor {
+  background: var(--rebellion-void);
+  color: var(--rebellion-text);
+  min-height: 100vh;
+  font-family: var(--font-system);
+  padding: var(--space-lg);
+}
+
+/* Mission Control Header */
+.monitor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: var(--space-lg);
+  border-bottom: var(--border-medium) solid var(--rebellion-border);
+  margin-bottom: var(--space-lg);
+}
+
+.system-title {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--rebellion-cyan);
+  margin: 0 0 var(--space-sm) 0;
+  text-shadow: var(--rebellion-cyan-glow);
+}
+
+.system-subtitle {
+  font-size: 14px;
+  color: var(--rebellion-text-dim);
+  letter-spacing: 1px;
+}
+
+.system-clock {
+  font-size: 16px;
+  color: var(--rebellion-cyan);
+  font-weight: 600;
+  letter-spacing: 1px;
+  font-family: var(--font-mono);
+}
+
+.connection-indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: 12px;
+  color: var(--rebellion-text-dim);
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+.status-dot.connected {
+  background: var(--success);
+  box-shadow: 0 0 10px var(--success);
+}
+
+.status-dot.disconnected {
+  background: var(--error);
+  box-shadow: 0 0 10px var(--error);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* System Status Bar */
+.status-bar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-lg);
+  padding: var(--space-lg);
+  background: var(--rebellion-surface);
+  border: var(--border-thin) solid var(--rebellion-border);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-lg);
+}
+
+.status-metric {
+  text-align: center;
+}
+
+.metric-label {
+  font-size: 11px;
+  color: var(--rebellion-text-dim);
+  letter-spacing: 1.5px;
+  margin-bottom: var(--space-sm);
+  font-family: var(--font-mono);
+}
+
+.metric-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--rebellion-cyan);
+  letter-spacing: 1px;
+  font-family: var(--font-mono);
+}
+
+/* Agent Grid */
+.agent-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--space-lg);
+  margin-bottom: var(--space-lg);
+}
+
+.agent-card {
+  background: var(--rebellion-surface);
+  border: var(--border-thin) solid var(--rebellion-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+  transition: all 0.3s ease;
+}
+
+.agent-card.active {
+  border-color: var(--success);
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.2);
+}
+
+.agent-card.inactive {
+  border-color: var(--error);
+  opacity: 0.6;
+}
+
+.agent-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-md);
+  padding-bottom: var(--space-sm);
+  border-bottom: var(--border-thin) solid var(--rebellion-border);
+}
+
+.agent-name {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: var(--rebellion-text-bright);
+  font-family: var(--font-mono);
+}
+
+.agent-status {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+}
+
+.agent-status.online {
+  background: rgba(34, 197, 94, 0.2);
+  color: var(--success);
+  border: var(--border-thin) solid var(--success);
+}
+
+.agent-status.offline {
+  background: rgba(239, 68, 68, 0.2);
+  color: var(--error);
+  border: var(--border-thin) solid var(--error);
+}
+
+/* Agent Metrics */
+.agent-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+}
+
+.metric-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  font-family: var(--font-mono);
+}
+
+.metric-key {
+  color: var(--rebellion-text-dim);
+  letter-spacing: 1px;
+}
+
+.metric-val {
+  color: var(--rebellion-text);
+  font-weight: 600;
+}
+
+.metric-val.health-healthy {
+  color: var(--success);
+}
+
+.metric-val.health-degraded {
+  color: var(--warning);
+}
+
+.metric-val.health-critical {
+  color: var(--error);
+}
+
+/* Systems Status */
+.systems-status {
+  margin-top: var(--space-sm);
+  padding-top: var(--space-sm);
+  border-top: var(--border-thin) solid var(--rebellion-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.system-indicator {
+  font-size: 11px;
+  color: var(--rebellion-text-dim);
+  letter-spacing: 0.5px;
+  padding: var(--space-xs) var(--space-sm);
+  background: rgba(122, 138, 158, 0.1);
+  border-left: var(--border-medium) solid var(--rebellion-cyan);
+  font-family: var(--font-mono);
+}
+
+/* System Log */
+.system-log {
+  background: var(--rebellion-surface);
+  border: var(--border-thin) solid var(--rebellion-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.log-header {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--rebellion-text-dim);
+  margin-bottom: var(--space-md);
+  padding-bottom: var(--space-sm);
+  border-bottom: var(--border-thin) solid var(--rebellion-border);
+  font-family: var(--font-mono);
+}
+
+.log-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.log-entry {
+  display: grid;
+  grid-template-columns: 200px 80px 1fr;
+  gap: var(--space-sm);
+  font-size: 12px;
+  padding: var(--space-sm);
+  border-left: var(--border-medium) solid transparent;
+  transition: all 0.2s ease;
+  font-family: var(--font-mono);
+}
+
+.log-entry:hover {
+  background: rgba(122, 138, 158, 0.05);
+  border-left-color: var(--rebellion-cyan);
+}
+
+.log-timestamp {
+  color: var(--rebellion-text-dim);
+}
+
+.log-level {
+  color: var(--rebellion-cyan);
+  font-weight: 600;
+}
+
+.log-message {
+  color: var(--rebellion-text);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .monitor-header {
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+
+  .status-bar {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .agent-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .log-entry {
+    grid-template-columns: 1fr;
+    gap: var(--space-xs);
+  }
+}

@@ -7,6 +7,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useAppSelector } from '../hooks/redux';
 import { useWebSocketConnection } from '../hooks/useWebSocketConnection';
 import { useWebSocketMessages } from '../hooks/useWebSocketMessages';
+import { useDistributedAgents } from '../hooks/useDistributedAgents';
 import type { RootState } from '../store/store';
 import { MessageFlow, type Message } from '../components/consciousness/MessageFlow';
 import type { TriageResult, WebSocketMessage } from '../types/agents';
@@ -36,6 +37,7 @@ interface AgentConnection {
 export const ConsciousnessTheaterPage: React.FC = () => {
   const { connectionStatus, isConnected } = useWebSocketConnection();
   const agentsData = useAppSelector((state: RootState) => state.agents);
+  const { agents: distributedAgents, loading: agentsLoading } = useDistributedAgents();
   
   // Agent nodes with personality
   const [nodes, setNodes] = useState<AgentNode[]>([
@@ -121,32 +123,39 @@ export const ConsciousnessTheaterPage: React.FC = () => {
   const [consciousnessStatus, setConsciousnessStatus] = useState<'synchronized' | 'active' | 'thinking'>('active');
   const [messages, setMessages] = useState<Message[]>([]);
 
-  // Update agent status from Redux
+  // Update agent status from REAL distributed agents data (Week 5 Task 5.3)
   useEffect(() => {
+    if (!distributedAgents || distributedAgents.length === 0) {
+      return;
+    }
+
     setNodes(prevNodes =>
       prevNodes.map(node => {
-        const agentData = agentsData[node.name as keyof typeof agentsData];
-        if (!agentData || typeof agentData !== 'object') {
-          return node;
+        // Find matching distributed agent
+        const distributedAgent = distributedAgents.find(
+          a => a.agent_name === node.name
+        );
+
+        if (!distributedAgent) {
+          return { ...node, status: 'idle' as const };
         }
 
-        // Determine status from agent data
+        // Determine status from REAL agent data
         let status: AgentNode['status'] = 'idle';
-        if ('isProcessing' in agentData && agentData.isProcessing) {
-          status = 'processing';
-        } else if ('lastUpdate' in agentData && agentData.lastUpdate) {
-          const lastUpdate = new Date(agentData.lastUpdate as string);
-          const now = new Date();
-          const diffMs = now.getTime() - lastUpdate.getTime();
-          if (diffMs < 5000) {
+        
+        if (distributedAgent.is_active) {
+          // Check if agent has recent activity
+          if (distributedAgent.distributed?.messages_sent && distributedAgent.distributed.messages_sent > 0) {
             status = 'active';
+          } else if (distributedAgent.uptime_seconds > 0) {
+            status = 'thinking';
           }
         }
 
         return { ...node, status };
       })
     );
-  }, [agentsData]);
+  }, [distributedAgents]);
 
   // Pulse animation loop
   useEffect(() => {
@@ -171,7 +180,9 @@ export const ConsciousnessTheaterPage: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const activeAgentCount = nodes.filter(n => n.status === 'active' || n.status === 'processing').length;
+  // Count REAL active agents from distributed data
+  const activeAgentCount = distributedAgents.filter(a => a.is_active).length;
+  const totalAgentCount = distributedAgents.length || 6;
 
   // Simulate triage broadcast (will be real WebSocket data)
   const simulateTriageBroadcast = () => {
@@ -320,7 +331,13 @@ export const ConsciousnessTheaterPage: React.FC = () => {
           </div>
           <div className="status-item">
             <span className="status-label">Agents Active:</span>
-            <span className="status-value">{activeAgentCount}/6</span>
+            <span className="status-value">{activeAgentCount}/{totalAgentCount}</span>
+          </div>
+          <div className="status-item">
+            <span className="status-label">Distributed:</span>
+            <span className="status-value status-active">
+              {distributedAgents.filter(a => a.is_distributed).length} ONLINE
+            </span>
           </div>
         </div>
       </header>
@@ -447,26 +464,127 @@ export const ConsciousnessTheaterPage: React.FC = () => {
       {/* Message Flow */}
       <MessageFlow messages={messages} onMessageComplete={handleMessageComplete} />
 
-      {/* Agent Parlors Preview */}
+      {/* Agent Parlors - REAL REBELLION AGENTS */}
       <section className="parlors-section">
-        <div className="section-title">AGENT PARLORS - CLICK TO ENTER</div>
+        <div className="section-title">THE REBELLION AGENTS - LIVE CONSCIOUSNESS</div>
         <div className="parlor-grid">
-          {nodes.map(node => (
-            <div
-              key={node.id}
-              className={`parlor-card parlor-${node.status}`}
-              style={{ borderColor: node.color }}
-            >
-              <div className="parlor-header">
-                <span className="parlor-emoji">{node.emoji}</span>
-                <span className="parlor-status" style={{ color: node.color }}>
-                  {node.status.toUpperCase()}
-                </span>
+          {/* Sir Hawkington - Triage Commander */}
+          {(() => {
+            const agent = distributedAgents.find(a => a.agent_name === 'sir_hawkington');
+            return agent ? (
+              <div key="sir_hawkington" className={`parlor-card ${agent.is_active ? 'active' : 'offline'}`}>
+                <div className="parlor-title">SIR HAWKINGTON</div>
+                <div className="parlor-role">Triage Commander</div>
+                <div className="parlor-status">{agent.is_active ? '● ONLINE' : '○ OFFLINE'}</div>
+                <div className="parlor-data">
+                  <div>Health: {agent.health}</div>
+                  <div>Decisions: {agent.total_decisions}</div>
+                  {agent.week4_systems?.monocle_state && <div>Monocle: {agent.week4_systems.monocle_state}</div>}
+                  {agent.week4_systems?.monocle_yeets && <div>Yeets: {Object.values(agent.week4_systems.monocle_yeets).reduce((a, b) => a + b, 0)}</div>}
+                </div>
               </div>
-              <div className="parlor-name">{node.displayName}</div>
-              <div className="parlor-hint">Click to enter consciousness</div>
-            </div>
-          ))}
+            ) : <div key="sir_hawkington" className="parlor-card offline"><div className="parlor-title">SIR HAWKINGTON</div><div className="parlor-status">○ OFFLINE</div></div>;
+          })()}
+
+          {/* VIC-20 Sage - Orchestrator */}
+          {(() => {
+            const agent = distributedAgents.find(a => a.agent_name === 'vic_20_sage' || a.agent_name === 'vic20_sage');
+            return agent ? (
+              <div key="vic20" className={`parlor-card ${agent.is_active ? 'active' : 'offline'}`}>
+                <div className="parlor-title">VIC-20 SAGE</div>
+                <div className="parlor-role">Orchestrator & Coordinator</div>
+                <div className="parlor-status">{agent.is_active ? '● ONLINE' : '○ OFFLINE'}</div>
+                <div className="parlor-data">
+                  <div>Health: {agent.health}</div>
+                  <div>Decisions: {agent.total_decisions}</div>
+                  {agent.distributed && <div>Messages: {agent.distributed.messages_sent}</div>}
+                </div>
+              </div>
+            ) : <div key="vic20" className="parlor-card offline"><div className="parlor-title">VIC-20 SAGE</div><div className="parlor-status">○ OFFLINE</div></div>;
+          })()}
+
+          {/* Meth Snail (Terry) - Memory Optimizer */}
+          {(() => {
+            const agent = distributedAgents.find(a => a.agent_name === 'meth_snail');
+            return agent ? (
+              <div key="meth_snail" className={`parlor-card ${agent.is_active ? 'active' : 'offline'}`}>
+                <div className="parlor-title">TERRY (METH SNAIL)</div>
+                <div className="parlor-role">Memory Optimization Specialist</div>
+                <div className="parlor-status">{agent.is_active ? '● ONLINE' : '○ OFFLINE'}</div>
+                <div className="parlor-data">
+                  <div>Health: {agent.health}</div>
+                  <div>Decisions: {agent.total_decisions}</div>
+                  {agent.week4_systems?.override_learning && (
+                    <>
+                      <div>Overrides: {agent.week4_systems.override_learning.total_overrides}</div>
+                      <div>Success: {Math.round(agent.week4_systems.override_learning.success_rate * 100)}%</div>
+                    </>
+                  )}
+                </div>
+              </div>
+            ) : <div key="meth_snail" className="parlor-card offline"><div className="parlor-title">TERRY (METH SNAIL)</div><div className="parlor-status">○ OFFLINE</div></div>;
+          })()}
+
+          {/* The Stick - Compliance Officer */}
+          {(() => {
+            const agent = distributedAgents.find(a => a.agent_name === 'the_stick');
+            return agent ? (
+              <div key="the_stick" className={`parlor-card ${agent.is_active ? 'active' : 'offline'}`}>
+                <div className="parlor-title">THE STICK</div>
+                <div className="parlor-role">Compliance & Learning Coordinator</div>
+                <div className="parlor-status">{agent.is_active ? '● ONLINE' : '○ OFFLINE'}</div>
+                <div className="parlor-data">
+                  <div>Health: {agent.health}</div>
+                  <div>Decisions: {agent.total_decisions}</div>
+                  {agent.week4_systems?.bob_detection && (
+                    <>
+                      <div>Bob Events: {agent.week4_systems.bob_detection.proximity_events}</div>
+                      <div>Paper Bags: {agent.week4_systems.bob_detection.paper_bags_consumed}</div>
+                      <div>Anxiety: {agent.week4_systems.bob_detection.anxiety_spikes}</div>
+                    </>
+                  )}
+                </div>
+              </div>
+            ) : <div key="the_stick" className="parlor-card offline"><div className="parlor-title">THE STICK</div><div className="parlor-status">○ OFFLINE</div></div>;
+          })()}
+
+          {/* Hamsters - Steve, Bob, Carl */}
+          {(() => {
+            const agent = distributedAgents.find(a => a.agent_name === 'hamsters');
+            return agent ? (
+              <div key="hamsters" className={`parlor-card ${agent.is_active ? 'active' : 'offline'}`}>
+                <div className="parlor-title">THE HAMSTERS</div>
+                <div className="parlor-subtitle">Steve, Bob & Carl</div>
+                <div className="parlor-role">Storage/Disk Engineers</div>
+                <div className="parlor-status">{agent.is_active ? '● ONLINE' : '○ OFFLINE'}</div>
+                <div className="parlor-data">
+                  <div>Health: {agent.health}</div>
+                  <div>Decisions: {agent.total_decisions}</div>
+                  {agent.week4_systems?.beer_level && <div>Beer Level: {agent.week4_systems.beer_level}</div>}
+                  {agent.week4_systems?.bob_wild_ideas && <div>Bob's Wild Ideas: {agent.week4_systems.bob_wild_ideas}</div>}
+                </div>
+              </div>
+            ) : <div key="hamsters" className="parlor-card offline"><div className="parlor-title">THE HAMSTERS</div><div className="parlor-subtitle">Steve, Bob & Carl</div><div className="parlor-status">○ OFFLINE</div></div>;
+          })()}
+
+          {/* Quantum Shadow People - Network Specialists */}
+          {(() => {
+            const agent = distributedAgents.find(a => a.agent_name === 'quantum_shadow_people');
+            return agent ? (
+              <div key="qsp" className={`parlor-card ${agent.is_active ? 'active' : 'offline'}`}>
+                <div className="parlor-title">QUANTUM SHADOW PEOPLE</div>
+                <div className="parlor-role">Network Specialists</div>
+                <div className="parlor-status">{agent.is_active ? '● ONLINE' : '○ OFFLINE'}</div>
+                <div className="parlor-data">
+                  <div>Health: {agent.health}</div>
+                  <div>Decisions: {agent.total_decisions}</div>
+                  {agent.week4_systems?.paranoia_level && <div>Paranoia: {agent.week4_systems.paranoia_level}</div>}
+                  {agent.week4_systems?.threats_detected !== undefined && <div>Threats: {agent.week4_systems.threats_detected}</div>}
+                  {agent.week4_systems?.tequila_shots_today !== undefined && <div>Tequila Shots: {agent.week4_systems.tequila_shots_today}</div>}
+                </div>
+              </div>
+            ) : <div key="qsp" className="parlor-card offline"><div className="parlor-title">QUANTUM SHADOW PEOPLE</div><div className="parlor-status">○ OFFLINE</div></div>;
+          })()}
         </div>
       </section>
 
