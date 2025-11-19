@@ -8,6 +8,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import type { RootState, AppDispatch } from './store/store';
 import { initializeAuth } from './store/slices/authSlice';
 import { ConsciousnessTheaterPage } from './pages/ConsciousnessTheaterPage';
+import { ConsciousnessMonitor } from './pages/ConsciousnessMonitor';
 import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
@@ -52,6 +53,7 @@ function App() {
         {/* Protected routes */}
         <Route path="/onboarding" element={auth.isAuthenticated ? <OnboardingFlow /> : <Navigate to="/login" replace />} />
         <Route path="/theater" element={auth.isAuthenticated ? <ConsciousnessTheaterPage /> : <Navigate to="/login" replace />} />
+        <Route path="/monitor" element={auth.isAuthenticated ? <ConsciousnessMonitor /> : <Navigate to="/login" replace />} />
         
         {/* Catch all */}
         <Route path="*" element={<Navigate to="/" replace />} />
