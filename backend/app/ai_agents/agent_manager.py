@@ -371,6 +371,12 @@ class AIAgentManager:
                 )
             else:
                 self.logger.warning("⚠️ No agents initialized with distributed features")
+            
+            # Store Redis client for WebSocket bridge
+            self.redis_client = redis_client
+            
+            # Register agents with API endpoint for frontend visibility (Week 5 Task 5.2)
+            self._register_agents_with_api()
                 
         except Exception as e:
             self.logger.error(
@@ -378,7 +384,25 @@ class AIAgentManager:
                 exc_info=True
             )
             # Don't raise - distributed features are optional
+            self.redis_client = None
 
+    def _register_agents_with_api(self) -> None:
+        """
+        Register all agents with the API endpoint registry.
+        
+        Week 5 Task 5.2: Make agents visible to frontend!
+        """
+        try:
+            from app.api.endpoints.distributed_agents import register_agent
+            
+            for agent_name, agent in self.agents.items():
+                register_agent(agent_name, agent)
+                self.logger.info(f"📡 Registered '{agent_name}' with API endpoint")
+            
+            self.logger.info(f"✅ All {len(self.agents)} agents registered with API")
+        except Exception as e:
+            self.logger.error(f"❌ Failed to register agents with API: {e}", exc_info=True)
+    
     async def _shutdown_distributed_features(self) -> None:
         """
         Shutdown distributed consciousness for all agents.
