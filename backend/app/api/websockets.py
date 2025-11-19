@@ -1,6 +1,7 @@
 import asyncio
 import logging
-from typing import Set, List, Dict, Any
+import json
+from typing import Set, List, Dict, Any, Optional
 from collections import deque
 from fastapi import WebSocket
 
@@ -10,11 +11,18 @@ class WebSocketManager:
     def __init__(self) -> None:
         self.active_connections: Set[WebSocket] = set()
         self._heartbeat_task: asyncio.Task | None = None
+        self._redis_subscription_task: asyncio.Task | None = None
         self._started = False
+        self._redis_client: Optional[Any] = None
         
         # Buffers for insights and events (last 20 of each)
         self.recent_insights: deque = deque(maxlen=20)
         self.recent_events: deque = deque(maxlen=20)
+        
+        # Buffers for distributed agent messages
+        self.recent_agent_messages: deque = deque(maxlen=50)
+        self.recent_triage_decisions: deque = deque(maxlen=20)
+        self.recent_resource_alerts: deque = deque(maxlen=20)
 
     async def connect(self, websocket: WebSocket) -> None:
         await websocket.accept()
@@ -66,11 +74,141 @@ class WebSocketManager:
             except Exception as e:
                 logger.warning("WS heartbeat error: %s", e, exc_info=True)
 
+    async def _subscribe_to_agent_messages(self) -> None:
+        """
+        Subscribe to Redis channels and forward messages to WebSocket clients.
+        
+        Week 5 Task 5.1: Redis → WebSocket Bridge
+        """
+        if not self._redis_client:
+            logger.warning("⚠️ Redis client not set - agent messages will not be forwarded")
+            return
+        
+        try:
+            # Create Redis pubsub
+            pubsub = self._redis_client.pubsub()
+            
+            # Subscribe to agent broadcast channels
+            await pubsub.subscribe(
+                'agent:broadcast',  # All agent messages
+                'triage:decisions',  # Triage decisions from Sir Hawkington
+                'resource:alerts',  # Resource alerts
+                'coordination:requests',  # VIC-20 coordination
+                'agent:actions'  # Agent actions (overrides, etc.)
+            )
+            
+            logger.info("📡 Subscribed to Redis agent channels - forwarding to WebSocket clients")
+            
+            # Listen for messages
+            while True:
+                try:
+                    message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
+                    
+                    if message and message['type'] == 'message':
+                        channel = message['channel'].decode('utf-8') if isinstance(message['channel'], bytes) else message['channel']
+                        data = message['data']
+                        
+                        # Parse message data
+                        try:
+                            if isinstance(data, bytes):
+                                data = data.decode('utf-8')
+                            
+                            message_data = json.loads(data) if isinstance(data, str) else data
+                            
+                            # Add channel info
+                            message_data['redis_channel'] = channel
+                            
+                            # Route to appropriate buffer and broadcast
+                            if channel == 'triage:decisions':
+                                self.recent_triage_decisions.append(message_data)
+                                await self.broadcast_json({
+                                    'type': 'triage_decision',
+                                    'data': message_data
+                                })
+                                logger.debug("🎯 Forwarded triage decision to WebSocket clients")
+                            
+                            elif channel == 'resource:alerts':
+                                self.recent_resource_alerts.append(message_data)
+                                await self.broadcast_json({
+                                    'type': 'resource_alert',
+                                    'data': message_data
+                                })
+                                logger.debug("⚠️ Forwarded resource alert to WebSocket clients")
+                            
+                            elif channel == 'coordination:requests':
+                                await self.broadcast_json({
+                                    'type': 'coordination_request',
+                                    'data': message_data
+                                })
+                                logger.debug("🤝 Forwarded coordination request to WebSocket clients")
+                            
+                            elif channel == 'agent:actions':
+                                await self.broadcast_json({
+                                    'type': 'agent_action',
+                                    'data': message_data
+                                })
+                                logger.debug("⚡ Forwarded agent action to WebSocket clients")
+                            
+                            else:  # agent:broadcast
+                                self.recent_agent_messages.append(message_data)
+                                await self.broadcast_json({
+                                    'type': 'agent_message',
+                                    'data': message_data
+                                })
+                                logger.debug("📨 Forwarded agent message to WebSocket clients")
+                        
+                        except json.JSONDecodeError as e:
+                            logger.error(f"❌ Failed to parse Redis message: {e}")
+                        except Exception as e:
+                            logger.error(f"❌ Error processing Redis message: {e}", exc_info=True)
+                    
+                    # Small delay to prevent tight loop
+                    await asyncio.sleep(0.01)
+                
+                except asyncio.CancelledError:
+                    raise
+                except Exception as e:
+                    logger.error(f"❌ Error in Redis subscription loop: {e}", exc_info=True)
+                    await asyncio.sleep(1)  # Back off on error
+        
+        except asyncio.CancelledError:
+            logger.info("🛑 Redis subscription cancelled")
+            raise
+        except Exception as e:
+            logger.error(f"❌ Fatal error in Redis subscription: {e}", exc_info=True)
+        finally:
+            try:
+                await pubsub.unsubscribe()
+                await pubsub.close()
+            except Exception:
+                pass
+    
+    def set_redis_client(self, redis_client: Any) -> None:
+        """
+        Set the Redis client for subscribing to agent messages.
+        
+        Args:
+            redis_client: Connected Redis client
+        """
+        self._redis_client = redis_client
+        logger.info("✅ Redis client set for WebSocket bridge")
+    
     async def start(self) -> None:
         if self._started:
             return
         logger.info("✅ WebSocketManager starting…")
         self._heartbeat_task = asyncio.create_task(self._heartbeat_loop(), name="ws-heartbeat")
+        
+        # Start Redis subscription if client is set
+        if self._redis_client:
+            self._redis_subscription_task = asyncio.create_task(
+                self._subscribe_to_agent_messages(),
+                name="redis-ws-bridge"
+            )
+            logger.info("🌉 Redis → WebSocket bridge started")
+        else:
+            logger.warning("⚠️ Redis client not set - agent messages will not be forwarded")
+        
         self._started = True
 
     async def shutdown(self) -> None:
@@ -80,6 +218,14 @@ class WebSocketManager:
                 await self._heartbeat_task
             except asyncio.CancelledError:
                 pass
+        
+        if self._redis_subscription_task:
+            self._redis_subscription_task.cancel()
+            try:
+                await self._redis_subscription_task
+            except asyncio.CancelledError:
+                pass
+        
         self._started = False
         logger.info("🛑 WebSocketManager stopped")
 

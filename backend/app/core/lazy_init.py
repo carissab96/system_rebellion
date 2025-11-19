@@ -73,6 +73,13 @@ async def initialize_agents_and_websockets(app_state) -> bool:
             active_agents = list(agent_manager.agents.keys()) if agent_manager.initialized else []
             logger.info(f"✅ AI Agents initialized in {agent_elapsed:.2f}s - Active: {active_agents}")
             
+            # Connect WebSocket manager to Redis for agent message forwarding (Week 5 Task 5.1)
+            if agent_manager.redis_client:
+                _ws_manager.set_redis_client(agent_manager.redis_client)
+                logger.info("🌉 WebSocket manager connected to Redis - agent messages will be forwarded")
+            else:
+                logger.warning("⚠️ Redis client not available - agent messages will not be forwarded to WebSocket")
+            
             # Count distributed agents
             distributed_count = sum(
                 1 for agent in agent_manager.agents.values()
