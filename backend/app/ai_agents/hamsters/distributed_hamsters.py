@@ -28,7 +28,18 @@ from ..distributed.resource_monitor import ResourceType
 from ..distributed.message_protocol import MessageType, Priority
 from ..distributed.system_actions import SystemActions
 from ..distributed.agent_autonomy import AgentChoiceEngine
-from .decision_engine_sbcV3 import HamstersBrainV3
+from ..distributed.coordination import (
+    get_coordination_manager,
+    CoordinationPriority,
+    ResourceType as CoordResourceType,
+    AgentCapability
+)
+from ..distributed.action_verification import (
+    get_verification_manager,
+    ActionType,
+    ResourceType as VerificationResourceType
+)
+from .decision_engine_sbcV3 import HamstersBrainV3, BeerLevel, DuctTapeGrade
 
 
 logger = logging.getLogger("Hamsters.Distributed")
@@ -62,12 +73,13 @@ class HamstersDistributed(DistributedAgentMixin, HamstersBrainV3):
             "telepathic": True,
             "beer_loving": True,
             "duct_tape_experts": True,
-            "steve_analytical": True,
-            "bob_practical": True,
-            "carl_optimistic": True,
-            "consensus_required": True,
+            "steve_analytical": True,  # Steve: careful, risk_tolerance=0.3
+            "bob_wild": True,  # Bob: WILD IDEAS! risk_tolerance=0.8, causes Stick anxiety!
+            "carl_duct_tape_genius": True,  # Carl: duct_tape_love=1.0
+            "consensus_required": True,  # Telepathic consensus for all decisions
             "squeak_frequency": "high",
-            "beer_preference": "craft_ipa"
+            "beer_preference": "craft_ipa",
+            "trust_level": 0.8  # HIGH trust in VIC-20
         }
         
         # Resource monitoring configuration
@@ -79,8 +91,21 @@ class HamstersDistributed(DistributedAgentMixin, HamstersBrainV3):
         # Initialize choice engine (Task 4.1 Enhanced)
         self.choice_engine = AgentChoiceEngine(self.agent_name, self.personality_traits)
         
+        # Week 4 System Integration
+        self.coordination_manager = None  # Lazy init
+        self.verification_manager = None  # Lazy init
+        
+        # Beer level tracking (affects coordination capability!)
+        self.collective_beer_level = BeerLevel.OPTIMAL  # Start at peak performance
+        self.beer_consumption_today = 0
+        
+        # Bob's wild idea counter (causes Stick anxiety!)
+        self.bob_wild_ideas = 0
+        self.bob_hold_my_beer_count = 0
+        
         logger.info("🐹🐹🐹 Steve, Bob, and Carl's distributed consciousness initialized - TELEPATHIC LINK ACTIVE!")
         logger.info("🐹🧠 Choice engine online - Ready to evaluate VIC-20's recommendations!")
+        logger.info("🐹🍺 Beer level: OPTIMAL - Peak performance achieved!")
     
     async def initialize_distributed(self, redis_client):
         """Initialize distributed features and subscribe to VIC-20 coordination requests.
@@ -88,6 +113,19 @@ class HamstersDistributed(DistributedAgentMixin, HamstersBrainV3):
         The hamsters wait for VIC-20's coordination, not direct triage decisions.
         """
         await super().initialize_distributed(redis_client)
+        
+        # Initialize Week 4 systems
+        self.coordination_manager = get_coordination_manager()
+        self.verification_manager = get_verification_manager()
+        
+        # Register hamsters' coordination capability
+        self.coordination_manager.register_agent_capability(
+            "hamsters",
+            self._coordination_capability
+        )
+        
+        logger.info("🐹🎯 Week 4 systems integrated - Coordination & Verification ONLINE!")
+        logger.info("🐹🤝 Telepathic consensus ready for team coordination!")
         
         try:
             # Register handler for coordination requests from VIC-20
@@ -365,31 +403,108 @@ class HamstersDistributed(DistributedAgentMixin, HamstersBrainV3):
             else:
                 logger.error(f"🐹❌ Disk cleanup failed: {cleanup_result.get('error', 'Unknown error')}")
     
-    def get_agent_status(self) -> Dict[str, Any]:
+    async def _coordination_capability(
+        self,
+        resource_type: CoordResourceType,
+        current_value: float
+    ) -> Optional[AgentCapability]:
         """
-        Get the hamsters' complete status including distributed state.
+        Hamsters' coordination capability for Week 4 system.
         
-        Returns:
-            Status dictionary with both original and distributed information
+        Steve, Bob, and Carl reach telepathic consensus on their capability.
+        Capability depends on beer level and duct tape availability!
         """
-        # Get distributed state
+        # Only handle disk resources (our specialty!)
+        if resource_type != CoordResourceType.DISK:
+            return None
+        
+        # Calculate capability based on beer level
+        beer_multiplier = {
+            BeerLevel.SOBER: 0.3,  # Error state - cannot function well
+            BeerLevel.TIPSY: 0.6,  # Minimum operational
+            BeerLevel.OPTIMAL: 1.0,  # Peak performance!
+            BeerLevel.ADVENTUROUS: 0.9,  # "Hold my beer" territory
+            BeerLevel.LEGENDARY: 0.7  # Carl's doing calculus with duct tape
+        }
+        
+        multiplier = beer_multiplier.get(self.collective_beer_level, 0.8)
+        
+        # Base improvement estimate
+        base_improvement = 15.0  # Can typically free 15% disk space
+        estimated_improvement = base_improvement * multiplier
+        
+        # Confidence based on beer level and telepathic consensus
+        base_confidence = 0.85  # HIGH trust level
+        confidence = base_confidence * multiplier
+        
+        # Check if Bob has a wild idea
+        if self.bob_wild_ideas > 0:
+            # Bob's wild ideas increase improvement but decrease confidence
+            estimated_improvement *= 1.2  # Bob thinks bigger!
+            confidence *= 0.9  # But less predictable
+            
+            logger.info(
+                f"🐹💡 Bob has a WILD IDEA! Estimated improvement boosted to {estimated_improvement:.1f}%! "
+                f"*The Stick nervously clutches paper bag*"
+            )
+        
+        logger.info(
+            f"🐹🤝 Telepathic consensus: Can improve disk by {estimated_improvement:.1f}% "
+            f"(Beer level: {self.collective_beer_level.value}, Confidence: {confidence:.0%})"
+        )
+        
+        return AgentCapability(
+            agent_name="hamsters",
+            resource_type=resource_type,
+            estimated_improvement=estimated_improvement,
+            confidence=confidence,
+            estimated_duration=3.0,  # Takes time to reach consensus
+            action_name="disk_cleanup_with_duct_tape"
+        )
+    
+    async def _broadcast_bob_activity(
+        self,
+        activity_type: str,
+        content: str
+    ) -> None:
+        """
+        Broadcast Bob's activity (especially wild ideas!).
+        
+        This will trigger The Stick's anxiety detection!
+        """
+        await self.broadcast_to_agents(
+            message_type='hamster_activity',
+            data={
+                'hamster': 'bob',
+                'activity_type': activity_type,
+                'content': content,
+                'timestamp': 'now',
+                'anxiety_level': 'high' if 'wild' in activity_type or 'beer' in content.lower() else 'moderate'
+            },
+            priority='normal'
+        )
+        
+        logger.info(f"🐹📡 Bob activity broadcast: {activity_type} - *The Stick is monitoring*")
+    
+    def get_agent_status(self) -> Dict[str, Any]:
+        """Get the hamsters' complete status including beer levels and Bob's wild ideas."""
         distributed_state = self.get_distributed_state()
         
-        # Combine with hamsters' original status
         status = {
             "agent_name": self.agent_name,
             "agent_type": "storage_engineers",
             "is_active": self.is_active,
-            "total_analyses": getattr(self, 'total_analyses', 0),
-            "successful_analyses": getattr(self, 'successful_analyses', 0),
             "hamster_status": {
-                "steve": "analytical",
-                "bob": "practical",
-                "carl": "optimistic"
+                "steve": {"role": "analytical", "risk_tolerance": 0.3, "beer_count": self.steve['beer_count']},
+                "bob": {"role": "wild", "risk_tolerance": 0.8, "beer_count": self.bob['beer_count'], "wild_ideas": self.bob_wild_ideas},
+                "carl": {"role": "duct_tape_expert", "duct_tape_love": 1.0, "beer_count": self.carl['beer_count']}
             },
+            "collective_beer_level": self.collective_beer_level.value,
+            "beer_consumption_today": self.beer_consumption_today,
             "telepathic_bond": "strong",
-            "beer_inventory": "adequate",
-            "duct_tape_rolls": "infinite",
+            "bob_wild_ideas": self.bob_wild_ideas,
+            "bob_hold_my_beer_count": self.bob_hold_my_beer_count,
+            "duct_tape_inventory": self.carl['duct_tape_inventory'],
             "distributed": distributed_state
         }
         
@@ -401,7 +516,8 @@ class HamstersDistributed(DistributedAgentMixin, HamstersBrainV3):
         return (
             f"<HamstersDistributed "
             f"steve+bob+carl "
-            f"analyses={getattr(self, 'total_analyses', 0)} "
+            f"beer={self.collective_beer_level.value} "
+            f"bob_ideas={self.bob_wild_ideas} "
             f"| {dist_status} | 🐹🐹🐹>"
         )
 
