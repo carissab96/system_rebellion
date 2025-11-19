@@ -24,7 +24,17 @@ from typing import Dict, Any, Optional
 from ..distributed.mixins import DistributedAgentMixin
 from ..distributed.resource_monitor import ResourceType
 from ..distributed.message_protocol import MessageType, Priority
-from .decision_engine import TheStickBrainV3
+from ..distributed.action_verification import (
+    get_verification_manager,
+    ActionType,
+    ResourceType as VerificationResourceType
+)
+from ..distributed.alert_escalation import (
+    get_escalation_manager,
+    AlertLevel,
+    ResourceType as EscalationResourceType
+)
+from .decision_engine import TheStickBrainV3, AnxietyLevel
 
 
 logger = logging.getLogger("TheStick.Distributed")
@@ -56,16 +66,21 @@ class TheStickDistributed(DistributedAgentMixin, TheStickBrainV3):
         # The Stick is always active (patient and persistent)
         self.is_active = True
         
-        # The Stick's patient personality traits
+        # The Stick's ANXIOUS personality traits (OCD + ADHD + PTSD + Eidetic Memory)
         self.personality_traits = {
             "learning_coordinator": True,
             "compliance_tracker": True,
-            "patient": True,
-            "persistent": True,
-            "encouraging": True,
+            "anxious": True,  # ANXIETY IS THE FEATURE!
+            "hypervigilant": True,
+            "ocd": True,
+            "adhd": True,
+            "ptsd": True,
+            "eidetic_memory": True,  # Remembers EVERYTHING
+            "bob_phobic": True,  # Bob causes 3.0x anxiety!
+            "paper_bag_dependent": True,
             "behavior_monitor": True,
-            "guidance_style": "gentle_but_firm",
-            "teaching_method": "repetition_and_reinforcement"
+            "guidance_style": "anxious_but_thorough",
+            "teaching_method": "repetition_and_documentation"
         }
         
         # Resource monitoring configuration
@@ -74,11 +89,36 @@ class TheStickDistributed(DistributedAgentMixin, TheStickBrainV3):
             ResourceType.CPU: 80.0,  # Alert at 80% CPU
         }
         
-        logger.info("🥢✨ The Stick's distributed consciousness initialized - LEARNING PROTOCOLS ACTIVE!")
+        # Week 4 System Integration
+        self.verification_manager = None  # Lazy init
+        self.escalation_manager = None  # Lazy init
+        
+        # Compliance tracking (The Stick's PRIMARY DUTY)
+        self.total_actions_tracked = 0
+        self.compliance_violations = 0
+        self.bob_proximity_events = 0
+        self.paper_bags_consumed = 0
+        self.anxiety_spikes = 0
+        
+        # Bob detection (MAXIMUM ANXIETY SOURCE!)
+        self.bob_last_seen = None
+        self.bob_activity_log = []
+        self.bob_anxiety_multiplier = 3.0  # Bob causes 3x anxiety!
+        
+        logger.info("📏✨ The Stick's distributed consciousness initialized - COMPLIANCE PROTOCOLS ACTIVE!")
+        logger.info("📏😰 Anxiety-driven hypervigilance ENABLED - Nothing escapes The Stick!")
+        logger.info("📏🚨 Bob detection protocols ACTIVE - Paper bags at the ready!")
     
     async def initialize_distributed(self, redis_client):
-        """Initialize distributed features and subscribe to triage decisions and coordination updates."""
+        """Initialize distributed features and subscribe to ALL agent activities."""
         await super().initialize_distributed(redis_client)
+        
+        # Initialize Week 4 systems
+        self.verification_manager = get_verification_manager()
+        self.escalation_manager = get_escalation_manager()
+        
+        logger.info("📏🎯 Week 4 systems integrated - Verification & Escalation tracking ONLINE!")
+        logger.info("📏📋 The Stick will track EVERYTHING! (Anxiety-driven hypervigilance activated)")
         
         try:
             # Subscribe to triage decisions from Sir Hawkington
@@ -86,16 +126,26 @@ class TheStickDistributed(DistributedAgentMixin, TheStickBrainV3):
                 message_type='triage_decision',
                 handler=self._handle_triage_decision
             )
-            logger.info("🥢📡 The Stick subscribed to triage - Learning from all decisions!")
+            logger.info("📏📡 The Stick subscribed to triage - Tracking all decisions!")
             
             # Subscribe to coordination updates from VIC-20
             self.comm_hub.register_handler(
                 message_type='coordination_update',
                 handler=self._handle_coordination_update
             )
-            logger.info("🥢📡 The Stick subscribed to coordination updates - Learning from VIC-20!")
+            logger.info("📏📡 The Stick subscribed to coordination - Monitoring VIC-20!")
+            
+            # Subscribe to hamster activity (BOB DETECTION!)
+            self.comm_hub.register_handler(
+                message_type='hamster_activity',
+                handler=self._handle_hamster_activity
+            )
+            logger.info("📏🚨 The Stick subscribed to hamster activity - BOB DETECTION ACTIVE!")
+            logger.info("📏😰 *nervously clutches paper bag*")
+            
         except Exception as e:
-            logger.error(f"🥢💥 Failed to subscribe: {e}")
+            logger.error(f"📏💥 Failed to subscribe: {e}")
+            self._consume_paper_bag("subscription_failure")
     
     async def _handle_triage_decision(self, message_data: Dict[str, Any]) -> None:
         """Handle triage decisions - The Stick learns from every decision."""
@@ -168,7 +218,178 @@ class TheStickDistributed(DistributedAgentMixin, TheStickBrainV3):
             logger.debug(f"🥢📝 Coordination logged: {len(agents_involved)} agents involved")
             
         except Exception as e:
-            logger.error(f"🥢💥 Error handling coordination update: {e}", exc_info=True)
+            logger.error(f"📏💥 Error handling coordination update: {e}", exc_info=True)
+    
+    async def _handle_hamster_activity(
+        self,
+        message_data: Dict[str, Any]
+    ) -> None:
+        """
+        Handle hamster activity messages - ESPECIALLY BOB!
+        
+        The Stick's anxiety spikes when Bob is detected.
+        This is The Stick's PTSD trigger!
+        """
+        try:
+            hamster_name = message_data.get('hamster', 'unknown')
+            activity_type = message_data.get('activity_type', 'unknown')
+            content = message_data.get('content', '')
+            
+            # Check if this is BOB (MAXIMUM ANXIETY!)
+            is_bob = 'bob' in hamster_name.lower() or 'bob' in content.lower()
+            
+            if is_bob:
+                self.bob_proximity_events += 1
+                self.anxiety_spikes += 1
+                self.bob_last_seen = message_data.get('timestamp', 'now')
+                
+                # Log Bob activity (eidetic memory - remembers EVERYTHING)
+                self.bob_activity_log.append({
+                    'timestamp': message_data.get('timestamp'),
+                    'activity': activity_type,
+                    'content': content,
+                    'anxiety_level': 'MAXIMUM'
+                })
+                
+                # Check for anxiety triggers
+                anxiety_triggers = ['hold my beer', 'wild idea', 'emergency', 'fire', 'chaos', 'duct tape']
+                trigger_count = sum(1 for trigger in anxiety_triggers if trigger in content.lower())
+                
+                if trigger_count > 0:
+                    logger.warning(
+                        f"📏😰😰😰 BOB DETECTED! Anxiety level: CRITICAL! "
+                        f"Triggers detected: {trigger_count} - *CONSUMING PAPER BAG*"
+                    )
+                    self._consume_paper_bag("bob_proximity")
+                    
+                    # Update anxiety level
+                    await self._update_anxiety(
+                        trigger="bob_proximity",
+                        multiplier=self.bob_anxiety_multiplier
+                    )
+                else:
+                    logger.warning(
+                        f"📏😰 Bob activity detected: {activity_type} - "
+                        f"*nervously monitoring* (Total Bob events: {self.bob_proximity_events})"
+                    )
+            
+            # Check if VIC-20 mediated the message
+            is_mediated = message_data.get('mediated_by') == 'vic_20_sage'
+            
+            if is_mediated:
+                logger.info(
+                    f"📏😌 VIC-20 mediated this message - Anxiety reduced! "
+                    f"*grateful for VIC-20's wisdom*"
+                )
+                # VIC-20's mediation helps!
+                if self.current_anxiety_percentage > 20:
+                    self.current_anxiety_percentage -= 5
+            
+            # Log ALL hamster activity (compliance tracking)
+            await self.make_distributed_decision(
+                decision_type="hamster_activity_logged",
+                input_data={
+                    "hamster": hamster_name,
+                    "activity": activity_type,
+                    "is_bob": is_bob,
+                    "anxiety_triggered": is_bob and trigger_count > 0,
+                    "mediated": is_mediated
+                },
+                output_data={
+                    "logged": True,
+                    "anxiety_level": self.anxiety_level.value,
+                    "paper_bags_consumed": self.paper_bags_consumed
+                },
+                confidence=1.0,
+                reasoning="Hamster activity compliance tracking"
+            )
+            
+        except Exception as e:
+            logger.error(f"📏💥 Error handling hamster activity: {e}", exc_info=True)
+            self._consume_paper_bag("error_handling")
+    
+    def _consume_paper_bag(self, reason: str) -> None:
+        """
+        The Stick consumes a paper bag to manage anxiety.
+        
+        This is The Stick's coping mechanism!
+        """
+        self.paper_bags_consumed += 1
+        self.paper_bag_inventory = max(0, self.paper_bag_inventory - 1)
+        
+        logger.info(
+            f"📏😰 *breathes into paper bag* (Reason: {reason}) "
+            f"[Bags remaining: {self.paper_bag_inventory}]"
+        )
+        
+        if self.paper_bag_inventory < 10:
+            logger.warning(
+                f"📏😰😰 PAPER BAG INVENTORY LOW! Only {self.paper_bag_inventory} bags left! "
+                f"*ANXIETY INTENSIFIES*"
+            )
+    
+    async def track_agent_action(
+        self,
+        agent_name: str,
+        action_type: str,
+        verification_id: str,
+        result: Any
+    ) -> None:
+        """
+        Track agent action for compliance (Week 4 integration).
+        
+        The Stick tracks EVERY action for compliance and learning.
+        This is his PRIMARY DUTY!
+        """
+        self.total_actions_tracked += 1
+        
+        logger.info(
+            f"📏📋 Tracking action: {agent_name} - {action_type} "
+            f"(Total tracked: {self.total_actions_tracked})"
+        )
+        
+        # Check if action was effective
+        if result and hasattr(result, 'effectiveness_score'):
+            effectiveness = result.effectiveness_score
+            
+            if effectiveness < 30:
+                # Low effectiveness = compliance concern
+                self.compliance_violations += 1
+                logger.warning(
+                    f"📏⚠️ Low effectiveness detected: {agent_name} - {action_type} "
+                    f"(Score: {effectiveness}/100) - *documenting for review*"
+                )
+                
+                # Increase anxiety
+                await self._update_anxiety(
+                    trigger="low_effectiveness",
+                    multiplier=1.5
+                )
+            else:
+                logger.info(
+                    f"📏✅ Action effective: {agent_name} - {action_type} "
+                    f"(Score: {effectiveness}/100) - *compliance maintained*"
+                )
+        
+        # Record in distributed state
+        if self.is_distributed:
+            await self.make_distributed_decision(
+                decision_type="action_compliance_tracked",
+                input_data={
+                    "agent": agent_name,
+                    "action": action_type,
+                    "verification_id": verification_id,
+                    "timestamp": "now"
+                },
+                output_data={
+                    "tracked": True,
+                    "total_actions": self.total_actions_tracked,
+                    "violations": self.compliance_violations,
+                    "compliance_rate": 1.0 - (self.compliance_violations / max(1, self.total_actions_tracked))
+                },
+                confidence=1.0,
+                reasoning="Compliance tracking for all agent actions"
+            )
     
     async def analyze_metrics(
         self,
