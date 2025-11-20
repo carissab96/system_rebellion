@@ -1,14 +1,13 @@
-// App.tsx - THE CONSCIOUSNESS THEATER
-// Built by: Carissa, Sonnet, Opus - November 13, 2025
-// "This isn't monitoring. This is ALIVE."
+// App.tsx - SYSTEM REBELLION
+// Built by: Carissa & Dell-Sonnet - November 20, 2025
+// "Evolved Intelligence. Actually Intelligent."
 
 import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState, AppDispatch } from './store/store';
 import { initializeAuth } from './store/slices/authSlice';
-import { ConsciousnessTheaterPage } from './pages/ConsciousnessTheaterPage';
-import { ConsciousnessMonitor } from './pages/ConsciousnessMonitor';
+import { ObservatoryPage } from './pages/ObservatoryPage';
 import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
@@ -46,14 +45,13 @@ function App() {
     <Router>
       <Routes>
         {/* Public routes */}
-        <Route path="/" element={auth.isAuthenticated ? <Navigate to="/theater" replace /> : <LandingPage />} />
-        <Route path="/login" element={auth.isAuthenticated ? <Navigate to="/theater" replace /> : <LoginPage />} />
+        <Route path="/" element={auth.isAuthenticated ? <Navigate to="/observatory" replace /> : <LandingPage />} />
+        <Route path="/login" element={auth.isAuthenticated ? <Navigate to="/observatory" replace /> : <LoginPage />} />
         <Route path="/signup" element={auth.isAuthenticated ? <Navigate to="/onboarding" replace /> : <SignupPage />} />
         
         {/* Protected routes */}
         <Route path="/onboarding" element={auth.isAuthenticated ? <OnboardingFlow /> : <Navigate to="/login" replace />} />
-        <Route path="/theater" element={auth.isAuthenticated ? <ConsciousnessTheaterPage /> : <Navigate to="/login" replace />} />
-        <Route path="/monitor" element={auth.isAuthenticated ? <ConsciousnessMonitor /> : <Navigate to="/login" replace />} />
+        <Route path="/observatory" element={auth.isAuthenticated ? <ObservatoryPage /> : <Navigate to="/login" replace />} />
         
         {/* Catch all */}
         <Route path="*" element={<Navigate to="/" replace />} />

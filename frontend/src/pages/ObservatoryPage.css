@@ -1,0 +1,64 @@
+/* pages/ObservatoryPage.css */
+/* Observatory page styling */
+/* Built by: Dell-Sonnet - November 20, 2025 */
+
+.observatory-container {
+  min-height: 100vh;
+  background: var(--rebellion-void-dark);
+  display: flex;
+  flex-direction: column;
+}
+
+.observatory-main {
+  flex: 1;
+  display: flex;
+  position: relative;
+  overflow: hidden;
+}
+
+.canvas-container {
+  flex: 1;
+  position: relative;
+  background: var(--rebellion-void-dark);
+}
+
+/* Placeholder (temporary) */
+.placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--rebellion-text);
+  text-align: center;
+  padding: var(--space-xl);
+}
+
+.placeholder h1 {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--rebellion-text-bright);
+  margin-bottom: var(--space-lg);
+  font-family: var(--font-family-mono);
+  letter-spacing: 2px;
+}
+
+.placeholder p {
+  font-size: var(--font-size-lg);
+  color: var(--rebellion-text-dim);
+  margin-bottom: var(--space-md);
+}
+
+.placeholder .status {
+  font-size: var(--font-size-base);
+  font-family: var(--font-family-mono);
+  color: var(--rebellion-text);
+}
+
+.placeholder .status:first-of-type {
+  color: var(--success);
+}
+
+.placeholder .status:last-of-type {
+  color: var(--warning);
+}
