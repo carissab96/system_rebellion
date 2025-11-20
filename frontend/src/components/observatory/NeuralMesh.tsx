@@ -7,22 +7,24 @@ import { AgentNode } from './AgentNode';
 import { useDistributedAgents } from '../../hooks/useDistributedAgents';
 
 // Agent colors from design system
-const AGENT_COLORS = {
+// BACKEND IS SOURCE OF TRUTH - Use exact agent_name from API
+const AGENT_COLORS: Record<string, string> = {
   sir_hawkington: '#e6ac00',      // Hawkington gold
-  vic_20_sage: '#06b6d4',         // VIC-20 cyan
-  meth_snail: '#00d084',          // Snail electric
-  the_stick: '#f97316',           // Stick coral
-  hamsters: '#ff8c42',            // Hamster amber
+  vic_20_sage: '#06b6d4',         // VIC-20 cyan (not registered yet)
+  terry_meth_snail: '#00d084',    // Snail electric
+  the_stick: '#f97316',           // Stick coral (not registered yet)
+  bob_hamster: '#ff8c42',         // Hamster amber
   quantum_shadow_people: '#a855f7' // QSP violet
 };
 
 // Agent positions (VIC-20 at center, others orbit)
+// BACKEND IS SOURCE OF TRUTH - Use exact agent_name from API
 const AGENT_POSITIONS: Record<string, [number, number, number]> = {
-  vic_20_sage: [0, 0, 0],                    // Center - orchestrator
+  vic_20_sage: [0, 0, 0],                    // Center - orchestrator (not registered yet)
   sir_hawkington: [-4, 2, 0],                // Upper left
-  meth_snail: [4, 2, 0],                     // Upper right
-  the_stick: [0, -3, 2],                     // Lower center front
-  hamsters: [-3, -2, -2],                    // Lower left back
+  terry_meth_snail: [4, 2, 0],               // Upper right
+  the_stick: [0, -3, 2],                     // Lower center front (not registered yet)
+  bob_hamster: [-3, -2, -2],                 // Lower left back
   quantum_shadow_people: [3, -2, -2]         // Lower right back
 };
 
