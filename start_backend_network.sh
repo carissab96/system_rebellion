@@ -10,4 +10,4 @@ echo "🔌 WebSocket at: ws://192.168.1.127:8000/ws"
 echo ""
 
 source venv/bin/activate
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
