@@ -231,6 +231,7 @@
 .secondary-nav {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--space-xl);
   padding: var(--space-sm) var(--space-xl);
   background: var(--rebellion-void);

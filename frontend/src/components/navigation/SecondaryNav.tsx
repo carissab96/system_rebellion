@@ -2,7 +2,7 @@
 // Secondary info bar - System status, uptime, connection info
 // Built by: Dell-Sonnet - November 20, 2025
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useWebSocketConnection } from '../../hooks/useWebSocketConnection';
 import { useDistributedAgents } from '../../hooks/useDistributedAgents';
 import './Navigation.css';
