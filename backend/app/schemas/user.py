@@ -1,5 +1,5 @@
 # app/schemas/user.py
-from pydantic import BaseModel, EmailStr, Field, validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, ConfigDict
 from typing import Optional, Dict, Any, List, Union
 from datetime import datetime, timedelta
 from enum import Enum
@@ -66,8 +66,7 @@ class UserInDB(User):
     last_login: Optional[datetime] = None
     failed_login_attempts: int = 0
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class UserResponse(User):
     """User model for API responses"""
@@ -88,8 +87,7 @@ class UserResponse(User):
     updated_at: datetime
     last_login: Optional[datetime] = None
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TokenPayload(BaseModel):
@@ -100,7 +98,8 @@ class TokenPayload(BaseModel):
     type: str  # Token type (access, refresh, etc.)
     scopes: List[str] = []  # List of permissions/roles
     
-    @validator('exp', 'iat', pre=True)
+    @field_validator('exp', 'iat', mode='before')
+    @classmethod
     def parse_datetime(cls, v):
         if isinstance(v, int):
             return datetime.fromtimestamp(v)

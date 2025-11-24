@@ -3,7 +3,7 @@ Pydantic models for Quantum Shadow People (QSP) agent data validation.
 """
 from datetime import datetime
 from typing import Any, Optional, List, Dict
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 # ===================== Network Metrics =====================
 
@@ -34,8 +34,7 @@ class QSPNetworkMetricsRead(QSPNetworkMetricsBase):
     id: int
     timestamp: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # ===================== Decision Log =====================
 
@@ -59,8 +58,7 @@ class QSPDecisionLogRead(QSPDecisionLogBase):
     id: int
     timestamp: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # ===================== Quantum Stats =====================
 
@@ -86,8 +84,7 @@ class QSPQuantumStatsRead(QSPQuantumStatsBase):
     id: int
     timestamp: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # ===================== Network Patterns =====================
 
@@ -111,5 +108,4 @@ class QSPNetworkPatternsRead(QSPNetworkPatternsBase):
     timestamp: datetime
     last_updated: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

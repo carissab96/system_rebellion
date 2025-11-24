@@ -1,5 +1,5 @@
 from typing import Any, Dict, Generic, List, Optional, TypeVar, Union
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from enum import Enum
 
 T = TypeVar('T')
@@ -34,10 +34,8 @@ class StandardResponse(BaseModel, Generic[T]):
         description="Metadata about the response"
     )
     
-    class Config:
-        json_encoders = {
-            # Add custom JSON encoders if needed
-        }
+    # Note: json_encoders removed - use custom serializers in Pydantic V2 if needed
+    # model_config = ConfigDict(json_encoders={...})
 
 class PaginationLinks(BaseModel):
     """Pagination links for paginated responses"""

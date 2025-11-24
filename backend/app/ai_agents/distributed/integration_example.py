@@ -19,6 +19,8 @@ from app.ai_agents.distributed.example_agents import (
     BobHamsterDistributed,
     QuantumShadowPeopleDistributed
 )
+from app.ai_agents.the_stick.distributed_stick import TheStickDistributed
+from app.ai_agents.vic_20_sage.distributed_vic20 import VIC20SageDistributed
 from app.api.endpoints.distributed_agents import register_agent
 
 logger = logging.getLogger(__name__)
@@ -65,12 +67,13 @@ class DistributedAgentManager:
             register_agent("terry_meth_snail", terry)
             logger.info("✅ Terry the Meth Snail initialized")
             
-            # Bob the Hamster - Disk Monitor
-            bob = BobHamsterDistributed(self.redis_client)
-            await bob.initialize()
-            self.agents["bob_hamster"] = bob
-            register_agent("bob_hamster", bob)
-            logger.info("✅ Bob the Hamster initialized")
+            # The Hamsters - Disk Monitor (Steve, Bob and Carl)
+            hamsters = BobHamsterDistributed(self.redis_client)
+            await hamsters.initialize()
+            # Keep bob_hamster as the key for backward compatibility
+            self.agents["bob_hamster"] = hamsters
+            register_agent("bob_hamster", hamsters)
+            logger.info("✅ The Hamsters initialized (Steve, Bob and Carl)")
             
             # Quantum Shadow People - Network Monitor
             shadows = QuantumShadowPeopleDistributed(self.redis_client)
@@ -78,6 +81,20 @@ class DistributedAgentManager:
             self.agents["quantum_shadow_people"] = shadows
             register_agent("quantum_shadow_people", shadows)
             logger.info("✅ Quantum Shadow People initialized")
+            
+            # The Stick - Learning Coordinator
+            stick = TheStickDistributed(db_getter=None)
+            await stick.initialize_distributed(self.redis_client)
+            self.agents["the_stick"] = stick
+            register_agent("the_stick", stick)
+            logger.info("✅ The Stick initialized")
+            
+            # VIC-20 Sage - Orchestrator
+            vic20 = VIC20SageDistributed(db_getter=None)
+            await vic20.initialize_distributed(self.redis_client)
+            self.agents["vic_20_sage"] = vic20
+            register_agent("vic_20_sage", vic20)
+            logger.info("✅ VIC-20 Sage initialized")
             
             self._initialized = True
             logger.info(f"🌐 All {len(self.agents)} distributed agents initialized!")

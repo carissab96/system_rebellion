@@ -3,7 +3,7 @@ Pydantic models for agent memory banks data validation.
 """
 from datetime import datetime
 from typing import Any, Optional, List, Dict
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from uuid import UUID, uuid4
 
 # ===================== Central Memory Bank =====================
@@ -33,8 +33,7 @@ class CentralMemoryBankRead(CentralMemoryBankBase):
     memory_id: UUID
     timestamp: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # ===================== Agent-Specific Memory Banks =====================
 
@@ -56,8 +55,7 @@ class AgentMemoryBankRead(AgentMemoryBankBase):
     timestamp: datetime
     central_memory_id: Optional[UUID] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # # Sir Hawkington Memory Bank
 # class SirHawkingtonMemoryBankCreate(AgentMemoryBankCreate):
@@ -288,5 +286,4 @@ class MemoryBankMetadataRead(MemoryBankMetadataBase):
     id: int
     timestamp: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

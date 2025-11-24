@@ -354,9 +354,8 @@ class DistributedAgentMixin:
         if not self._comm_hub:
             raise RuntimeError("Distributed features not initialized")
         
-        # Subscribe to the appropriate channel
-        channel = f"agent:messages:{message_type.value}"
-        await self._comm_hub.message_bus.subscribe(channel, callback)
+        # Register the handler for this message type
+        self._comm_hub.message_bus.register_handler(message_type, callback)
         
         self._dist_logger.info(f"📬 Subscribed to {message_type.value} messages")
     

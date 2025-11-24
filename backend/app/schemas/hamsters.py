@@ -3,7 +3,7 @@ Pydantic models for Hamsters agent data validation.
 """
 from datetime import datetime
 from typing import Any, Optional, List, Dict
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from uuid import UUID
 
 # ===================== Individual Hamster Stats =====================
@@ -26,8 +26,7 @@ class HamstersIndividualStatsRead(HamstersIndividualStatsBase):
     id: int
     timestamp: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # ===================== Infrastructure Interventions =====================
 
@@ -59,8 +58,7 @@ class HamstersInfrastructureInterventionRead(HamstersInfrastructureInterventionB
     intervention_id: UUID
     started_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # ===================== Communication Logs =====================
 
@@ -83,8 +81,7 @@ class HamstersCommunicationLogRead(HamstersCommunicationLogBase):
     id: int
     timestamp: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # ===================== Duct Tape Usage =====================
 
@@ -106,8 +103,7 @@ class HamstersDuctTapeUsageRead(HamstersDuctTapeUsageBase):
     id: int
     timestamp: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # ===================== Beer Consumption =====================
 
@@ -127,8 +123,7 @@ class HamstersBeerConsumptionRead(HamstersBeerConsumptionBase):
     id: int
     timestamp: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # ===================== Supply Closet Raids =====================
 
@@ -148,8 +143,7 @@ class HamstersSupplyClosetRaidRead(HamstersSupplyClosetRaidBase):
     id: int
     timestamp: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # ===================== Engineering Stats =====================
 
@@ -183,5 +177,4 @@ class HamstersEngineeringStatsRead(HamstersEngineeringStatsBase):
     id: int
     timestamp: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

@@ -3,7 +3,7 @@ Pydantic models for metrics aggregates data validation.
 """
 from datetime import datetime
 from typing import Any, Optional, List, Dict
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 # ===================== Hourly Metrics =====================
 
@@ -50,8 +50,7 @@ class MetricsHourlyRead(MetricsHourlyBase):
     """Schema for reading hourly metrics records."""
     id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # ===================== Daily Metrics =====================
 
@@ -95,5 +94,4 @@ class MetricsDailyRead(MetricsDailyBase):
     """Schema for reading daily metrics records."""
     id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

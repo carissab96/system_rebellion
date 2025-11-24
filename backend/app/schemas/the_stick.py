@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from enum import Enum
@@ -31,8 +31,7 @@ class StickMemoryRead(StickMemoryBase):
     access_count: int = 0
     last_accessed: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class StickMemoryUpdate(BaseModel):
     """Schema for updating existing memories"""

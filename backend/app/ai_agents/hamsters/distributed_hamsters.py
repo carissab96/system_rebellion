@@ -23,9 +23,9 @@ Adds:
 import logging
 from typing import Dict, Any, Optional
 
-from ..distributed.mixins import DistributedAgentMixin
+from ..distributed.base_decision_engine import AgentDecisionEngine
 from ..distributed.resource_monitor import ResourceType
-from ..distributed.message_protocol import MessageType, Priority
+from ..distributed.message_protocol import MessageType, Priority, AgentMessage
 from ..distributed.system_actions import SystemActions
 from ..distributed.agent_autonomy import AgentChoiceEngine
 from ..distributed.coordination import (
@@ -45,7 +45,7 @@ from .decision_engine_sbcV3 import HamstersBrainV3, BeerLevel, DuctTapeGrade
 logger = logging.getLogger("Hamsters.Distributed")
 
 
-class HamstersDistributed(DistributedAgentMixin, HamstersBrainV3):
+class HamstersDistributed(AgentDecisionEngine, HamstersBrainV3):
     """
     Steve, Bob, and Carl with distributed consciousness.
     
@@ -111,7 +111,9 @@ class HamstersDistributed(DistributedAgentMixin, HamstersBrainV3):
         """Initialize distributed features and subscribe to VIC-20 coordination requests.
         
         The hamsters wait for VIC-20's coordination, not direct triage decisions.
+        Base class handles standard subscriptions (COORDINATION_REQUEST, EMERGENCY).
         """
+        # Call parent initialization (subscribes to standard channels)
         await super().initialize_distributed(redis_client)
         
         # Initialize Week 4 systems
@@ -126,20 +128,21 @@ class HamstersDistributed(DistributedAgentMixin, HamstersBrainV3):
         
         logger.info("🐹🎯 Week 4 systems integrated - Coordination & Verification ONLINE!")
         logger.info("🐹🤝 Telepathic consensus ready for team coordination!")
-        
-        try:
-            # Register handler for coordination requests from VIC-20
-            self.comm_hub.register_handler(
-                message_type='coordination_request',
-                handler=self._handle_coordination_request
-            )
-            logger.info("🐹📡 Hamsters subscribed to VIC-20 coordination - Telepathic consensus ready!")
-        except Exception as e:
-            logger.error(f"🐹💥 Failed to subscribe to coordination: {e}")
+        logger.info("🐹📡 Subscribed to VIC-20 coordination via base class - Telepathic consensus ready!")
     
-    async def _handle_coordination_request(self, message_data: Dict[str, Any]) -> None:
-        """Handle coordination requests from VIC-20 - Steve, Bob, and Carl reach consensus (Task 4.1 Enhanced)."""
+    async def _handle_coordination_request(self, message: AgentMessage) -> None:
+        """
+        Handle coordination requests from VIC-20 - Steve, Bob, and Carl reach consensus.
+        
+        PERSONALITY: Telepathic consensus with beer-powered decisions (trust: 0.8)
+        STRUCTURE: Standard AgentMessage parameter (required by base class)
+        
+        Args:
+            message: AgentMessage with coordination request from VIC-20
+        """
         try:
+            # Extract payload (STANDARD)
+            message_data = message.payload
             coordination_type = message_data.get('coordination_type', 'unknown')
             
             # Check if this is a resource recommendation from VIC-20
@@ -336,8 +339,8 @@ class HamstersDistributed(DistributedAgentMixin, HamstersBrainV3):
                 reasoning=f"Disk usage at {current_value:.1f}% exceeds threshold of {threshold:.1f}%"
             )
         
-        # If critical, EMERGENCY DISK CLEANUP
-        if severity == "critical":
+        # If critical or emergency, EMERGENCY DISK CLEANUP
+        if severity in ["critical", "emergency"]:
             logger.warning(
                 "🐹🐹🐹💥 CRITICAL DISK USAGE! "
                 "Hamsters initiate EMERGENCY CLEANUP PROTOCOL! "

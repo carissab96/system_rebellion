@@ -22,9 +22,9 @@ Adds:
 import logging
 from typing import Dict, Any, Optional
 
-from ..distributed.mixins import DistributedAgentMixin
+from ..distributed.base_decision_engine import AgentDecisionEngine
 from ..distributed.resource_monitor import ResourceType
-from ..distributed.message_protocol import MessageType, Priority
+from ..distributed.message_protocol import MessageType, Priority, AgentMessage
 from ..distributed.system_actions import SystemActions
 from ..distributed.agent_autonomy import AgentChoiceEngine
 from ..distributed.coordination import (
@@ -44,7 +44,7 @@ from .decision_engine import QuantumShadowPeopleBrainV2
 logger = logging.getLogger("QuantumShadowPeople.Distributed")
 
 
-class QuantumShadowPeopleDistributed(DistributedAgentMixin, QuantumShadowPeopleBrainV2):
+class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBrainV2):
     """
     Quantum Shadow People with distributed consciousness.
     
@@ -111,36 +111,39 @@ class QuantumShadowPeopleDistributed(DistributedAgentMixin, QuantumShadowPeopleB
     async def initialize_distributed(self, redis_client):
         """Initialize distributed features and subscribe to VIC-20 coordination requests.
         
-        QSP waits in the quantum shadows for VIC-20's coordination.
+        QSP waits for VIC-20's coordination, not direct triage decisions.
+        Base class handles standard subscriptions (COORDINATION_REQUEST, EMERGENCY).
         """
+        # Call parent initialization (subscribes to standard channels)
         await super().initialize_distributed(redis_client)
         
         # Initialize Week 4 systems
         self.coordination_manager = get_coordination_manager()
         self.verification_manager = get_verification_manager()
         
-        # Register QSP's paranoid coordination capability
+        # Register QSP's coordination capability
         self.coordination_manager.register_agent_capability(
             "quantum_shadow_people",
             self._coordination_capability
         )
         
-        logger.info("👥🎯 Week 4 systems integrated - Coordination & Verification ONLINE!")
-        logger.info("👥🔒 Paranoid security protocols active - TRUST NO ONE!")
-        
-        try:
-            # Register handler for coordination requests from VIC-20
-            self.comm_hub.register_handler(
-                message_type='coordination_request',
-                handler=self._handle_coordination_request
-            )
-            logger.info("👥📡 QSP subscribed to VIC-20 coordination - Quantum surveillance active!")
-        except Exception as e:
-            logger.error(f"👥💥 Failed to subscribe to coordination: {e}")
+        logger.info("👻🎯 Week 4 systems integrated - Coordination & Verification ONLINE!")
+        logger.info("👻🕵️ Paranoia levels optimal - Trust no one!")
+        logger.info("👻📡 Subscribed to VIC-20 coordination via base class - Paranoid monitoring active!")
     
-    async def _handle_coordination_request(self, message_data: Dict[str, Any]) -> None:
-        """Handle coordination requests from VIC-20 (Task 4.1 Enhanced) - QSP is PARANOID!"""
+    async def _handle_coordination_request(self, message: AgentMessage) -> None:
+        """
+        Handle coordination requests from VIC-20 - QSP is PARANOID but complies.
+        
+        PERSONALITY: Paranoid network security with tequila shots (trust: 0.4)
+        STRUCTURE: Standard AgentMessage parameter (required by base class)
+        
+        Args:
+            message: AgentMessage with coordination request from VIC-20
+        """
         try:
+            # Extract payload (STANDARD)
+            message_data = message.payload
             coordination_type = message_data.get('coordination_type', 'unknown')
             
             # Check if this is a resource recommendation from VIC-20
@@ -343,8 +346,8 @@ class QuantumShadowPeopleDistributed(DistributedAgentMixin, QuantumShadowPeopleB
                 reasoning=f"Network usage at {current_value:.1f}% exceeds threshold of {threshold:.1f}%"
             )
         
-        # If critical, initiate deep scan
-        if severity == "critical":
+        # If critical or emergency, initiate deep scan
+        if severity in ["critical", "emergency"]:
             logger.warning(
                 "👥🌌💥 CRITICAL NETWORK USAGE! "
                 "QSP initiates DEEP QUANTUM SECURITY SCAN! "

@@ -5,6 +5,12 @@
 import React, { useMemo } from 'react';
 import { AgentNode } from './AgentNode';
 import { useDistributedAgents } from '../../hooks/useDistributedAgents';
+import sirHawkingtonIcon from '../../assets/icons/agents/sir_hawkington.jpeg';
+import vic20SageIcon from '../../assets/icons/agents/vic_20_sage.png';
+import terryMethSnailIcon from '../../assets/icons/agents/terry_meth_snail.png';
+import theStickIcon from '../../assets/icons/agents/the_stick.png';
+import hamstersIcon from '../../assets/icons/agents/hamsters.png';
+import qspIcon from '../../assets/icons/agents/qsp.png';
 
 // Agent colors from design system
 // BACKEND IS SOURCE OF TRUTH - Use exact agent_name from API
@@ -28,6 +34,15 @@ const AGENT_POSITIONS: Record<string, [number, number, number]> = {
   quantum_shadow_people: [3, -2, -2]         // Lower right back
 };
 
+const AGENT_ICONS: Record<string, string> = {
+  sir_hawkington: sirHawkingtonIcon,
+  vic_20_sage: vic20SageIcon,
+  terry_meth_snail: terryMethSnailIcon,
+  the_stick: theStickIcon,
+  bob_hamster: hamstersIcon,
+  quantum_shadow_people: qspIcon
+};
+
 interface NeuralMeshProps {
   onAgentClick?: (agentName: string) => void;
 }
@@ -42,7 +57,8 @@ export const NeuralMesh: React.FC<NeuralMeshProps> = ({ onAgentClick }) => {
       position: (AGENT_POSITIONS[agent.agent_name] || [0, 0, 0]) as [number, number, number],
       color: AGENT_COLORS[agent.agent_name as keyof typeof AGENT_COLORS] || '#ffffff',
       isActive: agent.is_active,
-      health: agent.health
+      health: agent.health,
+      iconUrl: AGENT_ICONS[agent.agent_name] || ''
     }));
   }, [agents]);
 
@@ -64,6 +80,7 @@ export const NeuralMesh: React.FC<NeuralMeshProps> = ({ onAgentClick }) => {
           color={agent.color}
           isActive={agent.isActive}
           health={agent.health}
+          iconUrl={agent.iconUrl}
           onClick={() => onAgentClick?.(agent.name)}
         />
       ))}

@@ -21,9 +21,9 @@ Adds:
 import logging
 from typing import Dict, Any, Optional
 
-from ..distributed.mixins import DistributedAgentMixin
+from ..distributed.base_decision_engine import AgentDecisionEngine
 from ..distributed.resource_monitor import ResourceType
-from ..distributed.message_protocol import MessageType, Priority
+from ..distributed.message_protocol import MessageType, Priority, AgentMessage
 from ..distributed.action_verification import (
     get_verification_manager,
     ActionType,
@@ -40,14 +40,14 @@ from .decision_engine import TheStickBrainV3, AnxietyLevel
 logger = logging.getLogger("TheStick.Distributed")
 
 
-class TheStickDistributed(DistributedAgentMixin, TheStickBrainV3):
+class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
     """
     The Stick with distributed consciousness.
     
     Patient guidance now persists across the entire network!
     
     Inherits ALL existing learning logic from TheStickBrainV3
-    and adds distributed features via DistributedAgentMixin.
+    and adds distributed features via AgentDecisionEngine.
     """
     
     def __init__(self, db_getter=None):
@@ -110,7 +110,13 @@ class TheStickDistributed(DistributedAgentMixin, TheStickBrainV3):
         logger.info("📏🚨 Bob detection protocols ACTIVE - Paper bags at the ready!")
     
     async def initialize_distributed(self, redis_client):
-        """Initialize distributed features and subscribe to ALL agent activities."""
+        """
+        Initialize distributed features and subscribe to ALL agent activities.
+        
+        The Stick tracks EVERYTHING and gets anxious about Bob.
+        Base class handles standard subscriptions (COORDINATION_REQUEST, EMERGENCY).
+        """
+        # Call parent initialization (subscribes to standard channels)
         await super().initialize_distributed(redis_client)
         
         # Initialize Week 4 systems
@@ -121,35 +127,66 @@ class TheStickDistributed(DistributedAgentMixin, TheStickBrainV3):
         logger.info("📏📋 The Stick will track EVERYTHING! (Anxiety-driven hypervigilance activated)")
         
         try:
-            # Subscribe to triage decisions from Sir Hawkington
-            self.comm_hub.register_handler(
-                message_type='triage_decision',
-                handler=self._handle_triage_decision
+            # Subscribe to triage decisions from Sir Hawkington (use MessageType enum)
+            await self.subscribe_to_messages(
+                message_type=MessageType.DECISION_BROADCAST,
+                callback=self._handle_triage_decision
             )
             logger.info("📏📡 The Stick subscribed to triage - Tracking all decisions!")
             
-            # Subscribe to coordination updates from VIC-20
-            self.comm_hub.register_handler(
-                message_type='coordination_update',
-                handler=self._handle_coordination_update
-            )
-            logger.info("📏📡 The Stick subscribed to coordination - Monitoring VIC-20!")
-            
-            # Subscribe to hamster activity (BOB DETECTION!)
-            self.comm_hub.register_handler(
-                message_type='hamster_activity',
-                handler=self._handle_hamster_activity
-            )
-            logger.info("📏🚨 The Stick subscribed to hamster activity - BOB DETECTION ACTIVE!")
+            # Subscribe to decision broadcasts (The Stick tracks EVERYTHING)
+            # Note: AGENT_ACTION doesn't exist, so we track via DECISION_BROADCAST
+            logger.info("📏📡 The Stick tracking all activity via triage decisions!")
             logger.info("📏😰 *nervously clutches paper bag*")
             
         except Exception as e:
             logger.error(f"📏💥 Failed to subscribe: {e}")
             self._consume_paper_bag("subscription_failure")
     
-    async def _handle_triage_decision(self, message_data: Dict[str, Any]) -> None:
+    async def _handle_coordination_request(self, message: AgentMessage) -> None:
+        """
+        Handle coordination requests - The Stick tracks compliance.
+        
+        PERSONALITY: Anxious compliance tracking, Bob-phobic, paper bag consumption
+        STRUCTURE: Standard AgentMessage parameter (required by base class)
+        
+        Args:
+            message: AgentMessage with coordination request
+        """
+        message_data = message.payload
+        coordination_type = message_data.get('coordination_type', 'unknown')
+        
+        # Check for BOB involvement (MAXIMUM ANXIETY!)
+        if 'bob' in str(message_data).lower() or message.from_agent == 'hamsters':
+            logger.warning("📏😰 BOB DETECTED IN COORDINATION! *anxiety intensifies*")
+            self.bob_proximity_events += 1
+            self._consume_paper_bag("bob_detected_in_coordination")
+            self.current_anxiety_level = AnxietyLevel.ANXIOUS  # Bob causes anxiety!
+        
+        logger.info(f"📏📋 Tracking coordination request: {coordination_type}")
+        self.total_actions_tracked += 1
+        
+        # Record for compliance tracking
+        await self.make_distributed_decision(
+            decision_type="coordination_compliance_tracked",
+            input_data={
+                "coordination_type": coordination_type,
+                "from_agent": message.from_agent,
+                "bob_involved": 'bob' in str(message_data).lower()
+            },
+            output_data={
+                "tracked": True,
+                "anxiety_level": self.current_anxiety_level.value if hasattr(self, 'current_anxiety_level') else "baseline",
+                "paper_bags_consumed": self.paper_bags_consumed
+            },
+            confidence=1.0,
+            reasoning="Compliance tracking complete"
+        )
+    
+    async def _handle_triage_decision(self, message: AgentMessage) -> None:
         """Handle triage decisions - The Stick learns from every decision."""
         try:
+            message_data = message.payload
             severity = message_data.get('severity', 'unknown')
             routing = message_data.get('routing', 'unknown')
             target_agents = message_data.get('target_agents', [])

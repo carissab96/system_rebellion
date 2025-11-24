@@ -1,6 +1,6 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Optional, Union
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from enum import Enum
 
 class MetricType(str, Enum):
@@ -63,13 +63,13 @@ class SystemMetrics(BaseModel):
         description="Additional metadata tags for the metric"
     )
     
-    class Config:
-        use_enum_values = True
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+    model_config = ConfigDict(
+        use_enum_values=True,
+        json_encoders={datetime: lambda v: v.isoformat()}
+    )
     
-    @validator('value')
+    @field_validator('value')
+    @classmethod
     def validate_value(cls, v):
         """Validate that the value is a number, list of numbers, or dict of numbers"""
         if isinstance(v, (int, float)):
@@ -101,8 +101,7 @@ class SystemMetricsInDB(SystemMetrics):
     created_at: datetime = Field(..., description="When the metric was created")
     updated_at: datetime = Field(..., description="When the metric was last updated")
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class SystemMetricsResponse(SystemMetricsInDB):
     """Schema for system metric as returned in API responses"""
@@ -145,11 +144,10 @@ class SystemMetricsQuery(BaseModel):
         description="Time interval for grouping results (e.g., '1h', '1d')"
     )
     
-    class Config:
-        use_enum_values = True
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+    model_config = ConfigDict(
+        use_enum_values=True,
+        json_encoders={datetime: lambda v: v.isoformat()}
+    )
 
 class SystemMetricsSummary(BaseModel):
     """Summary statistics for system metrics"""

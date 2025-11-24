@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from enum import Enum
@@ -34,8 +34,7 @@ class SageWisdomRead(SageWisdomBase):
     last_applied: Optional[datetime] = None
     effectiveness: Optional[float] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class SageWisdomUpdate(BaseModel):
     """Schema for updating wisdom entries"""

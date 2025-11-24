@@ -444,6 +444,40 @@ class AgentCommunicationHub:
             await self.state_manager.update_metrics(messages_sent=1)
         return success
     
+    async def send_heartbeat(self) -> bool:
+        """Send a heartbeat message to indicate agent is alive"""
+        from .message_protocol import HeartbeatMessage
+        
+        agent_status = {
+            "status": "alive",
+            "uptime": self._state.uptime_seconds if self._state else 0,
+            "health": self._state.health.value if self._state else "unknown"
+        }
+        
+        heartbeat = HeartbeatMessage(
+            from_agent=self.agent_name,
+            agent_status=agent_status
+        )
+        
+        success = await self.message_bus.publish(heartbeat)
+        if success and self._state:
+            self._state.update_heartbeat()
+            await self.state_manager.save_state(self._state)
+        
+        return success
+    
+    async def broadcast_message(
+        self,
+        message_type: MessageType,
+        payload: Dict[str, Any],
+        priority: Priority = Priority.NORMAL
+    ) -> bool:
+        """Broadcast a message to all agents (wrapper for message_bus.broadcast)"""
+        success = await self.message_bus.broadcast(message_type, payload, priority)
+        if success:
+            await self.state_manager.update_metrics(messages_sent=1)
+        return success
+    
     async def make_decision(
         self,
         decision_type: str,

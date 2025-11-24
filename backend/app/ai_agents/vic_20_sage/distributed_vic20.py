@@ -22,9 +22,9 @@ import logging
 import asyncio
 from typing import Dict, Any, Optional
 
-from ..distributed.mixins import DistributedAgentMixin
+from ..distributed.base_decision_engine import AgentDecisionEngine
 from ..distributed.resource_monitor import ResourceType
-from ..distributed.message_protocol import MessageType, Priority
+from ..distributed.message_protocol import MessageType, Priority, AgentMessage
 from ..distributed.system_actions import RecommendationEngine
 from ..distributed.coordination import (
     get_coordination_manager,
@@ -47,7 +47,7 @@ from .decision_engine import VIC20SageBrainV2
 logger = logging.getLogger("VIC20Sage.Distributed")
 
 
-class VIC20SageDistributed(DistributedAgentMixin, VIC20SageBrainV2):
+class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
     """
     VIC-20 Sage with distributed consciousness.
     
@@ -57,13 +57,16 @@ class VIC20SageDistributed(DistributedAgentMixin, VIC20SageBrainV2):
     and adds distributed features via DistributedAgentMixin.
     """
     
-    def __init__(self):
+    def __init__(self, db_getter=None):
         """
         Initialize VIC-20 Sage with distributed consciousness.
+        
+        Args:
+            db_getter: Database session getter (optional, for lazy init)
         """
         # Initialize both parent classes via MRO
-        # VIC20SageBrainV2 doesn't take any parameters
-        super().__init__()
+        # Pass db_getter to VIC20SageBrainV2
+        super().__init__(db_getter=db_getter)
         
         # Set agent name for distributed features
         self.agent_name = "vic_20_sage"
@@ -104,7 +107,13 @@ class VIC20SageDistributed(DistributedAgentMixin, VIC20SageBrainV2):
         logger.info("🖥️🛡️ Bob mediation protocols active - STICK PROTECTION ENABLED!")
     
     async def initialize_distributed(self, redis_client):
-        """Initialize distributed features and subscribe to triage decisions."""
+        """
+        Initialize distributed features and subscribe to triage decisions.
+        
+        VIC-20 is the coordinator - he SENDS coordination requests to other agents.
+        Base class handles standard subscriptions (COORDINATION_REQUEST, EMERGENCY).
+        """
+        # Call parent initialization (subscribes to standard channels)
         await super().initialize_distributed(redis_client)
         
         # Initialize Week 4 systems
@@ -122,22 +131,43 @@ class VIC20SageDistributed(DistributedAgentMixin, VIC20SageBrainV2):
         
         try:
             await self.subscribe_to_messages(
-                message_type='triage_decision',
-                handler=self._handle_triage_decision
+                message_type=MessageType.DECISION_BROADCAST,
+                callback=self._handle_triage_decision
             )
             # Subscribe to hamster messages for Bob mediation
             await self.subscribe_to_messages(
-                message_type='hamster_activity',
-                handler=self._mediate_hamster_message
+                message_type=MessageType.AGENT_QUERY,
+                callback=self._mediate_hamster_message
             )
             logger.info("🖥️📡 VIC-20 subscribed to triage & hamster activity - Coordination matrix online!")
             logger.info("🖥️🛡️ Bob mediation active - The Stick is protected!")
         except Exception as e:
             logger.error(f"🖥️💥 Failed to subscribe to messages: {e}")
     
-    async def _handle_triage_decision(self, message_data: Dict[str, Any]) -> None:
-        """Handle triage decisions - VIC-20 coordinates multi-agent response."""
+    async def _handle_coordination_request(self, message: AgentMessage) -> None:
+        """
+        Handle coordination requests (VIC-20 rarely receives these, he SENDS them).
+        
+        PERSONALITY: Wise coordinator, mediates Bob's chaos
+        STRUCTURE: Standard AgentMessage parameter (required by base class)
+        
+        Args:
+            message: AgentMessage with coordination request
+        """
+        # VIC-20 is the coordinator - he rarely receives coordination requests
+        # But we implement this for completeness
+        message_data = message.payload
+        logger.info(f"🖥️📬 VIC-20 received coordination request: {message_data.get('coordination_type', 'unknown')}")
+        logger.info("🖥️💭 As the coordinator, I typically SEND these, not receive them!")
+    
+    async def _handle_triage_decision(self, message: AgentMessage) -> None:
+        """
+        Handle triage decisions - VIC-20 coordinates multi-agent response.
+        
+        This is VIC-20's PRIMARY role - receiving triage decisions and coordinating responses.
+        """
         try:
+            message_data = message.payload
             severity = message_data.get('severity', 'unknown')
             routing = message_data.get('routing', 'unknown')
             target_agents = message_data.get('target_agents', [])
@@ -225,8 +255,8 @@ class VIC20SageDistributed(DistributedAgentMixin, VIC20SageBrainV2):
             # Broadcast coordination requests
             for specialist in specialists_to_activate:
                 await self.broadcast_to_agents(
-                    message_type='coordination_request',
-                    data={
+                    message_type=MessageType.COORDINATION_REQUEST,
+                    payload={
                         'task_type': specialist['task_type'],
                         'target_agent': specialist['agent'],
                         'priority': severity,
@@ -237,7 +267,7 @@ class VIC20SageDistributed(DistributedAgentMixin, VIC20SageBrainV2):
                             'coordinated_by': 'vic_20_sage'
                         }
                     },
-                    priority='high' if severity in ['high', 'critical', 'emergency'] else 'normal'
+                    priority=Priority.HIGH if severity in ['high', 'critical', 'emergency'] else Priority.NORMAL
                 )
                 logger.info(f"🖥️📡 Coordination request sent to {specialist['agent']}: {specialist['task_type']}")
                 
@@ -257,8 +287,8 @@ class VIC20SageDistributed(DistributedAgentMixin, VIC20SageBrainV2):
         """
         try:
             await self.broadcast_to_agents(
-                message_type='coordination_update',
-                data={
+                message_type=MessageType.SYSTEM_EVENT,
+                payload={
                     'coordination_id': f"coord_{int(asyncio.get_event_loop().time())}",
                     'severity': severity,
                     'routing': routing,
@@ -266,7 +296,7 @@ class VIC20SageDistributed(DistributedAgentMixin, VIC20SageBrainV2):
                     'status': 'initiated',
                     'coordinated_by': 'vic_20_sage'
                 },
-                priority='normal'
+                priority=Priority.NORMAL
             )
             logger.debug("🖥️📝 Coordination update sent to The Stick")
             
@@ -295,21 +325,19 @@ class VIC20SageDistributed(DistributedAgentMixin, VIC20SageBrainV2):
             action_name="coordinate_specialists"
         )
     
-    async def _mediate_hamster_message(
-        self,
-        message_data: Dict[str, Any]
-    ) -> None:
+    async def _mediate_hamster_message(self, message: AgentMessage) -> None:
         """
         Mediate hamster messages, especially Bob's, before they reach The Stick.
         
         VIC-20's special duty: Keep Bob from over-stimulating The Stick!
         """
         try:
-            hamster_name = message_data.get('hamster', 'unknown')
+            message_data = message.payload
+            from_agent = message.from_agent
             message_content = message_data.get('content', '')
             
             # Check if Bob is involved
-            is_bob_message = 'bob' in hamster_name.lower() or 'bob' in message_content.lower()
+            is_bob_message = 'bob' in from_agent.lower() or 'bob' in message_content.lower()
             
             if is_bob_message:
                 self.bob_mediation_count += 1
@@ -329,15 +357,15 @@ class VIC20SageDistributed(DistributedAgentMixin, VIC20SageBrainV2):
                     
                     # Send mediated version to The Stick
                     await self.broadcast_to_agents(
-                        message_type='coordination_update',
-                        data={
+                        message_type=MessageType.SYSTEM_EVENT,
+                        payload={
                             'source': 'hamsters',
                             'mediated_by': 'vic_20_sage',
                             'content': mediated_message,
                             'original_anxiety_level': 'high',
                             'mediated_anxiety_level': 'moderate'
                         },
-                        priority='normal'
+                        priority=Priority.NORMAL
                     )
                     
                     self.stick_anxiety_prevented += 1
@@ -480,8 +508,8 @@ class VIC20SageDistributed(DistributedAgentMixin, VIC20SageBrainV2):
         if self.is_distributed and severity in ["critical", "high"]:
             await self._generate_and_broadcast_recommendations(alert)
         
-        # If critical, coordinate emergency response
-        if severity == "critical":
+        # If critical or emergency, coordinate emergency response
+        if severity in ["critical", "emergency"]:
             logger.warning(
                 "🖥️🧙💥 CRITICAL RESOURCE PRESSURE! "
                 "VIC-20 Sage initiates EMERGENCY COORDINATION PROTOCOL!"

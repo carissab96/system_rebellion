@@ -1,6 +1,6 @@
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Any, Optional, List, Dict, Union
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from uuid import UUID, uuid4
 
@@ -54,11 +54,10 @@ class AgentMemoryBase(BaseModel):
         description="Tags for categorizing and searching memories"
     )
     
-    class Config:
-        use_enum_values = True
-        json_encoders = {
-            datetime: lambda v: v.isoformat() if v else None
-        }
+    model_config = ConfigDict(
+        use_enum_values=True,
+        json_encoders={datetime: lambda v: v.isoformat() if v else None}
+    )
 
 # ============================================================================
 # Memory CRUD Schemas
@@ -94,8 +93,7 @@ class AgentMemoryInDB(AgentMemoryBase):
         description="Version number for optimistic concurrency control"
     )
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class AgentMemoryResponse(AgentMemoryInDB):
     """Schema for memory as returned in API responses"""
@@ -125,8 +123,7 @@ class MemoryBankBase(BaseModel):
         description="Maximum number of memories this bank can hold (None for unlimited)"
     )
     
-    class Config:
-        use_enum_values = True
+    model_config = ConfigDict(use_enum_values=True)
 
 class MemoryBankCreate(MemoryBankBase):
     """Schema for creating a new memory bank"""
@@ -150,8 +147,7 @@ class MemoryBankInDB(MemoryBankBase):
         description="Current number of memories in this bank"
     )
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class MemoryBankResponse(MemoryBankInDB):
     """Schema for memory bank as returned in API responses"""
@@ -193,5 +189,4 @@ class CentralMemoryResponse(AgentMemoryResponse):
     source_memory_id: Optional[str]
     relevance_score: float
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

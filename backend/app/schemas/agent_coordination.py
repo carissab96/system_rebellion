@@ -3,7 +3,7 @@ Pydantic models for agent coordination data validation.
 """
 from datetime import datetime
 from typing import Any, List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
 class CrossAgentCoordinationBase(BaseModel):
@@ -26,5 +26,4 @@ class CrossAgentCoordinationRead(CrossAgentCoordinationBase):
     id: int
     timestamp: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

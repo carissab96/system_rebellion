@@ -3,7 +3,7 @@ Pydantic models for AI agent tracking data validation.
 """
 from datetime import datetime
 from typing import Any, Optional, List, Dict
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from uuid import UUID
 
 # ===================== AI Agent Metrics =====================
@@ -38,8 +38,7 @@ class AIAgentMetricsRead(AIAgentMetricsBase):
     id: int
     timestamp: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # ===================== Agent-Specific Incident Tracking =====================
 
@@ -78,8 +77,7 @@ class MethSnailShellSpinsRead(AgentIncidentBase):
     network_io: Optional[Any] = None
     error_message: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Sir Hawkington Monocle Yeets
 class SirHawkingtonMonocleYeetsCreate(AgentIncidentBase):
@@ -101,8 +99,7 @@ class SirHawkingtonMonocleYeetsRead(AgentIncidentBase):
     actual_behavior: Optional[Any] = None
     concern_level: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # The Stick Hyperventilations
 class TheStickHyperventilationsCreate(AgentIncidentBase):
@@ -128,8 +125,7 @@ class TheStickHyperventilationsRead(AgentIncidentBase):
     paper_bags_used: int = 1
     recovery_time_seconds: Optional[int] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Quantum Shadow Phasings
 class QuantumShadowPhasingsCreate(AgentIncidentBase):
@@ -155,8 +151,7 @@ class QuantumShadowPhasingsRead(AgentIncidentBase):
     solution_comprehensibility: Optional[float] = None
     effectiveness_rating: Optional[float] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # VIC20 Wisdom
 class VIC20WisdomCreate(AgentIncidentBase):
@@ -180,5 +175,4 @@ class VIC20WisdomRead(AgentIncidentBase):
     wisdom_followed: Optional[bool] = None
     outcome_success: Optional[bool] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

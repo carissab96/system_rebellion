@@ -246,8 +246,10 @@ async def lifespan(app: FastAPI):
                     logger.info("✅ Distributed agents initialized:")
                     logger.info("  🧐 Sir Hawkington - CPU Monitor")
                     logger.info("  🐌💨 Terry the Meth Snail - Memory Monitor")
-                    logger.info("  🐹 Bob the Hamster - Disk Monitor")
+                    logger.info("  🐹 The Hamsters - Disk Monitor (Steve, Bob and Carl)")
                     logger.info("  👻 Quantum Shadow People - Network Monitor")
+                    logger.info("  📏 The Stick - Learning Coordinator")
+                    logger.info("  🖥️ VIC-20 Sage - Orchestrator")
                 except Exception as e:
                     logger.error(f"⚠️  Failed to initialize distributed agents: {e}", exc_info=True)
                     logger.warning("Continuing without distributed agent system")

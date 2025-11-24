@@ -448,6 +448,11 @@ class ResourceMonitor:
             f"severity: {alert.payload['severity']})"
         )
     
+    @property
+    def is_running(self) -> bool:
+        """Check if the monitor is currently running"""
+        return self._running
+    
     def get_last_metrics(self) -> Optional[ResourceMetrics]:
         """Get the last collected metrics"""
         return self._last_metrics

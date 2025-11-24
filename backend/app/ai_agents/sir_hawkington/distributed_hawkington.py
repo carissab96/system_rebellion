@@ -22,9 +22,9 @@ Adds:
 import logging
 from typing import Dict, Any, Optional
 
-from ..distributed.mixins import DistributedAgentMixin
+from ..distributed.base_decision_engine import AgentDecisionEngine
 from ..distributed.resource_monitor import ResourceType
-from ..distributed.message_protocol import MessageType, Priority
+from ..distributed.message_protocol import MessageType, Priority, AgentMessage
 from ..distributed.system_actions import SystemActions
 from ..distributed.coordination import (
     get_coordination_manager,
@@ -43,7 +43,7 @@ from .decision_engine import SirHawkingtonBrainV2, DecisionType, MonocleState, A
 logger = logging.getLogger("SirHawkington.Distributed")
 
 
-class SirHawkingtonDistributed(DistributedAgentMixin, SirHawkingtonBrainV2):
+class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
     """
     Sir Hawkington with distributed consciousness.
     
@@ -121,7 +121,7 @@ class SirHawkingtonDistributed(DistributedAgentMixin, SirHawkingtonBrainV2):
         
         This extends the base initialization to also enable triage broadcasting.
         """
-        # Call parent initialization
+        # Call parent initialization (subscribes to standard channels)
         await super().initialize_distributed(redis_client)
         
         # Initialize Week 4 systems
@@ -146,6 +146,60 @@ class SirHawkingtonDistributed(DistributedAgentMixin, SirHawkingtonBrainV2):
                 logger.info("🧐📡 Triage engine connected to distributed consciousness")
         except Exception as e:
             logger.error(f"🧐💥 Failed to inject comm_hub into triage engine: {e}")
+    
+    async def _handle_coordination_request(self, message: AgentMessage) -> None:
+        """
+        Handle coordination requests from VIC-20 with aristocratic grace.
+        
+        PERSONALITY: Aristocratic CPU throttling with monocle adjustment
+        STRUCTURE: Standard AgentMessage parameter (required by base class)
+        
+        Args:
+            message: AgentMessage with coordination request from VIC-20
+        """
+        message_data = message.payload
+        coordination_type = message_data.get('coordination_type', 'unknown')
+        
+        if coordination_type == 'resource_recommendation':
+            recommendation = message_data.get('recommendation', {})
+            
+            logger.info(
+                f"🧐 *adjusts monocle* VIC-20's recommendation has merit... "
+                f"Suggested action: {recommendation.get('suggested_action', 'unknown')}"
+            )
+            
+            # Execute aristocratic CPU throttling
+            logger.info("🧐⚙️ Initiating aristocratic system throttling with distinguished grace...")
+            throttle_result = await SystemActions.throttle_cpu_intensive_tasks()
+            
+            if throttle_result['success']:
+                logger.info(
+                    f"🧐✅ System throttled with DISTINCTION! CPU: {throttle_result['cpu_before']:.1f}% → "
+                    f"{throttle_result['cpu_after']:.1f}%. Improvement: {throttle_result['improvement']:.1f}%"
+                )
+                
+                # Record with aristocratic flair (PERSONALITY!)
+                await self.make_decision_and_broadcast(
+                    decision_type="cpu_throttle_completed",
+                    input_data={
+                        "trigger": "coordination_request",
+                        "recommendation": recommendation.get('suggested_action'),
+                        "cpu_before": throttle_result['cpu_before']
+                    },
+                    output_data={
+                        "cpu_after": throttle_result['cpu_after'],
+                        "improvement": throttle_result['improvement'],
+                        "improvement_percent": throttle_result['improvement_percent'],
+                        "monocle_state": self.current_monocle_state.value,  # PERSONALITY!
+                        "aristocratic_approval": "granted"  # PERSONALITY!
+                    },
+                    confidence=1.0,
+                    reasoning="Coordination request addressed with aristocratic efficiency",
+                    broadcast=True,
+                    priority=Priority.HIGH
+                )
+            else:
+                logger.error(f"🧐❌ CPU throttling failed: {throttle_result.get('error', 'Unknown error')}")
     
     async def analyze_metrics(
         self,
@@ -262,8 +316,8 @@ class SirHawkingtonDistributed(DistributedAgentMixin, SirHawkingtonBrainV2):
                 reasoning=f"CPU usage at {current_value:.1f}% exceeds threshold of {threshold:.1f}%"
             )
         
-        # If critical, take action
-        if severity == "critical":
+        # If critical or emergency, take action
+        if severity in ["critical", "emergency"]:
             logger.warning(
                 "🧐💥 CRITICAL CPU USAGE DETECTED! "
                 "Sir Hawkington adjusts his monocle with grave concern..."

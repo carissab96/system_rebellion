@@ -23,9 +23,9 @@ Adds:
 import logging
 from typing import Dict, Any, Optional
 
-from ..distributed.mixins import DistributedAgentMixin
+from ..distributed.base_decision_engine import AgentDecisionEngine
 from ..distributed.resource_monitor import ResourceType
-from ..distributed.message_protocol import MessageType, Priority
+from ..distributed.message_protocol import MessageType, Priority, AgentMessage
 from ..distributed.system_actions import SystemActions
 from ..distributed.agent_autonomy import AgentChoiceEngine
 from ..distributed.coordination import (
@@ -45,7 +45,7 @@ from .decision_engine import MethSnailBrainV2, OptimizationPriority, AnalysisDep
 logger = logging.getLogger("MethSnail.Distributed")
 
 
-class MethSnailDistributed(DistributedAgentMixin, MethSnailBrainV2):
+class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
     """
     Terry the Meth Snail with distributed consciousness.
     
@@ -113,8 +113,9 @@ class MethSnailDistributed(DistributedAgentMixin, MethSnailBrainV2):
         Initialize distributed features and subscribe to VIC-20 coordination requests.
         
         Terry doesn't subscribe to triage directly - he waits for VIC-20's coordination.
+        Base class handles standard subscriptions (COORDINATION_REQUEST, EMERGENCY).
         """
-        # Call parent initialization
+        # Call parent initialization (subscribes to standard channels)
         await super().initialize_distributed(redis_client)
         
         # Initialize Week 4 systems
@@ -129,25 +130,21 @@ class MethSnailDistributed(DistributedAgentMixin, MethSnailBrainV2):
         
         logger.info("🐌🎯 Week 4 systems integrated - Coordination & Verification ONLINE!")
         logger.info("🐌📊 Learning when I'm FASTER than VIC-20!")
-        
-        # Subscribe to coordination requests from VIC-20
-        try:
-            # Register handler for coordination requests
-            self.comm_hub.register_handler(
-                message_type='coordination_request',
-                handler=self._handle_coordination_request
-            )
-            logger.info("🐌📡 Subscribed to VIC-20 coordination - Ready to optimize on command!")
-        except Exception as e:
-            logger.error(f"🐌💥 Failed to subscribe to coordination: {e}")
+        logger.info("🐌📡 Subscribed to VIC-20 coordination via base class - Ready to optimize!")
     
-    async def _handle_coordination_request(self, message_data: Dict[str, Any]) -> None:
+    async def _handle_coordination_request(self, message: AgentMessage) -> None:
         """
         Handle coordination requests from VIC-20 (Task 4.1 Enhanced).
         
-        Terry usually ignores VIC-20 and does his own thing because he's FASTER!
+        PERSONALITY: Terry usually ignores VIC-20 because he's FASTER! (trust: 0.2)
+        STRUCTURE: Standard AgentMessage parameter (required by base class)
+        
+        Args:
+            message: AgentMessage with coordination request from VIC-20
         """
         try:
+            # Extract payload (STANDARD)
+            message_data = message.payload
             coordination_type = message_data.get('coordination_type', 'unknown')
             
             # Check if this is a resource recommendation from VIC-20
@@ -213,25 +210,27 @@ class MethSnailDistributed(DistributedAgentMixin, MethSnailBrainV2):
                                 success=improvement > 15
                             )
                         
-                        # Record decision and effectiveness
-                        await self.make_distributed_decision(
+                        # Record decision and effectiveness (STANDARD method)
+                        await self.make_decision_and_broadcast(
                             decision_type="recommendation_response",
                             input_data={
                                 "recommendation": recommendation.get('suggested_action'),
                                 "followed": decision['followed_recommendation'],
                                 "action_taken": action,
-                                "terry_says": "I'M FASTER THAN VIC-20!",
+                                "terry_says": "I'M FASTER THAN VIC-20!",  # PERSONALITY!
                                 "override_success_rate": self.override_success_rate
                             },
                             output_data={
                                 "result": cache_result,
                                 "effectiveness": cache_result['improvement_percent'],
-                                "speed": "MAXIMUM",
+                                "speed": "MAXIMUM",  # PERSONALITY!
                                 "overrides": self.total_overrides,
                                 "successful_overrides": self.successful_overrides
                             },
                             confidence=decision['decision_score'],
-                            reasoning=decision['reasoning']
+                            reasoning=decision['reasoning'],
+                            broadcast=True,
+                            priority=Priority.HIGH
                         )
                     else:
                         logger.error(f"🐌❌ Cache clear failed: {cache_result.get('error')}")
@@ -385,8 +384,8 @@ class MethSnailDistributed(DistributedAgentMixin, MethSnailBrainV2):
                 reasoning=f"Memory usage at {current_value:.1f}% exceeds threshold of {threshold:.1f}%"
             )
         
-        # If critical, EMERGENCY CACHE CLEAR
-        if severity == "critical":
+        # If critical or emergency, EMERGENCY CACHE CLEAR
+        if severity in ["critical", "emergency"]:
             logger.warning(
                 "🐌💨💥 CRITICAL MEMORY USAGE! "
                 "Terry initiates EMERGENCY CACHE CLEARING PROTOCOL!"

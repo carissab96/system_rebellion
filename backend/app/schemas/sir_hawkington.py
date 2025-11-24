@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from typing import Optional, List, Dict, Any, Union
 from datetime import datetime
 from enum import Enum
@@ -39,7 +39,8 @@ class SirHawkingtonMemoryType(BaseModel):
     tags: List[str] = Field(default_factory=list)
     importance: int = Field(ge=1, le=10, default=5)
 
-    @validator('title')
+    @field_validator('title')
+    @classmethod
     def title_must_be_proper(cls, v):
         """Ensure titles are properly capitalized and end with a period"""
         if not v[0].isupper():
@@ -60,8 +61,7 @@ class SirHawkingtonMemoryRead(SirHawkingtonMemoryType):
     last_reviewed: Optional[datetime] = None
     review_count: int = 0
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class SirHawkingtonMemoryUpdate(BaseModel):
     """Schema for updating existing aristocratic memories"""

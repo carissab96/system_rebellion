@@ -3,7 +3,8 @@
 // Built by: Dell-Sonnet - November 20, 2025
 
 import React, { useRef, useMemo } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useLoader } from '@react-three/fiber';
+import { Billboard } from '@react-three/drei';
 import * as THREE from 'three';
 
 interface AgentNodeProps {
@@ -12,6 +13,7 @@ interface AgentNodeProps {
   color: string;
   isActive: boolean;
   health: string | number;
+  iconUrl: string;
   onClick?: () => void;
 }
 
@@ -32,10 +34,13 @@ export const AgentNode: React.FC<AgentNodeProps> = ({
   color,
   isActive,
   health,
+  iconUrl,
   onClick
 }) => {
   const meshRef = useRef<THREE.Mesh>(null);
   const glowRef = useRef<THREE.Mesh>(null);
+
+  const iconTexture = useLoader(THREE.TextureLoader, iconUrl);
 
   // Parse color
   const colorObj = useMemo(() => new THREE.Color(color), [color]);
@@ -94,6 +99,12 @@ export const AgentNode: React.FC<AgentNodeProps> = ({
   if (agentName === 'bob_hamster') {
     return (
       <group position={position} onClick={onClick}>
+        <Billboard position={[0, 0, 2]}>
+          <mesh>
+            <planeGeometry args={[2.2, 2.2]} />
+            <meshBasicMaterial map={iconTexture} transparent />
+          </mesh>
+        </Billboard>
         {/* Steve */}
         <mesh ref={meshRef} position={[-0.8, 0, 0]}>
           <sphereGeometry args={[0.6, 32, 32]} />
@@ -143,20 +154,15 @@ export const AgentNode: React.FC<AgentNodeProps> = ({
   // Standard single-geometry agents
   return (
     <group position={position} onClick={onClick}>
-      {/* Main mesh */}
-      <mesh ref={meshRef}>
-        {renderGeometry()}
-        <meshStandardMaterial
-          color={colorObj}
-          emissive={colorObj}
-          emissiveIntensity={isActive ? 0.5 : 0.2}
-          metalness={0.8}
-          roughness={0.2}
-        />
-      </mesh>
+      <Billboard position={[0, 0, 0]}>
+        <mesh ref={meshRef}>
+          <planeGeometry args={[2.5, 2.5]} />
+          <meshBasicMaterial map={iconTexture} transparent />
+        </mesh>
+      </Billboard>
 
-      {/* Glow effect */}
-      <mesh ref={glowRef}>
+      {/* Glow effect behind icon */}
+      <mesh ref={glowRef} position={[0, 0, -0.5]}>
         <sphereGeometry args={[1.5, 32, 32]} />
         <meshBasicMaterial
           color={colorObj}
@@ -166,4 +172,4 @@ export const AgentNode: React.FC<AgentNodeProps> = ({
       </mesh>
     </group>
   );
-};
+}
