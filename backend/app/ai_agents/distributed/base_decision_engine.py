@@ -23,6 +23,7 @@ Pattern: BaseAgent -> DecisionEngine -> Redis pub/sub -> callback handler
 import logging
 from typing import Dict, Any, Optional, Callable, Awaitable
 from abc import ABC, abstractmethod
+from datetime import datetime, timezone
 
 from .mixins import DistributedAgentMixin
 from .message_protocol import AgentMessage, MessageType, Priority
@@ -322,6 +323,15 @@ class AgentDecisionEngine(DistributedAgentMixin, ABC):
                 confidence=1.0,
                 reasoning=f"{resource_type} usage at {current_value:.1f}% exceeds threshold"
             )
+    
+    def _get_current_time(self) -> datetime:
+        """
+        Get current time with timezone.
+        
+        Returns:
+            Current datetime with UTC timezone
+        """
+        return datetime.now(timezone.utc)
     
     def get_agent_status(self) -> Dict[str, Any]:
         """
