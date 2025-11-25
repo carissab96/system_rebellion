@@ -28,18 +28,18 @@ export default defineConfig(({ mode }) => {
       },
       proxy: {
         '/api': {
-          target: env.VITE_API_URL || 'http://localhost:8000',
+          target: env.VITE_API_URL || 'http://192.168.1.127:8000',
           changeOrigin: true,
           // NO REWRITE RULE - let the full path pass through
         },
         '/api/ws': {
-          target: env.VITE_WS_URL || 'ws://localhost:8000',
+          target: env.VITE_WS_URL || 'ws://192.168.1.127:8000',
           ws: true,
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api/, ''),
         },
         '/ws': {
-          target: env.VITE_WS_URL || 'ws://localhost:8000',
+          target: env.VITE_WS_URL || 'ws://192.168.1.127:8000',
           ws: true,
           changeOrigin: true,
         },
