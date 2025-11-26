@@ -235,8 +235,14 @@ async def run_consciousness_checkpoint():
     
     while True:
         try:
-            # Get agent manager
-            agent_manager = await get_agent_manager()
+            # Get distributed agent manager
+            from app.ai_agents.distributed.distributed_agent_manager import get_distributed_manager
+            agent_manager = get_distributed_manager()
+            
+            if not agent_manager or not agent_manager.initialized:
+                logger.warning("🧠⚠️ Agent manager not initialized, skipping checkpoint")
+                await asyncio.sleep(checkpoint_interval)
+                continue
             
             # Run consciousness checkpoint
             from app.ai_agents.distributed.consciousness_sync import consciousness_checkpoint
