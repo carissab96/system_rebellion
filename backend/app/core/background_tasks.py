@@ -10,6 +10,7 @@ from app.models.user import User
 from app.models.metrics import SystemMetrics
 from app.services.metrics_aggregation_service import MetricsAggregationService
 import logging
+from app.ai_agents.distributed.distributed_agent_manager import get_distributed_manager
 
 logger = logging.getLogger("MethSnail.Background")
 
@@ -98,8 +99,12 @@ async def run_realtime_optimization():
     
     logger.info("🐌💨 Meth Snail real-time optimization engine ENGAGED!")
     
-    # Get the agent manager instance
-    agent_manager = await get_agent_manager()
+    # Get the distributed agent manager instance
+    agent_manager = get_distributed_manager()
+    if not agent_manager or not agent_manager.initialized:
+        logger.warning("⚠️ Distributed agent manager not initialized, optimization engine waiting...")
+        await asyncio.sleep(30)
+        agent_manager = get_distributed_manager()
     
     # Main optimization loop
     optimization_interval = 30  # Check every 30 seconds
@@ -236,7 +241,6 @@ async def run_consciousness_checkpoint():
     while True:
         try:
             # Get distributed agent manager
-            from app.ai_agents.distributed.distributed_agent_manager import get_distributed_manager
             agent_manager = get_distributed_manager()
             
             if not agent_manager or not agent_manager.initialized:

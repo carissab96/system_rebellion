@@ -459,7 +459,7 @@ class SirHawkingtonTriageEngine(AgentInstrumentationMixin, TriageEngineWithRedis
             # Broadcast to all agents
             await self._comm_hub.broadcast_message(
                 message_type='triage_decision',
-                data=message_data,
+                payload=message_data,
                 priority=priority
             )
             

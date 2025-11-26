@@ -422,17 +422,18 @@ async def system_metrics_socket(websocket: WebSocket):
             # Small delay to ensure message is sent before next one
             await asyncio.sleep(0.1)
         
-        # AI Agent Manager (should already be initialized at startup)
+        # Distributed Agent Manager (should already be initialized at startup)
         agent_manager = None
         try:
-            # This should return instantly since it's initialized at startup
-            agent_manager = await asyncio.wait_for(get_agent_manager(), timeout=0.5)
-            logger.info("✅ Agent manager ready for %s", getattr(user, "email", None))
-        except asyncio.TimeoutError:
-            logger.warning("⚠️ Agent manager not initialized yet (should have been done at startup)")
-            agent_manager = None
+            from app.ai_agents.distributed.distributed_agent_manager import get_distributed_manager
+            agent_manager = get_distributed_manager()
+            if agent_manager and agent_manager.initialized:
+                logger.info("✅ Distributed agent manager ready for %s", getattr(user, "email", None))
+            else:
+                logger.warning("⚠️ Distributed agent manager not initialized yet")
+                agent_manager = None
         except Exception as e:
-            logger.error("❌ Failed to get AI Agent Manager: %s", str(e))
+            logger.error("❌ Failed to get Distributed Agent Manager: %s", str(e))
             agent_manager = None
 
         # System info
