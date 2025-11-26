@@ -18,9 +18,15 @@ Legacy agent management system that loaded agents from YAML configuration.
 **This is no longer used.** Replaced by `DistributedAgentManager` which initializes agents directly.
 
 ### `master_agent_database.py`
-Centralized database integration for dual-write pattern (agent table + memory bank).
+Centralized database integration wrapper for dual-write pattern (agent table + memory bank).
 
-**This is no longer used.** Each distributed agent now has its own `AgentStateManager` for Redis-based state persistence.
+**This wrapper is no longer used.** However, the **dual-write system is still active**:
+- Each agent brain (e.g., `SirHawkingtonBrainV2`) has its own database integration
+- Each database integration (e.g., `HawkingtonDatabaseIntegration`) performs dual-write
+- Writes to both agent-specific table AND `CentralMemoryBank`
+- Distributed agents inherit this functionality from their brain classes
+
+**What changed**: Removed centralized wrapper, kept individual agent database integrations.
 
 ### `master_websocket_router.py`
 Legacy WebSocket message routing system.
