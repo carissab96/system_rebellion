@@ -49,10 +49,12 @@ async def get_current_user_from_token(token: str) -> User:
             logger.debug("🗑️ Expired cache entry removed")
 
     try:
+        # Add 5 minute leeway to tolerate clock skew between machines
         payload = jwt.decode(
             token,
             get_settings().SECRET_KEY,
-            algorithms=[get_settings().ALGORITHM]
+            algorithms=[get_settings().ALGORITHM],
+            options={"verify_exp": True, "leeway": 300}  # 5 minutes tolerance for clock skew
         )
     except JWTError as e:
         logger.warning("JWT decode error: %s", str(e))
