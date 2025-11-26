@@ -114,6 +114,9 @@ class DistributedAgent(BaseAIAgent):
         # Register message handlers
         self._register_default_handlers()
         
+        # Register callback for own resource alerts
+        self.resource_monitor.register_alert_callback(self._handle_own_resource_alert)
+        
         # Start resource monitoring
         await self.resource_monitor.start()
         
@@ -223,6 +226,31 @@ class DistributedAgent(BaseAIAgent):
         )
         
         await self.comm_hub.send_message(response)
+    
+    async def _handle_own_resource_alert(self, alert):
+        """
+        Handle resource alert from own monitoring.
+        
+        This is called when the agent's own resource monitor detects an issue.
+        Broadcasts the alert to other agents and can trigger agent-specific logic.
+        
+        Args:
+            alert: ResourceAlert from the monitor
+        """
+        from .resource_monitor import ResourceAlert
+        
+        payload = alert.payload
+        resource_type = payload.get('resource_type')
+        current_value = payload.get('current_value')
+        severity = payload.get('severity')
+        
+        self.logger.warning(
+            f"🚨 {self.agent_name} detected {resource_type} at {current_value:.1f}% "
+            f"(threshold: {payload.get('threshold')}%) - severity: {severity}"
+        )
+        
+        # Broadcast alert to other agents (already done by resource monitor via message bus)
+        # Subclasses can override this to add agent-specific responses
     
     async def _handle_resource_alert(self, message: AgentMessage):
         """
