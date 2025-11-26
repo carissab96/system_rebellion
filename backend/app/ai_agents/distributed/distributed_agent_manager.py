@@ -123,12 +123,21 @@ class DistributedAgentManager:
         except Exception as e:
             logger.error(f"Error stopping behavior tracker: {e}")
         
+        # Shutdown all agents in parallel (like legacy manager)
+        shutdown_tasks = []
         for agent_name, agent in self.agents.items():
-            try:
-                await agent.shutdown()
-                logger.info(f"✅ {agent_name} shutdown complete")
-            except Exception as e:
-                logger.error(f"Error shutting down {agent_name}: {e}")
+            if hasattr(agent, 'shutdown') and asyncio.iscoroutinefunction(agent.shutdown):
+                logger.debug(f"Shutting down agent: {agent_name}")
+                shutdown_tasks.append(agent.shutdown())
+        
+        # Wait for all agents to shutdown, catching exceptions
+        if shutdown_tasks:
+            results = await asyncio.gather(*shutdown_tasks, return_exceptions=True)
+            for i, (agent_name, result) in enumerate(zip(self.agents.keys(), results)):
+                if isinstance(result, Exception):
+                    logger.error(f"Error shutting down {agent_name}: {result}")
+                else:
+                    logger.info(f"✅ {agent_name} shutdown complete")
         
         self.agents.clear()
         self._initialized = False
