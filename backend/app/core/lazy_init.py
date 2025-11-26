@@ -54,19 +54,15 @@ async def initialize_agents_and_websockets(app_state) -> bool:
             await _ws_manager.start()
             logger.info("✅ WebSocket manager initialized")
             
-            # Create database session factory for agents
-            def db_session_factory():
-                """Factory to create new database sessions for agent memory service"""
-                session = AsyncSessionLocal()
-                return session
-            
             # Initialize Distributed AI Agents (Week 5 Task 5.4: Single unified system)
             agent_start = time.time()
             redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
             logger.info(f"🔴 Using Redis URL: {redis_url}")
             
+            # Import get_async_db for agent database access
+            from app.core.database import get_async_db
             from app.ai_agents.distributed.distributed_agent_manager import initialize_distributed_agents, get_distributed_manager
-            await initialize_distributed_agents(redis_url, db_getter=db_session_factory)
+            await initialize_distributed_agents(redis_url, db_getter=get_async_db)
             agent_manager = get_distributed_manager()
             
             agent_elapsed = time.time() - agent_start
