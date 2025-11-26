@@ -540,6 +540,26 @@ async def system_metrics_socket(websocket: WebSocket):
                         name: dict(data)
                         for name, data in cached_agent_memories.items()
                     }
+                else:
+                    agent_insights = {}
+                
+                # Get current status from all distributed agents
+                if agent_manager and agent_manager.initialized:
+                    try:
+                        for agent_name in agent_manager.get_active_agents():
+                            agent = agent_manager.get_agent(agent_name)
+                            if agent and hasattr(agent, 'get_agent_status'):
+                                status = agent.get_agent_status()
+                                if agent_name not in agent_insights:
+                                    agent_insights[agent_name] = {}
+                                agent_insights[agent_name].update({
+                                    "status": "active",
+                                    "distributed": getattr(agent, 'is_distributed', False),
+                                    **status
+                                })
+                        logger.debug("📊 Updated insights for %d distributed agents", len(agent_insights))
+                    except Exception as e:
+                        logger.error("Failed to get distributed agent status: %s", str(e))
                 
                 # Only run expensive triage if enough time has passed
                 should_run_triage = (loop_start_time - last_triage_time) >= triage_interval
