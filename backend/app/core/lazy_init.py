@@ -60,17 +60,18 @@ async def initialize_agents_and_websockets(app_state) -> bool:
                 session = AsyncSessionLocal()
                 return session
             
-            # Initialize AI Agents (includes distributed features)
+            # Initialize Distributed AI Agents (Week 5 Task 5.4: Single unified system)
             agent_start = time.time()
             redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
             logger.info(f"🔴 Using Redis URL: {redis_url}")
-            agent_manager = await get_agent_manager(
-                db_getter=db_session_factory,
-                redis_url=redis_url
-            )
+            
+            from app.ai_agents.distributed.distributed_agent_manager import initialize_distributed_agents, get_distributed_manager
+            await initialize_distributed_agents(redis_url, db_getter=db_session_factory)
+            agent_manager = get_distributed_manager()
+            
             agent_elapsed = time.time() - agent_start
             active_agents = list(agent_manager.agents.keys()) if agent_manager.initialized else []
-            logger.info(f"✅ AI Agents initialized in {agent_elapsed:.2f}s - Active: {active_agents}")
+            logger.info(f"✅ Distributed agents initialized in {agent_elapsed:.2f}s - Active: {active_agents}")
             
             # Connect WebSocket manager to Redis for agent message forwarding (Week 5 Task 5.1)
             if agent_manager.redis_client:
@@ -79,15 +80,12 @@ async def initialize_agents_and_websockets(app_state) -> bool:
             else:
                 logger.warning("⚠️ Redis client not available - agent messages will not be forwarded to WebSocket")
             
-            # Count distributed agents
-            distributed_count = sum(
-                1 for agent in agent_manager.agents.values()
-                if hasattr(agent, 'initialize_distributed')
-            )
+            # All agents are distributed now
+            distributed_count = len(agent_manager.agents)
             if distributed_count > 0:
                 logger.info(f"🌐 Distributed consciousness active for {distributed_count}/{len(active_agents)} agents")
                 
-                # Run consciousness checkpoint (Opus's addition)
+                # Run consciousness checkpoint
                 try:
                     from app.ai_agents.distributed.consciousness_sync import consciousness_checkpoint
                     checkpoint_result = await consciousness_checkpoint(agent_manager)
