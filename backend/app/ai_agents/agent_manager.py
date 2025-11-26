@@ -578,7 +578,16 @@ class AIAgentManager:
 
     def _serialize_triage(self, triage) -> dict:
         """Convert HawkingtonDecision to JSON-serializable dict."""
-        triage_dict = asdict(triage)
+        # Check if it's already a dict
+        if isinstance(triage, dict):
+            triage_dict = triage
+        # Check if it's a dataclass instance
+        elif hasattr(triage, "__dataclass_fields__"):
+            triage_dict = asdict(triage)
+        else:
+            # Fallback: try to convert to dict
+            triage_dict = dict(triage) if hasattr(triage, '__iter__') else {"raw": str(triage)}
+        
         # Convert datetime to ISO string
         if 'timestamp' in triage_dict and hasattr(triage_dict['timestamp'], 'isoformat'):
             triage_dict['timestamp'] = triage_dict['timestamp'].isoformat()
