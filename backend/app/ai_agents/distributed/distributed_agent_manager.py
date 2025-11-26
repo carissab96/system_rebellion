@@ -14,8 +14,8 @@ from typing import Dict, Any
 
 from app.core.redis import get_redis_client
 from app.ai_agents.sir_hawkington.distributed_hawkington import SirHawkingtonDistributed
-from app.ai_agents.meth_snail.distributed_meth_snail import TerryMethSnailDistributed
-from app.ai_agents.hamsters.distributed_hamsters import BobHamsterDistributed
+from app.ai_agents.meth_snail.distributed_meth_snail import MethSnailDistributed
+from app.ai_agents.hamsters.distributed_hamsters import HamstersDistributed
 from app.ai_agents.quantum_shadow_people.distributed_qsp import QuantumShadowPeopleDistributed
 from app.ai_agents.the_stick.distributed_stick import TheStickDistributed
 from app.ai_agents.vic_20_sage.distributed_vic20 import VIC20SageDistributed
@@ -61,14 +61,14 @@ class DistributedAgentManager:
             logger.info("✅ Sir Hawkington initialized")
             
             # Terry the Meth Snail - Memory Monitor
-            terry = TerryMethSnailDistributed(db_getter=self.db_getter)
+            terry = MethSnailDistributed(db_getter=self.db_getter)
             await terry.initialize_distributed(self.redis_client)
             self.agents["terry_meth_snail"] = terry
             register_agent("terry_meth_snail", terry)
             logger.info("✅ Terry the Meth Snail initialized")
             
             # The Hamsters - Disk Monitor (Steve, Bob and Carl)
-            hamsters = BobHamsterDistributed(db_getter=self.db_getter)
+            hamsters = HamstersDistributed(db_getter=self.db_getter)
             await hamsters.initialize_distributed(self.redis_client)
             # Keep bob_hamster as the key for backward compatibility
             self.agents["bob_hamster"] = hamsters

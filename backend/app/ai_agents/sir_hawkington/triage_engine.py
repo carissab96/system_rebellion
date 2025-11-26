@@ -35,9 +35,6 @@ from .database_integration import HawkingtonDatabaseIntegration
 # Import agent memory model for structured queries
 from app.models.agent_memory_banks import SirHawkingtonMemoryBank
 
-# Import agent manager at module level to avoid circular imports
-from ..agent_manager import get_agent_manager
-
 # Import instrumentation for method tracking
 from ..agent_instrumentation import AgentInstrumentationMixin, instrument_method
 
@@ -548,10 +545,15 @@ class SirHawkingtonTriageEngine(AgentInstrumentationMixin, TriageEngineWithRedis
                 user_id=user_id
             )
             
-            agent_manager = await get_agent_manager()
+            # Import here to avoid circular dependency
+            from ..distributed.distributed_agent_manager import get_distributed_manager
             
-            agent_results = await agent_manager.process_metrics_through_triage_engine(
-                metrics_data, 
+            manager = get_distributed_manager()
+            
+            # Process through distributed agents if available
+            if manager and manager._initialized:
+                agent_results = await manager.process_metrics_through_triage_engine(
+                    metrics_data, 
                 user_context={'routed_by': 'sir_hawkington_triage', 'triage_severity': 'normal'}
             )
             
