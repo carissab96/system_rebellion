@@ -202,8 +202,16 @@ async def lifespan(app: FastAPI):
             logger.info("=" * 80)
             
             try:
-                # Initialize WebSocket manager
+                # Initialize WebSocket manager with Redis bridge
                 _ws_manager = get_websocket_manager()
+                
+                # Connect WebSocket manager to Redis for distributed agent messages
+                if redis_client:
+                    _ws_manager.set_redis_client(redis_client.client)
+                    logger.info("🌉 WebSocket manager connected to Redis for agent message forwarding")
+                else:
+                    logger.warning("⚠️ Redis client not available - distributed agent messages won't be forwarded to WebSocket")
+                
                 await _ws_manager.start()
                 logger.info("✅ Sir Hawkington websocket manager startup complete")
                 

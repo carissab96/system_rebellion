@@ -88,9 +88,16 @@ class WebSocketManager:
             # Create Redis pubsub
             pubsub = self._redis_client.pubsub()
             
-            # Subscribe to agent broadcast channels
+            # Subscribe to agent broadcast channels (distributed agent protocol)
             await pubsub.subscribe(
-                'agent:broadcast',  # All agent messages
+                'agents:broadcast',  # All agent messages (distributed protocol)
+                'agents:decisions',  # Decision coordination
+                'agents:resources:alerts',  # Resource monitoring alerts
+                'agents:emergency',  # Emergency broadcasts
+                'agents:heartbeats',  # Agent heartbeats
+                'agents:learning',  # Shared learning and patterns
+                # Legacy channels for backward compatibility
+                'agent:broadcast',  # Old protocol
                 'triage:decisions',  # Triage decisions from Sir Hawkington
                 'resource:alerts',  # Resource alerts
                 'coordination:requests',  # VIC-20 coordination
@@ -119,7 +126,8 @@ class WebSocketManager:
                             message_data['redis_channel'] = channel
                             
                             # Route to appropriate buffer and broadcast
-                            if channel == 'triage:decisions':
+                            # Distributed agent protocol channels
+                            if channel in ['agents:decisions', 'triage:decisions']:
                                 self.recent_triage_decisions.append(message_data)
                                 await self.broadcast_json({
                                     'type': 'triage_decision',
@@ -127,13 +135,34 @@ class WebSocketManager:
                                 })
                                 logger.debug("🎯 Forwarded triage decision to WebSocket clients")
                             
-                            elif channel == 'resource:alerts':
+                            elif channel in ['agents:resources:alerts', 'resource:alerts']:
                                 self.recent_resource_alerts.append(message_data)
                                 await self.broadcast_json({
                                     'type': 'resource_alert',
                                     'data': message_data
                                 })
                                 logger.debug("⚠️ Forwarded resource alert to WebSocket clients")
+                            
+                            elif channel == 'agents:emergency':
+                                await self.broadcast_json({
+                                    'type': 'emergency',
+                                    'data': message_data
+                                })
+                                logger.warning("🚨 Forwarded EMERGENCY to WebSocket clients")
+                            
+                            elif channel == 'agents:heartbeats':
+                                await self.broadcast_json({
+                                    'type': 'agent_heartbeat',
+                                    'data': message_data
+                                })
+                                logger.debug("💓 Forwarded agent heartbeat to WebSocket clients")
+                            
+                            elif channel == 'agents:learning':
+                                await self.broadcast_json({
+                                    'type': 'learning_update',
+                                    'data': message_data
+                                })
+                                logger.debug("🧠 Forwarded learning update to WebSocket clients")
                             
                             elif channel == 'coordination:requests':
                                 await self.broadcast_json({
@@ -149,7 +178,7 @@ class WebSocketManager:
                                 })
                                 logger.debug("⚡ Forwarded agent action to WebSocket clients")
                             
-                            else:  # agent:broadcast
+                            else:  # agents:broadcast or agent:broadcast
                                 self.recent_agent_messages.append(message_data)
                                 await self.broadcast_json({
                                     'type': 'agent_message',

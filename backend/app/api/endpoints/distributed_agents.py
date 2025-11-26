@@ -65,6 +65,150 @@ def get_agent(agent_name: str):
     return _agent_registry[agent_name]
 
 
+async def get_consciousness_status() -> Dict[str, Any]:
+    """
+    Get consciousness checkpoint status across all agents.
+    
+    Week 5 Task 5.2: Consciousness checkpoint visualization data
+    
+    Returns:
+        Consciousness checkpoint summary
+    """
+    try:
+        from app.ai_agents.agent_manager import get_agent_manager
+        
+        agent_manager = await get_agent_manager()
+        
+        if not agent_manager or not agent_manager.initialized:
+            return {
+                "status": "not_initialized",
+                "message": "Agent manager not initialized"
+            }
+        
+        # Check if we have distributed agents
+        distributed_agents = [
+            name for name, agent in _agent_registry.items()
+            if hasattr(agent, 'is_distributed') and agent.is_distributed
+        ]
+        
+        if not distributed_agents:
+            return {
+                "status": "no_distributed_agents",
+                "message": "No distributed agents registered"
+            }
+        
+        # Get time sync status
+        time_sync_status = []
+        for agent_name in distributed_agents:
+            try:
+                agent = _agent_registry[agent_name]
+                state = agent.comm_hub.get_state()
+                if state:
+                    time_sync_status.append({
+                        "agent_name": agent_name,
+                        "last_heartbeat": state.last_heartbeat,
+                        "is_active": state.is_active
+                    })
+            except Exception as e:
+                logger.warning(f"Could not get state for {agent_name}: {e}")
+        
+        # Calculate consensus
+        active_count = sum(1 for s in time_sync_status if s["is_active"])
+        consensus_achieved = active_count == len(distributed_agents)
+        
+        return {
+            "status": "healthy" if consensus_achieved else "degraded",
+            "total_distributed_agents": len(distributed_agents),
+            "active_agents": active_count,
+            "consensus_achieved": consensus_achieved,
+            "agents": time_sync_status,
+            "last_check": datetime.now(timezone.utc).isoformat()
+        }
+    
+    except Exception as e:
+        logger.error(f"Error getting consciousness status: {e}", exc_info=True)
+        return {
+            "status": "error",
+            "message": str(e)
+        }
+
+
+async def get_triage_flow_data() -> Dict[str, Any]:
+    """
+    Get triage flow visualization data.
+    
+    Week 5 Task 5.2: Triage flow visualization
+    
+    Returns:
+        Triage flow statistics and routing data
+    """
+    try:
+        # Get Sir Hawkington (triage commander)
+        sir_hawkington = None
+        for agent_name, agent in _agent_registry.items():
+            if 'hawkington' in agent_name.lower():
+                sir_hawkington = agent
+                break
+        
+        if not sir_hawkington:
+            return {
+                "status": "no_triage_commander",
+                "message": "Sir Hawkington not found"
+            }
+        
+        # Get triage statistics
+        status = sir_hawkington.get_agent_status()
+        
+        # Build triage flow data
+        triage_data = {
+            "status": "active",
+            "total_decisions": status.get("total_decisions", 0),
+            "routing_stats": {}
+        }
+        
+        # Get decision history if available
+        if hasattr(sir_hawkington, 'comm_hub'):
+            try:
+                recent_decisions = await sir_hawkington.comm_hub.state_manager.get_recent_decisions(
+                    count=20
+                )
+                
+                # Analyze routing patterns
+                routing_counts = {}
+                severity_counts = {}
+                
+                for decision in recent_decisions:
+                    # Count by severity
+                    severity = decision.input_data.get('severity', 'UNKNOWN')
+                    severity_counts[severity] = severity_counts.get(severity, 0) + 1
+                    
+                    # Count by routing
+                    routing = decision.output_data.get('routing', 'UNKNOWN')
+                    routing_counts[routing] = routing_counts.get(routing, 0) + 1
+                
+                triage_data["routing_stats"] = routing_counts
+                triage_data["severity_distribution"] = severity_counts
+                triage_data["recent_decisions_count"] = len(recent_decisions)
+                
+            except Exception as e:
+                logger.warning(f"Could not get decision history: {e}")
+        
+        # Add monocle state if available
+        if hasattr(sir_hawkington, 'current_monocle_state'):
+            triage_data["monocle_state"] = str(sir_hawkington.current_monocle_state)
+            if hasattr(sir_hawkington, 'monocle_yeets_by_severity'):
+                triage_data["monocle_yeets"] = sir_hawkington.monocle_yeets_by_severity
+        
+        return triage_data
+    
+    except Exception as e:
+        logger.error(f"Error getting triage flow data: {e}", exc_info=True)
+        return {
+            "status": "error",
+            "message": str(e)
+        }
+
+
 @router.get("/agents")
 async def list_agents():
     """
@@ -178,10 +322,18 @@ async def list_agents():
                 "error": str(e)
             })
     
+    # Get consciousness checkpoint status (Week 5 Task 5.2)
+    consciousness_status = await get_consciousness_status()
+    
+    # Get triage flow visualization data (Week 5 Task 5.2)
+    triage_flow = await get_triage_flow_data()
+    
     return {
         "total_agents": len(agents),
         "distributed_agents": distributed_count,
         "agents": agents,
+        "consciousness_checkpoint": consciousness_status,
+        "triage_flow": triage_flow,
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
 
