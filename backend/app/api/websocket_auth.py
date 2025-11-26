@@ -54,7 +54,7 @@ async def get_current_user_from_token(token: str) -> User:
             token,
             get_settings().SECRET_KEY,
             algorithms=[get_settings().ALGORITHM],
-            leeway=300  # 5 minutes tolerance for clock skew
+            options={"verify_exp": True, "leeway": 300}  # 5 minutes tolerance for clock skew
         )
     except JWTError as e:
         logger.warning("JWT decode error: %s", str(e))
