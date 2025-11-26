@@ -157,6 +157,90 @@ class DistributedAgentManager:
                 status["agents"][agent_name] = {"error": str(e)}
         
         return status
+    
+    # Compatibility methods for legacy AIAgentManager interface
+    
+    @property
+    def initialized(self) -> bool:
+        """Check if manager is initialized (compatibility with legacy)"""
+        return self._initialized
+    
+    def get_active_agents(self) -> list:
+        """Get list of active agent names (compatibility with legacy)"""
+        return list(self.agents.keys())
+    
+    async def get_agent_status(self, agent_name: str = None) -> Dict[str, Any]:
+        """
+        Get status of specific agent or all agents (compatibility with legacy).
+        
+        Args:
+            agent_name: Optional agent name. If None, returns status of all agents.
+        """
+        if agent_name:
+            agent = self.get_agent(agent_name)
+            if not agent:
+                return {"error": f"Agent {agent_name} not found"}
+            try:
+                return agent.get_agent_status()
+            except Exception as e:
+                return {"error": str(e)}
+        else:
+            # Return all agents status
+            return await self.get_system_status()
+    
+    async def process_metrics_through_triage_engine(self, metrics: dict, user_context: dict = None) -> dict:
+        """
+        Process metrics through triage engine (compatibility with legacy).
+        
+        Routes to Sir Hawkington for triage.
+        """
+        sir_hawk = self.get_agent("sir_hawkington")
+        if not sir_hawk:
+            return {"error": "Sir Hawkington not available"}
+        
+        try:
+            # Sir Hawkington handles triage
+            result = await sir_hawk.analyze_metrics(metrics, user_context=user_context)
+            return {
+                "status": "success",
+                "triage": result,
+                "agent": "sir_hawkington"
+            }
+        except Exception as e:
+            logger.error(f"Error in triage: {e}", exc_info=True)
+            return {"error": str(e)}
+    
+    async def health_check(self) -> Dict[str, Any]:
+        """Health check for all agents (compatibility with legacy)"""
+        health = {
+            "status": "healthy" if self._initialized else "not_initialized",
+            "initialized": self._initialized,
+            "total_agents": len(self.agents),
+            "healthy_agents": 0,
+            "unhealthy_agents": 0,
+            "agents": {}
+        }
+        
+        for agent_name, agent in self.agents.items():
+            try:
+                # Check if agent has is_distributed and it's True
+                is_healthy = getattr(agent, 'is_distributed', False)
+                health["agents"][agent_name] = {
+                    "status": "healthy" if is_healthy else "not_distributed",
+                    "distributed": is_healthy
+                }
+                if is_healthy:
+                    health["healthy_agents"] += 1
+                else:
+                    health["unhealthy_agents"] += 1
+            except Exception as e:
+                health["agents"][agent_name] = {
+                    "status": "error",
+                    "error": str(e)
+                }
+                health["unhealthy_agents"] += 1
+        
+        return health
 
 
 # Global instance
