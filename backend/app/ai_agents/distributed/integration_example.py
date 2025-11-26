@@ -22,6 +22,7 @@ from app.ai_agents.distributed.example_agents import (
 from app.ai_agents.the_stick.distributed_stick import TheStickDistributed
 from app.ai_agents.vic_20_sage.distributed_vic20 import VIC20SageDistributed
 from app.api.endpoints.distributed_agents import register_agent
+from app.ai_agents.distributed.behavior_tracker import get_behavior_tracker
 
 logger = logging.getLogger(__name__)
 
@@ -96,6 +97,11 @@ class DistributedAgentManager:
             register_agent("vic_20_sage", vic20)
             logger.info("✅ VIC-20 Sage initialized")
             
+            # Start behavior tracker for research recording
+            tracker = get_behavior_tracker()
+            await tracker.start(snapshot_interval=2.0)
+            logger.info("🔍 Behavior tracker started (research recording active)")
+            
             self._initialized = True
             logger.info(f"🌐 All {len(self.agents)} distributed agents initialized!")
             
@@ -109,6 +115,14 @@ class DistributedAgentManager:
             return
         
         logger.info("Shutting down distributed agents...")
+        
+        # Stop behavior tracker
+        try:
+            tracker = get_behavior_tracker()
+            await tracker.stop()
+            logger.info("🔍 Behavior tracker stopped")
+        except Exception as e:
+            logger.error(f"Error stopping behavior tracker: {e}")
         
         for agent_name, agent in self.agents.items():
             try:
