@@ -22,6 +22,8 @@ def setup_middleware(app: FastAPI):
     origins = [
         "http://localhost:5173",  # Frontend dev server
         "http://localhost:8000",   # Default Vite port
+        "http://192.168.1.199:5173",  # HP frontend (cross-machine)
+        "http://192.168.1.127:8000",  # Dell backend (self-reference)
         "https://system-rebellion.com",  # Production domain
         "https://system-rebellion.onrender.com",  # Render domain
         "https://system-rebellion-api.onrender.com",  # Render API domain
