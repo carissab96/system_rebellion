@@ -63,9 +63,7 @@ class VIC20DatabaseIntegration:
         """Initialize database connection"""
         if not self._initialized:
             if not self.db_getter:
-                logger.warning("⚠️ No db_getter provided - VIC-20 will use in-memory fallbacks")
-                self._initialized = True  # Mark as initialized to prevent repeated warnings
-                return
+                raise RuntimeError("🖥️💥 FATAL: No db_getter provided to VIC-20! Database is REQUIRED - no fallbacks allowed!")
             try:
                 # Verify db_getter works
                 async for session in self.db_getter():
@@ -73,8 +71,8 @@ class VIC20DatabaseIntegration:
                 self._initialized = True
                 logger.info("🕹️✨ Database integration initialized using shared connection pool (RETRO WISDOM!)")
             except Exception as e:
-                logger.warning(f"⚠️ Database initialization failed, using in-memory fallbacks: {e}")
-                self._initialized = True  # Mark as initialized to prevent retry loops
+                logger.error(f"🖥️💥 FATAL: Database initialization failed: {e}")
+                raise RuntimeError(f"VIC-20 database initialization failed - no fallbacks allowed!") from e
     
     async def ensure_initialized(self):
         """Ensure database is initialized"""
