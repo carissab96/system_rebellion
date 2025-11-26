@@ -457,8 +457,9 @@ class SirHawkingtonTriageEngine(AgentInstrumentationMixin, TriageEngineWithRedis
             }
             
             # Broadcast to all agents
+            from app.ai_agents.distributed.message_protocol import MessageType
             await self._comm_hub.broadcast_message(
-                message_type='triage_decision',
+                message_type=MessageType.TRIAGE_DECISION,
                 payload=message_data,
                 priority=priority
             )
