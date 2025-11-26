@@ -164,7 +164,9 @@ class SirHawkingtonTriageEngine(AgentInstrumentationMixin, TriageEngineWithRedis
     """
 
     def __init__(self, db_getter, **kwargs):
-        super().__init__(redis_url="redis://localhost", cache_namespace="hawk", **kwargs)
+        import os
+        redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
+        super().__init__(redis_url=redis_url, cache_namespace="hawk", **kwargs)
         
         # Set agent_name for instrumentation
         self.agent_name = "sir_hawkington"
