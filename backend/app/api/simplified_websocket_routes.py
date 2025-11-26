@@ -354,7 +354,11 @@ async def system_metrics_socket(websocket: WebSocket):
     try:
         ws_start = time.time()
         
-        # Authenticate FIRST via query param (before accepting connection)
+        # Accept connection first
+        await websocket.accept()
+        logger.info("WebSocket connection accepted for %s", client_id)
+        
+        # THEN authenticate via query param
         auth_start = time.time()
         token = (websocket.query_params.get("token") or "").replace("Bearer ", "").strip()
         if not token:
@@ -375,9 +379,6 @@ async def system_metrics_socket(websocket: WebSocket):
 
         logger.info("⏱️ WebSocket authenticated for user %s (%s) - Auth took %.2fms", 
                    getattr(user, "email", None), client_id, (time.time() - auth_start)*1000)
-
-        # THEN accept the connection after successful authentication
-        await websocket.accept()
         logger.info("WebSocket connection accepted for %s (%.2fms)", client_id, (time.time() - ws_start)*1000)
 
         # Register the connection under the circuit breaker
