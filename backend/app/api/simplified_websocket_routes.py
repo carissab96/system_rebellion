@@ -341,6 +341,8 @@ async def system_metrics_socket(websocket: WebSocket):
     client_id = f"client_{id(websocket)}"
     connection_registered = False
     db = None
+    db_gen = None
+    db_needs_cleanup = False
     user = None
     agent_manager = None
     ws_manager = get_websocket_manager()
