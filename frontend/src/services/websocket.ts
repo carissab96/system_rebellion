@@ -25,7 +25,7 @@ export class WebSocketService {
 
   // Optional external callbacks
   onError?: (evt: Event) => void;
-  onClose?: () => void;
+  onClose?: (event?: CloseEvent) => void;
 
   private constructor(wsBaseUrl: string) {
     this.urlBase = wsBaseUrl.replace(/\/$/, "");
@@ -190,10 +190,10 @@ export class WebSocketService {
       this.onError?.(evt);
     };
     
-    const onClose = () => {
+    const onClose = (event: CloseEvent) => {
       this.state = "closed";
       this.stopKeepAlive();
-      this.onClose?.();
+      this.onClose?.(event);
     };
     
     const onMessage = (ev: MessageEvent) => {

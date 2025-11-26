@@ -264,10 +264,24 @@ export const useWebSocketConnection = () => {
         }));
       };
       
-      wsServiceRef.current.onClose = () => {
-        console.log('🔌 WebSocket closed');
+      wsServiceRef.current.onClose = (event?: CloseEvent) => {
+        const closeCode = event?.code;
+        const closeReason = event?.reason || 'unknown';
+        console.log(`🔌 WebSocket closed (code: ${closeCode}, reason: ${closeReason})`);
         dispatch(setConnectionStatus('disconnected'));
         setLocalState(prev => ({ ...prev, isConnecting: false }));
+        
+        // Don't reconnect on auth failures (code 1008 = WS_1008_POLICY_VIOLATION)
+        if (closeCode === 1008) {
+          console.error('🔒 WebSocket closed due to auth failure - token may be expired');
+          dispatch(setError('Authentication failed - please refresh your session'));
+          setLocalState(prev => ({ 
+            ...prev, 
+            lastError: 'Authentication failed - token expired or invalid',
+            reconnectAttempts: MAX_RETRIES // Prevent further reconnect attempts
+          }));
+          return;
+        }
         
         // Only attempt reconnection if it wasn't an intentional close
         if (isMountedRef.current && !intentionalCloseRef.current) {
