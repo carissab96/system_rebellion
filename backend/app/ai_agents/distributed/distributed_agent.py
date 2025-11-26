@@ -97,9 +97,6 @@ class DistributedAgent(BaseAIAgent):
         # Decision tracking
         self._decision_counter = 0
         
-        # Mark as distributed (for API endpoint detection)
-        self.is_distributed = True
-        
         self.logger.info(
             f"🌐 Distributed agent created: {agent_name} "
             f"(role: {agent_role}, personality: {list(personality_traits.keys())})"
