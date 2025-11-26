@@ -94,12 +94,11 @@ class VIC20SageBrainV2:
         pass
 
     async def _ensure_db(self):
-        """Call integration's initializer if present; don't fail hard on errors."""
-        try:
-            if hasattr(self.db, "ensure_initialized") and callable(getattr(self.db, "ensure_initialized")):
-                await self.db.ensure_initialized()
-        except Exception as e:
-            self.logger.warning(f"DB init failed, will use in-memory fallbacks: {e}")
+        """Call integration's initializer - FAIL HARD if database not available."""
+        if hasattr(self.db, "ensure_initialized") and callable(getattr(self.db, "ensure_initialized")):
+            await self.db.ensure_initialized()
+        else:
+            raise RuntimeError("🖥️💥 FATAL: VIC-20 database integration not properly initialized!")
 
     async def initialize_database(self, bootstrap_user_id: Optional[str] = None):
         """Initialize and pre-load learning patterns (non-fatal if DB isn't ready)."""
@@ -138,23 +137,20 @@ class VIC20SageBrainV2:
     # ---------- learning bootstrap ----------
 
     async def _load_learning_patterns(self):
-        """Load historical patterns + per-agent harmony trends from DB; fallback to cache."""
-        try:
-            # 1) Successful patterns = recent coordinations with improvement/confidence
-            recents = await self.db.get_recent_coordinations(limit=200)
-            self.coordination_patterns = self._build_pattern_database_from_recents(recents)
+        """Load historical patterns + per-agent harmony trends from DB - FAIL HARD if unavailable."""
+        # 1) Successful patterns = recent coordinations with improvement/confidence
+        recents = await self.db.get_recent_coordinations(limit=200)
+        self.coordination_patterns = self._build_pattern_database_from_recents(recents)
 
-            # 2) Agent trends via harmony status (use default/system user for warmup)
-            harmony = await self.db.get_agent_harmony_status(self._default_user_id)
-            trends: Dict[str, Dict[str, float]] = {}
-            for agent, d in (harmony.get("agent_harmony") or {}).items():
-                trends[agent] = {
-                    "effectiveness_score": float(self._num(d.get("coordination_effectiveness"), 0.0)),
-                    "response_time": float(self._num(d.get("response_time_average"), 0.0)),
-                }
-            self.agent_performance_trends = trends
-        except Exception as e:
-            self.logger.warning(f"Load-learning fallback (DB unavailable): {e}")
+        # 2) Agent trends via harmony status (use default/system user for warmup)
+        harmony = await self.db.get_agent_harmony_status(self._default_user_id)
+        trends: Dict[str, Dict[str, float]] = {}
+        for agent, d in (harmony.get("agent_harmony") or {}).items():
+            trends[agent] = {
+                "effectiveness_score": float(self._num(d.get("coordination_effectiveness"), 0.0)),
+                "response_time": float(self._num(d.get("response_time_average"), 0.0)),
+            }
+        self.agent_performance_trends = trends
 
     # ---------- DB-wired helpers (previously missing) ----------
 
@@ -509,17 +505,8 @@ class VIC20SageBrainV2:
                     observation_data={"type": "coordination_error", **snapshot},
                 )
         except Exception as e:
-            self.logger.warning(f"Store-learning fallback (DB unavailable): {e}")
-            # still capture locally
-            self._recent_coordinations.append({
-                "timestamp_ts": utc_now().timestamp(),
-                "success": False,
-                "agent_actions": [],
-                "system_health": 0.0,
-                "issue_count": 0,
-                "suspected_pressure": None,
-                "effectiveness_score": 0.0,
-            })
+            self.logger.error(f"🖥️💥 FATAL: Failed to store coordination decision: {e}")
+            raise RuntimeError(f"VIC-20 failed to store coordination decision - no fallbacks allowed!") from e
 
     async def _log_mediation_event(self, mediation_result: Dict[str, Any], conflict_data: Dict[str, Any]):
         """Log mediation via the integration's real method."""
