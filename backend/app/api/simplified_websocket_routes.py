@@ -551,13 +551,13 @@ async def system_metrics_socket(websocket: WebSocket):
                         for agent_name in agent_manager.get_active_agents():
                             agent = agent_manager.get_agent(agent_name)
                             if agent and hasattr(agent, 'get_agent_status'):
-                                status = agent.get_agent_status()
+                                agent_status = agent.get_agent_status()
                                 if agent_name not in agent_insights:
                                     agent_insights[agent_name] = {}
                                 agent_insights[agent_name].update({
                                     "status": "active",
                                     "distributed": getattr(agent, 'is_distributed', False),
-                                    **status
+                                    **agent_status
                                 })
                         logger.debug("📊 Updated insights for %d distributed agents", len(agent_insights))
                     except Exception as e:
