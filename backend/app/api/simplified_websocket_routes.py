@@ -14,7 +14,6 @@ from app.core.resilience import (
     RecoveryAction,
     RecoveryStrategy
 )
-from app.ai_agents.agent_manager import get_agent_manager
 
 import asyncio
 import logging

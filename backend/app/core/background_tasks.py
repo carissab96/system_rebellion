@@ -9,7 +9,6 @@ from app.core.database import get_db, get_async_db, get_async_session
 from app.models.user import User
 from app.models.metrics import SystemMetrics
 from app.services.metrics_aggregation_service import MetricsAggregationService
-from app.ai_agents.agent_manager import get_agent_manager
 import logging
 
 logger = logging.getLogger("MethSnail.Background")

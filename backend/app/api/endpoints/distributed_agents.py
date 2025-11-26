@@ -75,14 +75,14 @@ async def get_consciousness_status() -> Dict[str, Any]:
         Consciousness checkpoint summary
     """
     try:
-        from app.ai_agents.agent_manager import get_agent_manager
+        from app.ai_agents.distributed.distributed_agent_manager import get_distributed_manager
         
-        agent_manager = await get_agent_manager()
+        manager = get_distributed_manager()
         
-        if not agent_manager or not agent_manager.initialized:
+        if not manager or not manager._initialized:
             return {
                 "status": "not_initialized",
-                "message": "Agent manager not initialized"
+                "message": "Distributed agent manager not initialized"
             }
         
         # Check if we have distributed agents
@@ -691,17 +691,17 @@ async def run_consciousness_checkpoint():
     Returns:
         Consciousness checkpoint results
     """
-    from app.ai_agents.agent_manager import get_agent_manager
+    from app.ai_agents.distributed.distributed_agent_manager import get_distributed_manager
     
     try:
-        agent_manager = await get_agent_manager()
+        manager = get_distributed_manager()
         
-        if not agent_manager or not agent_manager.initialized:
-            raise HTTPException(status_code=503, detail="Agent manager not initialized")
+        if not manager or not manager._initialized:
+            raise HTTPException(status_code=503, detail="Distributed agent manager not initialized")
         
         # Run consciousness checkpoint
         from app.ai_agents.distributed.consciousness_sync import consciousness_checkpoint
-        result = await consciousness_checkpoint(agent_manager)
+        result = await consciousness_checkpoint(manager)
         
         return {
             "consensus_achieved": result["consensus_achieved"],

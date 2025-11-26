@@ -44,7 +44,6 @@ async def initialize_agents_and_websockets(app_state) -> bool:
         
         try:
             from app.core.database import AsyncSessionLocal
-            from app.ai_agents.agent_manager import get_agent_manager
             from app.core.background_tasks import start_all_background_tasks
             from app.core.learning_helpers import run_metadata_scheduler
             from app.api.websockets import get_websocket_manager

@@ -9,7 +9,7 @@ from app.core.config import get_settings
 
 from app.core.auth import get_current_user
 from app.models.user import User
-from app.ai_agents.agent_manager import get_agent_manager
+from app.ai_agents.distributed.distributed_agent_manager import get_distributed_manager
 
 router = APIRouter()
 logger = logging.getLogger("system_api")
@@ -40,11 +40,11 @@ async def detect_system(
     try:
         logger.info("Starting system detection for user: %s", current_user.email)
         
-        # Try to get agent manager and system info
+        # Try to get distributed agent manager and system info
         try:
-            agent_manager = await get_agent_manager()
+            manager = get_distributed_manager()
             logger.debug("Getting agent status...")
-            agent_response = await agent_manager.get_agent_status()
+            agent_response = await manager.get_system_status() if manager and manager._initialized else None
                 
             if agent_response:
                 logger.debug("Agent response received, getting system info...")
