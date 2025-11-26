@@ -50,8 +50,7 @@ logger = logging.getLogger(__name__)
 # Import all models to ensure they are registered with SQLAlchemy
 from app.models import *  # noqa
 
-# Import AI Agents and Background Tasks
-from app.ai_agents.agent_manager import get_agent_manager
+# Import Background Tasks (Week 5 Task 5.4: Removed legacy AIAgentManager)
 from app.core.background_tasks import start_all_background_tasks
 from app.ai_agents.hamsters.hamsters_api_routes_refactored import router as hamsters_router
 from app.ai_agents.meth_snail import router as meth_snail_router
@@ -70,7 +69,7 @@ from app.core.resilience import (
     get_circuit_breaker,
     get_backpressure_handler
 )
-from app.ai_agents.distributed.integration_example import (
+from app.ai_agents.distributed.distributed_agent_manager import (
     initialize_distributed_agents,
     shutdown_distributed_agents
 )
@@ -219,34 +218,13 @@ async def lifespan(app: FastAPI):
                 import time
                 from app.core.database import AsyncSessionLocal
                 
-                # Create a database session factory for the agent manager
+                # Create a database session factory for distributed agents
                 def db_session_factory():
                     """Factory to create new database sessions for agent memory service"""
                     session = AsyncSessionLocal()
                     return session
                 
-                agent_start = time.time()
-                agent_manager = await get_agent_manager(db_getter=db_session_factory)
-                agent_elapsed = time.time() - agent_start
-                active_agents = list(agent_manager.agents.keys()) if agent_manager.initialized else []
-                logger.info(f"🤖 AI Agents initialized in {agent_elapsed:.2f}s - Active: {active_agents}")
-                
-                # Start background tasks (Meth Snail's optimization, aggregation, etc.)
-                agent_tasks = await start_all_background_tasks()
-                background_tasks.extend(agent_tasks)
-                
-                metadata_task = asyncio.create_task(
-                    run_metadata_scheduler(engine, every_seconds=300)
-                )
-                background_tasks.append(metadata_task)
-
-                logger.info("🔄 Background tasks started:")
-                logger.info("  🐌 Metrics aggregation engine running")
-                logger.info("  🐌💨 Real-time optimization engine engaged")
-                logger.info("  🏥 System health monitor active")
-                logger.info("  📊 Memory bank metadata scheduler running")
-                
-                # Initialize distributed agent consciousness system
+                # Initialize distributed agent consciousness system (Week 5 Task 5.4: Single unified system)
                 try:
                     redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
                     logger.info(f"🌐 Initializing distributed agent consciousness (Redis: {redis_url})...")
@@ -258,6 +236,22 @@ async def lifespan(app: FastAPI):
                     logger.info("  👻 Quantum Shadow People - Network Monitor")
                     logger.info("  📏 The Stick - Learning Coordinator")
                     logger.info("  🖥️ VIC-20 Sage - Orchestrator")
+                    
+                    # Start background tasks (Meth Snail's optimization, aggregation, etc.)
+                    agent_tasks = await start_all_background_tasks()
+                    background_tasks.extend(agent_tasks)
+                    
+                    metadata_task = asyncio.create_task(
+                        run_metadata_scheduler(engine, every_seconds=300)
+                    )
+                    background_tasks.append(metadata_task)
+
+                    logger.info("🔄 Background tasks started:")
+                    logger.info("  🐌 Metrics aggregation engine running")
+                    logger.info("  🐌💨 Real-time optimization engine engaged")
+                    logger.info("  🏥 System health monitor active")
+                    logger.info("  📊 Memory bank metadata scheduler running")
+                    
                 except Exception as e:
                     logger.error(f"⚠️  Failed to initialize distributed agents: {e}", exc_info=True)
                     logger.warning("Continuing without distributed agent system")
@@ -299,20 +293,12 @@ async def lifespan(app: FastAPI):
             await RedisClient.close_instance()
             logger.info("🛑 Closed Redis connection")
     
-    # Shutdown distributed agents
+    # Shutdown distributed agents (Week 5 Task 5.4: Single unified system)
     try:
         await shutdown_distributed_agents()
         logger.info("🌐 Distributed agents shut down")
     except Exception as e:
         logger.error(f"Error shutting down distributed agents: {e}")
-    
-    # Shutdown agent manager
-    try:
-        agent_manager = await get_agent_manager()
-        await agent_manager.shutdown()
-        logger.info("🤖 Agent manager shut down")
-    except Exception as e:
-        logger.warning(f"⚠️ Error shutting down agent manager: {e}")
     
     logger.info("🐌 Background tasks stopped")
     logger.info("🧐 Sir Hawkington bids you farewell")
@@ -361,9 +347,13 @@ def create_application() -> FastAPI:
         Sir Hawkington's Health Check Protocol
         The Quantum Shadow People shall not interfere!
         """
-        # Check AI agent status
-        agent_manager = await get_agent_manager()
-        active_agents = list(agent_manager.agents.keys()) if agent_manager.initialized else []
+        # Check distributed agent status (Week 5 Task 5.4: Use distributed registry)
+        from app.ai_agents.distributed.distributed_agent_manager import get_distributed_manager
+        try:
+            manager = get_distributed_manager()
+            active_agents = list(manager.agents.keys()) if manager._initialized else []
+        except:
+            active_agents = []
     
         return JSONResponse(
         content={
@@ -374,21 +364,25 @@ def create_application() -> FastAPI:
                 "active": active_agents,
                 "count": len(active_agents),
                 "sir_hawkington": "🧐 Monitoring with distinction" if 'sir_hawkington' in active_agents else "🧐 Adjusting monocle...",
-                "meth_snail": "🐌💨 Optimizing furiously" if 'meth_snail' in active_agents else "🐌 Preparing optimization protocols...",
+                "terry_meth_snail": "🐌💨 Optimizing furiously" if 'terry_meth_snail' in active_agents else "🐌 Preparing optimization protocols...",
                 "the_stick": "📏 Enforcing compliance" if 'the_stick' in active_agents else "📏 Calibrating compliance metrics...",
                 "quantum_shadow_people": "👻 Monitoring network" if 'quantum_shadow_people' in active_agents else "👻 Phasing into existence...",
-                "hamsters": "🐹 Ready to fix" if 'hamsters' in active_agents else "🐹 Preparing tools...",
+                "bob_hamster": "🐹 Ready to fix" if 'bob_hamster' in active_agents else "🐹 Preparing tools...",
                 "vic_20_sage": "🖥️ Dispensing wisdom" if 'vic_20_sage' in active_agents else "🖥️ Loading ancient protocols..."
             }
         }
     )        
 
-    # AI Agents status endpoint
+    # AI Agents status endpoint (Week 5 Task 5.4: Use distributed agents endpoint)
     @app.get("/api/ai-agents/status")
     async def ai_agents_status():
-        """Get detailed status of all AI agents"""
-        agent_manager = await get_agent_manager()
-        return agent_manager.get_agent_status()
+        """Get detailed status of all AI agents - redirects to distributed agents endpoint"""
+        from app.ai_agents.distributed.distributed_agent_manager import get_distributed_manager
+        try:
+            manager = get_distributed_manager()
+            return await manager.get_system_status()
+        except Exception as e:
+            return {"error": str(e), "agents": {}}
     
     # CSRF token endpoint directly in main.py for guaranteed availability
     @app.get("/api/auth/csrf_token")

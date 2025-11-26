@@ -471,6 +471,25 @@ Transform 6 existing agents into distributed, persistent, resource-monitoring co
 
 ---
 
+### Task 5.4: Deprecate Legacy AIAgentManager ✅ COMPLETE
+**Files**: `backend/main.py`, `backend/app/ai_agents/agents_config.yaml`
+
+- [x] Remove `AIAgentManager` initialization from `main.py`
+- [x] Keep `DistributedAgentManager` as single source of truth
+- [x] Move `agents_config.yaml` to `legacy/` directory
+- [x] Update all agent status endpoints to use distributed registry
+- [x] Verify no duplicate agent initialization
+- [x] Test that all 6 agents initialize once via DistributedAgentManager
+- [x] Verify WebSocket bridge receives messages
+- [x] Run full system test
+
+**Success Criteria**: Single unified system with no duplicate agents.
+
+**Completed**: November 26, 2025
+**Estimated Time**: 0.5 days
+
+---
+
 ### Week 5 Checkpoint: Real-Time Communication Test
 - [ ] Connect frontend to backend
 - [ ] Trigger triage decision

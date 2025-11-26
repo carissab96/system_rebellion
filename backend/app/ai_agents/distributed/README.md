@@ -149,29 +149,27 @@ pip install psutil  # For resource monitoring
 ### 4. Initialize Agents
 
 ```python
-from app.ai_agents.distributed.example_agents import (
-    SirHawkingtonDistributed,
-    TerryMethSnailDistributed,
-    BobHamsterDistributed,
-    QuantumShadowPeopleDistributed
-)
+from app.ai_agents.sir_hawkington.distributed_hawkington import SirHawkingtonDistributed
+from app.ai_agents.meth_snail.distributed_meth_snail import TerryMethSnailDistributed
+from app.ai_agents.hamsters.distributed_hamsters import BobHamsterDistributed
+from app.ai_agents.quantum_shadow_people.distributed_qsp import QuantumShadowPeopleDistributed
 from app.core.redis import get_redis_client
 
 # Get Redis client
 redis_client = await get_redis_client()
 
-# Initialize agents
-sir_hawk = SirHawkingtonDistributed(redis_client)
-await sir_hawk.initialize()
+# Initialize agents (production pattern)
+sir_hawk = SirHawkingtonDistributed(db_getter=db_session_factory)
+await sir_hawk.initialize_distributed(redis_client)
 
-terry = TerryMethSnailDistributed(redis_client)
-await terry.initialize()
+terry = TerryMethSnailDistributed(db_getter=db_session_factory)
+await terry.initialize_distributed(redis_client)
 
-bob = BobHamsterDistributed(redis_client)
-await bob.initialize()
+bob = BobHamsterDistributed(db_getter=db_session_factory)
+await bob.initialize_distributed(redis_client)
 
-shadows = QuantumShadowPeopleDistributed(redis_client)
-await shadows.initialize()
+shadows = QuantumShadowPeopleDistributed(db_getter=db_session_factory)
+await shadows.initialize_distributed(redis_client)
 ```
 
 ### 5. Register Agents with API
