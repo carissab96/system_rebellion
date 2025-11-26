@@ -15,7 +15,7 @@ These files are the old individual websocket handlers that were used by `master_
 - `vic20_websocket_handler.py` - VIC-20's old handler
 - `qsp_websocket_integration.py` - Quantum Shadow People's old handler
 
-**NOT HERE**: `hamsters_websocket_integration.py` - Still in use by `hamsters_api_routes_refactored.py` (see TODO below)
+- `hamsters_websocket_integration.py` - Hamsters' old handler (moved here with API routes)
 
 ---
 
@@ -77,38 +77,40 @@ These handle:
 
 ---
 
-## 🚨 TODO: Hamsters Integration
+## ✅ Hamsters Direct API Deprecated
 
-### Current Issue
-`app/ai_agents/hamsters/hamsters_api_routes_refactored.py` still uses:
-```python
-from app.ai_agents.hamsters.hamsters_websocket_integration import broadcast_hamster_event
-```
+### What Was Removed
+`app/ai_agents/hamsters/hamsters_api_routes_refactored.py` - Direct API for hamster control
 
-This is a **direct WebSocket broadcast** that bypasses the distributed system.
+This API provided direct endpoints for:
+- `/hamsters/recommendations` - Get infrastructure recommendations
+- `/hamsters/apply-engineering` - Apply fixes directly
+- `/hamsters/emergency` - Emergency response
+- `/hamsters/history` - View intervention history
+- `/hamsters/supply-closet` - Check supplies
+- `/hamsters/restock` - Restock inventory
+- `/hamsters/stats` - Get hamster stats
+- `/hamsters/reset` - Reset brain state
 
-### Should Be
-```python
-# Use distributed agent messaging instead
-hamsters_agent = manager.get_agent("bob_hamster")
-await hamsters_agent.broadcast_message(
-    MessageType.AGENT_EVENT,
-    {
-        'type': 'recommendation',
-        'priority': decision.priority.value,
-        'squeaks': decision.actual_squeaks,
-        ...
-    }
-)
-```
+### Why Deprecated
+This API **bypassed VIC-20's coordination system** completely. It allowed direct control of the Hamsters, which conflicts with the distributed architecture where:
+- VIC-20 coordinates all agent activities
+- Agents communicate via Redis pub/sub
+- Decisions go through triage and verification
 
-### Action Required
-- [ ] Refactor `hamsters_api_routes_refactored.py` to use distributed agent messaging
-- [ ] Remove `broadcast_hamster_event` calls
-- [ ] Use distributed agent's `broadcast_message()` method instead
-- [ ] Move `hamsters_websocket_integration.py` to legacy after refactor
+### New Architecture
+Hamsters now operate through:
+1. **Distributed Agent System** - `distributed_hamsters.py` (HamstersDistributed)
+2. **VIC-20 Coordination** - VIC-20 routes disk/storage tasks to Hamsters
+3. **Redis Messaging** - All communication via Redis channels
+4. **Triage System** - Sir Hawkington triages, routes to appropriate agent
 
-**Estimated Time**: 1-2 hours
+### Personalities Preserved
+Steve, Bob, and Carl's individual personalities are fully preserved in:
+- `decision_engine_sbcV3.py` (HamstersBrainV3) - Core logic
+- `distributed_hamsters.py` (HamstersDistributed) - Distributed wrapper
+
+**Steve** (careful, risk_tolerance=0.3), **Bob** (wild, risk_tolerance=0.8, causes Stick anxiety), and **Carl** (duct tape genius, duct_tape_love=1.0) all maintain their distinct personalities and telepathic consensus system.
 
 ---
 
@@ -118,7 +120,7 @@ await hamsters_agent.broadcast_message(
 - ✅ The Stick - Uses distributed system
 - ✅ VIC-20 Sage - Uses distributed system
 - ✅ Quantum Shadow People - Uses distributed system
-- ⏳ Hamsters - Partially migrated (API routes still use old handler)
+- ✅ Hamsters - Fully migrated to distributed system
 
 ---
 

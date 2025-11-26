@@ -135,11 +135,12 @@ Each agent has a decision engine (their "brain"):
 - ✅ `app/ai_agents/legacy/*` (4 core files from Task 5.4)
 - ✅ `app/ai_agents/legacy/websocket_handlers/*` (5 deprecated handlers)
 
-### TODO: Hamsters API Routes Refactor
-- ⏳ `hamsters_websocket_integration.py` - Still used by `hamsters_api_routes_refactored.py`
-  - Should be refactored to use distributed agent messaging
-  - Currently bypasses distributed system with direct WebSocket broadcasts
-  - See `legacy/websocket_handlers/README.md` for migration plan
+### ✅ Hamsters Direct API Deprecated
+- ✅ `hamsters_api_routes_refactored.py` - Moved to legacy
+- ✅ `hamsters_websocket_integration.py` - Moved to legacy/websocket_handlers/
+  - Direct API bypassed VIC-20's coordination system
+  - Hamsters now operate through distributed system
+  - Steve, Bob, and Carl's personalities fully preserved in distributed implementation
 
 ---
 
@@ -154,7 +155,6 @@ The two resource monitors serve different purposes:
 All other "similar" files are either:
 - Agent-specific implementations (needed)
 - Already in legacy directories (organized)
-- Hamsters API routes refactor (TODO for future)
 
 **Week 5 Task 5.4 cleanup is complete and comprehensive.**
 
@@ -168,6 +168,8 @@ All other "similar" files are either:
 7. ✅ `sticks_websocket_integration.py`
 8. ✅ `vic20_websocket_handler.py`
 9. ✅ `qsp_websocket_integration.py`
+10. ✅ `hamsters_websocket_integration.py`
+11. ✅ `hamsters_api_routes_refactored.py`
 
-**Total: 9 legacy files properly organized**
+**Total: 11 legacy files properly organized**
 

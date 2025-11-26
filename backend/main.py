@@ -52,7 +52,6 @@ from app.models import *  # noqa
 
 # Import Background Tasks (Week 5 Task 5.4: Removed legacy AIAgentManager)
 from app.core.background_tasks import start_all_background_tasks
-from app.ai_agents.hamsters.hamsters_api_routes_refactored import router as hamsters_router
 from app.ai_agents.meth_snail import router as meth_snail_router
 from app.api.endpoints import distributed_agents
 from rich.console import Console
@@ -444,12 +443,10 @@ def create_application() -> FastAPI:
         tags=["System-Metrics"]
     )
     
-    # Add Hamsters API Router   
-    app.include_router(
-        hamsters_router,
-        prefix="/api/hamsters",
-        tags=["Hamsters"]
-    )
+    # Hamsters API Router removed - Week 5 Task 5.4
+    # Hamsters now operate through distributed system coordinated by VIC-20
+    # Direct API bypassed coordination and is deprecated
+    # See: app/ai_agents/legacy/hamsters_api_routes_refactored.py
     
     # Add Meth Snail API Router
     app.include_router(

@@ -27,6 +27,16 @@ Legacy WebSocket message routing system.
 
 **This is no longer used.** Replaced by `WebSocketManager` in `app/api/websockets.py`
 
+### `hamsters_api_routes_refactored.py`
+Direct API for hamster control (recommendations, engineering, emergency response, etc.).
+
+**This is no longer used.** Bypassed VIC-20's coordination system. Hamsters now operate through distributed system coordinated by VIC-20.
+
+### `websocket_handlers/` directory
+Individual websocket handlers for each agent (6 files total).
+
+**These are no longer used.** Replaced by distributed agent messaging via Redis pub/sub.
+
 ## Why Deprecated?
 
 The legacy system had two major issues:
