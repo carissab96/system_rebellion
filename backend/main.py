@@ -242,7 +242,7 @@ async def lifespan(app: FastAPI):
                 try:
                     redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
                     logger.info(f"🌐 Initializing distributed agent consciousness (Redis: {redis_url})...")
-                    await initialize_distributed_agents(redis_url)
+                    await initialize_distributed_agents(redis_url, db_getter=db_session_factory)
                     logger.info("✅ Distributed agents initialized:")
                     logger.info("  🧐 Sir Hawkington - CPU Monitor")
                     logger.info("  🐌💨 Terry the Meth Snail - Memory Monitor")

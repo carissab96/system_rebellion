@@ -34,9 +34,10 @@ class DistributedAgentManager:
     Handles initialization, lifecycle, and coordination of all distributed agents.
     """
     
-    def __init__(self, redis_url: str = "redis://localhost:6379"):
+    def __init__(self, redis_url: str = "redis://localhost:6379", db_getter=None):
         self.redis_url = redis_url
         self.redis_client = None
+        self.db_getter = db_getter
         self.agents: Dict[str, Any] = {}
         self._initialized = False
     
@@ -84,14 +85,14 @@ class DistributedAgentManager:
             logger.info("✅ Quantum Shadow People initialized")
             
             # The Stick - Learning Coordinator
-            stick = TheStickDistributed(db_getter=None)
+            stick = TheStickDistributed(db_getter=self.db_getter)
             await stick.initialize_distributed(self.redis_client)
             self.agents["the_stick"] = stick
             register_agent("the_stick", stick)
             logger.info("✅ The Stick initialized")
             
             # VIC-20 Sage - Orchestrator
-            vic20 = VIC20SageDistributed(db_getter=None)
+            vic20 = VIC20SageDistributed(db_getter=self.db_getter)
             await vic20.initialize_distributed(self.redis_client)
             self.agents["vic_20_sage"] = vic20
             register_agent("vic_20_sage", vic20)
@@ -164,7 +165,7 @@ class DistributedAgentManager:
 _distributed_manager: DistributedAgentManager = None
 
 
-async def initialize_distributed_agents(redis_url: str = "redis://localhost:6379"):
+async def initialize_distributed_agents(redis_url: str = "redis://localhost:6379", db_getter=None):
     """
     Initialize distributed agents system.
     
@@ -172,11 +173,12 @@ async def initialize_distributed_agents(redis_url: str = "redis://localhost:6379
     
     Args:
         redis_url: Redis connection URL
+        db_getter: Database session factory for agents that need database access
     """
     global _distributed_manager
     
     if _distributed_manager is None:
-        _distributed_manager = DistributedAgentManager(redis_url)
+        _distributed_manager = DistributedAgentManager(redis_url, db_getter=db_getter)
     
     await _distributed_manager.initialize()
     return _distributed_manager
