@@ -5,7 +5,6 @@
 
 import React, { useMemo, useRef, useState, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Line } from '@react-three/drei';
 import * as THREE from 'three';
 import { AgentNode } from './AgentNode';
 import { useDistributedAgents } from '../../hooks/useDistributedAgents';
@@ -172,21 +171,28 @@ interface ConnectionLineProps {
 }
 
 const ConnectionLine: React.FC<ConnectionLineProps> = ({ start, end, color }) => {
-  // Pulsing opacity effect using time
-  const [opacity, setOpacity] = useState(0.2);
+  const lineRef = useRef<THREE.Line>(null);
   
+  // Pulsing opacity effect
   useFrame((state) => {
-    setOpacity(0.2 + Math.sin(state.clock.elapsedTime * 2) * 0.1);
+    if (lineRef.current && lineRef.current.material) {
+      const material = lineRef.current.material as THREE.LineBasicMaterial;
+      material.opacity = 0.2 + Math.sin(state.clock.elapsedTime * 2) * 0.1;
+    }
   });
 
+  // Create line geometry
+  const points = useMemo(() => {
+    return [new THREE.Vector3(...start), new THREE.Vector3(...end)];
+  }, [start, end]);
+
+  const geometry = useMemo(() => {
+    const geom = new THREE.BufferGeometry().setFromPoints(points);
+    return geom;
+  }, [points]);
+
   return (
-    <Line
-      points={[start, end]}
-      color={color}
-      lineWidth={1}
-      transparent
-      opacity={opacity}
-    />
+    <primitive object={new THREE.Line(geometry, new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.2 }))} ref={lineRef} />
   );
 };
 
