@@ -171,28 +171,35 @@ interface ConnectionLineProps {
 }
 
 const ConnectionLine: React.FC<ConnectionLineProps> = ({ start, end, color }) => {
-  const lineRef = useRef<THREE.Line>(null);
+  const materialRef = useRef<THREE.LineBasicMaterial>(null);
   
   // Pulsing opacity effect
   useFrame((state) => {
-    if (lineRef.current && lineRef.current.material) {
-      const material = lineRef.current.material as THREE.LineBasicMaterial;
-      material.opacity = 0.2 + Math.sin(state.clock.elapsedTime * 2) * 0.1;
+    if (materialRef.current) {
+      materialRef.current.opacity = 0.2 + Math.sin(state.clock.elapsedTime * 2) * 0.1;
     }
   });
 
-  // Create line geometry
-  const points = useMemo(() => {
-    return [new THREE.Vector3(...start), new THREE.Vector3(...end)];
+  // Create line geometry once
+  const positions = useMemo(() => {
+    return new Float32Array([...start, ...end]);
   }, [start, end]);
 
-  const geometry = useMemo(() => {
-    const geom = new THREE.BufferGeometry().setFromPoints(points);
-    return geom;
-  }, [points]);
-
   return (
-    <primitive object={new THREE.Line(geometry, new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.2 }))} ref={lineRef} />
+    <line>
+      <bufferGeometry>
+        <bufferAttribute
+          attach="attributes-position"
+          args={[positions, 3]}
+        />
+      </bufferGeometry>
+      <lineBasicMaterial 
+        ref={materialRef}
+        color={color} 
+        transparent 
+        opacity={0.2} 
+      />
+    </line>
   );
 };
 
