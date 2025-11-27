@@ -10,7 +10,7 @@ existing System Rebellion architecture.
 
 import asyncio
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 from app.core.redis import get_redis_client
 from app.ai_agents.sir_hawkington.distributed_hawkington import SirHawkingtonDistributed
@@ -288,10 +288,8 @@ async def shutdown_distributed_agents():
         _distributed_manager = None
 
 
-def get_distributed_manager() -> DistributedAgentManager:
-    """Get the distributed agent manager instance"""
-    if _distributed_manager is None:
-        raise RuntimeError("Distributed agents not initialized")
+def get_distributed_manager() -> Optional[DistributedAgentManager]:
+    """Get the distributed agent manager instance (returns None if not initialized)"""
     return _distributed_manager
 
 
