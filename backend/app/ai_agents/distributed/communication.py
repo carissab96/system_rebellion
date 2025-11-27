@@ -26,7 +26,7 @@ from .message_protocol import (
     RedisChannels,
     RedisKeys
 )
-from .agent_state import AgentStateManager
+from .agent_state import AgentStateManager, AgentHealth
 
 logger = logging.getLogger(__name__)
 
@@ -389,6 +389,8 @@ class AgentCommunicationHub:
             )
         else:
             self.logger.info(f"Restored state for {self.agent_name}")
+            # Reset health to STARTING on restart (was SHUTTING_DOWN from previous run)
+            await self.state_manager.update_health(AgentHealth.STARTING)
             await self.state_manager.mark_restart()
         
         # Start message bus
