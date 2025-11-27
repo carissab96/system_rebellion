@@ -57,6 +57,7 @@ class VIC20DatabaseIntegration:
     
     def __init__(self, db_getter=None):
         self.db_getter = db_getter
+        self.engine: Optional[AsyncEngine] = None
         self._initialized = False
         
     async def initialize(self):
@@ -65,11 +66,22 @@ class VIC20DatabaseIntegration:
             if not self.db_getter:
                 raise RuntimeError("🖥️💥 FATAL: No db_getter provided to VIC-20! Database is REQUIRED - no fallbacks allowed!")
             try:
+                # Create async engine for direct SQL operations
+                db_url = get_db_url()
+                self.engine = create_async_engine(
+                    db_url,
+                    echo=False,
+                    pool_pre_ping=True,
+                    pool_size=5,
+                    max_overflow=10
+                )
+                
                 # Verify db_getter works
                 async for session in self.db_getter():
                     break
+                    
                 self._initialized = True
-                logger.info("🕹️✨ Database integration initialized using shared connection pool (RETRO WISDOM!)")
+                logger.info("🕹️✨ Database integration initialized with engine and session pool (RETRO WISDOM!)")
             except Exception as e:
                 logger.error(f"🖥️💥 FATAL: Database initialization failed: {e}")
                 raise RuntimeError(f"VIC-20 database initialization failed - no fallbacks allowed!") from e

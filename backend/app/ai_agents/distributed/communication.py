@@ -295,8 +295,12 @@ class MessageBus:
             
             self._messages_received += 1
             
+            self.logger.info(
+                f"📨 REDIS SUB: {message.message_type.value} ← from={message.from_agent} | to={message.to_agent or 'broadcast'} | priority={message.priority.value} | id={message.message_id[:8]}"
+            )
+            
             self.logger.debug(
-                f"Received {message.message_type.value} from {message.from_agent} "
+                f"Full message details: {message.message_type.value} from {message.from_agent} "
                 f"(id: {message.message_id})"
             )
             
