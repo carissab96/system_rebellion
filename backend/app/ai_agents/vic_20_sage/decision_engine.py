@@ -38,8 +38,12 @@ class VIC20SageBrainV2:
     """
 
     def __init__(self, db_getter=None):
-        # Store db_getter for lazy initialization
-        self.db_getter = db_getter
+        # Store db_getter for lazy initialization (default to get_async_db if not provided)
+        if db_getter is None:
+            from app.core.database import get_async_db
+            self.db_getter = get_async_db
+        else:
+            self.db_getter = db_getter
         self._db = None  # Lazy-initialized database integration
 
         self.coordination_state = CoordinationState.OBSERVING
