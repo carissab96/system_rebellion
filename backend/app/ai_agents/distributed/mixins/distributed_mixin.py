@@ -309,7 +309,10 @@ class DistributedAgentMixin:
             priority=priority
         )
         
-        self._dist_logger.debug(f"📡 Broadcast sent: {message_type.value}")
+        self._dist_logger.info(
+            f"📢 BROADCAST: {message_type.value} | "
+            f"from={self.agent_name} | priority={priority.value}"
+        )
     
     async def send_to_agent(
         self,
@@ -337,7 +340,10 @@ class DistributedAgentMixin:
             priority=priority
         )
         
-        self._dist_logger.debug(f"📨 Message sent to {to_agent}: {message_type.value}")
+        self._dist_logger.info(
+            f"📨 SEND: {message_type.value} → {to_agent} | "
+            f"from={self.agent_name} | priority={priority.value}"
+        )
     
     async def subscribe_to_messages(
         self,

@@ -207,7 +207,11 @@ class AgentStateManager:
             await self.redis.set(key, state.to_json())
             await self.redis.expire(key, 86400 * 7)  # 7 day TTL
             self._state_cache = state
-            self.logger.debug(f"Saved state for {self.agent_name}")
+            self.logger.info(
+                f"💾 REDIS SAVE: {self.agent_name} state | "
+                f"decisions={state.total_decisions} | msgs_sent={state.total_messages_sent} | "
+                f"health={state.health.value} | uptime={state.calculate_uptime():.0f}s"
+            )
             return True
         except Exception as e:
             self.logger.error(f"Failed to save state: {e}")
@@ -285,7 +289,10 @@ class AgentStateManager:
                 self._state_cache.total_decisions += 1
                 await self.save_state(self._state_cache)
             
-            self.logger.debug(f"Recorded decision {decision.decision_id}")
+            self.logger.info(
+                f"📊 DECISION: {self.agent_name} | type={decision.decision_type} | "
+                f"confidence={decision.confidence:.2f} | id={decision.decision_id[:8]}"
+            )
             return True
         except Exception as e:
             self.logger.error(f"Failed to record decision: {e}")

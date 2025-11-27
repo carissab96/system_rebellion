@@ -185,9 +185,9 @@ class MessageBus:
             await self._archive_message(message)
             
             self._messages_sent += 1
-            self.logger.debug(
-                f"Published {message.message_type.value} to {channel} "
-                f"(id: {message.message_id})"
+            self.logger.info(
+                f"📡 REDIS PUB: {message.message_type.value} → {channel} "
+                f"| from={message.from_agent} | priority={message.priority.value} | id={message.message_id[:8]}"
             )
             return True
             
