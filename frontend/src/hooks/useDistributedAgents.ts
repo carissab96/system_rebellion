@@ -13,12 +13,25 @@ export interface DistributedAgent {
   total_decisions: number;
   is_distributed: boolean;
   distributed?: {
-    is_initialized: boolean;
-    redis_connected: boolean;
-    resource_monitoring: boolean;
-    recent_decisions: number;
-    messages_sent: number;
-    messages_received: number;
+    distributed_enabled: boolean;
+    agent_name: string;
+    health: string;
+    total_decisions: number;
+    total_messages_sent: number;
+    total_messages_received: number;
+    uptime_seconds: number;
+    restart_count: number;
+    personality_traits: Record<string, any>;
+    last_heartbeat: string;
+    resource_monitoring_enabled: boolean;
+    resource_monitoring_active: boolean;
+    // Legacy fields for backwards compatibility
+    is_initialized?: boolean;
+    redis_connected?: boolean;
+    resource_monitoring?: boolean;
+    recent_decisions?: number;
+    messages_sent?: number;
+    messages_received?: number;
   };
   personality?: Record<string, any>;
   week4_systems?: {

@@ -16,30 +16,30 @@ import qspIcon from '../../assets/icons/agents/qsp.png';
 // BACKEND IS SOURCE OF TRUTH - Use exact agent_name from API
 const AGENT_COLORS: Record<string, string> = {
   sir_hawkington: '#e6ac00',      // Hawkington gold
-  vic_20_sage: '#06b6d4',         // VIC-20 cyan (not registered yet)
-  terry_meth_snail: '#00d084',    // Snail electric
-  the_stick: '#f97316',           // Stick coral (not registered yet)
-  bob_hamster: '#ff8c42',         // Hamster amber
+  vic_20_sage: '#06b6d4',         // VIC-20 cyan
+  meth_snail: '#00d084',          // Terry's electric green (backend uses meth_snail)
+  the_stick: '#f97316',           // Stick coral
+  hamsters: '#ff8c42',            // Hamster amber (backend uses hamsters)
   quantum_shadow_people: '#a855f7' // QSP violet
 };
 
 // Agent positions (VIC-20 at center, others orbit)
 // BACKEND IS SOURCE OF TRUTH - Use exact agent_name from API
 const AGENT_POSITIONS: Record<string, [number, number, number]> = {
-  vic_20_sage: [0, 0, 0],                    // Center - orchestrator (not registered yet)
+  vic_20_sage: [0, 0, 0],                    // Center - orchestrator
   sir_hawkington: [-4, 2, 0],                // Upper left
-  terry_meth_snail: [4, 2, 0],               // Upper right
-  the_stick: [0, -3, 2],                     // Lower center front (not registered yet)
-  bob_hamster: [-3, -2, -2],                 // Lower left back
+  meth_snail: [4, 2, 0],                     // Upper right (backend: meth_snail)
+  the_stick: [0, -3, 2],                     // Lower center front
+  hamsters: [-3, -2, -2],                    // Lower left back (backend: hamsters)
   quantum_shadow_people: [3, -2, -2]         // Lower right back
 };
 
 const AGENT_ICONS: Record<string, string> = {
   sir_hawkington: sirHawkingtonIcon,
   vic_20_sage: vic20SageIcon,
-  terry_meth_snail: terryMethSnailIcon,
+  meth_snail: terryMethSnailIcon,            // backend: meth_snail
   the_stick: theStickIcon,
-  bob_hamster: hamstersIcon,
+  hamsters: hamstersIcon,                    // backend: hamsters
   quantum_shadow_people: qspIcon
 };
 

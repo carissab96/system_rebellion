@@ -9,6 +9,7 @@ import { OrbitControls, Stars } from '@react-three/drei';
 import { PrimaryNav } from '../components/navigation/PrimaryNav';
 import { SecondaryNav } from '../components/navigation/SecondaryNav';
 import { NeuralMesh } from '../components/observatory/NeuralMesh';
+import { DistributedAgentDashboard } from '../components/distributed/DistributedAgentDashboard';
 import './ObservatoryPage.css';
 
 export const ObservatoryPage: React.FC = () => {
@@ -70,6 +71,24 @@ export const ObservatoryPage: React.FC = () => {
               <button onClick={() => setSelectedAgent(null)}>Close</button>
             </div>
           )}
+        </div>
+
+        {/* THE AGENT THEATER - Watch them work */}
+        <div className="dashboard-container" style={{ 
+          padding: '2rem', 
+          maxWidth: '1600px', 
+          margin: '0 auto',
+          background: 'linear-gradient(180deg, rgba(1,1,25,0) 0%, rgba(1,1,25,0.8) 100%)'
+        }}>
+          <div className="text-center mb-8">
+            <h2 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-cyan-400 to-green-400 mb-2">
+              🎭 THE AGENT THEATER
+            </h2>
+            <p className="text-slate-400 text-sm">
+              Watch the distributed consciousness perform in real-time
+            </p>
+          </div>
+          <DistributedAgentDashboard />
         </div>
       </main>
     </div>
