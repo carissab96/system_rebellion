@@ -231,23 +231,25 @@ async def list_agents():
             if is_distributed:
                 distributed_count += 1
             
+            # Extract health/uptime/decisions from distributed state if available
+            dist_state = status.get("distributed", {})
+            
             agent_summary = {
                 "agent_name": agent_name,
                 "agent_type": status.get("agent_type"),
-                "health": status.get("health"),
+                "health": dist_state.get("health") if is_distributed else status.get("health"),
                 "is_active": status.get("is_active"),
-                "uptime_seconds": status.get("uptime_seconds"),
-                "total_decisions": status.get("total_decisions"),
+                "uptime_seconds": dist_state.get("uptime_seconds") if is_distributed else status.get("uptime_seconds"),
+                "total_decisions": dist_state.get("total_decisions") if is_distributed else status.get("total_decisions"),
                 "is_distributed": is_distributed
             }
             
             # Add distributed state if available
-            if is_distributed and "distributed" in status:
-                dist_state = status["distributed"]
+            if is_distributed and dist_state:
                 agent_summary["distributed"] = {
-                    "is_initialized": dist_state.get("is_initialized"),
-                    "redis_connected": dist_state.get("redis_connected"),
-                    "resource_monitoring": dist_state.get("resource_monitoring"),
+                    "is_initialized": dist_state.get("distributed_enabled"),
+                    "redis_connected": dist_state.get("distributed_enabled"),  # If distributed is enabled, Redis is connected
+                    "resource_monitoring": dist_state.get("resource_monitoring_active"),
                     "recent_decisions": dist_state.get("recent_decisions_count", 0),
                     "messages_sent": dist_state.get("total_messages_sent", 0),
                     "messages_received": dist_state.get("total_messages_received", 0)
@@ -316,11 +318,12 @@ async def list_agents():
             agents.append(agent_summary)
             
         except Exception as e:
-            logger.error(f"Error getting status for {agent_name}: {e}", exc_info=True)
-            agents.append({
-                "agent_name": agent_name,
-                "error": str(e)
-            })
+            logger.error(f"💥 FATAL: Failed to get status for {agent_name}: {e}", exc_info=True)
+            # Re-raise - don't hide failures with fake data
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to get status for {agent_name}: {str(e)}"
+            )
     
     # Get consciousness checkpoint status (Week 5 Task 5.2)
     consciousness_status = await get_consciousness_status()

@@ -386,6 +386,16 @@ class DistributedAgentMixin:
         
         state = self._comm_hub.get_state()
         
+        # FAIL HARD if state hasn't been initialized - NO FAKE DATA
+        if not state:
+            agent_name = getattr(self, 'agent_name', 'unknown')
+            error_msg = (
+                f"💥 FATAL: {agent_name} state is None - distributed features not properly initialized. "
+                f"This is a critical failure. NO FALLBACKS ALLOWED."
+            )
+            self._dist_logger.error(error_msg)
+            raise RuntimeError(error_msg)
+        
         return {
             "distributed_enabled": True,
             "agent_name": state.agent_name,
@@ -395,7 +405,7 @@ class DistributedAgentMixin:
             "total_messages_received": state.total_messages_received,
             "uptime_seconds": state.calculate_uptime(),
             "restart_count": state.restart_count,
-            "personality_traits": state.personality_traits,
+            "personality_traits": state.personality_traits or {},
             "last_heartbeat": state.last_heartbeat,
             "resource_monitoring_enabled": self._resource_monitor is not None,
             "resource_monitoring_active": self._resource_monitor.is_running if self._resource_monitor else False
