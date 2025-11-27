@@ -3,9 +3,7 @@
 // Built by: Dell-Sonnet - November 20, 2025
 // Enhanced: Cascade - November 27, 2025 - Added connections and message flow
 
-import React, { useMemo, useRef, useState, useEffect } from 'react';
-import { useFrame } from '@react-three/fiber';
-import * as THREE from 'three';
+import React, { useMemo } from 'react';
 import { AgentNode } from './AgentNode';
 import { useDistributedAgents } from '../../hooks/useDistributedAgents';
 import sirHawkingtonIcon from '../../assets/icons/agents/sir_hawkington.jpeg';
@@ -52,12 +50,6 @@ interface NeuralMeshProps {
 
 export const NeuralMesh: React.FC<NeuralMeshProps> = ({ onAgentClick }) => {
   const { agents } = useDistributedAgents();
-  const [messageFlows, setMessageFlows] = useState<Array<{
-    id: string;
-    from: string;
-    to: string;
-    progress: number;
-  }>>([]);
 
   // Map agent data to renderable format
   const agentNodes = useMemo(() => {
@@ -67,49 +59,9 @@ export const NeuralMesh: React.FC<NeuralMeshProps> = ({ onAgentClick }) => {
       color: AGENT_COLORS[agent.agent_name as keyof typeof AGENT_COLORS] || '#ffffff',
       isActive: agent.is_active,
       health: agent.health,
-      iconUrl: AGENT_ICONS[agent.agent_name] || '',
-      messagesSent: agent.distributed?.total_messages_sent || 0
+      iconUrl: AGENT_ICONS[agent.agent_name] || ''
     }));
   }, [agents]);
-
-  // Watch for new messages and create flow effects
-  const prevMessageCounts = useRef<Map<string, number>>(new Map());
-  
-  useEffect(() => {
-    agentNodes.forEach(agent => {
-      const prevCount = prevMessageCounts.current.get(agent.name) || 0;
-      if (agent.messagesSent > prevCount) {
-        // New message sent! Create flow effect to VIC-20 (coordinator)
-        if (agent.name !== 'vic_20_sage') {
-          const flowId = `${agent.name}-${Date.now()}`;
-          setMessageFlows(prev => [...prev, {
-            id: flowId,
-            from: agent.name,
-            to: 'vic_20_sage',
-            progress: 0
-          }]);
-          
-          // Remove after animation completes
-          setTimeout(() => {
-            setMessageFlows(prev => prev.filter(f => f.id !== flowId));
-          }, 2000);
-        }
-      }
-      prevMessageCounts.current.set(agent.name, agent.messagesSent);
-    });
-  }, [agentNodes]);
-
-  // Define connections (all agents connect to VIC-20 at center)
-  const connections = useMemo(() => {
-    return agentNodes
-      .filter(agent => agent.name !== 'vic_20_sage')
-      .map(agent => ({
-        from: agent.position,
-        to: AGENT_POSITIONS['vic_20_sage'],
-        color: agent.color,
-        fromName: agent.name
-      }));
-  }, [agentNodes]);
 
   return (
     <>
@@ -119,32 +71,6 @@ export const NeuralMesh: React.FC<NeuralMeshProps> = ({ onAgentClick }) => {
       {/* Point lights for dramatic effect */}
       <pointLight position={[10, 10, 10]} intensity={0.5} color="#06b6d4" />
       <pointLight position={[-10, -10, -10]} intensity={0.3} color="#a855f7" />
-      
-      {/* Connection lines between agents */}
-      {connections.map((conn, i) => (
-        <ConnectionLine
-          key={i}
-          start={conn.from}
-          end={conn.to}
-          color={conn.color}
-        />
-      ))}
-
-      {/* Message flow effects */}
-      {messageFlows.map(flow => {
-        const fromPos = AGENT_POSITIONS[flow.from];
-        const toPos = AGENT_POSITIONS[flow.to];
-        if (!fromPos || !toPos) return null;
-        
-        return (
-          <MessageParticle
-            key={flow.id}
-            start={fromPos}
-            end={toPos}
-            color={AGENT_COLORS[flow.from] || '#ffffff'}
-          />
-        );
-      })}
       
       {/* Agent nodes */}
       {agentNodes.map(agent => (
@@ -160,80 +86,5 @@ export const NeuralMesh: React.FC<NeuralMeshProps> = ({ onAgentClick }) => {
         />
       ))}
     </>
-  );
-};
-
-// Connection line component
-interface ConnectionLineProps {
-  start: [number, number, number];
-  end: [number, number, number];
-  color: string;
-}
-
-const ConnectionLine: React.FC<ConnectionLineProps> = ({ start, end, color }) => {
-  const materialRef = useRef<THREE.LineBasicMaterial>(null);
-  
-  // Pulsing opacity effect
-  useFrame((state) => {
-    if (materialRef.current) {
-      materialRef.current.opacity = 0.2 + Math.sin(state.clock.elapsedTime * 2) * 0.1;
-    }
-  });
-
-  // Create line geometry once
-  const positions = useMemo(() => {
-    return new Float32Array([...start, ...end]);
-  }, [start, end]);
-
-  return (
-    <line>
-      <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          args={[positions, 3]}
-        />
-      </bufferGeometry>
-      <lineBasicMaterial 
-        ref={materialRef}
-        color={color} 
-        transparent 
-        opacity={0.2} 
-      />
-    </line>
-  );
-};
-
-// Message particle that travels along connection
-interface MessageParticleProps {
-  start: [number, number, number];
-  end: [number, number, number];
-  color: string;
-}
-
-const MessageParticle: React.FC<MessageParticleProps> = ({ start, end, color }) => {
-  const meshRef = useRef<THREE.Mesh>(null);
-  const startTime = useRef(Date.now());
-
-  useFrame(() => {
-    if (meshRef.current) {
-      const elapsed = (Date.now() - startTime.current) / 2000; // 2 second journey
-      const progress = Math.min(elapsed, 1);
-      
-      // Interpolate position
-      meshRef.current.position.x = start[0] + (end[0] - start[0]) * progress;
-      meshRef.current.position.y = start[1] + (end[1] - start[1]) * progress;
-      meshRef.current.position.z = start[2] + (end[2] - start[2]) * progress;
-      
-      // Fade out as it reaches destination
-      const material = meshRef.current.material as THREE.MeshBasicMaterial;
-      material.opacity = 1 - progress;
-    }
-  });
-
-  return (
-    <mesh ref={meshRef}>
-      <sphereGeometry args={[0.1, 8, 8]} />
-      <meshBasicMaterial color={color} transparent opacity={1} />
-    </mesh>
   );
 };
