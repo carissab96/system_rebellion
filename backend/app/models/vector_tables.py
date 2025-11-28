@@ -72,7 +72,7 @@ class AgentDecisionVectors(Base):
     # Decision context
     event_type = Column(String, nullable=True)
     priority = Column(Integer, nullable=True)
-    metadata = Column(JSON, nullable=True)
+    context_metadata = Column("metadata", JSON, nullable=True)
     
     # Link back to SQL tables
     sql_memory_id = Column(String, nullable=True)  # UUID of central_memory_bank entry
@@ -128,7 +128,7 @@ class AgentPatternVectors(Base):
     confidence_score = Column(Float, nullable=True)
     
     # Pattern details
-    metadata = Column(JSON, nullable=True)
+    context_metadata = Column("metadata", JSON, nullable=True)
     pattern_summary = Column(String, nullable=True)
     
     # Link to learning tables
@@ -182,7 +182,7 @@ class AgentInteractionVectors(Base):
     success_score = Column(Float, nullable=True)
     
     # Interaction details
-    metadata = Column(JSON, nullable=True)
+    context_metadata = Column("metadata", JSON, nullable=True)
     interaction_summary = Column(String, nullable=True)
     
     # Link to SQL tables
