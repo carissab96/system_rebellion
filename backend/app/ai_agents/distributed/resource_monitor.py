@@ -253,14 +253,18 @@ class ResourceMonitor:
                     
                     # 🚨 ALWAYS publish metrics to agents (not just alerts)
                     if self.message_bus:
-                        await self.message_bus.publish_message(
-                            "system.metrics",
-                            {
+                        from .message_protocol import AgentMessage, MessageType, Priority
+                        metrics_message = AgentMessage(
+                            message_type=MessageType.RESOURCE_ALERT,
+                            sender=self.agent_name,
+                            priority=Priority.LOW,
+                            data={
                                 "type": "resource_metrics",
                                 "metrics": metrics.to_dict(),
                                 "timestamp": metrics.timestamp
                             }
                         )
+                        await self.message_bus.publish(metrics_message, channel="system.metrics")
                         self.logger.debug(f"Published metrics: CPU={metrics.cpu_percent}%, MEM={metrics.memory_percent}%")
                     
                     # Check thresholds (for alerts)
