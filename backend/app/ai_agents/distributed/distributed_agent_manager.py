@@ -55,8 +55,13 @@ class DistributedAgentManager:
             # Initialize agents
             logger.info("Initializing distributed agents...")
             
+            print(f"\n🔍 DistributedAgentManager.initialize()")
+            print(f"   self.db_getter: {self.db_getter}")
+            print(f"   self.db_getter type: {type(self.db_getter)}\n")
+            
             # Sir Hawkington - CPU Monitor & Triage Commander
             sir_hawk = SirHawkingtonDistributed(db_getter=self.db_getter)
+            print(f"✅ Sir Hawkington created with db_getter: {sir_hawk.db_getter}")
             await sir_hawk.initialize_distributed(self.redis_client)
             self.agents["sir_hawkington"] = sir_hawk
             register_agent("sir_hawkington", sir_hawk)
@@ -282,6 +287,13 @@ async def initialize_distributed_agents(redis_url: str = "redis://localhost:6379
         db_getter: Database session factory for agents that need database access
     """
     global _distributed_manager
+    
+    print(f"\n{'='*80}")
+    print(f"🔧 initialize_distributed_agents() called")
+    print(f"   redis_url: {redis_url}")
+    print(f"   db_getter: {db_getter}")
+    print(f"   db_getter type: {type(db_getter)}")
+    print(f"{'='*80}\n")
     
     if _distributed_manager is None:
         _distributed_manager = DistributedAgentManager(redis_url, db_getter=db_getter)
