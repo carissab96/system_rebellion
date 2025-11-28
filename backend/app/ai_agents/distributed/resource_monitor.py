@@ -256,9 +256,9 @@ class ResourceMonitor:
                         from .message_protocol import AgentMessage, MessageType, Priority
                         metrics_message = AgentMessage(
                             message_type=MessageType.RESOURCE_ALERT,
-                            sender=self.agent_name,
+                            from_agent=self.agent_name,
                             priority=Priority.LOW,
-                            data={
+                            payload={
                                 "type": "resource_metrics",
                                 "metrics": metrics.to_dict(),
                                 "timestamp": metrics.timestamp
