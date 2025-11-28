@@ -3,7 +3,7 @@
 // Built by: Dell-Sonnet - November 20, 2025
 // "Observing consciousness evolution in real-time"
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Stars } from '@react-three/drei';
 import { PrimaryNav } from '../components/navigation/PrimaryNav';
@@ -61,7 +61,9 @@ export const ObservatoryPage: React.FC = () => {
             />
 
             {/* Neural mesh with agents */}
-            <NeuralMesh onAgentClick={handleAgentClick} />
+            <Suspense fallback={null}>
+              <NeuralMesh onAgentClick={handleAgentClick} />
+            </Suspense>
           </Canvas>
 
           {/* TODO: Quick stats overlay when agent clicked */}
