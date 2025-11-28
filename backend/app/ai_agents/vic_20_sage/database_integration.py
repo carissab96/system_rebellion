@@ -106,15 +106,9 @@ class VIC20DatabaseIntegration:
         Store coordination decision with DUAL-WRITE pattern
         NO FAKE DATA: All fields are real or None
         
-        DUAL-WRITE FLOW:
-        1. Write structured data to VIC20MemoryBank
-        2. Write summary to CentralMemoryBank with foreign key link
-        3. Return the central memory_id for backwards compatibility
+        WRITE 1: VIC20MemoryBank (agent-specific table)
+        WRITE 2: CentralMemoryBank (shared table for all agents)
         
-        Args:
-            user_id: User identifier
-            decision: VIC20Decision instance with REAL structured data
-            
         Returns:
             central_memory_id for backwards compatibility
             
@@ -122,6 +116,10 @@ class VIC20DatabaseIntegration:
             ValueError: If required decision data is missing
             Exception: If database write fails
         """
+        print(f"\n{'='*80}")
+        print(f"🖥️ VIC-20 store_coordination_decision() CALLED for user {user_id}")
+        print(f"{'='*80}\n")
+        
         # VALIDATE REQUIRED DATA - NO FAKE FALLBACKS
         if not decision.decision_type:
             raise ValueError("🖥️💥 Missing decision_type - cannot store without real decision type")

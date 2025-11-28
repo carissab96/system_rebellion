@@ -21,6 +21,7 @@ from app.ai_agents.the_stick.distributed_stick import TheStickDistributed
 from app.ai_agents.vic_20_sage.distributed_vic20 import VIC20SageDistributed
 from app.api.endpoints.distributed_agents import register_agent
 from app.ai_agents.distributed.behavior_tracker import get_behavior_tracker
+from app.ai_agents.distributed.resource_monitor import ResourceMonitor
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +38,7 @@ class DistributedAgentManager:
         self.redis_client = None
         self.db_getter = db_getter
         self.agents: Dict[str, Any] = {}
+        self.resource_monitor: Optional[ResourceMonitor] = None
         self._initialized = False
     
     async def initialize(self):
@@ -100,6 +102,12 @@ class DistributedAgentManager:
             await tracker.start(snapshot_interval=2.0)
             logger.info("🔍 Behavior tracker started (research recording active)")
             
+            # 🚨 CRITICAL: Start resource monitor to feed metrics to agents
+            logger.info("📊 Starting resource monitor...")
+            self.resource_monitor = ResourceMonitor(self.redis_client)
+            await self.resource_monitor.start()
+            logger.info("✅ Resource monitor started - agents will now receive metrics!")
+            
             self._initialized = True
             logger.info(f"🌐 All {len(self.agents)} distributed agents initialized!")
             
@@ -113,6 +121,14 @@ class DistributedAgentManager:
             return
         
         logger.info("Shutting down distributed agents...")
+        
+        # Stop resource monitor
+        if self.resource_monitor:
+            try:
+                await self.resource_monitor.stop()
+                logger.info("📊 Resource monitor stopped")
+            except Exception as e:
+                logger.error(f"Error stopping resource monitor: {e}")
         
         # Stop behavior tracker
         try:
