@@ -28,6 +28,8 @@ from app.core.learning_helpers import (
 )
 
 from app.ai_agents.constants import AgentNames, PRIORITY_MAP
+from app.services.embedding_service import get_embedding_service, create_decision_text
+from app.services.vector_storage import get_vector_storage
 from app.ai_agents.sir_hawkington.data_types import HawkingtonDecision
 from app.ai_agents.sir_hawkington.constants import AGENT_NAME, HawkingtonEventTypes
 from app.utils.json_safety import to_json_safe
@@ -434,6 +436,47 @@ class HawkingtonDatabaseIntegration:
                 
                 session.add(central_memory)
                 await session.commit()
+                
+                # === WRITE 3: VECTOR EMBEDDING (NON-BLOCKING) ===
+                # Fire-and-forget vector write - doesn't block triage flow
+                try:
+                    decision_text = create_decision_text(
+                        agent_name=AGENT_NAME,
+                        decision_type="triage",
+                        description=f"Triage {triage_data.get('triage_severity', 'unknown')} severity",
+                        reasoning=triage_data.get('triage_reasoning', 'System triage assessment'),
+                        context={
+                            'priority': triage_data.get('priority', 3),
+                            'severity': triage_data.get('triage_severity'),
+                            'escalated': triage_data.get('escalated_to_vic20', False)
+                        }
+                    )
+                    
+                    embedding_service = get_embedding_service()
+                    embedding = await embedding_service.generate_embedding_async(decision_text)
+                    
+                    vector_storage = get_vector_storage()
+                    vector_storage.store_decision_vector_fire_and_forget(
+                        agent_name=AGENT_NAME,
+                        decision_type="triage",
+                        decision_text=decision_text,
+                        embedding=embedding,
+                        occurred_at=triage_data.get('timestamp', utc_now()),
+                        user_id=user_id,
+                        event_type=HawkingtonEventTypes.TRIAGE_COMPLETED.value,
+                        priority=triage_data.get('priority', 3),
+                        metadata=to_json_safe({
+                            'triage_severity': triage_data.get('triage_severity'),
+                            'escalated_to_vic20': triage_data.get('escalated_to_vic20', False),
+                            'monocle_state': triage_data.get('monocle_state')
+                        }),
+                        sql_memory_id=central_memory_id,
+                        confidence_score=triage_data.get('confidence_score'),
+                        decision_summary=f"Triage: {triage_data.get('triage_severity')}"
+                    )
+                    logger.debug(f"🔮 Queued vector embedding for triage {central_memory_id}")
+                except Exception as ve:
+                    logger.warning(f"⚠️ Vector embedding failed (non-critical): {ve}")
                 
                 logger.info(
                     f"🧐✨ DUAL-WRITE SUCCESS: Triage {triage_data.get('triage_severity')} stored in agent table "
