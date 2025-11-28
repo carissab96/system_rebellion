@@ -13,26 +13,53 @@ cd backend
 source venv/bin/activate
 ```
 
-## Step 3: Install Dependencies
+## Step 3: Install Dependencies (CPU-Only, No CUDA Bloat)
+
+**IMPORTANT:** We're doing CPU inference only. Skip the massive NVIDIA CUDA downloads.
+
 ```bash
+# Install PyTorch CPU-only first (way smaller, way faster)
+pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+# Then install sentence-transformers (will use CPU torch)
+pip install sentence-transformers
+```
+
+**Why CPU-only?**
+- Embedding generation is ~38ms on CPU (fast enough)
+- CUDA packages are 2-3GB+ of bloat we don't need
+- We're not training models, just doing inference
+- Saves hours of download time and GBs of disk space
+
+**If you already started the full install:**
+```bash
+# Kill it and start over
+Ctrl+C
+
+# Uninstall the bloat
+pip uninstall torch torchvision torchaudio -y
+
+# Install CPU-only version
+pip install torch --index-url https://download.pytorch.org/whl/cpu
 pip install sentence-transformers
 ```
 
 ## Step 4: Install pgvector PostgreSQL Extension
 
-### Option A: If you have sudo access
+### For Arch Linux (btw)
 ```bash
-# For PostgreSQL 16 (adjust version if different)
-sudo apt-get update
-sudo apt-get install postgresql-16-pgvector
-```
-
-### Option B: Check PostgreSQL version first
-```bash
+# Check PostgreSQL version
 psql --version
-# Then install matching version, e.g.:
-# sudo apt-get install postgresql-15-pgvector
-# sudo apt-get install postgresql-14-pgvector
+
+# Install pgvector from AUR
+yay -S pgvector
+# OR
+paru -S pgvector
+
+# If you don't have an AUR helper, manual install:
+git clone https://aur.archlinux.org/pgvector.git
+cd pgvector
+makepkg -si
 ```
 
 ## Step 5: Enable pgvector in Database
@@ -87,16 +114,21 @@ psql -U carissab -d system_rebellion
 
 ## Troubleshooting
 
-### If pgvector install fails:
+### If pgvector install fails (Arch):
 ```bash
 # Check PostgreSQL version
 psql --version
 
-# Search for available pgvector packages
-apt-cache search pgvector
+# Search AUR for pgvector
+yay -Ss pgvector
+# or
+paru -Ss pgvector
 
-# Install correct version
-sudo apt-get install postgresql-<version>-pgvector
+# Check if PostgreSQL is running
+sudo systemctl status postgresql
+
+# If pgvector build fails, install build dependencies
+sudo pacman -S base-devel postgresql-libs
 ```
 
 ### If setup_pgvector.py fails:
