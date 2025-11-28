@@ -110,7 +110,7 @@ class DistributedAgentManager:
             # 🚨 CRITICAL: Start resource monitor to feed metrics to agents
             logger.info("📊 Starting resource monitor...")
             from .communication import MessageBus
-            message_bus = MessageBus(self.redis_client)
+            message_bus = MessageBus(self.redis_client, agent_name="system_monitor")
             self.resource_monitor = ResourceMonitor(
                 agent_name="system_monitor",
                 message_bus=message_bus,
