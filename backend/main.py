@@ -215,19 +215,14 @@ async def lifespan(app: FastAPI):
                 
                 # Initialize AI Agents ONCE through AgentManager
                 import time
-                from app.core.database import AsyncSessionLocal
-                
-                # Create a database session factory for distributed agents
-                def db_session_factory():
-                    """Factory to create new database sessions for agent memory service"""
-                    session = AsyncSessionLocal()
-                    return session
+                from app.core.database import get_async_db
                 
                 # Initialize distributed agent consciousness system (Week 5 Task 5.4: Single unified system)
                 try:
                     redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
                     logger.info(f"🌐 Initializing distributed agent consciousness (Redis: {redis_url})...")
-                    await initialize_distributed_agents(redis_url, db_getter=db_session_factory)
+                    # Use get_async_db directly - it's an async generator that yields sessions
+                    await initialize_distributed_agents(redis_url, db_getter=get_async_db)
                     logger.info("✅ Distributed agents initialized:")
                     logger.info("  🧐 Sir Hawkington - CPU Monitor")
                     logger.info("  🐌💨 Terry the Meth Snail - Memory Monitor")
