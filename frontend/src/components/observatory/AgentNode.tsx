@@ -21,10 +21,10 @@ interface AgentNodeProps {
 // BACKEND IS SOURCE OF TRUTH - Use exact agent_name from API
 const AGENT_GEOMETRIES: Record<string, string> = {
   sir_hawkington: 'octahedron',    // 8 faces, aristocratic symmetry
-  vic_20_sage: 'box',               // Solid, foundational, retro (not registered yet)
-  terry_meth_snail: 'sphere',       // Speed, motion (elongated)
-  the_stick: 'cylinder',            // Literally a stick (not registered yet)
-  bob_hamster: 'group',             // Three overlapping spheres
+  vic_20_sage: 'box',               // Solid, foundational, retro
+  meth_snail: 'sphere',             // Speed, motion (backend: meth_snail)
+  the_stick: 'cylinder',            // Literally a stick
+  hamsters: 'group',                // Three overlapping spheres (backend: hamsters)
   quantum_shadow_people: 'icosahedron' // 20 faces, quantum complexity
 };
 
@@ -95,8 +95,8 @@ export const AgentNode: React.FC<AgentNodeProps> = ({
   };
 
   // Render hamsters as special case (3 spheres)
-  // BACKEND IS SOURCE OF TRUTH - backend returns 'bob_hamster'
-  if (agentName === 'bob_hamster') {
+  // BACKEND IS SOURCE OF TRUTH - backend returns 'hamsters'
+  if (agentName === 'hamsters') {
     return (
       <group position={position} onClick={onClick}>
         <Billboard position={[0, 0, 2]}>
