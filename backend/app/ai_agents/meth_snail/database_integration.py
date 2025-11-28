@@ -44,6 +44,8 @@ from app.core.learning_helpers import (
 )
 from app.utils.json_safety import to_json_safe
 from app.ai_agents.meth_snail.data_types import OptimizationDecision, ShellSpinIncident
+from app.services.embedding_service import get_embedding_service, create_decision_text
+from app.services.vector_storage import get_vector_storage
 
 logger = logging.getLogger("MethSnail.Database")
 

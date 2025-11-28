@@ -32,6 +32,8 @@ from app.core.learning_helpers import (
     hydrate_memory_bank_metadata
 )
 from app.utils.json_safety import to_json_safe
+from app.services.embedding_service import get_embedding_service, create_decision_text
+from app.services.vector_storage import get_vector_storage
 from .constants import AGENT_NAME, QSPEventTypes, QSPDecisionTypes, PRIORITY_MAP, QUANTUM_PHASES, NETWORK_THRESHOLDS
 from .data_types import QSPDecision, QSPDecisionType, QuantumPhaseState
 

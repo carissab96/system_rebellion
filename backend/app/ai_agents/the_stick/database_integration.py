@@ -30,6 +30,8 @@ from app.core.learning_helpers import (
     pin_memory, get_pinned_memories
 )
 from app.utils.json_safety import to_json_safe
+from app.services.embedding_service import get_embedding_service, create_decision_text
+from app.services.vector_storage import get_vector_storage
 
 from .data_types import (
     StickDecision, UserPattern, ComplianceViolation, 
