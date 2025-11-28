@@ -283,8 +283,10 @@ class VIC20DatabaseIntegration:
                 # === WRITE 3: VECTOR EMBEDDING (NON-BLOCKING) ===
                 # This is the KEY CHANGE - fire-and-forget vector write
                 # Does NOT block the SQL commit or agent decision flow
+                print(f"🔮🔮🔮 VIC-20 ATTEMPTING VECTOR WRITE FOR {memory_id} 🔮🔮🔮")
                 try:
                     # Create searchable text for embedding
+                    print(f"🔮 Step 1: Creating decision text...")
                     decision_text = create_decision_text(
                         agent_name=AGENT_NAME,
                         decision_type=decision.decision_type.value if hasattr(decision.decision_type, 'value') else str(decision.decision_type),
@@ -296,10 +298,13 @@ class VIC20DatabaseIntegration:
                             'affected_agents': list(decision.agent_actions.keys()) if decision.agent_actions else []
                         }
                     )
+                    print(f"🔮 Step 2: Getting embedding service...")
                     
                     # Generate embedding asynchronously
                     embedding_service = get_embedding_service()
+                    print(f"🔮 Step 3: Generating embedding (this may take 95s on first call)...")
                     embedding = await embedding_service.generate_embedding_async(decision_text)
+                    print(f"🔮 Step 4: Embedding generated! Storing vector...")
                     
                     # Store vector (fire-and-forget - doesn't block)
                     vector_storage = get_vector_storage()
@@ -321,10 +326,14 @@ class VIC20DatabaseIntegration:
                         confidence_score=decision.confidence_level,
                         decision_summary=f"Coordination: {decision.coordination_target}" if decision.coordination_target else None
                     )
+                    print(f"✅✅✅ VECTOR WRITE COMPLETE FOR {memory_id} ✅✅✅")
                     logger.debug(f"🔮 Queued vector embedding for decision {memory_id}")
                 except Exception as ve:
                     # Vector write failure doesn't break the decision flow
+                    print(f"❌❌❌ VECTOR WRITE FAILED: {ve} ❌❌❌")
                     logger.warning(f"⚠️ Vector embedding failed (non-critical): {ve}")
+                    import traceback
+                    traceback.print_exc()
                 
                 # Pin important coordination decisions
                 if priority >= 4:

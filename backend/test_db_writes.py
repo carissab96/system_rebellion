@@ -112,20 +112,34 @@ async def check_recent_writes():
             
             print()
             
-            # Check for writes in last 5 minutes
-            five_min_ago = datetime.now(timezone.utc) - timedelta(minutes=5)
+            # Check for recent writes (simpler query - just get latest timestamp)
+            print("⏰ RECENT ACTIVITY CHECK:")
             result = await conn.execute(text("""
-                SELECT COUNT(*) as recent_count
+                SELECT 
+                    agent_name,
+                    event_type,
+                    created_at
                 FROM central_memory_bank
-                WHERE created_at > :cutoff
-            """), {"cutoff": five_min_ago})
+                ORDER BY created_at DESC
+                LIMIT 5
+            """))
             
-            recent = result.fetchone()[0]
-            
-            if recent > 0:
-                print(f"✅ {recent} writes in last 5 minutes - SYSTEM IS ACTIVE")
+            recent_rows = result.fetchall()
+            if recent_rows:
+                print("  Most recent entries:")
+                for row in recent_rows:
+                    age = datetime.now(timezone.utc) - row[2]
+                    age_str = f"{age.total_seconds():.0f}s ago" if age.total_seconds() < 60 else f"{age.total_seconds()/60:.0f}m ago"
+                    print(f"    {row[0]:20s} | {row[1]:30s} | {age_str}")
+                
+                latest = recent_rows[0][2]
+                age = datetime.now(timezone.utc) - latest
+                if age.total_seconds() < 300:  # 5 minutes
+                    print(f"\n  ✅ SYSTEM IS ACTIVE (last write {age.total_seconds():.0f}s ago)")
+                else:
+                    print(f"\n  ⚠️  System may be idle (last write {age.total_seconds()/60:.0f}m ago)")
             else:
-                print(f"⚠️  NO writes in last 5 minutes - agents may not be making decisions")
+                print("  ❌ No entries found - database may be empty")
             
     except Exception as e:
         print(f"❌ Database check failed: {e}")
