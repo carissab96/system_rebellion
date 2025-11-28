@@ -55,3 +55,9 @@ backend/* .sql
 *.db
 *.sqlite
 backend/*.sql
+
+# Research logs (generated data)
+backend/logs/agent_events/*.jsonl
+backend/logs/agent_events/*.json
+backend/logs/behavior_snapshots/*.jsonl
+backend/logs/behavior_snapshots/*.json
