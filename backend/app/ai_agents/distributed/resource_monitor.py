@@ -251,7 +251,19 @@ class ResourceMonitor:
                     # Get current metrics
                     metrics = await self.get_current_metrics()
                     
-                    # Check thresholds
+                    # 🚨 ALWAYS publish metrics to agents (not just alerts)
+                    if self.message_bus:
+                        await self.message_bus.publish_message(
+                            "system.metrics",
+                            {
+                                "type": "resource_metrics",
+                                "metrics": metrics.to_dict(),
+                                "timestamp": metrics.timestamp
+                            }
+                        )
+                        self.logger.debug(f"Published metrics: CPU={metrics.cpu_percent}%, MEM={metrics.memory_percent}%")
+                    
+                    # Check thresholds (for alerts)
                     await self._check_thresholds(metrics)
                     
                     # Wait for next check
