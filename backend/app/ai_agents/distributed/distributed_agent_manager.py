@@ -63,16 +63,15 @@ class DistributedAgentManager:
             # Terry the Meth Snail - Memory Monitor
             terry = MethSnailDistributed(db_getter=self.db_getter)
             await terry.initialize_distributed(self.redis_client)
-            self.agents["terry_meth_snail"] = terry
-            register_agent("terry_meth_snail", terry)
+            self.agents["meth_snail"] = terry
+            register_agent("meth_snail", terry)
             logger.info("✅ Terry the Meth Snail initialized")
             
             # The Hamsters - Disk Monitor (Steve, Bob and Carl)
             hamsters = HamstersDistributed(db_getter=self.db_getter)
             await hamsters.initialize_distributed(self.redis_client)
-            # Keep bob_hamster as the key for backward compatibility
-            self.agents["bob_hamster"] = hamsters
-            register_agent("bob_hamster", hamsters)
+            self.agents["hamsters"] = hamsters
+            register_agent("hamsters", hamsters)
             logger.info("✅ The Hamsters initialized (Steve, Bob and Carl)")
             
             # Quantum Shadow People - Network Monitor
