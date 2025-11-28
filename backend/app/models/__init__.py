@@ -14,6 +14,9 @@ from .agent_memory_banks import HamstersMemoryBank
 from .agent_memory_banks import QuantumShadowPeopleMemoryBank
 from .agent_memory_banks import VIC20MemoryBank
 
+# Vector tables for semantic search
+from .vector_tables import AgentDecisionVectors, AgentPatternVectors, AgentInteractionVectors
+
 # Memory bank models
 # Ensure all models are imported and registered
 __all__ = [
@@ -25,4 +28,7 @@ __all__ = [
     
     # Agent-specific memory banks
     'SirHawkingtonMemoryBank', 'MethSnailMemoryBank', 'TheStickMemoryBank', 'HamstersMemoryBank', 'QuantumShadowPeopleMemoryBank', 'VIC20MemoryBank',
+    
+    # Vector tables
+    'AgentDecisionVectors', 'AgentPatternVectors', 'AgentInteractionVectors',
 ]
