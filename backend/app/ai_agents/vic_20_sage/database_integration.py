@@ -132,8 +132,12 @@ class VIC20DatabaseIntegration:
         
         # If db_getter is not available, return early (graceful degradation)
         if not self.db_getter:
+            print(f"❌❌❌ CRITICAL: db_getter is None! Database writes DISABLED! ❌❌❌")
             logger.warning("⚠️ Database not available - coordination decision not persisted")
             return str(uuid.uuid4())  # Return a fake ID for compatibility
+        
+        print(f"✅ db_getter exists: {self.db_getter}")
+        print(f"✅ About to write to database...")
         
         agent_memory_id = str(uuid.uuid4())
         memory_id = str(uuid.uuid4())
