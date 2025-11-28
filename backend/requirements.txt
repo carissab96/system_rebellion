@@ -173,6 +173,8 @@ wheel==0.45.1
     # via pip-tools
 yarl==1.20.1
     # via aiohttp
+sentence-transformers==5.1.2
+    # via -r requirements.in (vector embeddings for semantic search)
 
 # The following packages are considered to be unsafe in a requirements file:
 # pip
