@@ -40,7 +40,8 @@ export const AgentNode: React.FC<AgentNodeProps> = ({
   const meshRef = useRef<THREE.Mesh>(null);
   const glowRef = useRef<THREE.Mesh>(null);
 
-  const iconTexture = useLoader(THREE.TextureLoader, iconUrl);
+  // Only load texture if iconUrl is provided (prevents crash on empty string)
+  const iconTexture = iconUrl ? useLoader(THREE.TextureLoader, iconUrl) : null;
 
   // Parse color
   const colorObj = useMemo(() => new THREE.Color(color), [color]);
@@ -99,12 +100,14 @@ export const AgentNode: React.FC<AgentNodeProps> = ({
   if (agentName === 'hamsters') {
     return (
       <group position={position} onClick={onClick}>
-        <Billboard position={[0, 0, 2]}>
-          <mesh>
-            <planeGeometry args={[2.2, 2.2]} />
-            <meshBasicMaterial map={iconTexture} transparent />
-          </mesh>
-        </Billboard>
+        {iconTexture && (
+          <Billboard position={[0, 0, 2]}>
+            <mesh>
+              <planeGeometry args={[2.2, 2.2]} />
+              <meshBasicMaterial map={iconTexture} transparent />
+            </mesh>
+          </Billboard>
+        )}
         {/* Steve */}
         <mesh ref={meshRef} position={[-0.8, 0, 0]}>
           <sphereGeometry args={[0.6, 32, 32]} />
@@ -154,12 +157,14 @@ export const AgentNode: React.FC<AgentNodeProps> = ({
   // Standard single-geometry agents
   return (
     <group position={position} onClick={onClick}>
-      <Billboard position={[0, 0, 0]}>
-        <mesh ref={meshRef}>
-          <planeGeometry args={[2.5, 2.5]} />
-          <meshBasicMaterial map={iconTexture} transparent />
-        </mesh>
-      </Billboard>
+      {iconTexture && (
+        <Billboard position={[0, 0, 0]}>
+          <mesh ref={meshRef}>
+            <planeGeometry args={[2.5, 2.5]} />
+            <meshBasicMaterial map={iconTexture} transparent />
+          </mesh>
+        </Billboard>
+      )}
 
       {/* Glow effect behind icon */}
       <mesh ref={glowRef} position={[0, 0, -0.5]}>
