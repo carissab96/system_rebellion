@@ -18,13 +18,19 @@ import os
 async def check_recent_writes():
     """Check for recent database writes"""
     
-    # Get database URL
-    db_url = os.getenv("DB_URL") or os.getenv("DATABASE_URL") or "postgresql+asyncpg://carissab@192.168.1.127:5432/system_rebellion"
+    # Get database URL - try multiple sources
+    db_url = os.getenv("DB_URL") or os.getenv("DATABASE_URL")
+    
+    if not db_url:
+        # Default for Dell (localhost since we're running ON the Dell)
+        db_url = "postgresql+asyncpg://carissab@localhost:5432/system_rebellion"
     
     print("="*60)
     print("DATABASE WRITE CHECK")
     print("="*60)
-    print(f"Database: {db_url[:50]}...")
+    print(f"Database: {db_url}")
+    print()
+    print("Connecting...")
     print()
     
     engine = create_async_engine(db_url, echo=False)
@@ -123,10 +129,23 @@ async def check_recent_writes():
             
     except Exception as e:
         print(f"❌ Database check failed: {e}")
+        print()
+        print("Common issues:")
+        print("1. Database not running: sudo systemctl status postgresql")
+        print("2. Wrong password: Check .env file or use: psql -U carissab -d system_rebellion")
+        print("3. Wrong host: Are you on the Dell? Use localhost. On HP? Use 192.168.1.127")
+        print()
         import traceback
         traceback.print_exc()
     finally:
         await engine.dispose()
 
 if __name__ == "__main__":
-    asyncio.run(check_recent_writes())
+    try:
+        asyncio.run(check_recent_writes())
+    except KeyboardInterrupt:
+        print("\n\n👋 Interrupted by user")
+    except Exception as e:
+        print(f"\n\n💥 Fatal error: {e}")
+        import traceback
+        traceback.print_exc()
