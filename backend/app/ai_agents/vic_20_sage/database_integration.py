@@ -24,6 +24,8 @@ from app.core.learning_helpers import (
     get_pinned_memories, LearningTypes, MemoryTypes
 )
 from app.utils.json_safety import to_json_safe
+from app.services.embedding_service import get_embedding_service, create_decision_text
+from app.services.vector_storage import get_vector_storage
 
 from .constants import (
     AGENT_NAME, VIC20EventTypes, PRIORITY_MAP, COORDINATION_THRESHOLDS,
@@ -277,6 +279,52 @@ class VIC20DatabaseIntegration:
                 await session.commit()
                 await session.refresh(agent_memory)
                 await session.refresh(memory_entry)
+                
+                # === WRITE 3: VECTOR EMBEDDING (NON-BLOCKING) ===
+                # This is the KEY CHANGE - fire-and-forget vector write
+                # Does NOT block the SQL commit or agent decision flow
+                try:
+                    # Create searchable text for embedding
+                    decision_text = create_decision_text(
+                        agent_name=AGENT_NAME,
+                        decision_type=decision.decision_type.value if hasattr(decision.decision_type, 'value') else str(decision.decision_type),
+                        description=decision.coordination_target if decision.coordination_target else "Coordination decision",
+                        reasoning=decision.ancient_wisdom_principle if decision.ancient_wisdom_principle else "System coordination",
+                        context={
+                            'priority': priority,
+                            'event_type': VIC20EventTypes.COORDINATION_COMPLETED.value,
+                            'affected_agents': list(decision.agent_actions.keys()) if decision.agent_actions else []
+                        }
+                    )
+                    
+                    # Generate embedding asynchronously
+                    embedding_service = get_embedding_service()
+                    embedding = await embedding_service.generate_embedding_async(decision_text)
+                    
+                    # Store vector (fire-and-forget - doesn't block)
+                    vector_storage = get_vector_storage()
+                    vector_storage.store_decision_vector_fire_and_forget(
+                        agent_name=AGENT_NAME,
+                        decision_type=decision.decision_type.value if hasattr(decision.decision_type, 'value') else str(decision.decision_type),
+                        decision_text=decision_text,
+                        embedding=embedding,
+                        occurred_at=decision.timestamp,
+                        user_id=user_id,
+                        event_type=VIC20EventTypes.COORDINATION_COMPLETED.value,
+                        priority=priority,
+                        metadata=to_json_safe({
+                            'agents_involved': list(decision.agent_actions.keys()) if decision.agent_actions else [],
+                            'coordination_target': decision.coordination_target,
+                            'ancient_wisdom_applied': decision.ancient_wisdom_principle is not None
+                        }),
+                        sql_memory_id=memory_id,
+                        confidence_score=decision.confidence_level,
+                        decision_summary=f"Coordination: {decision.coordination_target}" if decision.coordination_target else None
+                    )
+                    logger.debug(f"🔮 Queued vector embedding for decision {memory_id}")
+                except Exception as ve:
+                    # Vector write failure doesn't break the decision flow
+                    logger.warning(f"⚠️ Vector embedding failed (non-critical): {ve}")
                 
                 # Pin important coordination decisions
                 if priority >= 4:
