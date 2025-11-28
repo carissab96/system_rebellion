@@ -6,11 +6,43 @@ SQLAlchemy models for pgvector-powered semantic search tables.
 These store embeddings of agent decisions, patterns, and interactions.
 """
 
-from sqlalchemy import Column, String, Integer, Float, DateTime, JSON, Index, text
+from sqlalchemy import Column, String, Integer, Float, DateTime, JSON, Index
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.types import UserDefinedType
 from app.core.base import Base
 from datetime import datetime, timezone
 import uuid
+
+
+class Vector(UserDefinedType):
+    """Custom SQLAlchemy type for pgvector"""
+    cache_ok = True
+    
+    def __init__(self, dim=384):
+        self.dim = dim
+    
+    def get_col_spec(self):
+        return f"vector({self.dim})"
+    
+    def bind_processor(self, dialect):
+        def process(value):
+            if value is None:
+                return value
+            # Convert list to pgvector format
+            if isinstance(value, list):
+                return f"[{','.join(str(x) for x in value)}]"
+            return value
+        return process
+    
+    def result_processor(self, dialect, coltype):
+        def process(value):
+            if value is None:
+                return value
+            # Parse pgvector format to list
+            if isinstance(value, str):
+                return [float(x) for x in value.strip('[]').split(',')]
+            return value
+        return process
 
 
 class AgentDecisionVectors(Base):
@@ -29,7 +61,7 @@ class AgentDecisionVectors(Base):
     decision_text = Column(String, nullable=False)  # Searchable text representation
     
     # Vector embedding (384 dimensions for all-MiniLM-L6-v2)
-    embedding = Column("embedding", text("vector(384)"), nullable=False)
+    embedding = Column(Vector(384), nullable=False)
     
     # Temporal data
     occurred_at = Column(DateTime(timezone=True), nullable=False, index=True)
@@ -82,7 +114,7 @@ class AgentPatternVectors(Base):
     pattern_text = Column(String, nullable=False)  # Searchable text representation
     
     # Vector embedding
-    embedding = Column("embedding", text("vector(384)"), nullable=False)
+    embedding = Column(Vector(384), nullable=False)
     
     # Temporal data
     first_observed = Column(DateTime(timezone=True), nullable=False)
@@ -137,7 +169,7 @@ class AgentInteractionVectors(Base):
     interaction_text = Column(String, nullable=False)  # Searchable text representation
     
     # Vector embedding
-    embedding = Column("embedding", text("vector(384)"), nullable=False)
+    embedding = Column(Vector(384), nullable=False)
     
     # Temporal data
     occurred_at = Column(DateTime(timezone=True), nullable=False, index=True)
