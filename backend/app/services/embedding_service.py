@@ -42,12 +42,23 @@ class EmbeddingService:
     
     def __init__(self):
         """Initialize the embedding model (lazy loading)."""
+        # Don't load model in __init__ - load on first use
+        # This prevents backend startup crashes if model loading fails
+        pass
+    
+    def _ensure_model_loaded(self):
+        """Lazy load the model on first use with error handling."""
         if self._model is None:
-            logger.info(f"🔮 Loading embedding model: {self._model_name}")
-            start = datetime.now()
-            self._model = SentenceTransformer(self._model_name)
-            load_time = (datetime.now() - start).total_seconds()
-            logger.info(f"✅ Embedding model loaded in {load_time:.2f}s")
+            try:
+                logger.info(f"🔮 Loading embedding model: {self._model_name}")
+                start = datetime.now()
+                self._model = SentenceTransformer(self._model_name)
+                load_time = (datetime.now() - start).total_seconds()
+                logger.info(f"✅ Embedding model loaded in {load_time:.2f}s")
+            except Exception as e:
+                logger.error(f"❌ Failed to load embedding model: {e}")
+                logger.warning("⚠️ Vector embeddings will be disabled - SQL writes will continue normally")
+                raise RuntimeError(f"Embedding model failed to load: {e}")
     
     @property
     def model_name(self) -> str:
@@ -69,8 +80,10 @@ class EmbeddingService:
         Returns:
             List of floats (384 dimensions)
         """
+        self._ensure_model_loaded()
+        
         if not text or not text.strip():
-            logger.warning("Empty text provided for embedding")
+            # Return zero vector for empty text
             return [0.0] * self._dimensions
         
         try:
@@ -90,6 +103,8 @@ class EmbeddingService:
         Returns:
             List of embeddings
         """
+        self._ensure_model_loaded()
+        
         if not texts:
             return []
         
@@ -110,7 +125,9 @@ class EmbeddingService:
         Returns:
             List of floats (384 dimensions)
         """
-        # Run in thread pool to avoid blocking event loop
+        self._ensure_model_loaded()
+        
+        # Run in thread pool to avoid blocking
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self.generate_embedding, text)
     
