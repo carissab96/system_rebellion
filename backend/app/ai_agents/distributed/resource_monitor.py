@@ -264,8 +264,19 @@ class ResourceMonitor:
                                 "timestamp": metrics.timestamp
                             }
                         )
+                        
+                        print(f"\n{'='*80}")
+                        print(f"📊 RESOURCE MONITOR PUBLISHING METRICS")
+                        print(f"   Message Type: {metrics_message.message_type}")
+                        print(f"   From Agent: {metrics_message.from_agent}")
+                        print(f"   CPU: {metrics.cpu_percent}%")
+                        print(f"   Memory: {metrics.memory_percent}%")
+                        print(f"   Message ID: {metrics_message.message_id}")
+                        print(f"{'='*80}\n")
+                        
                         # Let MessageBus route to correct channel (agents:resources:alerts)
-                        await self.message_bus.publish(metrics_message)
+                        result = await self.message_bus.publish(metrics_message)
+                        print(f"✅ Publish result: {result}\n")
                         self.logger.info(f"📊 Published metrics: CPU={metrics.cpu_percent}%, MEM={metrics.memory_percent}%")
                     
                     # Check thresholds (for alerts)

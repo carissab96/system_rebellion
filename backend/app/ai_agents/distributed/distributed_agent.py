@@ -261,6 +261,18 @@ class DistributedAgent(BaseAIAgent):
         Args:
             message: Resource alert message
         """
+        print(f"\n{'='*80}")
+        print(f"🎯 {self.agent_name.upper()} RECEIVED RESOURCE ALERT!")
+        print(f"   From: {message.from_agent}")
+        print(f"   Message Type: {message.message_type}")
+        print(f"   Payload Type: {message.payload.get('type')}")
+        print(f"   Message ID: {message.message_id}")
+        if message.payload.get('metrics'):
+            metrics = message.payload.get('metrics', {})
+            print(f"   CPU: {metrics.get('cpu_percent')}%")
+            print(f"   Memory: {metrics.get('memory_percent')}%")
+        print(f"{'='*80}\n")
+        
         payload = message.payload
         self.logger.warning(
             f"Resource alert from {message.from_agent}: "
