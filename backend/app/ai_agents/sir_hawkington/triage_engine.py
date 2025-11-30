@@ -548,27 +548,41 @@ class SirHawkingtonTriageEngine(AgentInstrumentationMixin, TriageEngineWithRedis
                 user_id=user_id
             )
             
-            # Import here to avoid circular dependency
-            from ..distributed.distributed_agent_manager import get_distributed_manager
+            # 🔧 CIRCULAR IMPORT FIX: Import inside try block to avoid module-level circular import
+            try:
+                from ..distributed.distributed_agent_manager import get_distributed_manager
+                manager = get_distributed_manager()
+                
+                # Process through distributed agents if available
+                if manager and manager._initialized:
+                    agent_results = await manager.process_metrics_through_triage_engine(
+                        metrics_data, 
+                        user_context={'routed_by': 'sir_hawkington_triage', 'triage_severity': 'normal'}
+                    )
+                    
+                    return {
+                        'agent': 'agent_manager_delegation',
+                        'status': 'success',
+                        'result': {
+                            'message': '🧐📏 Normal operations - routed to Agent Manager for full processing',
+                            'agent_processing': agent_results.get('agent_processing', {}),
+                            'processed_agents': agent_results.get('agent_processing', {}).get('successful_agents', [])
+                        },
+                        'routing_reason': 'Normal operations - Agent Manager delegation'
+                    }
+            except ImportError as ie:
+                self.logger.warning(f"🧐⚠️ Could not import distributed manager (circular import): {ie}")
+            except Exception as e:
+                self.logger.error(f"🧐💥 Error in agent manager delegation: {e}")
             
-            manager = get_distributed_manager()
-            
-            # Process through distributed agents if available
-            if manager and manager._initialized:
-                agent_results = await manager.process_metrics_through_triage_engine(
-                    metrics_data, 
-                user_context={'routed_by': 'sir_hawkington_triage', 'triage_severity': 'normal'}
-            )
-            
+            # Fallback if distributed manager not available
             return {
-                'agent': 'agent_manager_delegation',
+                'agent': 'triage_normal_operations',
                 'status': 'success',
                 'result': {
-                    'message': '🧐📏 Normal operations - routed to Agent Manager for full processing',
-                    'agent_processing': agent_results.get('agent_processing', {}),
-                    'processed_agents': agent_results.get('agent_processing', {}).get('successful_agents', [])
+                    'message': '🧐📏 Normal operations - distributed agents not available',
                 },
-                'routing_reason': 'Normal operations - Agent Manager delegation'
+                'routing_reason': 'Normal operations - fallback mode'
             }
             
         except Exception as e:
