@@ -13,14 +13,6 @@ import logging
 from typing import Dict, Any, Optional
 
 from app.core.redis import get_redis_client
-from app.ai_agents.sir_hawkington.distributed_hawkington import SirHawkingtonDistributed
-from app.ai_agents.meth_snail.distributed_meth_snail import MethSnailDistributed
-from app.ai_agents.hamsters.distributed_hamsters import HamstersDistributed
-from app.ai_agents.quantum_shadow_people.distributed_qsp import QuantumShadowPeopleDistributed
-from app.ai_agents.the_stick.distributed_stick import TheStickDistributed
-from app.ai_agents.vic_20_sage.distributed_vic20 import VIC20SageDistributed
-from app.api.endpoints.distributed_agents import register_agent
-from app.ai_agents.distributed.behavior_tracker import get_behavior_tracker
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +38,17 @@ class DistributedAgentManager:
             return
         
         try:
+            # 🔧 CIRCULAR IMPORT FIX: Import agents here, not at module level
+            # This breaks the circular dependency chain
+            from app.ai_agents.sir_hawkington.distributed_hawkington import SirHawkingtonDistributed
+            from app.ai_agents.meth_snail.distributed_meth_snail import MethSnailDistributed
+            from app.ai_agents.hamsters.distributed_hamsters import HamstersDistributed
+            from app.ai_agents.quantum_shadow_people.distributed_qsp import QuantumShadowPeopleDistributed
+            from app.ai_agents.the_stick.distributed_stick import TheStickDistributed
+            from app.ai_agents.vic_20_sage.distributed_vic20 import VIC20SageDistributed
+            from app.api.endpoints.distributed_agents import register_agent
+            from app.ai_agents.distributed.behavior_tracker import get_behavior_tracker
+            
             # Get Redis client
             logger.info(f"Connecting to Redis at {self.redis_url}")
             self.redis_client = await get_redis_client()
