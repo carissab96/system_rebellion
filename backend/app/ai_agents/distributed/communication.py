@@ -79,10 +79,13 @@ class MessageBus:
             # Subscribe to broadcast channel
             await self.subscribe(RedisChannels.broadcast())
             
+            # Subscribe to resource alerts channel (for system metrics)
+            await self.subscribe(RedisChannels.resource_alerts())
+            
             # Start listener task
             self._listener_task = asyncio.create_task(self._listen_loop())
             
-            self.logger.info(f"Message bus started for {self.agent_name}")
+            self.logger.info(f"Message bus started for {self.agent_name} - subscribed to agent-specific, broadcast, and resource alerts")
         except Exception as e:
             self.logger.error(f"Failed to start message bus: {e}")
             self._running = False
