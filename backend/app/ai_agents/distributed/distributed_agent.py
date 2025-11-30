@@ -54,6 +54,7 @@ class DistributedAgent(BaseAIAgent):
         monitored_resources: Optional[List[ResourceType]] = None,
         resource_check_interval: float = 5.0,
         heartbeat_interval: float = 30.0,
+        enable_resource_monitor: bool = False,  # NEW: Default to False
         version: str = "2.0"
     ):
         """
@@ -67,6 +68,7 @@ class DistributedAgent(BaseAIAgent):
             monitored_resources: Resources to monitor (None = all)
             resource_check_interval: Seconds between resource checks
             heartbeat_interval: Seconds between heartbeats
+            enable_resource_monitor: Enable resource monitoring (default False)
             version: Agent version
         """
         super().__init__(agent_name, version, agent_role)
@@ -82,13 +84,17 @@ class DistributedAgent(BaseAIAgent):
             personality_traits=personality_traits
         )
         
-        # Initialize resource monitor
-        self.resource_monitor = ResourceMonitor(
-            agent_name=agent_name,
-            message_bus=self.comm_hub.message_bus,
-            monitored_resources=monitored_resources,
-            check_interval=resource_check_interval
-        )
+        # Initialize resource monitor (only if enabled)
+        self.enable_resource_monitor = enable_resource_monitor
+        if enable_resource_monitor:
+            self.resource_monitor = ResourceMonitor(
+                agent_name=agent_name,
+                message_bus=self.comm_hub.message_bus,
+                monitored_resources=monitored_resources,
+                check_interval=resource_check_interval
+            )
+        else:
+            self.resource_monitor = None
         
         # Heartbeat configuration
         self.heartbeat_interval = heartbeat_interval
@@ -114,11 +120,15 @@ class DistributedAgent(BaseAIAgent):
         # Register message handlers
         self._register_default_handlers()
         
-        # Register callback for own resource alerts
-        self.resource_monitor.register_alert_callback(self._handle_own_resource_alert)
-        
-        # Start resource monitoring
-        await self.resource_monitor.start()
+        # Start resource monitoring (only if enabled)
+        if self.resource_monitor:
+            # Register callback for own resource alerts
+            self.resource_monitor.register_alert_callback(self._handle_own_resource_alert)
+            # Start monitoring
+            await self.resource_monitor.start()
+            self.logger.info(f"📊 Resource monitoring enabled for {self.agent_name}")
+        else:
+            self.logger.info(f"🎯 No resource monitoring for {self.agent_name} (receives from hierarchy)")
         
         # Start heartbeat
         self._heartbeat_task = asyncio.create_task(self._heartbeat_loop())
@@ -147,8 +157,9 @@ class DistributedAgent(BaseAIAgent):
             except asyncio.CancelledError:
                 pass
         
-        # Stop resource monitoring
-        await self.resource_monitor.stop()
+        # Stop resource monitoring (if enabled)
+        if self.resource_monitor:
+            await self.resource_monitor.stop()
         
         # Shutdown communication hub (saves state, stops message bus)
         await self.comm_hub.shutdown()
@@ -373,7 +384,7 @@ class DistributedAgent(BaseAIAgent):
             Status dictionary
         """
         state = self.comm_hub.get_state()
-        metrics = self.resource_monitor.get_last_metrics()
+        metrics = self.resource_monitor.get_last_metrics() if self.resource_monitor else None
         comm_stats = self.comm_hub.get_stats()
         
         status = {
@@ -388,7 +399,7 @@ class DistributedAgent(BaseAIAgent):
             "total_decisions": state.total_decisions if state else 0,
             "error_count": state.error_count if state else 0,
             "communication": comm_stats,
-            "resource_monitoring": self.resource_monitor.get_stats()
+            "resource_monitoring": self.resource_monitor.get_stats() if self.resource_monitor else None
         }
         
         # Add current resource metrics if available
@@ -471,8 +482,11 @@ class DistributedAgent(BaseAIAgent):
     
     def get_resource_metrics(self) -> Optional[ResourceMetrics]:
         """Get current resource metrics"""
-        return self.resource_monitor.get_last_metrics()
+        return self.resource_monitor.get_last_metrics() if self.resource_monitor else None
     
     def set_resource_threshold(self, resource_type: ResourceType, threshold: float):
         """Set resource alert threshold"""
-        self.resource_monitor.set_threshold(resource_type, threshold)
+        if self.resource_monitor:
+            self.resource_monitor.set_threshold(resource_type, threshold)
+        else:
+            self.logger.warning(f"Cannot set threshold - resource monitoring not enabled for {self.agent_name}")
