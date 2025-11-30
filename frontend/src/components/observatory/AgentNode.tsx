@@ -17,23 +17,11 @@ interface AgentNodeProps {
   onClick?: () => void;
 }
 
-// Agent-specific geometry types
-// BACKEND IS SOURCE OF TRUTH - Use exact agent_name from API
-const AGENT_GEOMETRIES: Record<string, string> = {
-  sir_hawkington: 'octahedron',    // 8 faces, aristocratic symmetry
-  vic_20_sage: 'box',               // Solid, foundational, retro
-  meth_snail: 'sphere',             // Speed, motion (backend: meth_snail)
-  the_stick: 'cylinder',            // Literally a stick
-  hamsters: 'group',                // Three overlapping spheres (backend: hamsters)
-  quantum_shadow_people: 'icosahedron' // 20 faces, quantum complexity
-};
-
 export const AgentNode: React.FC<AgentNodeProps> = ({
   agentName,
   position,
   color,
   isActive,
-  health,
   iconUrl,
   onClick
 }) => {
@@ -69,31 +57,6 @@ export const AgentNode: React.FC<AgentNodeProps> = ({
   });
 
   // Get geometry based on agent type
-  const renderGeometry = () => {
-    const geometryType = AGENT_GEOMETRIES[agentName as keyof typeof AGENT_GEOMETRIES] || 'sphere';
-
-    switch (geometryType) {
-      case 'octahedron':
-        return <octahedronGeometry args={[1, 0]} />;
-      case 'box':
-        return <boxGeometry args={[1.5, 1.5, 1.5]} />;
-      case 'sphere':
-        return <sphereGeometry args={[1, 32, 32]} />;
-      case 'cylinder':
-        return <cylinderGeometry args={[0.3, 0.3, 2, 16]} />;
-      case 'icosahedron':
-        return <icosahedronGeometry args={[1, 0]} />;
-      case 'group':
-        // Hamsters: Three overlapping spheres
-        return (
-          <>
-            <sphereGeometry args={[0.7, 32, 32]} />
-          </>
-        );
-      default:
-        return <sphereGeometry args={[1, 32, 32]} />;
-    }
-  };
 
   // Render hamsters as special case (3 spheres)
   // BACKEND IS SOURCE OF TRUTH - backend returns 'hamsters'
