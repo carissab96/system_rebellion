@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'backend'))
 
 from app.core.redis import get_redis_client
 from app.ai_agents.distributed.distributed_agent_manager import DistributedAgentManager
-from app.database import get_async_db
+from app.core.database import get_async_db
 
 
 async def test_phase2():
