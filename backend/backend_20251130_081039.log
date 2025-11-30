@@ -1,0 +1,1 @@
+./run_with_logging.sh: line 13: uvicorn: command not found
