@@ -41,6 +41,12 @@ class MessageType(Enum):
     COORDINATION_REQUEST = "coordination_request"
     COORDINATION_UPDATE = "coordination_update"
     
+    # Hierarchy-specific (Hawk → VIC-20 → Specialists → Stick)
+    TRIAGE_ALERT = "triage_alert"              # Hawk → VIC-20
+    RECOMMENDED_FIX = "recommended_fix"        # VIC-20 → Specialists
+    ACTION_REPORT = "action_report"            # Specialists → VIC-20
+    DECISION_LOG = "decision_log"              # Everyone → The Stick (CC)
+    
     # Memory and learning
     MEMORY_SHARE = "memory_share"
     PATTERN_DISCOVERED = "pattern_discovered"

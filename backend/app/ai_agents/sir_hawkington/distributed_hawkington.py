@@ -88,10 +88,14 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
             "trust_level": 0.6  # MEDIUM - Aristocratic wisdom
         }
         
-        # Resource monitoring configuration
-        # Sir Hawkington monitors CPU usage (befitting his role as triage commander)
+        # 🎯 HIERARCHY: Sir Hawkington monitors ALL system metrics (sole system monitor)
+        # As triage commander, he assesses all resources and routes to appropriate specialists
         self.resource_thresholds = {
-            ResourceType.CPU: 70.0,  # Alert at 70% CPU
+            ResourceType.CPU: 70.0,       # Alert at 70% CPU → route to Terry
+            ResourceType.MEMORY: 75.0,    # Alert at 75% Memory → route to Terry
+            ResourceType.DISK: 85.0,      # Alert at 85% Disk → route to Hamsters
+            ResourceType.NETWORK: 80.0,   # Alert at 80% Network → route to QSP
+            ResourceType.SWAP: 50.0,      # Alert at 50% Swap → route to Terry
         }
         
         # Week 4 System Integration
@@ -121,8 +125,14 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
         
         This extends the base initialization to also enable triage broadcasting.
         """
-        # Call parent initialization (subscribes to standard channels)
-        await super().initialize_distributed(redis_client)
+        # 🎯 HIERARCHY: Enable resource monitoring with fast check interval (5s)
+        # Hawk is the ONLY agent monitoring system metrics
+        await super().initialize_distributed(
+            redis_client,
+            enable_resource_monitoring=True,  # ONLY Hawk has this True
+            heartbeat_interval=30,
+            resource_check_interval=5  # Check every 5 seconds
+        )
         
         # Initialize Week 4 systems
         self.coordination_manager = get_coordination_manager()
@@ -282,12 +292,15 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
     
     async def _handle_resource_alert(self, alert):
         """
-        Handle CPU resource alerts with aristocratic grace.
+        🎯 TRIAGE LOGIC: Sir Hawkington's primary role as system monitor.
         
-        When CPU usage is high, Sir Hawkington takes action:
-        - Logs the alert with distinguished concern
-        - Records the incident in decision history
-        - May adjust system behavior if critical
+        As the sole system monitor, Hawk:
+        1. Receives alerts for ALL resources (CPU, Memory, Disk, Network, Swap)
+        2. Assesses severity and confidence
+        3. Routes to VIC-20 for coordination when thresholds met
+        4. CCs The Stick for pattern learning
+        
+        This is the entry point for the entire hierarchy.
         
         Args:
             alert: ResourceAlert from the monitor
@@ -295,81 +308,56 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
         severity = alert.payload['severity']
         current_value = alert.payload['current_value']
         threshold = alert.payload['threshold']
+        resource_type = alert.payload.get('resource_type', 'unknown')
         
         logger.warning(
-            f"🧐⚠️ Sir Hawkington observes elevated CPU usage: "
+            f"🧐⚠️ Sir Hawkington observes elevated {resource_type.upper()} usage: "
             f"{current_value:.1f}% (threshold: {threshold:.1f}%) - "
             f"Severity: {severity}"
         )
         
-        # Record the resource alert as a decision
+        # 🎯 TRIAGE STEP 1: Assess severity and confidence
+        confidence = self._assess_confidence(current_value, threshold, severity)
+        should_escalate = self._should_escalate_to_vic20(severity, confidence)
+        
+        logger.info(
+            f"🧐🎯 Triage assessment: severity={severity}, confidence={confidence:.2f}, "
+            f"escalate_to_vic20={should_escalate}"
+        )
+        
+        # 🎯 TRIAGE STEP 2: Log triage decision (CC The Stick)
         if self.is_distributed:
-            await self.make_distributed_decision(
-                decision_type="resource_alert_cpu",
+            triage_decision = await self.make_distributed_decision(
+                decision_type=f"triage_{resource_type}",
                 input_data={
-                    "resource_type": "cpu",
+                    "resource_type": resource_type,
                     "current_value": current_value,
                     "threshold": threshold,
                     "severity": severity
                 },
-                confidence=1.0,  # We're certain about resource measurements
-                reasoning=f"CPU usage at {current_value:.1f}% exceeds threshold of {threshold:.1f}%"
+                output_data={
+                    "confidence": confidence,
+                    "should_escalate": should_escalate,
+                    "monocle_state": self.current_monocle_state.value if hasattr(self, 'current_monocle_state') else "polished"
+                },
+                confidence=confidence,
+                reasoning=f"{resource_type.upper()} at {current_value:.1f}% exceeds threshold {threshold:.1f}%"
             )
+            
+            # CC The Stick for pattern learning
+            await self._cc_the_stick("triage_decision", triage_decision)
         
-        # If critical or emergency, take action
-        if severity in ["critical", "emergency"]:
-            logger.warning(
-                "🧐💥 CRITICAL CPU USAGE DETECTED! "
-                "Sir Hawkington adjusts his monocle with grave concern..."
+        # 🎯 TRIAGE STEP 3: Route to VIC-20 if threshold met
+        if should_escalate and self.is_distributed:
+            logger.info(f"🧐📨 Escalating {resource_type} alert to VIC-20 for coordination...")
+            
+            await self._send_triage_alert_to_vic20(
+                resource_type=resource_type,
+                current_value=current_value,
+                threshold=threshold,
+                severity=severity,
+                confidence=confidence
             )
-            
-            # Broadcast critical resource alert to other agents
-            if self.is_distributed:
-                await self.broadcast_to_agents(
-                    message_type=MessageType.RESOURCE_ALERT,
-                    payload={
-                        "resource_type": "cpu",
-                        "current_value": current_value,
-                        "threshold": threshold,
-                        "severity": "critical",
-                        "action_required": True,
-                        "commander": "sir_hawkington"
-                    },
-                    priority=Priority.CRITICAL
-                )
-            
-            # REAL CPU throttling (Task 4.1 Enhanced)
-            logger.info("🧐⚙️ Initiating aristocratic system throttling with distinguished grace...")
-            
-            throttle_result = await SystemActions.throttle_cpu_intensive_tasks()
-            
-            if throttle_result['success']:
-                logger.info(
-                    f"🧐✅ System throttled with DISTINCTION! CPU: {throttle_result['cpu_before']:.1f}% → "
-                    f"{throttle_result['cpu_after']:.1f}%. Improvement: {throttle_result['improvement']:.1f}%"
-                )
-                logger.info(f"🧐⚙️ Actions taken: {', '.join(throttle_result['actions_taken'])}")
-                
-                # Record successful throttling
-                if self.is_distributed:
-                    await self.make_distributed_decision(
-                        decision_type="cpu_throttle_completed",
-                        input_data={
-                            "cpu_before": throttle_result['cpu_before'],
-                            "trigger": "critical_cpu"
-                        },
-                        output_data={
-                            "cpu_after": throttle_result['cpu_after'],
-                            "improvement": throttle_result['improvement'],
-                            "improvement_percent": throttle_result['improvement_percent'],
-                            "monocle_state": "polished",
-                            "aristocratic_approval": "granted"
-                        },
-                        confidence=1.0,
-                        reasoning="Critical CPU usage addressed with aristocratic efficiency"
-                    )
-            else:
-                logger.error(f"🧐❌ CPU throttling failed: {throttle_result.get('error', 'Unknown error')}")
     
     async def _coordination_capability(
         self,
@@ -581,8 +569,99 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
             f"monocle={monocle} "
             f"alerts={self.total_alerts_sent}(prevented={self.cooldown_prevented_alerts}) "
             f"yeets={len(self.monocle_yeet_incidents)} "
-            f"| {dist_status}>"
+            f"status={dist_status}>"
         )
+    
+    # 🎯 TRIAGE HELPER METHODS
+    
+    def _assess_confidence(self, current_value: float, threshold: float, severity: str) -> float:
+        """
+        Assess confidence in the alert based on how far over threshold we are.
+        
+        Returns confidence score 0.0-1.0
+        """
+        overage_percent = ((current_value - threshold) / threshold) * 100
+        
+        if overage_percent < 5:
+            return 0.6  # Just over threshold
+        elif overage_percent < 15:
+            return 0.8  # Moderately over
+        else:
+            return 1.0  # Significantly over
+    
+    def _should_escalate_to_vic20(self, severity: str, confidence: float) -> bool:
+        """
+        Determine if alert should be escalated to VIC-20 for coordination.
+        
+        Escalate if:
+        - High severity with good confidence
+        - Critical or emergency severity (always)
+        """
+        if severity in ["critical", "emergency"]:
+            return True
+        if severity == "high" and confidence >= 0.7:
+            return True
+        return False
+    
+    async def _send_triage_alert_to_vic20(
+        self,
+        resource_type: str,
+        current_value: float,
+        threshold: float,
+        severity: str,
+        confidence: float
+    ):
+        """
+        Send triage alert to VIC-20 for coordination.
+        
+        This is the key handoff in the hierarchy: Hawk → VIC-20
+        """
+        triage_alert = AgentMessage(
+            message_type=MessageType.TRIAGE_ALERT,
+            from_agent="sir_hawkington",
+            to_agent="vic_20_sage",
+            priority=Priority.HIGH if severity in ["critical", "emergency"] else Priority.NORMAL,
+            payload={
+                "resource_type": resource_type,
+                "current_value": current_value,
+                "threshold": threshold,
+                "severity": severity,
+                "confidence": confidence,
+                "triage_commander": "sir_hawkington",
+                "timestamp": str(self._get_current_time()) if hasattr(self, '_get_current_time') else None
+            }
+        )
+        
+        # Send directly to VIC-20
+        await self._comm_hub.send_message(triage_alert)
+        
+        logger.info(
+            f"🧐📨 Triage alert sent to VIC-20: {resource_type} at {current_value:.1f}% "
+            f"(severity={severity}, confidence={confidence:.2f})"
+        )
+    
+    async def _cc_the_stick(self, decision_type: str, decision_data: Dict[str, Any]):
+        """
+        CC The Stick on all triage decisions for pattern learning.
+        
+        The Stick receives ALL decisions for learning and logging.
+        """
+        decision_log = AgentMessage(
+            message_type=MessageType.DECISION_LOG,
+            from_agent="sir_hawkington",
+            to_agent="the_stick",
+            priority=Priority.LOW,  # Logging is low priority
+            payload={
+                "decision_type": decision_type,
+                "decision_data": decision_data,
+                "source_agent": "sir_hawkington",
+                "timestamp": str(self._get_current_time()) if hasattr(self, '_get_current_time') else None
+            }
+        )
+        
+        await self._comm_hub.send_message(decision_log)
+        
+        logger.debug(f"🧐📋 Decision logged to The Stick: {decision_type}")
 
 
 # Convenience function for backward compatibility
