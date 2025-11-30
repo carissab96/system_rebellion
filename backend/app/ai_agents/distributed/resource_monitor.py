@@ -264,8 +264,9 @@ class ResourceMonitor:
                                 "timestamp": metrics.timestamp
                             }
                         )
-                        await self.message_bus.publish(metrics_message, channel="system.metrics")
-                        self.logger.debug(f"Published metrics: CPU={metrics.cpu_percent}%, MEM={metrics.memory_percent}%")
+                        # Let MessageBus route to correct channel (agents:resources:alerts)
+                        await self.message_bus.publish(metrics_message)
+                        self.logger.info(f"📊 Published metrics: CPU={metrics.cpu_percent}%, MEM={metrics.memory_percent}%")
                     
                     # Check thresholds (for alerts)
                     await self._check_thresholds(metrics)
