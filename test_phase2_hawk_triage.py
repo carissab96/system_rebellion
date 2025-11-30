@@ -33,7 +33,7 @@ async def test_phase2():
             sys.path.insert(0, backend_path)
         
         # Import after path is set
-        from app.database import get_async_db
+        from app.core.database import get_async_db
         
         # Import manager last to avoid circular imports
         from app.ai_agents.distributed.distributed_agent_manager import DistributedAgentManager
