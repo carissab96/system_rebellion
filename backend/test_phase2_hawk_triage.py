@@ -14,6 +14,13 @@ Verifies:
 import asyncio
 import sys
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env.development
+env_path = os.path.join(os.path.dirname(__file__), '..', '.env.development')
+load_dotenv(env_path)
+print(f"📝 Loaded environment from: {env_path}")
+print(f"📡 Redis URL: {os.getenv('REDIS_URL', 'NOT SET')}")
 
 # Add backend to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'backend'))
