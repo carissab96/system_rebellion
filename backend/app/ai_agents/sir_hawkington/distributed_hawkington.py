@@ -90,10 +90,10 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
         
         # 🎯 HIERARCHY: Sir Hawkington monitors ALL system metrics (sole system monitor)
         # As triage commander, he assesses all resources and routes to appropriate specialists
-        # 🧪 TESTING: Temporarily lowered memory threshold to 50% to trigger flow
+        # 🧪 TESTING: Temporarily lowered memory threshold to 20% to DEFINITELY trigger flow
         self.resource_thresholds = {
             ResourceType.CPU: 70.0,       # Alert at 70% CPU → route to Terry
-            ResourceType.MEMORY: 50.0,    # 🧪 TESTING: Lowered from 75% to trigger flow
+            ResourceType.MEMORY: 20.0,    # 🧪 TESTING: Lowered from 75% to 20% - WILL TRIGGER!
             ResourceType.DISK: 85.0,      # Alert at 85% Disk → route to Hamsters
             ResourceType.NETWORK: 80.0,   # Alert at 80% Network → route to QSP
             ResourceType.SWAP: 50.0,      # Alert at 50% Swap → route to Terry
