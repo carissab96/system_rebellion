@@ -16,18 +16,30 @@ import sys
 import os
 from dotenv import load_dotenv
 
-# Load environment variables from .env.development
+# CRITICAL: Load environment BEFORE any imports
 # Get the project root (parent of backend directory)
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 env_path = os.path.join(project_root, '.env.development')
 print(f"📝 Loading environment from: {env_path}")
 print(f"📝 File exists: {os.path.exists(env_path)}")
-load_dotenv(env_path)
-print(f"📡 Redis URL: {os.getenv('REDIS_URL', 'NOT SET')}")
+
+# Load with override=True to ensure it takes precedence
+load_dotenv(env_path, override=True)
+
+# Verify it loaded
+redis_url = os.getenv('REDIS_URL', 'NOT SET')
+print(f"📡 Redis URL from env: {redis_url}")
+
+if redis_url == 'NOT SET' or 'localhost' in redis_url:
+    print("⚠️  WARNING: Redis URL not loaded correctly!")
+    print("   Setting manually to 192.168.1.216:6379")
+    os.environ['REDIS_URL'] = 'redis://192.168.1.216:6379'
+    print(f"📡 Redis URL now: {os.getenv('REDIS_URL')}")
 
 # Add backend to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'backend'))
 
+# NOW import modules (they will read the env vars)
 from app.core.redis import get_redis_client
 from app.ai_agents.distributed.distributed_agent_manager import DistributedAgentManager
 from app.core.database import get_async_db
