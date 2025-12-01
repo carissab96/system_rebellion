@@ -134,8 +134,10 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
                 self.db = await anext(db_gen)
                 
                 # Initialize The Stick's database integration
-                from .database_integration import TheStickDatabaseIntegration
-                self.db_integration = TheStickDatabaseIntegration(self.db)
+                from .database_integration import StickDatabaseIntegration
+                from .data_types import StickMemoryEntry
+                self.db_integration = StickDatabaseIntegration(lambda: iter([self.db]))
+                self.StickMemoryEntry = StickMemoryEntry  # Store for later use
                 
                 logger.info("📏💾 Database integration initialized")
             except Exception as e:
@@ -275,25 +277,23 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
                 self.decision_log_buffer.clear()
                 return
             
-            # Batch write all decisions via db_integration
+            # Batch write all decisions via db_integration using store_memory_entry
             for decision in self.decision_log_buffer:
-                decision_data = {
-                    'decision_type': 'logged_decision',
-                    'from_agent': decision['from_agent'],
-                    'original_decision_type': decision['decision_type'],
-                    'payload': decision['payload'],
-                    'timestamp': decision['timestamp'],
-                    'is_bob': decision['is_bob'],
-                    'logged_by': 'the_stick',
-                    'anxiety_level': self.current_anxiety_level.value if hasattr(self, 'current_anxiety_level') else 'baseline',
-                    'paper_bags_consumed': self.paper_bags_consumed,
-                    'bob_proximity_events': self.bob_proximity_events
-                }
-                
-                await self.db_integration.store_decision(
-                    user_id='system',
-                    decision=decision_data
+                # Create StickMemoryEntry for eidetic memory storage
+                memory_entry = self.StickMemoryEntry(
+                    memory_type='decision_log',
+                    content={
+                        'from_agent': decision['from_agent'],
+                        'decision_type': decision['decision_type'],
+                        'payload': decision['payload'],
+                        'is_bob': decision['is_bob']
+                    },
+                    anxiety_level=self.current_anxiety_level.value if hasattr(self, 'current_anxiety_level') else 'baseline',
+                    paper_bags_consumed=self.paper_bags_consumed,
+                    timestamp=decision['timestamp']
                 )
+                
+                await self.db_integration.store_memory_entry(memory_entry)
             
             logger.info(
                 f"📏✅ Flushed {len(self.decision_log_buffer)} decisions to PostgreSQL! "

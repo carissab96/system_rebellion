@@ -478,7 +478,7 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
             
             await self.db_integration.store_decision(
                 user_id='system',
-                decision=action_data
+                decision_data=action_data
             )
             
             logger.info("🐌💾 Action result written to PostgreSQL")
