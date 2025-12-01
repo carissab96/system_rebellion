@@ -120,6 +120,14 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
             enable_resource_monitoring=False  # Terry doesn't monitor
         )
         
+        # Initialize database integration for PostgreSQL writes
+        if self.db_getter:
+            try:
+                await self.initialize_database()
+                logger.info("🐌💾 Database integration initialized")
+            except Exception as e:
+                logger.error(f"🐌💥 Failed to initialize database: {e}")
+        
         # Initialize Week 4 systems
         self.coordination_manager = get_coordination_manager()
         self.verification_manager = get_verification_manager()
@@ -440,35 +448,31 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
         severity: str
     ) -> None:
         """
-        PHASE 4: Write action result to PostgreSQL.
+        PHASE 4: Write action result to PostgreSQL via db_integration.
         """
         try:
-            if not self.db_getter:
-                logger.warning("🐌⚠️ No db_getter available, skipping database write")
+            if not self.db_integration:
+                logger.warning("🐌⚠️ Database integration not available, skipping write")
                 return
             
-            # Use database integration if available
-            if hasattr(self, 'db_integration') and self.db_integration:
-                action_data = {
-                    'decision_type': 'specialist_action',
-                    'resource_type': resource_type,
-                    'action': action,
-                    'followed_vic20': followed_vic20,
-                    'result': result,
-                    'severity': severity,
-                    'override_count': self.total_overrides,
-                    'success_rate': self.override_success_rate
-                }
-                
-                # Store action result
-                await self.db_integration.store_decision(
-                    user_id='system',
-                    decision=action_data
-                )
-                
-                logger.info("🐌💾 Action result written to PostgreSQL")
-            else:
-                logger.warning("🐌⚠️ Database integration not available")
+            # Write to PostgreSQL using db_integration
+            action_data = {
+                'decision_type': 'specialist_action',
+                'resource_type': resource_type,
+                'action': action,
+                'followed_vic20': followed_vic20,
+                'result': result,
+                'severity': severity,
+                'override_count': self.total_overrides,
+                'success_rate': self.override_success_rate
+            }
+            
+            await self.db_integration.store_decision(
+                user_id='system',
+                decision=action_data
+            )
+            
+            logger.info("🐌💾 Action result written to PostgreSQL")
         except Exception as e:
             logger.error(f"🐌💥 Error writing action result: {e}", exc_info=True)
     

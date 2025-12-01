@@ -126,6 +126,18 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
             enable_resource_monitoring=False  # The Stick doesn't monitor
         )
         
+        # Initialize database integration for PostgreSQL writes
+        if self.db_getter:
+            try:
+                await self.initialize_database()
+                # Initialize The Stick's database integration
+                from .database_integration import TheStickDatabaseIntegration
+                self.db_integration = TheStickDatabaseIntegration(self.db)
+                logger.info("📏💾 Database integration initialized")
+            except Exception as e:
+                logger.error(f"📏💥 Failed to initialize database: {e}")
+                self.db_integration = None
+        
         # Initialize Week 4 systems
         self.verification_manager = get_verification_manager()
         self.escalation_manager = get_escalation_manager()
@@ -246,7 +258,7 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
     
     async def _flush_decision_log_buffer(self) -> None:
         """
-        PHASE 5: Batch write decision logs to PostgreSQL with vector embeddings.
+        PHASE 5: Batch write decision logs to PostgreSQL via db_integration.
         """
         if not self.decision_log_buffer:
             return
@@ -254,28 +266,29 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
         try:
             logger.info(f"📏💾 Flushing {len(self.decision_log_buffer)} decisions to PostgreSQL...")
             
-            # Check if db_integration is available
-            if not hasattr(self, 'db_integration') or not self.db_integration:
+            if not self.db_integration:
                 logger.warning("📏⚠️ Database integration not available, skipping write")
                 self.decision_log_buffer.clear()
                 return
             
-            # Batch write all decisions
+            # Batch write all decisions via db_integration
             for decision in self.decision_log_buffer:
-                # Store decision with vector embedding
+                decision_data = {
+                    'decision_type': 'logged_decision',
+                    'from_agent': decision['from_agent'],
+                    'original_decision_type': decision['decision_type'],
+                    'payload': decision['payload'],
+                    'timestamp': decision['timestamp'],
+                    'is_bob': decision['is_bob'],
+                    'logged_by': 'the_stick',
+                    'anxiety_level': self.current_anxiety_level.value if hasattr(self, 'current_anxiety_level') else 'baseline',
+                    'paper_bags_consumed': self.paper_bags_consumed,
+                    'bob_proximity_events': self.bob_proximity_events
+                }
+                
                 await self.db_integration.store_decision(
                     user_id='system',
-                    decision={
-                        'decision_type': 'logged_decision',
-                        'from_agent': decision['from_agent'],
-                        'original_decision_type': decision['decision_type'],
-                        'payload': decision['payload'],
-                        'timestamp': decision['timestamp'],
-                        'is_bob': decision['is_bob'],
-                        'logged_by': 'the_stick',
-                        'anxiety_level': self.current_anxiety_level.value if hasattr(self, 'current_anxiety_level') else 'baseline',
-                        'paper_bags_consumed': self.paper_bags_consumed
-                    }
+                    decision=decision_data
                 )
             
             logger.info(
