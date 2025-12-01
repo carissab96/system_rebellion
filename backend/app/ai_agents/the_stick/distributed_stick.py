@@ -83,11 +83,9 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
             "teaching_method": "repetition_and_documentation"
         }
         
-        # Resource monitoring configuration
-        # The Stick monitors system stability (CPU as proxy)
-        self.resource_thresholds = {
-            ResourceType.CPU: 80.0,  # Alert at 80% CPU
-        }
+        # 🎯 PHASE 5: The Stick does NOT monitor resources
+        # The Stick is the universal logger - receives DECISION_LOG from everyone
+        self.resource_thresholds = {}
         
         # Week 4 System Integration
         self.verification_manager = None  # Lazy init
@@ -111,13 +109,22 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
     
     async def initialize_distributed(self, redis_client):
         """
-        Initialize distributed features and subscribe to ALL agent activities.
+        PHASE 5: Initialize The Stick as universal logger.
         
-        The Stick tracks EVERYTHING and gets anxious about Bob.
-        Base class handles standard subscriptions (COORDINATION_REQUEST, EMERGENCY).
+        The Stick receives DECISION_LOG from ALL agents:
+        - Sir Hawkington (triage decisions)
+        - VIC-20 (coordination decisions)
+        - Terry (specialist actions)
+        - Hamsters (specialist actions)
+        - QSP (specialist actions)
+        
+        Writes everything to PostgreSQL with vector embeddings for pattern learning.
         """
-        # Call parent initialization (subscribes to standard channels)
-        await super().initialize_distributed(redis_client)
+        # Call parent initialization - NO resource monitoring
+        await super().initialize_distributed(
+            redis_client,
+            enable_resource_monitoring=False  # The Stick doesn't monitor
+        )
         
         # Initialize Week 4 systems
         self.verification_manager = get_verification_manager()
@@ -126,22 +133,23 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
         logger.info("📏🎯 Week 4 systems integrated - Verification & Escalation tracking ONLINE!")
         logger.info("📏📋 The Stick will track EVERYTHING! (Anxiety-driven hypervigilance activated)")
         
+        # 🎯 PHASE 5: Subscribe to DECISION_LOG from ALL agents
         try:
-            # Subscribe to triage decisions from Sir Hawkington (use MessageType enum)
             await self.subscribe_to_messages(
-                message_type=MessageType.DECISION_BROADCAST,
-                callback=self._handle_triage_decision
+                message_type=MessageType.DECISION_LOG,
+                callback=self._handle_decision_log
             )
-            logger.info("📏📡 The Stick subscribed to triage - Tracking all decisions!")
-            
-            # Subscribe to decision broadcasts (The Stick tracks EVERYTHING)
-            # Note: AGENT_ACTION doesn't exist, so we track via DECISION_BROADCAST
-            logger.info("📏📡 The Stick tracking all activity via triage decisions!")
-            logger.info("📏😰 *nervously clutches paper bag*")
+            logger.info("📏📡 The Stick subscribed to DECISION_LOG - Universal logger ACTIVE!")
+            logger.info("📏😰 *nervously clutches paper bag* SO MANY DECISIONS TO TRACK!")
             
         except Exception as e:
             logger.error(f"📏💥 Failed to subscribe: {e}")
             self._consume_paper_bag("subscription_failure")
+        
+        # Initialize decision log buffer for batch writes
+        self.decision_log_buffer = []
+        self.buffer_max_size = 10  # Batch write every 10 decisions
+        self.total_decisions_logged = 0
     
     async def _handle_coordination_request(self, message: AgentMessage) -> None:
         """
@@ -183,8 +191,109 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
             reasoning="Compliance tracking complete"
         )
     
+    async def _handle_decision_log(self, message: AgentMessage) -> None:
+        """
+        PHASE 5: Handle DECISION_LOG from any agent.
+        
+        Flow:
+        1. Receive DECISION_LOG
+        2. Add to buffer
+        3. When buffer full → batch write to PostgreSQL with vector embeddings
+        4. Track anxiety (Bob causes 3x anxiety!)
+        
+        PERSONALITY: Anxious but thorough, remembers EVERYTHING (eidetic memory)
+        """
+        try:
+            payload = message.payload
+            from_agent = payload.get('from_agent', 'unknown')
+            decision_type = payload.get('decision_type', 'unknown')
+            
+            # Check for BOB involvement (MAXIMUM ANXIETY!)
+            is_bob = from_agent == 'hamsters' or 'bob' in str(payload).lower()
+            if is_bob:
+                logger.warning("📏😰💥 BOB ACTIVITY DETECTED! *hyperventilates into paper bag*")
+                self.bob_proximity_events += 1
+                self._consume_paper_bag("bob_activity_logged")
+                self.anxiety_spikes += 1
+            
+            logger.info(
+                f"📏📬 DECISION_LOG from {from_agent}: {decision_type} "
+                f"{'🚨 BOB ALERT!' if is_bob else ''}"
+            )
+            
+            # Add to buffer
+            self.decision_log_buffer.append({
+                'from_agent': from_agent,
+                'decision_type': decision_type,
+                'payload': payload,
+                'timestamp': message.timestamp,
+                'is_bob': is_bob
+            })
+            self.total_decisions_logged += 1
+            
+            # Batch write when buffer full
+            if len(self.decision_log_buffer) >= self.buffer_max_size:
+                await self._flush_decision_log_buffer()
+            
+            logger.debug(
+                f"📏📊 Buffer: {len(self.decision_log_buffer)}/{self.buffer_max_size} "
+                f"(Total logged: {self.total_decisions_logged})"
+            )
+            
+        except Exception as e:
+            logger.error(f"📏💥 Error handling decision log: {e}", exc_info=True)
+            self._consume_paper_bag("decision_log_error")
+    
+    async def _flush_decision_log_buffer(self) -> None:
+        """
+        PHASE 5: Batch write decision logs to PostgreSQL with vector embeddings.
+        """
+        if not self.decision_log_buffer:
+            return
+        
+        try:
+            logger.info(f"📏💾 Flushing {len(self.decision_log_buffer)} decisions to PostgreSQL...")
+            
+            # Check if db_integration is available
+            if not hasattr(self, 'db_integration') or not self.db_integration:
+                logger.warning("📏⚠️ Database integration not available, skipping write")
+                self.decision_log_buffer.clear()
+                return
+            
+            # Batch write all decisions
+            for decision in self.decision_log_buffer:
+                # Store decision with vector embedding
+                await self.db_integration.store_decision(
+                    user_id='system',
+                    decision={
+                        'decision_type': 'logged_decision',
+                        'from_agent': decision['from_agent'],
+                        'original_decision_type': decision['decision_type'],
+                        'payload': decision['payload'],
+                        'timestamp': decision['timestamp'],
+                        'is_bob': decision['is_bob'],
+                        'logged_by': 'the_stick',
+                        'anxiety_level': self.current_anxiety_level.value if hasattr(self, 'current_anxiety_level') else 'baseline',
+                        'paper_bags_consumed': self.paper_bags_consumed
+                    }
+                )
+            
+            logger.info(
+                f"📏✅ Flushed {len(self.decision_log_buffer)} decisions to PostgreSQL! "
+                f"(Total: {self.total_decisions_logged})"
+            )
+            
+            # Clear buffer
+            self.decision_log_buffer.clear()
+            
+        except Exception as e:
+            logger.error(f"📏💥 Error flushing decision log buffer: {e}", exc_info=True)
+            self._consume_paper_bag("buffer_flush_error")
+            # Clear buffer anyway to prevent memory leak
+            self.decision_log_buffer.clear()
+    
     async def _handle_triage_decision(self, message: AgentMessage) -> None:
-        """Handle triage decisions - The Stick learns from every decision."""
+        """DEPRECATED: Handle triage decisions - now using DECISION_LOG instead."""
         try:
             message_data = message.payload
             severity = message_data.get('severity', 'unknown')
