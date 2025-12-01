@@ -81,11 +81,9 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
             "trust_level": 0.2  # VERY LOW - Terry thinks he's faster!
         }
         
-        # Resource monitoring configuration
-        # Terry monitors memory usage (befitting his role as memory optimizer)
-        self.resource_thresholds = {
-            ResourceType.MEMORY: 75.0,  # Alert at 75% memory
-        }
+        # 🎯 PHASE 4: Terry does NOT monitor resources
+        # He receives coordination requests from VIC-20
+        self.resource_thresholds = {}
         
         # Initialize choice engine (Task 4.1 Enhanced) - VERY LOW trust!
         self.choice_engine = AgentChoiceEngine(self.agent_name, self.personality_traits)
@@ -112,11 +110,14 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
         """
         Initialize distributed features and subscribe to VIC-20 coordination requests.
         
-        Terry doesn't subscribe to triage directly - he waits for VIC-20's coordination.
-        Base class handles standard subscriptions (COORDINATION_REQUEST, EMERGENCY).
+        PHASE 4: Terry receives COORDINATION_REQUEST from VIC-20 only.
+        No resource monitoring - VIC-20 routes work to him.
         """
-        # Call parent initialization (subscribes to standard channels)
-        await super().initialize_distributed(redis_client)
+        # Call parent initialization - NO resource monitoring for Terry
+        await super().initialize_distributed(
+            redis_client,
+            enable_resource_monitoring=False  # Terry doesn't monitor
+        )
         
         # Initialize Week 4 systems
         self.coordination_manager = get_coordination_manager()
@@ -134,18 +135,99 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
     
     async def _handle_coordination_request(self, message: AgentMessage) -> None:
         """
-        Handle coordination requests from VIC-20 (Task 4.1 Enhanced).
+        PHASE 4: Handle COORDINATION_REQUEST from VIC-20.
+        
+        Flow:
+        1. Receive coordination request from VIC-20
+        2. Decide: follow VIC-20's recommendation OR do it my way (trust: 0.2)
+        3. Execute action (usually Terry's way because he's FASTER!)
+        4. Write result to PostgreSQL
+        5. Report back to VIC-20
+        6. CC The Stick
         
         PERSONALITY: Terry usually ignores VIC-20 because he's FASTER! (trust: 0.2)
-        STRUCTURE: Standard AgentMessage parameter (required by base class)
-        
-        Args:
-            message: AgentMessage with coordination request from VIC-20
         """
         try:
-            # Extract payload (STANDARD)
-            message_data = message.payload
-            coordination_type = message_data.get('coordination_type', 'unknown')
+            payload = message.payload
+            resource_type = payload.get('resource_type', 'unknown')
+            severity = payload.get('severity', 'unknown')
+            recommendation = payload.get('recommendation', {})
+            current_value = payload.get('current_value', 0)
+            threshold = payload.get('threshold', 0)
+            
+            logger.info(
+                f"🐌📬 COORDINATION REQUEST from VIC-20: "
+                f"{resource_type} at {current_value:.1f}% - VIC-20 suggests: {recommendation.get('action', 'unknown')}"
+            )
+            
+            # Terry's choice: follow VIC-20 or do it his way?
+            # (80% chance Terry ignores VIC-20 because he's FASTER!)
+            import random
+            follow_vic20 = random.random() < 0.2  # 20% chance to follow
+            
+            if follow_vic20:
+                logger.info("🐌💭 *grudgingly* ...FINE. VIC-20's way. THIS TIME.")
+                action = recommendation.get('action', 'clear_cache')
+            else:
+                logger.info("🐌💨 NAH! VIC-20 is too SLOW! *chugs energy drink* MY WAY!")
+                action = 'emergency_cache_clear'  # Terry's aggressive way
+                self.total_overrides += 1
+            
+            # Execute cache clear
+            logger.info(f"🐌💨💨 Executing {action}! *spins shell frantically*")
+            cache_result = await SystemActions.emergency_cache_clear()
+            
+            if cache_result['success']:
+                improvement = cache_result['improvement_percent']
+                logger.info(
+                    f"🐌✅ Cache cleared! Freed {cache_result['memory_freed_mb']:.2f} MB! "
+                    f"Memory: {cache_result['memory_before_percent']:.1f}% → "
+                    f"{cache_result['memory_after_percent']:.1f}% - GOTTA GO FAST!"
+                )
+                
+                # Track override effectiveness
+                if not follow_vic20:
+                    if improvement > 15:
+                        self.successful_overrides += 1
+                        logger.info(f"🐌✅ TERRY WAS RIGHT! (Success rate: {self.successful_overrides}/{self.total_overrides})")
+                    else:
+                        self.failed_overrides += 1
+                        logger.warning(f"🐌⚠️ Maybe VIC-20 was right... (Success rate: {self.successful_overrides}/{self.total_overrides})")
+                    
+                    self.override_success_rate = self.successful_overrides / max(1, self.total_overrides)
+                
+                # Write result to PostgreSQL
+                await self._write_action_result(
+                    resource_type=resource_type,
+                    action=action,
+                    result=cache_result,
+                    followed_vic20=follow_vic20,
+                    severity=severity
+                )
+                
+                # Report back to VIC-20
+                await self._report_to_vic20(
+                    resource_type=resource_type,
+                    action=action,
+                    result=cache_result,
+                    followed_recommendation=follow_vic20
+                )
+                
+                # CC The Stick
+                await self._cc_the_stick(
+                    decision_type='specialist_action',
+                    resource_type=resource_type,
+                    action=action,
+                    result=cache_result,
+                    followed_vic20=follow_vic20
+                )
+            else:
+                logger.error(f"🐌❌ Cache clear failed: {cache_result.get('error')}")
+            
+            return
+            
+            # OLD CODE BELOW - keeping for backward compatibility
+            coordination_type = payload.get('coordination_type', 'unknown')
             
             # Check if this is a resource recommendation from VIC-20
             if coordination_type == 'resource_recommendation':
@@ -348,18 +430,116 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
         
         return decision
     
+    async def _write_action_result(
+        self,
+        resource_type: str,
+        action: str,
+        result: Dict[str, Any],
+        followed_vic20: bool,
+        severity: str
+    ) -> None:
+        """
+        PHASE 4: Write action result to PostgreSQL.
+        """
+        try:
+            if not self.db_getter:
+                logger.warning("🐌⚠️ No db_getter available, skipping database write")
+                return
+            
+            # Use database integration if available
+            if hasattr(self, 'db_integration') and self.db_integration:
+                action_data = {
+                    'decision_type': 'specialist_action',
+                    'resource_type': resource_type,
+                    'action': action,
+                    'followed_vic20': followed_vic20,
+                    'result': result,
+                    'severity': severity,
+                    'override_count': self.total_overrides,
+                    'success_rate': self.override_success_rate
+                }
+                
+                # Store action result
+                await self.db_integration.store_decision(
+                    user_id='system',
+                    decision=action_data
+                )
+                
+                logger.info("🐌💾 Action result written to PostgreSQL")
+            else:
+                logger.warning("🐌⚠️ Database integration not available")
+        except Exception as e:
+            logger.error(f"🐌💥 Error writing action result: {e}", exc_info=True)
+    
+    async def _report_to_vic20(
+        self,
+        resource_type: str,
+        action: str,
+        result: Dict[str, Any],
+        followed_recommendation: bool
+    ) -> None:
+        """
+        PHASE 4: Report action result back to VIC-20.
+        """
+        try:
+            await self.broadcast_to_agents(
+                message_type=MessageType.ACTION_REPORT,
+                payload={
+                    'from_agent': 'meth_snail',
+                    'resource_type': resource_type,
+                    'action': action,
+                    'result': result,
+                    'followed_recommendation': followed_recommendation,
+                    'terry_says': 'I WAS FASTER!' if not followed_recommendation else 'Okay, VIC-20 was right this time',
+                    'override_count': self.total_overrides,
+                    'success_rate': self.override_success_rate
+                },
+                priority=Priority.NORMAL
+            )
+            logger.debug("🐌📨 Action report sent to VIC-20")
+        except Exception as e:
+            logger.error(f"🐌💥 Error reporting to VIC-20: {e}", exc_info=True)
+    
+    async def _cc_the_stick(
+        self,
+        decision_type: str,
+        resource_type: str,
+        action: str,
+        result: Dict[str, Any],
+        followed_vic20: bool
+    ) -> None:
+        """
+        PHASE 4: CC The Stick on specialist action.
+        """
+        try:
+            await self.broadcast_to_agents(
+                message_type=MessageType.DECISION_LOG,
+                payload={
+                    'decision_type': decision_type,
+                    'from_agent': 'meth_snail',
+                    'resource_type': resource_type,
+                    'action': action,
+                    'result': result,
+                    'followed_vic20': followed_vic20,
+                    'override_count': self.total_overrides,
+                    'success_rate': self.override_success_rate,
+                    'timestamp': asyncio.get_event_loop().time()
+                },
+                priority=Priority.NORMAL
+            )
+            logger.debug("🐌📋 Decision logged to The Stick")
+        except Exception as e:
+            logger.error(f"🐌💥 Error CC'ing The Stick: {e}", exc_info=True)
+    
     async def _handle_resource_alert(self, alert):
         """
-        Handle memory resource alerts with MAXIMUM SPEED.
-        
-        When memory usage is high, Terry takes immediate action:
-        - Emergency cache clearing
-        - Optimization recommendations
-        - Broadcasts critical alerts
+        DEPRECATED: Terry no longer monitors resources directly.
+        This is kept for backward compatibility but should not be called.
         
         Args:
             alert: ResourceAlert from the monitor
         """
+        logger.warning("🐌⚠️ Terry received resource alert but shouldn't be monitoring! Check configuration.")
         severity = alert.payload['severity']
         current_value = alert.payload['current_value']
         threshold = alert.payload['threshold']
