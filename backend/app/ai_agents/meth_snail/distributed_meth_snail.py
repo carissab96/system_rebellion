@@ -473,7 +473,7 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
             }
             
             await self.db_integration.store_decision(
-                user_id='system',
+                user_id=None,  # System-level decisions don't have a user
                 decision_data=action_data
             )
             
