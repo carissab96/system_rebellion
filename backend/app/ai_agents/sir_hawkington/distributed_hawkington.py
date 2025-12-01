@@ -598,15 +598,21 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
         """
         Determine if alert should be escalated to VIC-20 for coordination.
         
+        🧪 TESTING: Temporarily escalating ALL severities to test hierarchy flow
+        
         Escalate if:
         - High severity with good confidence
         - Critical or emergency severity (always)
         """
-        if severity in ["critical", "emergency"]:
-            return True
-        if severity == "high" and confidence >= 0.7:
-            return True
-        return False
+        # 🧪 TESTING: Always escalate to test the flow!
+        return True
+        
+        # ORIGINAL LOGIC (restore after testing):
+        # if severity in ["critical", "emergency"]:
+        #     return True
+        # if severity == "high" and confidence >= 0.7:
+        #     return True
+        # return False
     
     async def _send_triage_alert_to_vic20(
         self,
