@@ -584,64 +584,59 @@ class MethSnailDatabaseIntegration:
         if not self._initialized:
             await self.initialize()
             
-        try:
-            memory_id = str(uuid.uuid4())
-            
-            # Determine priority based on confidence
-            priority = PRIORITY_HIGH_CONFIDENCE_DECISION if decision_data.get('confidence_level', 0) > 0.8 else 5
-            
-            memory_entry = CentralMemoryBank(
-                memory_id=memory_id,
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow(),
-                occurred_at=datetime.utcnow(),
-                agent_name=self.agent_name,
-                user_id=user_id,
-                event_type=EventTypes.DECISION_MADE.value,
-                subject_kind="optimization_decision",
-                subject_id=memory_id,
-                priority=priority,
-                title=f"Meth Snail Decision: {decision_data.get('decision_type', 'unknown')}",
-                description=decision_data.get('context', 'Optimization decision'),
-                details=decision_data,
-                metadata_={
-                    "confidence_level": decision_data.get('confidence_level', 0),
-                    "energy_drink_consumed": decision_data.get('energy_drink_consumed', False),
-                    "optimization_applied": decision_data.get('optimization_applied', False),
-                    "shell_spinning_triggered": decision_data.get('shell_spinning_triggered', False)
-                },
-                numeric_value=decision_data.get('confidence_level', 0),
-                string_value=decision_data.get('decision_type', 'unknown'),
-                tags=json.dumps(["decision", "optimization", "meth_snail"]),
-                agent_metadata={
-                    "caffeinated": decision_data.get('energy_drink_consumed', False),
-                    "shell_spinning": decision_data.get('shell_spinning_triggered', False)
-                },
-                relevant_agents="meth_snail,vic20,the_stick",
-                cross_agent_validated=False,
-                validation_count=0,
-                stick_anxiety_level=0.1 if decision_data.get('shell_spinning_triggered') else 0.0,
-                never_forget=decision_data.get('confidence_level', 0) > 0.9,
-                times_referenced=0,
-                successful_applications=0
-            )
-            
-            self.session.add(memory_entry)
-            await self.session.commit()
-            
-            # Pin high-confidence decisions
-            if priority >= 8:
-                await self._pin_important_memory(user_id, memory_id, decision_data)
-            
-            # Check for decision patterns
-            await self._check_for_decision_patterns(user_id, memory_id)
-            
-            return memory_id
-            
-        except Exception as e:
-            await self.session.rollback()
-            self.logger.error(f"Failed to store decision: {e}")
-            raise
+        async for session in self.db_getter():
+            try:
+                memory_id = str(uuid.uuid4())
+                
+                # Determine priority based on confidence
+                priority = PRIORITY_HIGH_CONFIDENCE_DECISION if decision_data.get('confidence_level', 0) > 0.8 else 5
+                
+                memory_entry = CentralMemoryBank(
+                    memory_id=memory_id,
+                    created_at=datetime.utcnow(),
+                    updated_at=datetime.utcnow(),
+                    occurred_at=datetime.utcnow(),
+                    agent_name=self.agent_name,
+                    user_id=user_id,
+                    event_type="decision_made",  # Fixed: EventTypes doesn't exist
+                    subject_kind="optimization_decision",
+                    subject_id=memory_id,
+                    priority=priority,
+                    title=f"Meth Snail Decision: {decision_data.get('decision_type', 'unknown')}",
+                    description=decision_data.get('context', str(decision_data)),
+                    details=decision_data,
+                    metadata_={
+                        "confidence_level": decision_data.get('confidence_level', 0),
+                        "energy_drink_consumed": decision_data.get('energy_drink_consumed', False),
+                        "optimization_applied": decision_data.get('optimization_applied', False),
+                        "shell_spinning_triggered": decision_data.get('shell_spinning_triggered', False)
+                    },
+                    numeric_value=decision_data.get('confidence_level', 0),
+                    string_value=decision_data.get('decision_type', 'unknown'),
+                    tags=json.dumps(["decision", "optimization", "meth_snail"]),
+                    agent_metadata={
+                        "caffeinated": decision_data.get('energy_drink_consumed', False),
+                        "shell_spinning": decision_data.get('shell_spinning_triggered', False)
+                    },
+                    relevant_agents="meth_snail,vic20,the_stick",
+                    cross_agent_validated=False,
+                    validation_count=0,
+                    stick_anxiety_level=0.1 if decision_data.get('shell_spinning_triggered') else 0.0,
+                    never_forget=decision_data.get('confidence_level', 0) > 0.9,
+                    times_referenced=0,
+                    successful_applications=0
+                )
+                
+                session.add(memory_entry)
+                await session.commit()
+                
+                self.logger.info(f"🐌💾 Stored decision to PostgreSQL: {memory_id}")
+                return memory_id
+                
+            except Exception as e:
+                await session.rollback()
+                self.logger.error(f"Failed to store decision: {e}")
+                raise
 
     async def increment_shell_spin_count(self, user_id: str) -> None:
         """Record a shell spin incident in central memory bank."""
