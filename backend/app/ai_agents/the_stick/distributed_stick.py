@@ -129,13 +129,17 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
         # Initialize database integration for PostgreSQL writes
         if self.db_getter:
             try:
-                await self.initialize_database()
+                # Get database session from async generator
+                db_gen = self.db_getter()
+                self.db = await anext(db_gen)
+                
                 # Initialize The Stick's database integration
                 from .database_integration import TheStickDatabaseIntegration
                 self.db_integration = TheStickDatabaseIntegration(self.db)
+                
                 logger.info("📏💾 Database integration initialized")
             except Exception as e:
-                logger.error(f"📏💥 Failed to initialize database: {e}")
+                logger.error(f"📏💥 Failed to initialize database: {e}", exc_info=True)
                 self.db_integration = None
         
         # Initialize Week 4 systems
