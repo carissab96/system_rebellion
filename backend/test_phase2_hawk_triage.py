@@ -17,9 +17,12 @@ import os
 from dotenv import load_dotenv
 
 # Load environment variables from .env.development
-env_path = os.path.join(os.path.dirname(__file__), '..', '.env.development')
+# Get the project root (parent of backend directory)
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+env_path = os.path.join(project_root, '.env.development')
+print(f"📝 Loading environment from: {env_path}")
+print(f"📝 File exists: {os.path.exists(env_path)}")
 load_dotenv(env_path)
-print(f"📝 Loaded environment from: {env_path}")
 print(f"📡 Redis URL: {os.getenv('REDIS_URL', 'NOT SET')}")
 
 # Add backend to path
