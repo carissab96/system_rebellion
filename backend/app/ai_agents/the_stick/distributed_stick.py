@@ -129,14 +129,10 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
         # Initialize database integration for PostgreSQL writes
         if self.db_getter:
             try:
-                # Get database session from async generator
-                db_gen = self.db_getter()
-                self.db = await anext(db_gen)
-                
-                # Initialize The Stick's database integration
+                # Initialize The Stick's database integration with db_getter
                 from .database_integration import StickDatabaseIntegration
                 from .data_types import StickMemoryEntry
-                self.db_integration = StickDatabaseIntegration(lambda: iter([self.db]))
+                self.db_integration = StickDatabaseIntegration(self.db_getter)
                 self.StickMemoryEntry = StickMemoryEntry  # Store for later use
                 
                 logger.info("📏💾 Database integration initialized")

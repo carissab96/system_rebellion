@@ -123,13 +123,9 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
         # Initialize database integration for PostgreSQL writes
         if self.db_getter:
             try:
-                # Get database session from async generator
-                db_gen = self.db_getter()
-                db = await anext(db_gen)
-                
-                # Initialize database integration
+                # Initialize database integration with db_getter (it handles the async generator)
                 from .database_integration import MethSnailDatabaseIntegration
-                self.db_integration = MethSnailDatabaseIntegration(db)
+                self.db_integration = MethSnailDatabaseIntegration(self.db_getter)
                 await self.db_integration.initialize()
                 self._db_initialized = True
                 
