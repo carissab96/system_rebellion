@@ -349,23 +349,33 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
                 logger.warning("🖥️⚠️ No db_getter available, skipping database write")
                 return
             
-            # Use database integration from VIC20SageBrainV2
+            # Write coordination decision to PostgreSQL
             if hasattr(self, 'db_integration') and self.db_integration:
-                decision_data = {
-                    'decision_type': 'coordination',
-                    'resource_type': resource_type,
-                    'specialist_routed_to': specialist,
-                    'recommendation': recommendation['action'],
-                    'reasoning': recommendation['reasoning'],
-                    'confidence': recommendation['confidence'],
-                    'severity': severity,
-                    'triage_data': triage_data
-                }
+                from .data_types import VIC20Decision, VIC20DecisionType, CoordinationState
+                from datetime import datetime
+                
+                # Create proper VIC20Decision object
+                decision_obj = VIC20Decision(
+                    decision_type=VIC20DecisionType.AGENT_COORDINATION,
+                    coordination_state=CoordinationState.ORCHESTRATING,
+                    coordination_target=specialist,
+                    agent_actions={specialist: recommendation['action']},
+                    confidence_level=recommendation['confidence'],
+                    technical_orchestration={
+                        'resource_type': resource_type,
+                        'severity': severity,
+                        'recommendation': recommendation
+                    },
+                    system_context_snapshot=triage_data,
+                    ancient_wisdom_principle=None,
+                    similar_past_decisions=[],
+                    timestamp=datetime.utcnow()
+                )
                 
                 # Store coordination decision
                 await self.db_integration.store_coordination_decision(
                     user_id=None,  # System-level decision (no user)
-                    decision=decision_data
+                    decision=decision_obj
                 )
                 
                 logger.info("🖥️💾 Coordination decision written to PostgreSQL")
