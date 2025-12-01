@@ -116,6 +116,19 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
             enable_resource_monitoring=False  # VIC-20 doesn't monitor
         )
         
+        # Initialize database integration for PostgreSQL writes
+        if self.db_getter:
+            try:
+                # Initialize database integration with db_getter
+                from .database_integration import VIC20DatabaseIntegration
+                self.db_integration = VIC20DatabaseIntegration(self.db_getter)
+                await self.db_integration.initialize()
+                self._db_initialized = True
+                
+                logger.info("🖥️💾 Database integration initialized")
+            except Exception as e:
+                logger.error(f"🖥️💥 Failed to initialize database: {e}", exc_info=True)
+        
         # Initialize Week 4 systems
         self.coordination_manager = get_coordination_manager()
         self.escalation_manager = get_escalation_manager()
@@ -351,7 +364,7 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
                 
                 # Store coordination decision
                 await self.db_integration.store_coordination_decision(
-                    user_id='system',  # System-level decision
+                    user_id=None,  # System-level decision (no user)
                     decision=decision_data
                 )
                 
