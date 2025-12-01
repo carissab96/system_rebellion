@@ -306,6 +306,9 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
         Args:
             alert: ResourceAlert from the monitor
         """
+        print(f"\n🔔 HAWK ALERT CALLBACK TRIGGERED!")
+        print(f"   Alert payload: {alert.payload}")
+        
         severity = alert.payload['severity']
         current_value = alert.payload['current_value']
         threshold = alert.payload['threshold']
@@ -316,6 +319,7 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
             f"{current_value:.1f}% (threshold: {threshold:.1f}%) - "
             f"Severity: {severity}"
         )
+        print(f"🧐⚠️ Sir Hawkington observes elevated {resource_type.upper()} usage: {current_value:.1f}%")
         
         # 🎯 TRIAGE STEP 1: Assess severity and confidence
         confidence = self._assess_confidence(current_value, threshold, severity)
