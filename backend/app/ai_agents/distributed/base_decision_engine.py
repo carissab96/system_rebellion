@@ -94,14 +94,31 @@ class AgentDecisionEngine(DistributedAgentMixin, ABC):
         
         self._logger = logging.getLogger(f"DecisionEngine.{self.agent_name}")
     
-    async def initialize_distributed(self, redis_client):
+    async def initialize_distributed(
+        self,
+        redis_client,
+        enable_resource_monitoring: bool = False,  # Default False - only Hawk enables
+        heartbeat_interval: int = 30,
+        resource_check_interval: int = 60
+    ):
         """
         Initialize distributed features and subscribe to standard channels.
         
         Subclasses can override to add custom subscriptions, but MUST
         call super().initialize_distributed(redis_client) first.
+        
+        Args:
+            redis_client: Connected Redis client
+            enable_resource_monitoring: Enable resource monitoring (default False)
+            heartbeat_interval: Seconds between heartbeats
+            resource_check_interval: Seconds between resource checks
         """
-        await super().initialize_distributed(redis_client)
+        await super().initialize_distributed(
+            redis_client,
+            enable_resource_monitoring=enable_resource_monitoring,
+            heartbeat_interval=heartbeat_interval,
+            resource_check_interval=resource_check_interval
+        )
         
         # Standard subscriptions (all agents)
         await self._subscribe_to_standard_channels()
