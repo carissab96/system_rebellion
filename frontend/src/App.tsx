@@ -12,6 +12,7 @@ import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
 import { OnboardingFlow } from './pages/OnboardingFlow';
+import AgentMonitorPage from './pages/AgentMonitorPage';
 import './index.css';
 
 function App() {
@@ -52,6 +53,7 @@ function App() {
         {/* Protected routes */}
         <Route path="/onboarding" element={auth.isAuthenticated ? <OnboardingFlow /> : <Navigate to="/login" replace />} />
         <Route path="/observatory" element={auth.isAuthenticated ? <ObservatoryPage /> : <Navigate to="/login" replace />} />
+        <Route path="/agent-monitor" element={auth.isAuthenticated ? <AgentMonitorPage /> : <Navigate to="/login" replace />} />
         
         {/* Catch all */}
         <Route path="*" element={<Navigate to="/" replace />} />
