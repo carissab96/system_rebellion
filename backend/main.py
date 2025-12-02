@@ -250,13 +250,12 @@ async def lifespan(app: FastAPI):
                     
                     # Set up WebSocket logging to broadcast agent logs to frontend
                     from app.core.websocket_log_handler import setup_websocket_logging
-                    from app.api.websockets import get_websocket_manager
+                    from app.api.agent_logs_websocket import broadcast_agent_log
                     import asyncio
                     
-                    ws_manager = get_websocket_manager()
                     event_loop = asyncio.get_event_loop()
-                    setup_websocket_logging(ws_manager, event_loop, level=logging.INFO)
-                    logger.info("✅ WebSocket logging enabled - agent logs will broadcast to frontend")
+                    setup_websocket_logging(broadcast_agent_log, event_loop, level=logging.INFO)
+                    logger.info("✅ WebSocket logging enabled - agent logs will broadcast to /ws/agent-logs")
                     
                     # Start background tasks (Meth Snail's optimization, aggregation, etc.)
                     agent_tasks = await start_all_background_tasks()
@@ -434,6 +433,14 @@ def create_application() -> FastAPI:
             prefix="/api",
             tags=["WebSockets"]
         )
+    
+    # Include agent logs WebSocket route
+    from app.api import agent_logs_websocket
+    app.include_router(
+        agent_logs_websocket.router,
+        prefix="/api",
+        tags=["Agent Logs"]
+    )
     
     # Deprecated: Agent events and insights WebSocket routes
     # These are now unified into the system-metrics endpoint (/api/ws/system-metrics)

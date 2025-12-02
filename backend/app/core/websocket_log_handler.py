@@ -11,17 +11,17 @@ from typing import Optional
 class WebSocketLogHandler(logging.Handler):
     """
     Custom logging handler that broadcasts log messages to WebSocket clients.
-    Integrates with the WebSocket manager to send real-time logs to frontend.
+    Uses dedicated agent_logs_websocket endpoint.
     """
     
-    def __init__(self, ws_manager=None):
+    def __init__(self, broadcast_func=None):
         super().__init__()
-        self.ws_manager = ws_manager
+        self.broadcast_func = broadcast_func
         self.loop: Optional[asyncio.AbstractEventLoop] = None
         
-    def set_websocket_manager(self, ws_manager):
-        """Set the WebSocket manager after initialization"""
-        self.ws_manager = ws_manager
+    def set_broadcast_function(self, broadcast_func):
+        """Set the broadcast function after initialization"""
+        self.broadcast_func = broadcast_func
         
     def set_event_loop(self, loop: asyncio.AbstractEventLoop):
         """Set the event loop for async operations"""
@@ -32,7 +32,7 @@ class WebSocketLogHandler(logging.Handler):
         Emit a log record to WebSocket clients.
         Called automatically by Python's logging system.
         """
-        if not self.ws_manager:
+        if not self.broadcast_func:
             return
             
         try:
@@ -63,7 +63,7 @@ class WebSocketLogHandler(logging.Handler):
             # Broadcast to all WebSocket clients
             if self.loop and self.loop.is_running():
                 asyncio.run_coroutine_threadsafe(
-                    self.ws_manager.broadcast(message),
+                    self.broadcast_func(message),
                     self.loop
                 )
             
@@ -111,17 +111,17 @@ class WebSocketLogHandler(logging.Handler):
         return 'system'
 
 
-def setup_websocket_logging(ws_manager, event_loop: asyncio.AbstractEventLoop, level=logging.INFO):
+def setup_websocket_logging(broadcast_func, event_loop: asyncio.AbstractEventLoop, level=logging.INFO):
     """
     Set up WebSocket logging for all agent loggers.
     
     Args:
-        ws_manager: WebSocket manager instance
+        broadcast_func: Async function to broadcast messages
         event_loop: Asyncio event loop
         level: Minimum log level to broadcast (default: INFO)
     """
     # Create the WebSocket log handler
-    ws_handler = WebSocketLogHandler(ws_manager)
+    ws_handler = WebSocketLogHandler(broadcast_func)
     ws_handler.set_event_loop(event_loop)
     ws_handler.setLevel(level)
     

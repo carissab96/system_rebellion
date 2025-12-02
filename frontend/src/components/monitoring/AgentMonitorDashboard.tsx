@@ -2,20 +2,6 @@ import { useState, useEffect } from 'react';
 import { Crown, Cpu, Zap, HardDrive, Wifi, Ruler, Settings } from 'lucide-react';
 
 // Backend payload structure (source of truth)
-interface BackendAgentData {
-  agent_name: string;
-  agent_type: string;
-  health: string;
-  is_active: boolean;
-  distributed: {
-    messages_sent: number;
-    messages_received: number;
-    redis_connected: boolean;
-  };
-  total_decisions: number;
-  uptime_seconds: number;
-}
-
 interface AgentLogMessage {
   type: 'agent_log';
   agent_name: string;
@@ -24,6 +10,9 @@ interface AgentLogMessage {
   message: string;
   timestamp: string;
   logger: string;
+  module: string;
+  function: string;
+  line: number;
 }
 
 interface LogEntry {
@@ -39,7 +28,6 @@ interface AgentState {
   color: string;
   displayName: string;
   is_active: boolean;
-  uptime: string;
   logs: {
     redis: LogEntry[];
     postgres: LogEntry[];
@@ -72,7 +60,6 @@ export function AgentMonitorDashboard() {
         color: config.color,
         displayName: config.displayName,
         is_active: false,
-        uptime: '0s',
         logs: {
           redis: [],
           postgres: [],
@@ -83,14 +70,14 @@ export function AgentMonitorDashboard() {
     });
     setAgents(initialAgents);
 
-    // Connect to existing WebSocket
+    // Connect to dedicated agent logs WebSocket
     const token = localStorage.getItem('token');
     if (!token) {
       console.error('No auth token found');
       return;
     }
 
-    const wsUrl = `${import.meta.env.VITE_WS_URL || 'ws://localhost:8000'}/ws/system-metrics?token=${token}`;
+    const wsUrl = `${import.meta.env.VITE_WS_URL || 'ws://localhost:8000'}/api/ws/agent-logs?token=${token}`;
     const ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
@@ -101,35 +88,6 @@ export function AgentMonitorDashboard() {
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        
-        // Handle system_update messages (agent stats)
-        if (data.type === 'system_update' && data.agents) {
-          setAgents(prev => {
-            const updated = new Map(prev);
-            
-            data.agents.forEach((agentData: BackendAgentData) => {
-              const existing = updated.get(agentData.agent_name);
-              if (existing) {
-                const hours = Math.floor(agentData.uptime_seconds / 3600);
-                const minutes = Math.floor((agentData.uptime_seconds % 3600) / 60);
-                const seconds = Math.floor(agentData.uptime_seconds % 60);
-                const uptimeStr = hours > 0 
-                  ? `${hours}h ${minutes}m`
-                  : minutes > 0
-                  ? `${minutes}m ${seconds}s`
-                  : `${seconds}s`;
-
-                updated.set(agentData.agent_name, {
-                  ...existing,
-                  is_active: agentData.is_active,
-                  uptime: uptimeStr,
-                });
-              }
-            });
-            
-            return updated;
-          });
-        }
         
         // Handle agent_log messages (backend logs)
         if (data.type === 'agent_log') {
@@ -237,9 +195,6 @@ export function AgentMonitorDashboard() {
                     <h3 className="font-bold text-slate-100">{agent.displayName}</h3>
                   </div>
                   <div className={`w-2 h-2 rounded-full ${getStatusColor(agent.is_active)}`} />
-                </div>
-                <div className="text-xs text-slate-400">
-                  Uptime: {agent.uptime}
                 </div>
               </div>
 
