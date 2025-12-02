@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
+import { useSelector } from 'react-redux';
+import type { RootState } from '../../store/store';
 
 interface AgentEvent {
   timestamp: string;
@@ -33,9 +35,12 @@ const AGENTS = [
 
 export function AgentMonitorDashboard() {
   const [agents, setAgents] = useState<Map<string, AgentStatus>>(new Map());
-  const [connected, setConnected] = useState(false);
-  const wsRef = useRef<WebSocket | null>(null);
   const startTimeRef = useRef<Date>(new Date());
+  const messageQueueRef = useRef<any[]>([]);
+  
+  // Use existing WebSocket connection from Redux
+  const metrics = useSelector((state: RootState) => state.metrics);
+  const connected = metrics.connectionStatus === 'connected';
 
   useEffect(() => {
     // Initialize agent states
@@ -55,44 +60,37 @@ export function AgentMonitorDashboard() {
       });
     });
     setAgents(initialAgents);
+    startTimeRef.current = new Date();
+  }, []);
 
-    // Connect to WebSocket
-    const token = localStorage.getItem('token');
-    if (!token) {
-      console.error('No auth token found');
-      return;
-    }
-
-    // Use environment variable for WebSocket URL
-    const wsBaseUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:8000';
-    const wsUrl = `${wsBaseUrl}/ws/agent-events?token=${token}`;
-    const ws = new WebSocket(wsUrl);
-    wsRef.current = ws;
-
-    ws.onopen = () => {
-      console.log('✅ Connected to agent events WebSocket');
-      setConnected(true);
-      startTimeRef.current = new Date();
-    };
-
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        handleAgentEvent(data);
-      } catch (error) {
-        console.error('Failed to parse WebSocket message:', error);
+  // Process metrics data from Redux
+  useEffect(() => {
+    if (metrics.data) {
+      // Process agent insights
+      if (metrics.data.recent_insights) {
+        metrics.data.recent_insights.forEach((insight: any) => {
+          handleAgentEvent({
+            type: 'agent_insight',
+            from_agent: insight.from_agent,
+            ...insight
+          });
+        });
       }
-    };
+      
+      // Process resource alerts
+      if (metrics.data.resource_alerts) {
+        metrics.data.resource_alerts.forEach((alert: any) => {
+          handleAgentEvent({
+            type: 'resource_alert',
+            ...alert
+          });
+        });
+      }
+    }
+  }, [metrics.data]);
 
-    ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
-      setConnected(false);
-    };
-
-    ws.onclose = () => {
-      console.log('❌ Disconnected from agent events WebSocket');
-      setConnected(false);
-    };
+  // Listen to real-time WebSocket messages
+  useEffect(() => {
 
     // Update uptime every second
     const uptimeInterval = setInterval(() => {
@@ -117,25 +115,33 @@ export function AgentMonitorDashboard() {
 
     return () => {
       clearInterval(uptimeInterval);
-      ws.close();
     };
-  }, []);
+  }, [metrics]);
 
   const handleAgentEvent = (data: any) => {
     // Skip heartbeat and connection messages
-    if (data.type === 'heartbeat' || data.type === 'connected' || data.type === 'pong') {
+    if (data.type === 'heartbeat' || data.type === 'connected' || data.type === 'pong' || data.type === 'connection_established' || data.type === 'system_info' || data.type === 'agent_roster' || data.type === 'persist_result' || data.type === 'system_update') {
       return;
     }
 
     // Parse the event and categorize it
-    const agentName = data.agent_name || data.from_agent || data.agent || 'system';
-    const message = data.message || data.event_type || data.type || JSON.stringify(data);
+    let agentName = data.agent_name || data.from_agent || data.agent || 'system';
     
-    console.log('Agent event received:', { agentName, message, data });
+    // Normalize agent names
+    if (agentName === 'vic20_sage' || agentName === 'vic_20') agentName = 'vic_20_sage';
+    if (agentName === 'sir_hawkington' || agentName === 'hawkington') agentName = 'sir_hawkington';
     
-    // Determine category based on message content
+    const message = data.message || data.reasoning || data.action || data.event_type || data.type || JSON.stringify(data);
+    
+    console.log('Agent event received:', { agentName, message, type: data.type, data });
+    
+    // Determine category based on message type and content
     let category: 'redis' | 'postgres' | 'vector' | 'system' = 'system';
-    if (message.includes('Redis') || message.includes('pub/sub') || message.includes('broadcast')) {
+    if (data.type === 'agent_message' || data.type === 'agent_insight') {
+      category = 'redis';
+    } else if (data.type === 'resource_alert') {
+      category = 'system';
+    } else if (message.includes('Redis') || message.includes('pub/sub') || message.includes('broadcast')) {
       category = 'redis';
     } else if (message.includes('PostgreSQL') || message.includes('database') || message.includes('wrote')) {
       category = 'postgres';
