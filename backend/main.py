@@ -252,7 +252,6 @@ async def lifespan(app: FastAPI):
                     
                     # Set up WebSocket logging to broadcast agent logs to frontend
                     from app.core.websocket_log_handler import setup_websocket_logging
-                    from app.api.websockets import get_websocket_manager
                     
                     ws_manager = get_websocket_manager()
                     event_loop = asyncio.get_running_loop()
