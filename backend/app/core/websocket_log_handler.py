@@ -62,10 +62,13 @@ class WebSocketLogHandler(logging.Handler):
             
             # Broadcast to all WebSocket clients
             if self.loop and self.loop.is_running():
+                print(f"🔊 Broadcasting log: {message['agent_name']} - {message['category']} - {message['message'][:50]}")
                 asyncio.run_coroutine_threadsafe(
                     self.broadcast_func(message),
                     self.loop
                 )
+            else:
+                print(f"⚠️ Cannot broadcast - loop not running or not set")
             
         except Exception as e:
             # Don't let logging errors break the application
