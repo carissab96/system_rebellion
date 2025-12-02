@@ -242,11 +242,19 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
             )
             
             # Add to buffer
+            from datetime import datetime
+            # Ensure timestamp is a datetime object
+            timestamp = message.timestamp
+            if isinstance(timestamp, str):
+                timestamp = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+            elif not isinstance(timestamp, datetime):
+                timestamp = datetime.utcnow()
+            
             self.decision_log_buffer.append({
                 'from_agent': from_agent,
                 'decision_type': decision_type,
                 'payload': payload,
-                'timestamp': message.timestamp,
+                'timestamp': timestamp,
                 'is_bob': is_bob
             })
             self.total_decisions_logged += 1
@@ -292,7 +300,7 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
                         'is_bob': decision['is_bob'],
                         'paper_bags_consumed': self.paper_bags_consumed
                     },
-                    anxiety_level=self.current_anxiety_level.value if hasattr(self, 'current_anxiety_level') else 'baseline',
+                    anxiety_level=float(self.current_anxiety_percentage) if hasattr(self, 'current_anxiety_percentage') else 0.0,
                     importance='HIGH' if decision['is_bob'] else 'MEDIUM',
                     related_hamsters=[],
                     compliance_impact='decision_logged',
