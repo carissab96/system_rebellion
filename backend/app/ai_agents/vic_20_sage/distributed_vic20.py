@@ -360,16 +360,18 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
                     coordination_state=CoordinationState.ORCHESTRATING,
                     coordination_target=specialist,
                     agent_actions={specialist: recommendation['action']},
-                    confidence_level=recommendation['confidence'],
+                    system_synthesis_confidence=recommendation['confidence'],
                     technical_orchestration={
                         'resource_type': resource_type,
                         'severity': severity,
                         'recommendation': recommendation
                     },
+                    expected_rebellion_improvement=0.0,  # Will be calculated after execution
+                    confidence_level=recommendation['confidence'],
+                    timestamp=datetime.utcnow(),
                     system_context_snapshot=triage_data,
                     ancient_wisdom_principle=None,
-                    similar_past_decisions=[],
-                    timestamp=datetime.utcnow()
+                    similar_past_decisions=[]
                 )
                 
                 # Store coordination decision
