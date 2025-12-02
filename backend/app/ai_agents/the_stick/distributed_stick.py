@@ -291,7 +291,7 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
                     timestamp=decision['timestamp']
                 )
                 
-                await self.db_integration.store_memory_entry(memory_entry)
+                await self.db_integration.store_memory_entry(memory_entry, user_id=self.user_id)
             
             logger.info(
                 f"📏✅ Flushed {len(self.decision_log_buffer)} decisions to PostgreSQL! "

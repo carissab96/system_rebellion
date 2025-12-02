@@ -540,12 +540,13 @@ class StickDatabaseIntegration:
                 await session.rollback()
                 raise Exception(f"PAPER BAG INVENTORY CRISIS: {str(e)}")
     
-    async def store_memory_entry(self, entry: StickMemoryEntry, session=None):
+    async def store_memory_entry(self, entry: StickMemoryEntry, user_id: str = None, session=None):
         """Store in The Stick's eidetic memory in central bank - NEVER FORGETS"""
         
         memory_entry = CentralMemoryBank(
             memory_id=str(uuid.uuid4()),
             agent_name=AGENT_NAME,
+            user_id=user_id,
             event_type=StickEventTypes.EIDETIC_MEMORY_ENTRY,
             occurred_at=entry.timestamp,
             created_at=datetime.now(timezone.utc),
