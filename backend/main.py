@@ -248,6 +248,16 @@ async def lifespan(app: FastAPI):
                     logger.info("  📏 The Stick - Learning Coordinator")
                     logger.info("  🖥️ VIC-20 Sage - Orchestrator")
                     
+                    # Set up WebSocket logging to broadcast agent logs to frontend
+                    from app.core.websocket_log_handler import setup_websocket_logging
+                    from app.api.websockets import get_websocket_manager
+                    import asyncio
+                    
+                    ws_manager = get_websocket_manager()
+                    event_loop = asyncio.get_event_loop()
+                    setup_websocket_logging(ws_manager, event_loop, level=logging.INFO)
+                    logger.info("✅ WebSocket logging enabled - agent logs will broadcast to frontend")
+                    
                     # Start background tasks (Meth Snail's optimization, aggregation, etc.)
                     agent_tasks = await start_all_background_tasks()
                     background_tasks.extend(agent_tasks)

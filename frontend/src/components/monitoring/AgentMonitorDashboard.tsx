@@ -65,27 +65,64 @@ export function AgentMonitorDashboard() {
 
   // Process metrics data from Redux
   useEffect(() => {
-    if (metrics.data) {
-      // Process agent insights
-      if (metrics.data.recent_insights) {
-        metrics.data.recent_insights.forEach((insight: any) => {
-          handleAgentEvent({
-            type: 'agent_insight',
-            from_agent: insight.from_agent,
-            ...insight
-          });
+    if (metrics.data?.agents) {
+      // Update agent status from backend data
+      setAgents(prev => {
+        const updated = new Map(prev);
+        
+        metrics.data.agents.forEach((agentData: any) => {
+          const agentName = agentData.agent_name;
+          const existing = updated.get(agentName);
+          
+          if (existing) {
+            // Add message stats as events
+            if (agentData.distributed?.messages_sent > 0) {
+              const event: AgentEvent = {
+                timestamp: new Date().toISOString(),
+                agent: agentName,
+                category: 'redis',
+                message: `Sent ${agentData.distributed.messages_sent} messages`,
+                level: 'info'
+              };
+              const redisEvents = [...existing.events.redis, event].slice(-5);
+              updated.set(agentName, {
+                ...existing,
+                status: agentData.is_active ? 'active' : 'idle',
+                events: { ...existing.events, redis: redisEvents }
+              });
+            }
+            
+            // Add decision stats
+            if (agentData.total_decisions > 0) {
+              const event: AgentEvent = {
+                timestamp: new Date().toISOString(),
+                agent: agentName,
+                category: 'system',
+                message: `Total decisions: ${agentData.total_decisions}`,
+                level: 'success'
+              };
+              const systemEvents = [...existing.events.system, event].slice(-5);
+              updated.set(agentName, {
+                ...existing,
+                events: { ...existing.events, system: systemEvents }
+              });
+            }
+          }
         });
-      }
-      
-      // Process resource alerts
-      if (metrics.data.resource_alerts) {
-        metrics.data.resource_alerts.forEach((alert: any) => {
-          handleAgentEvent({
-            type: 'resource_alert',
-            ...alert
-          });
+        
+        return updated;
+      });
+    }
+    
+    // Process recent insights
+    if (metrics.data?.recent_insights) {
+      metrics.data.recent_insights.forEach((insight: any) => {
+        handleAgentEvent({
+          type: 'agent_insight',
+          from_agent: insight.from_agent,
+          ...insight
         });
-      }
+      });
     }
   }, [metrics.data]);
 
@@ -124,6 +161,40 @@ export function AgentMonitorDashboard() {
       return;
     }
 
+    // Handle agent_log messages (backend logs)
+    if (data.type === 'agent_log') {
+      const agentName = data.agent_name;
+      const message = data.message;
+      const category = data.category as 'redis' | 'postgres' | 'vector' | 'system';
+      const level = data.level as 'info' | 'warning' | 'error' | 'success';
+      
+      const event: AgentEvent = {
+        timestamp: data.timestamp,
+        agent: agentName,
+        category,
+        message,
+        level
+      };
+      
+      setAgents(prev => {
+        const updated = new Map(prev);
+        const agent = updated.get(agentName);
+        if (agent) {
+          const categoryEvents = [...agent.events[category], event].slice(-10);
+          updated.set(agentName, {
+            ...agent,
+            status: 'active',
+            events: {
+              ...agent.events,
+              [category]: categoryEvents,
+            },
+          });
+        }
+        return updated;
+      });
+      return;
+    }
+
     // Parse the event and categorize it
     let agentName = data.agent_name || data.from_agent || data.agent || 'system';
     
@@ -132,8 +203,6 @@ export function AgentMonitorDashboard() {
     if (agentName === 'sir_hawkington' || agentName === 'hawkington') agentName = 'sir_hawkington';
     
     const message = data.message || data.reasoning || data.action || data.event_type || data.type || JSON.stringify(data);
-    
-    console.log('Agent event received:', { agentName, message, type: data.type, data });
     
     // Determine category based on message type and content
     let category: 'redis' | 'postgres' | 'vector' | 'system' = 'system';
