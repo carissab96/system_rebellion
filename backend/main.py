@@ -252,11 +252,14 @@ async def lifespan(app: FastAPI):
                     
                     # Set up WebSocket logging to broadcast agent logs to frontend
                     from app.core.websocket_log_handler import setup_websocket_logging
-                    from app.api.agent_logs_websocket import broadcast_agent_log
+                    from app.api.websockets import get_websocket_manager
                     
+                    ws_manager = get_websocket_manager()
                     event_loop = asyncio.get_running_loop()
-                    setup_websocket_logging(broadcast_agent_log, event_loop, level=logging.INFO)
-                    logger.info("✅ WebSocket logging enabled - agent logs will broadcast to /ws/agent-logs")
+                    
+                    # Use ws_manager.broadcast as the broadcast function
+                    setup_websocket_logging(ws_manager.broadcast, event_loop, level=logging.INFO)
+                    logger.info("✅ WebSocket logging enabled - agent logs will broadcast via /ws/system-metrics")
                     
                     # Start background tasks (Meth Snail's optimization, aggregation, etc.)
                     agent_tasks = await start_all_background_tasks()

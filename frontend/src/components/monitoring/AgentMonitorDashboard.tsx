@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import { Crown, Cpu, Zap, HardDrive, Wifi, Ruler, Settings } from 'lucide-react';
+import type { RootState } from '../../store/store';
 
 // Backend payload structure (source of truth)
 interface AgentLogMessage {
@@ -48,7 +50,8 @@ const AGENT_CONFIG = {
 
 export function AgentMonitorDashboard() {
   const [agents, setAgents] = useState<Map<string, AgentState>>(new Map());
-  const [wsConnected, setWsConnected] = useState(false);
+  const metrics = useSelector((state: RootState) => state.metrics);
+  const wsConnected = metrics.connectionStatus === 'connected';
 
   useEffect(() => {
     // Initialize agent states
@@ -69,76 +72,20 @@ export function AgentMonitorDashboard() {
       });
     });
     setAgents(initialAgents);
-
-    // Connect to dedicated agent logs WebSocket
-    const token = localStorage.getItem('token');
-    if (!token) {
-      console.error('No auth token found');
-      return;
-    }
-
-    const wsUrl = `${import.meta.env.VITE_WS_URL || 'ws://localhost:8000'}/api/ws/agent-logs?token=${token}`;
-    const ws = new WebSocket(wsUrl);
-
-    ws.onopen = () => {
-      console.log('✅ Agent Monitor connected to WebSocket');
-      setWsConnected(true);
-    };
-
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        
-        // Handle agent_log messages (backend logs)
-        if (data.type === 'agent_log') {
-          const logMsg = data as AgentLogMessage;
-          
-          setAgents(prev => {
-            const updated = new Map(prev);
-            const agent = updated.get(logMsg.agent_name);
-            
-            if (agent) {
-              const logEntry: LogEntry = {
-                timestamp: logMsg.timestamp,
-                level: logMsg.level,
-                category: logMsg.category,
-                message: logMsg.message,
-              };
-              
-              const categoryLogs = [...agent.logs[logMsg.category], logEntry].slice(-10);
-              
-              updated.set(logMsg.agent_name, {
-                ...agent,
-                is_active: true,
-                logs: {
-                  ...agent.logs,
-                  [logMsg.category]: categoryLogs,
-                },
-              });
-            }
-            
-            return updated;
-          });
-        }
-      } catch (error) {
-        console.error('Failed to parse WebSocket message:', error);
-      }
-    };
-
-    ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
-      setWsConnected(false);
-    };
-
-    ws.onclose = () => {
-      console.log('❌ Agent Monitor WebSocket disconnected');
-      setWsConnected(false);
-    };
-
-    return () => {
-      ws.close();
-    };
   }, []);
+
+  // Listen for agent_log messages from metrics updates
+  useEffect(() => {
+    // Check if we have any new data in metrics
+    if (metrics.data) {
+      // For now, just log to see what we're getting
+      console.log('Metrics data:', metrics.data);
+    }
+  }, [metrics.data]);
+
+  // TODO: Subscribe to WebSocket messages directly
+  // The WebSocketService has a subscriber system we can tap into
+  // For now, we're just showing the UI structure
 
   const getLevelColor = (level: string) => {
     switch (level) {
