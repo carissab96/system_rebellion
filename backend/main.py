@@ -193,6 +193,10 @@ async def lifespan(app: FastAPI):
         # This allows auth to work immediately without waiting for agents
         async def initialize_agents_after_startup():
             """Initialize agents after the server is fully started and accepting requests"""
+            import asyncio
+            import time
+            from app.core.database import get_async_db
+            
             await asyncio.sleep(2)  # Give server time to fully start
             
             logger.info("=" * 80)
@@ -214,8 +218,6 @@ async def lifespan(app: FastAPI):
                 logger.info("✅ Sir Hawkington websocket manager startup complete")
                 
                 # Initialize AI Agents ONCE through AgentManager
-                import time
-                from app.core.database import get_async_db
                 
                 # Initialize distributed agent consciousness system (Week 5 Task 5.4: Single unified system)
                 try:
@@ -251,9 +253,8 @@ async def lifespan(app: FastAPI):
                     # Set up WebSocket logging to broadcast agent logs to frontend
                     from app.core.websocket_log_handler import setup_websocket_logging
                     from app.api.agent_logs_websocket import broadcast_agent_log
-                    import asyncio
                     
-                    event_loop = asyncio.get_event_loop()
+                    event_loop = asyncio.get_running_loop()
                     setup_websocket_logging(broadcast_agent_log, event_loop, level=logging.INFO)
                     logger.info("✅ WebSocket logging enabled - agent logs will broadcast to /ws/agent-logs")
                     
