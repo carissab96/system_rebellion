@@ -353,6 +353,7 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
             await self._cc_the_stick("triage_decision", triage_decision)
         
         # 🎯 TRIAGE STEP 3: Route to VIC-20 if threshold met
+        logger.info(f"🧐🔍 DEBUG: should_escalate={should_escalate}, is_distributed={self.is_distributed}")
         if should_escalate and self.is_distributed:
             logger.info(f"🧐📨 Escalating {resource_type} alert to VIC-20 for coordination...")
             
@@ -363,6 +364,8 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
                 severity=severity,
                 confidence=confidence
             )
+        else:
+            logger.info(f"🧐⏸️ NOT escalating: should_escalate={should_escalate}, is_distributed={self.is_distributed}")
     
     async def _coordination_capability(
         self,
