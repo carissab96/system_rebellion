@@ -283,16 +283,20 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
             for decision in self.decision_log_buffer:
                 # Create StickMemoryEntry for eidetic memory storage
                 memory_entry = self.StickMemoryEntry(
-                    memory_type='decision_log',
-                    content={
+                    timestamp=decision['timestamp'],
+                    event_type='decision_log',
+                    details={
                         'from_agent': decision['from_agent'],
                         'decision_type': decision['decision_type'],
                         'payload': decision['payload'],
-                        'is_bob': decision['is_bob']
+                        'is_bob': decision['is_bob'],
+                        'paper_bags_consumed': self.paper_bags_consumed
                     },
                     anxiety_level=self.current_anxiety_level.value if hasattr(self, 'current_anxiety_level') else 'baseline',
-                    paper_bags_consumed=self.paper_bags_consumed,
-                    timestamp=decision['timestamp']
+                    importance='HIGH' if decision['is_bob'] else 'MEDIUM',
+                    related_hamsters=[],
+                    compliance_impact='decision_logged',
+                    never_forget=decision['is_bob']  # Never forget Bob activity!
                 )
                 
                 await self.db_integration.store_memory_entry(memory_entry, user_id=self.user_id)
