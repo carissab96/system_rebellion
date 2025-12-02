@@ -585,9 +585,11 @@ class StickDatabaseIntegration:
                 try:
                     new_session.add(memory_entry)
                     await new_session.commit()
+                    logger.info(f"📏✅ Wrote decision log to central_memory_bank (memory_id={memory_entry.memory_id})")
                     return memory_entry.memory_id
                 except Exception as e:
                     await new_session.rollback()
+                    logger.error(f"📏💥 Database write failed: {e}", exc_info=True)
                     raise Exception(f"MEMORY STORAGE FAILURE - The Stick is distressed: {str(e)}")
                 finally:
                     break  # Only use first session from generator
