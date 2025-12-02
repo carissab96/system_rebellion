@@ -261,6 +261,10 @@ async def lifespan(app: FastAPI):
                     setup_websocket_logging(ws_manager.broadcast, event_loop, level=logging.INFO)
                     logger.info("✅ WebSocket logging enabled - agent logs will broadcast via /ws/system-metrics")
                     
+                    # Test the logging handler
+                    test_logger = logging.getLogger('TheStick.Distributed')
+                    test_logger.info("🧪 TEST LOG - WebSocket handler attached and working!")
+                    
                     # Start background tasks (Meth Snail's optimization, aggregation, etc.)
                     agent_tasks = await start_all_background_tasks()
                     background_tasks.extend(agent_tasks)
