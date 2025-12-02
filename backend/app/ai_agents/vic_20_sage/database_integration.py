@@ -873,18 +873,26 @@ class VIC20DatabaseIntegration:
         """Pin important coordination decisions for eidetic memory"""
         try:
             importance = 9 if decision.decision_type == VIC20DecisionType.EMERGENCY_COORDINATION else 7
-            await pin_memory(
+            
+            # Create PinnedMemory object
+            pinned_memory = PinnedMemory(
                 user_id=user_id,
                 agent_name=AGENT_NAME,
-                memory_id=memory_id,
-                reason=f"Coordination decision: {decision.decision_type.value if hasattr(decision.decision_type, 'value') else str(decision.decision_type)}",
-                importance=importance
+                memory_type=VIC20MemoryTypes.COORDINATION_DECISION.value,
+                content={
+                    'decision_type': decision.decision_type.value if hasattr(decision.decision_type, 'value') else str(decision.decision_type),
+                    'coordination_target': decision.coordination_target,
+                    'confidence': decision.confidence_level
+                },
+                importance=importance,
+                timestamp=decision.timestamp,
+                source_memory_id=memory_id
             )
-            import logging
-            logging.getLogger("VIC20.Database").info(f"📌 Pinned coordination decision")
+            
+            await pin_memory(self.engine, pinned_memory)
+            logger.info(f"📌 Pinned coordination decision")
         except Exception as e:
-            import logging
-            logging.getLogger("VIC20.Database").warning(f"Failed to pin coordination decision: {str(e)}")
+            logger.warning(f"Failed to pin coordination decision: {str(e)}")
     
     async def _pin_orchestration_success(
         self,
