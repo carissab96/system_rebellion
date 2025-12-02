@@ -122,9 +122,16 @@ export function AgentMonitorDashboard() {
   }, []);
 
   const handleAgentEvent = (data: any) => {
+    // Skip heartbeat and connection messages
+    if (data.type === 'heartbeat' || data.type === 'connected' || data.type === 'pong') {
+      return;
+    }
+
     // Parse the event and categorize it
-    const agentName = data.agent_name || data.from_agent || 'system';
-    const message = data.message || data.event_type || JSON.stringify(data);
+    const agentName = data.agent_name || data.from_agent || data.agent || 'system';
+    const message = data.message || data.event_type || data.type || JSON.stringify(data);
+    
+    console.log('Agent event received:', { agentName, message, data });
     
     // Determine category based on message content
     let category: 'redis' | 'postgres' | 'vector' | 'system' = 'system';
@@ -212,7 +219,7 @@ export function AgentMonitorDashboard() {
         </div>
       </div>
 
-      {/* Agent Cards Grid */}
+      {/* Agent Cards Grid - 2 rows of 3-4 */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {AGENTS.map(agentConfig => {
           const agent = agents.get(agentConfig.name);
