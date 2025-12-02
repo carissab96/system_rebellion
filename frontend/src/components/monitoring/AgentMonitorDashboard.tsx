@@ -31,7 +31,7 @@ const AGENTS = [
   { name: 'system', emoji: '⚙️', displayName: 'System' },
 ];
 
-export default function AgentMonitorPage() {
+export function AgentMonitorDashboard() {
   const [agents, setAgents] = useState<Map<string, AgentStatus>>(new Map());
   const [connected, setConnected] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
@@ -103,7 +103,7 @@ export default function AgentMonitorPage() {
         const minutes = Math.floor((elapsed % 3600) / 60);
         const seconds = elapsed % 60;
         const uptimeStr = hours > 0 
-          ? `${hours}h ${minutes}m ${seconds}s`
+          ? `${hours}h ${minutes}m`
           : minutes > 0
           ? `${minutes}m ${seconds}s`
           : `${seconds}s`;
@@ -190,18 +190,25 @@ export default function AgentMonitorPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-6">
+    <div className="w-full">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">🎯 Agent Monitor Dashboard</h1>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <div className={`w-3 h-3 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500'}`} />
-            <span className="text-sm">{connected ? 'Connected' : 'Disconnected'}</span>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 mb-2">
+              🎯 Agent Monitor
+            </h2>
+            <p className="text-slate-400 text-sm">Real-time backend event streaming</p>
           </div>
-          <span className="text-sm text-gray-400">
-            {Array.from(agents.values()).filter(a => a.status === 'active').length} / {agents.size} agents active
-          </span>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div className={`w-3 h-3 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500'} animate-pulse`} />
+              <span className="text-sm text-slate-300">{connected ? 'Connected' : 'Disconnected'}</span>
+            </div>
+            <span className="text-sm text-slate-400">
+              {Array.from(agents.values()).filter(a => a.status === 'active').length} / {agents.size} active
+            </span>
+          </div>
         </div>
       </div>
 
@@ -212,50 +219,27 @@ export default function AgentMonitorPage() {
           if (!agent) return null;
 
           return (
-            <div key={agent.name} className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+            <div key={agent.name} className="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700/50 overflow-hidden hover:border-cyan-500/50 transition-colors">
               {/* Agent Header */}
-              <div className="bg-gray-750 p-4 border-b border-gray-700">
+              <div className="bg-slate-900/50 p-4 border-b border-slate-700/50">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <span className="text-2xl">{agent.emoji}</span>
-                    <h3 className="font-bold">{agentConfig.displayName}</h3>
+                    <h3 className="font-bold text-slate-100">{agentConfig.displayName}</h3>
                   </div>
                   <div className={`w-2 h-2 rounded-full ${getStatusColor(agent.status)}`} />
                 </div>
-                <div className="text-xs text-gray-400">
+                <div className="text-xs text-slate-400">
                   Uptime: {agent.uptime}
                 </div>
               </div>
 
               {/* Event Categories */}
               <div className="p-4 space-y-3">
-                {/* Redis */}
-                <EventSection
-                  title="🔴 Redis"
-                  events={agent.events.redis}
-                  getLevelColor={getLevelColor}
-                />
-
-                {/* PostgreSQL */}
-                <EventSection
-                  title="💾 PostgreSQL"
-                  events={agent.events.postgres}
-                  getLevelColor={getLevelColor}
-                />
-
-                {/* Vector Storage */}
-                <EventSection
-                  title="🔮 Vector"
-                  events={agent.events.vector}
-                  getLevelColor={getLevelColor}
-                />
-
-                {/* System */}
-                <EventSection
-                  title="📊 System"
-                  events={agent.events.system}
-                  getLevelColor={getLevelColor}
-                />
+                <EventSection title="🔴 Redis" events={agent.events.redis} getLevelColor={getLevelColor} />
+                <EventSection title="💾 PostgreSQL" events={agent.events.postgres} getLevelColor={getLevelColor} />
+                <EventSection title="🔮 Vector" events={agent.events.vector} getLevelColor={getLevelColor} />
+                <EventSection title="📊 System" events={agent.events.system} getLevelColor={getLevelColor} />
               </div>
             </div>
           );
@@ -276,12 +260,12 @@ function EventSection({
 }) {
   return (
     <div>
-      <h4 className="text-xs font-semibold text-gray-400 mb-1">{title}</h4>
-      <div className="bg-gray-900 rounded p-2 h-24 overflow-y-auto text-xs space-y-1">
+      <h4 className="text-xs font-semibold text-slate-400 mb-1">{title}</h4>
+      <div className="bg-slate-900/80 rounded p-2 h-20 overflow-y-auto text-xs space-y-1 font-mono">
         {events.length === 0 ? (
-          <div className="text-gray-600 italic">No events</div>
+          <div className="text-slate-600 italic">No events</div>
         ) : (
-          events.map((event, idx) => (
+          events.slice(-5).map((event, idx) => (
             <div key={idx} className={`${getLevelColor(event.level)} truncate`}>
               {new Date(event.timestamp).toLocaleTimeString()}: {event.message}
             </div>

@@ -10,6 +10,7 @@ import { PrimaryNav } from '../components/navigation/PrimaryNav';
 import { SecondaryNav } from '../components/navigation/SecondaryNav';
 import { NeuralMesh } from '../components/observatory/NeuralMesh';
 import { DistributedAgentDashboard } from '../components/distributed/DistributedAgentDashboard';
+import { AgentMonitorDashboard } from '../components/monitoring/AgentMonitorDashboard';
 import './ObservatoryPage.css';
 
 export const ObservatoryPage: React.FC = () => {
@@ -91,6 +92,16 @@ export const ObservatoryPage: React.FC = () => {
             </p>
           </div>
           <DistributedAgentDashboard />
+        </div>
+
+        {/* AGENT MONITOR - Backend event streaming */}
+        <div className="dashboard-container" style={{ 
+          padding: '2rem', 
+          maxWidth: '1600px', 
+          margin: '2rem auto 0',
+          background: 'linear-gradient(180deg, rgba(1,1,25,0.8) 0%, rgba(1,1,25,0.9) 100%)'
+        }}>
+          <AgentMonitorDashboard />
         </div>
       </main>
     </div>
