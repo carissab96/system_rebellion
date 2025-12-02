@@ -166,6 +166,10 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
         self.decision_log_buffer = []
         self.buffer_max_size = 10  # Batch write every 10 decisions
         self.total_decisions_logged = 0
+        
+        # Start periodic flush task (every 30 seconds)
+        import asyncio
+        self._flush_task = asyncio.create_task(self._periodic_flush())
     
     async def _handle_coordination_request(self, message: AgentMessage) -> None:
         """
@@ -306,6 +310,25 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
             self._consume_paper_bag("buffer_flush_error")
             # Clear buffer anyway to prevent memory leak
             self.decision_log_buffer.clear()
+    
+    async def _periodic_flush(self) -> None:
+        """Periodically flush decision log buffer to prevent data loss"""
+        import asyncio
+        while True:
+            try:
+                await asyncio.sleep(30)  # Flush every 30 seconds
+                if self.decision_log_buffer:
+                    logger.info(f"📏⏰ Periodic flush triggered ({len(self.decision_log_buffer)} decisions buffered)")
+                    await self._flush_decision_log_buffer()
+            except asyncio.CancelledError:
+                # Flush on shutdown
+                if self.decision_log_buffer:
+                    logger.info(f"📏🛑 Shutdown flush ({len(self.decision_log_buffer)} decisions)")
+                    await self._flush_decision_log_buffer()
+                break
+            except Exception as e:
+                logger.error(f"📏💥 Error in periodic flush: {e}", exc_info=True)
+                self._consume_paper_bag("periodic_flush_error")
     
     async def _handle_triage_decision(self, message: AgentMessage) -> None:
         """DEPRECATED: Handle triage decisions - now using DECISION_LOG instead."""
