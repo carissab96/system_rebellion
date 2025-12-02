@@ -201,36 +201,7 @@ class VIC20DatabaseIntegration:
                 simplicity_effectiveness = 1.0 - (len(str(decision.agent_actions)) / 1000.0) if decision.agent_actions else 1.0
                 simplicity_effectiveness = max(0.0, min(1.0, simplicity_effectiveness))
                 
-                # === WRITE 1: STRUCTURED DATA TO AGENT TABLE ===
-                
-                agent_memory = VIC20MemoryBank(
-                    memory_id=agent_memory_id,
-                    user_id=user_id,
-                    timestamp=decision.timestamp,
-                    
-                    # VIC-20-specific structured fields
-                    coordination_pattern=coordination_pattern,
-                    mediation_insight=mediation_insight,
-                    ancient_wisdom_application=ancient_wisdom_application,
-                    conflict_resolution_method=conflict_resolution_method,
-                    agent_personality_patterns=agent_personality_patterns,
-                    successful_mediation_strategies=successful_mediation_strategies,
-                    retro_computing_insight=retro_computing_insight,
-                    
-                    # STRUCTURED NUMERIC FIELDS - REAL or None
-                    agent_harmony_score=agent_harmony_score,
-                    coordination_efficiency=coordination_efficiency,
-                    simplicity_effectiveness=simplicity_effectiveness,
-                    
-                    # Link to central memory
-                    shared_with_central=True,
-                    central_memory_id=memory_id
-                )
-                
-                session.add(agent_memory)
-                await session.flush()  # Ensure agent memory is written first
-                
-                # === WRITE 2: SUMMARY TO CENTRAL MEMORY BANK ===
+                # === WRITE 1: SUMMARY TO CENTRAL MEMORY BANK (MUST BE FIRST FOR FK) ===
                 
                 # Determine priority based on decision type
                 priority = DECISION_PRIORITY_MAP.get(
@@ -278,9 +249,38 @@ class VIC20DatabaseIntegration:
                 )
                 
                 session.add(memory_entry)
+                await session.flush()  # Flush central memory first so FK constraint is satisfied
+                
+                # === WRITE 2: STRUCTURED DATA TO AGENT TABLE (AFTER CENTRAL FOR FK) ===
+                
+                agent_memory = VIC20MemoryBank(
+                    memory_id=agent_memory_id,
+                    user_id=user_id,
+                    timestamp=decision.timestamp,
+                    
+                    # VIC-20-specific structured fields
+                    coordination_pattern=coordination_pattern,
+                    mediation_insight=mediation_insight,
+                    ancient_wisdom_application=ancient_wisdom_application,
+                    conflict_resolution_method=conflict_resolution_method,
+                    agent_personality_patterns=agent_personality_patterns,
+                    successful_mediation_strategies=successful_mediation_strategies,
+                    retro_computing_insight=retro_computing_insight,
+                    
+                    # STRUCTURED NUMERIC FIELDS - REAL or None
+                    agent_harmony_score=agent_harmony_score,
+                    coordination_efficiency=coordination_efficiency,
+                    simplicity_effectiveness=simplicity_effectiveness,
+                    
+                    # Link to central memory (FK now satisfied)
+                    shared_with_central=True,
+                    central_memory_id=memory_id
+                )
+                
+                session.add(agent_memory)
                 await session.commit()
-                await session.refresh(agent_memory)
                 await session.refresh(memory_entry)
+                await session.refresh(agent_memory)
                 
                 # === WRITE 3: VECTOR EMBEDDING (NON-BLOCKING) ===
                 # This is the KEY CHANGE - fire-and-forget vector write
