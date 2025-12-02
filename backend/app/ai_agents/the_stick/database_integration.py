@@ -580,8 +580,8 @@ class StickDatabaseIntegration:
             session.add(memory_entry)
             return memory_entry.memory_id
         else:
-            # Create new session and commit
-            async with self.session_factory() as new_session:
+            # Create new session and commit using db_getter
+            async for new_session in self.db_getter():
                 try:
                     new_session.add(memory_entry)
                     await new_session.commit()
@@ -589,6 +589,8 @@ class StickDatabaseIntegration:
                 except Exception as e:
                     await new_session.rollback()
                     raise Exception(f"MEMORY STORAGE FAILURE - The Stick is distressed: {str(e)}")
+                finally:
+                    break  # Only use first session from generator
     
     async def store_user_behavior_observation(self, user_id: str, observation: Dict[str, Any]):
         """Store user behavior observation in central memory bank with anxiety-enhanced perception"""
