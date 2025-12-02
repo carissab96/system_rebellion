@@ -221,8 +221,25 @@ async def lifespan(app: FastAPI):
                 try:
                     redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
                     logger.info(f"🌐 Initializing distributed agent consciousness (Redis: {redis_url})...")
+                    
+                    # Get system user ID for agent database writes
+                    from sqlalchemy import select
+                    from app.models.user import User
+                    from app.core.database import get_async_db
+                    
+                    system_user_id = None
+                    async for session in get_async_db():
+                        result = await session.execute(select(User.id).limit(1))
+                        system_user_id = result.scalar_one_or_none()
+                        break
+                    
+                    if not system_user_id:
+                        logger.warning("⚠️ No users found in database - agents will not be able to write to database")
+                    else:
+                        logger.info(f"✅ System user ID: {system_user_id}")
+                    
                     # Use get_async_db directly - it's an async generator that yields sessions
-                    await initialize_distributed_agents(redis_url, db_getter=get_async_db)
+                    await initialize_distributed_agents(redis_url, db_getter=get_async_db, user_id=system_user_id)
                     logger.info("✅ Distributed agents initialized:")
                     logger.info("  🧐 Sir Hawkington - CPU Monitor")
                     logger.info("  🐌💨 Terry the Meth Snail - Memory Monitor")

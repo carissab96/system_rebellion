@@ -57,16 +57,17 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
     and adds distributed features via DistributedAgentMixin.
     """
     
-    def __init__(self, db_getter=None):
+    def __init__(self, db_getter=None, user_id: str = None):
         """
         Initialize VIC-20 Sage with distributed consciousness.
         
         Args:
-            db_getter: Database session getter (optional, for lazy init)
+            db_getter: Database session factory for PostgreSQL writes
+            user_id: User ID for database writes (required for multi-tenant support)
         """
-        # Initialize both parent classes via MRO
-        # Pass db_getter to VIC20SageBrainV2
+        # Initialize decision engine (parent class)
         super().__init__(db_getter=db_getter)
+        self.user_id = user_id
         
         # Set agent name for distributed features
         self.agent_name = "vic_20_sage"
@@ -376,7 +377,7 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
                 
                 # Store coordination decision
                 await self.db_integration.store_coordination_decision(
-                    user_id=None,  # System-level decision (no user)
+                    user_id=self.user_id,
                     decision=decision_obj
                 )
                 

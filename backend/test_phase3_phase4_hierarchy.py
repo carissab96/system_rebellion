@@ -58,7 +58,19 @@ async def test_hierarchy():
     # Initialize manager
     print("📦 Initializing distributed agent manager...")
     try:
-        manager = DistributedAgentManager(db_getter=get_async_db)
+        # Get system user ID
+        from sqlalchemy import select
+        from app.models.user import User
+        
+        system_user_id = None
+        async for session in get_async_db():
+            result = await session.execute(select(User.id).limit(1))
+            system_user_id = result.scalar_one_or_none()
+            break
+        
+        print(f"✅ System user ID: {system_user_id}")
+        
+        manager = DistributedAgentManager(db_getter=get_async_db, user_id=system_user_id)
         await manager.initialize()
         print("✅ Manager initialized\n")
     except Exception as e:

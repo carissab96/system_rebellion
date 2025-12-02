@@ -62,15 +62,17 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
         decisions = await hawkington.get_recent_decisions()
     """
     
-    def __init__(self, db_getter=None):
+    def __init__(self, db_getter=None, user_id: str = None):
         """
         Initialize Sir Hawkington with distributed consciousness.
         
         Args:
             db_getter: Database session getter (optional)
+            user_id: User ID for database writes (required for multi-tenant support)
         """
         # Initialize both parent classes via MRO
         super().__init__(db_getter=db_getter)
+        self.user_id = user_id
         
         # Set agent name for distributed features
         self.agent_name = "sir_hawkington"

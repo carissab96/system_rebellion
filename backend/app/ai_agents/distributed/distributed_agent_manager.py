@@ -24,10 +24,11 @@ class DistributedAgentManager:
     Handles initialization, lifecycle, and coordination of all distributed agents.
     """
     
-    def __init__(self, redis_url: str = "redis://localhost:6379", db_getter=None):
+    def __init__(self, redis_url: str = "redis://localhost:6379", db_getter=None, user_id: str = None):
         self.redis_url = redis_url
         self.redis_client = None
         self.db_getter = db_getter
+        self.user_id = user_id
         self.agents: Dict[str, Any] = {}
         self._initialized = False
     
@@ -61,7 +62,7 @@ class DistributedAgentManager:
             print(f"   self.db_getter type: {type(self.db_getter)}\n")
             
             # Sir Hawkington - CPU Monitor & Triage Commander
-            sir_hawk = SirHawkingtonDistributed(db_getter=self.db_getter)
+            sir_hawk = SirHawkingtonDistributed(db_getter=self.db_getter, user_id=self.user_id)
             print(f"✅ Sir Hawkington created with db_getter: {sir_hawk.db_getter}")
             await sir_hawk.initialize_distributed(self.redis_client)
             self.agents["sir_hawkington"] = sir_hawk
@@ -69,35 +70,35 @@ class DistributedAgentManager:
             logger.info("✅ Sir Hawkington initialized")
             
             # Terry the Meth Snail - Memory Monitor
-            terry = MethSnailDistributed(db_getter=self.db_getter)
+            terry = MethSnailDistributed(db_getter=self.db_getter, user_id=self.user_id)
             await terry.initialize_distributed(self.redis_client)
             self.agents["meth_snail"] = terry
             register_agent("meth_snail", terry)
             logger.info("✅ Terry the Meth Snail initialized")
             
             # The Hamsters - Disk Monitor (Steve, Bob and Carl)
-            hamsters = HamstersDistributed(db_getter=self.db_getter)
+            hamsters = HamstersDistributed(db_getter=self.db_getter, user_id=self.user_id)
             await hamsters.initialize_distributed(self.redis_client)
             self.agents["hamsters"] = hamsters
             register_agent("hamsters", hamsters)
             logger.info("✅ The Hamsters initialized (Steve, Bob and Carl)")
             
             # Quantum Shadow People - Network Monitor
-            shadows = QuantumShadowPeopleDistributed(db_getter=self.db_getter)
+            shadows = QuantumShadowPeopleDistributed(db_getter=self.db_getter, user_id=self.user_id)
             await shadows.initialize_distributed(self.redis_client)
             self.agents["quantum_shadow_people"] = shadows
             register_agent("quantum_shadow_people", shadows)
             logger.info("✅ Quantum Shadow People initialized")
             
             # The Stick - Learning Coordinator
-            stick = TheStickDistributed(db_getter=self.db_getter)
+            stick = TheStickDistributed(db_getter=self.db_getter, user_id=self.user_id)
             await stick.initialize_distributed(self.redis_client)
             self.agents["the_stick"] = stick
             register_agent("the_stick", stick)
             logger.info("✅ The Stick initialized")
             
             # VIC-20 Sage - Orchestrator
-            vic20 = VIC20SageDistributed(db_getter=self.db_getter)
+            vic20 = VIC20SageDistributed(db_getter=self.db_getter, user_id=self.user_id)
             await vic20.initialize_distributed(self.redis_client)
             self.agents["vic_20_sage"] = vic20
             register_agent("vic_20_sage", vic20)
@@ -266,7 +267,7 @@ class DistributedAgentManager:
 _distributed_manager: DistributedAgentManager = None
 
 
-async def initialize_distributed_agents(redis_url: str = "redis://localhost:6379", db_getter=None):
+async def initialize_distributed_agents(redis_url: str = "redis://localhost:6379", db_getter=None, user_id: str = None):
     """
     Initialize distributed agents system.
     
@@ -275,6 +276,7 @@ async def initialize_distributed_agents(redis_url: str = "redis://localhost:6379
     Args:
         redis_url: Redis connection URL
         db_getter: Database session factory for agents that need database access
+        user_id: User ID for agent database writes (required for multi-tenant support)
     """
     global _distributed_manager
     
@@ -283,10 +285,11 @@ async def initialize_distributed_agents(redis_url: str = "redis://localhost:6379
     print(f"   redis_url: {redis_url}")
     print(f"   db_getter: {db_getter}")
     print(f"   db_getter type: {type(db_getter)}")
+    print(f"   user_id: {user_id}")
     print(f"{'='*80}\n")
     
     if _distributed_manager is None:
-        _distributed_manager = DistributedAgentManager(redis_url, db_getter=db_getter)
+        _distributed_manager = DistributedAgentManager(redis_url, db_getter=db_getter, user_id=user_id)
     
     await _distributed_manager.initialize()
     return _distributed_manager

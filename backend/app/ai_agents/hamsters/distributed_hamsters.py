@@ -55,15 +55,17 @@ class HamstersDistributed(AgentDecisionEngine, HamstersBrainV3):
     and adds distributed features via DistributedAgentMixin.
     """
     
-    def __init__(self, db_getter=None):
+    def __init__(self, db_getter=None, user_id: str = None):
         """
         Initialize the hamster trio with distributed consciousness.
         
         Args:
-            db_getter: Database session getter (optional)
+            db_getter: Database session factory for PostgreSQL writes
+            user_id: User ID for database writes (required for multi-tenant support)
         """
-        # Initialize both parent classes via MRO
+        # Initialize decision engine (parent class)
         super().__init__(db_getter=db_getter)
+        self.user_id = user_id
         
         # Set agent name for distributed features
         self.agent_name = "hamsters"

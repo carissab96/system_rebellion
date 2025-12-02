@@ -56,15 +56,17 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
     and adds distributed features via DistributedAgentMixin.
     """
     
-    def __init__(self, db_getter=None):
+    def __init__(self, db_getter=None, user_id: str = None):
         """
         Initialize Terry with distributed consciousness.
         
         Args:
-            db_getter: Database session getter (optional)
+            db_getter: Database session factory for PostgreSQL writes
+            user_id: User ID for database writes (required for multi-tenant support)
         """
-        # Initialize both parent classes via MRO
+        # Initialize decision engine (parent class)
         super().__init__(db_getter=db_getter)
+        self.user_id = user_id
         
         # Set agent name for distributed features
         self.agent_name = "meth_snail"
@@ -473,7 +475,7 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
             }
             
             await self.db_integration.store_decision(
-                user_id=None,  # System-level decisions don't have a user
+                user_id=self.user_id,
                 decision_data=action_data
             )
             

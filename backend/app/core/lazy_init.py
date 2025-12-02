@@ -62,7 +62,20 @@ async def initialize_agents_and_websockets(app_state) -> bool:
             # Import get_async_db for agent database access
             from app.core.database import get_async_db
             from app.ai_agents.distributed.distributed_agent_manager import initialize_distributed_agents, get_distributed_manager
-            await initialize_distributed_agents(redis_url, db_getter=get_async_db)
+            from sqlalchemy import select
+            from app.models.user import User
+            
+            # Get system user ID for agent database writes
+            system_user_id = None
+            async for session in get_async_db():
+                result = await session.execute(select(User.id).limit(1))
+                system_user_id = result.scalar_one_or_none()
+                break
+            
+            if not system_user_id:
+                logger.warning("⚠️ No users found - agents will not be able to write to database")
+            
+            await initialize_distributed_agents(redis_url, db_getter=get_async_db, user_id=system_user_id)
             agent_manager = get_distributed_manager()
             
             agent_elapsed = time.time() - agent_start
