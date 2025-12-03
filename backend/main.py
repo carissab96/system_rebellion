@@ -256,8 +256,8 @@ async def lifespan(app: FastAPI):
                     ws_manager = get_websocket_manager()
                     event_loop = asyncio.get_running_loop()
                     
-                    # Use ws_manager.broadcast as the broadcast function
-                    setup_websocket_logging(ws_manager.broadcast, event_loop, level=logging.INFO)
+                    # Use ws_manager.broadcast_json as the broadcast function
+                    setup_websocket_logging(ws_manager.broadcast_json, event_loop, level=logging.INFO)
                     logger.info("✅ WebSocket logging enabled - agent logs will broadcast via /ws/system-metrics")
                     
                     # Test the logging handler
