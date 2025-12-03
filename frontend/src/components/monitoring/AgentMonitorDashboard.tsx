@@ -2,6 +2,39 @@ import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { Crown, Cpu, Zap, HardDrive, Wifi, Ruler, Settings } from 'lucide-react';
 import type { RootState } from '../../store/store';
+import { WebSocketService } from '../../services/websocket';
+
+// Backend WebSocket message types (source of truth)
+interface AgentMessage {
+  type: 'agent_message';
+  data: {
+    message_id: string;
+    message_type: string;
+    priority: number;
+    from_agent: string;
+    timestamp: string;
+    payload: {
+      severity?: string;
+      routing?: string;
+      reasoning?: string;
+      metrics_summary?: any;
+    };
+    redis_channel: string;
+  };
+}
+
+interface ResourceAlert {
+  type: 'resource_alert';
+  data: {
+    from_agent: string;
+    timestamp: string;
+    payload: {
+      type: string;
+      metrics: any;
+    };
+    redis_channel: string;
+  };
+}
 
 interface LogEntry {
   timestamp: string;
@@ -60,10 +93,87 @@ export function AgentMonitorDashboard() {
     setAgents(initialAgents);
   }, []);
 
-  // TODO: Hook into WebSocket to receive agent_log messages
-  // The backend broadcasts agent_log messages via ws_manager.broadcast_json
-  // We need to subscribe to those messages and update the agent logs
-  // For now, just showing the UI structure
+  // Listen for agent messages from WebSocket
+  useEffect(() => {
+    const handleAgentMessage = (msg: AgentMessage | ResourceAlert) => {
+      if (msg.type === 'agent_message') {
+        const agentName = msg.data.from_agent;
+        const reasoning = msg.data.payload.reasoning || msg.data.message_type;
+        const severity = msg.data.payload.severity || 'info';
+        
+        setAgents(prev => {
+          const updated = new Map(prev);
+          const agent = updated.get(agentName);
+          
+          if (agent) {
+            const logEntry: LogEntry = {
+              timestamp: msg.data.timestamp,
+              level: severity === 'high' || severity === 'emergency' ? 'error' : 
+                     severity === 'medium' ? 'warning' : 'info',
+              category: 'system',
+              message: reasoning,
+            };
+            
+            const systemLogs = [...agent.logs.system, logEntry].slice(-5);
+            
+            updated.set(agentName, {
+              ...agent,
+              is_active: true,
+              logs: {
+                ...agent.logs,
+                system: systemLogs,
+              },
+            });
+          }
+          
+          return updated;
+        });
+      } else if (msg.type === 'resource_alert') {
+        const agentName = msg.data.from_agent;
+        const metrics = msg.data.payload.metrics;
+        
+        setAgents(prev => {
+          const updated = new Map(prev);
+          const agent = updated.get(agentName);
+          
+          if (agent) {
+            const logEntry: LogEntry = {
+              timestamp: msg.data.timestamp,
+              level: 'info',
+              category: 'system',
+              message: `CPU: ${metrics.cpu_percent}% | Memory: ${metrics.memory_percent}% | Disk: ${metrics.disk_percent}%`,
+            };
+            
+            const systemLogs = [...agent.logs.system, logEntry].slice(-5);
+            
+            updated.set(agentName, {
+              ...agent,
+              is_active: true,
+              logs: {
+                ...agent.logs,
+                system: systemLogs,
+              },
+            });
+          }
+          
+          return updated;
+        });
+      }
+    };
+
+    // Subscribe to WebSocket messages
+    const wsService = WebSocketService.getInstance(
+      import.meta.env.VITE_WS_URL || 'ws://localhost:8000'
+    );
+    
+    wsService.subscribe(handleAgentMessage);
+    console.log('✅ AgentMonitor: Subscribed to WebSocket messages');
+    
+    return () => {
+      wsService.unsubscribe(handleAgentMessage);
+      console.log('❌ AgentMonitor: Unsubscribed from WebSocket messages');
+    };
+  }, []);
 
   const getLevelColor = (level: string) => {
     switch (level) {
