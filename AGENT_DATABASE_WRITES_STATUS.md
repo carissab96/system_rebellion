@@ -116,16 +116,27 @@ All agents use the **DUAL-WRITE pattern**:
 ### SQL Queries to Run:
 
 ```sql
--- Check central memory bank by agent
+-- Check central memory bank by agent (shows which agents are writing)
 SELECT agent_name, COUNT(*) as count, MAX(created_at) as last_write
 FROM central_memory_bank
-GROUP BY agent_name;
+GROUP BY agent_name
+ORDER BY count DESC;
 
--- Check agent-specific tables
-SELECT COUNT(*) FROM the_stick_memory_bank;
-SELECT COUNT(*) FROM vic20_memory_bank;
-SELECT COUNT(*) FROM meth_snail_memory_bank;
-SELECT COUNT(*) FROM sir_hawkington_memory_bank;
-SELECT COUNT(*) FROM hamsters_memory_bank;
-SELECT COUNT(*) FROM quantum_shadow_people_memory_bank;
+-- Check agent-specific tables (shows if DUAL-WRITE is working)
+SELECT 'the_stick_memory_bank' as table_name, COUNT(*) as row_count FROM the_stick_memory_bank
+UNION ALL
+SELECT 'vic20_memory_bank', COUNT(*) FROM vic20_memory_bank
+UNION ALL
+SELECT 'meth_snail_memory_bank', COUNT(*) FROM meth_snail_memory_bank
+UNION ALL
+SELECT 'sir_hawkington_memory_bank', COUNT(*) FROM sir_hawkington_memory_bank
+UNION ALL
+SELECT 'hamsters_memory_bank', COUNT(*) FROM hamsters_memory_bank
+UNION ALL
+SELECT 'quantum_shadow_people_memory_bank', COUNT(*) FROM quantum_shadow_people_memory_bank;
+
+-- Check learning tables
+SELECT 'user_learning_patterns' as table_name, COUNT(*) as row_count FROM user_learning_patterns
+UNION ALL
+SELECT 'agent_learning_interactions', COUNT(*) FROM agent_learning_interactions;
 ```
