@@ -3,20 +3,6 @@ import { useSelector } from 'react-redux';
 import { Crown, Cpu, Zap, HardDrive, Wifi, Ruler, Settings } from 'lucide-react';
 import type { RootState } from '../../store/store';
 
-// Backend payload structure (source of truth)
-interface AgentLogMessage {
-  type: 'agent_log';
-  agent_name: string;
-  level: 'info' | 'warning' | 'error' | 'debug';
-  category: 'redis' | 'postgres' | 'vector' | 'system';
-  message: string;
-  timestamp: string;
-  logger: string;
-  module: string;
-  function: string;
-  line: number;
-}
-
 interface LogEntry {
   timestamp: string;
   level: string;
@@ -74,18 +60,10 @@ export function AgentMonitorDashboard() {
     setAgents(initialAgents);
   }, []);
 
-  // Listen for agent_log messages from metrics updates
-  useEffect(() => {
-    // Check if we have any new data in metrics
-    if (metrics.data) {
-      // For now, just log to see what we're getting
-      console.log('Metrics data:', metrics.data);
-    }
-  }, [metrics.data]);
-
-  // TODO: Subscribe to WebSocket messages directly
-  // The WebSocketService has a subscriber system we can tap into
-  // For now, we're just showing the UI structure
+  // TODO: Hook into WebSocket to receive agent_log messages
+  // The backend broadcasts agent_log messages via ws_manager.broadcast_json
+  // We need to subscribe to those messages and update the agent logs
+  // For now, just showing the UI structure
 
   const getLevelColor = (level: string) => {
     switch (level) {
