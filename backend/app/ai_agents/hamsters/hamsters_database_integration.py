@@ -290,6 +290,47 @@ class HamstersDatabaseIntegration:
                 await session.refresh(agent_memory)
                 await session.refresh(memory_entry)
                 
+                # === WRITE 3: VECTOR EMBEDDING (FIRE-AND-FORGET) ===
+                try:
+                    decision_text = create_decision_text(
+                        agent_name=AGENT_NAME,
+                        decision_type="infrastructure_intervention",
+                        description=intervention.human_readable_summary if hasattr(intervention, 'human_readable_summary') and intervention.human_readable_summary else f"Infrastructure {intervention.type.value if hasattr(intervention.type, 'value') else str(intervention.type)}",
+                        reasoning=f"Hamster collective intervention - Beer: {intervention.beer_consumed}, Duct tape: {len(intervention.duct_tape_used) if intervention.duct_tape_used else 0} applications",
+                        context={
+                            'priority': priority,
+                            'event_type': intervention.type.value if hasattr(intervention.type, 'value') else str(intervention.type),
+                            'affected_agents': ['the_stick'] if (hasattr(intervention, 'caused_stick_anxiety_spike') and intervention.caused_stick_anxiety_spike) else []
+                        }
+                    )
+                    
+                    embedding_service = get_embedding_service()
+                    embedding = await embedding_service.generate_embedding_async(decision_text)
+                    
+                    vector_storage = get_vector_storage()
+                    vector_storage.store_decision_vector_fire_and_forget(
+                        agent_name=AGENT_NAME,
+                        decision_type="infrastructure_intervention",
+                        decision_text=decision_text,
+                        embedding=embedding,
+                        occurred_at=intervention.started_at,
+                        user_id=user_id,
+                        event_type=intervention.type.value if hasattr(intervention.type, 'value') else str(intervention.type),
+                        priority=priority,
+                        metadata=to_json_safe({
+                            'intervention_type': intervention.type.value if hasattr(intervention.type, 'value') else str(intervention.type),
+                            'beer_consumed': intervention.beer_consumed,
+                            'duct_tape_used': len(intervention.duct_tape_used) if intervention.duct_tape_used else 0,
+                            'space_freed_gb': intervention.space_freed_gb
+                        }),
+                        sql_memory_id=memory_id,
+                        confidence_score=solution_effectiveness,
+                        decision_summary=f"Hamster intervention: {intervention.type.value if hasattr(intervention.type, 'value') else str(intervention.type)}"
+                    )
+                    logger.debug(f"🔮 Queued vector embedding for intervention {memory_id}")
+                except Exception as ve:
+                    logger.warning(f"⚠️ Vector embedding failed (non-critical): {ve}")
+                
                 await session.close()
                 
                 logger.info(

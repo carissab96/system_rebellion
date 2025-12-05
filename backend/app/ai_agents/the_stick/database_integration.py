@@ -222,6 +222,48 @@ class StickDatabaseIntegration:
                 await session.refresh(agent_memory)
                 await session.refresh(central_memory)
                 
+                # === WRITE 3: VECTOR EMBEDDING (FIRE-AND-FORGET) ===
+                try:
+                    decision_text = create_decision_text(
+                        agent_name=AGENT_NAME,
+                        decision_type="compliance_violation",
+                        description=f"Compliance violation: {violation.violation_type}",
+                        reasoning=f"Severity: {violation.severity}, Measured: {violation.measured_value}, Threshold: {violation.threshold_value}",
+                        context={
+                            'priority': priority,
+                            'event_type': StickEventTypes.COMPLIANCE_VIOLATION.value,
+                            'affected_agents': []
+                        }
+                    )
+                    
+                    embedding_service = get_embedding_service()
+                    embedding = await embedding_service.generate_embedding_async(decision_text)
+                    
+                    vector_storage = get_vector_storage()
+                    vector_storage.store_decision_vector_fire_and_forget(
+                        agent_name=AGENT_NAME,
+                        decision_type="compliance_violation",
+                        decision_text=decision_text,
+                        embedding=embedding,
+                        occurred_at=violation.timestamp,
+                        user_id=user_id,
+                        event_type=StickEventTypes.COMPLIANCE_VIOLATION.value,
+                        priority=priority,
+                        metadata=to_json_safe({
+                            'violation_type': violation.violation_type,
+                            'severity': violation.severity,
+                            'measured_value': violation.measured_value,
+                            'threshold_value': violation.threshold_value,
+                            'anxiety_impact': violation.anxiety_impact
+                        }),
+                        sql_memory_id=central_memory_id,
+                        confidence_score=1.0 - (violation.anxiety_impact if violation.anxiety_impact else 0.5),
+                        decision_summary=f"Violation: {violation.violation_type} ({violation.severity})"
+                    )
+                    logger.debug(f"🔮 Queued vector embedding for violation {central_memory_id}")
+                except Exception as ve:
+                    logger.warning(f"⚠️ Vector embedding failed (non-critical): {ve}")
+                
                 logger.info(
                     f"📋✨ DUAL-WRITE SUCCESS: Compliance violation {violation.violation_type} stored in agent table "
                     f"({agent_memory_id}) and CMB ({central_memory_id})"
@@ -438,6 +480,48 @@ class StickDatabaseIntegration:
                 await session.commit()
                 await session.refresh(agent_memory)
                 await session.refresh(central_memory)
+                
+                # === WRITE 3: VECTOR EMBEDDING (FIRE-AND-FORGET) ===
+                try:
+                    decision_text = create_decision_text(
+                        agent_name=AGENT_NAME,
+                        decision_type="hamster_encounter",
+                        description=f"HAMSTER ENCOUNTER: {', '.join(normalized_hamsters)}",
+                        reasoning=f"Panic level: {alert.panic_level}, Anxiety multiplier: {alert.anxiety_multiplier}, Paper bags consumed: {alert.paper_bags_consumed}",
+                        context={
+                            'priority': 10,
+                            'event_type': StickEventTypes.HAMSTER_PROXIMITY_ALERT.value,
+                            'affected_agents': normalized_hamsters
+                        }
+                    )
+                    
+                    embedding_service = get_embedding_service()
+                    embedding = await embedding_service.generate_embedding_async(decision_text)
+                    
+                    vector_storage = get_vector_storage()
+                    vector_storage.store_decision_vector_fire_and_forget(
+                        agent_name=AGENT_NAME,
+                        decision_type="hamster_encounter",
+                        decision_text=decision_text,
+                        embedding=embedding,
+                        occurred_at=alert.timestamp,
+                        user_id=user_id,
+                        event_type=StickEventTypes.HAMSTER_PROXIMITY_ALERT.value,
+                        priority=10,
+                        metadata=to_json_safe({
+                            'active_hamsters': normalized_hamsters,
+                            'panic_level': alert.panic_level,
+                            'anxiety_multiplier': alert.anxiety_multiplier,
+                            'paper_bags_consumed': alert.paper_bags_consumed,
+                            'bob_detected': HAMSTER_BOB in normalized_hamsters
+                        }),
+                        sql_memory_id=central_memory_id,
+                        confidence_score=0.0,  # The Stick has NO confidence when hamsters are involved
+                        decision_summary=f"HAMSTER ENCOUNTER: {', '.join(normalized_hamsters)}"
+                    )
+                    logger.debug(f"🔮 Queued vector embedding for hamster encounter {central_memory_id}")
+                except Exception as ve:
+                    logger.warning(f"⚠️ Vector embedding failed (non-critical): {ve}")
                 
                 logger.info(
                     f"📋✨ DUAL-WRITE SUCCESS: Hamster encounter with {normalized_hamsters} stored in agent table "

@@ -15,6 +15,9 @@ from sqlalchemy import select, func, desc, and_, update
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
+# Import base class
+from app.ai_agents.distributed.base_database_integration import BaseDatabaseIntegration, utc_now
+
 # Import all required models
 from app.models.agent_memory_banks import (
     CentralMemoryBank,
@@ -49,49 +52,24 @@ from app.services.vector_storage import get_vector_storage
 
 logger = logging.getLogger("MethSnail.Database")
 
-def utc_now():
-    """Get current UTC time with timezone awareness"""
-    return datetime.now(timezone.utc)
 
-class MethSnailDatabaseIntegration:
+class MethSnailDatabaseIntegration(BaseDatabaseIntegration):
     """
     Database integration for Meth Snail's optimization engine.
     
     Now with full pattern learning capabilities!
+    Inherits from BaseDatabaseIntegration for consistent session management.
     """
     
-    def __init__(self, db_getter=None):
-        """Initialize with db_getter for shared pool"""
-        self.db_getter = db_getter
-        self._initialized = False
-        self.logger = logging.getLogger("MethSnail.Database.Integration")
-        self.agent_name = AGENT_NAME
-
-    async def initialize(self):
-        """Initialize database connection if not already done"""
-        if self._initialized:
-            return
-        
-        if not self.db_getter:
-            raise ValueError("db_getter is required - Meth Snail optimizes the SHARED pool!")
-            
-        try:
-            # Verify db_getter works
-            async for session in self.db_getter():
-                break
-            self._initialized = True
-            self.logger.info("🐌💨 Database integration initialized using shared connection pool (OPTIMIZED!)")
-        except Exception as e:
-            self.logger.error(f"🐌💥 Failed to initialize: {e}")
-            raise
+    def _get_agent_name(self) -> str:
+        """Return agent name for base class"""
+        return AGENT_NAME
     
-    @property
-    def session(self):
+    async def store_decision(self, user_id: str, decision: OptimizationDecision) -> str:
         """
-        Legacy property for backwards compatibility.
-        Methods should be refactored to use async for session in self.db_getter()
+        Required by base class - alias for store_optimization_decision
         """
-        raise RuntimeError("Direct session access not supported - use async for session in self.db_getter()")
+        return await self.store_optimization_decision(user_id, decision)
     
     # === DUAL-WRITE METHOD 1: STORE OPTIMIZATION DECISION ===
     
@@ -124,139 +102,180 @@ class MethSnailDatabaseIntegration:
         if not decision.timestamp:
             raise ValueError("🐌💥 Missing timestamp - cannot store without real timestamp")
         
-        if not self._initialized:
-            await self.initialize()
+        await self.ensure_initialized()
         
-        try:
-            # Generate IDs
-            agent_memory_id = str(uuid.uuid4())
-            central_memory_id = str(uuid.uuid4())
-            
-            # === EXTRACT REAL DATA (NO FALLBACKS) ===
-            
-            # Build optimization pattern
-            optimization_pattern = to_json_safe({
-                'priority': decision.priority.value if hasattr(decision.priority, 'value') else str(decision.priority),
-                'actions': decision.actions,
-                'urgency': decision.urgency,
-                'estimated_impact': decision.estimated_impact
-            })
-            
-            # Build caffeine level context
-            caffeine_level_context = decision.caffeine_level_mg if decision.caffeine_level_mg else None
-            
-            # Build shell spin correlation
-            shell_spin_correlation = to_json_safe({
-                'shell_spin_count': decision.shell_spin_count,
-                'data_quality_score': decision.data_quality_score,
-                'analysis_depth': decision.analysis_depth.value if hasattr(decision.analysis_depth, 'value') else str(decision.analysis_depth)
-            })
-            
-            # Build jitter threshold learning
-            jitter_threshold_learning = to_json_safe({
-                'current_jitter_level': decision.current_jitter_level,
-                'is_decaffeinated': decision.is_decaffeinated,
-                'requires_energy_drink': decision.requires_energy_drink
-            })
-            
-            # Calculate performance improvement (REAL or None)
-            performance_improvement = None
-            if decision.estimated_impact and 'performance_gain' in decision.estimated_impact:
-                performance_improvement = decision.estimated_impact['performance_gain']
-            
-            # === WRITE 1: STRUCTURED DATA TO AGENT TABLE ===
-            
-            agent_memory = MethSnailMemoryBank(
-                memory_id=agent_memory_id,
-                user_id=user_id,
-                timestamp=decision.timestamp,
+        # Generate IDs
+        agent_memory_id = str(uuid.uuid4())
+        central_memory_id = str(uuid.uuid4())
+        
+        # Use self.get_session() from base class
+        async for session in self.get_session():
+            try:
+                # === EXTRACT REAL DATA (NO FALLBACKS) ===
                 
-                # Snail-specific structured fields
-                optimization_pattern=optimization_pattern,
-                caffeine_level_context=caffeine_level_context,
-                shell_spin_correlation=shell_spin_correlation,
-                jitter_threshold_learning=jitter_threshold_learning,
-                
-                # STRUCTURED NUMERIC FIELDS - REAL or None
-                performance_improvement=performance_improvement,
-                confidence_level=decision.confidence,
-                
-                # Link to central memory
-                shared_with_central=True,
-                central_memory_id=central_memory_id
-            )
-            
-            self.session.add(agent_memory)
-            await self.session.flush()  # Ensure agent memory is written first
-            
-            # === WRITE 2: SUMMARY TO CENTRAL MEMORY BANK ===
-            
-            priority = PRIORITY_HIGH_CONFIDENCE_DECISION if decision.confidence > 0.8 else 5
-            
-            central_memory = CentralMemoryBank(
-                memory_id=central_memory_id,
-                agent_name=AGENT_NAME,
-                user_id=user_id,
-                event_type=EVENT_TYPES["OPTIMIZATION_APPLIED"],
-                occurred_at=decision.timestamp,
-                created_at=utc_now(),
-                updated_at=utc_now(),
-                subject_kind="optimization_decision",
-                subject_id=agent_memory_id,
-                
-                # Summary details (not duplicating structured data)
-                details=to_json_safe({
+                # Build optimization pattern
+                optimization_pattern = to_json_safe({
                     'priority': decision.priority.value if hasattr(decision.priority, 'value') else str(decision.priority),
+                    'actions': decision.actions,
                     'urgency': decision.urgency,
-                    'rationale': decision.rationale,
-                    'agent_memory_ref': agent_memory_id
-                }),
-                
-                metadata_=to_json_safe({
-                    'caffeinated': not decision.is_decaffeinated,
-                    'shell_spinning': decision.shell_spin_count > 0,
-                    'has_structured_data': True,
-                    'agent_memory_id': agent_memory_id
-                }),
-                
-                # Key metrics for CMB indexing - REAL values
-                numeric_value=decision.confidence,
-                string_value=decision.urgency,
-                priority=priority,
-                never_forget=(decision.confidence > 0.9),
-                
-                agent_metadata=to_json_safe({
-                    'has_structured_data': True,
-                    'agent_memory_id': agent_memory_id
+                    'estimated_impact': decision.estimated_impact
                 })
-            )
-            
-            self.session.add(central_memory)
-            await self.session.commit()
-            await self.session.refresh(agent_memory)
-            await self.session.refresh(central_memory)
-            
-            logger.info(
-                f"🐌✨ DUAL-WRITE SUCCESS: Optimization decision stored in agent table "
-                f"({agent_memory_id}) and CMB ({central_memory_id})"
-            )
-            
-            # Pin high confidence decisions
-            if decision.confidence > 0.9:
-                await self._pin_optimization(user_id, decision, central_memory_id)
-            
-            return central_memory_id
-            
-        except ValueError as ve:
-            # Data validation error - graceful failure with clear message
-            await self.session.rollback()
-            logger.error(f"🐌💥 DATA VALIDATION FAILED: {str(ve)}")
-            raise
-            
-        except Exception as e:
-            await self.session.rollback()
-            logger.error(f"🐌💥 DUAL-WRITE FAILED: {str(e)}")
-            raise Exception(f"🐌💥 Failed to store optimization decision: {str(e)}")
+                
+                # Build caffeine level context
+                caffeine_level_context = decision.caffeine_level_mg if decision.caffeine_level_mg else None
+                
+                # Build shell spin correlation
+                shell_spin_correlation = to_json_safe({
+                    'shell_spin_count': decision.shell_spin_count,
+                    'data_quality_score': decision.data_quality_score,
+                    'analysis_depth': decision.analysis_depth.value if hasattr(decision.analysis_depth, 'value') else str(decision.analysis_depth)
+                })
+                
+                # Build jitter threshold learning
+                jitter_threshold_learning = to_json_safe({
+                    'current_jitter_level': decision.current_jitter_level,
+                    'is_decaffeinated': decision.is_decaffeinated,
+                    'requires_energy_drink': decision.requires_energy_drink
+                })
+                
+                # Calculate performance improvement (REAL or None)
+                performance_improvement = None
+                if decision.estimated_impact and 'performance_gain' in decision.estimated_impact:
+                    performance_improvement = decision.estimated_impact['performance_gain']
+                
+                # === WRITE 1: STRUCTURED DATA TO AGENT TABLE ===
+                
+                agent_memory = MethSnailMemoryBank(
+                    memory_id=agent_memory_id,
+                    user_id=user_id,
+                    timestamp=decision.timestamp,
+                    
+                    # Snail-specific structured fields
+                    optimization_pattern=optimization_pattern,
+                    caffeine_level_context=caffeine_level_context,
+                    shell_spin_correlation=shell_spin_correlation,
+                    jitter_threshold_learning=jitter_threshold_learning,
+                    
+                    # STRUCTURED NUMERIC FIELDS - REAL or None
+                    performance_improvement=performance_improvement,
+                    confidence_level=decision.confidence,
+                    
+                    # Link to central memory
+                    shared_with_central=True,
+                    central_memory_id=central_memory_id
+                )
+                
+                session.add(agent_memory)
+                await session.flush()  # Ensure agent memory is written first
+                
+                # === WRITE 2: SUMMARY TO CENTRAL MEMORY BANK ===
+                
+                priority = PRIORITY_HIGH_CONFIDENCE_DECISION if decision.confidence > 0.8 else 5
+                
+                central_memory = CentralMemoryBank(
+                    memory_id=central_memory_id,
+                    agent_name=AGENT_NAME,
+                    user_id=user_id,
+                    event_type=EVENT_TYPES["OPTIMIZATION_APPLIED"],
+                    occurred_at=decision.timestamp,
+                    created_at=utc_now(),
+                    updated_at=utc_now(),
+                    subject_kind="optimization_decision",
+                    subject_id=agent_memory_id,
+                    
+                    # Summary details (not duplicating structured data)
+                    details=to_json_safe({
+                        'priority': decision.priority.value if hasattr(decision.priority, 'value') else str(decision.priority),
+                        'urgency': decision.urgency,
+                        'rationale': decision.rationale,
+                        'agent_memory_ref': agent_memory_id
+                    }),
+                    
+                    metadata_=to_json_safe({
+                        'caffeinated': not decision.is_decaffeinated,
+                        'shell_spinning': decision.shell_spin_count > 0,
+                        'has_structured_data': True,
+                        'agent_memory_id': agent_memory_id
+                    }),
+                    
+                    # Key metrics for CMB indexing - REAL values
+                    numeric_value=decision.confidence,
+                    string_value=decision.urgency,
+                    priority=priority,
+                    never_forget=(decision.confidence > 0.9),
+                    
+                    agent_metadata=to_json_safe({
+                        'has_structured_data': True,
+                        'agent_memory_id': agent_memory_id
+                    })
+                )
+                
+                session.add(central_memory)
+                await session.commit()
+                await session.refresh(agent_memory)
+                await session.refresh(central_memory)
+                
+                # === WRITE 3: VECTOR EMBEDDING (FIRE-AND-FORGET) ===
+                try:
+                    decision_text = create_decision_text(
+                        agent_name=AGENT_NAME,
+                        decision_type="optimization",
+                        description=decision.urgency,
+                        reasoning=decision.rationale if decision.rationale else "Memory optimization",
+                        context={
+                            'priority': priority,
+                            'confidence': decision.confidence,
+                            'caffeinated': not decision.is_decaffeinated
+                        }
+                    )
+                    
+                    embedding_service = get_embedding_service()
+                    embedding = await embedding_service.generate_embedding_async(decision_text)
+                    
+                    vector_storage = get_vector_storage()
+                    vector_storage.store_decision_vector_fire_and_forget(
+                        agent_name=AGENT_NAME,
+                        decision_type="optimization",
+                        decision_text=decision_text,
+                        embedding=embedding,
+                        occurred_at=decision.timestamp,
+                        user_id=user_id,
+                        event_type=EVENT_TYPES["OPTIMIZATION_APPLIED"],
+                        priority=priority,
+                        metadata=to_json_safe({
+                            'urgency': decision.urgency,
+                            'confidence': decision.confidence,
+                            'caffeinated': not decision.is_decaffeinated
+                        }),
+                        sql_memory_id=central_memory_id,
+                        confidence_score=decision.confidence,
+                        decision_summary=f"Optimization: {decision.urgency}"
+                    )
+                    logger.debug(f"🔮 Queued vector embedding for optimization {central_memory_id}")
+                except Exception as ve:
+                    logger.warning(f"⚠️ Vector embedding failed (non-critical): {ve}")
+                
+                await self.log_dual_write_success(
+                    "optimization_decision", 
+                    agent_memory_id, 
+                    central_memory_id
+                )
+                
+                # Pin high confidence decisions
+                if decision.confidence > 0.9:
+                    await self._pin_optimization(user_id, decision, central_memory_id)
+                
+                return central_memory_id
+                
+            except ValueError as ve:
+                await session.rollback()
+                await self.log_dual_write_failure("optimization_decision", ve)
+                raise
+                
+            except Exception as e:
+                await session.rollback()
+                await self.log_dual_write_failure("optimization_decision", e)
+                raise
     
     async def _pin_optimization(self, user_id: str, decision: OptimizationDecision, memory_id: str):
         """Pin high confidence optimizations"""
@@ -301,122 +320,163 @@ class MethSnailDatabaseIntegration:
         if not incident.timestamp:
             raise ValueError("🐌💥 Missing timestamp - cannot store without real timestamp")
         
-        if not self._initialized:
-            await self.initialize()
+        await self.ensure_initialized()
         
-        try:
-            # Generate IDs
-            agent_memory_id = str(uuid.uuid4())
-            central_memory_id = str(uuid.uuid4())
-            
-            # === EXTRACT REAL DATA (NO FALLBACKS) ===
-            
-            # Build shell spin correlation
-            shell_spin_correlation = to_json_safe({
-                'missing_metrics': incident.missing_metrics if incident.missing_metrics else [],
-                'invalid_metrics': incident.invalid_metrics if incident.invalid_metrics else [],
-                'reason': incident.reason
-            })
-            
-            # Build optimization pattern (what was attempted)
-            optimization_pattern = to_json_safe({
-                'attempted_analysis': True,
-                'data_validation_failed': True,
-                'requires_real_data': True
-            })
-            
-            # Calculate data quality score
-            total_metrics = len(incident.missing_metrics) + len(incident.invalid_metrics)
-            data_quality_score = 0.0 if total_metrics > 0 else 1.0
-            
-            # === WRITE 1: STRUCTURED DATA TO AGENT TABLE ===
-            
-            agent_memory = MethSnailMemoryBank(
-                memory_id=agent_memory_id,
-                user_id=user_id,
-                timestamp=incident.timestamp,
+        # Generate IDs
+        agent_memory_id = str(uuid.uuid4())
+        central_memory_id = str(uuid.uuid4())
+        
+        # Use self.get_session() from base class
+        async for session in self.get_session():
+            try:
+                # === EXTRACT REAL DATA (NO FALLBACKS) ===
                 
-                # Snail-specific structured fields
-                optimization_pattern=optimization_pattern,
-                shell_spin_correlation=shell_spin_correlation,
-                
-                # STRUCTURED NUMERIC FIELDS - REAL or None
-                performance_improvement=None,  # No optimization occurred
-                confidence_level=0.0,  # No confidence in fake data
-                
-                # Link to central memory
-                shared_with_central=True,
-                central_memory_id=central_memory_id
-            )
-            
-            self.session.add(agent_memory)
-            await self.session.flush()  # Ensure agent memory is written first
-            
-            # === WRITE 2: SUMMARY TO CENTRAL MEMORY BANK ===
-            
-            central_memory = CentralMemoryBank(
-                memory_id=central_memory_id,
-                agent_name=AGENT_NAME,
-                user_id=user_id,
-                event_type=EVENT_TYPES["SHELL_SPIN_DETECTED"],
-                occurred_at=incident.timestamp,
-                created_at=utc_now(),
-                updated_at=utc_now(),
-                subject_kind="shell_spin_incident",
-                subject_id=agent_memory_id,
-                
-                # Summary details (not duplicating structured data)
-                details=to_json_safe({
-                    'reason': incident.reason,
-                    'missing_count': len(incident.missing_metrics) if incident.missing_metrics else 0,
-                    'invalid_count': len(incident.invalid_metrics) if incident.invalid_metrics else 0,
-                    'agent_memory_ref': agent_memory_id
-                }),
-                
-                metadata_=to_json_safe({
-                    'shell_spinning': True,
-                    'data_quality_failure': True,
-                    'has_structured_data': True,
-                    'agent_memory_id': agent_memory_id
-                }),
-                
-                # Key metrics for CMB indexing - REAL values
-                numeric_value=data_quality_score,
-                string_value='shell_spin',
-                priority=PRIORITY_SHELL_SPIN,
-                never_forget=True,  # Always remember data quality issues
-                
-                agent_metadata=to_json_safe({
-                    'has_structured_data': True,
-                    'agent_memory_id': agent_memory_id
+                # Build shell spin correlation
+                shell_spin_correlation = to_json_safe({
+                    'missing_metrics': incident.missing_metrics if incident.missing_metrics else [],
+                    'invalid_metrics': incident.invalid_metrics if incident.invalid_metrics else [],
+                    'reason': incident.reason
                 })
-            )
-            
-            self.session.add(central_memory)
-            await self.session.commit()
-            await self.session.refresh(agent_memory)
-            await self.session.refresh(central_memory)
-            
-            logger.info(
-                f"🐌✨ DUAL-WRITE SUCCESS: Shell spin incident stored in agent table "
-                f"({agent_memory_id}) and CMB ({central_memory_id})"
-            )
-            
-            # Pin shell spin incidents - they're important for learning
-            await self._pin_shell_spin(user_id, incident, central_memory_id)
-            
-            return central_memory_id
-            
-        except ValueError as ve:
-            # Data validation error - graceful failure with clear message
-            await self.session.rollback()
-            logger.error(f"🐌💥 DATA VALIDATION FAILED: {str(ve)}")
-            raise
-            
-        except Exception as e:
-            await self.session.rollback()
-            logger.error(f"🐌💥 DUAL-WRITE FAILED: {str(e)}")
-            raise Exception(f"🐌💥 Failed to store shell spin incident: {str(e)}")
+                
+                # Build optimization pattern (what was attempted)
+                optimization_pattern = to_json_safe({
+                    'attempted_analysis': True,
+                    'data_validation_failed': True,
+                    'requires_real_data': True
+                })
+                
+                # Calculate data quality score
+                total_metrics = len(incident.missing_metrics if incident.missing_metrics else []) + len(incident.invalid_metrics if incident.invalid_metrics else [])
+                data_quality_score = 0.0 if total_metrics > 0 else 1.0
+                
+                # === WRITE 1: STRUCTURED DATA TO AGENT TABLE ===
+                
+                agent_memory = MethSnailMemoryBank(
+                    memory_id=agent_memory_id,
+                    user_id=user_id,
+                    timestamp=incident.timestamp,
+                    
+                    # Snail-specific structured fields
+                    optimization_pattern=optimization_pattern,
+                    shell_spin_correlation=shell_spin_correlation,
+                    
+                    # STRUCTURED NUMERIC FIELDS - REAL or None
+                    performance_improvement=None,  # No optimization occurred
+                    confidence_level=0.0,  # No confidence in fake data
+                    
+                    # Link to central memory
+                    shared_with_central=True,
+                    central_memory_id=central_memory_id
+                )
+                
+                session.add(agent_memory)
+                await session.flush()  # Ensure agent memory is written first
+                
+                # === WRITE 2: SUMMARY TO CENTRAL MEMORY BANK ===
+                
+                central_memory = CentralMemoryBank(
+                    memory_id=central_memory_id,
+                    agent_name=AGENT_NAME,
+                    user_id=user_id,
+                    event_type=EVENT_TYPES["SHELL_SPIN_DETECTED"],
+                    occurred_at=incident.timestamp,
+                    created_at=utc_now(),
+                    updated_at=utc_now(),
+                    subject_kind="shell_spin_incident",
+                    subject_id=agent_memory_id,
+                    
+                    # Summary details (not duplicating structured data)
+                    details=to_json_safe({
+                        'reason': incident.reason,
+                        'missing_count': len(incident.missing_metrics) if incident.missing_metrics else 0,
+                        'invalid_count': len(incident.invalid_metrics) if incident.invalid_metrics else 0,
+                        'agent_memory_ref': agent_memory_id
+                    }),
+                    
+                    metadata_=to_json_safe({
+                        'shell_spinning': True,
+                        'data_quality_failure': True,
+                        'has_structured_data': True,
+                        'agent_memory_id': agent_memory_id
+                    }),
+                    
+                    # Key metrics for CMB indexing - REAL values
+                    numeric_value=data_quality_score,
+                    string_value='shell_spin',
+                    priority=PRIORITY_SHELL_SPIN,
+                    never_forget=True,  # Always remember data quality issues
+                    
+                    agent_metadata=to_json_safe({
+                        'has_structured_data': True,
+                        'agent_memory_id': agent_memory_id
+                    })
+                )
+                
+                session.add(central_memory)
+                await session.commit()
+                await session.refresh(agent_memory)
+                await session.refresh(central_memory)
+                
+                # === WRITE 3: VECTOR EMBEDDING (FIRE-AND-FORGET) ===
+                try:
+                    decision_text = create_decision_text(
+                        agent_name=AGENT_NAME,
+                        decision_type="shell_spin",
+                        description=f"Shell spin: {incident.reason}",
+                        reasoning=f"Data quality failure - Missing: {len(incident.missing_metrics) if incident.missing_metrics else 0}, Invalid: {len(incident.invalid_metrics) if incident.invalid_metrics else 0}",
+                        context={
+                            'priority': PRIORITY_SHELL_SPIN,
+                            'event_type': EVENT_TYPES["SHELL_SPIN_DETECTED"],
+                            'affected_agents': []
+                        }
+                    )
+                    
+                    embedding_service = get_embedding_service()
+                    embedding = await embedding_service.generate_embedding_async(decision_text)
+                    
+                    vector_storage = get_vector_storage()
+                    vector_storage.store_decision_vector_fire_and_forget(
+                        agent_name=AGENT_NAME,
+                        decision_type="shell_spin",
+                        decision_text=decision_text,
+                        embedding=embedding,
+                        occurred_at=incident.timestamp,
+                        user_id=user_id,
+                        event_type=EVENT_TYPES["SHELL_SPIN_DETECTED"],
+                        priority=PRIORITY_SHELL_SPIN,
+                        metadata=to_json_safe({
+                            'reason': incident.reason,
+                            'missing_metrics': incident.missing_metrics if incident.missing_metrics else [],
+                            'invalid_metrics': incident.invalid_metrics if incident.invalid_metrics else []
+                        }),
+                        sql_memory_id=central_memory_id,
+                        confidence_score=0.0,
+                        decision_summary=f"Shell spin: {incident.reason}"
+                    )
+                    logger.debug(f"🔮 Queued vector embedding for shell spin {central_memory_id}")
+                except Exception as ve:
+                    logger.warning(f"⚠️ Vector embedding failed (non-critical): {ve}")
+                
+                logger.info(
+                    f"🐌✨ DUAL-WRITE SUCCESS: Shell spin incident stored in agent table "
+                    f"({agent_memory_id}) and CMB ({central_memory_id})"
+                )
+                
+                # Pin shell spin incidents - they're important for learning
+                await self._pin_shell_spin(user_id, incident, central_memory_id)
+                
+                return central_memory_id
+                
+            except ValueError as ve:
+                # Data validation error - graceful failure with clear message
+                await session.rollback()
+                logger.error(f"🐌💥 DATA VALIDATION FAILED: {str(ve)}")
+                raise
+                
+            except Exception as e:
+                await session.rollback()
+                logger.error(f"🐌💥 DUAL-WRITE FAILED: {str(e)}")
+                raise Exception(f"🐌💥 Failed to store shell spin incident: {str(e)}")
     
     async def _pin_shell_spin(self, user_id: str, incident: ShellSpinIncident, memory_id: str):
         """Pin shell spin incidents for learning"""
