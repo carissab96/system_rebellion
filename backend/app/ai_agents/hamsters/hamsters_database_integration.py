@@ -18,6 +18,10 @@ from sqlalchemy import text, select, and_, or_, func
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import NullPool, QueuePool
+
+# Import base class for consistent session management
+from app.ai_agents.distributed.base_database_integration import BaseDatabaseIntegration
+
 from app.ai_agents.hamsters.data_types import (
     InfrastructureIntervention, HamsterCommunication, DuctTapeUsage
 )
@@ -59,16 +63,18 @@ def utc_now():
     """Get current UTC time with timezone awareness"""
     return datetime.now(timezone.utc)
 
-class HamstersDatabaseIntegration:
+class HamstersDatabaseIntegration(BaseDatabaseIntegration):
     """
     Database integration for The Hamsters using central memory bank
     Tracks collective and individual hamster activities
     """
     
     def __init__(self, db_getter=None):
-        self.logger = logging.getLogger("Hamsters.Database")
-        self.db_getter = db_getter
-        self._initialized = False
+        super().__init__(db_getter)
+    
+    def _get_agent_name(self) -> str:
+        """Return agent name for base class"""
+        return AGENT_NAME
         
     async def initialize(self):
         """Initialize database connection"""
@@ -80,8 +86,8 @@ class HamstersDatabaseIntegration:
             
         try:
             # Verify db_getter works
-            async for session in self.db_getter():
-                break
+            async with self.get_managed_session() as session:
+                pass  # Just verify we can get a session
             
             self._initialized = True
             self.logger.info("🐹🍺 Database integration initialized using shared connection pool (beer-powered efficiency!)")
@@ -120,7 +126,7 @@ class HamstersDatabaseIntegration:
         """Get a database session using db_getter pattern"""
         if not self._initialized:
             await self.initialize()
-        async for session in self.db_getter():
+        async with self.get_managed_session() as session:
             return session
     
     # === DUAL-WRITE METHOD 1: STORE INFRASTRUCTURE INTERVENTION ===

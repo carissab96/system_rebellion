@@ -18,6 +18,9 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 import os
 import json
 
+# Import base class for consistent session management
+from app.ai_agents.distributed.base_database_integration import BaseDatabaseIntegration
+
 from app.models.agent_memory_banks import CentralMemoryBank, QuantumShadowPeopleMemoryBank
 from app.models.agent_memory import AgentMemory
 from app.models.agent_memory_banks import AgentLearningInteractions
@@ -63,22 +66,24 @@ def utc_now():
     """Get current UTC time with timezone awareness"""
     return datetime.now(timezone.utc)
 
-class QSPDatabaseIntegration:
+class QSPDatabaseIntegration(BaseDatabaseIntegration):
     """Complete database integration for Quantum Shadow People"""
     
     def __init__(self, db_getter=None):
-        self.db_getter = db_getter or get_async_db
+        super().__init__(db_getter or get_async_db)
         self.engine = None
-        self._initialized = False
+    
+    def _get_agent_name(self) -> str:
+        """Return agent name for base class"""
+        return AGENT_NAME
         
     async def initialize(self):
         """Initialize database connection"""
         if not self._initialized:
-            # Get database session
-            async for db in self.db_getter():
+            # Get database session to extract engine
+            async with self.get_managed_session() as db:
                 # Extract engine from session
                 self.engine = db.bind
-                break
             self._initialized = True
     
     async def _ensure_initialized(self):

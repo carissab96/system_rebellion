@@ -1,6 +1,7 @@
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy import create_engine
+from contextlib import asynccontextmanager
 from app.core.base import Base
 import os
 from dotenv import load_dotenv
@@ -87,10 +88,36 @@ async def init_models():
     log_registered_models()
     print("Models initialized successfully.")
 
-# Async database getter
+# Async database getter (generator pattern - use for FastAPI dependencies)
 async def get_async_db():
     async with AsyncSessionLocal() as session:
         yield session
+
+@asynccontextmanager
+async def get_managed_session():
+    """
+    Get a properly managed database session for use in background tasks.
+    
+    Unlike get_async_db() which is an async generator, this context manager
+    ensures proper session lifecycle even when used in asyncio.create_task()
+    or fire-and-forget contexts.
+    
+    Usage:
+        async with get_managed_session() as session:
+            session.add(...)
+            await session.commit()
+    
+    This prevents the IllegalStateChangeError that occurs when async generators
+    are garbage collected before completing in background tasks.
+    """
+    session = AsyncSessionLocal()
+    try:
+        yield session
+    except Exception:
+        await session.rollback()
+        raise
+    finally:
+        await session.close()
 
 # Dedicated auth database getter with priority connection pool
 async def get_auth_db():

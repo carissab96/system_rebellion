@@ -6,6 +6,7 @@ Enforces consistent db_getter pattern and DUAL-WRITE architecture
 import logging
 from typing import Optional, AsyncGenerator, Dict, Any
 from datetime import datetime, timezone
+from contextlib import asynccontextmanager
 from sqlalchemy.ext.asyncio import AsyncSession
 from abc import ABC, abstractmethod
 
@@ -81,6 +82,37 @@ class BaseDatabaseIntegration(ABC):
         if not self.db_getter:
             raise ValueError(f"{self.agent_name}: db_getter not configured!")
         return self.db_getter()
+    
+    @asynccontextmanager
+    async def get_managed_session(self):
+        """
+        Get a properly managed database session that works in fire-and-forget tasks.
+        
+        Unlike get_session() which uses an async generator, this context manager
+        ensures proper session lifecycle even when used in asyncio.create_task().
+        
+        Usage:
+            async with self.get_managed_session() as session:
+                session.add(...)
+                await session.commit()
+        
+        This prevents the IllegalStateChangeError that occurs when async generators
+        are garbage collected before completing in background tasks.
+        """
+        if not self.db_getter:
+            raise ValueError(f"{self.agent_name}: db_getter not configured!")
+        
+        # Import here to avoid circular imports
+        from app.core.database import AsyncSessionLocal
+        
+        session = AsyncSessionLocal()
+        try:
+            yield session
+        except Exception:
+            await session.rollback()
+            raise
+        finally:
+            await session.close()
     
     async def health_check(self) -> bool:
         """

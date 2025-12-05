@@ -16,6 +16,9 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy import select, func, desc, and_, delete, text
 import logging
 
+# Import base class for consistent session management
+from app.ai_agents.distributed.base_database_integration import BaseDatabaseIntegration
+
 from app.models.agent_memory_banks import (
     CentralMemoryBank,
     SirHawkingtonMemoryBank
@@ -44,15 +47,18 @@ def datetime_to_iso(dt: Optional[datetime]) -> Optional[str]:
     """Convert datetime to ISO format string"""
     return dt.isoformat() if dt else None
 
-class HawkingtonDatabaseIntegration:
+class HawkingtonDatabaseIntegration(BaseDatabaseIntegration):
     """
     Database integration for Sir Hawkington with DUAL-WRITE architecture
     NO FAKE DATA POLICY: Real data or graceful failure
     """
     
     def __init__(self, db_getter=None):
-        self.db_getter = db_getter
-        self._initialized = False
+        super().__init__(db_getter)
+    
+    def _get_agent_name(self) -> str:
+        """Return agent name for base class"""
+        return AGENT_NAME
     
     def _get_database_config(self) -> dict:
         """Get database configuration based on environment"""
@@ -90,9 +96,8 @@ class HawkingtonDatabaseIntegration:
         
         # Verify db_getter works by testing a connection
         try:
-            async for session in self.db_getter():
-                # Just verify we can get a session
-                break
+            async with self.get_managed_session() as session:
+                pass  # Just verify we can get a session
         except Exception as e:
             logger.error(f"🧐❌ Failed to verify database connection: {e}")
             raise
@@ -133,7 +138,7 @@ class HawkingtonDatabaseIntegration:
         if not decision.timestamp:
             raise ValueError("🧐💥 Missing timestamp - cannot store without real timestamp")
         
-        async for session in self.db_getter():
+        async with self.get_managed_session() as session:
             try:
                 # Generate IDs
                 agent_memory_id = str(uuid.uuid4())
@@ -347,7 +352,7 @@ class HawkingtonDatabaseIntegration:
         if not triage_data.get('routing_decision'):
             raise ValueError("🧐💥 Missing routing_decision - cannot store without real routing")
         
-        async for session in self.db_getter():
+        async with self.get_managed_session() as session:
             try:
                 # Generate IDs
                 agent_memory_id = str(uuid.uuid4())
@@ -572,7 +577,7 @@ class HawkingtonDatabaseIntegration:
         if not incident_data.get('reason'):
             raise ValueError("🧐💥 Missing yeet reason - cannot store monocle yeet without explanation")
         
-        async for session in self.db_getter():
+        async with self.get_managed_session() as session:
             try:
                 # Generate IDs
                 agent_memory_id = str(uuid.uuid4())
@@ -724,7 +729,7 @@ class HawkingtonDatabaseIntegration:
     
     async def get_historical_decisions(self, user_id: str, days: int = 7) -> List[Dict[str, Any]]:
         """Get Sir Hawkington's historical decisions from central memory bank"""
-        async for session in self.db_getter():
+        async with self.get_managed_session() as session:
             try:
                 cutoff_date = utc_now() - timedelta(days=days)
                 
@@ -763,7 +768,7 @@ class HawkingtonDatabaseIntegration:
         Get triage statistics from AGENT TABLE (structured queries!)
         NO FAKE DATA: Real stats or None
         """
-        async for session in self.db_getter():
+        async with self.get_managed_session() as session:
             try:
                 cutoff_date = utc_now() - timedelta(days=days)
                 
@@ -858,7 +863,7 @@ class HawkingtonDatabaseIntegration:
         Get Sir Hawkington's performance metrics from AGENT TABLE
         NO FAKE DATA: Real metrics or None
         """
-        async for session in self.db_getter():
+        async with self.get_managed_session() as session:
             try:
                 # Query agent table for all memory categories
                 query = select(SirHawkingtonMemoryBank).where(
@@ -924,7 +929,7 @@ class HawkingtonDatabaseIntegration:
         observation_data: Dict[str, Any]
     ) -> None:
         """Store user behavior observation for pattern learning"""
-        async for session in self.db_getter():
+        async with self.get_managed_session() as session:
             try:
                 memory_entry = CentralMemoryBank(
                     memory_id=str(uuid.uuid4()),
@@ -957,7 +962,7 @@ class HawkingtonDatabaseIntegration:
         min_observations: int = 25
     ) -> Optional[Dict[str, Any]]:
         """Analyze triage patterns and learn user preferences - NO FAKE DATA"""
-        async for session in self.db_getter():
+        async with self.get_managed_session() as session:
             try:
                 cutoff = utc_now() - timedelta(days=30)
                 
@@ -1224,7 +1229,7 @@ class HawkingtonDatabaseIntegration:
     
     async def contribute_to_metadata_rollup(self) -> Dict[str, int]:
         """Contribute Hawkington's memory counts for metadata rollup"""
-        async for session in self.db_getter():
+        async with self.get_managed_session() as session:
             try:
                 # Count from AGENT TABLE (structured!)
                 result = await session.execute(
@@ -1548,7 +1553,7 @@ class HawkingtonDatabaseIntegration:
         Clean up old data with aristocratic precision - keep important memories
         NO FAKE DATA: Only removes low-priority, non-critical REAL memories
         """
-        async for session in self.db_getter():
+        async with self.get_managed_session() as session:
             try:
                 cutoff_date = utc_now() - timedelta(days=days_to_keep)
                 
@@ -1596,7 +1601,7 @@ class HawkingtonDatabaseIntegration:
         NO FAKE DATA: Real connection status or error
         """
         try:
-            async for session in self.db_getter():
+            async with self.get_managed_session() as session:
                 # Simple health check query
                 result = await session.execute(text("SELECT 1"))
                 result.scalar()

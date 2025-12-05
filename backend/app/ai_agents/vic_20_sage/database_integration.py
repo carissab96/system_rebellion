@@ -15,6 +15,9 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine, AsyncSession
 from sqlalchemy import text
 
+# Import base class for consistent session management
+from app.ai_agents.distributed.base_database_integration import BaseDatabaseIntegration
+
 from app.models.agent_memory_banks import CentralMemoryBank, VIC20MemoryBank
 from app.core.database import get_db_url
 from app.core.learning_helpers import (
@@ -49,7 +52,7 @@ def utc_now() -> datetime:
     """Get current UTC time"""
     return datetime.now(UTC)
 
-class VIC20DatabaseIntegration:
+class VIC20DatabaseIntegration(BaseDatabaseIntegration):
     """
     Database integration for VIC-20 Sage using the 5-table architecture
     
@@ -58,9 +61,12 @@ class VIC20DatabaseIntegration:
     """
     
     def __init__(self, db_getter=None):
-        self.db_getter = db_getter
+        super().__init__(db_getter)
         self.engine: Optional[AsyncEngine] = None
-        self._initialized = False
+    
+    def _get_agent_name(self) -> str:
+        """Return agent name for base class"""
+        return AGENT_NAME
         
     async def initialize(self):
         """Initialize database connection"""
@@ -79,8 +85,8 @@ class VIC20DatabaseIntegration:
                 )
                 
                 # Verify db_getter works
-                async for session in self.db_getter():
-                    break
+                async with self.get_managed_session() as session:
+                    pass  # Just verify we can get a session
                     
                 self._initialized = True
                 logger.info("🕹️✨ Database integration initialized with engine and session pool (RETRO WISDOM!)")
@@ -144,7 +150,7 @@ class VIC20DatabaseIntegration:
         now = utc_now()
         
         try:
-            async for session in self.db_getter():
+            async with self.get_managed_session() as session:
                 # === EXTRACT REAL DATA (NO FALLBACKS) ===
                 
                 # Build coordination pattern
@@ -985,7 +991,7 @@ class VIC20DatabaseIntegration:
             "LIMIT :limit"
         ])
         
-        async for session in self.db_getter():
+        async with self.get_managed_session() as session:
             result = await session.execute(
                 text(" ".join(query_parts)),
                 params
@@ -1028,7 +1034,7 @@ class VIC20DatabaseIntegration:
             }
         
         # Get recent harmony snapshots
-        async for session in self.db_getter():
+        async with self.get_managed_session() as session:
             result = await session.execute(
                 text("""
                     SELECT subject_id, numeric_value, details, metadata, occurred_at

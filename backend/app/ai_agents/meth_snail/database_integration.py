@@ -661,7 +661,9 @@ class MethSnailDatabaseIntegration(BaseDatabaseIntegration):
         priority = PRIORITY_HIGH_CONFIDENCE_DECISION if confidence > 0.8 else 5
         decision_type = decision_data.get('decision_type', 'unknown')
         
-        async for session in self.db_getter():
+        # Use managed session for proper lifecycle in message handler contexts
+        from app.core.database import get_managed_session
+        async with get_managed_session() as session:
             try:
                 # === WRITE 1: CENTRAL MEMORY BANK (summary) ===
                 memory_entry = CentralMemoryBank(
