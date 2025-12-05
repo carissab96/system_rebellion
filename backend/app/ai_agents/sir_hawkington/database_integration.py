@@ -261,6 +261,46 @@ class HawkingtonDatabaseIntegration:
                 await session.refresh(agent_memory)
                 await session.refresh(central_memory)
                 
+                # === WRITE 3: VECTOR EMBEDDING (FIRE-AND-FORGET) ===
+                try:
+                    decision_text = create_decision_text(
+                        agent_name=AGENT_NAME,
+                        decision_type=decision.decision_type,
+                        description=decision.reasoning if decision.reasoning else f"Aristocratic {decision.decision_type} decision",
+                        reasoning=f"System impact: {decision.system_impact}, Confidence: {decision.confidence}",
+                        context={
+                            'priority': self._get_priority_for_decision(decision.decision_type),
+                            'event_type': HawkingtonEventTypes.ARISTOCRATIC_DECISION.value,
+                            'affected_agents': []
+                        }
+                    )
+                    
+                    embedding_service = get_embedding_service()
+                    embedding = await embedding_service.generate_embedding_async(decision_text)
+                    
+                    vector_storage = get_vector_storage()
+                    vector_storage.store_decision_vector_fire_and_forget(
+                        agent_name=AGENT_NAME,
+                        decision_type=decision.decision_type,
+                        decision_text=decision_text,
+                        embedding=embedding,
+                        occurred_at=decision.timestamp,
+                        user_id=user_id,
+                        event_type=HawkingtonEventTypes.ARISTOCRATIC_DECISION.value,
+                        priority=self._get_priority_for_decision(decision.decision_type),
+                        metadata=to_json_safe({
+                            'decision_id': decision.decision_id,
+                            'system_impact': decision.system_impact,
+                            'monocle_state': 'polished'
+                        }),
+                        sql_memory_id=central_memory_id,
+                        confidence_score=decision.confidence,
+                        decision_summary=f"Hawkington: {decision.decision_type}"
+                    )
+                    logger.debug(f"🔮 Queued vector embedding for decision {central_memory_id}")
+                except Exception as ve:
+                    logger.warning(f"⚠️ Vector embedding failed (non-critical): {ve}")
+                
                 logger.info(
                     f"🧐✨ DUAL-WRITE SUCCESS: Decision {decision.decision_type} stored in agent table "
                     f"({agent_memory_id}) and CMB ({central_memory_id})"
