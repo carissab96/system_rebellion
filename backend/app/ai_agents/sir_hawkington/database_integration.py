@@ -496,7 +496,8 @@ class HawkingtonDatabaseIntegration:
                     embedding = await embedding_service.generate_embedding_async(decision_text)
                     
                     vector_storage = get_vector_storage()
-                    vector_storage.store_decision_vector_fire_and_forget(
+                    import asyncio
+                    asyncio.create_task(vector_storage.store_decision_vector_fire_and_forget(
                         agent_name=AGENT_NAME,
                         decision_type="triage",
                         decision_text=decision_text,
@@ -513,7 +514,7 @@ class HawkingtonDatabaseIntegration:
                         sql_memory_id=central_memory_id,
                         confidence_score=triage_data.get('confidence_score'),
                         decision_summary=f"Triage: {triage_data.get('triage_severity')}"
-                    )
+                    ))
                     logger.debug(f"🔮 Queued vector embedding for triage {central_memory_id}")
                 except Exception as ve:
                     logger.warning(f"⚠️ Vector embedding failed (non-critical): {ve}")

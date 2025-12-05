@@ -84,7 +84,7 @@ class VectorStorageService:
                             gen_random_uuid(), :sql_memory_id, :agent_name, :user_id,
                             :decision_type, :event_type, :priority, :occurred_at,
                             :embedding, :decision_text, :decision_summary,
-                            :metadata::jsonb, :confidence_score, :embedding_model
+                            CAST(:metadata AS jsonb), :confidence_score, :embedding_model
                         )
                         RETURNING vector_id
                     """),
