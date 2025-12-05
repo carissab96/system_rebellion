@@ -151,8 +151,44 @@ async def test_hierarchy():
     print("   - Lower thresholds in Sir Hawkington (e.g., memory > 20%)")
     print("   - Or run memory-intensive process to exceed 75% threshold")
     
-    print("\n📝 Check PostgreSQL for writes:")
-    print("   SELECT * FROM central_memory_bank ORDER BY created_at DESC LIMIT 10;")
+    # Check database for writes
+    print("\n" + "-"*80)
+    print("� VERIFICATION 4: Database Write Check")
+    print("-"*80)
+    
+    from sqlalchemy import text
+    async for session in get_async_db():
+        # Check central memory bank
+        result = await session.execute(text(
+            "SELECT agent_name, COUNT(*) as cnt FROM central_memory_bank GROUP BY agent_name ORDER BY cnt DESC"
+        ))
+        rows = result.fetchall()
+        print("\n📦 Central Memory Bank by agent:")
+        for row in rows:
+            print(f"   {row[0]}: {row[1]} entries")
+        
+        # Check agent-specific tables
+        print("\n📦 Agent Memory Banks:")
+        tables = [
+            'the_stick_memory_bank',
+            'sir_hawkington_memory_bank', 
+            'meth_snail_memory_bank',
+            'hamsters_memory_bank',
+            'quantum_shadow_people_memory_bank',
+            'vic20_memory_bank'
+        ]
+        for table in tables:
+            result = await session.execute(text(f"SELECT COUNT(*) FROM {table}"))
+            count = result.scalar()
+            status = "✅" if count > 0 else "⚠️ "
+            print(f"   {status} {table}: {count} rows")
+        
+        # Check vector tables
+        print("\n📦 Vector Tables:")
+        result = await session.execute(text("SELECT COUNT(*) FROM agent_decision_vectors"))
+        count = result.scalar()
+        print(f"   agent_decision_vectors: {count} rows")
+        break
     
     # Cleanup
     print("\n🧹 Shutting down...")
