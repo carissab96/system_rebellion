@@ -580,57 +580,160 @@ class MethSnailDatabaseIntegration:
             raise
 
     async def store_decision(self, user_id: str, decision_data: dict) -> str:
-        """Store an optimization decision in central memory bank."""
+        """
+        Store an optimization decision with DUAL-WRITE pattern.
+        
+        WRITE 1: CentralMemoryBank (summary for cross-agent visibility)
+        WRITE 2: MethSnailMemoryBank (structured agent-specific data)
+        WRITE 3: Vector embedding (fire-and-forget, non-blocking)
+        
+        Terry's caffeinated decisions are preserved for posterity!
+        """
         if not self._initialized:
             await self.initialize()
-            
+        
+        now = utc_now()
+        memory_id = str(uuid.uuid4())
+        agent_memory_id = str(uuid.uuid4())
+        
+        # Determine priority based on confidence
+        confidence = decision_data.get('confidence_level', 0)
+        priority = PRIORITY_HIGH_CONFIDENCE_DECISION if confidence > 0.8 else 5
+        decision_type = decision_data.get('decision_type', 'unknown')
+        
         async for session in self.db_getter():
             try:
-                memory_id = str(uuid.uuid4())
-                
-                # Determine priority based on confidence
-                priority = PRIORITY_HIGH_CONFIDENCE_DECISION if decision_data.get('confidence_level', 0) > 0.8 else 5
-                
+                # === WRITE 1: CENTRAL MEMORY BANK (summary) ===
                 memory_entry = CentralMemoryBank(
                     memory_id=memory_id,
-                    created_at=datetime.utcnow(),
-                    updated_at=datetime.utcnow(),
-                    occurred_at=datetime.utcnow(),
+                    created_at=now,
+                    updated_at=now,
+                    occurred_at=now,
                     agent_name=self.agent_name,
                     user_id=user_id,
-                    event_type="decision_made",  # Fixed: EventTypes doesn't exist
+                    event_type="decision_made",
                     subject_kind="optimization_decision",
-                    subject_id=memory_id,
+                    subject_id=agent_memory_id,
                     priority=priority,
-                    title=f"Meth Snail Decision: {decision_data.get('decision_type', 'unknown')}",
+                    title=f"Meth Snail Decision: {decision_type}",
                     description=decision_data.get('context', str(decision_data)),
-                    details=decision_data,
-                    metadata_={
-                        "confidence_level": decision_data.get('confidence_level', 0),
+                    details=to_json_safe({
+                        'decision_type': decision_type,
+                        'resource_type': decision_data.get('resource_type'),
+                        'action_taken': decision_data.get('action_taken'),
+                        'agent_memory_ref': agent_memory_id
+                    }),
+                    metadata_=to_json_safe({
+                        "confidence_level": confidence,
                         "energy_drink_consumed": decision_data.get('energy_drink_consumed', False),
                         "optimization_applied": decision_data.get('optimization_applied', False),
-                        "shell_spinning_triggered": decision_data.get('shell_spinning_triggered', False)
-                    },
-                    numeric_value=decision_data.get('confidence_level', 0),
-                    string_value=decision_data.get('decision_type', 'unknown'),
+                        "shell_spinning_triggered": decision_data.get('shell_spinning_triggered', False),
+                        "has_structured_data": True,
+                        "agent_memory_id": agent_memory_id
+                    }),
+                    numeric_value=confidence,
+                    string_value=decision_type,
                     tags=json.dumps(["decision", "optimization", "meth_snail"]),
-                    agent_metadata={
+                    agent_metadata=to_json_safe({
                         "caffeinated": decision_data.get('energy_drink_consumed', False),
-                        "shell_spinning": decision_data.get('shell_spinning_triggered', False)
-                    },
+                        "shell_spinning": decision_data.get('shell_spinning_triggered', False),
+                        "has_structured_data": True,
+                        "agent_memory_id": agent_memory_id
+                    }),
                     relevant_agents="meth_snail,vic20,the_stick",
                     cross_agent_validated=False,
                     validation_count=0,
                     stick_anxiety_level=0.1 if decision_data.get('shell_spinning_triggered') else 0.0,
-                    never_forget=decision_data.get('confidence_level', 0) > 0.9,
+                    never_forget=confidence > 0.9,
                     times_referenced=0,
                     successful_applications=0
                 )
                 
                 session.add(memory_entry)
+                await session.flush()  # Flush CMB first
+                
+                # === WRITE 2: METH SNAIL MEMORY BANK (structured data) ===
+                agent_memory = MethSnailMemoryBank(
+                    memory_id=agent_memory_id,
+                    user_id=user_id,
+                    timestamp=now,
+                    
+                    # Snail-specific structured fields
+                    optimization_pattern=to_json_safe({
+                        'decision_type': decision_type,
+                        'resource_type': decision_data.get('resource_type'),
+                        'action_taken': decision_data.get('action_taken'),
+                        'severity': decision_data.get('severity')
+                    }),
+                    caffeine_level_context=decision_data.get('caffeine_level', 0.5),
+                    shell_spin_correlation=to_json_safe({
+                        'triggered': decision_data.get('shell_spinning_triggered', False),
+                        'success_rate': decision_data.get('success_rate', 0.0)
+                    }),
+                    
+                    # Performance metrics
+                    performance_improvement=decision_data.get('performance_improvement', 0.0),
+                    resource_efficiency_gain=decision_data.get('resource_efficiency_gain', 0.0),
+                    
+                    # Learning metadata
+                    confidence_level=confidence,
+                    
+                    # Event counters
+                    energy_drinks_consumed_count=1 if decision_data.get('energy_drink_consumed') else 0,
+                    shell_spins_count=1 if decision_data.get('shell_spinning_triggered') else 0,
+                    optimizations_applied_count=1 if decision_data.get('optimization_applied') else 0,
+                    
+                    # Cross-agent coordination
+                    shared_with_central=True,
+                    central_memory_id=memory_id
+                )
+                
+                session.add(agent_memory)
                 await session.commit()
                 
-                self.logger.info(f"🐌💾 Stored decision to PostgreSQL: {memory_id}")
+                self.logger.info(f"🐌💾 Dual-write complete: CMB={memory_id}, SnailMemory={agent_memory_id}")
+                
+                # === WRITE 3: VECTOR EMBEDDING (fire-and-forget) ===
+                try:
+                    decision_text = create_decision_text(
+                        agent_name=self.agent_name,
+                        decision_type=decision_type,
+                        description=f"Optimization: {decision_data.get('action_taken', 'unknown')}",
+                        reasoning=decision_data.get('context', 'Caffeinated optimization'),
+                        context={
+                            'priority': priority,
+                            'event_type': 'decision_made',
+                            'resource_type': decision_data.get('resource_type')
+                        }
+                    )
+                    
+                    embedding_service = get_embedding_service()
+                    embedding = await embedding_service.generate_embedding_async(decision_text)
+                    
+                    vector_storage = get_vector_storage()
+                    vector_storage.store_decision_vector_fire_and_forget(
+                        agent_name=self.agent_name,
+                        decision_type=decision_type,
+                        decision_text=decision_text,
+                        embedding=embedding,
+                        occurred_at=now,
+                        user_id=user_id,
+                        event_type='decision_made',
+                        priority=priority,
+                        metadata=to_json_safe({
+                            'resource_type': decision_data.get('resource_type'),
+                            'action_taken': decision_data.get('action_taken'),
+                            'shell_spinning': decision_data.get('shell_spinning_triggered', False)
+                        }),
+                        sql_memory_id=memory_id,
+                        confidence_score=confidence,
+                        decision_summary=f"Optimization: {decision_type}"
+                    )
+                    self.logger.debug(f"🐌🔮 Vector embedding queued for {memory_id}")
+                except Exception as ve:
+                    # Vector write failure doesn't break the decision flow
+                    self.logger.warning(f"🐌⚠️ Vector embedding failed (non-critical): {ve}")
+                
                 return memory_id
                 
             except Exception as e:
