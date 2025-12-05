@@ -132,6 +132,20 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
         logger.info("👻🎯 Week 4 systems integrated - Coordination & Verification ONLINE!")
         logger.info("👻🕵️ Paranoia levels optimal - Trust no one!")
         logger.info("👻📡 Subscribed to VIC-20 coordination via base class - Paranoid monitoring active!")
+        
+        # Initialize database integration for PostgreSQL writes
+        if self.db_getter:
+            try:
+                from .database_integration import QSPDatabaseIntegration
+                self.db_integration = QSPDatabaseIntegration(db_getter=self.db_getter)
+                await self.db_integration.initialize()
+                logger.info("👻💾 Database integration initialized - Paranoid records enabled!")
+            except Exception as e:
+                logger.error(f"👻💥 Failed to initialize database: {e}", exc_info=True)
+                self.db_integration = None
+        else:
+            self.db_integration = None
+            logger.warning("👻⚠️ No db_getter provided - PostgreSQL writes disabled")
     
     async def _handle_coordination_request(self, message: AgentMessage) -> None:
         """
@@ -199,6 +213,37 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
                             confidence=decision['decision_score'],
                             reasoning=decision['reasoning']
                         )
+                        
+                        # 💾 WRITE TO POSTGRESQL: Store quantum decision
+                        if self.db_integration and self.user_id:
+                            try:
+                                from .data_types import QSPDecision, QSPDecisionType, QuantumPhaseState
+                                from datetime import datetime, timezone
+                                
+                                quantum_decision = QSPDecision(
+                                    decision_type=QSPDecisionType.NETWORK_DIMENSION_SHIFT,
+                                    quantum_state=QuantumPhaseState.PHASED,
+                                    network_target=action,
+                                    optimization_parameters={
+                                        'connections_before': network_result.get('connections_before', 0),
+                                        'connections_after': network_result.get('connections_after', 0),
+                                        'connections_reduced': network_result.get('connections_reduced', 0)
+                                    },
+                                    tequila_jello_shots_required=self.tequila_shots_today,
+                                    mysterious_explanation=decision['reasoning'],
+                                    technical_details={
+                                        'action': action,
+                                        'paranoia_justified': True,
+                                        'threat_level': 'elevated'
+                                    },
+                                    expected_improvement=min(1.0, network_result.get('connections_reduced', 0) / 100.0),
+                                    confidence_level=decision['decision_score'],
+                                    timestamp=datetime.now(timezone.utc)
+                                )
+                                await self.db_integration.store_decision(self.user_id, quantum_decision)
+                                logger.info(f"👻💾 Quantum decision written to PostgreSQL")
+                            except Exception as e:
+                                logger.error(f"👻💥 Failed to write to PostgreSQL: {e}")
                     else:
                         logger.error(f"👥❌ Network throttle failed: {network_result.get('error')}")
                 

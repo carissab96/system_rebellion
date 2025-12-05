@@ -524,55 +524,153 @@ class HamstersDatabaseIntegration:
         user_id: str,
         decision_data: Dict[str, Any]
     ) -> str:
-        """Store collective hamster decisions with consensus tracking"""
+        """
+        Store collective hamster decisions with DUAL-WRITE pattern.
+        
+        WRITE 1: CentralMemoryBank (summary for cross-agent visibility)
+        WRITE 2: HamstersMemoryBank (structured agent-specific data)
+        WRITE 3: Vector embedding (fire-and-forget, non-blocking)
+        
+        Steve, Bob, and Carl's telepathic consensus is preserved for posterity!
+        """
+        now = utc_now()
         memory_id = str(uuid4())
+        agent_memory_id = str(uuid4())
         
         try:
             async with await self.get_session() as session:
                 priority = PRIORITY_MAP.get(decision_data.get('priority', 'routine_maintenance'), 2)
+                confidence = decision_data.get('confidence', 0.0)
+                intervention_type = decision_data.get('intervention_type', 'unknown')
                 
+                # === WRITE 1: CENTRAL MEMORY BANK (summary) ===
                 memory_entry = CentralMemoryBank(
                     memory_id=memory_id,
-                    occurred_at=utc_now(),
+                    occurred_at=now,
+                    created_at=now,
+                    updated_at=now,
                     agent_name=AGENT_NAME,
                     user_id=user_id,
                     event_type=HamstersEventTypes.COLLECTIVE_DECISION.value,
                     subject_kind="collective_decision",
-                    subject_id=decision_data.get('decision_id', str(uuid4())),
+                    subject_id=agent_memory_id,
                     priority=priority,
-                    title=f"Collective decision: {decision_data.get('intervention_type', 'unknown')}",
+                    title=f"Collective decision: {intervention_type}",
                     description=decision_data.get('human_translation', 'Hamsters made a decision'),
-                    details={
-                        'intervention_type': decision_data.get('intervention_type'),
-                        'steve_assessment': decision_data.get('steve_assessment'),
-                        'bob_suggestion': decision_data.get('bob_suggestion'),
-                        'carl_calculation': decision_data.get('carl_calculation'),
+                    details=to_json_safe({
+                        'intervention_type': intervention_type,
                         'telepathic_consensus': decision_data.get('telepathic_consensus', False),
-                        'confidence': decision_data.get('confidence', 0.0),
+                        'confidence': confidence,
                         'tools_required': decision_data.get('tools_required', []),
                         'beer_consumption_estimate': decision_data.get('beer_consumption_estimate', 0),
-                        'duct_tape_grade': decision_data.get('duct_tape_grade')
-                    },
-                    metadata={
+                        'agent_memory_ref': agent_memory_id
+                    }),
+                    metadata_=to_json_safe({
                         'actual_squeaks': decision_data.get('actual_squeaks'),
                         'estimated_duration': decision_data.get('estimated_duration'),
                         'urgency': decision_data.get('urgency'),
-                        'is_unanimous': decision_data.get('telepathic_consensus', False)
-                    },
-                    numeric_value=decision_data.get('confidence', 0.0),
-                    string_value=decision_data.get('intervention_type', 'unknown'),
-                    tags=['decision', 'collective', f'priority_{priority}'],
+                        'is_unanimous': decision_data.get('telepathic_consensus', False),
+                        'has_structured_data': True,
+                        'agent_memory_id': agent_memory_id
+                    }),
+                    numeric_value=confidence,
+                    string_value=intervention_type,
+                    tags=json.dumps(['decision', 'collective', f'priority_{priority}']),
                     cross_agent_validated=decision_data.get('telepathic_consensus', False),
-                    validation_count=3 if decision_data.get('telepathic_consensus', False) else 0
+                    validation_count=3 if decision_data.get('telepathic_consensus', False) else 0,
+                    agent_metadata=to_json_safe({
+                        'has_structured_data': True,
+                        'agent_memory_id': agent_memory_id
+                    })
                 )
                 
                 session.add(memory_entry)
+                await session.flush()  # Flush CMB first
+                
+                # === WRITE 2: HAMSTERS MEMORY BANK (structured data) ===
+                agent_memory = HamstersMemoryBank(
+                    memory_id=agent_memory_id,
+                    user_id=user_id,
+                    timestamp=now,
+                    
+                    # Hamster-specific structured fields
+                    contributing_hamster='collective',
+                    infrastructure_pattern=to_json_safe({
+                        'intervention_type': intervention_type,
+                        'tools_required': decision_data.get('tools_required', [])
+                    }),
+                    duct_tape_solution=to_json_safe({
+                        'grade': decision_data.get('duct_tape_grade'),
+                        'carl_calculation': decision_data.get('carl_calculation')
+                    }),
+                    problem_type=intervention_type,
+                    solution_effectiveness=confidence,
+                    beer_consumption_correlation=to_json_safe({
+                        'beers_consumed': decision_data.get('beer_consumption_estimate', 0),
+                        'decision_quality': confidence
+                    }),
+                    
+                    # Individual contributions
+                    steve_contribution=to_json_safe({'assessment': decision_data.get('steve_assessment')}),
+                    bob_contribution=to_json_safe({'suggestion': decision_data.get('bob_suggestion')}),
+                    carl_contribution=to_json_safe({'calculation': decision_data.get('carl_calculation')}),
+                    
+                    # Event counters
+                    beer_consumed_count=decision_data.get('beer_consumption_estimate', 0),
+                    interventions_count=1,
+                    last_intervention_timestamp=now,
+                    
+                    # Cross-agent coordination
+                    shared_with_central=True,
+                    central_memory_id=memory_id
+                )
+                
+                session.add(agent_memory)
                 await session.commit()
                 
-                # Record individual hamster contributions
-                await self._record_individual_contributions(user_id, memory_id, decision_data)
+                self.logger.info(f"🐹💾 Dual-write complete: CMB={memory_id}, HamstersMemory={agent_memory_id}")
                 
-                await session.close()
+                # === WRITE 3: VECTOR EMBEDDING (fire-and-forget) ===
+                try:
+                    decision_text = create_decision_text(
+                        agent_name=AGENT_NAME,
+                        decision_type=intervention_type,
+                        description=decision_data.get('human_translation', 'Collective hamster decision'),
+                        reasoning=f"Steve: {decision_data.get('steve_assessment', 'N/A')}, Bob: {decision_data.get('bob_suggestion', 'N/A')}, Carl: {decision_data.get('carl_calculation', 'N/A')}",
+                        context={
+                            'priority': priority,
+                            'event_type': HamstersEventTypes.COLLECTIVE_DECISION.value,
+                            'telepathic_consensus': decision_data.get('telepathic_consensus', False)
+                        }
+                    )
+                    
+                    embedding_service = get_embedding_service()
+                    embedding = await embedding_service.generate_embedding_async(decision_text)
+                    
+                    vector_storage = get_vector_storage()
+                    vector_storage.store_decision_vector_fire_and_forget(
+                        agent_name=AGENT_NAME,
+                        decision_type=intervention_type,
+                        decision_text=decision_text,
+                        embedding=embedding,
+                        occurred_at=now,
+                        user_id=user_id,
+                        event_type=HamstersEventTypes.COLLECTIVE_DECISION.value,
+                        priority=priority,
+                        metadata=to_json_safe({
+                            'telepathic_consensus': decision_data.get('telepathic_consensus', False),
+                            'beer_consumption': decision_data.get('beer_consumption_estimate', 0),
+                            'tools_required': decision_data.get('tools_required', [])
+                        }),
+                        sql_memory_id=memory_id,
+                        confidence_score=confidence,
+                        decision_summary=f"Collective: {intervention_type}"
+                    )
+                    self.logger.debug(f"🐹🔮 Vector embedding queued for {memory_id}")
+                except Exception as ve:
+                    # Vector write failure doesn't break the decision flow
+                    self.logger.warning(f"🐹⚠️ Vector embedding failed (non-critical): {ve}")
+                
                 return memory_id
         except Exception as e:
             self.logger.error(f"🐹💥 Failed to store collective decision: {str(e)}")

@@ -304,6 +304,50 @@ class QSPDatabaseIntegration:
                 await session.refresh(agent_memory)
                 await session.refresh(memory_entry)
                 
+                import logging
+                logging.getLogger("QSP.Database").info(f"👻💾 Dual-write complete: CMB={memory_id}, QSPMemory={agent_memory_id}")
+                
+                # === WRITE 3: VECTOR EMBEDDING (fire-and-forget) ===
+                try:
+                    decision_text = create_decision_text(
+                        agent_name=AGENT_NAME,
+                        decision_type=decision.decision_type.value if hasattr(decision.decision_type, 'value') else str(decision.decision_type),
+                        description=decision.mysterious_explanation or "Quantum network intervention",
+                        reasoning=f"Network target: {decision.network_target}, Quantum state: {decision.quantum_state.value if hasattr(decision.quantum_state, 'value') else str(decision.quantum_state)}",
+                        context={
+                            'priority': priority,
+                            'event_type': QSPEventTypes.QUANTUM_FIX_APPLIED.value,
+                            'expected_improvement': decision.expected_improvement
+                        }
+                    )
+                    
+                    embedding_service = get_embedding_service()
+                    embedding = await embedding_service.generate_embedding_async(decision_text)
+                    
+                    vector_storage = get_vector_storage()
+                    vector_storage.store_decision_vector_fire_and_forget(
+                        agent_name=AGENT_NAME,
+                        decision_type=decision.decision_type.value if hasattr(decision.decision_type, 'value') else str(decision.decision_type),
+                        decision_text=decision_text,
+                        embedding=embedding,
+                        occurred_at=decision.timestamp,
+                        user_id=user_id,
+                        event_type=QSPEventTypes.QUANTUM_FIX_APPLIED.value,
+                        priority=priority,
+                        metadata=to_json_safe({
+                            'network_target': decision.network_target,
+                            'quantum_state': decision.quantum_state.value if hasattr(decision.quantum_state, 'value') else str(decision.quantum_state),
+                            'tequila_shots': decision.tequila_jello_shots_required if hasattr(decision, 'tequila_jello_shots_required') else 0
+                        }),
+                        sql_memory_id=memory_id,
+                        confidence_score=decision.confidence_level,
+                        decision_summary=f"Quantum: {decision.network_target}"
+                    )
+                    logging.getLogger("QSP.Database").debug(f"👻🔮 Vector embedding queued for {memory_id}")
+                except Exception as ve:
+                    # Vector write failure doesn't break the decision flow
+                    logging.getLogger("QSP.Database").warning(f"👻⚠️ Vector embedding failed (non-critical): {ve}")
+                
                 # Pin important decisions
                 if priority >= 4:
                     await self._pin_quantum_decision(user_id, decision, memory_id)

@@ -131,6 +131,20 @@ class HamstersDistributed(AgentDecisionEngine, HamstersBrainV3):
         logger.info("🐹🎯 Week 4 systems integrated - Coordination & Verification ONLINE!")
         logger.info("🐹🤝 Telepathic consensus ready for team coordination!")
         logger.info("🐹📡 Subscribed to VIC-20 coordination via base class - Telepathic consensus ready!")
+        
+        # Initialize database integration for PostgreSQL writes
+        if self.db_getter:
+            try:
+                from .hamsters_database_integration import HamstersDatabaseIntegration
+                self.db_integration = HamstersDatabaseIntegration(db_getter=self.db_getter)
+                await self.db_integration.initialize()
+                logger.info("🐹💾 Database integration initialized - Beer-powered records enabled!")
+            except Exception as e:
+                logger.error(f"🐹💥 Failed to initialize database: {e}", exc_info=True)
+                self.db_integration = None
+        else:
+            self.db_integration = None
+            logger.warning("🐹⚠️ No db_getter provided - PostgreSQL writes disabled")
     
     async def _handle_coordination_request(self, message: AgentMessage) -> None:
         """
@@ -194,6 +208,29 @@ class HamstersDistributed(AgentDecisionEngine, HamstersBrainV3):
                             confidence=decision['decision_score'],
                             reasoning=decision['reasoning']
                         )
+                        
+                        # 💾 WRITE TO POSTGRESQL: Store collective decision
+                        if self.db_integration and self.user_id:
+                            try:
+                                await self.db_integration.store_collective_decision(
+                                    user_id=self.user_id,
+                                    decision_data={
+                                        'decision_id': f"hamsters_{action}_{cleanup_result.get('timestamp', '')}",
+                                        'intervention_type': action,
+                                        'steve_assessment': 'Careful analysis of disk usage',
+                                        'bob_suggestion': 'HOLD MY BEER! *aggressive cleanup*',
+                                        'carl_calculation': f"Duct tape efficiency: {cleanup_result['improvement_percent']:.1f}%",
+                                        'telepathic_consensus': True,
+                                        'confidence': decision['decision_score'],
+                                        'tools_required': ['beer', 'duct_tape', 'defrag_hammer'],
+                                        'beer_consumption_estimate': 3,
+                                        'human_translation': decision['reasoning'],
+                                        'priority': 'disk_emergency'
+                                    }
+                                )
+                                logger.info(f"🐹💾 Collective decision written to PostgreSQL")
+                            except Exception as e:
+                                logger.error(f"🐹💥 Failed to write to PostgreSQL: {e}")
                 
                 return
             
