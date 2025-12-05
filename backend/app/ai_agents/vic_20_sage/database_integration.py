@@ -99,6 +99,30 @@ class VIC20DatabaseIntegration(BaseDatabaseIntegration):
         if not self._initialized:
             await self.initialize()
     
+    async def store_decision(self, user_id: str, decision: Any) -> str:
+        """
+        Required by BaseDatabaseIntegration - delegates to store_coordination_decision.
+        VIC-20 stores coordination decisions.
+        """
+        if isinstance(decision, VIC20Decision):
+            return await self.store_coordination_decision(user_id, decision)
+        elif isinstance(decision, dict):
+            # Convert dict to VIC20Decision
+            from datetime import datetime, timezone
+            vic_decision = VIC20Decision(
+                decision_type=VIC20DecisionType(decision.get('decision_type', 'coordination_routing')),
+                timestamp=decision.get('timestamp', datetime.now(timezone.utc)),
+                confidence_score=decision.get('confidence_score', 0.8),
+                ancient_wisdom_applied=decision.get('ancient_wisdom_applied'),
+                coordination_context=decision.get('coordination_context', {}),
+                agents_involved=decision.get('agents_involved', []),
+                harmony_impact=decision.get('harmony_impact', 0.0),
+                retro_insight=decision.get('retro_insight')
+            )
+            return await self.store_coordination_decision(user_id, vic_decision)
+        else:
+            raise ValueError(f"Unknown decision type: {type(decision)}")
+    
     # === CENTRAL MEMORY BANK OPERATIONS ===
     
     # === DUAL-WRITE METHOD 1: STORE COORDINATION DECISION ===

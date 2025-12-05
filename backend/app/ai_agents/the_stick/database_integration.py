@@ -86,6 +86,32 @@ class StickDatabaseIntegration(BaseDatabaseIntegration):
         
         logger.info("📏✨ Database integration initialized using shared connection pool (anxiety level: manageable)")
     
+    async def store_decision(self, user_id: str, decision: Any) -> str:
+        """
+        Required by BaseDatabaseIntegration - delegates to store_memory_entry.
+        The Stick stores everything as eidetic memory entries.
+        """
+        if isinstance(decision, StickMemoryEntry):
+            return await self.store_memory_entry(decision, user_id)
+        elif isinstance(decision, ComplianceViolation):
+            return await self.store_compliance_violation(user_id, decision)
+        elif isinstance(decision, dict):
+            # Convert dict to StickMemoryEntry
+            from datetime import datetime, timezone
+            entry = StickMemoryEntry(
+                timestamp=decision.get('timestamp', datetime.now(timezone.utc)),
+                event_type=decision.get('event_type', 'decision'),
+                details=decision,
+                anxiety_level=decision.get('anxiety_level', 25.0),
+                importance=decision.get('importance', 'MEDIUM'),
+                related_hamsters=decision.get('related_hamsters', []),
+                compliance_impact=decision.get('compliance_impact'),
+                never_forget=decision.get('never_forget', False)
+            )
+            return await self.store_memory_entry(entry, user_id)
+        else:
+            raise ValueError(f"Unknown decision type: {type(decision)}")
+    
     # === DUAL-WRITE METHOD 1: STORE COMPLIANCE VIOLATION ===
     
     async def store_compliance_violation(self, user_id: str, violation: ComplianceViolation) -> str:

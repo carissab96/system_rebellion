@@ -129,6 +129,33 @@ class HamstersDatabaseIntegration(BaseDatabaseIntegration):
         async with self.get_managed_session() as session:
             return session
     
+    async def store_decision(self, user_id: str, decision: Any) -> str:
+        """
+        Required by BaseDatabaseIntegration - delegates to store_infrastructure_intervention.
+        The Hamsters store infrastructure interventions (with duct tape calculations).
+        """
+        if isinstance(decision, InfrastructureIntervention):
+            return await self.store_infrastructure_intervention(user_id, decision)
+        elif isinstance(decision, dict):
+            # Convert dict to InfrastructureIntervention
+            from datetime import datetime, timezone
+            intervention = InfrastructureIntervention(
+                timestamp=decision.get('timestamp', datetime.now(timezone.utc)),
+                intervention_type=decision.get('intervention_type', 'disk_optimization'),
+                target_resource=decision.get('target_resource', 'disk'),
+                steve_assessment=decision.get('steve_assessment', {}),
+                bob_assessment=decision.get('bob_assessment', {}),
+                carl_assessment=decision.get('carl_assessment', {}),
+                consensus_reached=decision.get('consensus_reached', True),
+                duct_tape_required=decision.get('duct_tape_required', 0),
+                beer_consumed=decision.get('beer_consumed', 0),
+                success_probability=decision.get('success_probability', 0.8),
+                actual_outcome=decision.get('actual_outcome')
+            )
+            return await self.store_infrastructure_intervention(user_id, intervention)
+        else:
+            raise ValueError(f"Unknown decision type: {type(decision)}")
+    
     # === DUAL-WRITE METHOD 1: STORE INFRASTRUCTURE INTERVENTION ===
     
     async def store_infrastructure_intervention(
