@@ -170,7 +170,7 @@ class SirHawkingtonMemoryBank(Base):
     
     # Cross-agent coordination
     shared_with_central = Column(Boolean, default=False)
-    central_memory_id = Column(String(36), ForeignKey('central_memory_bank.memory_id'))
+    central_memory_id = Column(String(36), nullable=True)  # Optional link to CMB (no FK - agents write independently)
     
     __table_args__ = (
         Index('idx_hawkington_category', 'memory_category', 'timestamp'),
@@ -213,7 +213,7 @@ class TheStickMemoryBank(Base):
     
     # Cross-agent coordination
     shared_with_central = Column(Boolean, default=False)
-    central_memory_id = Column(String(36), ForeignKey('central_memory_bank.memory_id'))
+    central_memory_id = Column(String(36), nullable=True)  # Optional link to CMB (no FK - agents write independently)
     
     # Relationship to user
     user = relationship(
@@ -268,7 +268,7 @@ class MethSnailMemoryBank(Base):
     
     # Cross-agent coordination
     shared_with_central = Column(Boolean, default=False)
-    central_memory_id = Column(String(36), ForeignKey('central_memory_bank.memory_id'))
+    central_memory_id = Column(String(36), nullable=True)  # Optional link to CMB (no FK - agents write independently)
     
     __table_args__ = (
         Index('idx_snail_optimization', 'optimization_pattern', 'performance_improvement'),
@@ -323,7 +323,7 @@ class HamstersMemoryBank(Base):
     
     # Cross-agent coordination
     shared_with_central = Column(Boolean, default=False)
-    central_memory_id = Column(String(36), ForeignKey('central_memory_bank.memory_id'))
+    central_memory_id = Column(String(36), nullable=True)  # Optional link to CMB (no FK - agents write independently)
     
     __table_args__ = (
         Index('idx_hamsters_contributor', 'contributing_hamster', 'problem_type'),
@@ -375,7 +375,7 @@ class QuantumShadowPeopleMemoryBank(Base):
     
     # Cross-agent coordination
     shared_with_central = Column(Boolean, default=False)
-    central_memory_id = Column(String(36), ForeignKey('central_memory_bank.memory_id'))
+    central_memory_id = Column(String(36), nullable=True)  # Optional link to CMB (no FK - agents write independently)
     
     __table_args__ = (
         Index('idx_qsp_phase', 'phase_pattern', 'quantum_confidence'),
@@ -425,7 +425,7 @@ class VIC20MemoryBank(Base):
     
     # Cross-agent coordination
     shared_with_central = Column(Boolean, default=False)
-    central_memory_id = Column(String(36), ForeignKey('central_memory_bank.memory_id'))
+    central_memory_id = Column(String(36), nullable=True)  # Optional link to CMB (no FK - agents write independently)
     
     __table_args__ = (
         Index('idx_vic20_coordination', 'coordination_pattern', 'agent_harmony_score'),
