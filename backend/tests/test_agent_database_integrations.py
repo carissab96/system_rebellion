@@ -75,12 +75,14 @@ class TestTheStickDatabaseIntegration:
             db_integration._initialized = True
             
             violation = ComplianceViolation(
-                violation_id=str(uuid4()),
                 violation_type="RESOURCE_THRESHOLD_EXCEEDED",
                 severity="HIGH",
                 timestamp=datetime.now(timezone.utc),
                 measured_value=95.0,
                 threshold_value=80.0,
+                anxiety_adjusted_threshold=75.0,
+                user_id="test_user",
+                recommendation="Reduce resource usage",
                 anxiety_impact=0.7
             )
             
@@ -116,8 +118,11 @@ class TestTheStickDatabaseIntegration:
             alert = HamsterProximityAlert(
                 timestamp=datetime.now(timezone.utc),
                 active_hamsters=['bob', 'carl'],
-                panic_level=0.9,
+                locations={'bob': 'supply_closet', 'carl': 'server_room'},
                 anxiety_multiplier=2.5,
+                panic_level="HIGH",
+                infrastructure_risk="MODERATE",
+                stick_response="HYPERVENTILATING",
                 paper_bags_consumed=3
             )
             
