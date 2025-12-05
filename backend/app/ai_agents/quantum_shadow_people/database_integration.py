@@ -325,7 +325,9 @@ class QSPDatabaseIntegration:
                     embedding = await embedding_service.generate_embedding_async(decision_text)
                     
                     vector_storage = get_vector_storage()
-                    vector_storage.store_decision_vector_fire_and_forget(
+                    # Fire-and-forget: create task but don't await
+                    import asyncio
+                    asyncio.create_task(vector_storage.store_decision_vector_fire_and_forget(
                         agent_name=AGENT_NAME,
                         decision_type=decision.decision_type.value if hasattr(decision.decision_type, 'value') else str(decision.decision_type),
                         decision_text=decision_text,
@@ -342,7 +344,7 @@ class QSPDatabaseIntegration:
                         sql_memory_id=memory_id,
                         confidence_score=decision.confidence_level,
                         decision_summary=f"Quantum: {decision.network_target}"
-                    )
+                    ))
                     logging.getLogger("QSP.Database").debug(f"👻🔮 Vector embedding queued for {memory_id}")
                 except Exception as ve:
                     # Vector write failure doesn't break the decision flow

@@ -369,15 +369,30 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
             if self.db_integration and self.user_id:
                 try:
                     from datetime import datetime, timezone
+                    
+                    # Map resource type to routing decision
+                    routing_map = {
+                        'cpu': 'meth_snail',
+                        'memory': 'meth_snail', 
+                        'disk': 'hamsters',
+                        'network': 'quantum_shadow_people',
+                        'swap': 'meth_snail'
+                    }
+                    routing_decision = routing_map.get(resource_type.lower() if isinstance(resource_type, str) else str(resource_type).lower(), 'vic20_sage')
+                    
                     triage_data = {
                         "resource_type": resource_type,
                         "current_value": current_value,
                         "threshold": threshold,
-                        "severity": severity,
+                        "triage_severity": severity,  # REQUIRED field
+                        "routing_decision": routing_decision,  # REQUIRED field
+                        "target_agents": [routing_decision],
                         "confidence": confidence,
                         "should_escalate": should_escalate,
                         "monocle_state": self.current_monocle_state.value if hasattr(self, 'current_monocle_state') else "polished",
-                        "timestamp": datetime.now(timezone.utc)
+                        "monocle_yeeted": False,
+                        "timestamp": datetime.now(timezone.utc),
+                        "reasoning": f"Resource {resource_type} at {current_value}% exceeds threshold {threshold}%"
                     }
                     await self.db_integration.store_triage_decision(self.user_id, triage_data)
                     logger.info(f"🧐💾 Triage decision written to PostgreSQL")

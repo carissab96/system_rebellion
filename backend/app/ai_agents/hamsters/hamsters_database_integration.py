@@ -648,7 +648,9 @@ class HamstersDatabaseIntegration:
                     embedding = await embedding_service.generate_embedding_async(decision_text)
                     
                     vector_storage = get_vector_storage()
-                    vector_storage.store_decision_vector_fire_and_forget(
+                    # Fire-and-forget: create task but don't await
+                    import asyncio
+                    asyncio.create_task(vector_storage.store_decision_vector_fire_and_forget(
                         agent_name=AGENT_NAME,
                         decision_type=intervention_type,
                         decision_text=decision_text,
@@ -665,7 +667,7 @@ class HamstersDatabaseIntegration:
                         sql_memory_id=memory_id,
                         confidence_score=confidence,
                         decision_summary=f"Collective: {intervention_type}"
-                    )
+                    ))
                     self.logger.debug(f"🐹🔮 Vector embedding queued for {memory_id}")
                 except Exception as ve:
                     # Vector write failure doesn't break the decision flow
