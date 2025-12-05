@@ -13,6 +13,7 @@ Key Features:
 """
 
 import logging
+import json
 from typing import List, Optional, Dict, Any, Tuple
 from datetime import datetime
 from uuid import uuid4
@@ -65,6 +66,12 @@ class VectorStorageService:
             vector_id if successful, None if failed
         """
         try:
+            # JSON-encode metadata for PostgreSQL JSONB column
+            metadata_json = json.dumps(metadata) if metadata else None
+            
+            # Convert event_type enum to string if needed
+            event_type_str = event_type.value if hasattr(event_type, 'value') else str(event_type) if event_type else None
+            
             async with self.engine.begin() as conn:
                 result = await conn.execute(
                     text("""
@@ -77,7 +84,7 @@ class VectorStorageService:
                             gen_random_uuid(), :sql_memory_id, :agent_name, :user_id,
                             :decision_type, :event_type, :priority, :occurred_at,
                             :embedding, :decision_text, :decision_summary,
-                            :metadata, :confidence_score, :embedding_model
+                            :metadata::jsonb, :confidence_score, :embedding_model
                         )
                         RETURNING vector_id
                     """),
@@ -86,13 +93,13 @@ class VectorStorageService:
                         "agent_name": agent_name,
                         "user_id": user_id,
                         "decision_type": decision_type,
-                        "event_type": event_type,
+                        "event_type": event_type_str,
                         "priority": priority,
                         "occurred_at": occurred_at,
                         "embedding": embedding,
                         "decision_text": decision_text,
                         "decision_summary": decision_summary,
-                        "metadata": metadata,
+                        "metadata": metadata_json,
                         "confidence_score": confidence_score,
                         "embedding_model": "all-MiniLM-L6-v2"
                     }

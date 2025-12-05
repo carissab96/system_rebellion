@@ -16,6 +16,7 @@ class HawkingtonEventTypes(str, Enum):
     # Decision events
     ARISTOCRATIC_DECISION = "hawkington.aristocratic_decision"
     TRIAGE_DECISION = "hawkington.triage_decision"
+    TRIAGE_COMPLETED = "hawkington.triage_completed"
     
     # Monocle events
     MONOCLE_YEET = "hawkington.monocle_yeet"

@@ -310,7 +310,8 @@ class VIC20DatabaseIntegration:
                     
                     # Store vector (fire-and-forget - doesn't block)
                     vector_storage = get_vector_storage()
-                    vector_storage.store_decision_vector_fire_and_forget(
+                    import asyncio
+                    asyncio.create_task(vector_storage.store_decision_vector_fire_and_forget(
                         agent_name=AGENT_NAME,
                         decision_type=decision.decision_type.value if hasattr(decision.decision_type, 'value') else str(decision.decision_type),
                         decision_text=decision_text,
@@ -327,7 +328,7 @@ class VIC20DatabaseIntegration:
                         sql_memory_id=memory_id,
                         confidence_score=decision.confidence_level,
                         decision_summary=f"Coordination: {decision.coordination_target}" if decision.coordination_target else None
-                    )
+                    ))
                     print(f"✅✅✅ VECTOR WRITE COMPLETE FOR {memory_id} ✅✅✅")
                     logger.debug(f"🔮 Queued vector embedding for decision {memory_id}")
                 except Exception as ve:
