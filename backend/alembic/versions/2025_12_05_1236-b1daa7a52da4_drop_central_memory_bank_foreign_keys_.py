@@ -54,7 +54,7 @@ def upgrade() -> None:
     # Drop FK from quantum_shadow_people_memory_bank
     op.execute("""
         ALTER TABLE quantum_shadow_people_memory_bank 
-        DROP CONSTRAINT IF EXISTS fk_quantum_shadow_people_memory_bank_central_memory_id_ce_c7b2
+        DROP CONSTRAINT IF EXISTS fk_quantum_shadow_people_memory_bank_central_memory_id__1d52
     """)
     
     # Drop FK from vic20_memory_bank
@@ -99,7 +99,7 @@ def downgrade() -> None:
     # Re-add FK to quantum_shadow_people_memory_bank
     op.execute("""
         ALTER TABLE quantum_shadow_people_memory_bank 
-        ADD CONSTRAINT fk_quantum_shadow_people_memory_bank_central_memory_id_ce_c7b2
+        ADD CONSTRAINT fk_quantum_shadow_people_memory_bank_central_memory_id__1d52
         FOREIGN KEY (central_memory_id) REFERENCES central_memory_bank(memory_id)
     """)
     
