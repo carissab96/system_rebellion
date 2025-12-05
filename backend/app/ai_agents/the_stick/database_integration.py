@@ -759,7 +759,9 @@ class StickDatabaseIntegration:
                         embedding = await embedding_service.generate_embedding_async(decision_text)
                         
                         vector_storage = get_vector_storage()
-                        vector_storage.store_decision_vector_fire_and_forget(
+                        # Fire-and-forget: create task but don't await
+                        import asyncio
+                        asyncio.create_task(vector_storage.store_decision_vector_fire_and_forget(
                             agent_name=AGENT_NAME,
                             decision_type=entry.event_type or "eidetic_memory",
                             decision_text=decision_text,
@@ -776,7 +778,7 @@ class StickDatabaseIntegration:
                             sql_memory_id=memory_id,
                             confidence_score=1.0 if entry.never_forget else 0.8,
                             decision_summary=f"Eidetic: {entry.event_type}"
-                        )
+                        ))
                         logger.debug(f"📏🔮 Vector embedding queued for {memory_id}")
                     except Exception as ve:
                         # Vector write failure doesn't break the decision flow

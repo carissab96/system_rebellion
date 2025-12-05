@@ -101,31 +101,51 @@ async def test_hierarchy():
             print(f"{status} - {agent_name}: Specialist")
     
     print("\n" + "-"*80)
-    print("✅ VERIFICATION 2: Check Message Subscriptions")
+    print("✅ VERIFICATION 2: Check Message Subscriptions & DB Integration")
     print("-"*80)
     
     hawk = manager.agents.get("sir_hawkington")
     vic20 = manager.agents.get("vic_20_sage")
     terry = manager.agents.get("meth_snail")
+    stick = manager.agents.get("the_stick")
+    hamsters = manager.agents.get("hamsters")
+    qsp = manager.agents.get("quantum_shadow_people")
     
     if hawk:
-        print("✅ Sir Hawkington: Monitors ALL resources, sends TRIAGE_ALERT to VIC-20")
+        has_db = hasattr(hawk, 'db_integration') and hawk.db_integration is not None
+        print(f"✅ Sir Hawkington: Monitors ALL resources, sends TRIAGE_ALERT to VIC-20 | DB: {'✅' if has_db else '❌'}")
     
     if vic20:
-        print("✅ VIC-20: Subscribed to TRIAGE_ALERT, routes to specialists")
+        has_db = hasattr(vic20, 'db_integration') and vic20.db_integration is not None
+        print(f"✅ VIC-20: Subscribed to TRIAGE_ALERT, routes to specialists | DB: {'✅' if has_db else '❌'}")
     
     if terry:
-        print("✅ Terry: Subscribed to COORDINATION_REQUEST from VIC-20")
+        has_db = hasattr(terry, 'db_integration') and terry.db_integration is not None
+        print(f"✅ Terry (Meth Snail): CPU/Memory/Swap specialist | DB: {'✅' if has_db else '❌'}")
+    
+    if stick:
+        has_db = hasattr(stick, 'db_integration') and stick.db_integration is not None
+        print(f"✅ The Stick: Universal logger, CC'd on all decisions | DB: {'✅' if has_db else '❌'}")
+    
+    if hamsters:
+        has_db = hasattr(hamsters, 'db_integration') and hamsters.db_integration is not None
+        print(f"✅ Hamsters: Disk specialist (Steve, Bob, Carl) | DB: {'✅' if has_db else '❌'}")
+    
+    if qsp:
+        has_db = hasattr(qsp, 'db_integration') and qsp.db_integration is not None
+        print(f"✅ QSP: Network specialist (paranoid quantum monitoring) | DB: {'✅' if has_db else '❌'}")
     
     print("\n" + "-"*80)
     print("🎯 VERIFICATION 3: Monitor Complete Flow for 60 seconds")
     print("-"*80)
     print("\n🔍 Watching for:")
-    print("   1. 🧐 Sir Hawkington: Resource monitoring & triage")
-    print("   2. 🖥️ VIC-20: Triage alert received & routing")
-    print("   3. 🐌 Terry: Coordination request & action")
-    print("   4. 💾 PostgreSQL: Database writes")
-    print("   5. 📋 The Stick: Decision logs")
+    print("   1. 🧐 Sir Hawkington: Resource monitoring & triage (ALL resources)")
+    print("   2. 🖥️ VIC-20: Triage alert received & routing to specialists")
+    print("   3. 🐌 Terry: CPU/Memory/Swap coordination & action")
+    print("   4. � Hamsters: Disk coordination (Steve, Bob, Carl consensus)")
+    print("   5. 👻 QSP: Network coordination (paranoid quantum analysis)")
+    print("   6. � The Stick: Universal decision logging")
+    print("   7. 💾 PostgreSQL: Dual-write to CMB + agent tables + vectors")
     print("\n⏱️  Starting 60-second observation period...\n")
     
     # Monitor for 60 seconds
@@ -140,16 +160,21 @@ async def test_hierarchy():
     print("\n📊 Expected Flow (check backend logs):")
     print("   1. 🧐 Sir Hawkington publishes RESOURCE_ALERT every 5 seconds")
     print("   2. 🧐 If threshold exceeded → sends TRIAGE_ALERT to VIC-20")
-    print("   3. 🖥️ VIC-20 receives TRIAGE_ALERT → routes to specialist")
-    print("   4. 🖥️ VIC-20 sends COORDINATION_REQUEST to Terry")
-    print("   5. 🐌 Terry receives request → decides (80% his way!)")
-    print("   6. 🐌 Terry executes cache clear → writes to PostgreSQL")
-    print("   7. 🐌 Terry sends ACTION_REPORT to VIC-20")
-    print("   8. 📋 Everyone CC's The Stick with DECISION_LOG")
+    print("   3. 🖥️ VIC-20 receives TRIAGE_ALERT → routes to specialist based on resource:")
+    print("      • CPU/Memory/Swap → 🐌 Terry (Meth Snail)")
+    print("      • Disk → � Hamsters (Steve, Bob, Carl)")
+    print("      • Network → 👻 QSP (Quantum Shadow People)")
+    print("   4. Specialist receives COORDINATION_REQUEST → decides & acts")
+    print("   5. Specialist writes to PostgreSQL (CMB + agent table + vector)")
+    print("   6. Specialist sends ACTION_REPORT to VIC-20")
+    print("   7. � The Stick CC'd on all decisions via DECISION_LOG")
     
-    print("\n💡 To trigger the flow:")
-    print("   - Lower thresholds in Sir Hawkington (e.g., memory > 20%)")
-    print("   - Or run memory-intensive process to exceed 75% threshold")
+    print("\n💡 Current thresholds (lowered for testing):")
+    print("   • CPU: 20% → Terry")
+    print("   • Memory: 20% → Terry")
+    print("   • Disk: 20% → Hamsters")
+    print("   • Network: 5% → QSP")
+    print("   • Swap: 10% → Terry")
     
     # Check database for writes
     print("\n" + "-"*80)
