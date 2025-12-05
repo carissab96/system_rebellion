@@ -51,10 +51,14 @@ def upgrade() -> None:
         DROP CONSTRAINT IF EXISTS fk_hamsters_memory_bank_central_memory_id_central_memory__0f8a
     """)
     
-    # Drop FK from quantum_shadow_people_memory_bank
+    # Drop FK from quantum_shadow_people_memory_bank (try both possible suffixes)
     op.execute("""
         ALTER TABLE quantum_shadow_people_memory_bank 
         DROP CONSTRAINT IF EXISTS fk_quantum_shadow_people_memory_bank_central_memory_id__1d52
+    """)
+    op.execute("""
+        ALTER TABLE quantum_shadow_people_memory_bank 
+        DROP CONSTRAINT IF EXISTS fk_quantum_shadow_people_memory_bank_central_memory_id_ce_c7b2
     """)
     
     # Drop FK from vic20_memory_bank
