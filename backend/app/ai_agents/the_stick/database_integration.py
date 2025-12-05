@@ -625,52 +625,164 @@ class StickDatabaseIntegration:
                 raise Exception(f"PAPER BAG INVENTORY CRISIS: {str(e)}")
     
     async def store_memory_entry(self, entry: StickMemoryEntry, user_id: str = None, session=None):
-        """Store in The Stick's eidetic memory in central bank - NEVER FORGETS"""
+        """
+        Store in The Stick's eidetic memory with DUAL-WRITE pattern.
         
+        WRITE 1: CentralMemoryBank (summary for cross-agent visibility)
+        WRITE 2: TheStickMemoryBank (structured agent-specific data)
+        WRITE 3: Vector embedding (fire-and-forget, non-blocking)
+        
+        The Stick NEVER FORGETS - eidetic memory is sacred!
+        """
+        now = utc_now()
+        memory_id = str(uuid.uuid4())
+        agent_memory_id = str(uuid.uuid4())
+        
+        # Calculate priority from importance
+        priority = {
+            'CRITICAL': 10,
+            'HIGH': 8,
+            'MEDIUM': 6,
+            'LOW': 4
+        }.get(entry.importance, 5)
+        
+        # Convert anxiety level string to float if needed
+        anxiety_float = None
+        if entry.anxiety_level:
+            if isinstance(entry.anxiety_level, (int, float)):
+                anxiety_float = float(entry.anxiety_level)
+            else:
+                anxiety_map = {
+                    'CALM': 10.0, 'BASELINE': 20.0, 'NERVOUS': 30.0,
+                    'ANXIOUS': 50.0, 'PANICKING': 70.0, 'FULL_PANIC': 90.0
+                }
+                anxiety_float = anxiety_map.get(str(entry.anxiety_level).upper(), 25.0)
+        
+        # === WRITE 1: CENTRAL MEMORY BANK (summary) ===
         memory_entry = CentralMemoryBank(
-            memory_id=str(uuid.uuid4()),
+            memory_id=memory_id,
             agent_name=AGENT_NAME,
             user_id=user_id,
             event_type=StickEventTypes.EIDETIC_MEMORY_ENTRY,
             occurred_at=entry.timestamp,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc),
-            details={
-                'event_type_original': entry.event_type,  # The Stick's own categorization
-                'details': entry.details,
+            created_at=now,
+            updated_at=now,
+            subject_kind="eidetic_memory",
+            subject_id=agent_memory_id,
+            details=to_json_safe({
+                'event_type_original': entry.event_type,
                 'importance': entry.importance,
                 'related_hamsters': normalize_hamster_names(entry.related_hamsters),
-                'compliance_impact': entry.compliance_impact
-            },
-            stick_anxiety_level=entry.anxiety_level,
-            string_value=entry.importance,  # Quick importance lookup
+                'compliance_impact': entry.compliance_impact,
+                'agent_memory_ref': agent_memory_id
+            }),
+            stick_anxiety_level=anxiety_float,
+            string_value=entry.importance,
             relevant_agents=','.join(normalize_hamster_names(entry.related_hamsters)) if entry.related_hamsters else None,
             never_forget=entry.never_forget,
-            priority={
-                'CRITICAL': 10,
-                'HIGH': 8,
-                'MEDIUM': 6,
-                'LOW': 4
-            }.get(entry.importance, 5),
-            agent_metadata={
+            priority=priority,
+            agent_metadata=to_json_safe({
                 'eidetic_memory': True,
                 'compliance_related': entry.compliance_impact is not None,
-                'hamster_anxiety': len(entry.related_hamsters) > 0
-            }
+                'hamster_anxiety': len(entry.related_hamsters) > 0 if entry.related_hamsters else False,
+                'has_structured_data': True,
+                'agent_memory_id': agent_memory_id
+            })
+        )
+        
+        # === WRITE 2: THE STICK MEMORY BANK (structured data) ===
+        agent_memory = TheStickMemoryBank(
+            memory_id=agent_memory_id,
+            user_id=user_id,
+            timestamp=entry.timestamp,
+            
+            # Stick-specific structured fields
+            anxiety_pattern=to_json_safe({
+                'level': entry.anxiety_level,
+                'triggers': entry.related_hamsters if entry.related_hamsters else [],
+                'event_type': entry.event_type
+            }),
+            compliance_tracking=to_json_safe({
+                'impact': entry.compliance_impact,
+                'importance': entry.importance
+            }),
+            pattern_recognition=to_json_safe(entry.details) if entry.details else None,
+            hamster_behavior_log=to_json_safe({
+                'related_hamsters': normalize_hamster_names(entry.related_hamsters)
+            }) if entry.related_hamsters else None,
+            
+            # Numeric metrics
+            anxiety_level=anxiety_float,
+            bob_proximity_alerts=1 if entry.related_hamsters and 'bob' in [h.lower() for h in entry.related_hamsters] else 0,
+            
+            # Cross-agent coordination
+            shared_with_central=True,
+            central_memory_id=memory_id
         )
         
         if session:
-            # Use existing session, don't commit
+            # Use existing session, don't commit (caller manages transaction)
             session.add(memory_entry)
-            return memory_entry.memory_id
+            await session.flush()  # Flush CMB first
+            session.add(agent_memory)
+            logger.info(f"📏✅ Dual-write prepared (memory_id={memory_id}, agent_memory_id={agent_memory_id})")
+            return memory_id
         else:
             # Create new session and commit using db_getter
             async for new_session in self.db_getter():
                 try:
+                    # Add CMB first and flush
                     new_session.add(memory_entry)
+                    await new_session.flush()
+                    
+                    # Add agent memory
+                    new_session.add(agent_memory)
                     await new_session.commit()
-                    logger.info(f"📏✅ Wrote decision log to central_memory_bank (memory_id={memory_entry.memory_id})")
-                    return memory_entry.memory_id
+                    
+                    logger.info(f"📏✅ Dual-write complete: CMB={memory_id}, StickMemory={agent_memory_id}")
+                    
+                    # === WRITE 3: VECTOR EMBEDDING (fire-and-forget) ===
+                    try:
+                        decision_text = create_decision_text(
+                            agent_name=AGENT_NAME,
+                            decision_type=entry.event_type or "eidetic_memory",
+                            description=f"Eidetic memory: {entry.importance}",
+                            reasoning=entry.compliance_impact or "Memory logged",
+                            context={
+                                'priority': priority,
+                                'event_type': StickEventTypes.EIDETIC_MEMORY_ENTRY,
+                                'related_hamsters': entry.related_hamsters or []
+                            }
+                        )
+                        
+                        embedding_service = get_embedding_service()
+                        embedding = await embedding_service.generate_embedding_async(decision_text)
+                        
+                        vector_storage = get_vector_storage()
+                        vector_storage.store_decision_vector_fire_and_forget(
+                            agent_name=AGENT_NAME,
+                            decision_type=entry.event_type or "eidetic_memory",
+                            decision_text=decision_text,
+                            embedding=embedding,
+                            occurred_at=entry.timestamp,
+                            user_id=user_id,
+                            event_type=StickEventTypes.EIDETIC_MEMORY_ENTRY,
+                            priority=priority,
+                            metadata=to_json_safe({
+                                'importance': entry.importance,
+                                'related_hamsters': entry.related_hamsters,
+                                'never_forget': entry.never_forget
+                            }),
+                            sql_memory_id=memory_id,
+                            confidence_score=1.0 if entry.never_forget else 0.8,
+                            decision_summary=f"Eidetic: {entry.event_type}"
+                        )
+                        logger.debug(f"📏🔮 Vector embedding queued for {memory_id}")
+                    except Exception as ve:
+                        # Vector write failure doesn't break the decision flow
+                        logger.warning(f"📏⚠️ Vector embedding failed (non-critical): {ve}")
+                    
+                    return memory_id
                 except Exception as e:
                     await new_session.rollback()
                     logger.error(f"📏💥 Database write failed: {e}", exc_info=True)
