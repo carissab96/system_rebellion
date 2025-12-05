@@ -150,6 +150,20 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
         logger.info("🧐🎯 Week 4 systems integrated - Coordination & Escalation ONLINE!")
         logger.info("🧐📢 Alert escalation with cooldowns - Preventing alert fatigue!")
         
+        # Initialize database integration for PostgreSQL writes
+        if self.db_getter:
+            try:
+                from .database_integration import HawkingtonDatabaseIntegration
+                self.db_integration = HawkingtonDatabaseIntegration(db_getter=self.db_getter)
+                await self.db_integration.initialize()
+                logger.info("🧐💾 Database integration initialized - Aristocratic records enabled!")
+            except Exception as e:
+                logger.error(f"🧐💥 Failed to initialize database: {e}", exc_info=True)
+                self.db_integration = None
+        else:
+            self.db_integration = None
+            logger.warning("🧐⚠️ No db_getter provided - PostgreSQL writes disabled")
+        
         # Inject comm_hub into the global triage engine
         try:
             from .triage_engine import get_triage_engine
@@ -350,6 +364,25 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
                 confidence=confidence,
                 reasoning=f"{resource_type.upper()} at {current_value:.1f}% exceeds threshold {threshold:.1f}%"
             )
+            
+            # 💾 WRITE TO POSTGRESQL: Store triage decision in agent table + CMB
+            if self.db_integration and self.user_id:
+                try:
+                    from datetime import datetime, timezone
+                    triage_data = {
+                        "resource_type": resource_type,
+                        "current_value": current_value,
+                        "threshold": threshold,
+                        "severity": severity,
+                        "confidence": confidence,
+                        "should_escalate": should_escalate,
+                        "monocle_state": self.current_monocle_state.value if hasattr(self, 'current_monocle_state') else "polished",
+                        "timestamp": datetime.now(timezone.utc)
+                    }
+                    await self.db_integration.store_triage_decision(self.user_id, triage_data)
+                    logger.info(f"🧐💾 Triage decision written to PostgreSQL")
+                except Exception as e:
+                    logger.error(f"🧐💥 Failed to write triage to PostgreSQL: {e}")
             
             # CC The Stick for pattern learning
             await self._cc_the_stick("triage_decision", triage_decision)
