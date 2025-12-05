@@ -18,6 +18,40 @@ YELLOW = "\033[93m"
 RESET = "\033[0m"
 BOLD = "\033[1m"
 
+# Will be set by get_test_user_id()
+TEST_USER_ID = None
+
+
+async def get_test_user_id():
+    """Get a real user_id from the database"""
+    global TEST_USER_ID
+    if TEST_USER_ID:
+        return TEST_USER_ID
+    
+    from app.core.database import get_async_db
+    from sqlalchemy import text
+    
+    async for session in get_async_db():
+        result = await session.execute(text("SELECT id FROM users LIMIT 1"))
+        row = result.fetchone()
+        if row:
+            TEST_USER_ID = row[0]
+            print(f"  Using test user_id: {TEST_USER_ID}")
+            return TEST_USER_ID
+        else:
+            # Create a test user if none exists
+            test_id = str(uuid4())
+            await session.execute(text(
+                "INSERT INTO users (id, email, created_at) VALUES (:id, :email, :created_at)"
+            ), {"id": test_id, "email": "test@systemrebellion.local", "created_at": datetime.now(timezone.utc)})
+            await session.commit()
+            TEST_USER_ID = test_id
+            print(f"  Created test user_id: {TEST_USER_ID}")
+            return TEST_USER_ID
+        break
+    
+    return None
+
 
 async def test_the_stick_compliance_violation():
     """Test The Stick's store_compliance_violation with real DB"""
@@ -28,6 +62,7 @@ async def test_the_stick_compliance_violation():
     from app.ai_agents.the_stick.data_types import ComplianceViolation
     from sqlalchemy import text
     
+    user_id = await get_test_user_id()
     db_integration = StickDatabaseIntegration(db_getter=get_async_db)
     
     violation = ComplianceViolation(
@@ -37,13 +72,13 @@ async def test_the_stick_compliance_violation():
         anxiety_adjusted_threshold=75.0,
         severity="HIGH",
         timestamp=datetime.now(timezone.utc),
-        user_id="test_user_live",
+        user_id=user_id,
         recommendation="This is a test violation",
         anxiety_impact=0.5
     )
     
     try:
-        memory_id = await db_integration.store_compliance_violation("test_user_live", violation)
+        memory_id = await db_integration.store_compliance_violation(user_id, violation)
         print(f"  ✅ Stored with memory_id: {memory_id}")
         
         # Verify in central_memory_bank
@@ -101,6 +136,7 @@ async def test_meth_snail_shell_spin():
     from app.ai_agents.meth_snail.data_types import ShellSpinIncident
     from sqlalchemy import text
     
+    user_id = await get_test_user_id()
     db_integration = MethSnailDatabaseIntegration(db_getter=get_async_db)
     
     incident = ShellSpinIncident(
@@ -111,7 +147,7 @@ async def test_meth_snail_shell_spin():
     )
     
     try:
-        memory_id = await db_integration.store_shell_spin_incident("test_user_live", incident)
+        memory_id = await db_integration.store_shell_spin_incident(user_id, incident)
         print(f"  ✅ Stored with memory_id: {memory_id}")
         
         async for session in get_async_db():
@@ -155,6 +191,7 @@ async def test_sir_hawkington_decision():
     from app.ai_agents.sir_hawkington.data_types import HawkingtonDecision
     from sqlalchemy import text
     
+    user_id = await get_test_user_id()
     db_integration = HawkingtonDatabaseIntegration(db_getter=get_async_db)
     
     decision = HawkingtonDecision(
@@ -168,7 +205,7 @@ async def test_sir_hawkington_decision():
     )
     
     try:
-        memory_id = await db_integration.store_decision("test_user_live", decision)
+        memory_id = await db_integration.store_decision(user_id, decision)
         print(f"  ✅ Stored with memory_id: {memory_id}")
         
         async for session in get_async_db():
@@ -214,6 +251,7 @@ async def test_hamsters_intervention():
     )
     from sqlalchemy import text
     
+    user_id = await get_test_user_id()
     db_integration = HamstersDatabaseIntegration(db_getter=get_async_db)
     await db_integration.initialize()
     
@@ -233,7 +271,7 @@ async def test_hamsters_intervention():
     )
     
     try:
-        memory_id = await db_integration.store_infrastructure_intervention("test_user_live", intervention)
+        memory_id = await db_integration.store_infrastructure_intervention(user_id, intervention)
         print(f"  ✅ Stored with memory_id: {memory_id}")
         
         async for session in get_async_db():
@@ -279,6 +317,7 @@ async def test_qsp_decision():
     )
     from sqlalchemy import text
     
+    user_id = await get_test_user_id()
     db_integration = QSPDatabaseIntegration(db_getter=get_async_db)
     await db_integration.initialize()
     
@@ -296,7 +335,7 @@ async def test_qsp_decision():
     )
     
     try:
-        memory_id = await db_integration.store_decision("test_user_live", decision)
+        memory_id = await db_integration.store_decision(user_id, decision)
         print(f"  ✅ Stored with memory_id: {memory_id}")
         
         async for session in get_async_db():

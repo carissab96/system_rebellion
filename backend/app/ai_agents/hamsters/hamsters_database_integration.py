@@ -116,11 +116,12 @@ class HamstersDatabaseIntegration:
                 'connect_args': {"check_same_thread": False}
             }
     
-    async def get_session(self) -> AsyncSession:
-        """Get a database session"""
+    async def get_session(self):
+        """Get a database session using db_getter pattern"""
         if not self._initialized:
             await self.initialize()
-        return self._db_session_maker()
+        async for session in self.db_getter():
+            return session
     
     # === DUAL-WRITE METHOD 1: STORE INFRASTRUCTURE INTERVENTION ===
     
