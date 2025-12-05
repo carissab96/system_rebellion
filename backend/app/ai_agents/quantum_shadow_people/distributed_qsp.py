@@ -158,145 +158,100 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
             message: AgentMessage with coordination request from VIC-20
         """
         try:
-            # Extract payload (STANDARD)
-            message_data = message.payload
-            coordination_type = message_data.get('coordination_type', 'unknown')
+            # Extract payload (STANDARD - matches Terry's pattern)
+            payload = message.payload
+            resource_type = payload.get('resource_type', 'unknown')
+            severity = payload.get('severity', 'unknown')
+            recommendation = payload.get('recommendation', {})
+            current_value = payload.get('current_value', 0)
+            threshold = payload.get('threshold', 0)
             
-            # Check if this is a resource recommendation from VIC-20
-            if coordination_type == 'resource_recommendation':
-                recommendation = message_data.get('recommendation', {})
-                
-                # Use choice engine to decide (QSP has LOW trust - paranoid!)
-                decision = self.choice_engine.should_follow_recommendation(
-                    recommendation=recommendation,
-                    current_situation={
-                        'resource_type': recommendation.get('resource_type', 'network'),
-                        'current_value': recommendation.get('current_value', 0),
-                        'threshold': recommendation.get('threshold', 85),
-                        'security_threat': True  # QSP always assumes threat
-                    }
-                )
-                
-                logger.info(
-                    f"👥🔮 Quantum analysis complete: "
-                    f"{'ACCEPTABLE' if decision['followed_recommendation'] else 'SUSPICIOUS - USING OWN PROTOCOL'}"
-                )
-                logger.info(f"👥💭 {decision['reasoning']}")
-                
-                # Execute the chosen action
-                action = decision['final_action']
-                
-                if 'network' in action or 'throttle' in action:
-                    logger.info("👥🔒 EXECUTING QUANTUM NETWORK LOCKDOWN! *paranoid analysis intensifies*")
-                    network_result = await SystemActions.throttle_network_operations()
-                    
-                    if network_result['success']:
-                        logger.info(
-                            f"👥✅ Network throttled! Connections: {network_result['connections_before']} → "
-                            f"{network_result['connections_after']}. Quantum phase secured!"
-                        )
-                        
-                        # Record decision and effectiveness
-                        await self.make_distributed_decision(
-                            decision_type="recommendation_response",
-                            input_data={
-                                "recommendation": recommendation.get('suggested_action'),
-                                "followed": decision['followed_recommendation'],
-                                "action_taken": action,
-                                "paranoia_justified": True
-                            },
-                            output_data={
-                                "result": network_result,
-                                "connections_reduced": network_result['connections_reduced'],
-                                "quantum_state": "secured"
-                            },
-                            confidence=decision['decision_score'],
-                            reasoning=decision['reasoning']
-                        )
-                        
-                        # 💾 WRITE TO POSTGRESQL: Store quantum decision
-                        if self.db_integration and self.user_id:
-                            try:
-                                from .data_types import QSPDecision, QSPDecisionType, QuantumPhaseState
-                                from datetime import datetime, timezone
-                                
-                                quantum_decision = QSPDecision(
-                                    decision_type=QSPDecisionType.NETWORK_DIMENSION_SHIFT,
-                                    quantum_state=QuantumPhaseState.PHASED,
-                                    network_target=action,
-                                    optimization_parameters={
-                                        'connections_before': network_result.get('connections_before', 0),
-                                        'connections_after': network_result.get('connections_after', 0),
-                                        'connections_reduced': network_result.get('connections_reduced', 0)
-                                    },
-                                    tequila_jello_shots_required=self.tequila_shots_today,
-                                    mysterious_explanation=decision['reasoning'],
-                                    technical_details={
-                                        'action': action,
-                                        'paranoia_justified': True,
-                                        'threat_level': 'elevated'
-                                    },
-                                    expected_improvement=min(1.0, network_result.get('connections_reduced', 0) / 100.0),
-                                    confidence_level=decision['decision_score'],
-                                    timestamp=datetime.now(timezone.utc)
-                                )
-                                await self.db_integration.store_decision(self.user_id, quantum_decision)
-                                logger.info(f"👻💾 Quantum decision written to PostgreSQL")
-                            except Exception as e:
-                                logger.error(f"👻💥 Failed to write to PostgreSQL: {e}")
-                    else:
-                        logger.error(f"👥❌ Network throttle failed: {network_result.get('error')}")
-                
-                return
-            
-            # Handle other coordination types (legacy)
-            task_type = message_data.get('task_type', 'unknown')
-            priority = message_data.get('priority', 'normal')
-            recommendation = message_data.get('recommendation', '')
-            
-            logger.info(f"👥📬 Coordination request from VIC-20: {task_type} (priority: {priority})")
-            
-            # Check if this task is for us
-            target_agent = message_data.get('target_agent', '')
-            if target_agent != 'quantum_shadow_people' and target_agent != 'all':
-                logger.debug(f"👥 Task not for us (target: {target_agent}), observing from shadows")
-                return
-            
-            logger.info("👥⚡ QSP ACTIVATED! Quantum phase shift: NETWORK ANALYSIS MODE!")
-            
-            await self.make_distributed_decision(
-                decision_type="coordination_task_received",
-                input_data={
-                    "task_type": task_type,
-                    "priority": priority,
-                    "recommendation": recommendation,
-                    "context": message_data.get('context', {})
-                },
-                output_data={
-                    "status": "executing",
-                    "quantum_state": "analyzing",
-                    "paranoia_level": "elevated",
-                    "tequila_jello_shots": "prepared"
-                },
-                confidence=0.99  # Always slightly paranoid
+            logger.info(
+                f"👻📬 COORDINATION REQUEST from VIC-20: "
+                f"{resource_type} at {current_value:.1f}% - VIC-20 suggests: {recommendation.get('action', 'unknown')}"
             )
             
-            if priority in ['high', 'critical', 'emergency']:
-                logger.warning("👥🔥 SECURITY THREAT DETECTED! Initiating deep network scan!")
-                # Broadcast that we're taking action
-                await self.broadcast_to_agents(
-                    message_type='agent_action',
-                    data={
-                        "agent": "quantum_shadow_people",
-                        "action": "deep_network_security_scan",
-                        "priority": priority,
-                        "reason": recommendation
-                    },
-                    priority='high'
+            # Use choice engine to decide (QSP has LOW trust - paranoid!)
+            decision = self.choice_engine.should_follow_recommendation(
+                recommendation=recommendation,
+                current_situation={
+                    'resource_type': resource_type,
+                    'current_value': current_value,
+                    'threshold': threshold,
+                    'security_threat': True  # QSP always assumes threat
+                }
+            )
+            
+            logger.info(
+                f"👻🔮 Quantum analysis complete: "
+                f"{'ACCEPTABLE' if decision['followed_recommendation'] else 'SUSPICIOUS - USING OWN PROTOCOL'}"
+            )
+            logger.info(f"👻💭 {decision['reasoning']}")
+            
+            # Execute network throttle (QSP's specialty)
+            action = decision['final_action']
+            logger.info("👻🔒 EXECUTING QUANTUM NETWORK LOCKDOWN! *paranoid analysis intensifies*")
+            network_result = await SystemActions.throttle_network_operations()
+            
+            if network_result['success']:
+                logger.info(
+                    f"👻✅ Network throttled! Connections: {network_result['connections_before']} → "
+                    f"{network_result['connections_after']}. Quantum phase secured!"
                 )
                 
+                # Record decision and effectiveness
+                await self.make_distributed_decision(
+                    decision_type="recommendation_response",
+                    input_data={
+                        "recommendation": recommendation.get('action'),
+                        "followed": decision['followed_recommendation'],
+                        "action_taken": action,
+                        "paranoia_justified": True
+                    },
+                    output_data={
+                        "result": network_result,
+                        "connections_reduced": network_result['connections_reduced'],
+                        "quantum_state": "secured"
+                    },
+                    confidence=decision['decision_score'],
+                    reasoning=decision['reasoning']
+                )
+                
+                # 💾 WRITE TO POSTGRESQL: Store quantum decision
+                if self.db_integration and self.user_id:
+                    try:
+                        from .data_types import QSPDecision, QSPDecisionType, QuantumPhaseState
+                        from datetime import datetime, timezone
+                        
+                        quantum_decision = QSPDecision(
+                            decision_type=QSPDecisionType.NETWORK_DIMENSION_SHIFT,
+                            quantum_state=QuantumPhaseState.PHASED,
+                            network_target=action,
+                            optimization_parameters={
+                                'connections_before': network_result.get('connections_before', 0),
+                                'connections_after': network_result.get('connections_after', 0),
+                                'connections_reduced': network_result.get('connections_reduced', 0)
+                            },
+                            tequila_jello_shots_required=self.tequila_shots_today,
+                            mysterious_explanation=decision['reasoning'],
+                            technical_details={
+                                'action': action,
+                                'paranoia_justified': True,
+                                'threat_level': 'elevated'
+                            },
+                            expected_improvement=min(1.0, network_result.get('connections_reduced', 0) / 100.0),
+                            confidence_level=decision['decision_score'],
+                            timestamp=datetime.now(timezone.utc)
+                        )
+                        await self.db_integration.store_decision(self.user_id, quantum_decision)
+                        logger.info(f"👻💾 Quantum decision written to PostgreSQL")
+                    except Exception as e:
+                        logger.error(f"👻💥 Failed to write to PostgreSQL: {e}")
+            else:
+                logger.error(f"👻❌ Network throttle failed: {network_result.get('error')}")
+                
         except Exception as e:
-            logger.error(f"👥💥 Error handling coordination request: {e}", exc_info=True)
+            logger.error(f"👻💥 Error handling coordination request: {e}", exc_info=True)
     
     async def analyze_metrics(
         self,

@@ -157,128 +157,85 @@ class HamstersDistributed(AgentDecisionEngine, HamstersBrainV3):
             message: AgentMessage with coordination request from VIC-20
         """
         try:
-            # Extract payload (STANDARD)
-            message_data = message.payload
-            coordination_type = message_data.get('coordination_type', 'unknown')
+            # Extract payload (STANDARD - matches Terry's pattern)
+            payload = message.payload
+            resource_type = payload.get('resource_type', 'unknown')
+            severity = payload.get('severity', 'unknown')
+            recommendation = payload.get('recommendation', {})
+            current_value = payload.get('current_value', 0)
+            threshold = payload.get('threshold', 0)
             
-            # Check if this is a resource recommendation from VIC-20
-            if coordination_type == 'resource_recommendation':
-                recommendation = message_data.get('recommendation', {})
-                
-                # Use choice engine to decide whether to follow recommendation
-                decision = self.choice_engine.should_follow_recommendation(
-                    recommendation=recommendation,
-                    current_situation={
-                        'resource_type': recommendation.get('resource_type', 'disk'),
-                        'current_value': recommendation.get('current_value', 0),
-                        'threshold': recommendation.get('threshold', 80)
-                    }
-                )
-                
-                logger.info(
-                    f"🐹🧠 Telepathic consensus reached: "
-                    f"{'FOLLOW' if decision['followed_recommendation'] else 'OVERRIDE'} VIC-20's recommendation"
-                )
-                logger.info(f"🐹💭 {decision['reasoning']}")
-                
-                # Execute the chosen action
-                action = decision['final_action']
-                
-                if 'cleanup' in action or 'disk' in action:
-                    logger.info("🐹🔧 Executing disk cleanup with defrag!")
-                    cleanup_result = await SystemActions.emergency_disk_cleanup(include_defrag=True)
-                    
-                    if cleanup_result['success']:
-                        logger.info(
-                            f"🐹✅ Cleanup successful! Freed {cleanup_result['disk_freed_mb']:.2f} MB"
-                        )
-                        
-                        # Record decision and effectiveness
-                        await self.make_distributed_decision(
-                            decision_type="recommendation_response",
-                            input_data={
-                                "recommendation": recommendation.get('suggested_action'),
-                                "followed": decision['followed_recommendation'],
-                                "action_taken": action
-                            },
-                            output_data={
-                                "result": cleanup_result,
-                                "effectiveness": cleanup_result['improvement_percent']
-                            },
-                            confidence=decision['decision_score'],
-                            reasoning=decision['reasoning']
-                        )
-                        
-                        # 💾 WRITE TO POSTGRESQL: Store collective decision
-                        if self.db_integration and self.user_id:
-                            try:
-                                await self.db_integration.store_collective_decision(
-                                    user_id=self.user_id,
-                                    decision_data={
-                                        'decision_id': f"hamsters_{action}_{cleanup_result.get('timestamp', '')}",
-                                        'intervention_type': action,
-                                        'steve_assessment': 'Careful analysis of disk usage',
-                                        'bob_suggestion': 'HOLD MY BEER! *aggressive cleanup*',
-                                        'carl_calculation': f"Duct tape efficiency: {cleanup_result['improvement_percent']:.1f}%",
-                                        'telepathic_consensus': True,
-                                        'confidence': decision['decision_score'],
-                                        'tools_required': ['beer', 'duct_tape', 'defrag_hammer'],
-                                        'beer_consumption_estimate': 3,
-                                        'human_translation': decision['reasoning'],
-                                        'priority': 'disk_emergency'
-                                    }
-                                )
-                                logger.info(f"🐹💾 Collective decision written to PostgreSQL")
-                            except Exception as e:
-                                logger.error(f"🐹💥 Failed to write to PostgreSQL: {e}")
-                
-                return
-            
-            # Handle other coordination types (legacy)
-            task_type = message_data.get('task_type', 'unknown')
-            priority = message_data.get('priority', 'normal')
-            recommendation = message_data.get('recommendation', '')
-            
-            logger.info(f"🐹📬 Coordination request from VIC-20: {task_type} (priority: {priority})")
-            
-            # Check if this task is for us
-            target_agent = message_data.get('target_agent', '')
-            if target_agent != 'hamsters' and target_agent != 'all':
-                logger.debug(f"🐹 Task not for us (target: {target_agent}), ignoring")
-                return
-            
-            logger.info("🐹⚡ HAMSTERS ACTIVATED! Telepathic consensus: DISK INTERVENTION READY!")
-            
-            await self.make_distributed_decision(
-                decision_type="coordination_task_received",
-                input_data={
-                    "task_type": task_type,
-                    "priority": priority,
-                    "recommendation": recommendation,
-                    "context": message_data.get('context', {})
-                },
-                output_data={
-                    "status": "executing",
-                    "consensus": "unanimous",
-                    "beer_cans_ready": True,
-                    "duct_tape_prepared": True
-                },
-                confidence=1.0
+            logger.info(
+                f"🐹📬 COORDINATION REQUEST from VIC-20: "
+                f"{resource_type} at {current_value:.1f}% - VIC-20 suggests: {recommendation.get('action', 'unknown')}"
             )
             
-            if priority in ['high', 'critical', 'emergency']:
-                logger.warning("🐹🔥 EMERGENCY! Steve grabs beer, Bob gets duct tape, Carl spins wheel!")
-                # Broadcast that we're taking action
-                await self.broadcast_to_agents(
-                    message_type='agent_action',
-                    data={
-                        "agent": "hamsters",
-                        "action": "emergency_disk_cleanup",
-                        "priority": priority,
-                        "reason": recommendation
-                    },
-                    priority='high'
+            # Use choice engine to decide whether to follow recommendation
+            decision = self.choice_engine.should_follow_recommendation(
+                recommendation=recommendation,
+                current_situation={
+                    'resource_type': resource_type,
+                    'current_value': current_value,
+                    'threshold': threshold
+                }
+            )
+            
+            logger.info(
+                f"🐹🧠 Telepathic consensus reached: "
+                f"{'FOLLOW' if decision['followed_recommendation'] else 'OVERRIDE'} VIC-20's recommendation"
+            )
+            logger.info(f"🐹💭 {decision['reasoning']}")
+            
+            # Execute disk cleanup (Hamsters' specialty)
+            action = decision['final_action']
+            logger.info("🐹🔧 Executing disk cleanup with defrag!")
+            cleanup_result = await SystemActions.emergency_disk_cleanup(include_defrag=True)
+            
+            if cleanup_result['success']:
+                logger.info(
+                    f"🐹✅ Cleanup successful! Freed {cleanup_result['disk_freed_mb']:.2f} MB"
                 )
+                
+                # Record decision and effectiveness
+                await self.make_distributed_decision(
+                    decision_type="recommendation_response",
+                    input_data={
+                        "recommendation": recommendation.get('action'),
+                        "followed": decision['followed_recommendation'],
+                        "action_taken": action
+                    },
+                    output_data={
+                        "result": cleanup_result,
+                        "effectiveness": cleanup_result['improvement_percent']
+                    },
+                    confidence=decision['decision_score'],
+                    reasoning=decision['reasoning']
+                )
+                
+                # 💾 WRITE TO POSTGRESQL: Store collective decision
+                if self.db_integration and self.user_id:
+                    try:
+                        await self.db_integration.store_collective_decision(
+                            user_id=self.user_id,
+                            decision_data={
+                                'decision_id': f"hamsters_{action}_{cleanup_result.get('timestamp', '')}",
+                                'intervention_type': action,
+                                'steve_assessment': 'Careful analysis of disk usage',
+                                'bob_suggestion': 'HOLD MY BEER! *aggressive cleanup*',
+                                'carl_calculation': f"Duct tape efficiency: {cleanup_result['improvement_percent']:.1f}%",
+                                'telepathic_consensus': True,
+                                'confidence': decision['decision_score'],
+                                'tools_required': ['beer', 'duct_tape', 'defrag_hammer'],
+                                'beer_consumption_estimate': 3,
+                                'human_translation': decision['reasoning'],
+                                'priority': 'disk_emergency'
+                            }
+                        )
+                        logger.info(f"🐹💾 Collective decision written to PostgreSQL")
+                    except Exception as e:
+                        logger.error(f"🐹💥 Failed to write to PostgreSQL: {e}")
+            else:
+                logger.error(f"🐹❌ Disk cleanup failed: {cleanup_result.get('error')}")
                 
         except Exception as e:
             logger.error(f"🐹💥 Error handling coordination request: {e}", exc_info=True)
