@@ -92,13 +92,12 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
         
         # 🎯 HIERARCHY: Sir Hawkington monitors ALL system metrics (sole system monitor)
         # As triage commander, he assesses all resources and routes to appropriate specialists
-        # 🧪 TESTING: Lowered ALL thresholds to trigger all specialists for database write testing
         self.resource_thresholds = {
-            ResourceType.CPU: 20.0,       # 🧪 TESTING: Lowered to 20% → route to Terry
-            ResourceType.MEMORY: 20.0,    # 🧪 TESTING: Lowered to 20% → route to Terry
-            ResourceType.DISK: 20.0,      # 🧪 TESTING: Lowered to 20% → route to Hamsters
-            ResourceType.NETWORK: 5.0,    # 🧪 TESTING: Lowered to 5% → route to QSP
-            ResourceType.SWAP: 10.0,      # 🧪 TESTING: Lowered to 10% → route to Terry
+            ResourceType.CPU: 85.0,       # → route to Terry (Meth Snail)
+            ResourceType.MEMORY: 85.0,    # → route to Terry (Meth Snail)
+            ResourceType.DISK: 85.0,      # → route to Hamsters (Steve, Bob, Carl)
+            ResourceType.NETWORK: 80.0,   # → route to QSP (Quantum Shadow People)
+            ResourceType.SWAP: 50.0,      # → route to Terry (swap usage is more concerning at lower %)
         }
         
         # Week 4 System Integration
