@@ -55,6 +55,7 @@ class HawkingtonDatabaseIntegration(BaseDatabaseIntegration):
     
     def __init__(self, db_getter=None):
         super().__init__(db_getter)
+        self.engine = None  # Set during initialize for learning helpers
     
     def _get_agent_name(self) -> str:
         """Return agent name for base class"""
@@ -94,10 +95,11 @@ class HawkingtonDatabaseIntegration(BaseDatabaseIntegration):
         if not self.db_getter:
             raise ValueError("db_getter is required - Sir Hawkington refuses to create his own engine!")
         
-        # Verify db_getter works by testing a connection
+        # Verify db_getter works by testing a connection and get engine
         try:
             async with self.get_managed_session() as session:
-                pass  # Just verify we can get a session
+                # Extract engine from session for learning helpers
+                self.engine = session.bind
         except Exception as e:
             logger.error(f"🧐❌ Failed to verify database connection: {e}")
             raise
