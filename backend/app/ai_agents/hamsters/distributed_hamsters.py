@@ -128,9 +128,15 @@ class HamstersDistributed(AgentDecisionEngine, HamstersBrainV3):
             self._coordination_capability
         )
         
+        # CRITICAL: Subscribe to COORDINATION_REQUEST from VIC-20
+        await self.subscribe_to_messages(
+            message_type=MessageType.COORDINATION_REQUEST,
+            callback=self._handle_coordination_request
+        )
+        
         logger.info("🐹🎯 Week 4 systems integrated - Coordination & Verification ONLINE!")
         logger.info("🐹🤝 Telepathic consensus ready for team coordination!")
-        logger.info("🐹📡 Subscribed to VIC-20 coordination via base class - Telepathic consensus ready!")
+        logger.info("🐹📡 Subscribed to COORDINATION_REQUEST - Ready to receive from VIC-20!")
         
         # Initialize database integration for PostgreSQL writes
         if self.db_getter:

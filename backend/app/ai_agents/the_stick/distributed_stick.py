@@ -159,8 +159,18 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
             logger.info("📏😰 *nervously clutches paper bag* SO MANY DECISIONS TO TRACK!")
             
         except Exception as e:
-            logger.error(f"📏💥 Failed to subscribe: {e}")
+            logger.error(f"📏💥 Failed to subscribe to DECISION_LOG: {e}")
             self._consume_paper_bag("subscription_failure")
+        
+        # CRITICAL: Subscribe to COORDINATION_REQUEST from VIC-20
+        try:
+            await self.subscribe_to_messages(
+                message_type=MessageType.COORDINATION_REQUEST,
+                callback=self._handle_coordination_request
+            )
+            logger.info("📏📡 The Stick subscribed to COORDINATION_REQUEST - Compliance tracking ACTIVE!")
+        except Exception as e:
+            logger.error(f"📏💥 Failed to subscribe to COORDINATION_REQUEST: {e}")
         
         # Initialize decision log buffer for batch writes
         self.decision_log_buffer = []
