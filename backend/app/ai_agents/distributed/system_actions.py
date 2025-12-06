@@ -337,18 +337,20 @@ class SystemActions:
                     )
                     
                     if result.returncode == 0:
-                        # Run fstrim on root filesystem
+                        # Run fstrim on root filesystem (non-interactive - fails fast if sudo needs password)
                         trim_result = subprocess.run(
-                            ['sudo', 'fstrim', '-v', '/'],
+                            ['sudo', '-n', 'fstrim', '-v', '/'],  # -n = non-interactive
                             capture_output=True,
                             text=True,
+                            stdin=subprocess.DEVNULL,  # No stdin = no password prompt
                             timeout=30
                         )
                         if trim_result.returncode == 0:
                             actions_taken.append(f"SSD TRIM: {trim_result.stdout.strip()}")
                             logger.info(f"🐹🔧 Defrag: {trim_result.stdout.strip()}")
                         else:
-                            actions_taken.append("SSD TRIM: Skipped (permission or not needed)")
+                            actions_taken.append("SSD TRIM: Skipped (requires sudo privileges)")
+                            logger.info("🐹 Defrag: Skipped - fstrim requires sudo (add to sudoers for auto-trim)")
                     else:
                         actions_taken.append("Defrag: fstrim not available")
                 except subprocess.TimeoutExpired:
