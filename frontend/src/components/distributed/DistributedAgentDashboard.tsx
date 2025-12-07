@@ -1,10 +1,23 @@
 // components/distributed/DistributedAgentDashboard.tsx
-// THE AGENT THEATER - Watch agents work in real-time
-// Not a boring dashboard. A living, breathing performance.
+// THE AGENT THEATER - Watch distributed agents work in real-time
+// Data flows: WebSocket → Redux → useDistributedAgents → this component
+//
+// Design: Uses rebellion design system + CSS modules (no inline styles except design tokens)
 
-import React, { useState, useEffect } from 'react';
-import { useDistributedAgents } from '../../hooks/useDistributedAgents';
-import { Radio, Sparkles, Heart, Zap as Lightning } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useDistributedAgents, type DistributedAgent } from '../../hooks/useDistributedAgents';
+import { Radio, Activity, AlertTriangle } from 'lucide-react';
+import styles from '../../styles/modules/AgentDashboard.module.css';
+
+// Agent display configuration - maps backend agent_name to display info
+const AGENT_CONFIG: Record<string, { emoji: string; displayName: string; styleClass: string }> = {
+  sir_hawkington: { emoji: '🧐', displayName: 'Sir Hawkington', styleClass: 'sirHawkington' },
+  vic20_sage: { emoji: '🖥️', displayName: 'VIC-20 Sage', styleClass: 'vic20Sage' },
+  meth_snail: { emoji: '🐌', displayName: 'Terry (Meth Snail)', styleClass: 'methSnail' },
+  the_stick: { emoji: '📏', displayName: 'The Stick', styleClass: 'theStick' },
+  hamsters: { emoji: '🐹', displayName: 'The Hamsters', styleClass: 'hamsters' },
+  quantum_shadow_people: { emoji: '👻', displayName: 'Quantum Shadow People', styleClass: 'quantumShadowPeople' },
+};
 
 interface ActivityLog {
   id: string;
@@ -15,33 +28,48 @@ interface ActivityLog {
 }
 
 export const DistributedAgentDashboard: React.FC = () => {
-  const { agents, loading, error } = useDistributedAgents();
+  const { agents, loading, error, connectionStatus, lastUpdate } = useDistributedAgents();
   const [activityLog, setActivityLog] = useState<ActivityLog[]>([]);
-  const [prevAgentStates, setPrevAgentStates] = useState<Map<string, any>>(new Map());
+  const prevAgentStatesRef = useRef<Map<string, any>>(new Map());
 
   // Watch for agent activity changes and log them
   useEffect(() => {
+    const prevStates = prevAgentStatesRef.current;
+    
     agents.forEach(agent => {
-      const prev = prevAgentStates.get(agent.agent_name);
+      const prev = prevStates.get(agent.agent_name);
       const dist = agent.distributed;
       
-      if (!prev || !dist) return;
+      if (!prev) {
+        // First time seeing this agent
+        addActivity(agent.agent_name, '🟢 Agent came online');
+        return;
+      }
 
       // Detect new messages sent
-      if (dist.total_messages_sent > (prev.messages_sent || 0)) {
-        const count = dist.total_messages_sent - (prev.messages_sent || 0);
-        addActivity(agent.agent_name, `📡 Broadcast ${count} message${count > 1 ? 's' : ''} to Redis`, getAgentColor(agent.agent_name));
+      const currentMsgCount = dist?.total_messages_sent || 0;
+      const prevMsgCount = prev.messages_sent || 0;
+      if (currentMsgCount > prevMsgCount) {
+        const count = currentMsgCount - prevMsgCount;
+        addActivity(agent.agent_name, `📡 Broadcast ${count} message${count > 1 ? 's' : ''}`);
       }
 
       // Detect new decisions
-      if (agent.total_decisions > (prev.decisions || 0)) {
-        const count = agent.total_decisions - (prev.decisions || 0);
-        addActivity(agent.agent_name, `🧠 Made ${count} decision${count > 1 ? 's' : ''}`, getAgentColor(agent.agent_name));
+      const currentDecisions = agent.total_decisions || 0;
+      const prevDecisions = prev.decisions || 0;
+      if (currentDecisions > prevDecisions) {
+        const count = currentDecisions - prevDecisions;
+        addActivity(agent.agent_name, `🧠 Made ${count} decision${count > 1 ? 's' : ''}`);
       }
 
       // Detect health changes
       if (agent.health !== prev.health) {
-        addActivity(agent.agent_name, `💓 Health: ${prev.health} → ${agent.health}`, getAgentColor(agent.agent_name));
+        addActivity(agent.agent_name, `💓 Health: ${prev.health} → ${agent.health}`);
+      }
+      
+      // Detect triage events (Sir Hawkington)
+      if (agent.triage?.disposition && agent.triage.disposition !== prev.triageDisposition) {
+        addActivity(agent.agent_name, `🎯 Triage: ${agent.triage.disposition}`);
       }
     });
 
@@ -51,224 +79,253 @@ export const DistributedAgentDashboard: React.FC = () => {
       newStates.set(agent.agent_name, {
         messages_sent: agent.distributed?.total_messages_sent || 0,
         decisions: agent.total_decisions || 0,
-        health: agent.health
+        health: agent.health,
+        triageDisposition: agent.triage?.disposition,
       });
     });
-    setPrevAgentStates(newStates);
+    prevAgentStatesRef.current = newStates;
   }, [agents]);
 
-  const getAgentColor = (agentName: string): string => {
-    // BACKEND IS SOURCE OF TRUTH - Use exact agent_name from API
-    const colors: Record<string, string> = {
-      'sir_hawkington': '#e6ac00',      // Hawkington gold
-      'vic_20_sage': '#06b6d4',         // VIC-20 cyan
-      'meth_snail': '#00d084',          // Terry's electric green (backend uses meth_snail)
-      'the_stick': '#f97316',           // Stick coral
-      'hamsters': '#ff8c42',            // Hamster amber (backend uses hamsters, not bob_hamster)
-      'quantum_shadow_people': '#a855f7' // QSP violet
-    };
-    return colors[agentName] || '#ffffff';
-  };
-
-  const addActivity = (agent: string, action: string, color: string) => {
+  const addActivity = (agentName: string, action: string) => {
     const newActivity: ActivityLog = {
-      id: `${Date.now()}-${Math.random()}`,
-      agent,
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      agent: agentName,
       action,
       timestamp: new Date(),
-      color
+      color: getAgentColor(agentName),
     };
-    setActivityLog(prev => [newActivity, ...prev].slice(0, 50)); // Keep last 50
+    setActivityLog(prev => [newActivity, ...prev].slice(0, 50));
   };
 
+  const getAgentColor = (agentName: string): string => {
+    const colors: Record<string, string> = {
+      sir_hawkington: 'var(--hawkington-gold)',
+      vic20_sage: 'var(--vic20-cyan)',
+      meth_snail: 'var(--snail-electric)',
+      the_stick: 'var(--stick-coral)',
+      hamsters: 'var(--hamster-amber)',
+      quantum_shadow_people: 'var(--qsp-violet)',
+    };
+    return colors[agentName] || 'var(--rebellion-text)';
+  };
+
+  const formatUptime = (seconds: number): string => {
+    if (!seconds) return '0s';
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    if (h > 0) return `${h}h ${m}m`;
+    if (m > 0) return `${m}m ${s}s`;
+    return `${s}s`;
+  };
+
+  const formatTimestamp = (date: Date): string => {
+    return date.toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit', 
+      second: '2-digit',
+      hour12: false 
+    });
+  };
+
+  // Loading state
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-cyan-400 animate-pulse text-xl">🎭 Raising the curtain...</div>
+      <div className={styles.loading}>
+        <div className={styles.loadingSpinner} />
+        <span>Raising the curtain...</span>
       </div>
     );
   }
 
+  // Error state
   if (error) {
     return (
-      <div className="bg-red-900/20 border border-red-500 rounded-lg p-6 text-center">
-        <p className="text-red-400 text-2xl mb-2">💥 THE SHOW MUST NOT GO ON</p>
-        <p className="text-red-300">{error}</p>
-        <p className="text-red-400 text-sm mt-2">No fallbacks. Fix it or fail it.</p>
+      <div className={styles.emptyState}>
+        <div className={styles.emptyIcon}>💥</div>
+        <h3 style={{ color: 'var(--error)', marginBottom: 'var(--space-sm)' }}>
+          Connection Error
+        </h3>
+        <p>{error}</p>
+      </div>
+    );
+  }
+
+  // Empty state
+  if (agents.length === 0) {
+    return (
+      <div className={styles.emptyState}>
+        <div className={styles.emptyIcon}>🎭</div>
+        <h3>Waiting for agents...</h3>
+        <p>The theater is empty. Agents will appear when they come online.</p>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      {/* THE STAGE - Agent performers */}
-      <div className="lg:col-span-2 space-y-4">
-        <div className="flex items-center gap-3 mb-4">
-          <Sparkles className="w-6 h-6 text-purple-400" />
-          <h3 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400">
-            THE STAGE
-          </h3>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {agents.map(agent => (
-            <AgentPerformer key={agent.agent_name} agent={agent} />
-          ))}
+    <div className={styles.dashboard}>
+      {/* Header */}
+      <div className={styles.header}>
+        <h2 className={styles.title}>
+          <Radio style={{ width: 24, height: 24, color: 'var(--vic20-cyan)' }} />
+          Agent Theater
+        </h2>
+        <div className={styles.connectionStatus}>
+          <span 
+            className={`${styles.statusDot} ${
+              connectionStatus === 'connected' ? styles.connected :
+              connectionStatus === 'connecting' ? styles.connecting :
+              styles.error
+            }`} 
+          />
+          <span>{connectionStatus}</span>
+          {lastUpdate && (
+            <span style={{ marginLeft: 'var(--space-sm)' }}>
+              • Last update: {formatTimestamp(lastUpdate)}
+            </span>
+          )}
         </div>
       </div>
 
-      {/* LIVE FEED - Activity stream */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-3 mb-4">
-          <Radio className="w-6 h-6 text-green-400 animate-pulse" />
-          <h3 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-cyan-400">
-            LIVE FEED
-          </h3>
-        </div>
+      {/* Agent Grid */}
+      <div className={styles.agentGrid}>
+        {agents.map(agent => {
+          const config = AGENT_CONFIG[agent.agent_name] || { 
+            emoji: '🤖', 
+            displayName: agent.agent_name,
+            styleClass: '' 
+          };
+          
+          return (
+            <AgentCard 
+              key={agent.agent_name} 
+              agent={agent} 
+              config={config}
+              formatUptime={formatUptime}
+            />
+          );
+        })}
+      </div>
 
-        <div className="bg-black/40 border border-green-500/30 rounded-lg p-4 h-[600px] overflow-y-auto space-y-2">
-          {activityLog.length === 0 ? (
-            <div className="text-slate-500 text-center py-8">
-              Waiting for agent activity...
-            </div>
-          ) : (
-            activityLog.map(log => (
-              <div 
-                key={log.id}
-                className="bg-slate-900/50 border-l-4 p-3 rounded animate-fade-in"
-                style={{ borderLeftColor: log.color }}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1">
-                    <div className="font-semibold" style={{ color: log.color }}>
-                      {log.agent}
-                    </div>
-                    <div className="text-sm text-slate-300">{log.action}</div>
-                  </div>
-                  <div className="text-xs text-slate-500">
-                    {log.timestamp.toLocaleTimeString()}
-                  </div>
+      {/* Activity Feed */}
+      <div className={styles.activityFeed}>
+        <h3 className={styles.feedTitle}>
+          <Activity style={{ width: 20, height: 20, color: 'var(--snail-electric)' }} />
+          Live Activity Feed
+        </h3>
+        
+        {activityLog.length === 0 ? (
+          <div style={{ color: 'var(--rebellion-text-dim)', textAlign: 'center', padding: 'var(--space-lg)' }}>
+            Waiting for agent activity...
+          </div>
+        ) : (
+          activityLog.map(log => {
+            const config = AGENT_CONFIG[log.agent];
+            return (
+              <div key={log.id} className={styles.feedItem}>
+                <span className={styles.feedDot} style={{ backgroundColor: log.color }} />
+                <div className={styles.feedContent}>
+                  <span className={styles.feedAgent} style={{ color: log.color }}>
+                    {config?.emoji} {config?.displayName || log.agent}
+                  </span>
+                  <div className={styles.feedAction}>{log.action}</div>
+                  <div className={styles.feedTimestamp}>{formatTimestamp(log.timestamp)}</div>
                 </div>
               </div>
-            ))
-          )}
-        </div>
+            );
+          })
+        )}
       </div>
     </div>
   );
 };
 
-interface AgentPerformerProps {
-  agent: any;
+// =============================================================================
+// AGENT CARD COMPONENT
+// =============================================================================
+
+interface AgentCardProps {
+  agent: DistributedAgent;
+  config: { emoji: string; displayName: string; styleClass: string };
+  formatUptime: (seconds: number) => string;
 }
 
-const AgentPerformer: React.FC<AgentPerformerProps> = ({ agent }) => {
-  const dist = agent.distributed || {};
+const AgentCard: React.FC<AgentCardProps> = ({ agent, config, formatUptime }) => {
+  const dist = agent.distributed;
   
-  const healthColors: Record<string, string> = {
-    'starting': 'text-yellow-400 border-yellow-500/30',
-    'healthy': 'text-green-400 border-green-500/30',
-    'degraded': 'text-orange-400 border-orange-500/30',
-    'critical': 'text-red-400 border-red-500/30',
-    'shutting_down': 'text-gray-400 border-gray-500/30'
-  };
-  
-  const healthColor = healthColors[agent.health] || 'text-slate-400 border-slate-500/30';
-
-  const formatUptime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}m ${secs}s`;
+  // Determine health badge style
+  const getHealthClass = (health: string | undefined): string => {
+    switch (health?.toLowerCase()) {
+      case 'healthy': return styles.healthy;
+      case 'degraded': return styles.degraded;
+      case 'unhealthy':
+      case 'critical': return styles.unhealthy;
+      default: return '';
+    }
   };
 
   return (
-    <div className={`bg-slate-800/50 border rounded-lg p-4 ${healthColor}`}>
-      {/* Header */}
-      <div className="flex items-start justify-between mb-3">
-        <div>
-          <h3 className="text-lg font-semibold text-white">{agent.agent_name}</h3>
-          <p className="text-xs text-slate-400">{agent.agent_type}</p>
+    <div className={`${styles.agentCard} ${styles[config.styleClass] || ''}`}>
+      {/* Card Header */}
+      <div className={styles.cardHeader}>
+        <div className={styles.agentName}>
+          <span className={styles.agentEmoji}>{config.emoji}</span>
+          {config.displayName}
         </div>
-        <div className="flex items-center gap-2">
-          <Heart className={`w-5 h-5 ${agent.is_active ? 'text-green-400 animate-pulse' : 'text-gray-400'}`} fill={agent.is_active ? 'currentColor' : 'none'} />
-          <span className={`text-xs font-medium ${healthColor}`}>
-            {agent.health}
-          </span>
-        </div>
+        <span className={`${styles.healthBadge} ${getHealthClass(agent.health)}`}>
+          {agent.health || 'unknown'}
+        </span>
       </div>
 
-      {/* Distributed Stats */}
-      {dist.distributed_enabled && (
-        <div className="space-y-2 mb-3">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-slate-400">Uptime</span>
-            <span className="text-cyan-400 font-mono">
-              {formatUptime(agent.uptime_seconds || 0)}
-            </span>
-          </div>
-          
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-slate-400">Decisions</span>
-            <span className="text-green-400 font-mono">{agent.total_decisions || 0}</span>
-          </div>
+      {/* Stats Grid */}
+      <div className={styles.statsGrid}>
+        <div className={styles.stat}>
+          <div className={styles.statLabel}>Decisions</div>
+          <div className={styles.statValue}>{agent.total_decisions || 0}</div>
+        </div>
+        <div className={styles.stat}>
+          <div className={styles.statLabel}>Uptime</div>
+          <div className={styles.statValue}>{formatUptime(agent.uptime_seconds || 0)}</div>
+        </div>
+        {dist && (
+          <>
+            <div className={styles.stat}>
+              <div className={styles.statLabel}>Messages Sent</div>
+              <div className={styles.statValue}>{dist.total_messages_sent || 0}</div>
+            </div>
+            <div className={styles.stat}>
+              <div className={styles.statLabel}>Messages Recv</div>
+              <div className={styles.statValue}>{dist.total_messages_received || 0}</div>
+            </div>
+          </>
+        )}
+      </div>
 
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-slate-400">Messages Sent</span>
-            <span className="text-purple-400 font-mono">{dist.messages_sent || 0}</span>
-          </div>
-
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-slate-400">Messages Received</span>
-            <span className="text-blue-400 font-mono">{dist.messages_received || 0}</span>
-          </div>
-
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-slate-400">Restarts</span>
-            <span className="text-amber-400 font-mono">{dist.restart_count || 0}</span>
+      {/* Recent Activity */}
+      {agent.event_type && (
+        <div className={styles.recentActivity}>
+          <div className={styles.activityTitle}>Latest Event</div>
+          <div className={styles.activityItem}>
+            <span className={styles.activityType}>{agent.event_type}</span>
           </div>
         </div>
       )}
 
-      {/* Week 4 Systems */}
-      {agent.week4_systems && (
-        <div className="border-t border-slate-700 pt-3 space-y-2">
-          {agent.week4_systems.monocle_state && (
-            <div className="flex items-center gap-2 text-xs">
-              <span className="text-amber-400">🧐</span>
-              <span className="text-slate-300">{agent.week4_systems.monocle_state}</span>
+      {/* Triage Section (Sir Hawkington only) */}
+      {agent.triage && agent.agent_name === 'sir_hawkington' && (
+        <div className={styles.triageSection}>
+          <div className={styles.triageTitle}>
+            <AlertTriangle style={{ width: 14, height: 14 }} />
+            Triage Status
+          </div>
+          <div className={styles.triageDisposition}>
+            {agent.triage.disposition || 'Monitoring...'}
+          </div>
+          {agent.triage.confidence !== undefined && (
+            <div className={styles.triageConfidence}>
+              Confidence: {(agent.triage.confidence * 100).toFixed(0)}%
             </div>
           )}
-          
-          {agent.week4_systems.beer_level && (
-            <div className="flex items-center gap-2 text-xs">
-              <span className="text-amber-400">🍺</span>
-              <span className="text-slate-300">{agent.week4_systems.beer_level}</span>
-            </div>
-          )}
-          
-          {agent.week4_systems.paranoia_level && (
-            <div className="flex items-center gap-2 text-xs">
-              <span className="text-purple-400">👻</span>
-              <span className="text-slate-300">{agent.week4_systems.paranoia_level}</span>
-            </div>
-          )}
-
-          {agent.week4_systems.bob_detection && (
-            <div className="flex items-center gap-2 text-xs">
-              <span className="text-orange-400">📋</span>
-              <span className="text-slate-300">
-                {agent.week4_systems.bob_detection.paper_bags_consumed} bags consumed
-              </span>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Performance Indicator */}
-      {dist.resource_monitoring_active && (
-        <div className="mt-3 flex items-center gap-2 text-xs">
-          <Lightning className="w-3 h-3 text-yellow-400" />
-          <span className="text-yellow-400">⚡ Performing</span>
         </div>
       )}
     </div>

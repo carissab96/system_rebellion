@@ -246,6 +246,9 @@ class VectorStorageService:
     ) -> Optional[str]:
         """Store a pattern vector."""
         try:
+            # JSON-encode pattern_data for PostgreSQL JSONB column
+            pattern_data_json = json.dumps(pattern_data) if pattern_data else None
+            
             async with self.engine.begin() as conn:
                 result = await conn.execute(
                     text("""
@@ -260,7 +263,7 @@ class VectorStorageService:
                             :pattern_name, :pattern_description, :first_observed,
                             :last_observed, :observation_count, :embedding,
                             :confidence_score, :success_rate, :application_count,
-                            :pattern_data, :embedding_model
+                            CAST(:pattern_data AS jsonb), :embedding_model
                         )
                         RETURNING vector_id
                     """),
@@ -277,16 +280,49 @@ class VectorStorageService:
                         "confidence_score": confidence_score,
                         "success_rate": success_rate,
                         "application_count": application_count,
-                        "pattern_data": pattern_data,
+                        "pattern_data": pattern_data_json,
                         "embedding_model": "all-MiniLM-L6-v2"
                     }
                 )
                 row = result.fetchone()
-                return str(row[0]) if row else None
+                vector_id = str(row[0]) if row else None
+                
+                if vector_id:
+                    logger.info(f"✅ Stored pattern vector for {agent_name}: {pattern_type}")
+                return vector_id
                 
         except Exception as e:
             logger.error(f"❌ Failed to store pattern vector: {e}")
             return None
+    
+    async def store_pattern_vector_fire_and_forget(
+        self,
+        agent_name: str,
+        pattern_type: str,
+        pattern_description: str,
+        embedding: List[float],
+        pattern_data: Dict[str, Any],
+        first_observed: datetime,
+        last_observed: datetime,
+        **kwargs
+    ) -> None:
+        """
+        Store pattern vector without waiting for result.
+        Fire and forget - we don't wait for the write to complete.
+        """
+        asyncio.create_task(
+            self.store_pattern_vector(
+                agent_name=agent_name,
+                pattern_type=pattern_type,
+                pattern_description=pattern_description,
+                embedding=embedding,
+                pattern_data=pattern_data,
+                first_observed=first_observed,
+                last_observed=last_observed,
+                **kwargs
+            )
+        )
+        logger.debug(f"🚀 Queued pattern vector write for {agent_name}")
     
     # ========================================================================
     # INTERACTION VECTORS
@@ -306,6 +342,9 @@ class VectorStorageService:
     ) -> Optional[str]:
         """Store an interaction vector."""
         try:
+            # JSON-encode metadata for PostgreSQL JSONB column
+            metadata_json = json.dumps(metadata) if metadata else None
+            
             async with self.engine.begin() as conn:
                 result = await conn.execute(
                     text("""
@@ -316,7 +355,7 @@ class VectorStorageService:
                         ) VALUES (
                             gen_random_uuid(), :from_agent, :to_agent, :interaction_type,
                             :occurred_at, :embedding, :interaction_text,
-                            :interaction_summary, :metadata, :priority, :embedding_model
+                            :interaction_summary, CAST(:metadata AS jsonb), :priority, :embedding_model
                         )
                         RETURNING vector_id
                     """),
@@ -328,17 +367,46 @@ class VectorStorageService:
                         "embedding": embedding,
                         "interaction_text": interaction_text,
                         "interaction_summary": interaction_summary,
-                        "metadata": metadata,
+                        "metadata": metadata_json,
                         "priority": priority,
                         "embedding_model": "all-MiniLM-L6-v2"
                     }
                 )
                 row = result.fetchone()
-                return str(row[0]) if row else None
+                vector_id = str(row[0]) if row else None
+                
+                if vector_id:
+                    logger.info(f"✅ Stored interaction vector: {from_agent} → {to_agent or 'broadcast'}")
+                return vector_id
                 
         except Exception as e:
             logger.error(f"❌ Failed to store interaction vector: {e}")
             return None
+    
+    async def store_interaction_vector_fire_and_forget(
+        self,
+        from_agent: str,
+        interaction_type: str,
+        interaction_text: str,
+        embedding: List[float],
+        occurred_at: datetime,
+        **kwargs
+    ) -> None:
+        """
+        Store interaction vector without waiting for result.
+        Fire and forget - we don't wait for the write to complete.
+        """
+        asyncio.create_task(
+            self.store_interaction_vector(
+                from_agent=from_agent,
+                interaction_type=interaction_type,
+                interaction_text=interaction_text,
+                embedding=embedding,
+                occurred_at=occurred_at,
+                **kwargs
+            )
+        )
+        logger.debug(f"🚀 Queued interaction vector write for {from_agent}")
 
 
 # Global singleton instance

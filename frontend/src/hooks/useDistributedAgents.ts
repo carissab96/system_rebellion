@@ -1,17 +1,25 @@
 // hooks/useDistributedAgents.ts
-// Hook to fetch distributed agent data from the backend
-// Week 5 Task 5.3: Frontend Integration
+// Hook to access distributed agent data from Redux store
+// Data flows: WebSocket → useWebSocketConnection → Redux → this hook → components
+//
+// NO POLLING. WebSocket pushes updates every 5 seconds.
+// This hook is a thin wrapper around Redux selectors.
 
-import { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { selectAllAgentDisplayData, type AgentDisplayData } from '../store/slices/agentsSlice';
+import type { RootState } from '../store/store';
 
-export interface DistributedAgent {
+/**
+ * Agent data structure matching backend payload
+ * All fields come directly from the WebSocket system_update message
+ */
+export interface DistributedAgent extends AgentDisplayData {
+  // Core identity (from AgentDisplayData)
   agent_name: string;
-  agent_type: string;
-  health: string;
-  is_active: boolean;
-  uptime_seconds: number;
-  total_decisions: number;
-  is_distributed: boolean;
+  status: 'active' | 'idle' | 'processing' | 'error';
+  last_activity: string | null;
+  
+  // Distributed system fields (from backend payload.agents[agent_name])
   distributed?: {
     distributed_enabled: boolean;
     agent_name: string;
@@ -25,90 +33,86 @@ export interface DistributedAgent {
     last_heartbeat: string;
     resource_monitoring_enabled: boolean;
     resource_monitoring_active: boolean;
-    // Legacy fields for backwards compatibility
-    is_initialized?: boolean;
-    redis_connected?: boolean;
-    resource_monitoring?: boolean;
-    recent_decisions?: number;
-    messages_sent?: number;
-    messages_received?: number;
   };
-  personality?: Record<string, any>;
-  week4_systems?: {
-    coordination_enabled?: boolean;
-    alert_escalation_enabled?: boolean;
-    action_verification_enabled?: boolean;
-    total_alerts?: number;
-    escalated_alerts?: number;
-    actions_tracked?: number;
-    override_learning?: {
-      total_overrides: number;
-      successful_overrides: number;
-      success_rate: number;
-    };
-    bob_detection?: {
-      proximity_events: number;
-      paper_bags_consumed: number;
-      anxiety_spikes: number;
-    };
-    beer_level?: string;
-    bob_wild_ideas?: number;
-    paranoia_level?: string;
-    threats_detected?: number;
-    tequila_shots_today?: number;
-    monocle_state?: string;
-    monocle_yeets?: Record<string, number>;
+  
+  // Triage data (Sir Hawkington only)
+  triage?: {
+    disposition?: string;
+    confidence?: number;
+    resource_type?: string;
+    current_value?: number;
+    threshold?: number;
+    recommended_action?: string;
   };
+  
+  // Memory bank data
+  memory_id?: string;
+  event_type?: string;
+  details?: Record<string, any>;
+  priority?: number;
+  
+  // Agent-specific personality data
+  personality_traits?: Record<string, any>;
+  
+  // Computed stats
+  total_decisions?: number;
+  health?: string;
+  uptime_seconds?: number;
 }
 
-export interface DistributedAgentsResponse {
-  total_agents: number;
-  distributed_agents: number;
-  agents: DistributedAgent[];
-  timestamp: string;
-}
-
+/**
+ * Hook to access distributed agent data from Redux
+ * 
+ * Data source: WebSocket system_update → agentsSlice
+ * Update frequency: Every 5 seconds (backend push)
+ * 
+ * @returns Agent data, loading state, and connection info
+ */
 export const useDistributedAgents = () => {
-  const [agents, setAgents] = useState<DistributedAgent[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
-
-  const fetchAgents = async () => {
-    try {
-      const response = await fetch('/api/distributed-agents/agents');
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch agents: ${response.statusText}`);
-      }
-
-      const data: DistributedAgentsResponse = await response.json();
-      setAgents(data.agents);
-      setLastUpdate(new Date());
-      setError(null);
-    } catch (err) {
-      console.error('Error fetching distributed agents:', err);
-      setError(err instanceof Error ? err.message : 'Unknown error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    // Initial fetch
-    fetchAgents();
-
-    // Poll every 5 seconds for updates
-    const interval = setInterval(fetchAgents, 5000);
-
-    return () => clearInterval(interval);
-  }, []);
-
+  // Get all agent display data from Redux
+  const agentDisplayData = useSelector(selectAllAgentDisplayData);
+  
+  // Get connection status and last update from metrics slice
+  const connectionStatus = useSelector((state: RootState) => state.metrics.connectionStatus);
+  const lastUpdate = useSelector((state: RootState) => state.agents.last_update);
+  const activeAgents = useSelector((state: RootState) => state.agents.active_agents);
+  
+  // Transform AgentDisplayData to DistributedAgent format
+  // The backend payload is already spread into display_data via ...memory in agentsSlice
+  // So all backend fields are available on the data object
+  const agents: DistributedAgent[] = agentDisplayData.map(data => {
+    // Cast to any to access dynamic backend fields that were spread in
+    const backendData = data as any;
+    
+    return {
+      ...data,
+      // Ensure required fields have defaults
+      health: backendData.distributed?.health || data.status || 'unknown',
+      total_decisions: backendData.distributed?.total_decisions || data.summary_stats?.total_events || 0,
+      uptime_seconds: backendData.distributed?.uptime_seconds || 0,
+      // Pass through backend fields
+      distributed: backendData.distributed,
+      triage: backendData.triage,
+      memory_id: backendData.memory_id,
+      event_type: backendData.event_type,
+      details: backendData.details,
+      priority: backendData.priority,
+      personality_traits: backendData.personality_traits,
+    };
+  });
+  
+  // Derive loading state from connection and data
+  const loading = connectionStatus === 'connecting' || (connectionStatus === 'connected' && agents.length === 0);
+  const error = connectionStatus === 'error' ? 'WebSocket connection error' : null;
+  
   return {
     agents,
     loading,
     error,
-    lastUpdate,
-    refetch: fetchAgents
+    lastUpdate: lastUpdate ? new Date(lastUpdate) : null,
+    activeAgentCount: activeAgents.length,
+    connectionStatus,
+    // No refetch needed - WebSocket pushes updates
+    refetch: () => console.log('refetch() is a no-op - data comes from WebSocket')
   };
 };

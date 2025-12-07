@@ -53,7 +53,7 @@ from app.models import *  # noqa
 # Import Background Tasks (Week 5 Task 5.4: Removed legacy AIAgentManager)
 from app.core.background_tasks import start_all_background_tasks
 from app.ai_agents.meth_snail import router as meth_snail_router
-from app.api.endpoints import distributed_agents
+from app.api.endpoints import distributed_agents, reports
 from rich.console import Console
 from rich.table import Table
 from rich.live import Live
@@ -524,6 +524,13 @@ def create_application() -> FastAPI:
         distributed_agents.router,
         prefix="/api",
         tags=["Distributed Agents"]
+    )
+    
+    # Add reports router for agent activity visibility
+    app.include_router(
+        reports.router,
+        prefix="/api",
+        tags=["Reports"]
     )
     
     # Note: agent_insights and agent_events routers already registered above (lines 362-383)

@@ -5,6 +5,7 @@ import { WebSocketService } from '../services/websocket';
 import { updateMetrics, setConnectionStatus, setError } from '../store/slices/metricSlice';
 import { updateTriageData } from '../store/slices/triageSlice';
 import { addAgentMemory } from '../store/slices/agentsSlice';
+import { addCommunication, setCommunications, type AgentCommunication } from '../store/slices/communicationSlice';
 import type { RootState } from '../store/store';
 
 const WS_BASE_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000';
@@ -135,10 +136,23 @@ export const useWebSocketConnection = () => {
         });
       }
       
-      // 3. HANDLE RECENT INSIGHTS (if needed by insights slice)
-      // payload.recent_insights is available for future use
+      // 3. HANDLE RECENT INSIGHTS (inter-agent communications)
+      if (payload.recent_insights && Array.isArray(payload.recent_insights)) {
+        // Transform insights to AgentCommunication format
+        const communications: AgentCommunication[] = payload.recent_insights.map((insight: any, index: number) => ({
+          id: insight.id || `insight-${Date.now()}-${index}`,
+          timestamp: insight.timestamp || new Date().toISOString(),
+          from_agent: insight.from_agent || insight.sender || 'unknown',
+          to_agent: insight.to_agent || insight.recipient || 'unknown',
+          message_type: insight.message_type || insight.type || 'AGENT_MESSAGE',
+          summary: insight.summary || insight.message || insight.content,
+          confidence: insight.confidence,
+          priority: insight.priority,
+        }));
+        dispatch(setCommunications(communications));
+      }
       
-      // 4. HANDLE RECENT EVENTS (if needed by events slice)
+      // 4. HANDLE RECENT EVENTS (personality events - future use)
       // payload.recent_events is available for future use
       
     } 
@@ -174,6 +188,23 @@ export const useWebSocketConnection = () => {
     } else if (payload.type === 'error') {
       dispatch(setError(payload.message || 'Unknown error'));
       setLocalState(prev => ({ ...prev, lastError: payload.message }));
+    }
+    // Handle real-time agent messages (for live pulse animations)
+    else if (payload.type === 'agent_message' || payload.type === 'coordination_request' || 
+             payload.type === 'triage_decision' || payload.type === 'agent_action') {
+      const data = payload.data || payload;
+      if (data.from_agent || data.sender) {
+        dispatch(addCommunication({
+          id: `live-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+          timestamp: data.timestamp || new Date().toISOString(),
+          from_agent: data.from_agent || data.sender || 'unknown',
+          to_agent: data.to_agent || data.recipient || data.target || 'broadcast',
+          message_type: data.message_type || payload.type.toUpperCase(),
+          summary: data.summary || data.message || data.action,
+          confidence: data.confidence,
+          priority: data.priority,
+        }));
+      }
     }
   }, [dispatch]);
 

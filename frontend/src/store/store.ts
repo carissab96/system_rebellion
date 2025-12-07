@@ -12,6 +12,7 @@ import vic20Reducer from './slices/vic20Slice';
 import metricsReducer from './slices/metricSlice';
 import triageReducer from './slices/triageSlice';
 import agentsReducer from './slices/agentsSlice';
+import communicationReducer from './slices/communicationSlice';
 
 export const store = configureStore({
 
@@ -26,7 +27,8 @@ export const store = configureStore({
     auth: authReducer,
     metrics: metricsReducer,
     triage: triageReducer,
-    agents: agentsReducer,  
+    agents: agentsReducer,
+    communication: communicationReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import { Provider } from "react-redux";
 import { store } from "./store/store";
 import App from "./App";
+import { GlobalErrorBoundary } from "./components/GlobalErrorBoundary";
 import "./index.css";
 import { WebSocketService } from "./services/websocket";
 
@@ -32,8 +33,10 @@ if (!container) {
 
 ReactDOM.createRoot(container).render(
   <React.StrictMode>
-    <Provider store={store}>
-          <App />
-    </Provider>
+    <GlobalErrorBoundary>
+      <Provider store={store}>
+        <App />
+      </Provider>
+    </GlobalErrorBoundary>
   </React.StrictMode>
 );

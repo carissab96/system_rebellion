@@ -97,9 +97,11 @@ export function AgentMonitorDashboard() {
   useEffect(() => {
     const handleAgentMessage = (msg: AgentMessage | ResourceAlert) => {
       if (msg.type === 'agent_message') {
-        const agentName = msg.data.from_agent;
-        const reasoning = msg.data.payload.reasoning || msg.data.message_type;
-        const severity = msg.data.payload.severity || 'info';
+        const agentName = msg.data?.from_agent;
+        if (!agentName) return;
+        
+        const reasoning = msg.data?.payload?.reasoning || msg.data?.message_type || 'Agent message';
+        const severity = msg.data?.payload?.severity || 'info';
         
         setAgents(prev => {
           const updated = new Map(prev);
@@ -129,19 +131,29 @@ export function AgentMonitorDashboard() {
           return updated;
         });
       } else if (msg.type === 'resource_alert') {
-        const agentName = msg.data.from_agent;
-        const metrics = msg.data.payload.metrics;
+        const agentName = msg.data?.from_agent;
+        const metrics = msg.data?.payload?.metrics;
+        
+        // Skip if no agent name or metrics
+        if (!agentName) return;
         
         setAgents(prev => {
           const updated = new Map(prev);
           const agent = updated.get(agentName);
           
           if (agent) {
+            // Build message with safe property access
+            const cpuPct = metrics?.cpu_percent ?? metrics?.cpu ?? 'N/A';
+            const memPct = metrics?.memory_percent ?? metrics?.memory ?? 'N/A';
+            const diskPct = metrics?.disk_percent ?? metrics?.disk ?? 'N/A';
+            
             const logEntry: LogEntry = {
               timestamp: msg.data.timestamp,
               level: 'info',
               category: 'system',
-              message: `CPU: ${metrics.cpu_percent}% | Memory: ${metrics.memory_percent}% | Disk: ${metrics.disk_percent}%`,
+              message: metrics 
+                ? `CPU: ${cpuPct}% | Memory: ${memPct}% | Disk: ${diskPct}%`
+                : 'Resource alert received (no metrics)',
             };
             
             const systemLogs = [...agent.logs.system, logEntry].slice(-5);

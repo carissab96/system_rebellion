@@ -187,6 +187,9 @@ class MessageBus:
             # Archive message
             await self._archive_message(message)
             
+            # Store interaction vector (fire-and-forget)
+            asyncio.create_task(self._store_interaction_vector(message))
+            
             self._messages_sent += 1
             self.logger.info(
                 f"📡 REDIS PUB: {message.message_type.value} → {channel} "
@@ -338,6 +341,59 @@ class MessageBus:
             
         except Exception as e:
             self.logger.warning(f"Failed to archive message: {e}")
+    
+    async def _store_interaction_vector(self, message: AgentMessage):
+        """
+        Store interaction vector for agent-to-agent communication.
+        Fire-and-forget - errors are logged but don't affect message delivery.
+        
+        Args:
+            message: The AgentMessage being sent
+        """
+        try:
+            # Skip heartbeats - too noisy for vector storage
+            if message.message_type == MessageType.AGENT_HEARTBEAT:
+                return
+            
+            # Import here to avoid circular imports
+            from app.services.vector_storage import get_vector_storage
+            from app.services.embedding_service import get_embedding_service
+            
+            # Build interaction text for embedding
+            interaction_text = (
+                f"{message.from_agent} sent {message.message_type.value} "
+                f"to {message.to_agent or 'all agents'}: "
+                f"{json.dumps(message.payload)[:500]}"
+            )
+            
+            # Generate embedding
+            embedding_service = get_embedding_service()
+            embedding = await embedding_service.generate_embedding_async(interaction_text)
+            
+            if not embedding:
+                self.logger.warning("Failed to generate embedding for interaction vector")
+                return
+            
+            # Store the vector
+            vector_storage = get_vector_storage()
+            await vector_storage.store_interaction_vector(
+                from_agent=message.from_agent,
+                to_agent=message.to_agent,
+                interaction_type=message.message_type.value,
+                interaction_text=interaction_text,
+                embedding=embedding,
+                occurred_at=message.timestamp,
+                priority=message.priority.value if hasattr(message.priority, 'value') else 2,
+                metadata={
+                    "message_id": message.message_id,
+                    "payload_keys": list(message.payload.keys()) if message.payload else []
+                },
+                interaction_summary=f"{message.message_type.value} from {message.from_agent}"
+            )
+            
+        except Exception as e:
+            # Don't let vector storage failures affect message delivery
+            self.logger.debug(f"Failed to store interaction vector: {e}")
     
     def get_stats(self) -> Dict[str, Any]:
         """Get message bus statistics"""
