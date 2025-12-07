@@ -4,38 +4,7 @@ import { Crown, Cpu, Zap, HardDrive, Wifi, Ruler, Settings } from 'lucide-react'
 import type { RootState } from '../../store/store';
 import { WebSocketService } from '../../services/websocket';
 
-// Backend WebSocket message types (source of truth)
-interface AgentMessage {
-  type: 'agent_message';
-  data: {
-    message_id: string;
-    message_type: string;
-    priority: number;
-    from_agent: string;
-    timestamp: string;
-    payload: {
-      severity?: string;
-      routing?: string;
-      reasoning?: string;
-      metrics_summary?: any;
-    };
-    redis_channel: string;
-  };
-}
-
-interface ResourceAlert {
-  type: 'resource_alert';
-  data: {
-    from_agent: string;
-    timestamp: string;
-    payload: {
-      type: string;
-      metrics: any;
-    };
-    redis_channel: string;
-  };
-}
-
+// Log entry for agent activity
 interface LogEntry {
   timestamp: string;
   level: string;
@@ -59,12 +28,29 @@ interface AgentState {
 
 const AGENT_CONFIG = {
   sir_hawkington: { icon: Crown, color: '#e6ac00', displayName: 'Sir Hawkington' },
-  vic_20_sage: { icon: Cpu, color: '#06b6d4', displayName: 'VIC-20 Sage' },
+  vic20_sage: { icon: Cpu, color: '#06b6d4', displayName: 'VIC-20 Sage' },
   meth_snail: { icon: Zap, color: '#00d084', displayName: 'Terry (Meth Snail)' },
   hamsters: { icon: HardDrive, color: '#ff8c42', displayName: 'The Hamsters' },
   quantum_shadow_people: { icon: Wifi, color: '#a855f7', displayName: 'Quantum Shadow People' },
   the_stick: { icon: Ruler, color: '#f97316', displayName: 'The Stick' },
   system: { icon: Settings, color: '#64748b', displayName: 'System' },
+};
+
+// Normalize agent names from backend (handles variations)
+const normalizeAgentName = (name: string): string => {
+  const normalized = name?.toLowerCase().replace(/[-_\s]+/g, '_');
+  // Map common variations
+  const nameMap: Record<string, string> = {
+    'vic_20_sage': 'vic20_sage',
+    'vic20': 'vic20_sage',
+    'terry': 'meth_snail',
+    'terry_meth_snail': 'meth_snail',
+    'qsp': 'quantum_shadow_people',
+    'hawk': 'sir_hawkington',
+    'hawkington': 'sir_hawkington',
+    'stick': 'the_stick',
+  };
+  return nameMap[normalized] || normalized;
 };
 
 export function AgentMonitorDashboard() {
@@ -93,84 +79,127 @@ export function AgentMonitorDashboard() {
     setAgents(initialAgents);
   }, []);
 
-  // Listen for agent messages from WebSocket
-  useEffect(() => {
-    const handleAgentMessage = (msg: AgentMessage | ResourceAlert) => {
-      if (msg.type === 'agent_message') {
-        const agentName = msg.data?.from_agent;
-        if (!agentName) return;
+  // Helper to add a log entry to an agent
+  const addLogEntry = (
+    agentName: string, 
+    category: 'redis' | 'postgres' | 'vector' | 'system',
+    level: 'info' | 'warning' | 'error',
+    message: string,
+    timestamp?: string
+  ) => {
+    const normalizedName = normalizeAgentName(agentName);
+    
+    setAgents(prev => {
+      const updated = new Map(prev);
+      const agent = updated.get(normalizedName);
+      
+      if (agent) {
+        const logEntry: LogEntry = {
+          timestamp: timestamp || new Date().toISOString(),
+          level,
+          category,
+          message,
+        };
         
-        const reasoning = msg.data?.payload?.reasoning || msg.data?.message_type || 'Agent message';
-        const severity = msg.data?.payload?.severity || 'info';
+        const categoryLogs = [...agent.logs[category], logEntry].slice(-5);
         
-        setAgents(prev => {
-          const updated = new Map(prev);
-          const agent = updated.get(agentName);
-          
-          if (agent) {
-            const logEntry: LogEntry = {
-              timestamp: msg.data.timestamp,
-              level: severity === 'high' || severity === 'emergency' ? 'error' : 
-                     severity === 'medium' ? 'warning' : 'info',
-              category: 'system',
-              message: reasoning,
-            };
-            
-            const systemLogs = [...agent.logs.system, logEntry].slice(-5);
-            
-            updated.set(agentName, {
-              ...agent,
-              is_active: true,
-              logs: {
-                ...agent.logs,
-                system: systemLogs,
-              },
-            });
-          }
-          
-          return updated;
-        });
-      } else if (msg.type === 'resource_alert') {
-        const agentName = msg.data?.from_agent;
-        const metrics = msg.data?.payload?.metrics;
-        
-        // Skip if no agent name or metrics
-        if (!agentName) return;
-        
-        setAgents(prev => {
-          const updated = new Map(prev);
-          const agent = updated.get(agentName);
-          
-          if (agent) {
-            // Build message with safe property access
-            const cpuPct = metrics?.cpu_percent ?? metrics?.cpu ?? 'N/A';
-            const memPct = metrics?.memory_percent ?? metrics?.memory ?? 'N/A';
-            const diskPct = metrics?.disk_percent ?? metrics?.disk ?? 'N/A';
-            
-            const logEntry: LogEntry = {
-              timestamp: msg.data.timestamp,
-              level: 'info',
-              category: 'system',
-              message: metrics 
-                ? `CPU: ${cpuPct}% | Memory: ${memPct}% | Disk: ${diskPct}%`
-                : 'Resource alert received (no metrics)',
-            };
-            
-            const systemLogs = [...agent.logs.system, logEntry].slice(-5);
-            
-            updated.set(agentName, {
-              ...agent,
-              is_active: true,
-              logs: {
-                ...agent.logs,
-                system: systemLogs,
-              },
-            });
-          }
-          
-          return updated;
+        updated.set(normalizedName, {
+          ...agent,
+          is_active: true,
+          logs: {
+            ...agent.logs,
+            [category]: categoryLogs,
+          },
         });
       }
+      
+      return updated;
+    });
+  };
+
+  // Listen for agent messages from WebSocket
+  useEffect(() => {
+    const handleAgentMessage = (msg: any) => {
+      const msgType = msg.type;
+      const data = msg.data || msg;
+      const agentName = data?.from_agent || data?.agent_name || data?.sender;
+      
+      if (!agentName) return;
+      
+      // Determine category based on message type or content
+      const determineCategory = (): 'redis' | 'postgres' | 'vector' | 'system' => {
+        const channel = data?.redis_channel || '';
+        const payload = data?.payload || {};
+        
+        // Check for database-related messages
+        if (channel.includes('postgres') || payload?.db_operation || payload?.table) {
+          return 'postgres';
+        }
+        if (channel.includes('vector') || payload?.vector_operation || msgType === 'learning_update') {
+          return 'vector';
+        }
+        if (channel.includes('redis') || channel.includes('agents:')) {
+          return 'redis';
+        }
+        return 'system';
+      };
+      
+      // Determine severity level
+      const determineLevel = (): 'info' | 'warning' | 'error' => {
+        const severity = data?.payload?.severity || data?.severity || 'info';
+        if (severity === 'high' || severity === 'emergency' || severity === 'critical') return 'error';
+        if (severity === 'medium' || severity === 'warning') return 'warning';
+        return 'info';
+      };
+      
+      // Build message based on type
+      let message = '';
+      const category = determineCategory();
+      const level = determineLevel();
+      
+      switch (msgType) {
+        case 'agent_message':
+          message = data?.payload?.reasoning || data?.message_type || 'Agent message';
+          break;
+          
+        case 'resource_alert': {
+          const metrics = data?.payload?.metrics;
+          if (metrics) {
+            const cpu = metrics?.cpu_percent ?? metrics?.cpu ?? 'N/A';
+            const mem = metrics?.memory_percent ?? metrics?.memory ?? 'N/A';
+            const disk = metrics?.disk_percent ?? metrics?.disk ?? 'N/A';
+            message = `CPU: ${cpu}% | Mem: ${mem}% | Disk: ${disk}%`;
+          } else {
+            message = 'Resource alert';
+          }
+          break;
+        }
+        
+        case 'triage_decision':
+          message = `Triage: ${data?.payload?.disposition || data?.disposition || 'decision made'}`;
+          break;
+          
+        case 'coordination_request':
+          message = `Coordination: ${data?.payload?.action || data?.action || 'request sent'}`;
+          break;
+          
+        case 'agent_action':
+          message = `Action: ${data?.payload?.action || data?.action || 'executed'}`;
+          break;
+          
+        case 'learning_update':
+          message = `Learning: ${data?.payload?.pattern || 'pattern detected'}`;
+          break;
+          
+        case 'agent_heartbeat':
+          message = `Heartbeat: ${data?.payload?.status || 'alive'}`;
+          break;
+          
+        default:
+          message = data?.payload?.message || data?.message || msgType || 'Activity';
+      }
+      
+      addLogEntry(agentName, category, level, message, data?.timestamp);
     };
 
     // Subscribe to WebSocket messages

@@ -20,6 +20,7 @@ export interface DistributedAgent extends AgentDisplayData {
   last_activity: string | null;
   
   // Distributed system fields (from backend payload.agents[agent_name])
+  // Note: Backend sends communication.messages_sent, we normalize to total_messages_sent
   distributed?: {
     distributed_enabled: boolean;
     agent_name: string;
@@ -33,6 +34,15 @@ export interface DistributedAgent extends AgentDisplayData {
     last_heartbeat: string;
     resource_monitoring_enabled: boolean;
     resource_monitoring_active: boolean;
+  };
+  
+  // Raw communication stats from backend (alternative field names)
+  communication?: {
+    messages_sent: number;
+    messages_received: number;
+    is_running: boolean;
+    subscribed_channels: number;
+    registered_handlers: number;
   };
   
   // Triage data (Sir Hawkington only)
@@ -84,14 +94,39 @@ export const useDistributedAgents = () => {
     // Cast to any to access dynamic backend fields that were spread in
     const backendData = data as any;
     
+    // Normalize communication stats - backend sends communication.messages_sent
+    // but components expect distributed.total_messages_sent
+    const comm = backendData.communication || {};
+    const normalizedDistributed = backendData.distributed ? {
+      ...backendData.distributed,
+      // Ensure message counts are available with expected names
+      total_messages_sent: backendData.distributed.total_messages_sent ?? comm.messages_sent ?? 0,
+      total_messages_received: backendData.distributed.total_messages_received ?? comm.messages_received ?? 0,
+    } : comm.messages_sent !== undefined ? {
+      // Create distributed object from communication stats if no distributed object
+      distributed_enabled: true,
+      agent_name: data.agent_name,
+      health: backendData.health || 'unknown',
+      total_decisions: backendData.total_decisions || 0,
+      total_messages_sent: comm.messages_sent || 0,
+      total_messages_received: comm.messages_received || 0,
+      uptime_seconds: backendData.uptime_seconds || 0,
+      restart_count: backendData.restart_count || 0,
+      personality_traits: backendData.personality_traits || {},
+      last_heartbeat: backendData.last_heartbeat || null,
+      resource_monitoring_enabled: false,
+      resource_monitoring_active: false,
+    } : undefined;
+    
     return {
       ...data,
-      // Ensure required fields have defaults
-      health: backendData.distributed?.health || data.status || 'unknown',
-      total_decisions: backendData.distributed?.total_decisions || data.summary_stats?.total_events || 0,
-      uptime_seconds: backendData.distributed?.uptime_seconds || 0,
-      // Pass through backend fields
-      distributed: backendData.distributed,
+      // Ensure required fields have defaults - check multiple sources
+      health: backendData.health || backendData.distributed?.health || data.status || 'unknown',
+      total_decisions: backendData.total_decisions || backendData.distributed?.total_decisions || data.summary_stats?.total_events || 0,
+      uptime_seconds: backendData.uptime_seconds || backendData.distributed?.uptime_seconds || 0,
+      // Pass through backend fields with normalized distributed
+      distributed: normalizedDistributed,
+      communication: backendData.communication,
       triage: backendData.triage,
       memory_id: backendData.memory_id,
       event_type: backendData.event_type,
