@@ -2,7 +2,7 @@
 // Secondary info bar - System status, uptime, connection info
 // Built by: Dell-Sonnet - November 20, 2025
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useWebSocketConnection } from '../../hooks/useWebSocketConnection';
 import { useDistributedAgents } from '../../hooks/useDistributedAgents';
 import './Navigation.css';
@@ -52,38 +52,35 @@ export const SecondaryNav: React.FC<SecondaryNavProps> = ({ onRefresh }) => {
     });
   };
 
-  const activeAgentCount = agents.filter(a => a.is_active).length;
-  const totalAgents = 6; // We have 6 agents
+  // Count agents that are reporting data - no fake counts
+  const reportingAgentCount = agents.length;
 
   const handleRefresh = () => {
     if (onRefresh) {
       onRefresh();
     }
-    // Also trigger a manual refresh of agents data
     window.location.reload();
   };
 
   return (
     <nav className="secondary-nav">
       <div className="info-item">
-        <span className="info-icon">⏱</span>
-        <span className="info-label">Uptime:</span>
-        <span className="info-value">{formatUptime(sessionUptime)} (Session)</span>
-        {/* TODO: Add total uptime from backend */}
+        <span className="info-label">Session:</span>
+        <span className="info-value">{formatUptime(sessionUptime)}</span>
       </div>
 
       <div className="info-item">
-        <span className={`info-icon ${activeAgentCount === totalAgents ? 'status-active' : 'status-partial'}`}>
+        <span className={`info-icon ${reportingAgentCount > 0 ? 'status-active' : 'status-partial'}`}>
           ●
         </span>
         <span className="info-value">
-          {activeAgentCount}/{totalAgents} Agents Active
+          {reportingAgentCount} Agent{reportingAgentCount !== 1 ? 's' : ''} Reporting
         </span>
       </div>
 
       <div className="info-item">
         <span className={`info-icon ${isConnected ? 'status-connected' : 'status-disconnected'}`}>
-          🔌
+          ●
         </span>
         <span className="info-label">WebSocket:</span>
         <span className="info-value">{connectionStatus}</span>
@@ -98,17 +95,7 @@ export const SecondaryNav: React.FC<SecondaryNavProps> = ({ onRefresh }) => {
       </div>
 
       <div className="info-item">
-        <span className="info-icon">📅</span>
         <span className="info-value">{formatDateTime(currentTime)}</span>
-      </div>
-
-      <div className="info-item">
-        <span className="info-icon">⚠️</span>
-        <span className="info-label">Last Incident:</span>
-        <span className="info-value">
-          {/* TODO: Calculate from backend data */}
-          --
-        </span>
       </div>
     </nav>
   );

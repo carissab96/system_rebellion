@@ -12,7 +12,7 @@ export const selectMethSnail = (s: RootState) => s.agents.meth_snail;
 export const selectHamsters = (s: RootState) => s.agents.hamsters;
 export const selectQuantumShadow = (s: RootState) => s.agents.quantum_shadow_people;
 export const selectTheStick = (s: RootState) => s.agents.the_stick;
-export const selectVic20Sage = (s: RootState) => s.agents.vic20_sage;
+export const selectVic20Sage = (s: RootState) => s.agents.vic_20_sage;
 
 // ========== METRICS SELECTORS ==========
 // System performance metrics
@@ -56,7 +56,7 @@ export type AgentKey =
   | "hamsters"
   | "quantum_shadow_people"
   | "the_stick"
-  | "vic20_sage";
+  | "vic_20_sage";
 
 export const AGENT_KEYS: AgentKey[] = [
   "sir_hawkington",
@@ -64,7 +64,7 @@ export const AGENT_KEYS: AgentKey[] = [
   "hamsters",
   "quantum_shadow_people",
   "the_stick",
-  "vic20_sage"
+  "vic_20_sage"
 ];
 
 // Total agent count 

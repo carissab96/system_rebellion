@@ -1,6 +1,7 @@
 // components/observatory/AgentNode.tsx
-// 3D Agent node visualization
+// 3D Agent node visualization with dynamic drift
 // Built by: Dell-Sonnet - November 20, 2025
+// Enhanced: Cascade - December 7, 2025 - Added dynamic positioning
 
 import React, { useRef, useMemo } from 'react';
 import { useFrame, useLoader } from '@react-three/fiber';
@@ -25,6 +26,7 @@ export const AgentNode: React.FC<AgentNodeProps> = ({
   iconUrl,
   onClick
 }) => {
+  const groupRef = useRef<THREE.Group>(null);
   const meshRef = useRef<THREE.Mesh>(null);
   const glowRef = useRef<THREE.Mesh>(null);
 
@@ -33,21 +35,43 @@ export const AgentNode: React.FC<AgentNodeProps> = ({
 
   // Parse color
   const colorObj = useMemo(() => new THREE.Color(color), [color]);
+  
+  // Unique drift offset per agent (based on name hash)
+  const driftOffset = useMemo(() => {
+    let hash = 0;
+    for (let i = 0; i < agentName.length; i++) {
+      hash = ((hash << 5) - hash) + agentName.charCodeAt(i);
+      hash |= 0;
+    }
+    return Math.abs(hash % 1000) / 1000 * Math.PI * 2;
+  }, [agentName]);
 
-  // Pulse animation
+  // Animation: pulse, glow, and gentle drift
   useFrame((state) => {
-    if (!meshRef.current || !glowRef.current) return;
+    if (!groupRef.current || !meshRef.current || !glowRef.current) return;
 
     const time = state.clock.getElapsedTime();
+    
+    // Dynamic drift - agents gently float around their base position
+    // Active agents drift more, idle agents drift less
+    const driftSpeed = isActive ? 0.3 : 0.15;
+    const driftAmount = isActive ? 0.4 : 0.2;
+    
+    const driftX = Math.sin(time * driftSpeed + driftOffset) * driftAmount;
+    const driftY = Math.cos(time * driftSpeed * 0.7 + driftOffset) * driftAmount * 0.5;
+    const driftZ = Math.sin(time * driftSpeed * 0.5 + driftOffset + 1) * driftAmount * 0.3;
+    
+    groupRef.current.position.set(
+      position[0] + driftX,
+      position[1] + driftY,
+      position[2] + driftZ
+    );
     
     if (isActive) {
       // Active: Fast pulse, bright glow
       const pulse = Math.sin(time * 2) * 0.5 + 0.5;
       meshRef.current.scale.setScalar(1 + pulse * 0.1);
       glowRef.current.scale.setScalar(1.5 + pulse * 0.3);
-      
-      // Slow rotation
-      meshRef.current.rotation.y += 0.01;
     } else {
       // Idle: Slow pulse, dim glow
       const pulse = Math.sin(time * 0.5) * 0.5 + 0.5;
@@ -56,70 +80,9 @@ export const AgentNode: React.FC<AgentNodeProps> = ({
     }
   });
 
-  // Get geometry based on agent type
-
-  // Render hamsters as special case (3 spheres)
-  // BACKEND IS SOURCE OF TRUTH - backend returns 'hamsters'
-  if (agentName === 'hamsters') {
-    return (
-      <group position={position} onClick={onClick}>
-        {iconTexture && (
-          <Billboard position={[0, 0, 2]}>
-            <mesh>
-              <planeGeometry args={[2.2, 2.2]} />
-              <meshBasicMaterial map={iconTexture} transparent />
-            </mesh>
-          </Billboard>
-        )}
-        {/* Steve */}
-        <mesh ref={meshRef} position={[-0.8, 0, 0]}>
-          <sphereGeometry args={[0.6, 32, 32]} />
-          <meshStandardMaterial
-            color={colorObj}
-            emissive={colorObj}
-            emissiveIntensity={isActive ? 0.5 : 0.2}
-            metalness={0.8}
-            roughness={0.2}
-          />
-        </mesh>
-        {/* Bob */}
-        <mesh position={[0, 0, 0]}>
-          <sphereGeometry args={[0.6, 32, 32]} />
-          <meshStandardMaterial
-            color={colorObj}
-            emissive={colorObj}
-            emissiveIntensity={isActive ? 0.5 : 0.2}
-            metalness={0.8}
-            roughness={0.2}
-          />
-        </mesh>
-        {/* Carl */}
-        <mesh position={[0.8, 0, 0]}>
-          <sphereGeometry args={[0.6, 32, 32]} />
-          <meshStandardMaterial
-            color={colorObj}
-            emissive={colorObj}
-            emissiveIntensity={isActive ? 0.5 : 0.2}
-            metalness={0.8}
-            roughness={0.2}
-          />
-        </mesh>
-        {/* Glow */}
-        <mesh ref={glowRef}>
-          <sphereGeometry args={[1.5, 32, 32]} />
-          <meshBasicMaterial
-            color={colorObj}
-            transparent
-            opacity={isActive ? 0.2 : 0.1}
-          />
-        </mesh>
-      </group>
-    );
-  }
-
-  // Standard single-geometry agents
+  // All agents use the same icon-based rendering - no geometric patterns
   return (
-    <group position={position} onClick={onClick}>
+    <group ref={groupRef} position={position} onClick={onClick}>
       {iconTexture && (
         <Billboard position={[0, 0, 0]}>
           <mesh ref={meshRef}>
@@ -135,7 +98,7 @@ export const AgentNode: React.FC<AgentNodeProps> = ({
         <meshBasicMaterial
           color={colorObj}
           transparent
-          opacity={isActive ? 0.2 : 0.1}
+          opacity={isActive ? 0.25 : 0.1}
         />
       </mesh>
     </group>

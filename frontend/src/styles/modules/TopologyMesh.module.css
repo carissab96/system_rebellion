@@ -145,15 +145,13 @@
 
 /* Connection Lines */
 .connectionLine {
-  stroke: var(--rebellion-border);
   stroke-width: 2;
   fill: none;
-  opacity: 0.4;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.3s ease, stroke-width 0.3s ease;
 }
 
 .connectionLine.active {
-  opacity: 0.8;
+  stroke-width: 3;
 }
 
 /* Pulse Animation on Connection */
@@ -200,8 +198,12 @@
   border-bottom: 1px solid var(--rebellion-border);
 }
 
-.tooltipEmoji {
-  font-size: 1.5rem;
+.tooltipIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--rebellion-border);
 }
 
 .tooltipTitle {
@@ -293,6 +295,12 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
+}
+
+.legendLine {
+  width: 24px;
+  height: 3px;
+  border-radius: 1px;
 }
 
 /* Animations */

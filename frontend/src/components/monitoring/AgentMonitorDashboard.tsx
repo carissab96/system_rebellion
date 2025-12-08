@@ -28,7 +28,7 @@ interface AgentState {
 
 const AGENT_CONFIG = {
   sir_hawkington: { icon: Crown, color: '#e6ac00', displayName: 'Sir Hawkington' },
-  vic20_sage: { icon: Cpu, color: '#06b6d4', displayName: 'VIC-20 Sage' },
+  vic_20_sage: { icon: Cpu, color: '#06b6d4', displayName: 'VIC-20 Sage' },
   meth_snail: { icon: Zap, color: '#00d084', displayName: 'Terry (Meth Snail)' },
   hamsters: { icon: HardDrive, color: '#ff8c42', displayName: 'The Hamsters' },
   quantum_shadow_people: { icon: Wifi, color: '#a855f7', displayName: 'Quantum Shadow People' },
@@ -41,8 +41,8 @@ const normalizeAgentName = (name: string): string => {
   const normalized = name?.toLowerCase().replace(/[-_\s]+/g, '_');
   // Map common variations
   const nameMap: Record<string, string> = {
-    'vic_20_sage': 'vic20_sage',
-    'vic20': 'vic20_sage',
+    'vic_20_sage': 'vic_20_sage',
+    'vic20': 'vic_20_sage',
     'terry': 'meth_snail',
     'terry_meth_snail': 'meth_snail',
     'qsp': 'quantum_shadow_people',

@@ -298,7 +298,7 @@ export type AgentMemory =
 // ============================================================================
 export interface AgentMemoryUpdate {
   type: 'agent_memory_update';
-  agent_name: 'sir_hawkington' | 'the_stick' | 'meth_snail' | 'hamsters' | 'quantum_shadow_people' | 'vic20_sage';
+  agent_name: 'sir_hawkington' | 'the_stick' | 'meth_snail' | 'hamsters' | 'quantum_shadow_people' | 'vic_20_sage';
   memory: AgentMemory;
 }
 
@@ -445,9 +445,9 @@ export const AGENT_METADATA: Record<string, AgentMetadata> = {
     personality: 'Mysterious, tequila-jello-powered, inexplicably effective',
     css_class: 'qsp'
   },
-  vic20_sage: {
-    id: 'vic20_sage',
-    name: 'vic20_sage',
+  vic_20_sage: {
+    id: 'vic_20_sage',
+    name: 'vic_20_sage',
     display_name: 'VIC-20 Sage',
     color: '#06b6d4',
     description: 'Ancient wisdom and agent coordination',

@@ -206,7 +206,7 @@ export interface VIC20Event extends AgentEventMessage {
   event: {
     id: number;
     timestamp: string;
-    agent_name: 'vic20_sage';
+    agent_name: 'vic_20_sage';
     event_type: 'coordination_executed' | 'wisdom_dispensed';
     event_data: {
       coordination_target?: string;

@@ -58,10 +58,10 @@
   background: var(--error);
 }
 
-/* Agent Grid */
+/* Agent Grid - 3 columns x 2 rows */
 .agentGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: var(--space-lg);
 }
 
@@ -123,8 +123,13 @@
   gap: var(--space-sm);
 }
 
-.agentEmoji {
-  font-size: 1.5rem;
+/* Agent Icon - circular avatar */
+.agentIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--rebellion-border);
 }
 
 .healthBadge {
@@ -337,12 +342,6 @@
   color: var(--rebellion-text-dim);
 }
 
-.emptyIcon {
-  font-size: 3rem;
-  margin-bottom: var(--space-md);
-  opacity: 0.5;
-}
-
 /* Animations */
 @keyframes pulse {
   0%, 100% { opacity: 1; }
@@ -354,6 +353,12 @@
 }
 
 /* Responsive */
+@media (max-width: 1200px) {
+  .agentGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 @media (max-width: 768px) {
   .agentGrid {
     grid-template-columns: 1fr;

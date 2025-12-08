@@ -154,6 +154,10 @@ class DistributedAgentMixin:
                 self._heartbeat_loop(heartbeat_interval)
             )
             
+            # Update health to HEALTHY now that we're fully initialized
+            from ..agent_state import AgentHealth
+            await self._comm_hub.state_manager.update_health(AgentHealth.HEALTHY)
+            
             self._distributed_initialized = True
             self._dist_logger.info("✅ Distributed consciousness initialized")
             

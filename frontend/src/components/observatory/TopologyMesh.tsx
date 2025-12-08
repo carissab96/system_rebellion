@@ -26,10 +26,9 @@ import theStickIcon from '../../assets/icons/agents/the_stick.png';
 import hamstersIcon from '../../assets/icons/agents/hamsters.png';
 import qspIcon from '../../assets/icons/agents/qsp.png';
 
-// Agent configuration
+// Agent configuration - NO EMOJIS
 const AGENT_CONFIG: Record<string, {
   displayName: string;
-  emoji: string;
   icon: string;
   styleClass: string;
   color: string;
@@ -37,15 +36,13 @@ const AGENT_CONFIG: Record<string, {
 }> = {
   sir_hawkington: {
     displayName: 'Sir Hawkington',
-    emoji: '🧐',
     icon: sirHawkingtonIcon,
     styleClass: 'sirHawkington',
     color: '#e6ac00',
     role: 'System Monitor & Triage',
   },
-  vic20_sage: {
+  vic_20_sage: {
     displayName: 'VIC-20 Sage',
-    emoji: '🖥️',
     icon: vic20SageIcon,
     styleClass: 'vic20Sage',
     color: '#06b6d4',
@@ -53,7 +50,6 @@ const AGENT_CONFIG: Record<string, {
   },
   meth_snail: {
     displayName: 'Terry',
-    emoji: '🐌',
     icon: terryMethSnailIcon,
     styleClass: 'methSnail',
     color: '#00d084',
@@ -61,7 +57,6 @@ const AGENT_CONFIG: Record<string, {
   },
   the_stick: {
     displayName: 'The Stick',
-    emoji: '📏',
     icon: theStickIcon,
     styleClass: 'theStick',
     color: '#f97316',
@@ -69,7 +64,6 @@ const AGENT_CONFIG: Record<string, {
   },
   hamsters: {
     displayName: 'The Hamsters',
-    emoji: '🐹',
     icon: hamstersIcon,
     styleClass: 'hamsters',
     color: '#ff8c42',
@@ -77,7 +71,6 @@ const AGENT_CONFIG: Record<string, {
   },
   quantum_shadow_people: {
     displayName: 'QSP',
-    emoji: '👻',
     icon: qspIcon,
     styleClass: 'quantumShadowPeople',
     color: '#a855f7',
@@ -86,34 +79,34 @@ const AGENT_CONFIG: Record<string, {
 };
 
 // Node positions (percentage-based for responsive layout)
-// Hierarchy layout: Hawk at top, VIC-20 center, specialists around, Stick at bottom
+// Hierarchy: Hawk at top, Stick between Hawk/VIC-20 (logs all), VIC-20 center, specialists below
 const NODE_POSITIONS: Record<string, { x: number; y: number }> = {
-  sir_hawkington: { x: 50, y: 10 },      // Top center - the watcher
-  vic20_sage: { x: 50, y: 45 },          // Center - the coordinator
-  meth_snail: { x: 20, y: 70 },          // Bottom left
-  hamsters: { x: 50, y: 75 },            // Bottom center
-  quantum_shadow_people: { x: 80, y: 70 }, // Bottom right
-  the_stick: { x: 85, y: 35 },           // Right side - receives from all
+  sir_hawkington: { x: 50, y: 12 },      // Top center - the watcher
+  the_stick: { x: 75, y: 28 },           // Upper right - between Hawk and VIC-20, logs everything
+  vic_20_sage: { x: 50, y: 45 },          // Center - the coordinator
+  meth_snail: { x: 20, y: 75 },          // Bottom left - memory specialist
+  hamsters: { x: 50, y: 80 },            // Bottom center - consensus engine
+  quantum_shadow_people: { x: 80, y: 75 }, // Bottom right - security
 };
 
 // Connection definitions (who can talk to whom)
 const CONNECTIONS: Array<{ from: string; to: string; type: 'command' | 'report' | 'log' }> = [
   // Hawk → VIC-20 (triage alerts)
-  { from: 'sir_hawkington', to: 'vic20_sage', type: 'command' },
+  { from: 'sir_hawkington', to: 'vic_20_sage', type: 'command' },
   // Hawk → Stick (decision logs)
   { from: 'sir_hawkington', to: 'the_stick', type: 'log' },
   
   // VIC-20 → Specialists (coordination)
-  { from: 'vic20_sage', to: 'meth_snail', type: 'command' },
-  { from: 'vic20_sage', to: 'hamsters', type: 'command' },
-  { from: 'vic20_sage', to: 'quantum_shadow_people', type: 'command' },
+  { from: 'vic_20_sage', to: 'meth_snail', type: 'command' },
+  { from: 'vic_20_sage', to: 'hamsters', type: 'command' },
+  { from: 'vic_20_sage', to: 'quantum_shadow_people', type: 'command' },
   // VIC-20 → Stick (logs)
-  { from: 'vic20_sage', to: 'the_stick', type: 'log' },
+  { from: 'vic_20_sage', to: 'the_stick', type: 'log' },
   
   // Specialists → VIC-20 (reports)
-  { from: 'meth_snail', to: 'vic20_sage', type: 'report' },
-  { from: 'hamsters', to: 'vic20_sage', type: 'report' },
-  { from: 'quantum_shadow_people', to: 'vic20_sage', type: 'report' },
+  { from: 'meth_snail', to: 'vic_20_sage', type: 'report' },
+  { from: 'hamsters', to: 'vic_20_sage', type: 'report' },
+  { from: 'quantum_shadow_people', to: 'vic_20_sage', type: 'report' },
   
   // Specialists → Stick (logs)
   { from: 'meth_snail', to: 'the_stick', type: 'log' },
@@ -196,13 +189,22 @@ export const TopologyMesh: React.FC<TopologyMeshProps> = ({ onAgentClick }) => {
       );
       
       // Determine line style based on connection type
+      // Command lines: solid, bright
+      // Report lines: dashed
+      // Log lines: dotted, dimmer
       let strokeDasharray = '';
-      let opacity = 0.3;
+      let baseOpacity = 0.6;
+      let strokeColor = 'var(--vic20-cyan)';
+      
       if (conn.type === 'log') {
-        strokeDasharray = '4 4';
-        opacity = 0.2;
+        strokeDasharray = '2 4';
+        baseOpacity = 0.4;
+        strokeColor = 'var(--stick-coral)';
       } else if (conn.type === 'report') {
-        strokeDasharray = '8 4';
+        strokeDasharray = '6 3';
+        strokeColor = 'var(--snail-electric)';
+      } else if (conn.type === 'command') {
+        strokeColor = 'var(--hawkington-gold)';
       }
       
       return (
@@ -212,7 +214,8 @@ export const TopologyMesh: React.FC<TopologyMeshProps> = ({ onAgentClick }) => {
           className={`${styles.connectionLine} ${isActive ? styles.active : ''}`}
           style={{ 
             strokeDasharray,
-            opacity: isActive ? 0.8 : opacity,
+            opacity: isActive ? 1 : baseOpacity,
+            stroke: strokeColor,
           }}
         />
       );
@@ -300,7 +303,11 @@ export const TopologyMesh: React.FC<TopologyMeshProps> = ({ onAgentClick }) => {
         style={{ left: tooltipX, top: tooltipY }}
       >
         <div className={styles.tooltipHeader}>
-          <span className={styles.tooltipEmoji}>{config?.emoji}</span>
+          <img 
+            src={config?.icon} 
+            alt={config?.displayName} 
+            className={styles.tooltipIcon}
+          />
           <div>
             <div className={styles.tooltipTitle}>{config?.displayName}</div>
             <div style={{ fontSize: '0.625rem', color: 'var(--rebellion-text-dim)' }}>
@@ -310,22 +317,30 @@ export const TopologyMesh: React.FC<TopologyMeshProps> = ({ onAgentClick }) => {
         </div>
         
         <div className={styles.tooltipStats}>
-          <div className={styles.tooltipStat}>
-            <span className={styles.tooltipStatLabel}>Health</span>
-            <span className={styles.tooltipStatValue}>{agentData?.health || 'unknown'}</span>
-          </div>
-          <div className={styles.tooltipStat}>
-            <span className={styles.tooltipStatLabel}>Decisions</span>
-            <span className={styles.tooltipStatValue}>{agentData?.total_decisions || 0}</span>
-          </div>
-          <div className={styles.tooltipStat}>
-            <span className={styles.tooltipStatLabel}>Messages Sent</span>
-            <span className={styles.tooltipStatValue}>{agentData?.distributed?.total_messages_sent || 0}</span>
-          </div>
-          <div className={styles.tooltipStat}>
-            <span className={styles.tooltipStatLabel}>Messages Recv</span>
-            <span className={styles.tooltipStatValue}>{agentData?.distributed?.total_messages_received || 0}</span>
-          </div>
+          {agentData?.health && (
+            <div className={styles.tooltipStat}>
+              <span className={styles.tooltipStatLabel}>Health</span>
+              <span className={styles.tooltipStatValue}>{agentData.health}</span>
+            </div>
+          )}
+          {agentData?.total_decisions !== undefined && (
+            <div className={styles.tooltipStat}>
+              <span className={styles.tooltipStatLabel}>Decisions</span>
+              <span className={styles.tooltipStatValue}>{agentData.total_decisions}</span>
+            </div>
+          )}
+          {agentData?.distributed?.total_messages_sent !== undefined && (
+            <div className={styles.tooltipStat}>
+              <span className={styles.tooltipStatLabel}>Msgs Sent</span>
+              <span className={styles.tooltipStatValue}>{agentData.distributed.total_messages_sent}</span>
+            </div>
+          )}
+          {agentData?.distributed?.total_messages_received !== undefined && (
+            <div className={styles.tooltipStat}>
+              <span className={styles.tooltipStatLabel}>Msgs Recv</span>
+              <span className={styles.tooltipStatValue}>{agentData.distributed.total_messages_received}</span>
+            </div>
+          )}
         </div>
         
         {communications.length > 0 && (
@@ -369,13 +384,19 @@ export const TopologyMesh: React.FC<TopologyMeshProps> = ({ onAgentClick }) => {
       
       {/* Legend */}
       <div className={styles.legend}>
-        <div className={styles.legendTitle}>Message Types</div>
-        {Object.entries(MESSAGE_TYPE_COLORS).slice(0, 5).map(([type, color]) => (
-          <div key={type} className={styles.legendItem}>
-            <span className={styles.legendDot} style={{ backgroundColor: color }} />
-            <span>{type.replace(/_/g, ' ')}</span>
-          </div>
-        ))}
+        <div className={styles.legendTitle}>Connection Types</div>
+        <div className={styles.legendItem}>
+          <span className={styles.legendLine} style={{ backgroundColor: 'var(--hawkington-gold)' }} />
+          <span>Command</span>
+        </div>
+        <div className={styles.legendItem}>
+          <span className={styles.legendLine} style={{ backgroundColor: 'var(--snail-electric)', backgroundImage: 'repeating-linear-gradient(90deg, var(--snail-electric) 0, var(--snail-electric) 6px, transparent 6px, transparent 9px)' }} />
+          <span>Report</span>
+        </div>
+        <div className={styles.legendItem}>
+          <span className={styles.legendLine} style={{ backgroundColor: 'var(--stick-coral)', backgroundImage: 'repeating-linear-gradient(90deg, var(--stick-coral) 0, var(--stick-coral) 2px, transparent 2px, transparent 6px)' }} />
+          <span>Log</span>
+        </div>
       </div>
     </div>
   );
