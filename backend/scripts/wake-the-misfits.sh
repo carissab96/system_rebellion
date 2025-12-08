@@ -58,7 +58,7 @@ show_banner() {
     echo "║                                                           ║"
     echo "║        🚀 SYSTEM REBELLION - WAKE THE MISFITS 🚀         ║"
     echo "║                                                           ║"
-    echo "║   IBM ThinkPad (Redis)    → 192.168.1.216:6379          ║"
+    echo "║   Dell (Redis)            → 192.168.1.127:6379          ║"
     echo "║   HP (Backend)            → 192.168.1.199:8000           ║"
     echo "║   Dell (Frontend)         → 192.168.1.127:5173           ║"
     echo "║                                                           ║"
@@ -96,25 +96,14 @@ check_service() {
     fi
 }
 
-# Wake Redis on IBM ThinkPad
+# Wake Redis on Dell (local)
 wake_redis() {
-    echo -e "\n${CYAN}${BOLD}━━━ STEP 1: WAKING REDIS ON IBM THINKPAD ━━━${NC}"
+    echo -e "\n${CYAN}${BOLD}━━━ STEP 1: WAKING REDIS ON DELL (LOCAL) ━━━${NC}"
     
-    show_status "Redis" "info" "Checking IBM ThinkPad connection..."
+    show_status "Redis" "info" "Starting Redis server locally..."
     
-    if ! ssh -o ConnectTimeout=5 "$IBM_HOST" "echo 'connected'" > /dev/null 2>&1; then
-        show_status "Redis" "error" "Cannot connect to IBM ThinkPad"
-        return 1
-    fi
-    
-    show_status "Redis" "success" "IBM ThinkPad is reachable"
-    
-    # Copy and run the wake script
-    show_status "Redis" "info" "Starting Redis server..."
-    scp -q "$SCRIPTS_DIR/wake-redis.sh" "$IBM_HOST:/tmp/" > /dev/null 2>&1
-    
-    if ssh "$IBM_HOST" "bash /tmp/wake-redis.sh" > "$REDIS_LOG" 2>&1; then
-        show_status "Redis" "success" "Redis is UP on redis://192.168.1.216:6379"
+    if bash "$SCRIPTS_DIR/wake-redis.sh" > "$REDIS_LOG" 2>&1; then
+        show_status "Redis" "success" "Redis is UP on redis://192.168.1.127:6379"
         return 0
     else
         show_status "Redis" "error" "Failed to start Redis (check $REDIS_LOG)"
@@ -200,8 +189,8 @@ monitor_services() {
     local frontend_down_count=0
     
     while true; do
-        # Check Redis
-        if check_service "Redis" "$IBM_HOST" "redis-cli ping"; then
+        # Check Redis (local on Dell)
+        if check_service "Redis" "local" "redis-cli ping"; then
             if [ $redis_down_count -gt 0 ]; then
                 show_status "Redis" "success" "Recovered!"
                 redis_down_count=0
@@ -283,7 +272,7 @@ main() {
     echo "║                                                           ║"
     echo "║           🎉 THE REBELLION IS AWAKE! 🎉                  ║"
     echo "║                                                           ║"
-    echo "║   Redis:    redis://192.168.1.216:6379                   ║"
+    echo "║   Redis:    redis://192.168.1.127:6379                   ║"
     echo "║   Backend:  http://192.168.1.199:8000                    ║"
     echo "║   Frontend: http://localhost:5173                        ║"
     echo "║   API Docs: http://192.168.1.199:8000/docs               ║"

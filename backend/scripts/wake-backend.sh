@@ -44,12 +44,12 @@ if ! command -v uvicorn &> /dev/null; then
 fi
 
 # Set environment variables
-export REDIS_URL="redis://192.168.1.216:6379"
+export REDIS_URL="redis://192.168.1.127:6379"
 export PYTHONPATH="${BACKEND_DIR}:${PYTHONPATH}"
 
 # Check Redis connectivity
 echo "🔴 Checking Redis connection..."
-if python -c "import redis; r = redis.from_url('redis://192.168.1.216:6379'); r.ping()" 2>/dev/null; then
+if python -c "import redis; r = redis.from_url('redis://192.168.1.127:6379'); r.ping()" 2>/dev/null; then
     echo -e "${GREEN}✅ Redis connection verified!${NC}"
 else
     echo -e "${YELLOW}⚠️  Warning: Cannot connect to Redis${NC}"
