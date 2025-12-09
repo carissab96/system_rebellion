@@ -1063,7 +1063,7 @@ class HamstersDatabaseIntegration(BaseDatabaseIntegration):
                         complexity_tolerance=0.7  # Hamsters handle complex infrastructure
                     )
                     
-                    await upsert_user_pattern(self.engine, pattern)
+                    await upsert_user_pattern(self.engine, pattern, agent_name=AGENT_NAME)
                     
                     # Store pattern learned event
                     await self._store_pattern_learned_event(user_id, pattern)

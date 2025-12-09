@@ -107,14 +107,82 @@ async def upsert_global_pattern(
             "updated_at": now,
         })
 
+async def _store_pattern_vector_if_available(
+    pattern: UserLearningPattern,
+    agent_name: str
+) -> None:
+    """
+    Fire-and-forget: Store pattern vector embedding for semantic search.
+    Silently fails if embedding service unavailable.
+    """
+    try:
+        from app.services.vector_storage import get_vector_storage
+        from app.services.embedding_service import get_embedding_service
+        
+        # Build searchable text from pattern
+        pattern_text_parts = []
+        if pattern.interaction_pattern:
+            pattern_text_parts.append(f"Pattern: {json.dumps(pattern.interaction_pattern)[:300]}")
+        if pattern.learning_preference:
+            pattern_text_parts.append(f"Preference: {json.dumps(pattern.learning_preference)[:200]}")
+        if pattern.success_patterns:
+            pattern_text_parts.append(f"Success: {json.dumps(pattern.success_patterns)[:200]}")
+        
+        if not pattern_text_parts:
+            return
+        
+        pattern_text = " | ".join(pattern_text_parts)
+        
+        # Generate embedding
+        embedding_service = get_embedding_service()
+        embedding = await embedding_service.generate_embedding_async(pattern_text)
+        
+        if not embedding:
+            return
+        
+        # Determine pattern type from interaction_pattern
+        pattern_type = "user_learning"
+        if pattern.interaction_pattern and isinstance(pattern.interaction_pattern, dict):
+            pattern_type = pattern.interaction_pattern.get("pattern_type", "user_learning")
+        
+        # Store the vector
+        now = datetime.now(UTC)
+        vector_storage = get_vector_storage()
+        await vector_storage.store_pattern_vector(
+            agent_name=agent_name,
+            pattern_type=pattern_type,
+            pattern_text=pattern_text,
+            embedding=embedding,
+            first_observed=pattern.timestamp or now,
+            last_observed=now,
+            user_id=pattern.user_id,
+            metadata={
+                "pattern_id": pattern.pattern_id,
+                "most_effective_agent": pattern.most_effective_agent,
+                "complexity_tolerance": pattern.complexity_tolerance
+            },
+            confidence_score=pattern.complexity_tolerance,  # Use as proxy
+            pattern_summary=f"{pattern_type} pattern for {pattern.user_id}",
+            sql_pattern_id=pattern.pattern_id
+        )
+        
+    except Exception as e:
+        # Fire-and-forget - don't let vector storage failures affect pattern storage
+        import logging
+        logger = logging.getLogger("learning_helpers")
+        logger.debug(f"Failed to store pattern vector: {e}")
+
+
 async def upsert_user_pattern(
     engine: AsyncEngine,
-    pattern: UserLearningPattern
+    pattern: UserLearningPattern,
+    agent_name: str = "system"
 ) -> None:
     """
     Upsert a user-specific learned pattern
     
     Called after analyzing sufficient observations (e.g., every 50 CMB entries)
+    Also stores a vector embedding for semantic pattern search.
     """
     ts = pattern.timestamp or datetime.now(UTC)
     
@@ -171,6 +239,10 @@ async def upsert_user_pattern(
             "agent_effectiveness_ranking": serialize_field(pattern.agent_effectiveness_ranking),
             "collaborative_preferences": serialize_field(pattern.collaborative_preferences),
         })
+    
+    # Fire-and-forget: Store pattern vector for semantic search
+    asyncio.create_task(_store_pattern_vector_if_available(pattern, agent_name))
+
 
 async def record_learning_interaction(
     engine: AsyncEngine,

@@ -232,38 +232,51 @@ class VectorStorageService:
         self,
         agent_name: str,
         pattern_type: str,
-        pattern_description: str,
+        pattern_text: str,
         embedding: List[float],
-        pattern_data: Dict[str, Any],
         first_observed: datetime,
         last_observed: datetime,
-        pattern_name: Optional[str] = None,
-        user_id: Optional[str] = None,
+        user_id: str,
+        metadata: Optional[Dict[str, Any]] = None,
         confidence_score: Optional[float] = None,
-        success_rate: Optional[float] = None,
-        observation_count: int = 1,
-        application_count: int = 0
+        occurrence_count: int = 1,
+        pattern_summary: Optional[str] = None,
+        sql_pattern_id: Optional[str] = None
     ) -> Optional[str]:
-        """Store a pattern vector."""
+        """
+        Store a pattern vector.
+        
+        Args:
+            agent_name: Name of the agent that observed the pattern
+            pattern_type: Type of pattern (e.g., 'optimization', 'shell_spinning')
+            pattern_text: Searchable text representation of the pattern
+            embedding: 384-dim vector embedding
+            first_observed: When pattern was first seen
+            last_observed: When pattern was last seen
+            user_id: User context (required)
+            metadata: Additional pattern data as JSON
+            confidence_score: Pattern confidence (0-1)
+            occurrence_count: How many times pattern was observed
+            pattern_summary: Brief summary of the pattern
+            sql_pattern_id: Link to SQL learning tables
+        """
         try:
-            # JSON-encode pattern_data for PostgreSQL JSONB column
-            pattern_data_json = json.dumps(pattern_data) if pattern_data else None
+            # JSON-encode metadata for PostgreSQL JSONB column
+            metadata_json = json.dumps(metadata) if metadata else None
             
             async with self.engine.begin() as conn:
                 result = await conn.execute(
                     text("""
                         INSERT INTO agent_pattern_vectors (
                             vector_id, agent_name, user_id, pattern_type,
-                            pattern_name, pattern_description, first_observed,
-                            last_observed, observation_count, embedding,
-                            confidence_score, success_rate, application_count,
-                            pattern_data, embedding_model
+                            pattern_text, first_observed, last_observed,
+                            occurrence_count, embedding, confidence_score,
+                            metadata, pattern_summary, sql_pattern_id
                         ) VALUES (
                             gen_random_uuid(), :agent_name, :user_id, :pattern_type,
-                            :pattern_name, :pattern_description, :first_observed,
-                            :last_observed, :observation_count, :embedding,
-                            :confidence_score, :success_rate, :application_count,
-                            CAST(:pattern_data AS jsonb), :embedding_model
+                            :pattern_text, :first_observed, :last_observed,
+                            :occurrence_count, :embedding, :confidence_score,
+                            CAST(:metadata AS jsonb), :pattern_summary, :sql_pattern_id
                         )
                         RETURNING vector_id
                     """),
@@ -271,17 +284,15 @@ class VectorStorageService:
                         "agent_name": agent_name,
                         "user_id": user_id,
                         "pattern_type": pattern_type,
-                        "pattern_name": pattern_name,
-                        "pattern_description": pattern_description,
+                        "pattern_text": pattern_text,
                         "first_observed": first_observed,
                         "last_observed": last_observed,
-                        "observation_count": observation_count,
+                        "occurrence_count": occurrence_count,
                         "embedding": embedding,
                         "confidence_score": confidence_score,
-                        "success_rate": success_rate,
-                        "application_count": application_count,
-                        "pattern_data": pattern_data_json,
-                        "embedding_model": "all-MiniLM-L6-v2"
+                        "metadata": metadata_json,
+                        "pattern_summary": pattern_summary,
+                        "sql_pattern_id": sql_pattern_id
                     }
                 )
                 row = result.fetchone()
@@ -299,11 +310,11 @@ class VectorStorageService:
         self,
         agent_name: str,
         pattern_type: str,
-        pattern_description: str,
+        pattern_text: str,
         embedding: List[float],
-        pattern_data: Dict[str, Any],
         first_observed: datetime,
         last_observed: datetime,
+        user_id: str,
         **kwargs
     ) -> None:
         """
@@ -314,11 +325,11 @@ class VectorStorageService:
             self.store_pattern_vector(
                 agent_name=agent_name,
                 pattern_type=pattern_type,
-                pattern_description=pattern_description,
+                pattern_text=pattern_text,
                 embedding=embedding,
-                pattern_data=pattern_data,
                 first_observed=first_observed,
                 last_observed=last_observed,
+                user_id=user_id,
                 **kwargs
             )
         )
@@ -330,17 +341,36 @@ class VectorStorageService:
     
     async def store_interaction_vector(
         self,
-        from_agent: str,
+        primary_agent: str,
         interaction_type: str,
         interaction_text: str,
         embedding: List[float],
         occurred_at: datetime,
-        to_agent: Optional[str] = None,
-        priority: int = 2,
+        user_id: str,
+        secondary_agent: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
-        interaction_summary: Optional[str] = None
+        interaction_summary: Optional[str] = None,
+        outcome: Optional[str] = None,
+        success_score: Optional[float] = None,
+        sql_interaction_id: Optional[str] = None
     ) -> Optional[str]:
-        """Store an interaction vector."""
+        """
+        Store an interaction vector.
+        
+        Args:
+            primary_agent: The agent initiating the interaction
+            interaction_type: Type of interaction (e.g., 'message', 'delegation')
+            interaction_text: Searchable text representation
+            embedding: 384-dim vector embedding
+            occurred_at: When the interaction occurred
+            user_id: User context (required)
+            secondary_agent: The agent receiving the interaction (optional for broadcasts)
+            metadata: Additional interaction data as JSON
+            interaction_summary: Brief summary
+            outcome: Result of the interaction
+            success_score: How successful was the interaction (0-1)
+            sql_interaction_id: Link to SQL tables
+        """
         try:
             # JSON-encode metadata for PostgreSQL JSONB column
             metadata_json = json.dumps(metadata) if metadata else None
@@ -349,34 +379,38 @@ class VectorStorageService:
                 result = await conn.execute(
                     text("""
                         INSERT INTO agent_interaction_vectors (
-                            vector_id, from_agent, to_agent, interaction_type,
-                            occurred_at, embedding, interaction_text,
-                            interaction_summary, metadata, priority, embedding_model
+                            vector_id, primary_agent, secondary_agent, interaction_type,
+                            interaction_text, embedding, occurred_at, user_id,
+                            outcome, success_score, metadata, interaction_summary,
+                            sql_interaction_id
                         ) VALUES (
-                            gen_random_uuid(), :from_agent, :to_agent, :interaction_type,
-                            :occurred_at, :embedding, :interaction_text,
-                            :interaction_summary, CAST(:metadata AS jsonb), :priority, :embedding_model
+                            gen_random_uuid(), :primary_agent, :secondary_agent, :interaction_type,
+                            :interaction_text, :embedding, :occurred_at, :user_id,
+                            :outcome, :success_score, CAST(:metadata AS jsonb), :interaction_summary,
+                            :sql_interaction_id
                         )
                         RETURNING vector_id
                     """),
                     {
-                        "from_agent": from_agent,
-                        "to_agent": to_agent,
+                        "primary_agent": primary_agent,
+                        "secondary_agent": secondary_agent or "broadcast",
                         "interaction_type": interaction_type,
-                        "occurred_at": occurred_at,
-                        "embedding": embedding,
                         "interaction_text": interaction_text,
-                        "interaction_summary": interaction_summary,
+                        "embedding": embedding,
+                        "occurred_at": occurred_at,
+                        "user_id": user_id,
+                        "outcome": outcome,
+                        "success_score": success_score,
                         "metadata": metadata_json,
-                        "priority": priority,
-                        "embedding_model": "all-MiniLM-L6-v2"
+                        "interaction_summary": interaction_summary,
+                        "sql_interaction_id": sql_interaction_id
                     }
                 )
                 row = result.fetchone()
                 vector_id = str(row[0]) if row else None
                 
                 if vector_id:
-                    logger.info(f"✅ Stored interaction vector: {from_agent} → {to_agent or 'broadcast'}")
+                    logger.info(f"✅ Stored interaction vector: {primary_agent} → {secondary_agent or 'broadcast'}")
                 return vector_id
                 
         except Exception as e:
@@ -385,11 +419,12 @@ class VectorStorageService:
     
     async def store_interaction_vector_fire_and_forget(
         self,
-        from_agent: str,
+        primary_agent: str,
         interaction_type: str,
         interaction_text: str,
         embedding: List[float],
         occurred_at: datetime,
+        user_id: str,
         **kwargs
     ) -> None:
         """
@@ -398,15 +433,16 @@ class VectorStorageService:
         """
         asyncio.create_task(
             self.store_interaction_vector(
-                from_agent=from_agent,
+                primary_agent=primary_agent,
                 interaction_type=interaction_type,
                 interaction_text=interaction_text,
                 embedding=embedding,
                 occurred_at=occurred_at,
+                user_id=user_id,
                 **kwargs
             )
         )
-        logger.debug(f"🚀 Queued interaction vector write for {from_agent}")
+        logger.debug(f"🚀 Queued interaction vector write for {primary_agent}")
 
 
 # Global singleton instance

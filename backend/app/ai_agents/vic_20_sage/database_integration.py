@@ -758,7 +758,7 @@ class VIC20DatabaseIntegration(BaseDatabaseIntegration):
                 complexity_tolerance=pattern_analysis["complexity_score"]
             )
             
-            await upsert_user_pattern(self.engine, pattern)
+            await upsert_user_pattern(self.engine, pattern, agent_name=AGENT_NAME)
             
             # Log pattern learning event
             await self._log_pattern_learned(user_id, pattern, pattern_analysis)

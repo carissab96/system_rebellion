@@ -25,7 +25,7 @@ const AGENT_CONFIG: Record<string, { icon: string; displayName: string; styleCla
   meth_snail: { icon: terryMethSnailIcon, displayName: 'Terry', styleClass: 'methSnail' },
   the_stick: { icon: theStickIcon, displayName: 'The Stick', styleClass: 'theStick' },
   hamsters: { icon: hamstersIcon, displayName: 'The Hamsters', styleClass: 'hamsters' },
-  quantum_shadow_people: { icon: qspIcon, displavasobrassilarj     mmmmmmmyName: 'QSP', styleClass: 'quantumShadowPeople' },
+  quantum_shadow_people: { icon: qspIcon, displayName: 'QSP', styleClass: 'quantumShadowPeople' },
 };
 
 interface ActivityLog {

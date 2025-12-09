@@ -543,7 +543,7 @@ class QSPDatabaseIntegration(BaseDatabaseIntegration):
                 complexity_tolerance=0.3  # QSP explanations are rarely understood
             )
             
-            await upsert_user_pattern(self.engine, pattern)
+            await upsert_user_pattern(self.engine, pattern, agent_name=AGENT_NAME)
             
             # Store pattern learned event in CMB
             memory_id = str(uuid.uuid4())

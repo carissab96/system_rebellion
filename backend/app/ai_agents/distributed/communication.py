@@ -377,16 +377,17 @@ class MessageBus:
             # Store the vector
             vector_storage = get_vector_storage()
             await vector_storage.store_interaction_vector(
-                from_agent=message.from_agent,
-                to_agent=message.to_agent,
+                primary_agent=message.from_agent,
+                secondary_agent=message.to_agent,
                 interaction_type=message.message_type.value,
                 interaction_text=interaction_text,
                 embedding=embedding,
                 occurred_at=message.timestamp,
-                priority=message.priority.value if hasattr(message.priority, 'value') else 2,
+                user_id="system",  # Agent-to-agent communication uses system context
                 metadata={
                     "message_id": message.message_id,
-                    "payload_keys": list(message.payload.keys()) if message.payload else []
+                    "payload_keys": list(message.payload.keys()) if message.payload else [],
+                    "priority": message.priority.value if hasattr(message.priority, 'value') else 2
                 },
                 interaction_summary=f"{message.message_type.value} from {message.from_agent}"
             )

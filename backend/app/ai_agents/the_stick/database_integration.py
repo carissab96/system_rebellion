@@ -1074,7 +1074,7 @@ class StickDatabaseIntegration(BaseDatabaseIntegration):
             )
             
             # Store in user patterns table
-            await upsert_user_pattern(self.engine, learning_pattern)
+            await upsert_user_pattern(self.engine, learning_pattern, agent_name=AGENT_NAME)
             
             # Check if pattern should be promoted globally
             if pattern.confidence_score >= PATTERN_CONFIDENCE_PROMOTE:

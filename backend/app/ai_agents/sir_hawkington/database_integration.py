@@ -1002,7 +1002,7 @@ class HawkingtonDatabaseIntegration(BaseDatabaseIntegration):
                         complexity_tolerance=pattern_analysis.get("complexity_score")
                     )
                     
-                    await upsert_user_pattern(self.engine, pattern)
+                    await upsert_user_pattern(self.engine, pattern, agent_name=AGENT_NAME)
                     
                     logger.info(f"🧐 Pattern learned with {pattern_analysis['confidence']:.2f} confidence")
                     
