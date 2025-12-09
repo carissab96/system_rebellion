@@ -376,13 +376,21 @@ class MessageBus:
             
             # Store the vector
             vector_storage = get_vector_storage()
+            
+            # Parse timestamp string to datetime
+            from datetime import datetime, timezone
+            if isinstance(message.timestamp, str):
+                occurred_at = datetime.fromisoformat(message.timestamp.replace('Z', '+00:00'))
+            else:
+                occurred_at = message.timestamp
+            
             await vector_storage.store_interaction_vector(
                 primary_agent=message.from_agent,
                 secondary_agent=message.to_agent,
                 interaction_type=message.message_type.value,
                 interaction_text=interaction_text,
                 embedding=embedding,
-                occurred_at=message.timestamp,
+                occurred_at=occurred_at,
                 user_id="system",  # Agent-to-agent communication uses system context
                 metadata={
                     "message_id": message.message_id,
