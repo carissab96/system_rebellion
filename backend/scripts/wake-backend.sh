@@ -44,15 +44,17 @@ if ! command -v uvicorn &> /dev/null; then
 fi
 
 # Set environment variables
-export REDIS_URL="redis://192.168.1.127:6379"
+# REDIS_URL can be passed from wake-the-misfits.sh, defaults to IBM
+REDIS_HOST="${REDIS_HOST:-192.168.1.216}"
+export REDIS_URL="redis://${REDIS_HOST}:6379"
 export PYTHONPATH="${BACKEND_DIR}:${PYTHONPATH}"
 
 # Check Redis connectivity
-echo "🔴 Checking Redis connection..."
-if python -c "import redis; r = redis.from_url('redis://192.168.1.127:6379'); r.ping()" 2>/dev/null; then
+echo "🔴 Checking Redis connection at ${REDIS_HOST}..."
+if python -c "import redis; r = redis.from_url('redis://${REDIS_HOST}:6379'); r.ping()" 2>/dev/null; then
     echo -e "${GREEN}✅ Redis connection verified!${NC}"
 else
-    echo -e "${YELLOW}⚠️  Warning: Cannot connect to Redis${NC}"
+    echo -e "${YELLOW}⚠️  Warning: Cannot connect to Redis at ${REDIS_HOST}${NC}"
 fi
 
 # Kill any existing backend processes
@@ -62,8 +64,8 @@ sleep 2
 
 # Start the backend server
 echo -e "${GREEN}🚀 STARTING BACKEND SERVER...${NC}"
-echo "   URL: http://192.168.1.199:8000"
-echo "   Docs: http://192.168.1.199:8000/docs"
+echo "   URL: http://192.168.1.127:8000"
+echo "   Docs: http://192.168.1.127:8000/docs"
 echo ""
 
 # Run with auto-reload

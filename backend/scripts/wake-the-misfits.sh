@@ -5,8 +5,21 @@
 # Hotkeys:
 #   Super+Shift+W - Wake the rebellion
 #   Super+Shift+S - Shutdown the rebellion
+#
+# Usage:
+#   ./wake-the-misfits.sh          # Redis on IBM (default)
+#   ./wake-the-misfits.sh dell      # Redis on Dell (fallback)
 
 set -e
+
+# Redis host selection: IBM (default) or Dell (fallback when IBM fan is dying)
+if [ "$1" = "dell" ]; then
+    REDIS_LOCATION="dell"
+    REDIS_IP="192.168.1.127"
+else
+    REDIS_LOCATION="ibm"
+    REDIS_IP="192.168.1.216"
+fi
 
 # Colors for beautiful output
 RED='\033[0;31m'
@@ -53,14 +66,21 @@ cleanup() {
 # Banner
 show_banner() {
     clear
+    local redis_label
+    if [ "$REDIS_LOCATION" = "dell" ]; then
+        redis_label="Dell (Redis-fallback) → 192.168.1.127:6379"
+    else
+        redis_label="IBM ThinkPad (Redis)  → 192.168.1.216:6379"
+    fi
+    
     echo -e "${MAGENTA}${BOLD}"
     echo "╔═══════════════════════════════════════════════════════════╗"
     echo "║                                                           ║"
     echo "║        🚀 SYSTEM REBELLION - WAKE THE MISFITS 🚀         ║"
     echo "║                                                           ║"
-    echo "║   Dell (Redis)            → 192.168.1.127:6379          ║"
-    echo "║   HP (Backend)            → 192.168.1.199:8000           ║"
-    echo "║   Dell (Frontend)         → 192.168.1.127:5173           ║"
+    echo "║   $redis_label          ║"
+    echo "║   Dell (Backend+PG)      → 192.168.1.127:8000           ║"
+    echo "║   HP (Frontend)          → 192.168.1.199:5173            ║"
     echo "║                                                           ║"
     echo "╚═══════════════════════════════════════════════════════════╝"
     echo -e "${NC}"
@@ -96,49 +116,63 @@ check_service() {
     fi
 }
 
-# Wake Redis on Dell (local)
+# Wake Redis (IBM primary, Dell fallback)
 wake_redis() {
-    echo -e "\n${CYAN}${BOLD}━━━ STEP 1: WAKING REDIS ON DELL (LOCAL) ━━━${NC}"
-    
-    show_status "Redis" "info" "Starting Redis server locally..."
-    
-    if bash "$SCRIPTS_DIR/wake-redis.sh" > "$REDIS_LOG" 2>&1; then
-        show_status "Redis" "success" "Redis is UP on redis://192.168.1.127:6379"
-        return 0
+    if [ "$REDIS_LOCATION" = "dell" ]; then
+        echo -e "\n${CYAN}${BOLD}━━━ STEP 1: WAKING REDIS ON DELL (FALLBACK) ━━━${NC}"
+        show_status "Redis" "info" "Starting Redis server locally on Dell..."
+        
+        if bash "$SCRIPTS_DIR/wake-redis.sh" > "$REDIS_LOG" 2>&1; then
+            show_status "Redis" "success" "Redis is UP on redis://192.168.1.127:6379"
+            return 0
+        else
+            show_status "Redis" "error" "Failed to start Redis (check $REDIS_LOG)"
+            return 1
+        fi
     else
-        show_status "Redis" "error" "Failed to start Redis (check $REDIS_LOG)"
-        return 1
+        echo -e "\n${CYAN}${BOLD}━━━ STEP 1: WAKING REDIS ON IBM THINKPAD ━━━${NC}"
+        show_status "Redis" "info" "Checking IBM ThinkPad connection..."
+        
+        if ! ssh -o ConnectTimeout=5 "$IBM_HOST" "echo 'connected'" > /dev/null 2>&1; then
+            show_status "Redis" "error" "Cannot connect to IBM ThinkPad"
+            return 1
+        fi
+        
+        show_status "Redis" "success" "IBM ThinkPad is reachable"
+        show_status "Redis" "info" "Starting Redis server..."
+        scp -q "$SCRIPTS_DIR/wake-redis.sh" "$IBM_HOST:/tmp/" > /dev/null 2>&1
+        
+        if ssh "$IBM_HOST" "bash /tmp/wake-redis.sh" > "$REDIS_LOG" 2>&1; then
+            show_status "Redis" "success" "Redis is UP on redis://192.168.1.216:6379"
+            return 0
+        else
+            show_status "Redis" "error" "Failed to start Redis (check $REDIS_LOG)"
+            return 1
+        fi
     fi
 }
 
-# Wake Backend on HP
+# Wake Backend on Dell (local)
 wake_backend() {
-    echo -e "\n${CYAN}${BOLD}━━━ STEP 2: WAKING BACKEND ON HP ━━━${NC}"
+    echo -e "\n${CYAN}${BOLD}━━━ STEP 2: WAKING BACKEND ON DELL (LOCAL) ━━━${NC}"
     
-    show_status "Backend" "info" "Checking HP connection..."
-    
-    if ! ssh -o ConnectTimeout=5 "$HP_HOST" "echo 'connected'" > /dev/null 2>&1; then
-        show_status "Backend" "error" "Cannot connect to HP"
-        return 1
-    fi
-    
-    show_status "Backend" "success" "HP is reachable"
-    
-    # Copy the wake script
     show_status "Backend" "info" "Starting backend server..."
-    scp -q "$SCRIPTS_DIR/wake-backend.sh" "$HP_HOST:/tmp/" > /dev/null 2>&1
     
-    # Start backend in a new terminal window on HP
-    # We'll use SSH with a persistent session
-    ssh -f "$HP_HOST" "bash /tmp/wake-backend.sh > /tmp/backend.log 2>&1" &
+    # Start backend in a new xfce4-terminal (pass REDIS_HOST)
+    xfce4-terminal \
+        --title="System Rebellion - Backend" \
+        --working-directory="$BACKEND_DIR" \
+        --command="bash -c 'REDIS_HOST=$REDIS_IP bash $SCRIPTS_DIR/wake-backend.sh'" \
+        --hold &
+    
     BACKEND_PID=$!
     echo "$BACKEND_PID" > "$PID_DIR/backend.pid"
     
     # Wait for backend to be ready
     show_status "Backend" "info" "Waiting for backend to start..."
     for i in {1..30}; do
-        if ssh "$HP_HOST" "curl -s http://localhost:8000/health" > /dev/null 2>&1; then
-            show_status "Backend" "success" "Backend is UP on http://192.168.1.199:8000"
+        if curl -s http://localhost:8000/health > /dev/null 2>&1; then
+            show_status "Backend" "success" "Backend is UP on http://192.168.1.127:8000"
             return 0
         fi
         sleep 1
@@ -148,18 +182,23 @@ wake_backend() {
     return 0
 }
 
-# Wake Frontend on Dell (local)
+# Wake Frontend on HP
 wake_frontend() {
-    echo -e "\n${CYAN}${BOLD}━━━ STEP 3: WAKING FRONTEND ON DELL ━━━${NC}"
+    echo -e "\n${CYAN}${BOLD}━━━ STEP 3: WAKING FRONTEND ON HP ━━━${NC}"
     
+    show_status "Frontend" "info" "Checking HP connection..."
+    
+    if ! ssh -o ConnectTimeout=5 "$HP_HOST" "echo 'connected'" > /dev/null 2>&1; then
+        show_status "Frontend" "error" "Cannot connect to HP"
+        return 1
+    fi
+    
+    show_status "Frontend" "success" "HP is reachable"
     show_status "Frontend" "info" "Starting frontend dev server..."
     
-    # Start frontend in a new xfce4-terminal
-    xfce4-terminal \
-        --title="System Rebellion - Frontend" \
-        --working-directory="$FRONTEND_DIR" \
-        --command="bash $SCRIPTS_DIR/wake-frontend.sh" \
-        --hold &
+    # Copy and run the wake script on HP
+    scp -q "$SCRIPTS_DIR/wake-frontend.sh" "$HP_HOST:/tmp/" > /dev/null 2>&1
+    ssh -f "$HP_HOST" "bash /tmp/wake-frontend.sh > /tmp/frontend.log 2>&1" &
     
     FRONTEND_PID=$!
     echo "$FRONTEND_PID" > "$PID_DIR/frontend.pid"
@@ -167,8 +206,8 @@ wake_frontend() {
     # Wait for frontend to be ready
     show_status "Frontend" "info" "Waiting for frontend to start..."
     for i in {1..30}; do
-        if curl -s http://localhost:5173 > /dev/null 2>&1; then
-            show_status "Frontend" "success" "Frontend is UP on http://localhost:5173"
+        if curl -s http://192.168.1.199:5173 > /dev/null 2>&1; then
+            show_status "Frontend" "success" "Frontend is UP on http://192.168.1.199:5173"
             return 0
         fi
         sleep 1
@@ -189,8 +228,13 @@ monitor_services() {
     local frontend_down_count=0
     
     while true; do
-        # Check Redis (local on Dell)
-        if check_service "Redis" "local" "redis-cli ping"; then
+        # Check Redis (IBM or Dell depending on config)
+        if [ "$REDIS_LOCATION" = "dell" ]; then
+            redis_check_host="local"
+        else
+            redis_check_host="$IBM_HOST"
+        fi
+        if check_service "Redis" "$redis_check_host" "redis-cli ping"; then
             if [ $redis_down_count -gt 0 ]; then
                 show_status "Redis" "success" "Recovered!"
                 redis_down_count=0
@@ -203,8 +247,8 @@ monitor_services() {
             fi
         fi
         
-        # Check Backend
-        if check_service "Backend" "$HP_HOST" "curl -s http://localhost:8000/health"; then
+        # Check Backend (local on Dell)
+        if check_service "Backend" "local" "curl -s http://localhost:8000/health"; then
             if [ $backend_down_count -gt 0 ]; then
                 show_status "Backend" "success" "Recovered!"
                 backend_down_count=0
@@ -217,8 +261,8 @@ monitor_services() {
             fi
         fi
         
-        # Check Frontend
-        if check_service "Frontend" "local" "curl -s http://localhost:5173"; then
+        # Check Frontend (on HP)
+        if check_service "Frontend" "$HP_HOST" "curl -s http://localhost:5173"; then
             if [ $frontend_down_count -gt 0 ]; then
                 show_status "Frontend" "success" "Recovered!"
                 frontend_down_count=0
@@ -272,10 +316,10 @@ main() {
     echo "║                                                           ║"
     echo "║           🎉 THE REBELLION IS AWAKE! 🎉                  ║"
     echo "║                                                           ║"
-    echo "║   Redis:    redis://192.168.1.127:6379                   ║"
-    echo "║   Backend:  http://192.168.1.199:8000                    ║"
-    echo "║   Frontend: http://localhost:5173                        ║"
-    echo "║   API Docs: http://192.168.1.199:8000/docs               ║"
+    echo "║   Redis:    redis://${REDIS_IP}:6379                      ║"
+    echo "║   Backend:  http://192.168.1.127:8000                     ║"
+    echo "║   Frontend: http://192.168.1.199:5173                     ║"
+    echo "║   API Docs: http://192.168.1.127:8000/docs                ║"
     echo "║                                                           ║"
     echo "╚═══════════════════════════════════════════════════════════╝"
     echo -e "${NC}\n"
