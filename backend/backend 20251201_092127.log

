@@ -1,0 +1,1586 @@
+INFO:     Will watch for changes in these directories: ['/home/carissab/Documents/system_rebellion/backend']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [55319] using StatReload
+INFO:main:ℹ️ Agent events and insights now served via unified /api/ws/system-metrics endpoint
+INFO:     Started server process [55324]
+INFO:     Waiting for application startup.
+INFO:main:🚀 Starting up System Rebellion application...
+INFO:main:🎭 The Virtual Misfits are awakening...
+INFO:main:Database initialization complete
+INFO:main:✅ Database initialization successful
+INFO:app.services.memory_redis_patch.redis_client:Successfully connected to Redis
+INFO:main:🔴 Connecting to Redis at redis://192.168.1.216:6379
+INFO:main:🔴 Redis connection established with circuit breaker
+INFO:app.services.memory_redis_patch.health:Redis health monitor started
+INFO:main:📊 Redis health monitoring started
+INFO:app.services.memory_redis_patch.agent_memory_service_with_cache:🔍 Getting database session from db_getter
+INFO:app.services.memory_redis_patch.agent_memory_service_with_cache:🔍 DB session acquired: <class 'sqlalchemy.orm.session.AsyncSession'>
+INFO:app.services.memory_redis_patch.agent_memory_service_with_cache:✅ Task queue initialized with shared Redis client
+INFO:main:📋 Task queue initialized
+INFO:main:💾 Memory batch processor started
+INFO:app.services.metrics_repository:🧐 MetricsRepository singleton initialized
+INFO:main:🟡 MetricsRepository initialized
+INFO:main:✅ Core services ready - authentication available
+INFO:main:
+INFO:main:⏳ Agent initialization scheduled (will complete in background)
+INFO:     Application startup complete.
+INFO:main:================================================================================
+INFO:main:🎭 INITIALIZING AI AGENTS AND WEBSOCKETS
+INFO:main:================================================================================
+INFO:app.api.websockets:✅ Redis client set for WebSocket bridge
+INFO:main:🌉 WebSocket manager connected to Redis for agent message forwarding
+INFO:app.api.websockets:✅ WebSocketManager starting…
+INFO:app.api.websockets:🌉 Redis → WebSocket bridge started
+INFO:main:✅ Sir Hawkington websocket manager startup complete
+INFO:main:🌐 Initializing distributed agent consciousness (Redis: redis://192.168.1.216:6379)...
+INFO:SirHawkington.Brain:🧐 Sir Hawkington's distinguished brain initialized with central memory compatibility
+INFO:QuantumShadowPeople.Brain:👻 Quantum Shadow People initialized - phasing between dimensions
+INFO:app.ai_agents.distributed.distributed_agent_manager:Connecting to Redis at redis://192.168.1.216:6379
+INFO:app.api.websockets:📡 Subscribed to Redis agent channels - forwarding to WebSocket clients
+INFO:app.ai_agents.distributed.distributed_agent_manager:Initializing distributed agents...
+INFO:SirHawkington.Brain:🧐 Sir Hawkington's distinguished brain initialized with central memory compatibility
+INFO:SirHawkington.Distributed:🧐 Sir Hawkington's distributed consciousness initialized
+INFO:SirHawkington.Distributed:🧐📢 Alert escalation protocols active - Distinguished triage!
+INFO:Distributed.unknown:🌐 Initializing distributed consciousness...
+INFO:StateManager.sir_hawkington:Loaded state for sir_hawkington (uptime: 1161s)
+INFO:CommHub.sir_hawkington:Restored state for sir_hawkington
+INFO:StateManager.sir_hawkington:💾 REDIS SAVE: sir_hawkington state | decisions=105 | msgs_sent=13391 | health=starting | uptime=1162s
+INFO:StateManager.sir_hawkington:💾 REDIS SAVE: sir_hawkington state | decisions=105 | msgs_sent=13391 | health=starting | uptime=0s
+INFO:MessageBus.sir_hawkington:Subscribed to channel: agents:sir_hawkington
+INFO:MessageBus.sir_hawkington:Subscribed to channel: agents:broadcast
+INFO:MessageBus.sir_hawkington:Subscribed to channel: agents:resources:alerts
+INFO:MessageBus.sir_hawkington:Message bus started for sir_hawkington - subscribed to agent-specific, broadcast, and resource alerts
+INFO:MessageBus.sir_hawkington:Message listener started
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: agent_state_change → agents:broadcast | from=sir_hawkington | priority=2 | id=d3c6b33d
+INFO:CommHub.sir_hawkington:Communication hub initialized for sir_hawkington
+INFO:StateManager.sir_hawkington:💾 REDIS SAVE: sir_hawkington state | decisions=105 | msgs_sent=13391 | health=starting | uptime=0s
+INFO:ResourceMonitor.sir_hawkington:Set cpu threshold to 70.0%
+INFO:ResourceMonitor.sir_hawkington:Set memory threshold to 20.0%
+INFO:ResourceMonitor.sir_hawkington:Set disk threshold to 85.0%
+INFO:ResourceMonitor.sir_hawkington:Set network threshold to 80.0%
+INFO:ResourceMonitor.sir_hawkington:Set swap threshold to 50.0%
+INFO:ResourceMonitor.sir_hawkington:Resource monitor started (interval: 5s, monitoring: ['cpu', 'memory', 'disk', 'network', 'swap', 'load_average'])
+INFO:Distributed.unknown:✅ Distributed consciousness initialized
+INFO:Distributed.unknown:📬 Subscribed to coordination_request messages
+INFO:Distributed.unknown:📬 Subscribed to emergency messages
+INFO:DecisionEngine.unknown:📡 Subscribed to standard channels
+INFO:ResourceMonitor.sir_hawkington:Resource monitoring loop started
+INFO:DecisionEngine.unknown:✅ sir_hawkington decision engine initialized
+INFO:app.ai_agents.distributed.coordination:🤝 Registered coordination capability for sir_hawkington
+INFO:SirHawkington.Distributed:🧐🎯 Week 4 systems integrated - Coordination & Escalation ONLINE!
+INFO:SirHawkington.Distributed:🧐📢 Alert escalation with cooldowns - Preventing alert fatigue!
+INFO:SirHawkington.TriageEngine:🧐⚡ Sir Hawkington's Triage Engine initialized - ARISTOCRATIC REVOLUTION ACTIVATED
+INFO:SirHawkington.Database:🧐✨ Database integration initialized using shared connection pool
+INFO:SirHawkingtonTriageEngine:Connected to Redis at redis://192.168.1.216:6379
+INFO:SirHawkington.TriageEngine:Redis connected for namespace 'hawk'. Circuit state: closed
+INFO:SirHawkington.Database:🧐✨ Database integration initialized using shared connection pool
+INFO:SirHawkington.TriageEngine:🧐✨ Triage Engine initialization complete - Ready for aristocratic command
+INFO:SirHawkington.TriageEngine:🧐📡 Communication hub connected - Triage broadcasting enabled
+INFO:SirHawkington.Distributed:🧐📡 Triage engine connected to distributed consciousness
+INFO:app.api.endpoints.distributed_agents:Registered agent for API: sir_hawkington
+INFO:app.ai_agents.distributed.distributed_agent_manager:✅ Sir Hawkington initialized
+INFO:MethSnail.Distributed:🐌💨 Terry the Meth Snail's distributed consciousness initialized - GOTTA GO FAST!
+INFO:MethSnail.Distributed:🐌🧠 Choice engine online - I'm FASTER than VIC-20's recommendations!
+INFO:MethSnail.Distributed:🐌📊 Override learning active - Tracking when I'm right!
+INFO:Distributed.unknown:🌐 Initializing distributed consciousness...
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=d19c4b7e
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=21.8%, MEM=18.2%
+INFO:StateManager.meth_snail:Loaded state for meth_snail (uptime: 1162s)
+INFO:CommHub.meth_snail:Restored state for meth_snail
+INFO:StateManager.meth_snail:💾 REDIS SAVE: meth_snail state | decisions=128 | msgs_sent=37 | health=starting | uptime=1162s
+INFO:StateManager.meth_snail:💾 REDIS SAVE: meth_snail state | decisions=128 | msgs_sent=37 | health=starting | uptime=0s
+INFO:MessageBus.meth_snail:Subscribed to channel: agents:meth_snail
+INFO:MessageBus.meth_snail:Subscribed to channel: agents:broadcast
+INFO:MessageBus.meth_snail:Subscribed to channel: agents:resources:alerts
+INFO:MessageBus.meth_snail:Message bus started for meth_snail - subscribed to agent-specific, broadcast, and resource alerts
+INFO:MessageBus.meth_snail:Message listener started
+INFO:MessageBus.sir_hawkington:📨 REDIS SUB: agent_state_change ← from=meth_snail | to=broadcast | priority=2 | id=34634832
+INFO:MessageBus.meth_snail:📡 REDIS PUB: agent_state_change → agents:broadcast | from=meth_snail | priority=2 | id=34634832
+INFO:CommHub.meth_snail:Communication hub initialized for meth_snail
+INFO:StateManager.meth_snail:💾 REDIS SAVE: meth_snail state | decisions=128 | msgs_sent=37 | health=starting | uptime=0s
+INFO:Distributed.unknown:✅ Distributed consciousness initialized
+INFO:Distributed.unknown:📬 Subscribed to coordination_request messages
+INFO:Distributed.unknown:📬 Subscribed to emergency messages
+INFO:DecisionEngine.unknown:📡 Subscribed to standard channels
+INFO:DecisionEngine.unknown:✅ meth_snail decision engine initialized
+INFO:MethSnail.Database.Integration:🐌💨 Database integration initialized using shared connection pool (OPTIMIZED!)
+INFO:MethSnail.Distributed:🐌💾 Database integration initialized
+INFO:app.ai_agents.distributed.coordination:🤝 Registered coordination capability for meth_snail
+INFO:MethSnail.Distributed:🐌🎯 Week 4 systems integrated - Coordination & Verification ONLINE!
+INFO:MethSnail.Distributed:🐌📊 Learning when I'm FASTER than VIC-20!
+INFO:MethSnail.Distributed:🐌📡 Subscribed to VIC-20 coordination via base class - Ready to optimize!
+INFO:app.api.endpoints.distributed_agents:Registered agent for API: meth_snail
+INFO:app.ai_agents.distributed.distributed_agent_manager:✅ Terry the Meth Snail initialized
+INFO:Hamsters.Brain:🐹🍺 The Hamsters (Steve, Bob, and Carl) are ready for infrastructure chaos!
+INFO:Hamsters.Distributed:🐹🐹🐹 Steve, Bob, and Carl's distributed consciousness initialized - TELEPATHIC LINK ACTIVE!
+INFO:Hamsters.Distributed:🐹🧠 Choice engine online - Ready to evaluate VIC-20's recommendations!
+INFO:Hamsters.Distributed:🐹🍺 Beer level: OPTIMAL - Peak performance achieved!
+INFO:Distributed.unknown:🌐 Initializing distributed consciousness...
+INFO:StateManager.hamsters:Loaded state for hamsters (uptime: 1162s)
+INFO:CommHub.hamsters:Restored state for hamsters
+INFO:StateManager.hamsters:💾 REDIS SAVE: hamsters state | decisions=86 | msgs_sent=14 | health=starting | uptime=1162s
+INFO:StateManager.hamsters:💾 REDIS SAVE: hamsters state | decisions=86 | msgs_sent=14 | health=starting | uptime=0s
+INFO:MessageBus.hamsters:Subscribed to channel: agents:hamsters
+INFO:MessageBus.hamsters:Subscribed to channel: agents:broadcast
+INFO:MessageBus.hamsters:Subscribed to channel: agents:resources:alerts
+INFO:MessageBus.hamsters:Message bus started for hamsters - subscribed to agent-specific, broadcast, and resource alerts
+INFO:MessageBus.hamsters:Message listener started
+INFO:MessageBus.sir_hawkington:📨 REDIS SUB: agent_state_change ← from=hamsters | to=broadcast | priority=2 | id=74d916ed
+INFO:MessageBus.meth_snail:📨 REDIS SUB: agent_state_change ← from=hamsters | to=broadcast | priority=2 | id=74d916ed
+INFO:MessageBus.hamsters:📡 REDIS PUB: agent_state_change → agents:broadcast | from=hamsters | priority=2 | id=74d916ed
+INFO:CommHub.hamsters:Communication hub initialized for hamsters
+INFO:StateManager.hamsters:💾 REDIS SAVE: hamsters state | decisions=86 | msgs_sent=14 | health=starting | uptime=0s
+INFO:Distributed.unknown:✅ Distributed consciousness initialized
+INFO:Distributed.unknown:📬 Subscribed to coordination_request messages
+INFO:Distributed.unknown:📬 Subscribed to emergency messages
+INFO:DecisionEngine.unknown:📡 Subscribed to standard channels
+INFO:DecisionEngine.unknown:✅ hamsters decision engine initialized
+INFO:app.ai_agents.distributed.coordination:🤝 Registered coordination capability for hamsters
+INFO:Hamsters.Distributed:🐹🎯 Week 4 systems integrated - Coordination & Verification ONLINE!
+INFO:Hamsters.Distributed:🐹🤝 Telepathic consensus ready for team coordination!
+INFO:Hamsters.Distributed:🐹📡 Subscribed to VIC-20 coordination via base class - Telepathic consensus ready!
+INFO:app.api.endpoints.distributed_agents:Registered agent for API: hamsters
+INFO:app.ai_agents.distributed.distributed_agent_manager:✅ The Hamsters initialized (Steve, Bob and Carl)
+INFO:QuantumShadowPeople.Brain:👻 Quantum Shadow People initialized - phasing between dimensions
+INFO:QuantumShadowPeople.Distributed:👥🔮 Quantum Shadow People's distributed consciousness initialized - QUANTUM SURVEILLANCE ACTIVE!
+INFO:QuantumShadowPeople.Distributed:👥🧠 Choice engine online - TRUST NO ONE, not even VIC-20!
+INFO:QuantumShadowPeople.Distributed:👥🔒 Paranoid coordination protocols active - Security is NOT negotiable!
+INFO:Distributed.unknown:🌐 Initializing distributed consciousness...
+INFO:StateManager.quantum_shadow_people:Loaded state for quantum_shadow_people (uptime: 1161s)
+INFO:CommHub.quantum_shadow_people:Restored state for quantum_shadow_people
+INFO:StateManager.quantum_shadow_people:💾 REDIS SAVE: quantum_shadow_people state | decisions=85 | msgs_sent=4627 | health=starting | uptime=1161s
+INFO:StateManager.quantum_shadow_people:💾 REDIS SAVE: quantum_shadow_people state | decisions=85 | msgs_sent=4627 | health=starting | uptime=0s
+INFO:MessageBus.quantum_shadow_people:Subscribed to channel: agents:quantum_shadow_people
+INFO:MessageBus.quantum_shadow_people:Subscribed to channel: agents:broadcast
+INFO:MessageBus.quantum_shadow_people:Subscribed to channel: agents:resources:alerts
+INFO:MessageBus.quantum_shadow_people:Message bus started for quantum_shadow_people - subscribed to agent-specific, broadcast, and resource alerts
+INFO:MessageBus.quantum_shadow_people:Message listener started
+INFO:MessageBus.sir_hawkington:📨 REDIS SUB: agent_state_change ← from=quantum_shadow_people | to=broadcast | priority=2 | id=da2c8450
+INFO:MessageBus.hamsters:📨 REDIS SUB: agent_state_change ← from=quantum_shadow_people | to=broadcast | priority=2 | id=da2c8450
+INFO:MessageBus.meth_snail:📨 REDIS SUB: agent_state_change ← from=quantum_shadow_people | to=broadcast | priority=2 | id=da2c8450
+INFO:MessageBus.quantum_shadow_people:📡 REDIS PUB: agent_state_change → agents:broadcast | from=quantum_shadow_people | priority=2 | id=da2c8450
+INFO:CommHub.quantum_shadow_people:Communication hub initialized for quantum_shadow_people
+INFO:StateManager.quantum_shadow_people:💾 REDIS SAVE: quantum_shadow_people state | decisions=85 | msgs_sent=4627 | health=starting | uptime=0s
+INFO:Distributed.unknown:✅ Distributed consciousness initialized
+INFO:Distributed.unknown:📬 Subscribed to coordination_request messages
+INFO:Distributed.unknown:📬 Subscribed to emergency messages
+INFO:DecisionEngine.unknown:📡 Subscribed to standard channels
+INFO:DecisionEngine.unknown:✅ quantum_shadow_people decision engine initialized
+INFO:app.ai_agents.distributed.coordination:🤝 Registered coordination capability for quantum_shadow_people
+INFO:QuantumShadowPeople.Distributed:👻🎯 Week 4 systems integrated - Coordination & Verification ONLINE!
+INFO:QuantumShadowPeople.Distributed:👻🕵️ Paranoia levels optimal - Trust no one!
+INFO:QuantumShadowPeople.Distributed:👻📡 Subscribed to VIC-20 coordination via base class - Paranoid monitoring active!
+INFO:app.api.endpoints.distributed_agents:Registered agent for API: quantum_shadow_people
+INFO:app.ai_agents.distributed.distributed_agent_manager:✅ Quantum Shadow People initialized
+INFO:TheStick.Distributed:📏✨ The Stick's distributed consciousness initialized - COMPLIANCE PROTOCOLS ACTIVE!
+INFO:TheStick.Distributed:📏😰 Anxiety-driven hypervigilance ENABLED - Nothing escapes The Stick!
+INFO:TheStick.Distributed:📏🚨 Bob detection protocols ACTIVE - Paper bags at the ready!
+INFO:Distributed.unknown:🌐 Initializing distributed consciousness...
+INFO:StateManager.the_stick:Loaded state for the_stick (uptime: 1161s)
+INFO:CommHub.the_stick:Restored state for the_stick
+INFO:StateManager.the_stick:💾 REDIS SAVE: the_stick state | decisions=132 | msgs_sent=15 | health=starting | uptime=1161s
+INFO:StateManager.the_stick:💾 REDIS SAVE: the_stick state | decisions=132 | msgs_sent=15 | health=starting | uptime=0s
+INFO:MessageBus.the_stick:Subscribed to channel: agents:the_stick
+INFO:MessageBus.the_stick:Subscribed to channel: agents:broadcast
+INFO:MessageBus.the_stick:Subscribed to channel: agents:resources:alerts
+INFO:MessageBus.the_stick:Message bus started for the_stick - subscribed to agent-specific, broadcast, and resource alerts
+INFO:MessageBus.the_stick:Message listener started
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: agent_state_change ← from=the_stick | to=broadcast | priority=2 | id=a004c9b5
+INFO:MessageBus.sir_hawkington:📨 REDIS SUB: agent_state_change ← from=the_stick | to=broadcast | priority=2 | id=a004c9b5
+INFO:MessageBus.hamsters:📨 REDIS SUB: agent_state_change ← from=the_stick | to=broadcast | priority=2 | id=a004c9b5
+INFO:MessageBus.meth_snail:📨 REDIS SUB: agent_state_change ← from=the_stick | to=broadcast | priority=2 | id=a004c9b5
+INFO:MessageBus.the_stick:📡 REDIS PUB: agent_state_change → agents:broadcast | from=the_stick | priority=2 | id=a004c9b5
+INFO:CommHub.the_stick:Communication hub initialized for the_stick
+INFO:StateManager.the_stick:💾 REDIS SAVE: the_stick state | decisions=132 | msgs_sent=15 | health=starting | uptime=0s
+INFO:Distributed.unknown:✅ Distributed consciousness initialized
+INFO:Distributed.unknown:📬 Subscribed to coordination_request messages
+INFO:Distributed.unknown:📬 Subscribed to emergency messages
+INFO:DecisionEngine.unknown:📡 Subscribed to standard channels
+INFO:DecisionEngine.unknown:✅ the_stick decision engine initialized
+INFO:TheStick.Distributed:📏💾 Database integration initialized
+INFO:TheStick.Distributed:📏🎯 Week 4 systems integrated - Verification & Escalation tracking ONLINE!
+INFO:TheStick.Distributed:📏📋 The Stick will track EVERYTHING! (Anxiety-driven hypervigilance activated)
+INFO:Distributed.unknown:📬 Subscribed to decision_log messages
+INFO:TheStick.Distributed:📏📡 The Stick subscribed to DECISION_LOG - Universal logger ACTIVE!
+INFO:TheStick.Distributed:📏😰 *nervously clutches paper bag* SO MANY DECISIONS TO TRACK!
+INFO:app.api.endpoints.distributed_agents:Registered agent for API: the_stick
+INFO:app.ai_agents.distributed.distributed_agent_manager:✅ The Stick initialized
+INFO:VIC20Sage.Distributed:🖥️✨ VIC-20 Sage's distributed consciousness initialized - ORCHESTRATION PROTOCOLS ACTIVE!
+INFO:VIC20Sage.Distributed:🖥️💡 Recommendation engine online - READY TO GUIDE AGENTS!
+INFO:VIC20Sage.Distributed:🖥️🛡️ Bob mediation protocols active - STICK PROTECTION ENABLED!
+INFO:Distributed.unknown:🌐 Initializing distributed consciousness...
+INFO:StateManager.vic_20_sage:Loaded state for vic_20_sage (uptime: 2615s)
+INFO:CommHub.vic_20_sage:Restored state for vic_20_sage
+INFO:StateManager.vic_20_sage:💾 REDIS SAVE: vic_20_sage state | decisions=102 | msgs_sent=69 | health=starting | uptime=2615s
+INFO:StateManager.vic_20_sage:💾 REDIS SAVE: vic_20_sage state | decisions=102 | msgs_sent=69 | health=starting | uptime=0s
+INFO:MessageBus.vic_20_sage:Subscribed to channel: agents:vic_20_sage
+INFO:MessageBus.vic_20_sage:Subscribed to channel: agents:broadcast
+INFO:MessageBus.vic_20_sage:Subscribed to channel: agents:resources:alerts
+INFO:MessageBus.vic_20_sage:Message bus started for vic_20_sage - subscribed to agent-specific, broadcast, and resource alerts
+INFO:MessageBus.vic_20_sage:Message listener started
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: agent_state_change ← from=vic_20_sage | to=broadcast | priority=2 | id=af1961e2
+INFO:MessageBus.sir_hawkington:📨 REDIS SUB: agent_state_change ← from=vic_20_sage | to=broadcast | priority=2 | id=af1961e2
+INFO:MessageBus.the_stick:📨 REDIS SUB: agent_state_change ← from=vic_20_sage | to=broadcast | priority=2 | id=af1961e2
+INFO:MessageBus.hamsters:📨 REDIS SUB: agent_state_change ← from=vic_20_sage | to=broadcast | priority=2 | id=af1961e2
+INFO:MessageBus.meth_snail:📨 REDIS SUB: agent_state_change ← from=vic_20_sage | to=broadcast | priority=2 | id=af1961e2
+INFO:MessageBus.vic_20_sage:📡 REDIS PUB: agent_state_change → agents:broadcast | from=vic_20_sage | priority=2 | id=af1961e2
+INFO:CommHub.vic_20_sage:Communication hub initialized for vic_20_sage
+INFO:StateManager.vic_20_sage:💾 REDIS SAVE: vic_20_sage state | decisions=102 | msgs_sent=69 | health=starting | uptime=0s
+INFO:Distributed.unknown:✅ Distributed consciousness initialized
+INFO:Distributed.unknown:📬 Subscribed to coordination_request messages
+INFO:Distributed.unknown:📬 Subscribed to emergency messages
+INFO:DecisionEngine.unknown:📡 Subscribed to standard channels
+INFO:DecisionEngine.unknown:✅ vic_20_sage decision engine initialized
+INFO:app.ai_agents.distributed.coordination:🤝 Registered coordination capability for vic_20_sage
+INFO:VIC20Sage.Distributed:🖥️🎯 Week 4 systems integrated - Coordination, Escalation, Prediction ONLINE!
+INFO:Distributed.unknown:📬 Subscribed to triage_alert messages
+INFO:VIC20Sage.Distributed:🖥️📡 VIC-20 subscribed to TRIAGE_ALERT from Sir Hawkington - Coordination ready!
+INFO:app.api.endpoints.distributed_agents:Registered agent for API: vic_20_sage
+INFO:app.ai_agents.distributed.distributed_agent_manager:✅ VIC-20 Sage initialized
+INFO:app.ai_agents.distributed.distributed_agent_manager:🔍 Behavior tracker started (research recording active)
+INFO:app.ai_agents.distributed.distributed_agent_manager:🎯 Sir Hawkington will handle all system monitoring and triage
+INFO:app.ai_agents.distributed.distributed_agent_manager:🌐 All 6 distributed agents initialized!
+INFO:main:✅ Distributed agents initialized:
+INFO:main:  🧐 Sir Hawkington - CPU Monitor
+INFO:main:  🐌💨 Terry the Meth Snail - Memory Monitor
+INFO:main:  🐹 The Hamsters - Disk Monitor (Steve, Bob and Carl)
+INFO:main:  👻 Quantum Shadow People - Network Monitor
+INFO:main:  📏 The Stick - Learning Coordinator
+INFO:main:  🖥️ VIC-20 Sage - Orchestrator
+INFO:MethSnail.Background:🚀 All background tasks started:
+INFO:MethSnail.Background:  🐌 Metrics aggregation engine
+INFO:MethSnail.Background:  🐌💨 Real-time optimization engine
+INFO:MethSnail.Background:  🏥 System health monitor
+INFO:MethSnail.Background:  🧠 Consciousness checkpoint monitor (every 5 minutes)
+INFO:main:🔄 Background tasks started:
+INFO:main:  🐌 Metrics aggregation engine running
+INFO:main:  🐌💨 Real-time optimization engine engaged
+INFO:main:  🏥 System health monitor active
+INFO:main:  📊 Memory bank metadata scheduler running
+INFO:main:================================================================================
+INFO:main:🎉 ALL SYSTEMS OPERATIONAL
+INFO:main:================================================================================
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=d9bc4999
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=d9bc4999
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=d9bc4999
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=d9bc4999
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=d9bc4999
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=d9bc4999
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=12.5%, MEM=18.3%
+INFO:MethSnail.Background:🐌💨 Meth Snail real-time optimization engine ENGAGED!
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=3ae22a59
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=3ae22a59
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=3ae22a59
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=3ae22a59
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=3ae22a59
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=3ae22a59
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=13.4%, MEM=18.3%
+INFO:MethSnail.Background:🏥 System health monitor activated
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=98c953e7
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=98c953e7
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=98c953e7
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=98c953e7
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=98c953e7
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=98c953e7
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=13.6%, MEM=26.2%
+WARNING:app.ai_agents.distributed.alert_escalation:🚨 INFO Alert: sir_hawkington: MEMORY at 26.2% (threshold: 20.0%) (Reason: Cooldown period (30m) expired)
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=2 | id=386d0fe9
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=2 | id=386d0fe9
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=2 | id=386d0fe9
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=2 | id=386d0fe9
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=2 | id=386d0fe9
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=2 | id=386d0fe9
+WARNING:SirHawkington.Distributed:🧐⚠️ Sir Hawkington observes elevated MEMORY usage: 26.2% (threshold: 20.0%) - Severity: info
+INFO:SirHawkington.Distributed:🧐🎯 Triage assessment: severity=info, confidence=1.00, escalate_to_vic20=True
+INFO:StateManager.sir_hawkington:💾 REDIS SAVE: sir_hawkington state | decisions=106 | msgs_sent=13391 | health=starting | uptime=16s
+INFO:StateManager.sir_hawkington:📊 DECISION: sir_hawkington | type=triage_memory | confidence=1.00 | id=sir_hawk
+INFO:Distributed.unknown:📊 Decision recorded: triage_memory (confidence: 1.00)
+INFO:MessageBus.the_stick:📨 REDIS SUB: decision_log ← from=sir_hawkington | to=the_stick | priority=10 | id=d7fb84a5
+INFO:TheStick.Distributed:📏📬 DECISION_LOG from unknown: triage_decision 
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: decision_log → agents:the_stick | from=sir_hawkington | priority=10 | id=d7fb84a5
+INFO:StateManager.sir_hawkington:💾 REDIS SAVE: sir_hawkington state | decisions=106 | msgs_sent=13392 | health=starting | uptime=16s
+INFO:SirHawkington.Distributed:🧐📨 Escalating memory alert to VIC-20 for coordination...
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: triage_alert ← from=sir_hawkington | to=vic_20_sage | priority=5 | id=8fdffc38
+INFO:VIC20Sage.Distributed:🖥️📬 TRIAGE ALERT from Sir Hawkington: memory at 26.2% (threshold: 20.0%) severity=info, confidence=1.00
+INFO:VIC20Sage.Distributed:🖥️💡 Routing to meth_snail: clear_cache (confidence: 0.90)
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: triage_alert → agents:vic_20_sage | from=sir_hawkington | priority=5 | id=8fdffc38
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: coordination_request ← from=vic_20_sage | to=broadcast | priority=5 | id=2130933d
+INFO:QuantumShadowPeople.Distributed:👥📬 Coordination request from VIC-20: unknown (priority: normal)
+INFO:MessageBus.sir_hawkington:📨 REDIS SUB: coordination_request ← from=vic_20_sage | to=broadcast | priority=5 | id=2130933d
+INFO:MessageBus.the_stick:📨 REDIS SUB: coordination_request ← from=vic_20_sage | to=broadcast | priority=5 | id=2130933d
+INFO:TheStick.Distributed:📏📋 Tracking coordination request: unknown
+INFO:MessageBus.hamsters:📨 REDIS SUB: coordination_request ← from=vic_20_sage | to=broadcast | priority=5 | id=2130933d
+INFO:Hamsters.Distributed:🐹📬 Coordination request from VIC-20: unknown (priority: normal)
+INFO:MessageBus.meth_snail:📨 REDIS SUB: coordination_request ← from=vic_20_sage | to=broadcast | priority=5 | id=2130933d
+INFO:MethSnail.Distributed:🐌📬 COORDINATION REQUEST from VIC-20: memory at 26.2% - VIC-20 suggests: clear_cache
+INFO:MethSnail.Distributed:🐌💨 NAH! VIC-20 is too SLOW! *chugs energy drink* MY WAY!
+INFO:MethSnail.Distributed:🐌💨💨 Executing emergency_cache_clear! *spins shell frantically*
+INFO:app.ai_agents.distributed.action_verification:📊 Started verification for system/ActionType.CACHE_CLEAR (ID: cache_clear_system_1764602515.062468_1764602515.062492)
+INFO:app.ai_agents.distributed.system_actions:🐌💨 Cache Clear: Collected 0 objects
+INFO:StateManager.sir_hawkington:💾 REDIS SAVE: sir_hawkington state | decisions=106 | msgs_sent=13393 | health=starting | uptime=17s
+INFO:SirHawkington.Distributed:🧐📨 Triage alert sent to VIC-20: memory at 26.2% (severity=info, confidence=1.00)
+WARNING:ResourceMonitor.sir_hawkington:Resource alert: memory at 26.2% (threshold: 20.0%, severity: info)
+INFO:MessageBus.vic_20_sage:📡 REDIS PUB: coordination_request → agents:broadcast | from=vic_20_sage | priority=5 | id=2130933d
+INFO:StateManager.vic_20_sage:💾 REDIS SAVE: vic_20_sage state | decisions=102 | msgs_sent=70 | health=starting | uptime=17s
+INFO:Distributed.unknown:📢 BROADCAST: coordination_request | from=vic_20_sage | priority=5
+WARNING:VIC20Sage.Distributed:🖥️⚠️ Database integration not available
+INFO:MessageBus.hamsters:📨 REDIS SUB: decision_log ← from=vic_20_sage | to=broadcast | priority=5 | id=233aed08
+INFO:MessageBus.sir_hawkington:📨 REDIS SUB: decision_log ← from=vic_20_sage | to=broadcast | priority=5 | id=233aed08
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: decision_log ← from=vic_20_sage | to=broadcast | priority=5 | id=233aed08
+INFO:StateManager.the_stick:💾 REDIS SAVE: the_stick state | decisions=133 | msgs_sent=15 | health=starting | uptime=17s
+INFO:StateManager.the_stick:📊 DECISION: the_stick | type=coordination_compliance_tracked | confidence=1.00 | id=the_stic
+INFO:Distributed.unknown:📊 Decision recorded: coordination_compliance_tracked (confidence: 1.00)
+INFO:MessageBus.the_stick:📨 REDIS SUB: decision_log ← from=vic_20_sage | to=broadcast | priority=5 | id=233aed08
+INFO:TheStick.Distributed:📏📬 DECISION_LOG from vic_20_sage: coordination 
+INFO:MessageBus.vic_20_sage:📡 REDIS PUB: decision_log → agents:broadcast | from=vic_20_sage | priority=5 | id=233aed08
+INFO:StateManager.vic_20_sage:💾 REDIS SAVE: vic_20_sage state | decisions=102 | msgs_sent=71 | health=starting | uptime=17s
+INFO:Distributed.unknown:📢 BROADCAST: decision_log | from=vic_20_sage | priority=5
+INFO:app.ai_agents.distributed.action_verification:❌ Action verified: system/ActionType.CACHE_CLEAR - COUNTERPRODUCTIVE (-0.5% improvement, score: 0/100)
+INFO:MethSnail.Distributed:🐌✅ Cache cleared! Freed -38.30 MB! Memory: 26.7% → 27.2% - GOTTA GO FAST!
+WARNING:MethSnail.Distributed:🐌⚠️ Maybe VIC-20 was right... (Success rate: 0/1)
+ERROR:MethSnail.Distributed:🐌💥 Error writing action result: Direct session access not supported - use async for session in self.db_getter()
+Traceback (most recent call last):
+  File "/home/carissab/Documents/system_rebellion/backend/app/ai_agents/meth_snail/database_integration.py", line 600, in store_decision
+    event_type=EventTypes.DECISION_MADE.value,
+               ^^^^^^^^^^
+NameError: name 'EventTypes' is not defined
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/carissab/Documents/system_rebellion/backend/app/ai_agents/meth_snail/distributed_meth_snail.py", line 475, in _write_action_result
+    await self.db_integration.store_decision(
+    ...<2 lines>...
+    )
+  File "/home/carissab/Documents/system_rebellion/backend/app/ai_agents/meth_snail/database_integration.py", line 642, in store_decision
+    await self.session.rollback()
+          ^^^^^^^^^^^^
+  File "/home/carissab/Documents/system_rebellion/backend/app/ai_agents/meth_snail/database_integration.py", line 94, in session
+    raise RuntimeError("Direct session access not supported - use async for session in self.db_getter()")
+RuntimeError: Direct session access not supported - use async for session in self.db_getter()
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: action_report ← from=meth_snail | to=broadcast | priority=5 | id=5c34e450
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: action_report ← from=meth_snail | to=broadcast | priority=5 | id=5c34e450
+INFO:MessageBus.the_stick:📨 REDIS SUB: action_report ← from=meth_snail | to=broadcast | priority=5 | id=5c34e450
+INFO:MessageBus.hamsters:📨 REDIS SUB: action_report ← from=meth_snail | to=broadcast | priority=5 | id=5c34e450
+INFO:MessageBus.sir_hawkington:📨 REDIS SUB: action_report ← from=meth_snail | to=broadcast | priority=5 | id=5c34e450
+INFO:MessageBus.meth_snail:📡 REDIS PUB: action_report → agents:broadcast | from=meth_snail | priority=5 | id=5c34e450
+INFO:StateManager.meth_snail:💾 REDIS SAVE: meth_snail state | decisions=128 | msgs_sent=38 | health=starting | uptime=17s
+INFO:Distributed.unknown:📢 BROADCAST: action_report | from=meth_snail | priority=5
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: decision_log ← from=meth_snail | to=broadcast | priority=5 | id=78aceb42
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: decision_log ← from=meth_snail | to=broadcast | priority=5 | id=78aceb42
+INFO:MessageBus.the_stick:📨 REDIS SUB: decision_log ← from=meth_snail | to=broadcast | priority=5 | id=78aceb42
+INFO:TheStick.Distributed:📏📬 DECISION_LOG from meth_snail: specialist_action 
+INFO:MessageBus.hamsters:📨 REDIS SUB: decision_log ← from=meth_snail | to=broadcast | priority=5 | id=78aceb42
+INFO:MessageBus.sir_hawkington:📨 REDIS SUB: decision_log ← from=meth_snail | to=broadcast | priority=5 | id=78aceb42
+INFO:MessageBus.meth_snail:📡 REDIS PUB: decision_log → agents:broadcast | from=meth_snail | priority=5 | id=78aceb42
+INFO:StateManager.meth_snail:💾 REDIS SAVE: meth_snail state | decisions=128 | msgs_sent=39 | health=starting | uptime=17s
+INFO:Distributed.unknown:📢 BROADCAST: decision_log | from=meth_snail | priority=5
+INFO:MessageBus.meth_snail:📨 REDIS SUB: decision_log ← from=vic_20_sage | to=broadcast | priority=5 | id=233aed08
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=1a313c59
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=1a313c59
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=1a313c59
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=1a313c59
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=1a313c59
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=1a313c59
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=12.5%, MEM=29.3%
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=dbd82a37
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=dbd82a37
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=dbd82a37
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=dbd82a37
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=dbd82a37
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=dbd82a37
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=13.7%, MEM=29.3%
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=sir_hawkington | priority=10 | id=0d9ab610
+INFO:StateManager.sir_hawkington:💾 REDIS SAVE: sir_hawkington state | decisions=106 | msgs_sent=13393 | health=starting | uptime=30s
+INFO:MessageBus.meth_snail:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=meth_snail | priority=10 | id=ead301ba
+INFO:StateManager.meth_snail:💾 REDIS SAVE: meth_snail state | decisions=128 | msgs_sent=39 | health=starting | uptime=30s
+INFO:MessageBus.hamsters:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=hamsters | priority=10 | id=3514c9cf
+INFO:StateManager.hamsters:💾 REDIS SAVE: hamsters state | decisions=86 | msgs_sent=14 | health=starting | uptime=30s
+INFO:MessageBus.quantum_shadow_people:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=quantum_shadow_people | priority=10 | id=625d3337
+INFO:MessageBus.the_stick:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=the_stick | priority=10 | id=b97e7beb
+INFO:StateManager.quantum_shadow_people:💾 REDIS SAVE: quantum_shadow_people state | decisions=85 | msgs_sent=4627 | health=starting | uptime=30s
+INFO:StateManager.the_stick:💾 REDIS SAVE: the_stick state | decisions=133 | msgs_sent=15 | health=starting | uptime=30s
+INFO:MethSnail.Background:🐌 Meth Snail awakens... optimization protocols initiated
+INFO:MethSnail.Background:🐌 Meth Snail hibernating for 2271s until next aggregation cycle
+INFO:MessageBus.vic_20_sage:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=vic_20_sage | priority=10 | id=c9e958fc
+INFO:StateManager.vic_20_sage:💾 REDIS SAVE: vic_20_sage state | decisions=102 | msgs_sent=71 | health=starting | uptime=30s
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=33c94574
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=33c94574
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=33c94574
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=33c94574
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=33c94574
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=33c94574
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=14.8%, MEM=29.3%
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=8532f9d6
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=8532f9d6
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=8532f9d6
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=8532f9d6
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=8532f9d6
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=8532f9d6
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=15.0%, MEM=29.3%
+✅ Loaded environment from: /home/carissab/Documents/system_rebellion/.env.development
+🔗 [database.py] Using database: postgresql+asyncpg://carissab@localhost:5432/syste...
+[config] Loaded settings: ENV=development DEBUG=True ENV_FILE=/home/carissab/Documents/system_rebellion/.env.development
+REGISTERED MODELS
+
+
+The snail Found Model: agent_memories
+The snail Found Model: agent_global_patterns
+The snail Found Model: users
+The snail Found Model: system_metrics
+The snail Found Model: metrics_hourly
+The snail Found Model: metrics_daily
+The snail Found Model: central_memory_bank
+The snail Found Model: sir_hawkington_memory_bank
+The snail Found Model: the_stick_memory_bank
+The snail Found Model: meth_snail_memory_bank
+The snail Found Model: hamsters_memory_bank
+The snail Found Model: quantum_shadow_people_memory_bank
+The snail Found Model: vic20_memory_bank
+The snail Found Model: agent_learning_interactions
+The snail Found Model: user_learning_patterns
+The snail Found Model: memory_bank_metadata
+The snail Found Model: agent_decision_vectors
+The snail Found Model: agent_pattern_vectors
+The snail Found Model: agent_interaction_vectors
+
+
+REGISTERED MODELS
+
+
+The snail Found Model: agent_memories
+The snail Found Model: agent_global_patterns
+The snail Found Model: users
+The snail Found Model: system_metrics
+The snail Found Model: metrics_hourly
+The snail Found Model: metrics_daily
+The snail Found Model: central_memory_bank
+The snail Found Model: sir_hawkington_memory_bank
+The snail Found Model: the_stick_memory_bank
+The snail Found Model: meth_snail_memory_bank
+The snail Found Model: hamsters_memory_bank
+The snail Found Model: quantum_shadow_people_memory_bank
+The snail Found Model: vic20_memory_bank
+The snail Found Model: agent_learning_interactions
+The snail Found Model: user_learning_patterns
+The snail Found Model: memory_bank_metadata
+The snail Found Model: agent_decision_vectors
+The snail Found Model: agent_pattern_vectors
+The snail Found Model: agent_interaction_vectors
+
+
+REGISTERED MODELS
+
+
+The snail Found Model: agent_memories
+The snail Found Model: agent_global_patterns
+The snail Found Model: users
+The snail Found Model: system_metrics
+The snail Found Model: metrics_hourly
+The snail Found Model: metrics_daily
+The snail Found Model: central_memory_bank
+The snail Found Model: sir_hawkington_memory_bank
+The snail Found Model: the_stick_memory_bank
+The snail Found Model: meth_snail_memory_bank
+The snail Found Model: hamsters_memory_bank
+The snail Found Model: quantum_shadow_people_memory_bank
+The snail Found Model: vic20_memory_bank
+The snail Found Model: agent_learning_interactions
+The snail Found Model: user_learning_patterns
+The snail Found Model: memory_bank_metadata
+The snail Found Model: agent_decision_vectors
+The snail Found Model: agent_pattern_vectors
+The snail Found Model: agent_interaction_vectors
+
+
+Models initialized successfully.
+
+================================================================================
+🔧 initialize_distributed_agents() called
+   redis_url: redis://192.168.1.216:6379
+   db_getter: <function get_async_db at 0x70cf2b314180>
+   db_getter type: <class 'function'>
+================================================================================
+
+🎯 Redis connected successfully - The Meth Snail approves!
+
+🔍 DistributedAgentManager.initialize()
+   self.db_getter: <function get_async_db at 0x70cf2b314180>
+   self.db_getter type: <class 'function'>
+
+✅ Sir Hawkington created with db_getter: <function get_async_db at 0x70cf2b314180>
+🎥 Event Logger initialized - Session: 20251201_152138
+📁 Logging to: logs/agent_events/session_20251201_152138.jsonl
+
+================================================================================
+📊 RESOURCE MONITOR PUBLISHING METRICS
+   Message Type: MessageType.RESOURCE_ALERT
+   From Agent: sir_hawkington
+   CPU: 21.8%
+   Memory: 18.2%
+   Message ID: d19c4b7e-f927-41ad-95b5-cb8a121a61df
+================================================================================
+
+✅ Publish result: True
+
+🔍 Behavior Tracker initialized - Session: 20251201_152138
+▶️  Behavior tracking started (snapshot every 2.0s)
+
+================================================================================
+📊 RESOURCE MONITOR PUBLISHING METRICS
+   Message Type: MessageType.RESOURCE_ALERT
+   From Agent: sir_hawkington
+   CPU: 12.5%
+   Memory: 18.3%
+   Message ID: d9bc4999-f6f0-403f-8ac2-3bbdfbf7fc76
+================================================================================
+
+✅ Publish result: True
+
+
+================================================================================
+📊 RESOURCE MONITOR PUBLISHING METRICS
+   Message Type: MessageType.RESOURCE_ALERT
+   From Agent: sir_hawkington
+   CPU: 13.4%
+   Memory: 18.3%
+   Message ID: 3ae22a59-a30d-4f3c-9f47-67b5a9a3ec02
+================================================================================
+
+✅ Publish result: True
+
+
+================================================================================
+📊 RESOURCE MONITOR PUBLISHING METRICS
+   Message Type: MessageType.RESOURCE_ALERT
+   From Agent: sir_hawkington
+   CPU: 13.6%
+   Memory: 26.2%
+   Message ID: 98c953e7-80e5-452a-b5eb-c3a62a53ccaa
+================================================================================
+
+✅ Publish result: True
+
+
+🔔 HAWK ALERT CALLBACK TRIGGERED!
+   Alert payload: {'resource_type': 'memory', 'current_value': 26.2, 'threshold': 20.0, 'severity': 'info', 'host': 'carissaXPS'}
+🧐⚠️ Sir Hawkington observes elevated MEMORY usage: 26.2%
+
+================================================================================
+📊 RESOURCE MONITOR PUBLISHING METRICS
+   Message Type: MessageType.RESOURCE_ALERT
+   From Agent: sir_hawkington
+   CPU: 12.5%
+   Memory: 29.3%
+   Message ID: 1a313c59-d617-4438-abb3-fc1c10438494
+================================================================================
+
+✅ Publish result: True
+
+
+================================================================================
+📊 RESOURCE MONITOR PUBLISHING METRICS
+   Message Type: MessageType.RESOURCE_ALERT
+   From Agent: sir_hawkington
+   CPU: 13.7%
+   Memory: 29.3%
+   Message ID: dbd82a37-e921-48cb-93a7-6c31f2c325f0
+================================================================================
+
+✅ Publish result: True
+
+
+================================================================================
+📊 RESOURCE MONITOR PUBLISHING METRICS
+   Message Type: MessageType.RESOURCE_ALERT
+   From Agent: sir_hawkington
+   CPU: 14.8%
+   Memory: 29.3%
+   Message ID: 33c94574-c0aa-4832-8fce-5a9571f5b4d0
+================================================================================
+
+✅ Publish result: True
+
+
+================================================================================
+📊 RESOURCE MONITOR PUBLISHING METRICS
+   Message Type: MessageType.RESOURCE_ALERT
+   From Agent: sir_hawkington
+   CPU: 15.0%
+   Memory: 29.3%
+   Message ID: 8532f9d6-3d21-4321-a6ba-4d9bc1b722e6
+================================================================================
+
+✅ Publish result: True
+
+INFO:     192.168.1.199:44942 - "GET /api/distributed-agents/agents HTTP/1.1" 200 OK
+INFO:     192.168.1.199:44954 - "GET /api/distributed-agents/agents HTTP/1.1" 200 OK
+INFO:     192.168.1.199:44956 - "GET /api/distributed-agents/agents HTTP/1.1" 200 OK
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=ea5084bc
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=13.6%, MEM=29.3%
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=ea5084bc
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=ea5084bc
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=ea5084bc
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=ea5084bc
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=ea5084bc
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=82cb623a
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=12.7%, MEM=29.3%
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=82cb623a
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=82cb623a
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=82cb623a
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=82cb623a
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=82cb623a
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=33c940b5
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=33c940b5
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=33c940b5
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=33c940b5
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=33c940b5
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=33c940b5
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=14.6%, MEM=35.0%
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=2de50b69
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=2de50b69
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=2de50b69
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=2de50b69
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=2de50b69
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=2de50b69
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=16.3%, MEM=39.8%
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=sir_hawkington | priority=10 | id=ca74488e
+INFO:StateManager.sir_hawkington:💾 REDIS SAVE: sir_hawkington state | decisions=106 | msgs_sent=13393 | health=starting | uptime=60s
+INFO:MessageBus.meth_snail:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=meth_snail | priority=10 | id=bae78908
+INFO:StateManager.meth_snail:💾 REDIS SAVE: meth_snail state | decisions=128 | msgs_sent=39 | health=starting | uptime=60s
+INFO:MessageBus.hamsters:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=hamsters | priority=10 | id=8ddeeb02
+INFO:StateManager.hamsters:💾 REDIS SAVE: hamsters state | decisions=86 | msgs_sent=14 | health=starting | uptime=60s
+INFO:MessageBus.quantum_shadow_people:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=quantum_shadow_people | priority=10 | id=2f048ce1
+INFO:StateManager.quantum_shadow_people:💾 REDIS SAVE: quantum_shadow_people state | decisions=85 | msgs_sent=4627 | health=starting | uptime=60s
+INFO:MessageBus.the_stick:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=the_stick | priority=10 | id=12e6e42d
+INFO:StateManager.the_stick:💾 REDIS SAVE: the_stick state | decisions=133 | msgs_sent=15 | health=starting | uptime=60s
+INFO:MethSnail.Background:🧠 Consciousness checkpoint monitor activated
+INFO:ConsciousnessSync:🧠 Running consciousness checkpoint...
+INFO:ConsciousnessSync:   Gathered state from 6/6 agents
+WARNING:ConsciousnessSync:⚠️ Consciousness checkpoint FAILED - 3 discrepancies
+WARNING:ConsciousnessSync:🔄 Triggering consciousness reconciliation...
+WARNING:ConsciousnessSync:   Discrepancies detected: 3
+WARNING:ConsciousnessSync:   - meth_snail: Missing memory threshold (expected: 75.0)
+WARNING:ConsciousnessSync:   - the_stick: Missing cpu threshold (expected: 80.0)
+WARNING:ConsciousnessSync:   - vic_20_sage: Missing cpu threshold (expected: 75.0)
+INFO:ConsciousnessSync:✅ Reconciliation complete (logged discrepancies)
+WARNING:MethSnail.Background:🧠⚠️ Consciousness checkpoint FAILED - 3 discrepancies detected
+WARNING:MethSnail.Background:  - meth_snail: Missing memory threshold (expected: 75.0)
+WARNING:MethSnail.Background:  - the_stick: Missing cpu threshold (expected: 80.0)
+WARNING:MethSnail.Background:  - vic_20_sage: Missing cpu threshold (expected: 75.0)
+INFO:MessageBus.vic_20_sage:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=vic_20_sage | priority=10 | id=c21af5d5
+INFO:StateManager.vic_20_sage:💾 REDIS SAVE: vic_20_sage state | decisions=102 | msgs_sent=71 | health=starting | uptime=60s
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=cf92a034
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=12.5%, MEM=39.8%
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=cf92a034
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=cf92a034
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=cf92a034
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=cf92a034
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=cf92a034
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=beb46edd
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=13.9%, MEM=39.8%
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=beb46edd
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=beb46edd
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=beb46edd
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=beb46edd
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=beb46edd
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=126f4ba5
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=126f4ba5
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=126f4ba5
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=126f4ba5
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=126f4ba5
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=126f4ba5
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=12.5%, MEM=39.8%
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=963bd9ed
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=12.5%, MEM=39.8%
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=963bd9ed
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=963bd9ed
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=963bd9ed
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=963bd9ed
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=963bd9ed
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=fb4ca046
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=13.9%, MEM=39.8%
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=fb4ca046
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=fb4ca046
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=fb4ca046
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=fb4ca046
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=fb4ca046
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=f7effb2c
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=f7effb2c
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=f7effb2c
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=f7effb2c
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=f7effb2c
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=f7effb2c
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=12.5%, MEM=43.8%
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=sir_hawkington | priority=10 | id=0baf7b4f
+INFO:StateManager.sir_hawkington:💾 REDIS SAVE: sir_hawkington state | decisions=106 | msgs_sent=13393 | health=starting | uptime=90s
+INFO:MessageBus.meth_snail:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=meth_snail | priority=10 | id=fd8f959f
+INFO:MessageBus.hamsters:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=hamsters | priority=10 | id=5775b060
+INFO:StateManager.meth_snail:💾 REDIS SAVE: meth_snail state | decisions=128 | msgs_sent=39 | health=starting | uptime=90s
+INFO:StateManager.hamsters:💾 REDIS SAVE: hamsters state | decisions=86 | msgs_sent=14 | health=starting | uptime=90s
+INFO:MessageBus.quantum_shadow_people:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=quantum_shadow_people | priority=10 | id=834bcb8b
+INFO:MessageBus.the_stick:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=the_stick | priority=10 | id=526f4ff8
+INFO:StateManager.quantum_shadow_people:💾 REDIS SAVE: quantum_shadow_people state | decisions=85 | msgs_sent=4627 | health=starting | uptime=90s
+INFO:StateManager.the_stick:💾 REDIS SAVE: the_stick state | decisions=133 | msgs_sent=15 | health=starting | uptime=90s
+INFO:MessageBus.vic_20_sage:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=vic_20_sage | priority=10 | id=b8c07a77
+INFO:StateManager.vic_20_sage:💾 REDIS SAVE: vic_20_sage state | decisions=102 | msgs_sent=71 | health=starting | uptime=90s
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=83e30a65
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=83e30a65
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=83e30a65
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=83e30a65
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=83e30a65
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=83e30a65
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=13.7%, MEM=50.4%
+
+================================================================================
+📊 RESOURCE MONITOR PUBLISHING METRICS
+   Message Type: MessageType.RESOURCE_ALERT
+   From Agent: sir_hawkington
+   CPU: 13.6%
+   Memory: 29.3%
+   Message ID: ea5084bc-9439-435f-bf66-01d1e2a747e1
+================================================================================
+
+✅ Publish result: True
+
+
+================================================================================
+📊 RESOURCE MONITOR PUBLISHING METRICS
+   Message Type: MessageType.RESOURCE_ALERT
+   From Agent: sir_hawkington
+   CPU: 12.7%
+   Memory: 29.3%
+   Message ID: 82cb623a-2799-4452-9120-18518f367793
+================================================================================
+
+✅ Publish result: True
+
+
+================================================================================
+📊 RESOURCE MONITOR PUBLISHING METRICS
+   Message Type: MessageType.RESOURCE_ALERT
+   From Agent: sir_hawkington
+   CPU: 14.6%
+   Memory: 35.0%
+   Message ID: 33c940b5-5210-4494-b002-49d644f51d59
+================================================================================
+
+✅ Publish result: True
+
+
+================================================================================
+📊 RESOURCE MONITOR PUBLISHING METRICS
+   Message Type: MessageType.RESOURCE_ALERT
+   From Agent: sir_hawkington
+   CPU: 16.3%
+   Memory: 39.8%
+   Message ID: 2de50b69-71f1-4a15-984f-e94f3a2552dd
+================================================================================
+
+✅ Publish result: True
+
+
+================================================================================
+📊 RESOURCE MONITOR PUBLISHING METRICS
+   Message Type: MessageType.RESOURCE_ALERT
+   From Agent: sir_hawkington
+   CPU: 12.5%
+   Memory: 39.8%
+   Message ID: cf92a034-534e-4412-919b-db7c66280c64
+================================================================================
+
+✅ Publish result: True
+
+
+================================================================================
+📊 RESOURCE MONITOR PUBLISHING METRICS
+   Message Type: MessageType.RESOURCE_ALERT
+   From Agent: sir_hawkington
+   CPU: 13.9%
+   Memory: 39.8%
+   Message ID: beb46edd-b227-4706-8be6-b421ec276509
+================================================================================
+
+✅ Publish result: True
+
+
+================================================================================
+📊 RESOURCE MONITOR PUBLISHING METRICS
+   Message Type: MessageType.RESOURCE_ALERT
+   From Agent: sir_hawkington
+   CPU: 12.5%
+   Memory: 39.8%
+   Message ID: 126f4ba5-d146-494c-850d-e7fbe047e0f1
+================================================================================
+
+✅ Publish result: True
+
+
+================================================================================
+📊 RESOURCE MONITOR PUBLISHING METRICS
+   Message Type: MessageType.RESOURCE_ALERT
+   From Agent: sir_hawkington
+   CPU: 12.5%
+   Memory: 39.8%
+   Message ID: 963bd9ed-597b-4f05-b5c9-5aafebfbda77
+================================================================================
+
+✅ Publish result: True
+
+
+================================================================================
+📊 RESOURCE MONITOR PUBLISHING METRICS
+   Message Type: MessageType.RESOURCE_ALERT
+   From Agent: sir_hawkington
+   CPU: 13.9%
+   Memory: 39.8%
+   Message ID: fb4ca046-ed7d-448f-9538-d1856e2958fb
+================================================================================
+
+✅ Publish result: True
+
+
+================================================================================
+📊 RESOURCE MONITOR PUBLISHING METRICS
+   Message Type: MessageType.RESOURCE_ALERT
+   From Agent: sir_hawkington
+   CPU: 12.5%
+   Memory: 43.8%
+   Message ID: f7effb2c-02d5-4fe9-a111-1079e2b9e5aa
+================================================================================
+
+✅ Publish result: True
+
+
+================================================================================
+📊 RESOURCE MONITOR PUBLISHING METRICS
+   Message Type: MessageType.RESOURCE_ALERT
+   From Agent: sir_hawkington
+   CPU: 13.7%
+   Memory: 50.4%
+   Message ID: 83e30a65-5793-4fd8-8d10-9fff04c065d3
+================================================================================
+
+✅ Publish result: True
+
+INFO:     192.168.1.199:41646 - "GET /api/distributed-agents/agents HTTP/1.1" 200 OK
+INFO:     192.168.1.199:41656 - "GET /api/distributed-agents/agents HTTP/1.1" 200 OK
+INFO:     192.168.1.199:41666 - "GET /api/distributed-agents/agents HTTP/1.1" 200 OK
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=54b81ec5
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=12.5%, MEM=50.4%
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=54b81ec5
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=54b81ec5
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=54b81ec5
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=54b81ec5
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=54b81ec5
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=3ecf6a52
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=12.5%, MEM=50.4%
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=3ecf6a52
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=3ecf6a52
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=3ecf6a52
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=3ecf6a52
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=3ecf6a52
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=504b34e2
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=11.4%, MEM=50.4%
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=504b34e2
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=504b34e2
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=504b34e2
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=504b34e2
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=504b34e2
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=8bac261a
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=12.5%, MEM=50.4%
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=8bac261a
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=8bac261a
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=8bac261a
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=8bac261a
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=8bac261a
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=sir_hawkington | priority=10 | id=e82c465f
+INFO:StateManager.sir_hawkington:💾 REDIS SAVE: sir_hawkington state | decisions=106 | msgs_sent=13393 | health=starting | uptime=120s
+INFO:MessageBus.meth_snail:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=meth_snail | priority=10 | id=55f63a71
+INFO:StateManager.meth_snail:💾 REDIS SAVE: meth_snail state | decisions=128 | msgs_sent=39 | health=starting | uptime=120s
+INFO:MessageBus.hamsters:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=hamsters | priority=10 | id=5654a9a1
+INFO:StateManager.hamsters:💾 REDIS SAVE: hamsters state | decisions=86 | msgs_sent=14 | health=starting | uptime=120s
+INFO:MessageBus.quantum_shadow_people:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=quantum_shadow_people | priority=10 | id=2ad9cf03
+INFO:MessageBus.the_stick:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=the_stick | priority=10 | id=a7a17a00
+INFO:StateManager.quantum_shadow_people:💾 REDIS SAVE: quantum_shadow_people state | decisions=85 | msgs_sent=4627 | health=starting | uptime=120s
+INFO:StateManager.the_stick:💾 REDIS SAVE: the_stick state | decisions=133 | msgs_sent=15 | health=starting | uptime=120s
+INFO:MessageBus.vic_20_sage:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=vic_20_sage | priority=10 | id=3e0b677e
+INFO:StateManager.vic_20_sage:💾 REDIS SAVE: vic_20_sage state | decisions=102 | msgs_sent=71 | health=starting | uptime=120s
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=a874c681
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=13.0%, MEM=50.4%
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=a874c681
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=a874c681
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=a874c681
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=a874c681
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=a874c681
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=e917d363
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=e917d363
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=e917d363
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=e917d363
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=e917d363
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=e917d363
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=13.7%, MEM=50.3%
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=ab3db5e5
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=ab3db5e5
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=12.5%, MEM=50.2%
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=ab3db5e5
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=ab3db5e5
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=ab3db5e5
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=ab3db5e5
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=e658a643
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=12.5%, MEM=50.2%
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=e658a643
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=e658a643
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=e658a643
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=e658a643
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=e658a643
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=f343d138
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=15.0%, MEM=50.2%
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=f343d138
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=f343d138
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=f343d138
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=f343d138
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=f343d138
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=a818c1c5
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=12.3%, MEM=50.3%
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=a818c1c5
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=a818c1c5
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=a818c1c5
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=a818c1c5
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=a818c1c5
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=sir_hawkington | priority=10 | id=b6a98e74
+INFO:StateManager.sir_hawkington:💾 REDIS SAVE: sir_hawkington state | decisions=106 | msgs_sent=13393 | health=starting | uptime=150s
+INFO:MessageBus.meth_snail:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=meth_snail | priority=10 | id=07f03372
+INFO:StateManager.meth_snail:💾 REDIS SAVE: meth_snail state | decisions=128 | msgs_sent=39 | health=starting | uptime=150s
+INFO:MessageBus.hamsters:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=hamsters | priority=10 | id=506e6901
+INFO:StateManager.hamsters:💾 REDIS SAVE: hamsters state | decisions=86 | msgs_sent=14 | health=starting | uptime=150s
+INFO:MessageBus.quantum_shadow_people:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=quantum_shadow_people | priority=10 | id=98e6c8c4
+INFO:MessageBus.the_stick:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=the_stick | priority=10 | id=2653247e
+INFO:StateManager.quantum_shadow_people:💾 REDIS SAVE: quantum_shadow_people state | decisions=85 | msgs_sent=4627 | health=starting | uptime=150s
+INFO:StateManager.the_stick:💾 REDIS SAVE: the_stick state | decisions=133 | msgs_sent=15 | health=starting | uptime=150s
+INFO:MessageBus.vic_20_sage:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=vic_20_sage | priority=10 | id=f350f3c8
+INFO:StateManager.vic_20_sage:💾 REDIS SAVE: vic_20_sage state | decisions=102 | msgs_sent=71 | health=starting | uptime=150s
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=572d5b95
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=12.5%, MEM=50.3%
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=572d5b95
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=572d5b95
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=572d5b95
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=572d5b95
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=572d5b95
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=c3101723
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=11.4%, MEM=50.3%
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=c3101723
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=c3101723
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=c3101723
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=c3101723
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=c3101723
+
+================================================================================
+📊 RESOURCE MONITOR PUBLISHING METRICS
+   Message Type: MessageType.RESOURCE_ALERT
+   From Agent: sir_hawkington
+   CPU: 12.5%
+   Memory: 50.4%
+   Message ID: 54b81ec5-37a7-4a2b-a9a8-2acdf61dbc18
+================================================================================
+
+✅ Publish result: True
+
+
+================================================================================
+📊 RESOURCE MONITOR PUBLISHING METRICS
+   Message Type: MessageType.RESOURCE_ALERT
+   From Agent: sir_hawkington
+   CPU: 12.5%
+   Memory: 50.4%
+   Message ID: 3ecf6a52-b37a-4620-b71b-4e5a1a33e0f9
+================================================================================
+
+✅ Publish result: True
+
+
+================================================================================
+📊 RESOURCE MONITOR PUBLISHING METRICS
+   Message Type: MessageType.RESOURCE_ALERT
+   From Agent: sir_hawkington
+   CPU: 11.4%
+   Memory: 50.4%
+   Message ID: 504b34e2-3671-4e32-bf34-2acc2fc4b82e
+================================================================================
+
+✅ Publish result: True
+
+
+================================================================================
+📊 RESOURCE MONITOR PUBLISHING METRICS
+   Message Type: MessageType.RESOURCE_ALERT
+   From Agent: sir_hawkington
+   CPU: 12.5%
+   Memory: 50.4%
+   Message ID: 8bac261a-ebb2-4fb0-8f04-8665beb8c992
+================================================================================
+
+✅ Publish result: True
+
+
+================================================================================
+📊 RESOURCE MONITOR PUBLISHING METRICS
+   Message Type: MessageType.RESOURCE_ALERT
+   From Agent: sir_hawkington
+   CPU: 13.0%
+   Memory: 50.4%
+   Message ID: a874c681-1bef-46f9-bb09-84815a0d9c5f
+================================================================================
+
+✅ Publish result: True
+
+
+================================================================================
+📊 RESOURCE MONITOR PUBLISHING METRICS
+   Message Type: MessageType.RESOURCE_ALERT
+   From Agent: sir_hawkington
+   CPU: 13.7%
+   Memory: 50.3%
+   Message ID: e917d363-dc1a-4701-b59e-6fca5b2192e2
+================================================================================
+
+✅ Publish result: True
+
+
+================================================================================
+📊 RESOURCE MONITOR PUBLISHING METRICS
+   Message Type: MessageType.RESOURCE_ALERT
+   From Agent: sir_hawkington
+   CPU: 12.5%
+   Memory: 50.2%
+   Message ID: ab3db5e5-f6f7-4f2f-8f98-1640f248afcd
+================================================================================
+
+✅ Publish result: True
+
+
+================================================================================
+📊 RESOURCE MONITOR PUBLISHING METRICS
+   Message Type: MessageType.RESOURCE_ALERT
+   From Agent: sir_hawkington
+   CPU: 12.5%
+   Memory: 50.2%
+   Message ID: e658a643-04c9-425e-8425-dc78258df244
+================================================================================
+
+✅ Publish result: True
+
+
+================================================================================
+📊 RESOURCE MONITOR PUBLISHING METRICS
+   Message Type: MessageType.RESOURCE_ALERT
+   From Agent: sir_hawkington
+   CPU: 15.0%
+   Memory: 50.2%
+   Message ID: f343d138-0e12-4e49-9d7b-e993a6ebf3e8
+================================================================================
+
+✅ Publish result: True
+
+
+================================================================================
+📊 RESOURCE MONITOR PUBLISHING METRICS
+   Message Type: MessageType.RESOURCE_ALERT
+   From Agent: sir_hawkington
+   CPU: 12.3%
+   Memory: 50.3%
+   Message ID: a818c1c5-8901-481d-823d-d851dc2df885
+================================================================================
+
+✅ Publish result: True
+
+
+================================================================================
+📊 RESOURCE MONITOR PUBLISHING METRICS
+   Message Type: MessageType.RESOURCE_ALERT
+   From Agent: sir_hawkington
+   CPU: 12.5%
+   Memory: 50.3%
+   Message ID: 572d5b95-8b6c-4823-9848-a8daac7fd256
+================================================================================
+
+✅ Publish result: True
+
+
+================================================================================
+📊 RESOURCE MONITOR PUBLISHING METRICS
+   Message Type: MessageType.RESOURCE_ALERT
+   From Agent: sir_hawkington
+   CPU: 11.4%
+   Memory: 50.3%
+   Message ID: c3101723-b842-4255-82f0-d454c78bbe8e
+================================================================================
+
+✅ Publish result: True
+
+INFO:     192.168.1.199:56734 - "GET /api/distributed-agents/agents HTTP/1.1" 200 OK
+INFO:     192.168.1.199:56748 - "GET /api/distributed-agents/agents HTTP/1.1" 200 OK
+INFO:     192.168.1.199:56764 - "GET /api/distributed-agents/agents HTTP/1.1" 200 OK
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=e8e4c552
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=e8e4c552
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=e8e4c552
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=e8e4c552
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=e8e4c552
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=e8e4c552
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=17.5%, MEM=50.5%
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=08970575
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=08970575
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=08970575
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=08970575
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=08970575
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=08970575
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=12.5%, MEM=50.3%
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=65128c46
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=25.0%, MEM=52.7%
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=65128c46
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=65128c46
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=65128c46
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=65128c46
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=65128c46
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=sir_hawkington | priority=10 | id=e095ab44
+INFO:StateManager.sir_hawkington:💾 REDIS SAVE: sir_hawkington state | decisions=106 | msgs_sent=13393 | health=starting | uptime=180s
+INFO:MessageBus.meth_snail:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=meth_snail | priority=10 | id=cc5473b5
+INFO:StateManager.meth_snail:💾 REDIS SAVE: meth_snail state | decisions=128 | msgs_sent=39 | health=starting | uptime=180s
+INFO:MessageBus.hamsters:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=hamsters | priority=10 | id=a2ce353d
+INFO:StateManager.hamsters:💾 REDIS SAVE: hamsters state | decisions=86 | msgs_sent=14 | health=starting | uptime=180s
+INFO:MessageBus.quantum_shadow_people:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=quantum_shadow_people | priority=10 | id=31a1ebec
+INFO:MessageBus.the_stick:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=the_stick | priority=10 | id=958007ff
+INFO:StateManager.the_stick:💾 REDIS SAVE: the_stick state | decisions=133 | msgs_sent=15 | health=starting | uptime=180s
+INFO:StateManager.quantum_shadow_people:💾 REDIS SAVE: quantum_shadow_people state | decisions=85 | msgs_sent=4627 | health=starting | uptime=180s
+INFO:MessageBus.vic_20_sage:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=vic_20_sage | priority=10 | id=f386bd3d
+INFO:StateManager.vic_20_sage:💾 REDIS SAVE: vic_20_sage state | decisions=102 | msgs_sent=71 | health=starting | uptime=180s
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=f24c8f8f
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=13.6%, MEM=54.7%
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: agent_state_change ← from=sir_hawkington | to=broadcast | priority=2 | id=1241d513
+INFO:MessageBus.the_stick:📨 REDIS SUB: agent_state_change ← from=sir_hawkington | to=broadcast | priority=2 | id=1241d513
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: agent_state_change ← from=sir_hawkington | to=broadcast | priority=2 | id=1241d513
+INFO:MessageBus.hamsters:📨 REDIS SUB: agent_state_change ← from=sir_hawkington | to=broadcast | priority=2 | id=1241d513
+INFO:MessageBus.meth_snail:📨 REDIS SUB: agent_state_change ← from=sir_hawkington | to=broadcast | priority=2 | id=1241d513
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=f24c8f8f
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=f24c8f8f
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=f24c8f8f
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=f24c8f8f
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=f24c8f8f
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=720ec532
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=720ec532
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=720ec532
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=720ec532
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=720ec532
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=2 | id=bf65b411
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=2 | id=bf65b411
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=2 | id=bf65b411
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=2 | id=bf65b411
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=2 | id=bf65b411
+INFO:MessageBus.the_stick:📨 REDIS SUB: decision_log ← from=sir_hawkington | to=the_stick | priority=10 | id=a0949861
+INFO:TheStick.Distributed:📏📬 DECISION_LOG from unknown: triage_decision 
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: agent_state_change ← from=meth_snail | to=broadcast | priority=2 | id=b1fa6fcd
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: agent_state_change ← from=meth_snail | to=broadcast | priority=2 | id=b1fa6fcd
+INFO:MessageBus.hamsters:📨 REDIS SUB: agent_state_change ← from=meth_snail | to=broadcast | priority=2 | id=b1fa6fcd
+INFO:MessageBus.sir_hawkington:📨 REDIS SUB: agent_state_change ← from=meth_snail | to=broadcast | priority=2 | id=b1fa6fcd
+INFO:MessageBus.the_stick:📨 REDIS SUB: agent_state_change ← from=meth_snail | to=broadcast | priority=2 | id=b1fa6fcd
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: triage_alert ← from=sir_hawkington | to=vic_20_sage | priority=5 | id=983b7450
+INFO:VIC20Sage.Distributed:🖥️📬 TRIAGE ALERT from Sir Hawkington: memory at 54.7% (threshold: 20.0%) severity=info, confidence=1.00
+INFO:VIC20Sage.Distributed:🖥️💡 Routing to meth_snail: clear_cache (confidence: 0.90)
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: coordination_request ← from=vic_20_sage | to=broadcast | priority=5 | id=86659ff2
+INFO:QuantumShadowPeople.Distributed:👥📬 Coordination request from VIC-20: unknown (priority: normal)
+INFO:MessageBus.hamsters:📨 REDIS SUB: coordination_request ← from=vic_20_sage | to=broadcast | priority=5 | id=86659ff2
+INFO:Hamsters.Distributed:🐹📬 Coordination request from VIC-20: unknown (priority: normal)
+INFO:MessageBus.meth_snail:📨 REDIS SUB: coordination_request ← from=vic_20_sage | to=broadcast | priority=5 | id=86659ff2
+INFO:MethSnail.Distributed:🐌📬 COORDINATION REQUEST from VIC-20: memory at 54.7% - VIC-20 suggests: clear_cache
+INFO:MethSnail.Distributed:🐌💨 NAH! VIC-20 is too SLOW! *chugs energy drink* MY WAY!
+INFO:MethSnail.Distributed:🐌💨💨 Executing emergency_cache_clear! *spins shell frantically*
+INFO:app.ai_agents.distributed.action_verification:📊 Started verification for system/ActionType.CACHE_CLEAR (ID: cache_clear_system_1764602680.189767_1764602680.189785)
+INFO:app.ai_agents.distributed.system_actions:🐌💨 Cache Clear: Collected 155993 objects
+INFO:MessageBus.sir_hawkington:📨 REDIS SUB: coordination_request ← from=vic_20_sage | to=broadcast | priority=5 | id=86659ff2
+INFO:MessageBus.the_stick:📨 REDIS SUB: coordination_request ← from=vic_20_sage | to=broadcast | priority=5 | id=86659ff2
+INFO:TheStick.Distributed:📏📋 Tracking coordination request: unknown
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: agent_state_change ← from=hamsters | to=broadcast | priority=2 | id=019240db
+INFO:MessageBus.vic_20_sage:📡 REDIS PUB: coordination_request → agents:broadcast | from=vic_20_sage | priority=5 | id=86659ff2
+INFO:StateManager.vic_20_sage:💾 REDIS SAVE: vic_20_sage state | decisions=102 | msgs_sent=72 | health=starting | uptime=182s
+INFO:Distributed.unknown:📢 BROADCAST: coordination_request | from=vic_20_sage | priority=5
+WARNING:VIC20Sage.Distributed:🖥️⚠️ Database integration not available
+INFO:MessageBus.sir_hawkington:📨 REDIS SUB: agent_state_change ← from=hamsters | to=broadcast | priority=2 | id=019240db
+INFO:StateManager.the_stick:💾 REDIS SAVE: the_stick state | decisions=134 | msgs_sent=15 | health=starting | uptime=182s
+INFO:StateManager.the_stick:📊 DECISION: the_stick | type=coordination_compliance_tracked | confidence=1.00 | id=the_stic
+INFO:Distributed.unknown:📊 Decision recorded: coordination_compliance_tracked (confidence: 1.00)
+INFO:MessageBus.hamsters:📨 REDIS SUB: agent_state_change ← from=quantum_shadow_people | to=broadcast | priority=2 | id=231b8e07
+INFO:MessageBus.vic_20_sage:📡 REDIS PUB: decision_log → agents:broadcast | from=vic_20_sage | priority=5 | id=2d667f44
+INFO:StateManager.vic_20_sage:💾 REDIS SAVE: vic_20_sage state | decisions=102 | msgs_sent=73 | health=starting | uptime=182s
+INFO:Distributed.unknown:📢 BROADCAST: decision_log | from=vic_20_sage | priority=5
+INFO:MessageBus.sir_hawkington:📨 REDIS SUB: agent_state_change ← from=quantum_shadow_people | to=broadcast | priority=2 | id=231b8e07
+INFO:MessageBus.the_stick:📨 REDIS SUB: agent_state_change ← from=hamsters | to=broadcast | priority=2 | id=019240db
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: agent_state_change ← from=the_stick | to=broadcast | priority=2 | id=4ea60f92
+INFO:MessageBus.hamsters:📨 REDIS SUB: agent_state_change ← from=the_stick | to=broadcast | priority=2 | id=4ea60f92
+INFO:MessageBus.sir_hawkington:📨 REDIS SUB: agent_state_change ← from=the_stick | to=broadcast | priority=2 | id=4ea60f92
+INFO:MessageBus.the_stick:📨 REDIS SUB: agent_state_change ← from=quantum_shadow_people | to=broadcast | priority=2 | id=231b8e07
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: agent_state_change ← from=vic_20_sage | to=broadcast | priority=2 | id=ac4b972b
+INFO:MessageBus.hamsters:📨 REDIS SUB: agent_state_change ← from=vic_20_sage | to=broadcast | priority=2 | id=ac4b972b
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: agent_state_change ← from=hamsters | to=broadcast | priority=2 | id=019240db
+INFO:MessageBus.sir_hawkington:📨 REDIS SUB: agent_state_change ← from=vic_20_sage | to=broadcast | priority=2 | id=ac4b972b
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: action_report ← from=meth_snail | to=broadcast | priority=5 | id=bf21a3e1
+INFO:MessageBus.hamsters:📨 REDIS SUB: action_report ← from=meth_snail | to=broadcast | priority=5 | id=bf21a3e1
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: agent_state_change ← from=quantum_shadow_people | to=broadcast | priority=2 | id=231b8e07
+INFO:MessageBus.sir_hawkington:📨 REDIS SUB: action_report ← from=meth_snail | to=broadcast | priority=5 | id=bf21a3e1
+INFO:MessageBus.the_stick:📨 REDIS SUB: agent_state_change ← from=vic_20_sage | to=broadcast | priority=2 | id=ac4b972b
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: decision_log ← from=meth_snail | to=broadcast | priority=5 | id=a1376c4d
+INFO:MessageBus.hamsters:📨 REDIS SUB: decision_log ← from=meth_snail | to=broadcast | priority=5 | id=a1376c4d
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: agent_state_change ← from=the_stick | to=broadcast | priority=2 | id=4ea60f92
+INFO:MessageBus.sir_hawkington:📨 REDIS SUB: decision_log ← from=meth_snail | to=broadcast | priority=5 | id=a1376c4d
+INFO:MessageBus.the_stick:📨 REDIS SUB: action_report ← from=meth_snail | to=broadcast | priority=5 | id=bf21a3e1
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: decision_log ← from=vic_20_sage | to=broadcast | priority=5 | id=2d667f44
+INFO:MessageBus.hamsters:📨 REDIS SUB: decision_log ← from=vic_20_sage | to=broadcast | priority=5 | id=2d667f44
+INFO:MessageBus.sir_hawkington:📨 REDIS SUB: decision_log ← from=vic_20_sage | to=broadcast | priority=5 | id=2d667f44
+INFO:MessageBus.the_stick:📨 REDIS SUB: decision_log ← from=meth_snail | to=broadcast | priority=5 | id=a1376c4d
+INFO:TheStick.Distributed:📏📬 DECISION_LOG from meth_snail: specialist_action 
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: action_report ← from=meth_snail | to=broadcast | priority=5 | id=bf21a3e1
+INFO:MessageBus.the_stick:📨 REDIS SUB: decision_log ← from=vic_20_sage | to=broadcast | priority=5 | id=2d667f44
+INFO:TheStick.Distributed:📏📬 DECISION_LOG from vic_20_sage: coordination 
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: decision_log ← from=meth_snail | to=broadcast | priority=5 | id=a1376c4d
+INFO:app.ai_agents.distributed.action_verification:✅ Action verified: system/ActionType.CACHE_CLEAR - MINIMALLY_EFFECTIVE (+2.5% improvement, score: 8/100)
+INFO:MethSnail.Distributed:🐌✅ Cache cleared! Freed 196.67 MB! Memory: 54.7% → 52.2% - GOTTA GO FAST!
+WARNING:MethSnail.Distributed:🐌⚠️ Maybe VIC-20 was right... (Success rate: 0/2)
+ERROR:MethSnail.Distributed:🐌💥 Error writing action result: Direct session access not supported - use async for session in self.db_getter()
+Traceback (most recent call last):
+  File "/home/carissab/Documents/system_rebellion/backend/app/ai_agents/meth_snail/database_integration.py", line 600, in store_decision
+    event_type=EventTypes.DECISION_MADE.value,
+               ^^^^^^^^^^
+NameError: name 'EventTypes' is not defined
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/carissab/Documents/system_rebellion/backend/app/ai_agents/meth_snail/distributed_meth_snail.py", line 475, in _write_action_result
+    await self.db_integration.store_decision(
+    ...<2 lines>...
+    )
+  File "/home/carissab/Documents/system_rebellion/backend/app/ai_agents/meth_snail/database_integration.py", line 642, in store_decision
+    await self.session.rollback()
+          ^^^^^^^^^^^^
+  File "/home/carissab/Documents/system_rebellion/backend/app/ai_agents/meth_snail/database_integration.py", line 94, in session
+    raise RuntimeError("Direct session access not supported - use async for session in self.db_getter()")
+RuntimeError: Direct session access not supported - use async for session in self.db_getter()
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: action_report ← from=meth_snail | to=broadcast | priority=5 | id=d2fae4a1
+INFO:MessageBus.the_stick:📨 REDIS SUB: action_report ← from=meth_snail | to=broadcast | priority=5 | id=d2fae4a1
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: action_report ← from=meth_snail | to=broadcast | priority=5 | id=d2fae4a1
+INFO:MessageBus.hamsters:📨 REDIS SUB: action_report ← from=meth_snail | to=broadcast | priority=5 | id=d2fae4a1
+INFO:MessageBus.sir_hawkington:📨 REDIS SUB: action_report ← from=meth_snail | to=broadcast | priority=5 | id=d2fae4a1
+INFO:MessageBus.meth_snail:📡 REDIS PUB: action_report → agents:broadcast | from=meth_snail | priority=5 | id=d2fae4a1
+INFO:StateManager.meth_snail:💾 REDIS SAVE: meth_snail state | decisions=128 | msgs_sent=40 | health=starting | uptime=183s
+INFO:Distributed.unknown:📢 BROADCAST: action_report | from=meth_snail | priority=5
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: decision_log ← from=meth_snail | to=broadcast | priority=5 | id=f730911d
+INFO:MessageBus.the_stick:📨 REDIS SUB: decision_log ← from=meth_snail | to=broadcast | priority=5 | id=f730911d
+INFO:TheStick.Distributed:📏📬 DECISION_LOG from meth_snail: specialist_action 
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: decision_log ← from=meth_snail | to=broadcast | priority=5 | id=f730911d
+INFO:MessageBus.hamsters:📨 REDIS SUB: decision_log ← from=meth_snail | to=broadcast | priority=5 | id=f730911d
+INFO:MessageBus.sir_hawkington:📨 REDIS SUB: decision_log ← from=meth_snail | to=broadcast | priority=5 | id=f730911d
+INFO:MessageBus.meth_snail:📡 REDIS PUB: decision_log → agents:broadcast | from=meth_snail | priority=5 | id=f730911d
+INFO:StateManager.meth_snail:💾 REDIS SAVE: meth_snail state | decisions=128 | msgs_sent=41 | health=starting | uptime=183s
+INFO:Distributed.unknown:📢 BROADCAST: decision_log | from=meth_snail | priority=5
+INFO:MessageBus.meth_snail:📨 REDIS SUB: agent_state_change ← from=hamsters | to=broadcast | priority=2 | id=019240db
+INFO:MessageBus.meth_snail:📨 REDIS SUB: agent_state_change ← from=quantum_shadow_people | to=broadcast | priority=2 | id=231b8e07
+INFO:MessageBus.meth_snail:📨 REDIS SUB: agent_state_change ← from=the_stick | to=broadcast | priority=2 | id=4ea60f92
+INFO:MessageBus.meth_snail:📨 REDIS SUB: agent_state_change ← from=vic_20_sage | to=broadcast | priority=2 | id=ac4b972b
+INFO:MessageBus.meth_snail:📨 REDIS SUB: decision_log ← from=vic_20_sage | to=broadcast | priority=5 | id=2d667f44
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=b3d15f01
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=b3d15f01
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=b3d15f01
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=b3d15f01
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=b3d15f01
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=b3d15f01
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=14.3%, MEM=52.2%
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=1d8a5414
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=1d8a5414
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=1d8a5414
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=1d8a5414
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=1d8a5414
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=6ac83ddc
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=0.0%, MEM=52.2%
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=6ac83ddc
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=6ac83ddc
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=6ac83ddc
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=6ac83ddc
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=6ac83ddc
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=4d553e5f
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=4d553e5f
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=4d553e5f
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=4d553e5f
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=4d553e5f
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=6be1706f
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=13.6%, MEM=52.2%
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=6be1706f
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=6be1706f
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=6be1706f
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=6be1706f
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=6be1706f
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=26ce5e3c
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=26ce5e3c
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=26ce5e3c
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=26ce5e3c
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=26ce5e3c
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=11ea98f9
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=11ea98f9
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=11ea98f9
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=11ea98f9
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=11ea98f9
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=11ea98f9
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=1.2%, MEM=52.1%
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=a0d0ea71
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=a0d0ea71
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=a0d0ea71
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=a0d0ea71
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=a0d0ea71
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=7f597ab2
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=7f597ab2
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=7f597ab2
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=7f597ab2
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=7f597ab2
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=7bd4adb6
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=12.5%, MEM=52.0%
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=7bd4adb6
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=7bd4adb6
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=7bd4adb6
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=7bd4adb6
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=7bd4adb6
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=sir_hawkington | priority=10 | id=0c37210c
+INFO:StateManager.sir_hawkington:💾 REDIS SAVE: sir_hawkington state | decisions=106 | msgs_sent=13393 | health=starting | uptime=210s
+INFO:MessageBus.meth_snail:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=meth_snail | priority=10 | id=320b5fcd
+INFO:StateManager.meth_snail:💾 REDIS SAVE: meth_snail state | decisions=128 | msgs_sent=41 | health=starting | uptime=210s
+INFO:MessageBus.hamsters:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=hamsters | priority=10 | id=4bc8f47b
+INFO:StateManager.hamsters:💾 REDIS SAVE: hamsters state | decisions=86 | msgs_sent=14 | health=starting | uptime=210s
+INFO:MessageBus.the_stick:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=the_stick | priority=10 | id=30d0d9b6
+INFO:MessageBus.quantum_shadow_people:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=quantum_shadow_people | priority=10 | id=4d068a08
+INFO:StateManager.the_stick:💾 REDIS SAVE: the_stick state | decisions=134 | msgs_sent=15 | health=starting | uptime=210s
+INFO:StateManager.quantum_shadow_people:💾 REDIS SAVE: quantum_shadow_people state | decisions=85 | msgs_sent=4627 | health=starting | uptime=210s
+INFO:MessageBus.vic_20_sage:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=vic_20_sage | priority=10 | id=32832335
+INFO:StateManager.vic_20_sage:💾 REDIS SAVE: vic_20_sage state | decisions=102 | msgs_sent=73 | health=starting | uptime=210s
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=d91b6be8
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=d91b6be8
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=d91b6be8
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=d91b6be8
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=d91b6be8
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=72ded462
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=72ded462
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=72ded462
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=72ded462
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=72ded462
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=72ded462
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=12.5%, MEM=52.0%
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=3bb9528e
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=3bb9528e
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=3bb9528e
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=3bb9528e
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=3bb9528e
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=e7a124d4
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=e7a124d4
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=e7a124d4
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=e7a124d4
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=e7a124d4
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=e7a124d4
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=12.5%, MEM=52.0%
+
+================================================================================
+📊 RESOURCE MONITOR PUBLISHING METRICS
+   Message Type: MessageType.RESOURCE_ALERT
+   From Agent: sir_hawkington
+   CPU: 17.5%
+   Memory: 50.5%
+   Message ID: e8e4c552-0093-4bf2-9b32-a850e157a11a
+================================================================================
+
+✅ Publish result: True
+
+
+================================================================================
+📊 RESOURCE MONITOR PUBLISHING METRICS
+   Message Type: MessageType.RESOURCE_ALERT
+   From Agent: sir_hawkington
+   CPU: 12.5%
+   Memory: 50.3%
+   Message ID: 08970575-599f-4b31-b05f-51f07089fe8e
+================================================================================
+
+✅ Publish result: True
+
+
+================================================================================
+📊 RESOURCE MONITOR PUBLISHING METRICS
+   Message Type: MessageType.RESOURCE_ALERT
+   From Agent: sir_hawkington
+   CPU: 25.0%
+   Memory: 52.7%
+   Message ID: 65128c46-34d6-4896-bfc6-d3662a4bdbc7
+================================================================================
+
+✅ Publish result: True
+
+
+================================================================================
+📊 RESOURCE MONITOR PUBLISHING METRICS
+   Message Type: MessageType.RESOURCE_ALERT
+   From Agent: sir_hawkington
+   CPU: 13.6%
+   Memory: 54.7%
+   Message ID: f24c8f8f-b17a-48b4-b089-c68d0fd97337
+================================================================================
+
+✅ Publish result: True
+
+
+================================================================================
+📊 RESOURCE MONITOR PUBLISHING METRICS
+   Message Type: MessageType.RESOURCE_ALERT
+   From Agent: sir_hawkington
+   CPU: 14.3%
+   Memory: 52.2%
+   Message ID: b3d15f01-827c-4a79-8da4-d32c4ddf03e6
+================================================================================
+
+✅ Publish result: True
+
+
+================================================================================
+📊 RESOURCE MONITOR PUBLISHING METRICS
+   Message Type: MessageType.RESOURCE_ALERT
+   From Agent: sir_hawkington
+   CPU: 0.0%
+   Memory: 52.2%
+   Message ID: 6ac83ddc-5e21-4528-bfdf-70f74d1a4f98
+================================================================================
+
+✅ Publish result: True
+
+
+================================================================================
+📊 RESOURCE MONITOR PUBLISHING METRICS
+   Message Type: MessageType.RESOURCE_ALERT
+   From Agent: sir_hawkington
+   CPU: 13.6%
+   Memory: 52.2%
+   Message ID: 6be1706f-953b-4396-9e7d-697dc515f7f5
+================================================================================
+
+✅ Publish result: True
+
+
+================================================================================
+📊 RESOURCE MONITOR PUBLISHING METRICS
+   Message Type: MessageType.RESOURCE_ALERT
+   From Agent: sir_hawkington
+   CPU: 1.2%
+   Memory: 52.1%
+   Message ID: 11ea98f9-75c2-48db-b737-4a3dd2a6a308
+================================================================================
+
+✅ Publish result: True
+
+
+================================================================================
+📊 RESOURCE MONITOR PUBLISHING METRICS
+   Message Type: MessageType.RESOURCE_ALERT
+   From Agent: sir_hawkington
+   CPU: 12.5%
+   Memory: 52.0%
+   Message ID: 7bd4adb6-1b95-49be-aee0-414b7cac8492
+================================================================================
+
+✅ Publish result: True
+
+
+================================================================================
+📊 RESOURCE MONITOR PUBLISHING METRICS
+   Message Type: MessageType.RESOURCE_ALERT
+   From Agent: sir_hawkington
+   CPU: 12.5%
+   Memory: 52.0%
+   Message ID: 72ded462-40ee-481e-bb67-b65255415896
+================================================================================
+
+✅ Publish result: True
+
+
+================================================================================
+📊 RESOURCE MONITOR PUBLISHING METRICS
+   Message Type: MessageType.RESOURCE_ALERT
+   From Agent: sir_hawkington
+   CPU: 12.5%
+   Memory: 52.0%
+   Message ID: e7a124d4-41c5-469e-b966-9c38c7875085
+================================================================================
+
+✅ Publish result: True
+
+INFO:     192.168.1.199:46510 - "GET /api/distributed-agents/agents HTTP/1.1" 200 OK
+INFO:     192.168.1.199:46514 - "GET /api/distributed-agents/agents HTTP/1.1" 200 OK
+INFO:     192.168.1.199:46526 - "GET /api/distributed-agents/agents HTTP/1.1" 200 OK
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=93846f79
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=93846f79
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=93846f79
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=93846f79
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=93846f79
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=149a744b
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=149a744b
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=149a744b
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=149a744b
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=149a744b
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=149a744b
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=12.5%, MEM=52.1%
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=223a9865
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=223a9865
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=223a9865
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=223a9865
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=223a9865
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=d876b703
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=d876b703
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=d876b703
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=d876b703
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=d876b703
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=d876b703
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=12.5%, MEM=52.0%
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=8fcb7b22
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=8fcb7b22
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=8fcb7b22
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=8fcb7b22
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=8fcb7b22
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=6dc55ea3
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=6dc55ea3
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=6dc55ea3
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=6dc55ea3
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=6dc55ea3
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=6dc55ea3
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=0.0%, MEM=52.0%
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=90f71bea
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=90f71bea
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=90f71bea
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=90f71bea
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=90f71bea
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=4a3ec1fb
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=4a3ec1fb
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=4a3ec1fb
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=4a3ec1fb
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=4a3ec1fb
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=4a3ec1fb
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=13.8%, MEM=52.0%
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=sir_hawkington | priority=10 | id=78fc29d8
+INFO:StateManager.sir_hawkington:💾 REDIS SAVE: sir_hawkington state | decisions=106 | msgs_sent=13393 | health=starting | uptime=241s
+INFO:MessageBus.meth_snail:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=meth_snail | priority=10 | id=bc7bbc25
+INFO:StateManager.meth_snail:💾 REDIS SAVE: meth_snail state | decisions=128 | msgs_sent=41 | health=starting | uptime=240s
+INFO:MessageBus.hamsters:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=hamsters | priority=10 | id=ba39273b
+INFO:StateManager.hamsters:💾 REDIS SAVE: hamsters state | decisions=86 | msgs_sent=14 | health=starting | uptime=240s
+INFO:MessageBus.the_stick:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=the_stick | priority=10 | id=10a657a2
+INFO:MessageBus.quantum_shadow_people:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=quantum_shadow_people | priority=10 | id=83617024
+INFO:StateManager.the_stick:💾 REDIS SAVE: the_stick state | decisions=134 | msgs_sent=15 | health=starting | uptime=240s
+INFO:MessageBus.vic_20_sage:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=vic_20_sage | priority=10 | id=52a75f21
+INFO:StateManager.quantum_shadow_people:💾 REDIS SAVE: quantum_shadow_people state | decisions=85 | msgs_sent=4627 | health=starting | uptime=240s
+INFO:StateManager.vic_20_sage:💾 REDIS SAVE: vic_20_sage state | decisions=102 | msgs_sent=73 | health=starting | uptime=240s
+INFO:MessageBus.vic_20_sage:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=ff599263
+INFO:MessageBus.the_stick:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=ff599263
+INFO:MessageBus.quantum_shadow_people:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=ff599263
+INFO:MessageBus.hamsters:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=ff599263
+INFO:MessageBus.meth_snail:📨 REDIS SUB: resource_alert ← from=sir_hawkington | to=broadcast | priority=10 | id=ff599263
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: resource_alert → agents:resources:alerts | from=sir_hawkington | priority=10 | id=ff599263
+INFO:ResourceMonitor.sir_hawkington:📊 Published metrics: CPU=12.5%, MEM=50.1%
