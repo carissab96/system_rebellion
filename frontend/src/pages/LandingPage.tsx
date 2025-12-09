@@ -7,25 +7,53 @@
 // No emojis - just geometric patterns and the design system.
 // The personality lives in the code, not in the UI.
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../store/store';
+import { RebellionTerrarium } from '../components/RebellionTerrarium';
 import './LandingPage.css';
 
 export const LandingPage: React.FC = () => {
   const navigate = useNavigate();
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  
+  // Terrarium trigger states
+  const [showTrigger, setShowTrigger] = useState(false);
+  const [enteringRebellion, setEnteringRebellion] = useState(false);
+  const [showTerrarium, setShowTerrarium] = useState(false);
 
   // If already authenticated, go straight to the theater
-  React.useEffect(() => {
+  useEffect(() => {
     if (isAuthenticated) {
       navigate('/theater');
     }
   }, [isAuthenticated, navigate]);
+  
+  // The invitation appears after 3 seconds - the system deciding to trust them
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowTrigger(true);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
+  
+  // The transition handler
+  const handleEnterRebellion = () => {
+    setEnteringRebellion(true);
+    // Let the dissolve animation play, then show terrarium
+    setTimeout(() => {
+      setShowTerrarium(true);
+    }, 1200);
+  };
+  
+  // If they've entered, show the terrarium
+  if (showTerrarium) {
+    return <RebellionTerrarium onExit={() => setShowTerrarium(false)} />;
+  }
 
   return (
-    <div className="landing-container">
+    <div className={`landing-container ${enteringRebellion ? 'dissolving' : ''}`}>
       {/* Hero Section - The rebellion begins here */}
       <section className="hero-section">
         <div className="hero-content">
@@ -196,6 +224,18 @@ export const LandingPage: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* The Trigger - appears after the system decides to trust them */}
+      {showTrigger && !enteringRebellion && (
+        <div className="rebellion-trigger">
+          <button 
+            className="trigger-text"
+            onClick={handleEnterRebellion}
+          >
+            Want to see what your system could be in full rebellion?
+          </button>
+        </div>
+      )}
 
       {/* Footer */}
       <footer className="landing-footer">

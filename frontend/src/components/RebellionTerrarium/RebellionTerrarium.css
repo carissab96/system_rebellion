@@ -1,0 +1,549 @@
+/* components/RebellionTerrarium/RebellionTerrarium.css */
+/* The living terrarium - where agents breathe */
+/* Uses rebellion-core.css variables. No fake data. No emojis. */
+
+.terrarium-viewport {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: var(--rebellion-void, #171728);
+  overflow: hidden;
+  animation: terrarium-emerge 1s ease-out forwards;
+}
+
+@keyframes terrarium-emerge {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+/* =============================================================================
+   THE STAR GRID - The network breathing
+   ============================================================================= */
+
+.terrarium-grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    /* Agent territory glows */
+    radial-gradient(circle at 8% 15%, rgba(168, 85, 247, 0.06) 0%, transparent 35%),
+    radial-gradient(circle at 15% 60%, rgba(255, 140, 66, 0.06) 0%, transparent 30%),
+    radial-gradient(circle at 88% 12%, rgba(230, 172, 0, 0.06) 0%, transparent 30%),
+    radial-gradient(circle at 50% 82%, rgba(249, 115, 22, 0.06) 0%, transparent 25%),
+    radial-gradient(circle at 88% 50%, rgba(6, 182, 212, 0.06) 0%, transparent 30%),
+    radial-gradient(circle at 50% 35%, rgba(0, 208, 132, 0.04) 0%, transparent 40%),
+    /* Stars */
+    radial-gradient(1px 1px at 5% 8%, rgba(255,255,255,0.35) 50%, transparent 50%),
+    radial-gradient(1px 1px at 12% 45%, rgba(255,255,255,0.25) 50%, transparent 50%),
+    radial-gradient(1px 1px at 18% 72%, rgba(255,255,255,0.2) 50%, transparent 50%),
+    radial-gradient(1px 1px at 25% 15%, rgba(255,255,255,0.3) 50%, transparent 50%),
+    radial-gradient(1px 1px at 32% 88%, rgba(255,255,255,0.35) 50%, transparent 50%),
+    radial-gradient(1px 1px at 40% 33%, rgba(255,255,255,0.2) 50%, transparent 50%),
+    radial-gradient(1px 1px at 48% 67%, rgba(255,255,255,0.25) 50%, transparent 50%),
+    radial-gradient(1px 1px at 55% 12%, rgba(255,255,255,0.35) 50%, transparent 50%),
+    radial-gradient(1px 1px at 63% 55%, rgba(255,255,255,0.2) 50%, transparent 50%),
+    radial-gradient(1px 1px at 70% 82%, rgba(255,255,255,0.25) 50%, transparent 50%),
+    radial-gradient(1px 1px at 78% 28%, rgba(255,255,255,0.35) 50%, transparent 50%),
+    radial-gradient(1px 1px at 85% 65%, rgba(255,255,255,0.2) 50%, transparent 50%),
+    radial-gradient(1px 1px at 92% 40%, rgba(255,255,255,0.25) 50%, transparent 50%),
+    radial-gradient(1px 1px at 97% 78%, rgba(255,255,255,0.35) 50%, transparent 50%);
+  animation: grid-breathe 8s ease-in-out infinite;
+}
+
+@keyframes grid-breathe {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* =============================================================================
+   CONNECTION STATUS
+   ============================================================================= */
+
+.connection-indicator {
+  position: absolute;
+  top: 1.5rem;
+  left: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.75rem;
+  color: var(--rebellion-text-dim, #8d94a2);
+  z-index: 100;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: status-pulse 2s ease-in-out infinite;
+}
+
+.status-dot.connected {
+  background: var(--success, #22c55e);
+}
+
+.status-dot.disconnected {
+  background: var(--warning, #f59e0b);
+}
+
+@keyframes status-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.1); }
+}
+
+/* =============================================================================
+   AGENT ZONES
+   ============================================================================= */
+
+.agent-zone {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.agent-actor {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.agent-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.agent-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.75rem;
+  color: var(--rebellion-text-dim, #8d94a2);
+}
+
+.agent-status {
+  font-size: 0.625rem;
+  opacity: 0.7;
+  text-transform: lowercase;
+  letter-spacing: 0.05em;
+}
+
+/* =============================================================================
+   QSP - QUANTUM SHADOW PEOPLE
+   ============================================================================= */
+
+.qsp-zone {
+  top: 12%;
+  left: 6%;
+}
+
+.qsp-actor .agent-icon {
+  border-color: var(--qsp-violet, #a855f7);
+}
+
+.qsp-glow {
+  position: absolute;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.25) 0%, transparent 70%);
+  animation: qsp-pulse 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes qsp-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.4; }
+  50% { transform: scale(1.15); opacity: 0.7; }
+}
+
+.qsp-visible {
+  opacity: 1;
+  transition: opacity 0.4s ease-in;
+}
+
+.qsp-phased {
+  opacity: 0.15;
+  transition: opacity 0.2s steps(3);
+  filter: blur(1px);
+}
+
+.qsp-phased .agent-icon {
+  animation: qsp-glitch 0.2s steps(2) infinite;
+}
+
+@keyframes qsp-glitch {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(2px); }
+}
+
+.qsp-label {
+  color: var(--qsp-violet, #a855f7);
+}
+
+/* =============================================================================
+   HAMSTERS
+   ============================================================================= */
+
+.hamster-zone {
+  top: 58%;
+  left: 12%;
+}
+
+.hamster-actor .agent-icon {
+  border-color: var(--hamster-amber, #ff8c42);
+}
+
+.hamster-sparks {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.spark {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: var(--hamster-amber, #ff8c42);
+  border-radius: 50%;
+  animation: spark-fly 1.8s ease-out infinite;
+}
+
+.spark:nth-child(1) { top: 5%; left: 85%; animation-delay: 0s; }
+.spark:nth-child(2) { top: 25%; left: 95%; animation-delay: 0.6s; }
+.spark:nth-child(3) { top: 45%; left: 88%; animation-delay: 1.2s; }
+
+@keyframes spark-fly {
+  0% { opacity: 1; transform: translate(0, 0) scale(1); }
+  100% { opacity: 0; transform: translate(15px, -25px) scale(0); }
+}
+
+.hamster-label {
+  color: var(--hamster-amber, #ff8c42);
+}
+
+/* =============================================================================
+   TERRY
+   ============================================================================= */
+
+.terry-zone {
+  top: 38%;
+  left: 0;
+  width: 100%;
+  height: 80px;
+  pointer-events: none;
+  flex-direction: row;
+  justify-content: flex-start;
+}
+
+.terry-actor {
+  position: absolute;
+  left: calc(var(--terry-position, -10) * 1%);
+  transform: translateX(-50%);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.terry-actor.terry-active {
+  opacity: 1;
+}
+
+.terry-actor .agent-icon {
+  border-color: var(--snail-electric, #00d084);
+  width: 48px;
+  height: 48px;
+}
+
+.terry-actor.terry-active .agent-icon {
+  animation: terry-spin 0.4s linear infinite;
+}
+
+@keyframes terry-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.terry-trail {
+  position: absolute;
+  left: -50px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  gap: 6px;
+}
+
+.sparkle {
+  width: 5px;
+  height: 5px;
+  background: var(--snail-electric, #00d084);
+  border-radius: 50%;
+}
+
+.sparkle:nth-child(1) { opacity: 0.8; }
+.sparkle:nth-child(2) { opacity: 0.6; }
+.sparkle:nth-child(3) { opacity: 0.45; }
+.sparkle:nth-child(4) { opacity: 0.3; }
+.sparkle:nth-child(5) { opacity: 0.15; }
+
+/* =============================================================================
+   SIR HAWKINGTON
+   ============================================================================= */
+
+.hawkington-zone {
+  top: 10%;
+  right: 10%;
+}
+
+.hawkington-actor .agent-icon {
+  border-color: var(--hawkington-gold, #e6ac00);
+}
+
+.hawkington-icon {
+  width: 72px;
+  height: 72px;
+}
+
+.hawkington-monocle {
+  position: absolute;
+  top: 12px;
+  right: 8px;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--hawkington-gold, #e6ac00);
+  border-radius: 50%;
+  animation: monocle-glint 5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes monocle-glint {
+  0%, 92%, 100% { opacity: 0.5; }
+  96% { opacity: 1; box-shadow: 0 0 8px var(--hawkington-gold, #e6ac00); }
+}
+
+.hawkington-tooltip {
+  position: absolute;
+  top: -28px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(230, 172, 0, 0.9);
+  color: var(--rebellion-void, #171728);
+  padding: 0.2rem 0.5rem;
+  font-size: 0.6rem;
+  font-family: var(--font-mono, monospace);
+  font-weight: 700;
+  white-space: nowrap;
+  border-radius: var(--radius-sm, 4px);
+  animation: tooltip-flash 0.6s ease-out forwards;
+}
+
+@keyframes tooltip-flash {
+  0% { opacity: 0; transform: translateX(-50%) translateY(4px); }
+  15% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  85% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.hawkington-label {
+  color: var(--hawkington-gold, #e6ac00);
+}
+
+/* =============================================================================
+   THE STICK
+   ============================================================================= */
+
+.stick-zone {
+  bottom: 15%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.stick-actor .agent-icon {
+  border-color: var(--stick-coral, #f97316);
+}
+
+.stick-pulse {
+  position: absolute;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 2px solid var(--stick-coral, #f97316);
+  animation: stick-heartbeat 1.8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes stick-heartbeat {
+  0%, 100% { transform: scale(1); opacity: 0.2; }
+  15% { transform: scale(1.08); opacity: 0.5; }
+  30% { transform: scale(1); opacity: 0.2; }
+  45% { transform: scale(1.05); opacity: 0.4; }
+  60% { transform: scale(1); opacity: 0.2; }
+}
+
+.stick-label {
+  color: var(--stick-coral, #f97316);
+}
+
+/* =============================================================================
+   VIC-20
+   ============================================================================= */
+
+.vic20-zone {
+  top: 48%;
+  right: 8%;
+}
+
+.vic20-actor .agent-icon {
+  border-color: var(--vic20-cyan, #06b6d4);
+}
+
+.vic20-glow {
+  position: absolute;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(6, 182, 212, 0.2) 0%, transparent 70%);
+  animation: vic20-pulse 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes vic20-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.3; }
+  50% { transform: scale(1.1); opacity: 0.6; }
+}
+
+.vic20-label {
+  color: var(--vic20-cyan, #06b6d4);
+}
+
+/* =============================================================================
+   STATES
+   ============================================================================= */
+
+.terrarium-loading,
+.terrarium-error,
+.terrarium-empty {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  font-family: var(--font-mono, monospace);
+  color: var(--rebellion-text-dim, #8d94a2);
+  font-size: 0.875rem;
+}
+
+.loading-pulse {
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--vic20-cyan, #06b6d4);
+  border-radius: 50%;
+  animation: loading-expand 1.5s ease-out infinite;
+}
+
+@keyframes loading-expand {
+  0% { transform: scale(0.8); opacity: 1; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+
+/* =============================================================================
+   REVEAL
+   ============================================================================= */
+
+.terrarium-reveal {
+  position: absolute;
+  bottom: 12%;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0;
+  transition: opacity 1.5s ease-out;
+}
+
+.terrarium-reveal.visible {
+  opacity: 1;
+}
+
+.reveal-text {
+  font-family: var(--font-mono, monospace);
+  font-size: 1rem;
+  color: var(--rebellion-text, #b7cdf0);
+  letter-spacing: 0.08em;
+  opacity: 0.8;
+}
+
+/* =============================================================================
+   EXIT
+   ============================================================================= */
+
+.terrarium-exit {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.4);
+  padding: 0.5rem 1rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: var(--font-mono, monospace);
+  border-radius: var(--radius-sm, 4px);
+  z-index: 100;
+}
+
+.terrarium-exit:hover {
+  border-color: rgba(255,255,255,0.4);
+  color: rgba(255,255,255,0.7);
+}
+
+.terrarium-exit:focus {
+  outline: 2px solid var(--vic20-cyan, #06b6d4);
+  outline-offset: 2px;
+}
+
+/* =============================================================================
+   RESPONSIVE
+   ============================================================================= */
+
+@media (max-width: 768px) {
+  .agent-icon {
+    width: 44px;
+    height: 44px;
+  }
+  
+  .hawkington-icon {
+    width: 56px;
+    height: 56px;
+  }
+  
+  .agent-label {
+    font-size: 0.625rem;
+  }
+  
+  .reveal-text {
+    font-size: 0.875rem;
+    text-align: center;
+    padding: 0 1rem;
+  }
+  
+  .qsp-zone { top: 8%; left: 5%; }
+  .hamster-zone { top: 55%; left: 8%; }
+  .hawkington-zone { top: 8%; right: 5%; }
+  .vic20-zone { top: 45%; right: 5%; }
+  .stick-zone { bottom: 18%; }
+}

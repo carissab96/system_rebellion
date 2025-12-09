@@ -421,6 +421,73 @@
 }
 
 /* ============================================================================
+   REBELLION TRIGGER - The invitation to see the living system
+   ============================================================================ */
+
+.rebellion-trigger {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  opacity: 0;
+  animation: trigger-fade-in 2s ease-out forwards;
+}
+
+@keyframes trigger-fade-in {
+  0% { opacity: 0; transform: translateX(-50%) translateY(20px); }
+  100% { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.trigger-text {
+  background: transparent;
+  border: 1px solid var(--qsp-violet);
+  color: var(--qsp-violet);
+  padding: 0.75rem 1.5rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: var(--font-mono);
+  letter-spacing: 0.03em;
+  border-radius: var(--radius-sm);
+}
+
+.trigger-text:hover {
+  background: rgba(168, 85, 247, 0.1);
+  border-color: var(--snail-electric);
+  color: var(--snail-electric);
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.2);
+}
+
+.trigger-text:focus {
+  outline: 2px solid var(--vic20-cyan);
+  outline-offset: 2px;
+}
+
+/* ============================================================================
+   DISSOLVE TRANSITION - Corporate facade melting away
+   ============================================================================ */
+
+.landing-container.dissolving {
+  animation: corporate-dissolve 1.2s ease-in-out forwards;
+}
+
+@keyframes corporate-dissolve {
+  0% { 
+    opacity: 1; 
+    filter: blur(0);
+  }
+  50% { 
+    opacity: 0.4; 
+    filter: blur(3px);
+  }
+  100% { 
+    opacity: 0; 
+    filter: blur(6px);
+  }
+}
+
+/* ============================================================================
    RESPONSIVE DESIGN
    ============================================================================ */
 
