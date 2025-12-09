@@ -39,11 +39,11 @@ def upgrade() -> None:
     op.drop_index('idx_agent_interaction_vectors_to', table_name='agent_interaction_vectors')
     op.drop_index('idx_agent_interaction_vectors_pair', table_name='agent_interaction_vectors')
     
-    # Create new indexes
-    op.create_index('idx_agent_interaction_vectors_primary', 'agent_interaction_vectors', ['primary_agent', sa.text('occurred_at DESC')])
-    op.create_index('idx_agent_interaction_vectors_secondary', 'agent_interaction_vectors', ['secondary_agent', sa.text('occurred_at DESC')])
-    op.create_index('idx_agent_interaction_vectors_pair', 'agent_interaction_vectors', ['primary_agent', 'secondary_agent', sa.text('occurred_at DESC')])
-    op.create_index('idx_agent_interaction_vectors_user', 'agent_interaction_vectors', ['user_id', sa.text('occurred_at DESC')])
+    # Create new indexes using raw SQL for DESC ordering
+    op.execute('CREATE INDEX idx_agent_interaction_vectors_primary ON agent_interaction_vectors(primary_agent, occurred_at DESC)')
+    op.execute('CREATE INDEX idx_agent_interaction_vectors_secondary ON agent_interaction_vectors(secondary_agent, occurred_at DESC)')
+    op.execute('CREATE INDEX idx_agent_interaction_vectors_pair ON agent_interaction_vectors(primary_agent, secondary_agent, occurred_at DESC)')
+    op.execute('CREATE INDEX idx_agent_interaction_vectors_user ON agent_interaction_vectors(user_id, occurred_at DESC)')
 
 
 def downgrade() -> None:
@@ -68,7 +68,7 @@ def downgrade() -> None:
     op.alter_column('agent_interaction_vectors', 'primary_agent', new_column_name='from_agent')
     op.alter_column('agent_interaction_vectors', 'secondary_agent', new_column_name='to_agent')
     
-    # Recreate old indexes
-    op.create_index('idx_agent_interaction_vectors_from', 'agent_interaction_vectors', ['from_agent', sa.text('occurred_at DESC')])
-    op.create_index('idx_agent_interaction_vectors_to', 'agent_interaction_vectors', ['to_agent', sa.text('occurred_at DESC')])
-    op.create_index('idx_agent_interaction_vectors_pair', 'agent_interaction_vectors', ['from_agent', 'to_agent', sa.text('occurred_at DESC')])
+    # Recreate old indexes using raw SQL
+    op.execute('CREATE INDEX idx_agent_interaction_vectors_from ON agent_interaction_vectors(from_agent, occurred_at DESC)')
+    op.execute('CREATE INDEX idx_agent_interaction_vectors_to ON agent_interaction_vectors(to_agent, occurred_at DESC)')
+    op.execute('CREATE INDEX idx_agent_interaction_vectors_pair ON agent_interaction_vectors(from_agent, to_agent, occurred_at DESC)')
