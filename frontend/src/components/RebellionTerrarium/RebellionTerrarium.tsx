@@ -106,15 +106,47 @@ export const RebellionTerrarium: React.FC<RebellionTerrariumProps> = ({ onExit }
     }
   }, []);
 
-  // Connect to existing WebSocket
+  // Connect to WebSocket - use demo endpoint if not authenticated
   useEffect(() => {
     const token = localStorage.getItem('access_token');
+    const wsEndpoint = token ? '/ws/system-metrics' : '/ws/demo-metrics';
+    
+    // For demo mode, create a simple WebSocket directly (no auth needed)
     if (!token) {
-      setError('Authentication required');
-      setIsLoading(false);
-      return;
+      const wsUrl = `${WS_BASE_URL || 'ws://localhost:8000'}${wsEndpoint}`;
+      const demoWs = new WebSocket(wsUrl);
+      
+      demoWs.onopen = () => {
+        console.log('Demo WebSocket connected');
+        setIsConnected(true);
+      };
+      
+      demoWs.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          handleMessage(data);
+        } catch (e) {
+          console.error('Failed to parse demo message:', e);
+        }
+      };
+      
+      demoWs.onerror = (err) => {
+        console.error('Demo WebSocket error:', err);
+        setIsConnected(false);
+        setIsLoading(false);
+      };
+      
+      demoWs.onclose = () => {
+        console.log('Demo WebSocket closed');
+        setIsConnected(false);
+      };
+      
+      return () => {
+        demoWs.close();
+      };
     }
 
+    // Authenticated mode - use the shared WebSocketService
     try {
       const wsService = WebSocketService.getInstance(WS_BASE_URL || 'ws://localhost:8000');
       wsRef.current = wsService;
@@ -123,23 +155,23 @@ export const RebellionTerrarium: React.FC<RebellionTerrariumProps> = ({ onExit }
       const unsubscribe = wsService.subscribe(handleMessage);
       
       // Connect
-      wsService.ensureConnected('/ws/system-metrics');
+      wsService.ensureConnected(wsEndpoint);
       wsService.waitUntilOpen(10000)
         .then(() => {
           setIsConnected(true);
-          // Loading will clear when we receive agent_roster or system_update
         })
         .catch((err) => {
-          setError(`Connection failed: ${err.message}`);
+          console.error('WebSocket connection failed:', err);
+          setIsConnected(false);
           setIsLoading(false);
         });
 
       return () => {
         unsubscribe();
-        // Don't close the WebSocket - it's shared across the app
       };
     } catch (err) {
-      setError(`WebSocket error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      console.error('WebSocket error:', err);
+      setIsConnected(false);
       setIsLoading(false);
     }
   }, [handleMessage]);
@@ -298,8 +330,8 @@ export const RebellionTerrarium: React.FC<RebellionTerrariumProps> = ({ onExit }
       
       {/* Connection status */}
       <div className="connection-indicator">
-        <span className={`status-dot ${isConnected ? 'connected' : 'disconnected'}`}></span>
-        <span className="status-text">{isConnected ? 'Live' : 'Connecting...'}</span>
+        <span className={`status-dot ${isConnected ? 'connected' : 'demo'}`}></span>
+        <span className="status-text">{isConnected ? 'Live' : 'Demo'}</span>
       </div>
       
       {!hasAnyAgent ? (

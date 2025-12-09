@@ -389,7 +389,7 @@
 
 .landing-footer {
   padding: var(--space-2xl) var(--space-lg);
-  background: var(--rebellion-void-dark);
+  background: transparent;
   border-top: 1px solid var(--rebellion-border);
 }
 
@@ -425,18 +425,17 @@
    ============================================================================ */
 
 .rebellion-trigger {
-  position: fixed;
-  bottom: 2rem;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 100;
+  display: flex;
+  justify-content: center;
+  padding: var(--space-xl) 0;
+  margin-top: var(--space-lg);
   opacity: 0;
   animation: trigger-fade-in 2s ease-out forwards;
 }
 
 @keyframes trigger-fade-in {
-  0% { opacity: 0; transform: translateX(-50%) translateY(20px); }
-  100% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
 
 .trigger-text {
@@ -462,6 +461,14 @@
 .trigger-text:focus {
   outline: 2px solid var(--vic20-cyan);
   outline-offset: 2px;
+}
+
+.trigger-error {
+  margin-top: var(--space-sm);
+  color: var(--stick-coral);
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  text-align: center;
 }
 
 /* ============================================================================

@@ -38,7 +38,7 @@ export const LandingPage: React.FC = () => {
     return () => clearTimeout(timer);
   }, []);
   
-  // The transition handler
+  // The transition handler - no auth needed, uses public demo WebSocket
   const handleEnterRebellion = () => {
     setEnteringRebellion(true);
     // Let the dissolve animation play, then show terrarium

@@ -858,3 +858,129 @@ async def system_metrics_socket(websocket: WebSocket):
         except Exception:
             pass
         logger.info("WebSocket connection closed for %s", client_id)
+
+
+@router.websocket("/ws/demo-metrics")
+async def demo_metrics_socket(websocket: WebSocket):
+    """
+    Public Demo WebSocket - No authentication required.
+    Streams real system metrics and agent status for landing page terrarium.
+    Read-only: no persistence, no user context, no triage.
+    """
+    client_id = f"demo_{id(websocket)}"
+    
+    try:
+        await websocket.accept()
+        logger.info("Demo WebSocket connection accepted for %s", client_id)
+        
+        # Send handshake
+        await safe_websocket_send(websocket, {
+            "type": "connection_established",
+            "client_id": client_id,
+            "mode": "demo",
+            "timestamp": _now_iso(),
+        })
+        
+        # System info
+        await safe_websocket_send(websocket, {
+            "type": "system_info",
+            "data": await get_system_info(),
+            "message": "Demo Metrics WebSocket ready.",
+            "timestamp": _now_iso(),
+        })
+        
+        # Get distributed agent manager for real agent status
+        agent_manager = None
+        try:
+            from app.ai_agents.distributed.distributed_agent_manager import get_distributed_manager
+            agent_manager = get_distributed_manager()
+            if agent_manager and agent_manager.initialized:
+                logger.info("✅ Demo: Distributed agent manager ready")
+            else:
+                agent_manager = None
+        except Exception as e:
+            logger.warning("Demo: Agent manager not available: %s", str(e))
+        
+        # Send agent roster
+        if agent_manager and agent_manager.initialized:
+            try:
+                active_agents = agent_manager.get_active_agents()
+                await safe_websocket_send(websocket, {
+                    "type": "agent_roster",
+                    "active_agents": active_agents,
+                    "count": len(active_agents),
+                    "timestamp": _now_iso(),
+                })
+            except Exception as e:
+                logger.error("Demo: Error sending agent roster: %s", str(e))
+        
+        # Metrics service
+        metrics_service = await SimplifiedMetricsService.get_instance()
+        update_interval = 5.0
+        
+        # Main loop - simplified, no persistence
+        while True:
+            loop_start = time.time()
+            
+            try:
+                # Get real metrics
+                metrics = await metrics_service.get_metrics()
+                
+                # Get agent insights (status only, no triage)
+                agent_insights: Dict[str, Any] = {}
+                
+                if agent_manager and agent_manager.initialized:
+                    try:
+                        for agent_name in agent_manager.get_active_agents():
+                            agent = agent_manager.get_agent(agent_name)
+                            if agent and hasattr(agent, 'get_agent_status'):
+                                agent_status = agent.get_agent_status()
+                                agent_insights[agent_name] = {
+                                    "status": "active",
+                                    "is_active": True,
+                                    **agent_status
+                                }
+                    except Exception as e:
+                        logger.error("Demo: Failed to get agent status: %s", str(e))
+                
+                # Send update
+                sent = await safe_websocket_send(websocket, {
+                    "type": "system_update",
+                    "timestamp": _now_iso(),
+                    "metrics": metrics,
+                    "agents": agent_insights,
+                    "mode": "demo",
+                })
+                
+                if not sent:
+                    logger.info("Demo: Client %s disconnected", client_id)
+                    break
+                
+                # Handle ping/pong
+                try:
+                    raw = await asyncio.wait_for(websocket.receive_text(), timeout=0.5)
+                    msg = json.loads(raw)
+                    if msg.get("type") == "ping":
+                        await safe_websocket_send(websocket, {"type": "pong", "timestamp": _now_iso()})
+                except asyncio.TimeoutError:
+                    pass
+                except json.JSONDecodeError:
+                    pass
+                
+                # Maintain cadence
+                elapsed = time.time() - loop_start
+                await asyncio.sleep(max(0.1, update_interval - elapsed))
+                
+            except WebSocketDisconnect:
+                logger.info("Demo WebSocket %s disconnected", client_id)
+                break
+            except Exception as e:
+                logger.error("Demo WebSocket error: %s", str(e))
+                break
+    
+    finally:
+        try:
+            await websocket.close()
+        except Exception:
+            pass
+        logger.info("Demo WebSocket closed for %s", client_id)
