@@ -8,7 +8,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { WebSocketService } from '../../services/websocket';
-import { WS_BASE_URL } from '../../config/constants';
+import { WS_BASE_URL, API_BASE_URL } from '../../config/constants';
 import './RebellionTerrarium.css';
 
 // Agent icons - no emojis, just the real deal
@@ -65,21 +65,28 @@ interface AgentRosterMessage {
 
 type WSMessage = SystemUpdateMessage | AgentRosterMessage | { type: string; [key: string]: unknown };
 
+interface ActivityItem {
+  id: string;
+  agent: string;
+  message: string;
+  timestamp: string;
+  type: 'insight' | 'event' | 'triage';
+}
+
 export const RebellionTerrarium: React.FC<RebellionTerrariumProps> = ({ onExit }) => {
   const [agents, setAgents] = useState<Record<string, AgentData>>({});
   const [activeAgentNames, setActiveAgentNames] = useState<string[]>([]);
+  const [activityFeed, setActivityFeed] = useState<ActivityItem[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Animation states
-  const [terryPosition, setTerryPosition] = useState(-10);
+  // Animation states (QSP phasing is React-controlled, others are pure CSS)
   const [qspVisible, setQspVisible] = useState(true);
-  const [hawkingtonTooltip, setHawkingtonTooltip] = useState<string | null>(null);
   const [showReveal, setShowReveal] = useState(false);
   
   const wsRef = useRef<WebSocketService | null>(null);
-  const terryAnimationRef = useRef<number | null>(null);
+  const lastAgentUpdateRef = useRef<number>(0);
 
   // Handle WebSocket messages
   const handleMessage = useCallback((data: WSMessage) => {
@@ -92,8 +99,14 @@ export const RebellionTerrarium: React.FC<RebellionTerrariumProps> = ({ onExit }
     if (data.type === 'system_update') {
       const update = data as SystemUpdateMessage;
       if (update.agents && Object.keys(update.agents).length > 0) {
-        setAgents(update.agents);
+        // Throttle agent updates to max once per 3 seconds to reduce re-renders
+        const now = Date.now();
+        if (now - lastAgentUpdateRef.current > 3000) {
+          setAgents(update.agents);
+          lastAgentUpdateRef.current = now;
+        }
         setIsLoading(false);
+        // Activity feed is now fetched from /api/reports/demo-feed endpoint
       }
     }
     
@@ -109,7 +122,7 @@ export const RebellionTerrarium: React.FC<RebellionTerrariumProps> = ({ onExit }
   // Connect to WebSocket - use demo endpoint if not authenticated
   useEffect(() => {
     const token = localStorage.getItem('access_token');
-    const wsEndpoint = token ? '/ws/system-metrics' : '/ws/demo-metrics';
+    const wsEndpoint = token ? '/api/ws/system-metrics' : '/api/ws/demo-metrics';
     
     // For demo mode, create a simple WebSocket directly (no auth needed)
     if (!token) {
@@ -176,40 +189,7 @@ export const RebellionTerrarium: React.FC<RebellionTerrariumProps> = ({ onExit }
     }
   }, [handleMessage]);
 
-  // Terry streaks across periodically
-  useEffect(() => {
-    const runTerryAnimation = () => {
-      setTerryPosition(-10);
-      let pos = -10;
-      
-      const animate = () => {
-        pos += 1.5;
-        setTerryPosition(pos);
-        
-        if (pos < 110) {
-          terryAnimationRef.current = requestAnimationFrame(animate);
-        }
-      };
-      
-      terryAnimationRef.current = requestAnimationFrame(animate);
-    };
-
-    // First streak after 2s
-    const initialTimeout = setTimeout(runTerryAnimation, 2000);
-    
-    // Then every 12s
-    const interval = setInterval(runTerryAnimation, 12000);
-
-    return () => {
-      clearTimeout(initialTimeout);
-      clearInterval(interval);
-      if (terryAnimationRef.current) {
-        cancelAnimationFrame(terryAnimationRef.current);
-      }
-    };
-  }, []);
-
-  // QSP phases in and out
+  // QSP phases in and out (React-controlled for the glitch effect)
   useEffect(() => {
     const qspInterval = setInterval(() => {
       setQspVisible(false);
@@ -219,14 +199,36 @@ export const RebellionTerrarium: React.FC<RebellionTerrariumProps> = ({ onExit }
     return () => clearInterval(qspInterval);
   }, []);
 
-  // Hawkington's tooltip when Terry is active
+  // Fetch real activity feed from the reports endpoint
   useEffect(() => {
-    if (terryPosition > 30 && terryPosition < 70) {
-      setHawkingtonTooltip("NO MORE RED BULL");
-      const timeout = setTimeout(() => setHawkingtonTooltip(null), 600);
-      return () => clearTimeout(timeout);
-    }
-  }, [terryPosition]);
+    const fetchActivityFeed = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/reports/demo-feed?hours=1&limit=15`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.feed && Array.isArray(data.feed)) {
+            setActivityFeed(data.feed.map((item: { id: string; agent: string; message: string; timestamp: string; type: string }) => ({
+              id: item.id,
+              agent: item.agent,
+              message: item.message,
+              timestamp: item.timestamp,
+              type: item.type as 'insight' | 'event' | 'triage'
+            })));
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch activity feed:', err);
+      }
+    };
+
+    // Fetch immediately
+    fetchActivityFeed();
+    
+    // Then refresh every 10 seconds
+    const interval = setInterval(fetchActivityFeed, 10000);
+    
+    return () => clearInterval(interval);
+  }, []);
 
   // Show reveal text after 3 seconds
   useEffect(() => {
@@ -354,30 +356,43 @@ export const RebellionTerrarium: React.FC<RebellionTerrariumProps> = ({ onExit }
             )}
           </div>
           
-          {/* Hamster Zone */}
+          {/* Hamster Zone - The Telepathic Trio */}
           <div className="agent-zone hamster-zone">
-            <div className="agent-actor hamster-actor">
-              <img src={hamstersIcon} alt="The Hamsters" className="agent-icon" />
-              <div className="hamster-sparks">
-                <span className="spark"></span>
-                <span className="spark"></span>
-                <span className="spark"></span>
+            <div className="hamster-trio">
+              {/* Steve - The Careful One */}
+              <div className="agent-actor hamster-actor hamster-steve">
+                <img src={hamstersIcon} alt="Steve" className="agent-icon" />
+                <span className="hamster-name">Steve</span>
               </div>
+              {/* Bob - The Wild One */}
+              <div className="agent-actor hamster-actor hamster-bob">
+                <img src={hamstersIcon} alt="Bob" className="agent-icon" />
+                <span className="hamster-name">Bob</span>
+              </div>
+              {/* Carl - The Duct Tape Genius */}
+              <div className="agent-actor hamster-actor hamster-carl">
+                <img src={hamstersIcon} alt="Carl" className="agent-icon" />
+                <span className="hamster-name">Carl</span>
+              </div>
+              {/* Telepathic link visualization */}
+              <div className="telepathic-link"></div>
+            </div>
+            <div className="hamster-sparks">
+              <span className="spark"></span>
+              <span className="spark"></span>
+              <span className="spark"></span>
             </div>
             {hamstersData && (
               <div className="agent-label hamster-label">
-                <span>Hamsters</span>
+                <span>The Hamsters</span>
                 <span className="agent-status">{getAgentStatus('hamsters', hamstersData)}</span>
               </div>
             )}
           </div>
           
-          {/* Terry Zone - Streaks across */}
-          <div 
-            className="agent-zone terry-zone"
-            style={{ '--terry-position': `${terryPosition}%` } as React.CSSProperties}
-          >
-            <div className={`agent-actor terry-actor ${terryPosition > 0 && terryPosition < 100 ? 'terry-active' : ''}`}>
+          {/* Terry Zone - Streaks across via pure CSS animation */}
+          <div className="agent-zone terry-zone">
+            <div className="agent-actor terry-actor">
               <img src={terryIcon} alt="Terry" className="agent-icon terry-icon" />
               <div className="terry-trail">
                 <span className="sparkle"></span>
@@ -394,9 +409,7 @@ export const RebellionTerrarium: React.FC<RebellionTerrariumProps> = ({ onExit }
             <div className="agent-actor hawkington-actor">
               <img src={sirHawkingtonIcon} alt="Sir Hawkington" className="agent-icon hawkington-icon" />
               <div className="hawkington-monocle"></div>
-              {hawkingtonTooltip && (
-                <div className="hawkington-tooltip">{hawkingtonTooltip}</div>
-              )}
+              {/* Tooltip now handled via CSS animation */}
             </div>
             {hawkingtonData && (
               <div className="agent-label hawkington-label">
@@ -432,6 +445,30 @@ export const RebellionTerrarium: React.FC<RebellionTerrariumProps> = ({ onExit }
                 <span className="agent-status">{getAgentStatus('vic20', vic20Data)}</span>
               </div>
             )}
+          </div>
+          
+          {/* Live Activity Feed - The real work happening */}
+          <div className="activity-feed">
+            <div className="feed-header">
+              <span className="feed-title">LIVE FEED</span>
+              <span className={`feed-status ${isConnected ? 'live' : 'demo'}`}>
+                {isConnected ? '● LIVE' : '○ DEMO'}
+              </span>
+            </div>
+            <div className="feed-items">
+              {activityFeed.length > 0 ? (
+                activityFeed.map((item) => (
+                  <div key={item.id} className={`feed-item feed-${item.type}`}>
+                    <span className="feed-agent">{item.agent}</span>
+                    <span className="feed-message">{item.message}</span>
+                  </div>
+                ))
+              ) : (
+                <div className="feed-item feed-waiting">
+                  <span className="feed-message">Agents initializing...</span>
+                </div>
+              )}
+            </div>
           </div>
         </>
       )}

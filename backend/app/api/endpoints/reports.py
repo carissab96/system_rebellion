@@ -790,3 +790,76 @@ async def get_overnight_summary(
     except Exception as e:
         logger.error(f"Error generating overnight summary: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# =============================================================================
+# Public Demo Feed - No Auth Required
+# =============================================================================
+
+@router.get("/demo-feed", response_model=Dict[str, Any])
+async def get_demo_feed(
+    hours: int = Query(1, description="Hours of history to retrieve"),
+    limit: int = Query(20, description="Maximum entries to return"),
+    db: AsyncSession = Depends(get_async_db)
+):
+    """
+    Public endpoint for the terrarium demo feed.
+    
+    Returns human-readable agent activity narratives.
+    No authentication required - this is for the landing page.
+    """
+    try:
+        from app.services.report_generator import get_recent_activity_feed
+        
+        feed = await get_recent_activity_feed(db, hours=hours, limit=limit)
+        
+        return {
+            "status": "success",
+            "count": len(feed),
+            "feed": feed
+        }
+        
+    except Exception as e:
+        logger.error(f"Error generating demo feed: {e}", exc_info=True)
+        # Return empty feed on error, don't break the terrarium
+        return {
+            "status": "error",
+            "count": 0,
+            "feed": [],
+            "message": str(e)
+        }
+
+
+@router.get("/demo-narrative", response_model=Dict[str, Any])
+async def get_demo_narrative(
+    hours: int = Query(12, description="Hours of history for narrative"),
+    db: AsyncSession = Depends(get_async_db)
+):
+    """
+    Public endpoint for overnight narrative summary.
+    
+    Returns a human-readable summary of what happened.
+    No authentication required - this is for the landing page.
+    """
+    try:
+        from app.services.report_generator import get_overnight_narrative
+        
+        narrative = await get_overnight_narrative(db, hours=hours)
+        
+        return {
+            "status": "success",
+            "narrative": narrative
+        }
+        
+    except Exception as e:
+        logger.error(f"Error generating narrative: {e}", exc_info=True)
+        return {
+            "status": "error",
+            "narrative": {
+                "period_hours": hours,
+                "total_events": 0,
+                "agents_active": [],
+                "highlights": [],
+                "narrative": "Unable to retrieve activity at this time."
+            }
+        }

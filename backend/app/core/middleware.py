@@ -21,8 +21,10 @@ def setup_middleware(app: FastAPI):
     # CORS Configuration
     origins = [
         "http://localhost:5173",  # Frontend dev server
+        "http://localhost:5174",  # Alternate Vite port
         "http://localhost:8000",   # Default Vite port
         "http://192.168.1.199:5173",  # HP frontend (cross-machine)
+        "http://192.168.1.199:5174",  # HP frontend alternate port
         "http://192.168.1.127:8000",  # Dell backend (self-reference)
         "https://system-rebellion.com",  # Production domain
         "https://system-rebellion.onrender.com",  # Render domain

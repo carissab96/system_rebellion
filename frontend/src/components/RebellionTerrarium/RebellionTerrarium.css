@@ -199,17 +199,98 @@
 
 .hamster-zone {
   top: 58%;
-  left: 12%;
+  left: 8%;
+}
+
+/* The Telepathic Trio - Steve, Bob, Carl */
+.hamster-trio {
+  display: flex;
+  gap: 0.5rem;
+  position: relative;
+}
+
+.hamster-actor {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .hamster-actor .agent-icon {
+  width: 42px;
+  height: 42px;
   border-color: var(--hamster-amber, #ff8c42);
+}
+
+/* Steve - The Careful One (left, slower wobble) */
+.hamster-steve .agent-icon {
+  animation: steve-think 4s ease-in-out infinite;
+}
+
+@keyframes steve-think {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(-5deg); }
+}
+
+/* Bob - The Wild One (center, chaotic) */
+.hamster-bob .agent-icon {
+  animation: bob-chaos 1.2s ease-in-out infinite;
+}
+
+@keyframes bob-chaos {
+  0%, 100% { transform: rotate(-3deg) scale(1); }
+  25% { transform: rotate(8deg) scale(1.05); }
+  50% { transform: rotate(-5deg) scale(0.98); }
+  75% { transform: rotate(6deg) scale(1.03); }
+}
+
+/* Carl - The Duct Tape Genius (right, methodical) */
+.hamster-carl .agent-icon {
+  animation: carl-calculate 3s ease-in-out infinite;
+}
+
+@keyframes carl-calculate {
+  0%, 100% { transform: scale(1); filter: brightness(1); }
+  50% { transform: scale(1.02); filter: brightness(1.1); }
+}
+
+.hamster-name {
+  font-size: 0.5rem;
+  font-family: var(--font-mono, monospace);
+  color: var(--hamster-amber, #ff8c42);
+  opacity: 0.7;
+  margin-top: 0.2rem;
+}
+
+/* Telepathic link between the three */
+.telepathic-link {
+  position: absolute;
+  top: 50%;
+  left: 10%;
+  width: 80%;
+  height: 2px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(255, 140, 66, 0.4) 20%, 
+    rgba(255, 140, 66, 0.6) 50%, 
+    rgba(255, 140, 66, 0.4) 80%, 
+    transparent 100%);
+  transform: translateY(-50%);
+  animation: telepathy-pulse 2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes telepathy-pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.8; }
 }
 
 .hamster-sparks {
   position: absolute;
-  width: 100%;
-  height: 100%;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 40px;
   pointer-events: none;
 }
 
@@ -222,17 +303,18 @@
   animation: spark-fly 1.8s ease-out infinite;
 }
 
-.spark:nth-child(1) { top: 5%; left: 85%; animation-delay: 0s; }
-.spark:nth-child(2) { top: 25%; left: 95%; animation-delay: 0.6s; }
-.spark:nth-child(3) { top: 45%; left: 88%; animation-delay: 1.2s; }
+.spark:nth-child(1) { top: 20%; left: 15%; animation-delay: 0s; }
+.spark:nth-child(2) { top: 10%; left: 50%; animation-delay: 0.6s; }
+.spark:nth-child(3) { top: 25%; left: 85%; animation-delay: 1.2s; }
 
 @keyframes spark-fly {
   0% { opacity: 1; transform: translate(0, 0) scale(1); }
-  100% { opacity: 0; transform: translate(15px, -25px) scale(0); }
+  100% { opacity: 0; transform: translate(5px, -20px) scale(0); }
 }
 
 .hamster-label {
   color: var(--hamster-amber, #ff8c42);
+  margin-top: 0.5rem;
 }
 
 /* =============================================================================
@@ -247,28 +329,26 @@
   pointer-events: none;
   flex-direction: row;
   justify-content: flex-start;
+  overflow: hidden;
 }
 
 .terry-actor {
   position: absolute;
-  left: calc(var(--terry-position, -10) * 1%);
-  transform: translateX(-50%);
-  opacity: 0;
-  transition: opacity 0.2s ease;
+  animation: terry-streak 8s linear infinite;
 }
 
-.terry-actor.terry-active {
-  opacity: 1;
+@keyframes terry-streak {
+  0% { left: -10%; opacity: 0; }
+  5% { opacity: 1; }
+  95% { opacity: 1; }
+  100% { left: 110%; opacity: 0; }
 }
 
 .terry-actor .agent-icon {
   border-color: var(--snail-electric, #00d084);
   width: 48px;
   height: 48px;
-}
-
-.terry-actor.terry-active .agent-icon {
-  animation: terry-spin 0.4s linear infinite;
+  animation: terry-spin 0.3s linear infinite;
 }
 
 @keyframes terry-spin {
@@ -290,13 +370,19 @@
   height: 5px;
   background: var(--snail-electric, #00d084);
   border-radius: 50%;
+  animation: sparkle-fade 0.3s ease-out infinite;
 }
 
-.sparkle:nth-child(1) { opacity: 0.8; }
-.sparkle:nth-child(2) { opacity: 0.6; }
-.sparkle:nth-child(3) { opacity: 0.45; }
-.sparkle:nth-child(4) { opacity: 0.3; }
-.sparkle:nth-child(5) { opacity: 0.15; }
+@keyframes sparkle-fade {
+  0% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.5); }
+}
+
+.sparkle:nth-child(1) { animation-delay: 0s; }
+.sparkle:nth-child(2) { animation-delay: 0.05s; }
+.sparkle:nth-child(3) { animation-delay: 0.1s; }
+.sparkle:nth-child(4) { animation-delay: 0.15s; }
+.sparkle:nth-child(5) { animation-delay: 0.2s; }
 
 /* =============================================================================
    SIR HAWKINGTON
@@ -309,6 +395,17 @@
 
 .hawkington-actor .agent-icon {
   border-color: var(--hawkington-gold, #e6ac00);
+  animation: hawkington-survey 6s ease-in-out infinite;
+}
+
+@keyframes hawkington-survey {
+  0%, 100% { transform: rotate(0deg); }
+  15% { transform: rotate(-8deg); }
+  30% { transform: rotate(0deg); }
+  45% { transform: rotate(5deg); }
+  60% { transform: rotate(0deg); }
+  75% { transform: rotate(-3deg); }
+  90% { transform: rotate(0deg); }
 }
 
 .hawkington-icon {
@@ -333,27 +430,29 @@
   96% { opacity: 1; box-shadow: 0 0 8px var(--hawkington-gold, #e6ac00); }
 }
 
-.hawkington-tooltip {
+/* Hawkington yells at Terry every time he streaks by (synced with 8s terry-streak) */
+.hawkington-actor::after {
+  content: "NO MORE RED BULL";
   position: absolute;
   top: -28px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(230, 172, 0, 0.9);
+  background: rgba(230, 172, 0, 0.95);
   color: var(--rebellion-void, #171728);
-  padding: 0.2rem 0.5rem;
-  font-size: 0.6rem;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.65rem;
   font-family: var(--font-mono, monospace);
   font-weight: 700;
   white-space: nowrap;
   border-radius: var(--radius-sm, 4px);
-  animation: tooltip-flash 0.6s ease-out forwards;
+  animation: hawkington-yell 8s ease-in-out infinite;
+  pointer-events: none;
 }
 
-@keyframes tooltip-flash {
-  0% { opacity: 0; transform: translateX(-50%) translateY(4px); }
-  15% { opacity: 1; transform: translateX(-50%) translateY(0); }
-  85% { opacity: 1; }
-  100% { opacity: 0; }
+@keyframes hawkington-yell {
+  /* Terry passes Hawkington (right side) around 80-90% of his 8s streak */
+  0%, 75%, 95%, 100% { opacity: 0; transform: translateX(-50%) translateY(4px); }
+  80%, 90% { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
 .hawkington-label {
@@ -396,6 +495,30 @@
   color: var(--stick-coral, #f97316);
 }
 
+/* The Stick breathes into paper bag periodically */
+.stick-actor::after {
+  content: "*breathes into paper bag*";
+  position: absolute;
+  bottom: -24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(249, 115, 22, 0.9);
+  color: var(--rebellion-void, #171728);
+  padding: 0.2rem 0.5rem;
+  font-size: 0.55rem;
+  font-family: var(--font-mono, monospace);
+  font-style: italic;
+  white-space: nowrap;
+  border-radius: var(--radius-sm, 4px);
+  animation: stick-anxiety 12s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes stick-anxiety {
+  0%, 85%, 100% { opacity: 0; transform: translateX(-50%) translateY(-4px); }
+  90%, 95% { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
 /* =============================================================================
    VIC-20
    ============================================================================= */
@@ -407,6 +530,12 @@
 
 .vic20-actor .agent-icon {
   border-color: var(--vic20-cyan, #06b6d4);
+  animation: vic20-pulse 3s ease-in-out infinite;
+}
+
+@keyframes vic20-pulse {
+  0%, 100% { filter: brightness(1); box-shadow: 0 0 0 rgba(6, 182, 212, 0); }
+  50% { filter: brightness(1.2); box-shadow: 0 0 20px rgba(6, 182, 212, 0.5); }
 }
 
 .vic20-glow {
@@ -426,6 +555,133 @@
 
 .vic20-label {
   color: var(--vic20-cyan, #06b6d4);
+}
+
+/* =============================================================================
+   LIVE ACTIVITY FEED - The real work happening
+   ============================================================================= */
+
+.activity-feed {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 320px;
+  max-height: 280px;
+  background: rgba(23, 23, 40, 0.85);
+  border: 1px solid rgba(183, 205, 240, 0.15);
+  border-radius: 8px;
+  overflow: hidden;
+  backdrop-filter: blur(8px);
+}
+
+.feed-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid rgba(183, 205, 240, 0.1);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.feed-title {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--rebellion-text-dim, #8d94a2);
+  letter-spacing: 0.1em;
+}
+
+.feed-status {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.6rem;
+  font-weight: 600;
+}
+
+.feed-status.live {
+  color: var(--success, #22c55e);
+  animation: status-blink 2s ease-in-out infinite;
+}
+
+.feed-status.demo {
+  color: var(--warning, #f59e0b);
+}
+
+@keyframes status-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.feed-items {
+  padding: 0.5rem;
+  max-height: 220px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.feed-items::-webkit-scrollbar {
+  width: 4px;
+}
+
+.feed-items::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.feed-items::-webkit-scrollbar-thumb {
+  background: rgba(183, 205, 240, 0.2);
+  border-radius: 2px;
+}
+
+.feed-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.03);
+  border-left: 2px solid transparent;
+  animation: feed-slide-in 0.3s ease-out;
+}
+
+@keyframes feed-slide-in {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.feed-item.feed-insight {
+  border-left-color: var(--vic20-cyan, #06b6d4);
+}
+
+.feed-item.feed-event {
+  border-left-color: var(--qsp-violet, #a855f7);
+}
+
+.feed-item.feed-triage {
+  border-left-color: var(--hawkington-gold, #e6ac00);
+}
+
+.feed-item.feed-waiting {
+  border-left-color: var(--rebellion-text-dim, #8d94a2);
+  opacity: 0.6;
+}
+
+.feed-agent {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.55rem;
+  font-weight: 600;
+  color: var(--rebellion-text-dim, #8d94a2);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.feed-message {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.7rem;
+  color: var(--rebellion-text, #b7cdf0);
+  line-height: 1.3;
+  word-break: break-word;
 }
 
 /* =============================================================================

@@ -943,6 +943,17 @@ async def demo_metrics_socket(websocket: WebSocket):
                     except Exception as e:
                         logger.error("Demo: Failed to get agent status: %s", str(e))
                 
+                # Fallback: if no agents from manager, provide demo presence
+                if not agent_insights:
+                    agent_insights = {
+                        "sir_hawkington": {"status": "active", "is_active": True, "monocle_state": "POLISHED"},
+                        "hamsters": {"status": "active", "is_active": True, "beer_level": "OPTIMAL"},
+                        "quantum_shadow_people": {"status": "active", "is_active": True, "paranoia_level": 42},
+                        "the_stick": {"status": "active", "is_active": True, "anxiety_spikes": 3},
+                        "vic20_sage": {"status": "active", "is_active": True},
+                        "meth_snail": {"status": "active", "is_active": True},
+                    }
+                
                 # Send update
                 sent = await safe_websocket_send(websocket, {
                     "type": "system_update",
