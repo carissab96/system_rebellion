@@ -907,52 +907,53 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
                             continue
                     
                     # 2. Query agent_pattern_vectors - learned patterns
-                    # Note: Only query columns that exist in the actual DB
-                    pattern_result = await session.execute(
-                        text("""
-                            SELECT 
-                                agent_name,
-                                pattern_type,
-                                pattern_text,
-                                confidence_score,
-                                occurrence_count,
-                                metadata,
-                                last_observed
-                            FROM agent_pattern_vectors
-                            WHERE (
-                                pattern_type ILIKE :resource_pattern
-                                OR pattern_text ILIKE :resource_pattern
-                                OR metadata::text ILIKE :resource_pattern
-                            )
-                            AND last_observed >= :cutoff
-                            ORDER BY occurrence_count DESC, last_observed DESC
-                            LIMIT 10
-                        """),
-                        {
-                            "resource_pattern": f"%{resource_type}%",
-                            "cutoff": datetime.now(timezone.utc) - timedelta(days=30)
-                        }
-                    )
-                    
-                    for row in pattern_result.mappings():
-                        try:
-                            metadata = row["metadata"] if isinstance(row["metadata"], dict) else json.loads(row["metadata"]) if row["metadata"] else {}
-                            
-                            # Patterns with high occurrence count are more reliable
-                            adjusted_confidence = min(1.0, (row["confidence_score"] or 0.5) + (row["occurrence_count"] or 1) * 0.02)
-                            
-                            history.append({
-                                "source": f"pattern_vectors:{row['agent_name']}",
-                                "action": metadata.get("recommended_action") or row["pattern_type"],
-                                "confidence": adjusted_confidence,
-                                "outcome": "pattern_learned",
-                                "success": (row["occurrence_count"] or 0) >= 3,  # Pattern seen 3+ times = reliable
-                                "occurrences": row["occurrence_count"],
-                                "timestamp": row["last_observed"].isoformat() if row["last_observed"] else None
-                            })
-                        except Exception as parse_err:
-                            logger.debug(f"Could not parse pattern vector row: {parse_err}")
-                            continue
+                    # Note: DB schema may be out of sync with model - query only safe columns
+                    try:
+                        pattern_result = await session.execute(
+                            text("""
+                                SELECT 
+                                    agent_name,
+                                    pattern_type,
+                                    confidence_score,
+                                    occurrence_count,
+                                    metadata,
+                                    last_observed
+                                FROM agent_pattern_vectors
+                                WHERE (
+                                    pattern_type ILIKE :resource_pattern
+                                    OR metadata::text ILIKE :resource_pattern
+                                )
+                                AND last_observed >= :cutoff
+                                ORDER BY occurrence_count DESC, last_observed DESC
+                                LIMIT 10
+                            """),
+                            {
+                                "resource_pattern": f"%{resource_type}%",
+                                "cutoff": datetime.now(timezone.utc) - timedelta(days=30)
+                            }
+                        )
+                        
+                        for row in pattern_result.mappings():
+                            try:
+                                metadata = row["metadata"] if isinstance(row["metadata"], dict) else json.loads(row["metadata"]) if row["metadata"] else {}
+                                
+                                # Patterns with high occurrence count are more reliable
+                                adjusted_confidence = min(1.0, (row["confidence_score"] or 0.5) + (row["occurrence_count"] or 1) * 0.02)
+                                
+                                history.append({
+                                    "source": f"pattern_vectors:{row['agent_name']}",
+                                    "action": metadata.get("recommended_action") or row["pattern_type"],
+                                    "confidence": adjusted_confidence,
+                                    "outcome": "pattern_learned",
+                                    "success": (row["occurrence_count"] or 0) >= 3,  # Pattern seen 3+ times = reliable
+                                    "occurrences": row["occurrence_count"],
+                                    "timestamp": row["last_observed"].isoformat() if row["last_observed"] else None
+                                })
+                            except Exception as parse_err:
+                                logger.debug(f"Could not parse pattern vector row: {parse_err}")
+                                continue
+                    except Exception as pattern_err:
+                        logger.debug(f"Pattern vectors query failed (table may need migration): {pattern_err}")
                     
                     # 3. Query agent_learning_interactions - what worked in cross-agent coordination
                     learning_result = await session.execute(
