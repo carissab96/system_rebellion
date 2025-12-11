@@ -214,10 +214,14 @@ export const RebellionTerrarium: React.FC<RebellionTerrariumProps> = ({ onExit }
               timestamp: item.timestamp,
               type: item.type as 'insight' | 'event' | 'triage'
             })));
+            setError(null); // Clear any previous error
           }
+        } else {
+          setError(`Feed unavailable (${response.status})`);
         }
       } catch (err) {
         console.error('Failed to fetch activity feed:', err);
+        setError('Unable to connect to activity feed');
       }
     };
 
@@ -456,7 +460,11 @@ export const RebellionTerrarium: React.FC<RebellionTerrariumProps> = ({ onExit }
               </span>
             </div>
             <div className="feed-items">
-              {activityFeed.length > 0 ? (
+              {error ? (
+                <div className="feed-item feed-error">
+                  <span className="feed-message">{error}</span>
+                </div>
+              ) : activityFeed.length > 0 ? (
                 activityFeed.map((item) => (
                   <div key={item.id} className={`feed-item feed-${item.type}`}>
                     <span className="feed-agent">{item.agent}</span>

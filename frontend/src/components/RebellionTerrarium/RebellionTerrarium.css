@@ -667,6 +667,15 @@
   opacity: 0.6;
 }
 
+.feed-item.feed-error {
+  border-left-color: var(--error, #ef4444);
+  opacity: 0.8;
+}
+
+.feed-item.feed-error .feed-message {
+  color: var(--error, #ef4444);
+}
+
 .feed-agent {
   font-family: var(--font-mono, monospace);
   font-size: 0.55rem;
