@@ -907,12 +907,13 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
                             continue
                     
                     # 2. Query agent_pattern_vectors - learned patterns
+                    # Note: Only query columns that exist in the actual DB
                     pattern_result = await session.execute(
                         text("""
                             SELECT 
                                 agent_name,
                                 pattern_type,
-                                pattern_summary,
+                                pattern_text,
                                 confidence_score,
                                 occurrence_count,
                                 metadata,
@@ -920,7 +921,7 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
                             FROM agent_pattern_vectors
                             WHERE (
                                 pattern_type ILIKE :resource_pattern
-                                OR pattern_summary ILIKE :resource_pattern
+                                OR pattern_text ILIKE :resource_pattern
                                 OR metadata::text ILIKE :resource_pattern
                             )
                             AND last_observed >= :cutoff
