@@ -818,10 +818,12 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
         """
         Query historical effectiveness data for this resource type.
         
-        Queries central_memory_bank and agent_decision_vectors to find:
-        - What actions were taken for this resource type before
-        - What the outcomes were
-        - Success/failure rates
+        Queries the RIGHT tables:
+        - agent_decision_vectors - Past decisions with outcomes
+        - agent_pattern_vectors - Learned patterns (The Stick's domain)
+        - agent_learning_interactions - Cross-agent learning outcomes
+        - the_stick_memory_bank - The Stick's validated recordings
+        - central_memory_bank - Specialist action history
         
         Args:
             resource_type: Type of resource (cpu, memory, disk, network)
@@ -829,34 +831,196 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
         Returns:
             List of historical action results with effectiveness scores
         """
+        # Map resource types to the specialists who handle them
+        specialist_mapping = {
+            'cpu': 'meth_snail',
+            'memory': 'meth_snail',
+            'ram': 'meth_snail',
+            'swap': 'meth_snail',
+            'disk': 'hamsters',
+            'storage': 'hamsters',
+            'infrastructure': 'hamsters',
+            'network': 'quantum_shadow_people'
+        }
+        
+        specialist = specialist_mapping.get(resource_type.lower(), 'meth_snail')
+        
         try:
             if not self.db_getter:
                 logger.warning("🖥️⚠️ No db_getter - cannot query history")
                 return None
             
-            # Use the database integration's query capabilities
             if hasattr(self, 'db') and self.db:
                 await self.db.ensure_initialized()
                 
-                # Query recent coordination decisions for this resource type
                 from sqlalchemy import text
+                import json
+                
+                history = []
                 
                 async with self.db.get_managed_session() as session:
-                    # Get past coordination decisions for this resource type
-                    result = await session.execute(
+                    # 1. Query agent_decision_vectors - past decisions for this resource
+                    decision_result = await session.execute(
                         text("""
                             SELECT 
+                                agent_name,
+                                decision_type,
+                                decision_summary,
+                                confidence_score,
+                                metadata,
+                                created_at
+                            FROM agent_decision_vectors
+                            WHERE (
+                                agent_name = :specialist
+                                OR agent_name = 'the_stick'
+                            )
+                            AND (
+                                decision_type ILIKE :resource_pattern
+                                OR decision_summary ILIKE :resource_pattern
+                                OR metadata::text ILIKE :resource_pattern
+                            )
+                            AND created_at >= :cutoff
+                            ORDER BY created_at DESC
+                            LIMIT 15
+                        """),
+                        {
+                            "specialist": specialist,
+                            "resource_pattern": f"%{resource_type}%",
+                            "cutoff": datetime.now(timezone.utc) - timedelta(days=7)
+                        }
+                    )
+                    
+                    for row in decision_result.mappings():
+                        try:
+                            metadata = row["metadata"] if isinstance(row["metadata"], dict) else json.loads(row["metadata"]) if row["metadata"] else {}
+                            
+                            history.append({
+                                "source": f"decision_vectors:{row['agent_name']}",
+                                "action": metadata.get("action") or row["decision_type"],
+                                "confidence": row["confidence_score"] or 0.5,
+                                "outcome": metadata.get("outcome", "unknown"),
+                                "success": metadata.get("success"),
+                                "timestamp": row["created_at"].isoformat() if row["created_at"] else None
+                            })
+                        except Exception as parse_err:
+                            logger.debug(f"Could not parse decision vector row: {parse_err}")
+                            continue
+                    
+                    # 2. Query agent_pattern_vectors - learned patterns
+                    pattern_result = await session.execute(
+                        text("""
+                            SELECT 
+                                agent_name,
+                                pattern_type,
+                                pattern_summary,
+                                confidence_score,
+                                occurrence_count,
+                                metadata,
+                                last_observed
+                            FROM agent_pattern_vectors
+                            WHERE (
+                                pattern_type ILIKE :resource_pattern
+                                OR pattern_summary ILIKE :resource_pattern
+                                OR metadata::text ILIKE :resource_pattern
+                            )
+                            AND last_observed >= :cutoff
+                            ORDER BY occurrence_count DESC, last_observed DESC
+                            LIMIT 10
+                        """),
+                        {
+                            "resource_pattern": f"%{resource_type}%",
+                            "cutoff": datetime.now(timezone.utc) - timedelta(days=30)
+                        }
+                    )
+                    
+                    for row in pattern_result.mappings():
+                        try:
+                            metadata = row["metadata"] if isinstance(row["metadata"], dict) else json.loads(row["metadata"]) if row["metadata"] else {}
+                            
+                            # Patterns with high occurrence count are more reliable
+                            adjusted_confidence = min(1.0, (row["confidence_score"] or 0.5) + (row["occurrence_count"] or 1) * 0.02)
+                            
+                            history.append({
+                                "source": f"pattern_vectors:{row['agent_name']}",
+                                "action": metadata.get("recommended_action") or row["pattern_type"],
+                                "confidence": adjusted_confidence,
+                                "outcome": "pattern_learned",
+                                "success": (row["occurrence_count"] or 0) >= 3,  # Pattern seen 3+ times = reliable
+                                "occurrences": row["occurrence_count"],
+                                "timestamp": row["last_observed"].isoformat() if row["last_observed"] else None
+                            })
+                        except Exception as parse_err:
+                            logger.debug(f"Could not parse pattern vector row: {parse_err}")
+                            continue
+                    
+                    # 3. Query agent_learning_interactions - what worked in cross-agent coordination
+                    learning_result = await session.execute(
+                        text("""
+                            SELECT 
+                                source_agent,
+                                target_agent,
+                                learning_type,
+                                effectiveness_score,
+                                transfer_success,
+                                improvement_measured,
+                                application_context,
+                                timestamp
+                            FROM agent_learning_interactions
+                            WHERE (
+                                target_agent = :specialist
+                                OR source_agent = :specialist
+                            )
+                            AND (
+                                learning_type ILIKE :resource_pattern
+                                OR application_context::text ILIKE :resource_pattern
+                            )
+                            AND timestamp >= :cutoff
+                            ORDER BY effectiveness_score DESC NULLS LAST
+                            LIMIT 10
+                        """),
+                        {
+                            "specialist": specialist,
+                            "resource_pattern": f"%{resource_type}%",
+                            "cutoff": datetime.now(timezone.utc) - timedelta(days=14)
+                        }
+                    )
+                    
+                    for row in learning_result.mappings():
+                        try:
+                            context = row["application_context"] if isinstance(row["application_context"], dict) else json.loads(row["application_context"]) if row["application_context"] else {}
+                            
+                            history.append({
+                                "source": f"learning:{row['source_agent']}->{row['target_agent']}",
+                                "action": context.get("action") or row["learning_type"],
+                                "confidence": row["effectiveness_score"] or 0.5,
+                                "outcome": "improved" if row["improvement_measured"] and row["improvement_measured"] > 0 else "no_improvement",
+                                "success": row["transfer_success"],
+                                "improvement": row["improvement_measured"],
+                                "timestamp": row["timestamp"].isoformat() if row["timestamp"] else None
+                            })
+                        except Exception as parse_err:
+                            logger.debug(f"Could not parse learning interaction row: {parse_err}")
+                            continue
+                    
+                    # 4. Query The Stick's memory bank for validated outcomes
+                    stick_result = await session.execute(
+                        text("""
+                            SELECT 
+                                event_type,
                                 details,
                                 metadata,
-                                numeric_value as confidence,
+                                numeric_value as effectiveness,
                                 occurred_at
                             FROM central_memory_bank
-                            WHERE agent_name = 'vic20_sage'
-                                AND event_type = 'coordination_decision'
-                                AND details::text ILIKE :resource_pattern
+                            WHERE agent_name = 'the_stick'
+                                AND (
+                                    details::text ILIKE :resource_pattern
+                                    OR event_type ILIKE :resource_pattern
+                                    OR event_type IN ('pattern_validated', 'outcome_recorded', 'fix_verified')
+                                )
                                 AND occurred_at >= :cutoff
                             ORDER BY occurred_at DESC
-                            LIMIT 20
+                            LIMIT 10
                         """),
                         {
                             "resource_pattern": f"%{resource_type}%",
@@ -864,33 +1028,42 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
                         }
                     )
                     
-                    history = []
-                    for row in result.mappings():
+                    for row in stick_result.mappings():
                         try:
-                            import json
                             details = row["details"] if isinstance(row["details"], dict) else json.loads(row["details"]) if row["details"] else {}
                             metadata = row["metadata"] if isinstance(row["metadata"], dict) else json.loads(row["metadata"]) if row["metadata"] else {}
                             
                             history.append({
-                                "action": details.get("recommendation", {}).get("action", "unknown"),
-                                "confidence": row["confidence"] or 0.5,
-                                "outcome": metadata.get("outcome", "unknown"),
-                                "success": metadata.get("success", None),
+                                "source": "the_stick",
+                                "action": details.get("action") or details.get("recommendation", {}).get("action") or row["event_type"],
+                                "confidence": row["effectiveness"] or 0.5,
+                                "outcome": metadata.get("outcome") or details.get("outcome", "unknown"),
+                                "success": metadata.get("success") or details.get("success") or details.get("validated", False),
                                 "timestamp": row["occurred_at"].isoformat() if row["occurred_at"] else None
                             })
                         except Exception as parse_err:
-                            logger.debug(f"Could not parse history row: {parse_err}")
+                            logger.debug(f"Could not parse Stick row: {parse_err}")
                             continue
+                
+                if history:
+                    sources = {}
+                    for h in history:
+                        src = h['source'].split(':')[0]
+                        sources[src] = sources.get(src, 0) + 1
                     
-                    if history:
-                        logger.info(f"🖥️📚 Found {len(history)} historical records for {resource_type}")
-                        return history
-                    else:
-                        logger.info(f"🖥️📚 No historical records found for {resource_type}")
-                        return None
+                    logger.info(
+                        f"🖥️📚 Found {len(history)} historical records for {resource_type}: "
+                        f"{', '.join(f'{k}={v}' for k, v in sources.items())}"
+                    )
+                    return history
+                else:
+                    logger.info(f"🖥️📚 No historical records found for {resource_type}")
+                    return None
                         
         except Exception as e:
             logger.warning(f"🖥️⚠️ Error querying historical effectiveness: {e}")
+            import traceback
+            traceback.print_exc()
             return None
         
         return None

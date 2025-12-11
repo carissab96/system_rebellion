@@ -95,64 +95,81 @@ async def test_vic20_real_history_query():
     return True
 
 
-async def test_vic20_writes_then_reads():
+async def test_check_table_contents():
     """
-    Test the full cycle: VIC-20 makes a decision, writes it, then reads it back.
-    This verifies the write-read loop is working.
+    Check what's actually in the tables VIC-20 queries.
+    This helps diagnose if data exists but queries aren't finding it.
     """
-    from app.ai_agents.vic_20_sage.distributed_vic20 import VIC20SageDistributed
     from app.core.database import get_async_db
-    from datetime import datetime, timezone
+    from sqlalchemy import text
     
     print("\n" + "=" * 70)
-    print("VIC-20 Write-Then-Read Test")
+    print("Database Table Contents Check")
     print("=" * 70)
     
-    vic20 = VIC20SageDistributed(db_getter=get_async_db, user_id="test_user")
-    
-    print("\n1. Initializing...")
-    await vic20.db.ensure_initialized()
-    
-    # First, query current history count
-    print("\n2. Checking current history for 'cpu'...")
-    history_before = await vic20._get_historical_effectiveness("cpu")
-    count_before = len(history_before) if history_before else 0
-    print(f"   Records before: {count_before}")
-    
-    # Write a coordination decision
-    print("\n3. Writing a test coordination decision...")
-    try:
-        from app.ai_agents.vic_20_sage.data_types import VIC20Decision, VIC20DecisionType
-        
-        test_decision = VIC20Decision(
-            decision_type=VIC20DecisionType.AGENT_COORDINATION,
-            timestamp=datetime.now(timezone.utc),
-            confidence_score=0.85,
-            coordination_context={
-                "resource_type": "cpu",
-                "recommendation": {"action": "throttle_processes"},
-                "test": True
-            },
-            agents_involved=["meth_snail"],
-            harmony_impact=0.1
+    async for session in get_async_db():
+        # Check agent_decision_vectors
+        print("\n1. agent_decision_vectors:")
+        result = await session.execute(
+            text("SELECT agent_name, COUNT(*) as count FROM agent_decision_vectors GROUP BY agent_name ORDER BY count DESC")
         )
+        for row in result.mappings():
+            print(f"   {row['agent_name']}: {row['count']} records")
         
-        await vic20.db.store_coordination_decision("test_user", test_decision)
-        print("   ✅ Decision written")
-    except Exception as e:
-        print(f"   ❌ Write failed: {e}")
-        return False
-    
-    # Query again to see if we can read it back
-    print("\n4. Querying history again...")
-    history_after = await vic20._get_historical_effectiveness("cpu")
-    count_after = len(history_after) if history_after else 0
-    print(f"   Records after: {count_after}")
-    
-    if count_after > count_before:
-        print("   ✅ Write-read cycle working!")
-    else:
-        print("   ⚠️  Record count didn't increase (might be event_type mismatch)")
+        # Check agent_pattern_vectors
+        print("\n2. agent_pattern_vectors:")
+        result = await session.execute(
+            text("SELECT agent_name, COUNT(*) as count FROM agent_pattern_vectors GROUP BY agent_name ORDER BY count DESC")
+        )
+        rows = list(result.mappings())
+        if rows:
+            for row in rows:
+                print(f"   {row['agent_name']}: {row['count']} records")
+        else:
+            print("   (empty)")
+        
+        # Check agent_learning_interactions
+        print("\n3. agent_learning_interactions:")
+        result = await session.execute(
+            text("SELECT source_agent, target_agent, COUNT(*) as count FROM agent_learning_interactions GROUP BY source_agent, target_agent ORDER BY count DESC LIMIT 10")
+        )
+        rows = list(result.mappings())
+        if rows:
+            for row in rows:
+                print(f"   {row['source_agent']} -> {row['target_agent']}: {row['count']} records")
+        else:
+            print("   (empty)")
+        
+        # Check central_memory_bank for The Stick
+        print("\n4. central_memory_bank (the_stick):")
+        result = await session.execute(
+            text("SELECT event_type, COUNT(*) as count FROM central_memory_bank WHERE agent_name = 'the_stick' GROUP BY event_type ORDER BY count DESC LIMIT 10")
+        )
+        rows = list(result.mappings())
+        if rows:
+            for row in rows:
+                print(f"   {row['event_type']}: {row['count']} records")
+        else:
+            print("   (empty)")
+        
+        # Check central_memory_bank for specialists
+        print("\n5. central_memory_bank (specialists):")
+        result = await session.execute(
+            text("""
+                SELECT agent_name, COUNT(*) as count 
+                FROM central_memory_bank 
+                WHERE agent_name IN ('meth_snail', 'hamsters', 'quantum_shadow_people')
+                GROUP BY agent_name ORDER BY count DESC
+            """)
+        )
+        rows = list(result.mappings())
+        if rows:
+            for row in rows:
+                print(f"   {row['agent_name']}: {row['count']} records")
+        else:
+            print("   (empty)")
+        
+        break
     
     print("\n" + "=" * 70)
     return True
@@ -166,24 +183,24 @@ if __name__ == "__main__":
     async def run_all():
         success = True
         
-        # Test 1: Query real history
+        # Test 1: Check what's in the tables
+        try:
+            result = await test_check_table_contents()
+            if not result:
+                success = False
+        except Exception as e:
+            print(f"\n❌ Table check failed with error: {e}")
+            import traceback
+            traceback.print_exc()
+            success = False
+        
+        # Test 2: Query real history and generate recommendations
         try:
             result = await test_vic20_real_history_query()
             if not result:
                 success = False
         except Exception as e:
-            print(f"\n❌ Test failed with error: {e}")
-            import traceback
-            traceback.print_exc()
-            success = False
-        
-        # Test 2: Write then read
-        try:
-            result = await test_vic20_writes_then_reads()
-            if not result:
-                success = False
-        except Exception as e:
-            print(f"\n❌ Test failed with error: {e}")
+            print(f"\n❌ History query test failed with error: {e}")
             import traceback
             traceback.print_exc()
             success = False
