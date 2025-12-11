@@ -337,8 +337,8 @@ async def get_recent_activity_feed(
     try:
         result = await db.execute(
             text("""
-                SELECT from_agent, to_agent, interaction_type, 
-                       message_summary, created_at
+                SELECT primary_agent, secondary_agent, interaction_type, 
+                       interaction_summary, created_at
                 FROM agent_interaction_vectors
                 WHERE created_at >= :since
                 ORDER BY created_at DESC
@@ -348,13 +348,13 @@ async def get_recent_activity_feed(
         )
         
         for row in result.mappings():
-            from_name = humanize_agent_name(row["from_agent"])
-            to_name = humanize_agent_name(row["to_agent"])
+            from_name = humanize_agent_name(row["primary_agent"])
+            to_name = humanize_agent_name(row["secondary_agent"]) if row["secondary_agent"] else "system"
             
             feed_items.append({
                 "id": f"int-{row['created_at'].timestamp()}",
                 "agent": from_name,
-                "message": f"{from_name} → {to_name}: {row['message_summary'] or row['interaction_type']}",
+                "message": f"{from_name} → {to_name}: {row['interaction_summary'] or row['interaction_type']}",
                 "timestamp": row["created_at"].isoformat(),
                 "type": "insight",
                 "raw_type": row["interaction_type"]

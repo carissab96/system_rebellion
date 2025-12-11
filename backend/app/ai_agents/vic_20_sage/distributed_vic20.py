@@ -20,7 +20,8 @@ Adds:
 
 import logging
 import asyncio
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
+from datetime import datetime, timezone, timedelta
 
 from ..distributed.base_decision_engine import AgentDecisionEngine
 from ..distributed.resource_monitor import ResourceType
@@ -289,46 +290,114 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
         """
         PHASE 3: Generate recommendation for specialist.
         
-        Uses historical patterns (future: from The Stick's learning).
-        For now, uses rule-based recommendations.
+        Queries historical patterns to inform recommendations.
+        Adjusts confidence based on past success rates.
         """
         overage = ((current_value - threshold) / threshold) * 100
         
-        # Resource-specific recommendations
-        recommendations = {
+        # Query historical effectiveness FIRST
+        historical_data = await self._get_historical_effectiveness(resource_type)
+        
+        # Base recommendations (defaults if no history)
+        base_recommendations = {
             'cpu': {
                 'action': 'throttle_processes',
                 'details': f'CPU {overage:.1f}% over threshold',
-                'confidence': 0.85
+                'confidence': 0.70  # Lower base confidence - history will adjust
             },
             'memory': {
                 'action': 'clear_cache',
                 'details': f'Memory {overage:.1f}% over threshold',
-                'confidence': 0.90
+                'confidence': 0.70
             },
             'disk': {
                 'action': 'cleanup_temp_files',
                 'details': f'Disk {overage:.1f}% over threshold',
-                'confidence': 0.80
+                'confidence': 0.70
             },
             'network': {
                 'action': 'analyze_connections',
                 'details': f'Network {overage:.1f}% over threshold',
-                'confidence': 0.75
+                'confidence': 0.65
             }
         }
         
-        rec = recommendations.get(resource_type.lower(), {
+        rec = base_recommendations.get(resource_type.lower(), {
             'action': 'investigate',
             'details': f'{resource_type} needs attention',
-            'confidence': 0.70
+            'confidence': 0.50
         })
+        
+        # LEARN FROM HISTORY - adjust recommendation based on past results
+        if historical_data:
+            # Calculate success rate for this action type
+            matching_actions = [h for h in historical_data if h.get('action') == rec['action']]
+            if matching_actions:
+                successes = sum(1 for h in matching_actions if h.get('success') is True)
+                total = len(matching_actions)
+                success_rate = successes / total if total > 0 else 0.5
+                
+                # Adjust confidence based on historical success
+                # More history = more confidence adjustment
+                history_weight = min(0.3, len(matching_actions) * 0.05)  # Max 30% adjustment
+                rec['confidence'] = rec['confidence'] * (1 - history_weight) + success_rate * history_weight
+                
+                rec['historical_basis'] = {
+                    'matching_records': len(matching_actions),
+                    'success_rate': success_rate,
+                    'confidence_adjustment': history_weight
+                }
+                
+                logger.info(
+                    f"🖥️📊 Historical adjustment: {len(matching_actions)} past {rec['action']} actions, "
+                    f"{success_rate:.0%} success rate, confidence now {rec['confidence']:.0%}"
+                )
+            
+            # Check if a different action worked better historically
+            action_success_rates = {}
+            for h in historical_data:
+                action = h.get('action', 'unknown')
+                if action not in action_success_rates:
+                    action_success_rates[action] = {'successes': 0, 'total': 0}
+                action_success_rates[action]['total'] += 1
+                if h.get('success') is True:
+                    action_success_rates[action]['successes'] += 1
+            
+            # Find best performing action
+            best_action = None
+            best_rate = 0
+            for action, stats in action_success_rates.items():
+                if stats['total'] >= 3:  # Need at least 3 samples
+                    rate = stats['successes'] / stats['total']
+                    if rate > best_rate:
+                        best_rate = rate
+                        best_action = action
+            
+            # If a different action has significantly better success, suggest it instead
+            if best_action and best_action != rec['action'] and best_rate > 0.7:
+                logger.info(
+                    f"🖥️💡 Historical data suggests '{best_action}' ({best_rate:.0%} success) "
+                    f"over default '{rec['action']}'"
+                )
+                rec['alternative_action'] = best_action
+                rec['alternative_confidence'] = best_rate
+        else:
+            rec['historical_basis'] = None
+            logger.info(f"🖥️📚 No historical data for {resource_type} - using base recommendation")
         
         # Adjust confidence based on severity
         if severity == 'critical':
             rec['confidence'] = min(1.0, rec['confidence'] + 0.1)
         
-        rec['reasoning'] = f"Pattern analysis suggests {rec['action']}. {rec['details']}"
+        # Build reasoning that includes historical context
+        if rec.get('historical_basis'):
+            rec['reasoning'] = (
+                f"Based on {rec['historical_basis']['matching_records']} past actions "
+                f"({rec['historical_basis']['success_rate']:.0%} success rate): {rec['action']}. "
+                f"{rec['details']}"
+            )
+        else:
+            rec['reasoning'] = f"No historical data available. Default recommendation: {rec['action']}. {rec['details']}"
         
         return rec
     
@@ -745,21 +814,85 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
             reasoning=recommendation['reasoning']
         )
     
-    async def _get_historical_effectiveness(self, resource_type: str) -> Optional[list]:
+    async def _get_historical_effectiveness(self, resource_type: str) -> Optional[List[Dict[str, Any]]]:
         """
-        Get historical effectiveness data for this resource type.
+        Query historical effectiveness data for this resource type.
         
-        In future, this will query The Stick's learning database.
-        For now, returns None (engine will use defaults).
+        Queries central_memory_bank and agent_decision_vectors to find:
+        - What actions were taken for this resource type before
+        - What the outcomes were
+        - Success/failure rates
         
         Args:
-            resource_type: Type of resource
+            resource_type: Type of resource (cpu, memory, disk, network)
             
         Returns:
-            List of historical action results or None
+            List of historical action results with effectiveness scores
         """
-        # TODO: Query The Stick's decision history for past effectiveness
-        # For now, return None to use default confidence scores
+        try:
+            if not self.db_getter:
+                logger.warning("🖥️⚠️ No db_getter - cannot query history")
+                return None
+            
+            # Use the database integration's query capabilities
+            if hasattr(self, 'db') and self.db:
+                await self.db.ensure_initialized()
+                
+                # Query recent coordination decisions for this resource type
+                from sqlalchemy import text
+                
+                async with self.db.get_managed_session() as session:
+                    # Get past coordination decisions for this resource type
+                    result = await session.execute(
+                        text("""
+                            SELECT 
+                                details,
+                                metadata,
+                                numeric_value as confidence,
+                                occurred_at
+                            FROM central_memory_bank
+                            WHERE agent_name = 'vic20_sage'
+                                AND event_type = 'coordination_decision'
+                                AND details::text ILIKE :resource_pattern
+                                AND occurred_at >= :cutoff
+                            ORDER BY occurred_at DESC
+                            LIMIT 20
+                        """),
+                        {
+                            "resource_pattern": f"%{resource_type}%",
+                            "cutoff": datetime.now(timezone.utc) - timedelta(days=7)
+                        }
+                    )
+                    
+                    history = []
+                    for row in result.mappings():
+                        try:
+                            import json
+                            details = row["details"] if isinstance(row["details"], dict) else json.loads(row["details"]) if row["details"] else {}
+                            metadata = row["metadata"] if isinstance(row["metadata"], dict) else json.loads(row["metadata"]) if row["metadata"] else {}
+                            
+                            history.append({
+                                "action": details.get("recommendation", {}).get("action", "unknown"),
+                                "confidence": row["confidence"] or 0.5,
+                                "outcome": metadata.get("outcome", "unknown"),
+                                "success": metadata.get("success", None),
+                                "timestamp": row["occurred_at"].isoformat() if row["occurred_at"] else None
+                            })
+                        except Exception as parse_err:
+                            logger.debug(f"Could not parse history row: {parse_err}")
+                            continue
+                    
+                    if history:
+                        logger.info(f"🖥️📚 Found {len(history)} historical records for {resource_type}")
+                        return history
+                    else:
+                        logger.info(f"🖥️📚 No historical records found for {resource_type}")
+                        return None
+                        
+        except Exception as e:
+            logger.warning(f"🖥️⚠️ Error querying historical effectiveness: {e}")
+            return None
+        
         return None
     
     def get_agent_status(self) -> Dict[str, Any]:
