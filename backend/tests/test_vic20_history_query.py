@@ -152,6 +152,31 @@ async def test_check_table_contents():
         else:
             print("   (empty)")
         
+        # Check for coordination outcomes specifically
+        print("\n4b. central_memory_bank (the_stick - coordination outcomes):")
+        result = await session.execute(
+            text("""
+                SELECT 
+                    details->'payload'->>'decision_type' as decision_type,
+                    details->'payload'->>'action' as action,
+                    details->'payload'->>'success' as success,
+                    COUNT(*) as count
+                FROM central_memory_bank 
+                WHERE agent_name = 'the_stick' 
+                    AND event_type = 'decision_log'
+                    AND details->'payload'->>'decision_type' IN ('coordination', 'coordination_outcome')
+                GROUP BY decision_type, action, success
+                ORDER BY count DESC
+                LIMIT 10
+            """)
+        )
+        rows = list(result.mappings())
+        if rows:
+            for row in rows:
+                print(f"   {row['decision_type']}: action={row['action']}, success={row['success']}, count={row['count']}")
+        else:
+            print("   (no coordination outcomes yet - need to run system to generate data)")
+        
         # Check central_memory_bank for specialists
         print("\n5. central_memory_bank (specialists):")
         result = await session.execute(
