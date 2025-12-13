@@ -6,8 +6,8 @@ SQLAlchemy models for pgvector-powered semantic search tables.
 These store embeddings of agent decisions, patterns, and interactions.
 """
 
-from sqlalchemy import Column, String, Integer, Float, DateTime, JSON, Index
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Column, String, Integer, BigInteger, Float, DateTime, JSON, Index, Text
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.types import UserDefinedType
 from app.core.base import Base
 from datetime import datetime, timezone
@@ -105,50 +105,50 @@ class AgentPatternVectors(Base):
     """
     __tablename__ = "agent_pattern_vectors"
     
-    # Primary key
-    vector_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    # Primary key - matches database schema
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    vector_id = Column(UUID(as_uuid=True), nullable=False, unique=True, default=uuid.uuid4)
     
     # Pattern metadata
-    agent_name = Column(String, nullable=False, index=True)
-    pattern_type = Column(String, nullable=False, index=True)
-    pattern_text = Column(String, nullable=False)  # Searchable text representation
-    
-    # Vector embedding
-    embedding = Column(Vector(384), nullable=False)
+    agent_name = Column(String(50), nullable=False, index=True)
+    user_id = Column(String(255), nullable=True)
+    pattern_type = Column(String(100), nullable=False, index=True)
+    pattern_name = Column(String(255), nullable=True)
+    pattern_description = Column(Text, nullable=False)
     
     # Temporal data
     first_observed = Column(DateTime(timezone=True), nullable=False)
     last_observed = Column(DateTime(timezone=True), nullable=False, index=True)
-    
-    # User context
-    user_id = Column(String, nullable=False, index=True)
-    
-    # Pattern strength
-    occurrence_count = Column(Integer, default=1)
-    confidence_score = Column(Float, nullable=True)
-    
-    # Pattern details
-    context_metadata = Column("metadata", JSON, nullable=True)
-    pattern_summary = Column(String, nullable=True)
-    
-    # Link to learning tables
-    sql_pattern_id = Column(String, nullable=True)
+    observation_count = Column(Integer, nullable=False, default=1)
     
     # Timestamps
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
-    # HNSW index
+    # Vector embedding
+    embedding = Column(Vector(384), nullable=False)
+    
+    # Pattern effectiveness tracking
+    confidence_score = Column(Float, nullable=True)
+    success_rate = Column(Float, nullable=True)
+    application_count = Column(Integer, nullable=False, default=0)
+    
+    # Pattern details
+    pattern_data = Column(JSONB, nullable=False)
+    embedding_model = Column(String(100), nullable=False, default='all-MiniLM-L6-v2')
+    
+    # HNSW index and other indexes
     __table_args__ = (
         Index(
-            'idx_pattern_vectors_hnsw',
+            'agent_pattern_vectors_embedding_idx',
             'embedding',
             postgresql_using='hnsw',
             postgresql_with={'m': 16, 'ef_construction': 64},
             postgresql_ops={'embedding': 'vector_cosine_ops'}
         ),
-        Index('idx_pattern_agent_time', 'agent_name', 'last_observed'),
-        Index('idx_pattern_user_time', 'user_id', 'last_observed'),
+        Index('idx_agent_pattern_vectors_agent_type', 'agent_name', 'pattern_type'),
+        Index('idx_agent_pattern_vectors_user', 'user_id', 'last_observed'),
+        Index('idx_agent_pattern_vectors_data', 'pattern_data', postgresql_using='gin'),
     )
 
 

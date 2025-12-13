@@ -907,53 +907,61 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
                             continue
                     
                     # 2. Query agent_pattern_vectors - learned patterns
-                    # Note: DB schema may be out of sync with model - query only safe columns
-                    try:
-                        pattern_result = await session.execute(
-                            text("""
-                                SELECT 
-                                    agent_name,
-                                    pattern_type,
-                                    confidence_score,
-                                    occurrence_count,
-                                    metadata,
-                                    last_observed
-                                FROM agent_pattern_vectors
-                                WHERE (
-                                    pattern_type ILIKE :resource_pattern
-                                    OR metadata::text ILIKE :resource_pattern
-                                )
-                                AND last_observed >= :cutoff
-                                ORDER BY occurrence_count DESC, last_observed DESC
-                                LIMIT 10
-                            """),
-                            {
-                                "resource_pattern": f"%{resource_type}%",
-                                "cutoff": datetime.now(timezone.utc) - timedelta(days=30)
-                            }
-                        )
-                        
-                        for row in pattern_result.mappings():
-                            try:
-                                metadata = row["metadata"] if isinstance(row["metadata"], dict) else json.loads(row["metadata"]) if row["metadata"] else {}
-                                
-                                # Patterns with high occurrence count are more reliable
-                                adjusted_confidence = min(1.0, (row["confidence_score"] or 0.5) + (row["occurrence_count"] or 1) * 0.02)
-                                
-                                history.append({
-                                    "source": f"pattern_vectors:{row['agent_name']}",
-                                    "action": metadata.get("recommended_action") or row["pattern_type"],
-                                    "confidence": adjusted_confidence,
-                                    "outcome": "pattern_learned",
-                                    "success": (row["occurrence_count"] or 0) >= 3,  # Pattern seen 3+ times = reliable
-                                    "occurrences": row["occurrence_count"],
-                                    "timestamp": row["last_observed"].isoformat() if row["last_observed"] else None
-                                })
-                            except Exception as parse_err:
-                                logger.debug(f"Could not parse pattern vector row: {parse_err}")
-                                continue
-                    except Exception as pattern_err:
-                        logger.debug(f"Pattern vectors query failed (table may need migration): {pattern_err}")
+                    pattern_result = await session.execute(
+                        text("""
+                            SELECT 
+                                agent_name,
+                                pattern_type,
+                                pattern_description,
+                                confidence_score,
+                                success_rate,
+                                observation_count,
+                                application_count,
+                                pattern_data,
+                                last_observed
+                            FROM agent_pattern_vectors
+                            WHERE (
+                                pattern_type ILIKE :resource_pattern
+                                OR pattern_description ILIKE :resource_pattern
+                                OR pattern_data::text ILIKE :resource_pattern
+                            )
+                            AND last_observed >= :cutoff
+                            ORDER BY observation_count DESC, last_observed DESC
+                            LIMIT 10
+                        """),
+                        {
+                            "resource_pattern": f"%{resource_type}%",
+                            "cutoff": datetime.now(timezone.utc) - timedelta(days=30)
+                        }
+                    )
+                    
+                    for row in pattern_result.mappings():
+                        try:
+                            pattern_data = row["pattern_data"] if isinstance(row["pattern_data"], dict) else json.loads(row["pattern_data"]) if row["pattern_data"] else {}
+                            
+                            # Use success_rate if available, otherwise calculate from observation count
+                            success_indicator = row["success_rate"] if row["success_rate"] is not None else (row["observation_count"] or 0) >= 3
+                            
+                            # Patterns with high observation count and success rate are more reliable
+                            base_confidence = row["confidence_score"] or 0.5
+                            observation_boost = min(0.3, (row["observation_count"] or 1) * 0.02)
+                            success_boost = (row["success_rate"] or 0.5) * 0.2 if row["success_rate"] is not None else 0
+                            adjusted_confidence = min(1.0, base_confidence + observation_boost + success_boost)
+                            
+                            history.append({
+                                "source": f"pattern_vectors:{row['agent_name']}",
+                                "action": pattern_data.get("recommended_action") or row["pattern_type"],
+                                "confidence": adjusted_confidence,
+                                "outcome": "pattern_learned",
+                                "success": success_indicator if isinstance(success_indicator, bool) else success_indicator > 0.7,
+                                "occurrences": row["observation_count"],
+                                "applications": row["application_count"],
+                                "success_rate": row["success_rate"],
+                                "timestamp": row["last_observed"].isoformat() if row["last_observed"] else None
+                            })
+                        except Exception as parse_err:
+                            logger.debug(f"Could not parse pattern vector row: {parse_err}")
+                            continue
                     
                     # 3. Query agent_learning_interactions - what worked in cross-agent coordination
                     learning_result = await session.execute(
