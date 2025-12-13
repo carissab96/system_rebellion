@@ -153,6 +153,16 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
             logger.info("🖥️📡 VIC-20 subscribed to TRIAGE_ALERT from Sir Hawkington - Coordination ready!")
         except Exception as e:
             logger.error(f"🖥️💥 Failed to subscribe to triage alerts: {e}")
+        
+        # 🎯 PHASE 4: Subscribe to ACTION_REPORT from specialists
+        try:
+            await self.subscribe_to_messages(
+                message_type=MessageType.ACTION_REPORT,
+                callback=self._handle_action_report
+            )
+            logger.info("🖥️📡 VIC-20 subscribed to ACTION_REPORT from specialists - Learning loop ready!")
+        except Exception as e:
+            logger.error(f"🖥️💥 Failed to subscribe to action reports: {e}")
     
     async def _handle_coordination_request(self, message: AgentMessage) -> None:
         """
@@ -251,6 +261,65 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
             
         except Exception as e:
             logger.error(f"🖥️💥 Error handling triage alert: {e}", exc_info=True)
+    
+    async def _handle_action_report(self, message: AgentMessage) -> None:
+        """
+        PHASE 4: Handle ACTION_REPORT from specialists.
+        
+        Flow:
+        1. Receive ACTION_REPORT with outcome/success from specialist
+        2. Extract action result and success status
+        3. Update The Stick with outcome data for learning
+        4. Log for historical effectiveness tracking
+        
+        This completes the feedback loop:
+        Hawkington → VIC-20 → Specialist → ACTION_REPORT → VIC-20 → The Stick (with outcome)
+        
+        Args:
+            message: AgentMessage with action report payload
+        """
+        try:
+            payload = message.payload
+            from_agent = payload.get('from_agent', 'unknown')
+            resource_type = payload.get('resource_type', 'unknown')
+            action = payload.get('action', 'unknown')
+            result = payload.get('result', {})
+            followed_recommendation = payload.get('followed_recommendation', False)
+            
+            # Determine success based on result
+            success = result.get('success', False) if isinstance(result, dict) else False
+            outcome = result.get('outcome', 'unknown') if isinstance(result, dict) else str(result)
+            
+            logger.info(
+                f"🖥️📨 ACTION_REPORT from {from_agent}: "
+                f"action={action}, success={success}, followed_rec={followed_recommendation}"
+            )
+            
+            # Update The Stick with the outcome for learning
+            await self.broadcast_to_agents(
+                message_type=MessageType.DECISION_LOG,
+                payload={
+                    'decision_type': 'coordination_outcome',
+                    'from_agent': 'vic_20_sage',
+                    'specialist': from_agent,
+                    'resource_type': resource_type,
+                    'action': action,
+                    'outcome': outcome,
+                    'success': success,
+                    'followed_recommendation': followed_recommendation,
+                    'result_details': result,
+                    'timestamp': asyncio.get_event_loop().time()
+                },
+                priority=Priority.NORMAL
+            )
+            
+            logger.info(
+                f"🖥️📋 Outcome logged to The Stick: "
+                f"{from_agent} {action} → {'✅ SUCCESS' if success else '❌ FAILED'}"
+            )
+            
+        except Exception as e:
+            logger.error(f"🖥️💥 Error handling action report: {e}", exc_info=True)
     
     def _route_to_specialist(self, resource_type: str) -> Optional[str]:
         """
@@ -1012,25 +1081,24 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
                             logger.debug(f"Could not parse learning interaction row: {parse_err}")
                             continue
                     
-                    # 4. Query The Stick's memory bank for validated outcomes
+                    # 4. Query The Stick's memory bank for coordination outcomes
+                    # The Stick records DECISION_LOG messages with nested payload structure
                     stick_result = await session.execute(
                         text("""
                             SELECT 
                                 event_type,
                                 details,
-                                metadata,
-                                numeric_value as effectiveness,
                                 occurred_at
                             FROM central_memory_bank
                             WHERE agent_name = 'the_stick'
+                                AND event_type = 'decision_log'
                                 AND (
-                                    details::text ILIKE :resource_pattern
-                                    OR event_type ILIKE :resource_pattern
-                                    OR event_type IN ('pattern_validated', 'outcome_recorded', 'fix_verified')
+                                    details->'payload'->>'resource_type' ILIKE :resource_pattern
+                                    OR details->'payload'->>'decision_type' IN ('coordination', 'coordination_outcome')
                                 )
                                 AND occurred_at >= :cutoff
                             ORDER BY occurred_at DESC
-                            LIMIT 10
+                            LIMIT 20
                         """),
                         {
                             "resource_pattern": f"%{resource_type}%",
@@ -1041,16 +1109,25 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
                     for row in stick_result.mappings():
                         try:
                             details = row["details"] if isinstance(row["details"], dict) else json.loads(row["details"]) if row["details"] else {}
-                            metadata = row["metadata"] if isinstance(row["metadata"], dict) else json.loads(row["metadata"]) if row["metadata"] else {}
+                            # The Stick nests the payload inside details
+                            payload = details.get("payload", {})
                             
-                            history.append({
-                                "source": "the_stick",
-                                "action": details.get("action") or details.get("recommendation", {}).get("action") or row["event_type"],
-                                "confidence": row["effectiveness"] or 0.5,
-                                "outcome": metadata.get("outcome") or details.get("outcome", "unknown"),
-                                "success": metadata.get("success") or details.get("success") or details.get("validated", False),
-                                "timestamp": row["occurred_at"].isoformat() if row["occurred_at"] else None
-                            })
+                            # Extract action and outcome from the nested structure
+                            action = payload.get("action") or payload.get("recommendation", {}).get("action", "unknown")
+                            outcome = payload.get("outcome", "unknown")
+                            success = payload.get("success")
+                            decision_type = payload.get("decision_type", "unknown")
+                            
+                            # Only add if we have meaningful outcome data
+                            if decision_type == 'coordination_outcome' or success is not None:
+                                history.append({
+                                    "source": "the_stick:coordination_outcome",
+                                    "action": action,
+                                    "confidence": 0.8 if success else 0.3,  # High confidence if successful
+                                    "outcome": outcome,
+                                    "success": success,
+                                    "timestamp": row["occurred_at"].isoformat() if row["occurred_at"] else None
+                                })
                         except Exception as parse_err:
                             logger.debug(f"Could not parse Stick row: {parse_err}")
                             continue
