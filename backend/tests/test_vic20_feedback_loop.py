@@ -33,16 +33,26 @@ async def test_complete_feedback_loop():
     print("VIC-20 FEEDBACK LOOP TEST - Complete Flow")
     print("=" * 70)
     
-    # Initialize agents
+    # Initialize agents with Redis
     print("\n1. Initializing agents...")
+    import os
+    import redis.asyncio as redis
+    
+    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
+    redis_client = redis.from_url(redis_url, decode_responses=True)
+    
     vic20 = VIC20SageDistributed(db_getter=get_async_db)
     stick = TheStickDistributed(db_getter=get_async_db)
+    
+    # Initialize distributed features (Redis)
+    await vic20.initialize_distributed(redis_client)
+    await stick.initialize_distributed(redis_client)
     
     if vic20.db:
         await vic20.db.ensure_initialized()
     if stick.db:
         await stick.db.ensure_initialized()
-    print("   ✅ Agents initialized")
+    print("   ✅ Agents initialized with Redis")
     
     # Step 1: Simulate Hawkington sending TRIAGE_ALERT to VIC-20
     print("\n2. Simulating Hawkington TRIAGE_ALERT...")
