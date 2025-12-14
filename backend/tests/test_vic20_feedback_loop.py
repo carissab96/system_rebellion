@@ -38,8 +38,10 @@ async def test_complete_feedback_loop():
     vic20 = VIC20SageDistributed(db_getter=get_async_db)
     stick = TheStickDistributed(db_getter=get_async_db)
     
-    await vic20.db.ensure_initialized()
-    await stick.db.ensure_initialized()
+    if vic20.db:
+        await vic20.db.ensure_initialized()
+    if stick.db:
+        await stick.db.ensure_initialized()
     print("   ✅ Agents initialized")
     
     # Step 1: Simulate Hawkington sending TRIAGE_ALERT to VIC-20
