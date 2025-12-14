@@ -117,14 +117,22 @@ async def test_complete_feedback_loop():
         timestamp=datetime.now(timezone.utc)
     )
     
-    # VIC-20 handles the action report
+    # VIC-20 handles the action report and logs outcome to The Stick
     await vic20._handle_action_report(action_report)
     print("   ✅ VIC-20 received action report and logged outcome to The Stick")
     
-    # Give The Stick time to flush buffer
+    # Give The Stick time to receive and process the DECISION_LOG message
+    await asyncio.sleep(1.0)
+    
+    # Flush The Stick's decision log buffer to ensure it's written to database
+    if hasattr(stick, '_flush_decision_log_buffer'):
+        await stick._flush_decision_log_buffer()
+        print("   ✅ Flushed The Stick's decision log buffer")
+    
+    # Give it a moment to complete the write
     await asyncio.sleep(0.5)
     
-    # Step 3: Check if The Stick has the coordination outcome
+    # Step 3: Check The Stick's memory for coordination outcomes
     print("\n4. Checking The Stick's memory for coordination outcomes...")
     async for session in get_async_db():
         from sqlalchemy import text
