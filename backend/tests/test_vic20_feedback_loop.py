@@ -1,3 +1,4 @@
+
 """
 Test VIC-20 Feedback Loop - Complete Flow
 ==========================================
@@ -37,12 +38,27 @@ async def test_complete_feedback_loop():
     print("\n1. Initializing agents...")
     import os
     import redis.asyncio as redis
+    from sqlalchemy import select
+    from app.models.user import User
+    
+    # Get a valid user_id from the database
+    user_id = None
+    async for session in get_async_db():
+        result = await session.execute(select(User.id).limit(1))
+        user_id = result.scalar_one_or_none()
+        break
+    
+    if not user_id:
+        print("   ❌ No users found in database - cannot test without user_id")
+        return False
+    
+    print(f"   Using user_id: {user_id}")
     
     redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
     redis_client = redis.from_url(redis_url, decode_responses=True)
     
-    vic20 = VIC20SageDistributed(db_getter=get_async_db)
-    stick = TheStickDistributed(db_getter=get_async_db)
+    vic20 = VIC20SageDistributed(db_getter=get_async_db, user_id=user_id)
+    stick = TheStickDistributed(db_getter=get_async_db, user_id=user_id)
     
     # Initialize distributed features (Redis)
     await vic20.initialize_distributed(redis_client)
