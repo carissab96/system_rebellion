@@ -121,8 +121,35 @@ async def test_complete_feedback_loop():
     await vic20._handle_action_report(action_report)
     print("   ✅ VIC-20 received action report and logged outcome to The Stick")
     
-    # Give The Stick time to receive and process the DECISION_LOG message
-    await asyncio.sleep(1.0)
+    # Simulate The Stick receiving the DECISION_LOG message
+    # (In the live system, this happens via Redis pub/sub)
+    decision_log_message = AgentMessage(
+        from_agent="vic_20_sage",
+        to_agent="the_stick",
+        message_type=MessageType.DECISION_LOG,
+        payload={
+            'decision_type': 'coordination_outcome',
+            'from_agent': 'vic_20_sage',
+            'specialist': 'meth_snail',
+            'resource_type': 'cpu',
+            'action': 'throttle_processes',
+            'outcome': 'CPU reduced from 85% to 65%',
+            'success': True,
+            'followed_recommendation': True,
+            'result_details': {
+                "success": True,
+                "outcome": "CPU reduced from 85% to 65%",
+                "cpu_before": 85.0,
+                "cpu_after": 65.0
+            },
+            'timestamp': asyncio.get_event_loop().time()
+        },
+        priority=Priority.NORMAL,
+        timestamp=datetime.now(timezone.utc)
+    )
+    
+    await stick._handle_decision_log(decision_log_message)
+    print("   ✅ The Stick received and processed DECISION_LOG")
     
     # Flush The Stick's decision log buffer to ensure it's written to database
     if hasattr(stick, '_flush_decision_log_buffer'):

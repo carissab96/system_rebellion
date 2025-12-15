@@ -6,19 +6,15 @@ interface VIC20State {
   data: any;
   lastUpdate: string | null;
   error: string | null;
-  coordinationSessions: number;
-  successfulCoordinations: number;
-  coordinationFailures: number;
-  patternApplications: number;
-  agentInteractionsLogged: number;
-  connectedAgents: number;
-  learningModeActive: boolean;
-  patternMatchingEnabled: boolean;
-  effectivenessTrackingEnabled: boolean;
-  ancientWisdomPrinciple: string;
-  systemSynthesisConfidence: number;
-  coordinationConfidence: number;
-  ancientWisdomBridge: string;
+  totalAnalyses: number;
+  successfulAnalyses: number;
+  wisdomLevel: string;
+  coordinationCapacity: string;
+  patternLibrarySize: string;
+  decisionsMade: number;
+  messagesSent: number;
+  health: string;
+  uptime: number;
 }
 
 const initialState: VIC20State = {
@@ -26,19 +22,15 @@ const initialState: VIC20State = {
   data: null,
   lastUpdate: null,
   error: null,
-  coordinationSessions: 0,
-  successfulCoordinations: 0,
-  coordinationFailures: 0,
-  patternApplications: 0,
-  agentInteractionsLogged: 0,
-  connectedAgents: 0,
-  learningModeActive: false,
-  patternMatchingEnabled: false,
-  effectivenessTrackingEnabled: false,
-  ancientWisdomPrinciple: 'none available',
-  systemSynthesisConfidence: 0,
-  coordinationConfidence: 0,
-  ancientWisdomBridge: 'unknown',
+  totalAnalyses: 0,
+  successfulAnalyses: 0,
+  wisdomLevel: 'sage',
+  coordinationCapacity: 'unlimited',
+  patternLibrarySize: 'extensive',
+  decisionsMade: 0,
+  messagesSent: 0,
+  health: 'unknown',
+  uptime: 0,
 };
 
 export const vic20Slice = createSlice({
@@ -54,20 +46,19 @@ export const vic20Slice = createSlice({
         state.lastUpdate = new Date().toISOString();
         state.error = null;
         
-        // Extract specific metrics - NO FAKE DATA
-        state.coordinationSessions = data.coordination_sessions || 0;
-        state.successfulCoordinations = data.successful_coordinations || 0;
-        state.coordinationFailures = data.coordination_failures || 0;
-        state.patternApplications = data.pattern_applications || 0;
-        state.agentInteractionsLogged = data.agent_interactions_logged || 0;
-        state.connectedAgents = data.connected_agents || 0;
-        state.learningModeActive = data.learning_mode_active || false;
-        state.patternMatchingEnabled = data.pattern_matching_enabled || false;
-        state.effectivenessTrackingEnabled = data.effectiveness_tracking_enabled || false;
-        state.ancientWisdomPrinciple = data.ancient_wisdom_principle || 'none available';
-        state.systemSynthesisConfidence = data.system_synthesis_confidence || 0;
-        state.coordinationConfidence = data.coordination_confidence || 0;
-        state.ancientWisdomBridge = data.ancient_wisdom_bridge || 'unknown';
+        // Extract backend fields - match what distributed_vic20.py sends
+        state.totalAnalyses = data.total_analyses ?? 0;
+        state.successfulAnalyses = data.successful_analyses ?? 0;
+        state.wisdomLevel = data.wisdom_level ?? 'sage';
+        state.coordinationCapacity = data.coordination_capacity ?? 'unlimited';
+        state.patternLibrarySize = data.pattern_library_size ?? 'extensive';
+        
+        // Extract distributed state fields if present
+        const distributed = data.distributed || {};
+        state.decisionsMade = distributed.decisions_made ?? 0;
+        state.messagesSent = distributed.messages_sent ?? 0;
+        state.health = distributed.health ?? 'unknown';
+        state.uptime = distributed.uptime_seconds ?? 0;
       } else {
         state.isOnline = false;
         state.error = 'No data received from VIC-20 Sage WebSocket handler';
@@ -88,28 +79,12 @@ export const vic20Slice = createSlice({
     requestCoordination: (state) => {
       if (state.isOnline) {
         // This would trigger a WebSocket message to backend
-        state.coordinationSessions += 1;
-      }
-    },
-    
-    // Special action for War Games mode
-    triggerWarGamesMode: (state) => {
-      if (state.isOnline) {
-        // This would trigger the War Games analysis
-        state.ancientWisdomPrinciple = 'The only winning move is not to play';
-      }
-    },
-    
-    // Special action for pattern learning
-    triggerPatternLearning: (state) => {
-      if (state.isOnline && state.learningModeActive) {
-        // This would trigger pattern learning update
-        state.patternApplications += 1;
+        state.decisionsMade += 1;
       }
     },
   },
 });
 
-export const { updateMetrics, setOffline, clearError, requestCoordination, triggerWarGamesMode, triggerPatternLearning } = vic20Slice.actions;
+export const { updateMetrics, setOffline, clearError, requestCoordination } = vic20Slice.actions;
 
 export default vic20Slice.reducer;
