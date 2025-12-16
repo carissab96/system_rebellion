@@ -112,7 +112,6 @@ const agentsSlice = createSlice({
         agent_name,
         status: memory.status || 'active',
         last_activity: memory.timestamp,
-        recent_memories: agent.recent_memories,
         summary_stats: {
           total_events: agent.recent_memories.length,
           recent_events_24h: agent.recent_memories.filter((m: any) => {
