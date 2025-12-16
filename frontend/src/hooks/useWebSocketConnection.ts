@@ -206,6 +206,18 @@ export const useWebSocketConnection = () => {
         }));
       }
     }
+    // Handle agent log messages from backend logging system
+    else if (payload.type === 'agent_log') {
+      dispatch(addCommunication({
+        id: `log-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        timestamp: payload.timestamp || new Date().toISOString(),
+        from_agent: payload.agent_name || 'system',
+        to_agent: 'system',
+        message_type: payload.category?.toUpperCase() || 'LOG',
+        summary: payload.message,
+        priority: payload.level === 'error' ? 'high' : payload.level === 'warning' ? 'medium' : 'low',
+      }));
+    }
   }, [dispatch]);
 
   const connect = useCallback(async () => {

@@ -51,7 +51,22 @@ export const DistributedAgentDashboard: React.FC = () => {
     // Take last 20 communications and convert to activity log
     const newActivities: ActivityLog[] = recentCommunications.slice(0, 20).map(comm => {
       const color = MESSAGE_TYPE_COLORS[comm.message_type] || MESSAGE_TYPE_COLORS.default;
-      const action = comm.summary || `${comm.message_type} → ${comm.to_agent}`;
+      
+      // Extract readable action text from summary
+      let action = '';
+      if (typeof comm.summary === 'string') {
+        action = comm.summary;
+      } else if (comm.summary && typeof comm.summary === 'object') {
+        // If summary is an object, try to extract meaningful text
+        action = comm.summary.message || comm.summary.action || comm.summary.content || JSON.stringify(comm.summary);
+      } else {
+        action = `${comm.message_type} → ${comm.to_agent}`;
+      }
+      
+      // Truncate long messages
+      if (action.length > 100) {
+        action = action.substring(0, 97) + '...';
+      }
       
       return {
         id: comm.id,
