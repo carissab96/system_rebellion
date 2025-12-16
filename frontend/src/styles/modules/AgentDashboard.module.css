@@ -255,6 +255,46 @@
   margin-top: var(--space-xs);
 }
 
+/* Personality Stats Section */
+.personalitySection {
+  background: rgba(100, 128, 252, 0.05);
+  border: 1px solid rgba(100, 128, 252, 0.15);
+  border-radius: var(--radius-sm);
+  padding: var(--space-md);
+  margin-top: var(--space-md);
+}
+
+.personalityTitle {
+  font-size: 0.75rem;
+  color: var(--vic20-cyan);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--space-sm);
+  font-weight: 600;
+}
+
+.personalityStat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-xs) 0;
+  font-size: 0.8125rem;
+}
+
+.personalityStat:not(:last-child) {
+  border-bottom: 1px solid rgba(100, 128, 252, 0.1);
+}
+
+.personalityLabel {
+  color: var(--rebellion-text-dim);
+}
+
+.personalityValue {
+  color: var(--rebellion-text-bright);
+  font-weight: 500;
+  font-family: var(--font-mono);
+}
+
 /* Activity Feed */
 .activityFeed {
   background: var(--rebellion-surface);

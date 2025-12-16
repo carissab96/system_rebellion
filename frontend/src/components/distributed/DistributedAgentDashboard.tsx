@@ -346,6 +346,184 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, config, formatUptime }) =>
           )}
         </div>
       )}
+
+      {/* Agent-Specific Personality Stats */}
+      <AgentPersonalityStats agent={agent} />
+    </div>
+  );
+};
+
+// =============================================================================
+// AGENT PERSONALITY STATS COMPONENT
+// =============================================================================
+
+interface AgentPersonalityStatsProps {
+  agent: DistributedAgent;
+}
+
+const AgentPersonalityStats: React.FC<AgentPersonalityStatsProps> = ({ agent }) => {
+  const renderStats = () => {
+    switch (agent.agent_name) {
+      case 'sir_hawkington':
+        return (
+          <>
+            {agent.monocle_yeet_count !== undefined && (
+              <div className={styles.personalityStat}>
+                <span className={styles.personalityLabel}>Monocle Yeets:</span>
+                <span className={styles.personalityValue}>{agent.monocle_yeet_count}</span>
+              </div>
+            )}
+            {agent.monocle_state && (
+              <div className={styles.personalityStat}>
+                <span className={styles.personalityLabel}>Monocle State:</span>
+                <span className={styles.personalityValue}>{agent.monocle_state}</span>
+              </div>
+            )}
+          </>
+        );
+
+      case 'meth_snail':
+        return (
+          <>
+            {agent.shell_spin_count !== undefined && (
+              <div className={styles.personalityStat}>
+                <span className={styles.personalityLabel}>Shell Spins:</span>
+                <span className={styles.personalityValue}>{agent.shell_spin_count}</span>
+              </div>
+            )}
+            {agent.energy_drinks_consumed !== undefined && (
+              <div className={styles.personalityStat}>
+                <span className={styles.personalityLabel}>Energy Drinks:</span>
+                <span className={styles.personalityValue}>{agent.energy_drinks_consumed}</span>
+              </div>
+            )}
+            {agent.current_jitter_level && (
+              <div className={styles.personalityStat}>
+                <span className={styles.personalityLabel}>Jitter Level:</span>
+                <span className={styles.personalityValue}>{agent.current_jitter_level}</span>
+              </div>
+            )}
+          </>
+        );
+
+      case 'hamsters':
+        return (
+          <>
+            {agent.bob_wild_ideas !== undefined && (
+              <div className={styles.personalityStat}>
+                <span className={styles.personalityLabel}>Bob's Wild Ideas:</span>
+                <span className={styles.personalityValue}>{agent.bob_wild_ideas}</span>
+              </div>
+            )}
+            {agent.bob_hold_my_beer_count !== undefined && (
+              <div className={styles.personalityStat}>
+                <span className={styles.personalityLabel}>Hold My Beer:</span>
+                <span className={styles.personalityValue}>{agent.bob_hold_my_beer_count}</span>
+              </div>
+            )}
+            {agent.collective_beer_level && (
+              <div className={styles.personalityStat}>
+                <span className={styles.personalityLabel}>Beer Level:</span>
+                <span className={styles.personalityValue}>{agent.collective_beer_level}</span>
+              </div>
+            )}
+            {agent.duct_tape_inventory && (
+              <div className={styles.personalityStat}>
+                <span className={styles.personalityLabel}>Duct Tape:</span>
+                <span className={styles.personalityValue}>
+                  {typeof agent.duct_tape_inventory === 'object' 
+                    ? Object.values(agent.duct_tape_inventory).reduce((a: any, b: any) => (a || 0) + (b || 0), 0)
+                    : agent.duct_tape_inventory}
+                </span>
+              </div>
+            )}
+          </>
+        );
+
+      case 'the_stick':
+        return (
+          <>
+            {agent.paper_bag_inventory !== undefined && (
+              <div className={styles.personalityStat}>
+                <span className={styles.personalityLabel}>Paper Bags Left:</span>
+                <span className={styles.personalityValue}>{agent.paper_bag_inventory}</span>
+              </div>
+            )}
+            {agent.paper_bags_consumed !== undefined && (
+              <div className={styles.personalityStat}>
+                <span className={styles.personalityLabel}>Bags Consumed:</span>
+                <span className={styles.personalityValue}>{agent.paper_bags_consumed}</span>
+              </div>
+            )}
+          </>
+        );
+
+      case 'quantum_shadow_people':
+        return (
+          <>
+            {agent.tequila_jello_shots !== undefined && (
+              <div className={styles.personalityStat}>
+                <span className={styles.personalityLabel}>Tequila Shots:</span>
+                <span className={styles.personalityValue}>{agent.tequila_jello_shots}</span>
+              </div>
+            )}
+            {agent.paranoia_level && (
+              <div className={styles.personalityStat}>
+                <span className={styles.personalityLabel}>Paranoia:</span>
+                <span className={styles.personalityValue}>{agent.paranoia_level}</span>
+              </div>
+            )}
+            {agent.threats_detected !== undefined && (
+              <div className={styles.personalityStat}>
+                <span className={styles.personalityLabel}>Threats Found:</span>
+                <span className={styles.personalityValue}>{agent.threats_detected}</span>
+              </div>
+            )}
+            {agent.false_alarms !== undefined && (
+              <div className={styles.personalityStat}>
+                <span className={styles.personalityLabel}>False Alarms:</span>
+                <span className={styles.personalityValue}>{agent.false_alarms}</span>
+              </div>
+            )}
+          </>
+        );
+
+      case 'vic_20_sage':
+        return (
+          <>
+            {agent.totalAnalyses !== undefined && (
+              <div className={styles.personalityStat}>
+                <span className={styles.personalityLabel}>Analyses:</span>
+                <span className={styles.personalityValue}>{agent.totalAnalyses}</span>
+              </div>
+            )}
+            {agent.decisionsMade !== undefined && (
+              <div className={styles.personalityStat}>
+                <span className={styles.personalityLabel}>Decisions:</span>
+                <span className={styles.personalityValue}>{agent.decisionsMade}</span>
+              </div>
+            )}
+            {agent.wisdomLevel && (
+              <div className={styles.personalityStat}>
+                <span className={styles.personalityLabel}>Wisdom:</span>
+                <span className={styles.personalityValue}>{agent.wisdomLevel}</span>
+              </div>
+            )}
+          </>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  const stats = renderStats();
+  if (!stats) return null;
+
+  return (
+    <div className={styles.personalitySection}>
+      <div className={styles.personalityTitle}>Personality Stats</div>
+      {stats}
     </div>
   );
 };
