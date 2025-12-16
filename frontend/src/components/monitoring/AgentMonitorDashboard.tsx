@@ -121,6 +121,22 @@ export function AgentMonitorDashboard() {
   useEffect(() => {
     const handleAgentMessage = (msg: any) => {
       const msgType = msg.type;
+      
+      // Handle agent_log messages from backend (WebSocketLogHandler)
+      if (msgType === 'agent_log') {
+        const agentName = msg.agent_name;
+        const category = msg.category as 'redis' | 'postgres' | 'vector' | 'system';
+        const level = msg.level as 'info' | 'warning' | 'error';
+        const message = msg.message;
+        const timestamp = msg.timestamp;
+        
+        if (agentName && category && level && message) {
+          addLogEntry(agentName, category, level, message, timestamp);
+        }
+        return;
+      }
+      
+      // Handle other message types (agent_insight, etc.)
       const data = msg.data || msg;
       const agentName = data?.from_agent || data?.agent_name || data?.sender;
       

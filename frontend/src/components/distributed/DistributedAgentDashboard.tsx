@@ -66,8 +66,8 @@ export const DistributedAgentDashboard: React.FC = () => {
   useEffect(() => {
     if (recentCommunications.length === 0) return;
     
-    // Take last 20 communications and convert to activity log
-    const newActivities: ActivityLog[] = recentCommunications.slice(0, 20).map(comm => {
+    // Take last 100 communications and convert to activity log
+    const newActivities: ActivityLog[] = recentCommunications.slice(0, 100).map(comm => {
       const color = MESSAGE_TYPE_COLORS[comm.message_type] || MESSAGE_TYPE_COLORS.default;
       
       // Extract readable action text from summary
