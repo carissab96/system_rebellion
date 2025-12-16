@@ -44,6 +44,10 @@ class WebSocketManager:
         elif msg_type == "agent_event":
             self.recent_events.append(message)
             logger.debug("📝 Buffered event: %s - %s", message.get("agent_name"), message.get("event_type"))
+        elif msg_type == "agent_log":
+            # Buffer agent logs as insights so they appear in activity feed
+            self.recent_insights.append(message)
+            logger.debug("📝 Buffered log: %s - %s", message.get("agent_name"), message.get("message", "")[:50])
         
         # Broadcast to all connections
         to_drop = []

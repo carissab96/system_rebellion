@@ -218,6 +218,10 @@ export const useWebSocketConnection = () => {
         priority: payload.level === 'error' ? 'high' : payload.level === 'warning' ? 'medium' : 'low',
       }));
     }
+    // Ignore heartbeat messages - they're just keepalive pings
+    else if (payload.type === 'heartbeat') {
+      // Do nothing - heartbeats are not agent activity
+    }
   }, [dispatch]);
 
   const connect = useCallback(async () => {
