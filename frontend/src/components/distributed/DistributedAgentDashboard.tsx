@@ -11,6 +11,7 @@ import { selectRecentCommunications, MESSAGE_TYPE_COLORS } from '../../store/sli
 import { Radio, Activity, AlertTriangle } from 'lucide-react';
 import styles from '../../styles/modules/AgentDashboard.module.css';
 import { AgentPersonalityAnimations } from './AgentPersonalityAnimations';
+import { SystemHealthNarrative } from './SystemHealthNarrative';
 
 // Agent icons
 import sirHawkingtonIcon from '../../assets/icons/agents/sir_hawkington.jpeg';
@@ -195,6 +196,11 @@ export const DistributedAgentDashboard: React.FC = () => {
             />
           );
         })}
+      </div>
+
+      {/* System Health Narrative - Real agent story */}
+      <div style={{ marginTop: 'var(--space-lg)' }}>
+        <SystemHealthNarrative />
       </div>
 
       {/* Activity Feed */}
