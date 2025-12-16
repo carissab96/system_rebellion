@@ -161,19 +161,13 @@ export const useDistributedAgents = () => {
     
     return {
       ...data,
-      // Ensure required fields have defaults - check multiple sources
+      // Spread ALL backend data to preserve personality fields
+      ...backendData,
+      // Then override specific fields with normalized/computed values
       health: backendData.health || backendData.distributed?.health || data.status || 'unknown',
       total_decisions: backendData.total_decisions || backendData.distributed?.total_decisions || data.summary_stats?.total_events || 0,
       uptime_seconds: backendData.uptime_seconds || backendData.distributed?.uptime_seconds || 0,
-      // Pass through backend fields with normalized distributed
       distributed: normalizedDistributed,
-      communication: backendData.communication,
-      triage: backendData.triage,
-      memory_id: backendData.memory_id,
-      event_type: backendData.event_type,
-      details: backendData.details,
-      priority: backendData.priority,
-      personality_traits: backendData.personality_traits,
     };
   });
   
