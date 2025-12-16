@@ -5,7 +5,9 @@
 // Design: Uses rebellion design system + CSS modules (no inline styles except design tokens)
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useSelector } from 'react-redux';
 import { useDistributedAgents, type DistributedAgent } from '../../hooks/useDistributedAgents';
+import { selectRecentCommunications, MESSAGE_TYPE_COLORS } from '../../store/slices/communicationSlice';
 import { Radio, Activity, AlertTriangle } from 'lucide-react';
 import styles from '../../styles/modules/AgentDashboard.module.css';
 
@@ -38,62 +40,30 @@ interface ActivityLog {
 
 export const DistributedAgentDashboard: React.FC = () => {
   const { agents, loading, error, connectionStatus, lastUpdate } = useDistributedAgents();
+  const recentCommunications = useSelector(selectRecentCommunications);
   const [activityLog, setActivityLog] = useState<ActivityLog[]>([]);
   const prevAgentStatesRef = useRef<Map<string, any>>(new Map());
 
-  // Watch for agent activity changes and log them
+  // Convert real-time communications to activity log format
   useEffect(() => {
-    const prevStates = prevAgentStatesRef.current;
+    if (recentCommunications.length === 0) return;
     
-    agents.forEach(agent => {
-      const prev = prevStates.get(agent.agent_name);
-      const dist = agent.distributed;
+    // Take last 20 communications and convert to activity log
+    const newActivities: ActivityLog[] = recentCommunications.slice(0, 20).map(comm => {
+      const color = MESSAGE_TYPE_COLORS[comm.message_type] || MESSAGE_TYPE_COLORS.default;
+      const action = comm.summary || `${comm.message_type} → ${comm.to_agent}`;
       
-      if (!prev) {
-        // First time seeing this agent
-        addActivity(agent.agent_name, 'Agent online');
-        return;
-      }
-
-      // Detect new messages sent
-      const currentMsgCount = dist?.total_messages_sent;
-      const prevMsgCount = prev.messages_sent;
-      if (currentMsgCount !== undefined && prevMsgCount !== undefined && currentMsgCount > prevMsgCount) {
-        const count = currentMsgCount - prevMsgCount;
-        addActivity(agent.agent_name, `Broadcast ${count} message${count > 1 ? 's' : ''}`);
-      }
-
-      // Detect new decisions
-      const currentDecisions = agent.total_decisions;
-      const prevDecisions = prev.decisions;
-      if (currentDecisions !== undefined && prevDecisions !== undefined && currentDecisions > prevDecisions) {
-        const count = currentDecisions - prevDecisions;
-        addActivity(agent.agent_name, `Made ${count} decision${count > 1 ? 's' : ''}`);
-      }
-
-      // Detect health changes
-      if (agent.health && prev.health && agent.health !== prev.health) {
-        addActivity(agent.agent_name, `Health: ${prev.health} -> ${agent.health}`);
-      }
-      
-      // Detect triage events (Sir Hawkington)
-      if (agent.triage?.disposition && agent.triage.disposition !== prev.triageDisposition) {
-        addActivity(agent.agent_name, `Triage: ${agent.triage.disposition}`);
-      }
+      return {
+        id: comm.id,
+        agent: comm.from_agent,
+        action,
+        timestamp: new Date(comm.timestamp),
+        color,
+      };
     });
-
-    // Update previous states
-    const newStates = new Map();
-    agents.forEach(agent => {
-      newStates.set(agent.agent_name, {
-        messages_sent: agent.distributed?.total_messages_sent,
-        decisions: agent.total_decisions,
-        health: agent.health,
-        triageDisposition: agent.triage?.disposition,
-      });
-    });
-    prevAgentStatesRef.current = newStates;
-  }, [agents]);
+    
+    setActivityLog(newActivities);
+  }, [recentCommunications]);
 
   const addActivity = (agentName: string, action: string) => {
     const newActivity: ActivityLog = {
