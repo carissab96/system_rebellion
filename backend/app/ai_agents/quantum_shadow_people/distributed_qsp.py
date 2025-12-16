@@ -555,8 +555,11 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
             "successful_analyses": getattr(self, 'successful_analyses', 0),
             "quantum_phase": "stable",
             "coherence_level": "high",
-            "tequila_jello_shots": "adequate",
-            "paranoia_level": "healthy",
+            "tequila_jello_shots": self.tequila_shots_today,
+            "paranoia_level": self.paranoia_level,
+            "threats_detected": self.threats_detected,
+            "false_alarms": self.false_alarms,
+            "quantum_phase_shifts": self.quantum_phase_shifts,
             "distributed": distributed_state
         }
         

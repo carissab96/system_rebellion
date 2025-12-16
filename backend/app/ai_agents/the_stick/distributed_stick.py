@@ -795,6 +795,8 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
             "patience_level": "infinite",
             "guidance_sessions": getattr(self, 'total_analyses', 0),
             "compliance_records": "comprehensive",
+            "paper_bag_inventory": self.paper_bag_inventory,
+            "paper_bags_consumed": self.paper_bags_consumed,
             "distributed": distributed_state
         }
         
