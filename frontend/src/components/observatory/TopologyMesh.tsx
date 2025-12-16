@@ -177,7 +177,8 @@ export const TopologyMesh: React.FC<TopologyMeshProps> = ({ onAgentClick }) => {
     const ctrlX = midX + (dy > 0 ? offset : -offset) * 0.5;
     const ctrlY = midY + (dx > 0 ? -offset : offset) * 0.5;
     
-    return `M ${fromPos.x}% ${fromPos.y}% Q ${ctrlX}% ${ctrlY}% ${toPos.x}% ${toPos.y}%`;
+    // SVG paths need absolute numbers, not percentages (viewBox is 0 0 100 100)
+    return `M ${fromPos.x} ${fromPos.y} Q ${ctrlX} ${ctrlY} ${toPos.x} ${toPos.y}`;
   }, []);
   
   // Render connection lines
@@ -242,7 +243,7 @@ export const TopologyMesh: React.FC<TopologyMeshProps> = ({ onAgentClick }) => {
           style={{
             stroke: pulse.color,
             strokeDasharray: '20 1000',
-            strokeDashoffset: `${100 - progress * 100}%`,
+            strokeDashoffset: 100 - progress * 100,
           }}
         />
       );
