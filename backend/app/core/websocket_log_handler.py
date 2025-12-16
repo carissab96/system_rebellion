@@ -135,15 +135,14 @@ def setup_websocket_logging(broadcast_func, event_loop: asyncio.AbstractEventLoo
     # Add handler to agent loggers
     agent_loggers = [
         'TheStick.Distributed',
-        'Stick.Database',
-        'VIC20.Coordination',
-        'VIC20.Database',
+        'VIC20Sage.Distributed',
         'MethSnail.Distributed',
-        'MethSnail.Database',
-        'Hawkington.Triage',
-        'Hawkington.Distributed',
+        'SirHawkington.Distributed',
         'Hamsters.Distributed',
-        'QSP.Distributed',
+        'QuantumShadowPeople.Distributed',
+        # Legacy/alternate logger names
+        'Hawkington.Triage',
+        'VIC20.Coordination',
     ]
     
     for logger_name in agent_loggers:
