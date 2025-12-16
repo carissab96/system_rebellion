@@ -138,17 +138,46 @@ export const useWebSocketConnection = () => {
       
       // 3. HANDLE RECENT INSIGHTS (inter-agent communications)
       if (payload.recent_insights && Array.isArray(payload.recent_insights)) {
+        // Helper to recursively extract meaningful text from nested objects
+        const extractMessage = (obj: any, depth: number = 0): string | null => {
+          if (depth > 5 || !obj || typeof obj !== 'object') return null;
+          
+          // Check common message fields
+          const messageFields = ['message', 'reasoning', 'action', 'content', 'summary', 'disposition', 'description', 'details'];
+          for (const field of messageFields) {
+            if (typeof obj[field] === 'string' && obj[field].length > 0) {
+              return obj[field];
+            }
+          }
+          
+          // Check nested objects
+          const nestedFields = ['payload', 'data', 'recommendation', 'triage', 'result'];
+          for (const field of nestedFields) {
+            if (obj[field]) {
+              const nested = extractMessage(obj[field], depth + 1);
+              if (nested) return nested;
+            }
+          }
+          
+          return null;
+        };
+        
         // Transform insights to AgentCommunication format
-        const communications: AgentCommunication[] = payload.recent_insights.map((insight: any, index: number) => ({
-          id: insight.id || `insight-${Date.now()}-${index}`,
-          timestamp: insight.timestamp || new Date().toISOString(),
-          from_agent: insight.from_agent || insight.sender || 'unknown',
-          to_agent: insight.to_agent || insight.recipient || 'unknown',
-          message_type: insight.message_type || insight.type || 'AGENT_MESSAGE',
-          summary: insight.summary || insight.message || insight.content,
-          confidence: insight.confidence,
-          priority: insight.priority,
-        }));
+        const communications: AgentCommunication[] = payload.recent_insights.map((insight: any, index: number) => {
+          // Aggressively extract summary from nested structure
+          const summary = extractMessage(insight) || `${insight.type || insight.message_type || 'activity'}`;
+          
+          return {
+            id: insight.id || `insight-${Date.now()}-${index}`,
+            timestamp: insight.timestamp || new Date().toISOString(),
+            from_agent: insight.from_agent || insight.agent_name || insight.sender || 'unknown',
+            to_agent: insight.to_agent || insight.recipient || 'broadcast',
+            message_type: insight.message_type || insight.type || insight.category?.toUpperCase() || 'AGENT_MESSAGE',
+            summary,
+            confidence: insight.confidence,
+            priority: insight.priority || (insight.level === 'error' ? 'high' : insight.level === 'warning' ? 'medium' : 'low'),
+          };
+        });
         dispatch(setCommunications(communications));
       }
       
