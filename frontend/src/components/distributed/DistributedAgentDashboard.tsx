@@ -10,6 +10,7 @@ import { useDistributedAgents, type DistributedAgent } from '../../hooks/useDist
 import { selectRecentCommunications, MESSAGE_TYPE_COLORS } from '../../store/slices/communicationSlice';
 import { Radio, Activity, AlertTriangle } from 'lucide-react';
 import styles from '../../styles/modules/AgentDashboard.module.css';
+import { AgentPersonalityAnimations } from './AgentPersonalityAnimations';
 
 // Agent icons
 import sirHawkingtonIcon from '../../assets/icons/agents/sir_hawkington.jpeg';
@@ -254,7 +255,20 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, config, formatUptime }) =>
   };
 
   return (
-    <div className={`${styles.agentCard} ${styles[config.styleClass] || ''}`}>
+    <div className={`${styles.agentCard} ${styles[config.styleClass] || ''}`} style={{ position: 'relative' }}>
+      {/* Real Data-Driven Personality Animations */}
+      <AgentPersonalityAnimations
+        agentName={agent.agent_name}
+        shell_spin_count={agent.shell_spin_count}
+        caffeine_level={agent.caffeine_level}
+        memory_percent={agent.distributed?.resource_monitoring_active ? agent.memory_percent : undefined}
+        paper_bags_consumed={agent.paper_bags_consumed}
+        paper_bag_inventory={agent.paper_bag_inventory}
+        bob_wild_ideas={agent.bob_wild_ideas}
+        monocle_yeet_count={agent.monocle_yeet_count}
+        data_quality_score={agent.data_quality_score}
+      />
+      
       {/* Card Header */}
       <div className={styles.cardHeader}>
         <div className={styles.agentName}>
