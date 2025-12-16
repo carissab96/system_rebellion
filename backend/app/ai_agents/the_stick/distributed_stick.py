@@ -528,6 +528,27 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
             f"[Bags remaining: {self.paper_bag_inventory}]"
         )
         
+        # Broadcast anxiety event to WebSocket
+        import asyncio
+        try:
+            from app.services.agent_insight_emitter import emit_agent_insight
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.create_task(emit_agent_insight(
+                    from_agent="the_stick",
+                    to_agent="system",
+                    action="paper_bag_consumed",
+                    reasoning=f"Anxiety management: {reason}",
+                    context={
+                        "reason": reason,
+                        "bags_remaining": self.paper_bag_inventory,
+                        "bags_consumed_total": self.paper_bags_consumed,
+                        "anxiety_level": self.current_anxiety_level.value if hasattr(self, 'current_anxiety_level') else "unknown"
+                    }
+                ))
+        except Exception as e:
+            logger.debug(f"Could not broadcast paper bag event: {e}")
+        
         if self.paper_bag_inventory < 10:
             logger.warning(
                 f"📏😰😰 PAPER BAG INVENTORY LOW! Only {self.paper_bag_inventory} bags left! "
