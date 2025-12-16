@@ -68,6 +68,47 @@ export interface DistributedAgent extends AgentDisplayData {
   total_decisions?: number;
   health?: string;
   uptime_seconds?: number;
+  
+  // Sir Hawkington personality fields
+  monocle_state?: string;
+  monocle_yeet_count?: number;
+  
+  // Meth Snail (Terry) personality fields
+  shell_spin_count?: number;
+  energy_drinks_consumed?: number;
+  current_jitter_level?: string;
+  
+  // Hamsters personality fields
+  bob_wild_ideas?: number;
+  bob_hold_my_beer_count?: number;
+  collective_beer_level?: string;
+  beer_consumption_today?: number;
+  duct_tape_inventory?: any;
+  hamster_status?: {
+    steve?: any;
+    bob?: any;
+    carl?: any;
+  };
+  
+  // The Stick personality fields
+  paper_bag_inventory?: number;
+  paper_bags_consumed?: number;
+  
+  // QSP personality fields
+  tequila_jello_shots?: number;
+  paranoia_level?: string;
+  threats_detected?: number;
+  false_alarms?: number;
+  quantum_phase_shifts?: number;
+  
+  // VIC-20 personality fields
+  totalAnalyses?: number;
+  successfulAnalyses?: number;
+  decisionsMade?: number;
+  messagesSent?: number;
+  wisdomLevel?: string;
+  coordinationCapacity?: string;
+  patternLibrarySize?: string;
 }
 
 /**

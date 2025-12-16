@@ -58,7 +58,8 @@ export const DistributedAgentDashboard: React.FC = () => {
         action = comm.summary;
       } else if (comm.summary && typeof comm.summary === 'object') {
         // If summary is an object, try to extract meaningful text
-        action = comm.summary.message || comm.summary.action || comm.summary.content || JSON.stringify(comm.summary);
+        const summaryObj = comm.summary as any;
+        action = summaryObj.message || summaryObj.action || summaryObj.content || JSON.stringify(comm.summary);
       } else {
         action = `${comm.message_type} → ${comm.to_agent}`;
       }
