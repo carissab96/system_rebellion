@@ -43,6 +43,20 @@ export const DistributedAgentDashboard: React.FC = () => {
   const recentCommunications = useSelector(selectRecentCommunications);
   const [activityLog, setActivityLog] = useState<ActivityLog[]>([]);
 
+  // Debug: Log agent data to see if personality fields are present
+  useEffect(() => {
+    if (agents.length > 0) {
+      console.log('🔍 Agent data received:', agents.map(a => ({
+        name: a.agent_name,
+        monocle_yeet_count: a.monocle_yeet_count,
+        shell_spin_count: a.shell_spin_count,
+        paper_bag_inventory: a.paper_bag_inventory,
+        tequila_jello_shots: a.tequila_jello_shots,
+        bob_wild_ideas: a.bob_wild_ideas,
+      })));
+    }
+  }, [agents]);
+
   // Convert real-time communications to activity log format
   useEffect(() => {
     if (recentCommunications.length === 0) return;
