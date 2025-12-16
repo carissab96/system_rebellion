@@ -42,7 +42,6 @@ export const DistributedAgentDashboard: React.FC = () => {
   const { agents, loading, error, connectionStatus, lastUpdate } = useDistributedAgents();
   const recentCommunications = useSelector(selectRecentCommunications);
   const [activityLog, setActivityLog] = useState<ActivityLog[]>([]);
-  const prevAgentStatesRef = useRef<Map<string, any>>(new Map());
 
   // Convert real-time communications to activity log format
   useEffect(() => {
@@ -80,29 +79,6 @@ export const DistributedAgentDashboard: React.FC = () => {
     
     setActivityLog(newActivities);
   }, [recentCommunications]);
-
-  const addActivity = (agentName: string, action: string) => {
-    const newActivity: ActivityLog = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      agent: agentName,
-      action,
-      timestamp: new Date(),
-      color: getAgentColor(agentName),
-    };
-    setActivityLog(prev => [newActivity, ...prev].slice(0, 50));
-  };
-
-  const getAgentColor = (agentName: string): string => {
-    const colors: Record<string, string> = {
-      sir_hawkington: 'var(--hawkington-gold)',
-      vic_20_sage: 'var(--vic20-cyan)',
-      meth_snail: 'var(--snail-electric)',
-      the_stick: 'var(--stick-coral)',
-      hamsters: 'var(--hamster-amber)',
-      quantum_shadow_people: 'var(--qsp-violet)',
-    };
-    return colors[agentName] || 'var(--rebellion-text)';
-  };
 
   const formatUptime = (seconds: number): string => {
     if (!seconds) return '0s';
