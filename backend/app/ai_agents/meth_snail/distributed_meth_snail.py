@@ -199,12 +199,45 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
             logger.info(f"🐌💨💨 Executing {action}! *spins shell frantically*")
             cache_result = await SystemActions.emergency_cache_clear()
             
+            # Broadcast action to WebSocket
+            from app.services.agent_insight_emitter import emit_agent_insight
+            await emit_agent_insight(
+                from_agent="meth_snail",
+                to_agent="vic20_sage",
+                action="cache_clear_executed",
+                reasoning=f"{'Following VIC-20 recommendation' if follow_vic20 else 'Overriding VIC-20 - GOTTA GO FAST!'} - {resource_type} optimization",
+                context={
+                    "resource_type": resource_type,
+                    "action": action,
+                    "followed_vic20": follow_vic20,
+                    "severity": severity,
+                    "current_value": current_value,
+                    "threshold": threshold
+                }
+            )
+            
             if cache_result['success']:
                 improvement = cache_result['improvement_percent']
                 logger.info(
                     f"🐌✅ Cache cleared! Freed {cache_result['memory_freed_mb']:.2f} MB! "
                     f"Memory: {cache_result['memory_before_percent']:.1f}% → "
                     f"{cache_result['memory_after_percent']:.1f}% - GOTTA GO FAST!"
+                )
+                
+                # Broadcast success to WebSocket
+                await emit_agent_insight(
+                    from_agent="meth_snail",
+                    to_agent="vic20_sage",
+                    action="cache_clear_success",
+                    reasoning=f"Freed {cache_result['memory_freed_mb']:.2f} MB - {improvement:.1f}% improvement",
+                    context={
+                        "success": True,
+                        "memory_freed_mb": cache_result['memory_freed_mb'],
+                        "improvement_percent": improvement,
+                        "memory_before": cache_result['memory_before_percent'],
+                        "memory_after": cache_result['memory_after_percent'],
+                        "followed_vic20": follow_vic20
+                    }
                 )
                 
                 # Track override effectiveness

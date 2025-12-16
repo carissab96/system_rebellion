@@ -241,6 +241,24 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
                 priority=Priority.HIGH if severity in ['high', 'critical'] else Priority.NORMAL
             )
             
+            # Broadcast coordination to WebSocket
+            from app.services.agent_insight_emitter import emit_agent_insight
+            await emit_agent_insight(
+                from_agent="vic20_sage",
+                to_agent=specialist,
+                action="coordinate_specialist",
+                reasoning=f"Routing {resource_type} alert to specialist - {recommendation['action']}",
+                context={
+                    "resource_type": resource_type,
+                    "current_value": current_value,
+                    "threshold": threshold,
+                    "severity": severity,
+                    "specialist": specialist,
+                    "recommendation": recommendation['action'],
+                    "confidence": recommendation['confidence']
+                }
+            )
+            
             # Write coordination decision to PostgreSQL
             await self._write_coordination_decision(
                 resource_type=resource_type,

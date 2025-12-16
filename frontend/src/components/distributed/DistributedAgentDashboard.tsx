@@ -388,6 +388,10 @@ const AgentPersonalityStats: React.FC<AgentPersonalityStatsProps> = ({ agent }) 
         );
 
       case 'hamsters':
+        const ductTape = agent.duct_tape_inventory as any;
+        const totalDuctTape = ductTape ? 
+          (ductTape.regular || 0) + (ductTape.premium || 0) + (ductTape.quantum || 0) + (ductTape.carls_special || 0) : 0;
+        
         return (
           <>
             {agent.bob_wild_ideas !== undefined && (
@@ -408,14 +412,16 @@ const AgentPersonalityStats: React.FC<AgentPersonalityStatsProps> = ({ agent }) 
                 <span className={styles.personalityValue}>{agent.collective_beer_level}</span>
               </div>
             )}
-            {agent.duct_tape_inventory && (
+            {ductTape && (
               <div className={styles.personalityStat}>
-                <span className={styles.personalityLabel}>Duct Tape:</span>
-                <span className={styles.personalityValue}>
-                  {typeof agent.duct_tape_inventory === 'object' 
-                    ? Object.values(agent.duct_tape_inventory).reduce((a: any, b: any) => (a || 0) + (b || 0), 0)
-                    : agent.duct_tape_inventory}
-                </span>
+                <span className={styles.personalityLabel}>Duct Tape Total:</span>
+                <span className={styles.personalityValue}>{totalDuctTape} rolls</span>
+              </div>
+            )}
+            {ductTape?.carls_special !== undefined && (
+              <div className={styles.personalityStat}>
+                <span className={styles.personalityLabel}>Carl's Special:</span>
+                <span className={styles.personalityValue}>{ductTape.carls_special}</span>
               </div>
             )}
           </>
