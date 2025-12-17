@@ -457,9 +457,18 @@ class SirHawkingtonTriageEngine(AgentInstrumentationMixin, TriageEngineWithRedis
             }
             
             # Broadcast to all agents
+            # Use TRIAGE_ALERT when routing to VIC-20 (he's subscribed to that)
+            # Use TRIAGE_DECISION for general broadcasts to all agents
             from app.ai_agents.distributed.message_protocol import MessageType
+            
+            # If routing to VIC-20, send TRIAGE_ALERT so his handler fires
+            if triage_decision.routing in [TriageRouting.VIC20_COORDINATION, TriageRouting.VIC20_EMERGENCY]:
+                message_type = MessageType.TRIAGE_ALERT
+            else:
+                message_type = MessageType.TRIAGE_DECISION
+            
             await self._comm_hub.broadcast_message(
-                message_type=MessageType.TRIAGE_DECISION,
+                message_type=message_type,
                 payload=message_data,
                 priority=priority
             )
