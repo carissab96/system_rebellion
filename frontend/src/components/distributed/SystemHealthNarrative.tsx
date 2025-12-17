@@ -55,8 +55,15 @@ export function SystemHealthNarrative() {
           const reasoning = comm.reasoning || '';
           const context = comm.context || {};
 
+          // Hawkington's triage actions (REAL)
+          if (action === 'route_normal_operations' || action === 'triage_decision') {
+            category = 'decision';
+            severity = context.severity === 'critical' ? 'critical' : 'warning';
+            narrative = reasoning || `${agentName} triaged ${context.resource_type || 'system'} alert`;
+          }
+          
           // Terry's cache clear actions (REAL)
-          if (action === 'cache_clear_executed') {
+          else if (action === 'cache_clear_executed') {
             category = 'action';
             severity = context.followed_vic20 ? 'info' : 'warning';
             narrative = context.followed_vic20
@@ -84,10 +91,39 @@ export function SystemHealthNarrative() {
             narrative = `${agentName} consumed paper bag due to ${context.reason} (${context.bags_remaining} remaining)`;
           }
           
-          // Generic insight
-          else {
+          // Hamsters disk cleanup (REAL)
+          else if (action === 'disk_cleanup_executed' || action === 'disk_cleanup_success') {
+            category = 'action';
+            severity = 'info';
+            if (action === 'disk_cleanup_success') {
+              const freed = context.disk_freed_mb?.toFixed(1) || '0';
+              narrative = `${agentName} freed ${freed}MB of disk space`;
+            } else {
+              narrative = reasoning || `${agentName} executing disk cleanup`;
+            }
+          }
+          
+          // QSP security scans (REAL)
+          else if (action === 'security_scan_executed' || action === 'security_scan_success') {
+            category = 'action';
+            severity = 'warning';
+            if (action === 'security_scan_success') {
+              const reduced = context.connections_reduced || 0;
+              narrative = `${agentName} secured network - ${reduced} connections reduced`;
+            } else {
+              narrative = reasoning || `${agentName} executing security lockdown`;
+            }
+          }
+          
+          // Generic insight - use reasoning if available
+          else if (reasoning) {
             category = 'decision';
-            narrative = reasoning || `${agentName} performed ${action}`;
+            narrative = reasoning;
+          }
+          // Last resort fallback
+          else if (action) {
+            category = 'decision';
+            narrative = `${agentName} performed ${action}`;
           }
         }
         
