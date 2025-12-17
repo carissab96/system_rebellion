@@ -111,7 +111,7 @@ const agentsSlice = createSlice({
       agent.display_data = {
         agent_name,
         status: memory.status || 'active',
-        last_activity: memory.timestamp,
+        last_activity: memory.timestamp || memory.last_heartbeat || new Date().toISOString(),
         summary_stats: {
           total_events: agent.recent_memories.length,
           recent_events_24h: agent.recent_memories.filter((m: any) => {

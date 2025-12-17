@@ -130,7 +130,10 @@ export const useWebSocketConnection = () => {
           if (agentData) {
             dispatch(addAgentMemory({
               agent_name: agent_name as any, // Type assertion for agent name
-              memory: agentData
+              memory: {
+                ...agentData,
+                timestamp: payload.timestamp // Add top-level timestamp to each agent
+              }
             }));
           }
         });
