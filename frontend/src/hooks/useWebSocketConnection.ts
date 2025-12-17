@@ -235,6 +235,8 @@ export const useWebSocketConnection = () => {
           summary: data.summary || data.message || data.action,
           confidence: data.confidence,
           priority: data.priority,
+          action: data.action,
+          context: data.context || {},
         }));
       }
     }
@@ -248,6 +250,8 @@ export const useWebSocketConnection = () => {
         message_type: payload.category?.toUpperCase() || 'LOG',
         summary: payload.message,
         priority: payload.level === 'error' ? 'high' : payload.level === 'warning' ? 'medium' : 'low',
+        action: undefined,
+        context: {},
       }));
     }
     // Ignore heartbeat messages - they're just keepalive pings
