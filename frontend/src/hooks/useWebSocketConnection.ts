@@ -126,8 +126,10 @@ export const useWebSocketConnection = () => {
         }
         
         // Update agent memories for all agents
+        console.log('📊 Processing agents from system_update:', Object.keys(payload.agents));
         Object.entries(payload.agents).forEach(([agent_name, agentData]: [string, any]) => {
           if (agentData) {
+            console.log(`  ✓ Dispatching agent data for ${agent_name}:`, agentData);
             dispatch(addAgentMemory({
               agent_name: agent_name as any, // Type assertion for agent name
               memory: {
@@ -135,6 +137,8 @@ export const useWebSocketConnection = () => {
                 timestamp: payload.timestamp // Add top-level timestamp to each agent
               }
             }));
+          } else {
+            console.warn(`  ⚠️ No data for agent ${agent_name}`);
           }
         });
       }
