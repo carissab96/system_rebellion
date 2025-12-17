@@ -7,6 +7,8 @@ import type { RootState } from '../store';
 
 // Communication between agents
 export interface AgentCommunication {
+  action: string;
+  context: any;
   id: string;
   timestamp: string;
   from_agent: string;
@@ -110,11 +112,15 @@ const communicationSlice = createSlice({
     
     // Bulk add communications (from system_update.recent_insights)
     setCommunications: (state, action: PayloadAction<AgentCommunication[]>) => {
-      state.recent_communications = action.payload.slice(0, 50);
+      // Merge new communications with existing ones, avoiding duplicates by ID
+      const existingIds = new Set(state.recent_communications.map(c => c.id));
+      const newComms = action.payload.filter(c => !existingIds.has(c.id));
       
-      // Recalculate connection counts
-      state.connection_counts = {};
-      action.payload.forEach((comm: AgentCommunication) => {
+      // Prepend new communications and keep last 100
+      state.recent_communications = [...newComms, ...state.recent_communications].slice(0, 100);
+      
+      // Update connection counts for new communications only
+      newComms.forEach((comm: AgentCommunication) => {
         const connectionKey = `${comm.from_agent}→${comm.to_agent}`;
         state.connection_counts[connectionKey] = (state.connection_counts[connectionKey] || 0) + 1;
       });
