@@ -44,6 +44,9 @@ export function SystemHealthNarrative() {
         const agentName = AGENT_DISPLAY_NAMES[comm.from_agent] || comm.from_agent;
         const timestamp = comm.timestamp || new Date().toISOString();
         
+        // Cast to any to access dynamic backend fields
+        const commData = comm as any;
+        
         // Generate narrative from REAL message data
         let narrative = '';
         let severity: 'info' | 'warning' | 'critical' = 'info';
@@ -52,7 +55,7 @@ export function SystemHealthNarrative() {
         // Parse real agent_insight messages
         if (comm.message_type === 'agent_insight') {
           const action = comm.action || '';
-          const reasoning = comm.reasoning || '';
+          const reasoning = commData.reasoning || '';
           const context = comm.context || {};
 
           // Hawkington's triage actions (REAL)
@@ -130,9 +133,9 @@ export function SystemHealthNarrative() {
         // Parse real agent_log messages
         else if (comm.message_type === 'agent_log') {
           category = 'system';
-          const level = comm.level || 'info';
+          const level = commData.level || 'info';
           severity = level === 'error' ? 'critical' : level === 'warning' ? 'warning' : 'info';
-          narrative = comm.message || comm.summary || 'System event';
+          narrative = commData.message || comm.summary || 'System event';
         }
         
         // Parse real coordination messages
