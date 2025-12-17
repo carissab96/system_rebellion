@@ -145,6 +145,11 @@ export const useWebSocketConnection = () => {
       
       // 3. HANDLE RECENT INSIGHTS (inter-agent communications)
       if (payload.recent_insights && Array.isArray(payload.recent_insights)) {
+        console.log('💡 Processing recent_insights:', payload.recent_insights.length, 'messages');
+        if (payload.recent_insights.length > 0) {
+          console.log('💡 First insight sample:', JSON.stringify(payload.recent_insights[0], null, 2));
+        }
+        
         // Helper to recursively extract meaningful text from nested objects
         const extractMessage = (obj: any, depth: number = 0): string | null => {
           if (depth > 5 || !obj || typeof obj !== 'object') return null;
