@@ -4,7 +4,7 @@
 //
 // Design: Uses rebellion design system + CSS modules (no inline styles except design tokens)
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useDistributedAgents, type DistributedAgent } from '../../hooks/useDistributedAgents';
 import { selectRecentCommunications, MESSAGE_TYPE_COLORS } from '../../store/slices/communicationSlice';
@@ -12,6 +12,7 @@ import { Radio, Activity, AlertTriangle } from 'lucide-react';
 import styles from '../../styles/modules/AgentDashboard.module.css';
 import { AgentPersonalityAnimations } from './AgentPersonalityAnimations';
 import { SystemHealthNarrative } from './SystemHealthNarrative';
+import { AgentCoordinationFlow } from './AgentCoordinationFlow';
 
 // Agent icons
 import sirHawkingtonIcon from '../../assets/icons/agents/sir_hawkington.jpeg';
@@ -203,6 +204,11 @@ export const DistributedAgentDashboard: React.FC = () => {
         <SystemHealthNarrative />
       </div>
 
+      {/* Agent Coordination Flow - Real decision chains */}
+      <div style={{ marginTop: 'var(--space-lg)' }}>
+        <AgentCoordinationFlow />
+      </div>
+
       {/* Activity Feed */}
       <div className={styles.activityFeed}>
         <h3 className={styles.feedTitle}>
@@ -260,19 +266,22 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, config, formatUptime }) =>
     }
   };
 
+  // Cast to any to access dynamic personality fields from backend (real data)
+  const agentData = agent as any;
+  
   return (
     <div className={`${styles.agentCard} ${styles[config.styleClass] || ''}`} style={{ position: 'relative' }}>
       {/* Real Data-Driven Personality Animations */}
       <AgentPersonalityAnimations
         agentName={agent.agent_name}
-        shell_spin_count={agent.shell_spin_count}
-        caffeine_level={agent.caffeine_level}
-        memory_percent={agent.distributed?.resource_monitoring_active ? agent.memory_percent : undefined}
-        paper_bags_consumed={agent.paper_bags_consumed}
-        paper_bag_inventory={agent.paper_bag_inventory}
-        bob_wild_ideas={agent.bob_wild_ideas}
-        monocle_yeet_count={agent.monocle_yeet_count}
-        data_quality_score={agent.data_quality_score}
+        shell_spin_count={agentData.shell_spin_count}
+        caffeine_level={agentData.caffeine_level}
+        memory_percent={agent.distributed?.resource_monitoring_active ? agentData.memory_percent : undefined}
+        paper_bags_consumed={agentData.paper_bags_consumed}
+        paper_bag_inventory={agentData.paper_bag_inventory}
+        bob_wild_ideas={agentData.bob_wild_ideas}
+        monocle_yeet_count={agentData.monocle_yeet_count}
+        data_quality_score={agentData.data_quality_score}
       />
       
       {/* Card Header */}
