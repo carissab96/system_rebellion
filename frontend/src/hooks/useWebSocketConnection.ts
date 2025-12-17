@@ -179,7 +179,7 @@ export const useWebSocketConnection = () => {
           // Aggressively extract summary from nested structure
           const summary = extractMessage(insight) || `${insight.type || insight.message_type || 'activity'}`;
           
-          return {
+          const comm = {
             id: insight.id || `insight-${Date.now()}-${index}`,
             timestamp: insight.timestamp || new Date().toISOString(),
             from_agent: insight.from_agent || insight.agent_name || insight.sender || 'unknown',
@@ -188,8 +188,18 @@ export const useWebSocketConnection = () => {
             summary,
             confidence: insight.confidence,
             priority: insight.priority || (insight.level === 'error' ? 'high' : insight.level === 'warning' ? 'medium' : 'low'),
+            action: insight.action,
+            context: insight.context || {},
+            reasoning: insight.reasoning,
           };
+          
+          if (index === 0) {
+            console.log('💡 Transformed first communication:', comm);
+          }
+          
+          return comm;
         });
+        console.log('💡 Dispatching', communications.length, 'communications to Redux');
         dispatch(setCommunications(communications));
       }
       
