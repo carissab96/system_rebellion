@@ -250,7 +250,7 @@ export const useWebSocketConnection = () => {
         message_type: payload.category?.toUpperCase() || 'LOG',
         summary: payload.message,
         priority: payload.level === 'error' ? 'high' : payload.level === 'warning' ? 'medium' : 'low',
-        action: undefined,
+        action: '',
         context: {},
       }));
     }
