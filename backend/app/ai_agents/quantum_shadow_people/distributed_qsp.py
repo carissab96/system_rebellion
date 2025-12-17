@@ -197,12 +197,49 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
             # Execute network throttle (QSP's specialty)
             action = decision['final_action']
             logger.info("👻🔒 EXECUTING QUANTUM NETWORK LOCKDOWN! *paranoid analysis intensifies*")
+            
+            # Broadcast action to WebSocket
+            from app.services.agent_insight_emitter import emit_agent_insight
+            await emit_agent_insight(
+                from_agent="quantum_shadow_people",
+                to_agent="vic20_sage",
+                action="security_scan_executed",
+                reasoning=f"{'Following VIC-20 recommendation' if decision['followed_recommendation'] else 'SUSPICIOUS - Using own protocol!'} - {resource_type} security lockdown",
+                context={
+                    "resource_type": resource_type,
+                    "action": action,
+                    "followed_vic20": decision['followed_recommendation'],
+                    "severity": severity,
+                    "current_value": current_value,
+                    "threshold": threshold,
+                    "paranoia_justified": True,
+                    "quantum_state": "analyzing"
+                }
+            )
+            
             network_result = await SystemActions.throttle_network_operations()
             
             if network_result['success']:
                 logger.info(
                     f"👻✅ Network throttled! Connections: {network_result['connections_before']} → "
                     f"{network_result['connections_after']}. Quantum phase secured!"
+                )
+                
+                # Broadcast success to WebSocket
+                await emit_agent_insight(
+                    from_agent="quantum_shadow_people",
+                    to_agent="vic20_sage",
+                    action="security_scan_success",
+                    reasoning=f"Network secured: {network_result['connections_reduced']} connections reduced - Quantum phase stable",
+                    context={
+                        "success": True,
+                        "connections_before": network_result['connections_before'],
+                        "connections_after": network_result['connections_after'],
+                        "connections_reduced": network_result['connections_reduced'],
+                        "followed_vic20": decision['followed_recommendation'],
+                        "paranoia_justified": True,
+                        "quantum_state": "secured"
+                    }
                 )
                 
                 # Record decision and effectiveness

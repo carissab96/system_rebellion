@@ -195,11 +195,47 @@ class HamstersDistributed(AgentDecisionEngine, HamstersBrainV3):
             # Execute disk cleanup (Hamsters' specialty)
             action = decision['final_action']
             logger.info("🐹🔧 Executing disk cleanup with defrag!")
+            
+            # Broadcast action to WebSocket
+            from app.services.agent_insight_emitter import emit_agent_insight
+            await emit_agent_insight(
+                from_agent="hamsters",
+                to_agent="vic20_sage",
+                action="disk_cleanup_executed",
+                reasoning=f"{'Following VIC-20 recommendation' if decision['followed_recommendation'] else 'Overriding VIC-20 - HOLD MY BEER!'} - {resource_type} cleanup",
+                context={
+                    "resource_type": resource_type,
+                    "action": action,
+                    "followed_vic20": decision['followed_recommendation'],
+                    "severity": severity,
+                    "current_value": current_value,
+                    "threshold": threshold,
+                    "telepathic_consensus": True
+                }
+            )
+            
             cleanup_result = await SystemActions.emergency_disk_cleanup(include_defrag=True)
             
             if cleanup_result['success']:
                 logger.info(
                     f"🐹✅ Cleanup successful! Freed {cleanup_result['disk_freed_mb']:.2f} MB"
+                )
+                
+                # Broadcast success to WebSocket
+                await emit_agent_insight(
+                    from_agent="hamsters",
+                    to_agent="vic20_sage",
+                    action="disk_cleanup_success",
+                    reasoning=f"Freed {cleanup_result['disk_freed_mb']:.2f} MB - {cleanup_result['improvement_percent']:.1f}% improvement",
+                    context={
+                        "success": True,
+                        "disk_freed_mb": cleanup_result['disk_freed_mb'],
+                        "improvement_percent": cleanup_result['improvement_percent'],
+                        "disk_before": cleanup_result.get('disk_before_percent', 0),
+                        "disk_after": cleanup_result.get('disk_after_percent', 0),
+                        "followed_vic20": decision['followed_recommendation'],
+                        "telepathic_consensus": True
+                    }
                 )
                 
                 # Record decision and effectiveness
