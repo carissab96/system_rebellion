@@ -380,7 +380,12 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
         Queries historical patterns to inform recommendations.
         Adjusts confidence based on past success rates.
         """
-        overage = ((current_value - threshold) / threshold) * 100
+        # Avoid division by zero - if threshold is 0, calculate overage differently
+        if threshold > 0:
+            overage = ((current_value - threshold) / threshold) * 100
+        else:
+            # If threshold is 0, just use the current value as the overage percentage
+            overage = current_value
         
         # Query historical effectiveness FIRST
         historical_data = await self._get_historical_effectiveness(resource_type)
