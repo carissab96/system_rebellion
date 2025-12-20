@@ -440,17 +440,46 @@ class SirHawkingtonTriageEngine(AgentInstrumentationMixin, TriageEngineWithRedis
             }
             priority = priority_map.get(triage_decision.severity, Priority.NORMAL)
             
-            # Create triage broadcast message
+            # Identify primary resource problem for VIC-20 coordination
+            cpu = metrics_data.get('cpu_usage', 0)
+            memory = metrics_data.get('memory_usage', 0)
+            disk = metrics_data.get('disk_usage', 0)
+            network = metrics_data.get('network_usage', 0)
+            
+            # Find which resource is highest (the primary problem)
+            resource_values = {
+                'cpu': cpu,
+                'memory': memory,
+                'disk': disk,
+                'network': network
+            }
+            primary_resource = max(resource_values, key=resource_values.get)
+            primary_value = resource_values[primary_resource]
+            
+            # Standard thresholds for each resource type
+            thresholds = {
+                'cpu': 80.0,
+                'memory': 85.0,
+                'disk': 90.0,
+                'network': 80.0
+            }
+            primary_threshold = thresholds.get(primary_resource, 80.0)
+            
+            # Create triage broadcast message with specific resource identification
             message_data = {
                 'severity': triage_decision.severity.value,
                 'routing': triage_decision.routing.value,
                 'target_agents': triage_decision.target_agents,
                 'reasoning': triage_decision.reasoning,
+                'resource_type': primary_resource,
+                'current_value': primary_value,
+                'threshold': primary_threshold,
+                'confidence': triage_decision.confidence,
                 'metrics_summary': {
-                    'cpu_usage': metrics_data.get('cpu_usage'),
-                    'memory_usage': metrics_data.get('memory_usage'),
-                    'disk_usage': metrics_data.get('disk_usage'),
-                    'network_usage': metrics_data.get('network_usage'),
+                    'cpu_usage': cpu,
+                    'memory_usage': memory,
+                    'disk_usage': disk,
+                    'network_usage': network,
                     'timestamp': metrics_data.get('timestamp')
                 },
                 'user_id': user_id
