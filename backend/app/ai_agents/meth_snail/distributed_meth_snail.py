@@ -547,7 +547,7 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
                     resource_type=resource_type,
                     action=action,
                     result=cache_result,
-                    followed_vic20=follow_vic20
+                    followed_recommendation=follow_vic20
                 )
                 
                 # CC The Stick
