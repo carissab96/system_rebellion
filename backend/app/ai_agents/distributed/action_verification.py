@@ -30,6 +30,12 @@ class ActionType(str, Enum):
     DEFRAG = "defrag"
     PROCESS_KILL = "process_kill"
     SERVICE_RESTART = "service_restart"
+    # Phase 2: New actions
+    PROCESS_PRIORITY = "process_priority"
+    LOG_ROTATION = "log_rotation"
+    BACKUP_ARCHIVE = "backup_archive"
+    PORT_SCAN = "port_scan"
+    FIREWALL_MANAGE = "firewall_manage"
 
 
 class ResourceType(str, Enum):
