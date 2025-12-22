@@ -296,6 +296,147 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
         except Exception as e:
             logger.error(f"👻💥 Error handling coordination request: {e}", exc_info=True)
     
+    async def handle_coordination(self, coordination_request: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        PHASE 1 REFACTOR: Accept coordination request directly from VIC-20 (not via Redis).
+        
+        This is the new direct communication path:
+        VIC-20 calls this method directly and gets an immediate response.
+        
+        Flow:
+        1. Receive coordination request directly from VIC-20
+        2. Quantum analysis with paranoid security assessment (trust: 0.4)
+        3. Execute network security action
+        4. Return result to VIC-20
+        5. Still broadcast to Redis for frontend observability
+        
+        Args:
+            coordination_request: Dict containing resource_type, recommendation, severity, etc.
+        
+        Returns:
+            Dict containing action result with success status and details
+        """
+        try:
+            resource_type = coordination_request.get('resource_type', 'unknown')
+            severity = coordination_request.get('severity', 'unknown')
+            recommendation = coordination_request.get('recommendation', {})
+            current_value = coordination_request.get('current_value', 0)
+            threshold = coordination_request.get('threshold', 0)
+            
+            logger.info(
+                f"👻📞 DIRECT CALL from VIC-20: "
+                f"{resource_type} at {current_value:.1f}% - VIC-20 suggests: {recommendation.get('action', 'unknown')}"
+            )
+            
+            # Use choice engine to decide (QSP has LOW trust - paranoid!)
+            decision = self.choice_engine.should_follow_recommendation(
+                recommendation=recommendation,
+                current_situation={
+                    'resource_type': resource_type,
+                    'current_value': current_value,
+                    'threshold': threshold,
+                    'security_threat': True  # QSP always assumes threat
+                }
+            )
+            
+            logger.info(
+                f"👻🔮 Quantum analysis complete: "
+                f"{'ACCEPTABLE' if decision['followed_recommendation'] else 'SUSPICIOUS - USING OWN PROTOCOL'}"
+            )
+            logger.info(f"👻💭 {decision['reasoning']}")
+            
+            # Execute network throttle (QSP's specialty)
+            action = decision['final_action']
+            logger.info("👻🔒 EXECUTING QUANTUM NETWORK LOCKDOWN! *paranoid analysis intensifies*")
+            
+            # Broadcast action to WebSocket
+            from app.services.agent_insight_emitter import emit_agent_insight
+            await emit_agent_insight(
+                from_agent="quantum_shadow_people",
+                to_agent="vic20_sage",
+                action="security_scan_executed",
+                reasoning=f"{'Following VIC-20 recommendation' if decision['followed_recommendation'] else 'SUSPICIOUS - Using own protocol!'} - {resource_type} security lockdown",
+                context={
+                    "resource_type": resource_type,
+                    "action": action,
+                    "followed_vic20": decision['followed_recommendation'],
+                    "severity": severity,
+                    "current_value": current_value,
+                    "threshold": threshold,
+                    "paranoia_justified": True,
+                    "quantum_state": "analyzing"
+                }
+            )
+            
+            network_result = await SystemActions.throttle_network_operations()
+            
+            if network_result['success']:
+                logger.info(
+                    f"👻✅ Network throttled! Connections: {network_result['connections_before']} → "
+                    f"{network_result['connections_after']}. Quantum phase secured!"
+                )
+                
+                # Broadcast success to WebSocket
+                await emit_agent_insight(
+                    from_agent="quantum_shadow_people",
+                    to_agent="vic20_sage",
+                    action="security_scan_success",
+                    reasoning=f"Network secured: {network_result['connections_reduced']} connections reduced - Quantum phase stable",
+                    context={
+                        "success": True,
+                        "connections_before": network_result['connections_before'],
+                        "connections_after": network_result['connections_after'],
+                        "connections_reduced": network_result['connections_reduced'],
+                        "followed_vic20": decision['followed_recommendation']
+                    }
+                )
+                
+                # Write to PostgreSQL
+                if self.db_integration and self.user_id:
+                    try:
+                        quantum_decision = {
+                            'decision_id': f"qsp_{action}_{network_result.get('timestamp', '')}",
+                            'threat_level': severity,
+                            'quantum_state': 'secured',
+                            'paranoia_justified': True,
+                            'tequila_shots_required': 2,
+                            'action_taken': action,
+                            'connections_reduced': network_result['connections_reduced'],
+                            'confidence': decision['decision_score'],
+                            'human_translation': decision['reasoning']
+                        }
+                        await self.db_integration.store_decision(self.user_id, quantum_decision)
+                        logger.info(f"👻💾 Quantum decision written to PostgreSQL")
+                    except Exception as e:
+                        logger.error(f"👻💥 Failed to write to PostgreSQL: {e}")
+                
+                # Return result to VIC-20
+                return {
+                    'success': True,
+                    'action': action,
+                    'followed_vic20': decision['followed_recommendation'],
+                    'connections_before': network_result['connections_before'],
+                    'connections_after': network_result['connections_after'],
+                    'connections_reduced': network_result['connections_reduced'],
+                    'paranoia_justified': True,
+                    'quantum_state': 'secured'
+                }
+            else:
+                logger.error(f"👻❌ Network throttle failed: {network_result.get('error')}")
+                return {
+                    'success': False,
+                    'error': network_result.get('error', 'Unknown error'),
+                    'action': action,
+                    'followed_vic20': decision['followed_recommendation']
+                }
+                
+        except Exception as e:
+            logger.error(f"👻💥 Error in direct coordination: {e}", exc_info=True)
+            return {
+                'success': False,
+                'error': str(e)
+            }
+    
     async def analyze_metrics(
         self,
         metrics_data: Dict[str, Any],
