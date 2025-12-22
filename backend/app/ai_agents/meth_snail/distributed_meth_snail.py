@@ -423,6 +423,147 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
         except Exception as e:
             logger.error(f"🐌💥 Error handling coordination request: {e}", exc_info=True)
     
+    async def handle_coordination(self, coordination_request: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        PHASE 1 REFACTOR: Accept coordination request directly from VIC-20 (not via Redis).
+        
+        This is the new direct communication path:
+        VIC-20 calls this method directly and gets an immediate response.
+        
+        Flow:
+        1. Receive coordination request directly from VIC-20
+        2. Decide: follow VIC-20's recommendation OR do it my way (trust: 0.2)
+        3. Execute action (usually Terry's way because he's FASTER!)
+        4. Return result to VIC-20
+        5. Still broadcast to Redis for frontend observability
+        
+        Args:
+            coordination_request: Dict containing resource_type, recommendation, severity, etc.
+        
+        Returns:
+            Dict containing action result with success status and details
+        """
+        try:
+            resource_type = coordination_request.get('resource_type', 'unknown')
+            severity = coordination_request.get('severity', 'unknown')
+            recommendation = coordination_request.get('recommendation', {})
+            current_value = coordination_request.get('current_value', 0)
+            threshold = coordination_request.get('threshold', 0)
+            
+            logger.info(
+                f"🐌📞 DIRECT CALL from VIC-20: "
+                f"{resource_type} at {current_value:.1f}% - VIC-20 suggests: {recommendation.get('action', 'unknown')}"
+            )
+            
+            # Terry's choice: follow VIC-20 or do it his way?
+            # (80% chance Terry ignores VIC-20 because he's FASTER!)
+            import random
+            follow_vic20 = random.random() < 0.2  # 20% chance to follow
+            
+            if follow_vic20:
+                logger.info("🐌💭 *grudgingly* ...FINE. VIC-20's way. THIS TIME.")
+                action = recommendation.get('action', 'clear_cache')
+            else:
+                logger.info("🐌💨 NAH! VIC-20 is too SLOW! *chugs energy drink* MY WAY!")
+                action = 'emergency_cache_clear'  # Terry's aggressive way
+                self.total_overrides += 1
+            
+            # Execute cache clear
+            logger.info(f"🐌💨💨 Executing {action}! *spins shell frantically*")
+            cache_result = await SystemActions.emergency_cache_clear()
+            
+            # Broadcast action to WebSocket
+            from app.services.agent_insight_emitter import emit_agent_insight
+            await emit_agent_insight(
+                from_agent="meth_snail",
+                to_agent="vic20_sage",
+                action="cache_clear_executed",
+                reasoning=f"{'Following VIC-20 recommendation' if follow_vic20 else 'Overriding VIC-20 - GOTTA GO FAST!'} - {resource_type} optimization",
+                context={
+                    "resource_type": resource_type,
+                    "action": action,
+                    "followed_vic20": follow_vic20,
+                    "severity": severity,
+                    "current_value": current_value,
+                    "threshold": threshold
+                }
+            )
+            
+            if cache_result['success']:
+                improvement = cache_result['improvement_percent']
+                logger.info(
+                    f"🐌✅ Cache cleared! Freed {cache_result['memory_freed_mb']:.2f} MB! "
+                    f"Memory: {cache_result['memory_before_percent']:.1f}% → "
+                    f"{cache_result['memory_after_percent']:.1f}% - GOTTA GO FAST!"
+                )
+                
+                # Broadcast success to WebSocket
+                await emit_agent_insight(
+                    from_agent="meth_snail",
+                    to_agent="vic20_sage",
+                    action="cache_clear_success",
+                    reasoning=f"Freed {cache_result['memory_freed_mb']:.2f} MB - {improvement:.1f}% improvement",
+                    context={
+                        "success": True,
+                        "memory_freed_mb": cache_result['memory_freed_mb'],
+                        "improvement_percent": improvement,
+                        "memory_before": cache_result['memory_before_percent'],
+                        "memory_after": cache_result['memory_after_percent'],
+                        "followed_vic20": follow_vic20
+                    }
+                )
+                
+                # Write action result to PostgreSQL
+                await self._write_action_result(
+                    resource_type=resource_type,
+                    action=action,
+                    result=cache_result,
+                    followed_vic20=follow_vic20
+                )
+                
+                # Report back to VIC-20 (via Redis for now)
+                await self._report_to_vic20(
+                    resource_type=resource_type,
+                    action=action,
+                    result=cache_result,
+                    followed_vic20=follow_vic20
+                )
+                
+                # CC The Stick
+                await self._cc_the_stick(
+                    decision_type='specialist_action',
+                    resource_type=resource_type,
+                    action=action,
+                    result=cache_result,
+                    followed_vic20=follow_vic20
+                )
+                
+                # Return result to VIC-20
+                return {
+                    'success': True,
+                    'action': action,
+                    'followed_vic20': follow_vic20,
+                    'memory_freed_mb': cache_result['memory_freed_mb'],
+                    'improvement_percent': improvement,
+                    'memory_before': cache_result['memory_before_percent'],
+                    'memory_after': cache_result['memory_after_percent']
+                }
+            else:
+                logger.error(f"🐌❌ Cache clear failed: {cache_result.get('error')}")
+                return {
+                    'success': False,
+                    'error': cache_result.get('error', 'Unknown error'),
+                    'action': action,
+                    'followed_vic20': follow_vic20
+                }
+            
+        except Exception as e:
+            logger.error(f"🐌💥 Error in direct coordination: {e}", exc_info=True)
+            return {
+                'success': False,
+                'error': str(e)
+            }
+    
     async def analyze_metrics(
         self,
         metrics_data: Dict[str, Any],
