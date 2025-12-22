@@ -119,6 +119,12 @@ class DistributedAgentManager:
             terry._agent_manager = self
             hamsters._agent_manager = self
             shadows._agent_manager = self
+            
+            # Also pass to the triage engine singleton
+            from app.ai_agents.sir_hawkington.triage_engine import get_triage_engine
+            triage_engine = await get_triage_engine()
+            triage_engine._agent_manager = self
+            
             logger.info("✅ Direct communication channels established")
             
             self._initialized = True
