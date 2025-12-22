@@ -657,13 +657,19 @@ class SirHawkingtonTriageEngine(AgentInstrumentationMixin, TriageEngineWithRedis
             vic20_result = None
             if hasattr(self, '_agent_manager') and self._agent_manager:
                 try:
-                    self.logger.info("🧐📞 Calling VIC-20 directly for coordination...")
+                    self.logger.info("=" * 80)
+                    self.logger.info("🧐📞 DIRECT CALL: Hawkington → VIC-20 (COORDINATION)")
+                    self.logger.info("=" * 80)
                     vic20_result = await self._agent_manager.call_agent(
                         'vic_20_sage',
                         'coordinate_from_triage',
                         triage_data=triage_data
                     )
-                    self.logger.info(f"🧐✅ VIC-20 responded: {vic20_result.get('success', False)}")
+                    self.logger.info("=" * 80)
+                    self.logger.info(f"🧐✅ DIRECT CALL RESULT: VIC-20 responded successfully={vic20_result.get('success', False)}")
+                    self.logger.info(f"    Specialist: {vic20_result.get('specialist', 'unknown')}")
+                    self.logger.info(f"    Action: {vic20_result.get('recommendation', {}).get('action', 'unknown')}")
+                    self.logger.info("=" * 80)
                 except Exception as e:
                     self.logger.error(f"🧐💥 Error calling VIC-20 directly: {e}")
                     vic20_result = {'success': False, 'error': str(e)}
@@ -751,13 +757,19 @@ class SirHawkingtonTriageEngine(AgentInstrumentationMixin, TriageEngineWithRedis
             vic20_result = None
             if hasattr(self, '_agent_manager') and self._agent_manager:
                 try:
-                    self.logger.warning("🧐💥📞 Calling VIC-20 directly for EMERGENCY coordination...")
+                    self.logger.warning("=" * 80)
+                    self.logger.warning("🧐💥📞 DIRECT CALL: Hawkington → VIC-20 (EMERGENCY!!!)")
+                    self.logger.warning("=" * 80)
                     vic20_result = await self._agent_manager.call_agent(
                         'vic_20_sage',
                         'coordinate_from_triage',
                         triage_data=triage_data
                     )
-                    self.logger.warning(f"🧐💥✅ VIC-20 emergency response: {vic20_result.get('success', False)}")
+                    self.logger.warning("=" * 80)
+                    self.logger.warning(f"🧐💥✅ EMERGENCY CALL RESULT: VIC-20 responded successfully={vic20_result.get('success', False)}")
+                    self.logger.warning(f"    Specialist: {vic20_result.get('specialist', 'unknown')}")
+                    self.logger.warning(f"    Action: {vic20_result.get('recommendation', {}).get('action', 'unknown')}")
+                    self.logger.warning("=" * 80)
                 except Exception as e:
                     self.logger.error(f"🧐💥💥 Error calling VIC-20 directly: {e}")
                     vic20_result = {'success': False, 'error': str(e)}

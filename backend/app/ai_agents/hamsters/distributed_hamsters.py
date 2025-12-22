@@ -309,10 +309,11 @@ class HamstersDistributed(AgentDecisionEngine, HamstersBrainV3):
             current_value = coordination_request.get('current_value', 0)
             threshold = coordination_request.get('threshold', 0)
             
-            logger.info(
-                f"🐹📞 DIRECT CALL from VIC-20: "
-                f"{resource_type} at {current_value:.1f}% - VIC-20 suggests: {recommendation.get('action', 'unknown')}"
-            )
+            logger.info("=" * 80)
+            logger.info(f"🐹📞 DIRECT CALL RECEIVED: VIC-20 → HAMSTERS (Steve, Bob, Carl)")
+            logger.info(f"    Resource: {resource_type} at {current_value:.1f}%")
+            logger.info(f"    VIC-20 suggests: {recommendation.get('action', 'unknown')}")
+            logger.info("=" * 80)
             
             # Use choice engine to decide whether to follow recommendation
             decision = self.choice_engine.should_follow_recommendation(

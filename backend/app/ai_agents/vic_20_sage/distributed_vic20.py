@@ -308,11 +308,17 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
             current_value = triage_data.get('current_value', 0)
             threshold = triage_data.get('threshold', 0)
             
+            logger.info("=" * 80)
             logger.info(
-                f"🖥️📞 DIRECT CALL from Sir Hawkington: "
-                f"{resource_type} at {current_value:.1f}% (threshold: {threshold:.1f}%) "
-                f"severity={severity}, confidence={confidence:.2f}"
+                f"🖥️📞 DIRECT CALL RECEIVED: Hawkington → VIC-20"
             )
+            logger.info(
+                f"    Resource: {resource_type} at {current_value:.1f}% (threshold: {threshold:.1f}%)"
+            )
+            logger.info(
+                f"    Severity: {severity}, Confidence: {confidence:.2f}"
+            )
+            logger.info("=" * 80)
             
             # Determine which specialist to route to
             specialist = self._route_to_specialist(resource_type)
@@ -349,16 +355,27 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
             }
             
             # Call specialist directly via agent_manager
-            # (This will be wired up in Step 1.5)
             specialist_result = None
             if hasattr(self, '_agent_manager') and self._agent_manager:
                 try:
+                    logger.info("=" * 80)
+                    logger.info(f"🖥️📞 DIRECT CALL: VIC-20 → {specialist.upper()}")
+                    logger.info(f"    Action: {recommendation['action']}")
+                    logger.info(f"    Confidence: {recommendation['confidence']:.2f}")
+                    logger.info("=" * 80)
+                    
                     specialist_result = await self._agent_manager.call_agent(
                         specialist,
                         'handle_coordination',
                         coordination_request=coordination_request
                     )
-                    logger.info(f"🖥️✅ Specialist {specialist} responded: {specialist_result}")
+                    
+                    logger.info("=" * 80)
+                    logger.info(f"🖥️✅ DIRECT CALL RESULT: {specialist.upper()} responded successfully={specialist_result.get('success', False)}")
+                    if specialist_result.get('success'):
+                        logger.info(f"    Action taken: {specialist_result.get('action', 'unknown')}")
+                        logger.info(f"    Followed VIC-20: {specialist_result.get('followed_vic20', 'unknown')}")
+                    logger.info("=" * 80)
                 except Exception as e:
                     logger.error(f"🖥️💥 Error calling specialist {specialist}: {e}")
                     specialist_result = {'success': False, 'error': str(e)}

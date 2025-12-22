@@ -450,10 +450,11 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
             current_value = coordination_request.get('current_value', 0)
             threshold = coordination_request.get('threshold', 0)
             
-            logger.info(
-                f"🐌📞 DIRECT CALL from VIC-20: "
-                f"{resource_type} at {current_value:.1f}% - VIC-20 suggests: {recommendation.get('action', 'unknown')}"
-            )
+            logger.info("=" * 80)
+            logger.info(f"🐌📞 DIRECT CALL RECEIVED: VIC-20 → TERRY (Meth Snail)")
+            logger.info(f"    Resource: {resource_type} at {current_value:.1f}%")
+            logger.info(f"    VIC-20 suggests: {recommendation.get('action', 'unknown')}")
+            logger.info("=" * 80)
             
             # Terry's choice: follow VIC-20 or do it his way?
             # (80% chance Terry ignores VIC-20 because he's FASTER!)
