@@ -42,8 +42,6 @@ from ..agent_instrumentation import AgentInstrumentationMixin, instrument_method
 from .decision_engine import (
     sir_hawkington_brain, 
     HawkingtonDecision, 
-    DecisionType, 
-    MonocleState,
     AnalysisDepth
 )
 
