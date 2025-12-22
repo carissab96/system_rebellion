@@ -585,59 +585,70 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
             'confidence': 0.50
         })
         
-        # LEARN FROM HISTORY - adjust recommendation based on past results
+        # PHASE 3: ENHANCED LEARNING - Apply time-weighted and context-aware learning
         if historical_data:
-            # Calculate success rate for this action type
-            matching_actions = [h for h in historical_data if h.get('action') == rec['action']]
-            if matching_actions:
-                successes = sum(1 for h in matching_actions if h.get('success') is True)
-                total = len(matching_actions)
-                success_rate = successes / total if total > 0 else 0.5
+            # Apply time-weighted learning with context awareness
+            learning_result = await self._apply_time_weighted_learning(
+                historical_data,
+                current_context={
+                    'severity': severity,
+                    'overage': overage,
+                    'resource_type': resource_type
+                }
+            )
+            
+            # If time-weighted learning suggests a better action, consider it
+            if learning_result['recommended_action'] and learning_result['confidence'] > 0.7:
+                learned_action = learning_result['recommended_action']
+                learned_confidence = learning_result['confidence']
                 
-                # Adjust confidence based on historical success
-                # More history = more confidence adjustment
-                history_weight = min(0.3, len(matching_actions) * 0.05)  # Max 30% adjustment
-                rec['confidence'] = rec['confidence'] * (1 - history_weight) + success_rate * history_weight
+                # If learned action differs from base recommendation and has high confidence
+                if learned_action != rec['action']:
+                    logger.info(
+                        f"🖥️🧠 Time-weighted learning suggests '{learned_action}' "
+                        f"(confidence: {learned_confidence:.0%}) over base '{rec['action']}'"
+                    )
+                    
+                    # Use learned action if confidence is significantly higher
+                    if learned_confidence > rec['confidence'] + 0.15:
+                        rec['action'] = learned_action
+                        rec['confidence'] = learned_confidence
+                        rec['learning_override'] = True
+                        logger.info(f"🖥️✨ Overriding base recommendation with learned action")
+                    else:
+                        rec['alternative_action'] = learned_action
+                        rec['alternative_confidence'] = learned_confidence
+                else:
+                    # Same action - boost confidence based on learning
+                    rec['confidence'] = max(rec['confidence'], learned_confidence)
                 
                 rec['historical_basis'] = {
-                    'matching_records': len(matching_actions),
-                    'success_rate': success_rate,
-                    'confidence_adjustment': history_weight
+                    'learning_type': learning_result['learning_basis'],
+                    'statistics': learning_result.get('statistics', {}),
+                    'time_weighted': True
                 }
-                
-                logger.info(
-                    f"🖥️📊 Historical adjustment: {len(matching_actions)} past {rec['action']} actions, "
-                    f"{success_rate:.0%} success rate, confidence now {rec['confidence']:.0%}"
-                )
-            
-            # Check if a different action worked better historically
-            action_success_rates = {}
-            for h in historical_data:
-                action = h.get('action', 'unknown')
-                if action not in action_success_rates:
-                    action_success_rates[action] = {'successes': 0, 'total': 0}
-                action_success_rates[action]['total'] += 1
-                if h.get('success') is True:
-                    action_success_rates[action]['successes'] += 1
-            
-            # Find best performing action
-            best_action = None
-            best_rate = 0
-            for action, stats in action_success_rates.items():
-                if stats['total'] >= 3:  # Need at least 3 samples
-                    rate = stats['successes'] / stats['total']
-                    if rate > best_rate:
-                        best_rate = rate
-                        best_action = action
-            
-            # If a different action has significantly better success, suggest it instead
-            if best_action and best_action != rec['action'] and best_rate > 0.7:
-                logger.info(
-                    f"🖥️💡 Historical data suggests '{best_action}' ({best_rate:.0%} success) "
-                    f"over default '{rec['action']}'"
-                )
-                rec['alternative_action'] = best_action
-                rec['alternative_confidence'] = best_rate
+            else:
+                # Fallback to simple historical analysis
+                matching_actions = [h for h in historical_data if h.get('action') == rec['action']]
+                if matching_actions:
+                    successes = sum(1 for h in matching_actions if h.get('success') is True)
+                    total = len(matching_actions)
+                    success_rate = successes / total if total > 0 else 0.5
+                    
+                    history_weight = min(0.3, len(matching_actions) * 0.05)
+                    rec['confidence'] = rec['confidence'] * (1 - history_weight) + success_rate * history_weight
+                    
+                    rec['historical_basis'] = {
+                        'matching_records': len(matching_actions),
+                        'success_rate': success_rate,
+                        'confidence_adjustment': history_weight,
+                        'time_weighted': False
+                    }
+                    
+                    logger.info(
+                        f"🖥️📊 Simple historical adjustment: {len(matching_actions)} past {rec['action']} actions, "
+                        f"{success_rate:.0%} success rate"
+                    )
         else:
             rec['historical_basis'] = None
             logger.info(f"🖥️📚 No historical data for {resource_type} - using base recommendation")
@@ -1342,6 +1353,134 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
             return None
         
         return None
+    
+    async def _apply_time_weighted_learning(
+        self,
+        historical_data: List[Dict[str, Any]],
+        current_context: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        PHASE 3: Apply time-weighted learning to historical data.
+        
+        Recent successes are weighted more heavily than older ones.
+        Context similarity boosts relevance of historical patterns.
+        
+        Args:
+            historical_data: List of historical action results
+            current_context: Current situation context (severity, overage, etc.)
+            
+        Returns:
+            Enhanced learning insights with weighted recommendations
+        """
+        if not historical_data:
+            return {
+                'recommended_action': None,
+                'confidence': 0.5,
+                'learning_basis': 'no_history'
+            }
+        
+        from datetime import datetime, timezone
+        import math
+        
+        now = datetime.now(timezone.utc)
+        action_scores = {}
+        
+        for record in historical_data:
+            action = record.get('action', 'unknown')
+            success = record.get('success')
+            timestamp_str = record.get('timestamp')
+            
+            if action == 'unknown' or success is None:
+                continue
+            
+            # Calculate time decay (exponential decay over 30 days)
+            if timestamp_str:
+                try:
+                    timestamp = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+                    days_old = (now - timestamp).total_seconds() / 86400
+                    time_weight = math.exp(-days_old / 30)  # Half-life of ~21 days
+                except:
+                    time_weight = 0.5
+            else:
+                time_weight = 0.5
+            
+            # Context similarity scoring
+            context_weight = 1.0
+            if current_context:
+                # Boost weight if severity matches
+                if record.get('outcome') == current_context.get('severity'):
+                    context_weight *= 1.3
+                
+                # Boost if similar overage levels
+                record_confidence = record.get('confidence', 0.5)
+                current_severity_score = {
+                    'low': 0.3,
+                    'medium': 0.6,
+                    'high': 0.8,
+                    'critical': 0.95
+                }.get(current_context.get('severity', 'medium'), 0.6)
+                
+                if abs(record_confidence - current_severity_score) < 0.2:
+                    context_weight *= 1.2
+            
+            # Success weight
+            success_weight = 1.5 if success else 0.3
+            
+            # Combined score
+            total_weight = time_weight * context_weight * success_weight
+            
+            if action not in action_scores:
+                action_scores[action] = {
+                    'total_weight': 0,
+                    'count': 0,
+                    'successes': 0,
+                    'recent_successes': 0
+                }
+            
+            action_scores[action]['total_weight'] += total_weight
+            action_scores[action]['count'] += 1
+            if success:
+                action_scores[action]['successes'] += 1
+                if time_weight > 0.7:  # Recent success (< 10 days old)
+                    action_scores[action]['recent_successes'] += 1
+        
+        # Find best action based on weighted scores
+        if not action_scores:
+            return {
+                'recommended_action': None,
+                'confidence': 0.5,
+                'learning_basis': 'insufficient_data'
+            }
+        
+        best_action = max(action_scores.items(), key=lambda x: x[1]['total_weight'])
+        action_name = best_action[0]
+        stats = best_action[1]
+        
+        # Calculate confidence based on consistency and recency
+        base_confidence = stats['successes'] / stats['count'] if stats['count'] > 0 else 0.5
+        recency_boost = min(0.2, stats['recent_successes'] * 0.1)
+        sample_size_boost = min(0.15, stats['count'] * 0.03)
+        
+        final_confidence = min(0.95, base_confidence + recency_boost + sample_size_boost)
+        
+        logger.info(
+            f"🖥️🧠 Time-weighted learning: {action_name} "
+            f"(confidence: {final_confidence:.2f}, "
+            f"samples: {stats['count']}, "
+            f"recent_successes: {stats['recent_successes']})"
+        )
+        
+        return {
+            'recommended_action': action_name,
+            'confidence': final_confidence,
+            'learning_basis': 'time_weighted_history',
+            'statistics': {
+                'total_samples': stats['count'],
+                'success_rate': stats['successes'] / stats['count'],
+                'recent_successes': stats['recent_successes'],
+                'weighted_score': stats['total_weight']
+            }
+        }
     
     def get_agent_status(self) -> Dict[str, Any]:
         """
