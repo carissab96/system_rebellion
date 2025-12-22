@@ -280,6 +280,149 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
         except Exception as e:
             logger.error(f"🖥️💥 Error handling triage alert: {e}", exc_info=True)
     
+    async def coordinate_from_triage(self, triage_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        PHASE 1 REFACTOR: Accept triage decision directly from Hawkington (not via Redis).
+        
+        This is the new direct communication path:
+        Hawkington calls this method directly and gets an immediate response.
+        
+        Flow:
+        1. Receive triage data directly from Hawkington
+        2. Determine which specialist to route to
+        3. Generate recommendation based on historical patterns
+        4. Call specialist directly via agent_manager.call_agent()
+        5. Return result to Hawkington
+        6. Still broadcast to Redis for frontend observability
+        
+        Args:
+            triage_data: Dict containing resource_type, current_value, threshold, severity, etc.
+        
+        Returns:
+            Dict containing coordination result with specialist response
+        """
+        try:
+            resource_type = triage_data.get('resource_type', 'unknown')
+            severity = triage_data.get('severity', 'unknown')
+            confidence = triage_data.get('confidence', 0.0)
+            current_value = triage_data.get('current_value', 0)
+            threshold = triage_data.get('threshold', 0)
+            
+            logger.info(
+                f"🖥️📞 DIRECT CALL from Sir Hawkington: "
+                f"{resource_type} at {current_value:.1f}% (threshold: {threshold:.1f}%) "
+                f"severity={severity}, confidence={confidence:.2f}"
+            )
+            
+            # Determine which specialist to route to
+            specialist = self._route_to_specialist(resource_type)
+            
+            if not specialist:
+                logger.warning(f"🖥️⚠️ No specialist found for resource type: {resource_type}")
+                return {
+                    'success': False,
+                    'error': f'No specialist found for resource type: {resource_type}'
+                }
+            
+            # Generate recommendation based on historical patterns
+            recommendation = await self._generate_recommendation(
+                resource_type=resource_type,
+                current_value=current_value,
+                threshold=threshold,
+                severity=severity
+            )
+            
+            logger.info(
+                f"🖥️💡 Routing to {specialist}: {recommendation['action']} "
+                f"(confidence: {recommendation['confidence']:.2f})"
+            )
+            
+            # Prepare coordination request for specialist
+            coordination_request = {
+                'resource_type': resource_type,
+                'current_value': current_value,
+                'threshold': threshold,
+                'severity': severity,
+                'recommendation': recommendation,
+                'from_coordinator': 'vic_20_sage',
+                'triage_confidence': confidence
+            }
+            
+            # Call specialist directly via agent_manager
+            # (This will be wired up in Step 1.5)
+            specialist_result = None
+            if hasattr(self, '_agent_manager') and self._agent_manager:
+                try:
+                    specialist_result = await self._agent_manager.call_agent(
+                        specialist,
+                        'handle_coordination',
+                        coordination_request=coordination_request
+                    )
+                    logger.info(f"🖥️✅ Specialist {specialist} responded: {specialist_result}")
+                except Exception as e:
+                    logger.error(f"🖥️💥 Error calling specialist {specialist}: {e}")
+                    specialist_result = {'success': False, 'error': str(e)}
+            else:
+                logger.debug("🖥️ Agent manager not available yet, skipping direct call")
+            
+            # Broadcast coordination to Redis for frontend observability
+            await self.broadcast_to_agents(
+                message_type=MessageType.COORDINATION_REQUEST,
+                payload=coordination_request,
+                priority=Priority.HIGH if severity in ['high', 'critical'] else Priority.NORMAL
+            )
+            
+            # Broadcast coordination to WebSocket
+            from app.services.agent_insight_emitter import emit_agent_insight
+            await emit_agent_insight(
+                from_agent="vic20_sage",
+                to_agent=specialist,
+                action="coordinate_specialist",
+                reasoning=f"Routing {resource_type} alert to specialist - {recommendation['action']}",
+                context={
+                    "resource_type": resource_type,
+                    "current_value": current_value,
+                    "threshold": threshold,
+                    "severity": severity,
+                    "specialist": specialist,
+                    "recommendation": recommendation['action'],
+                    "confidence": recommendation['confidence']
+                }
+            )
+            
+            # Write coordination decision to PostgreSQL
+            await self._write_coordination_decision(
+                resource_type=resource_type,
+                specialist=specialist,
+                recommendation=recommendation,
+                severity=severity,
+                triage_data=triage_data
+            )
+            
+            # CC The Stick for logging
+            await self._cc_the_stick(
+                decision_type='coordination',
+                resource_type=resource_type,
+                specialist=specialist,
+                recommendation=recommendation,
+                severity=severity
+            )
+            
+            # Return result to Hawkington
+            return {
+                'success': True,
+                'specialist': specialist,
+                'recommendation': recommendation,
+                'specialist_result': specialist_result
+            }
+            
+        except Exception as e:
+            logger.error(f"🖥️💥 Error in direct coordination: {e}", exc_info=True)
+            return {
+                'success': False,
+                'error': str(e)
+            }
+    
     async def _handle_action_report(self, message: AgentMessage) -> None:
         """
         PHASE 4: Handle ACTION_REPORT from specialists.
