@@ -162,6 +162,63 @@ class DistributedAgentManager:
         """Get all agents"""
         return self.agents.copy()
     
+    async def call_agent(self, agent_name: str, method_name: str, *args, **kwargs) -> Any:
+        """
+        Call a method on an agent directly and get the response.
+        
+        This enables direct agent-to-agent communication without Redis pub/sub.
+        Agents can now call each other and receive immediate responses.
+        
+        Args:
+            agent_name: Name of the agent to call (e.g., 'meth_snail', 'vic_20_sage')
+            method_name: Name of the method to call on the agent
+            *args: Positional arguments to pass to the method
+            **kwargs: Keyword arguments to pass to the method
+        
+        Returns:
+            The return value from the agent's method
+        
+        Raises:
+            ValueError: If agent not found or method doesn't exist
+            Exception: Any exception raised by the agent's method
+        
+        Example:
+            # VIC-20 calls Terry directly
+            result = await manager.call_agent(
+                'meth_snail',
+                'handle_coordination',
+                coordination_request={'action': 'cache_clear', 'reason': 'high_cpu'}
+            )
+        """
+        # Get the agent
+        agent = self.agents.get(agent_name)
+        if not agent:
+            raise ValueError(f"Agent '{agent_name}' not found. Available agents: {list(self.agents.keys())}")
+        
+        # Get the method
+        if not hasattr(agent, method_name):
+            raise ValueError(
+                f"Agent '{agent_name}' does not have method '{method_name}'. "
+                f"Available methods: {[m for m in dir(agent) if not m.startswith('_')]}"
+            )
+        
+        method = getattr(agent, method_name)
+        
+        # Check if it's callable
+        if not callable(method):
+            raise ValueError(f"'{method_name}' on agent '{agent_name}' is not callable")
+        
+        # Call the method
+        logger.debug(f"📞 Direct call: {agent_name}.{method_name}()")
+        
+        if asyncio.iscoroutinefunction(method):
+            result = await method(*args, **kwargs)
+        else:
+            result = method(*args, **kwargs)
+        
+        logger.debug(f"✅ Direct call completed: {agent_name}.{method_name}()")
+        return result
+    
     async def get_system_status(self) -> Dict[str, Any]:
         """Get status of all agents"""
         status = {
