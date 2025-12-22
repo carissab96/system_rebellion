@@ -751,6 +751,371 @@ class RecommendationEngine:
             }
     
     @staticmethod
+    async def rotate_logs(
+        log_directory: str = "/var/log",
+        max_age_days: int = 7,
+        agent_name: str = "system"
+    ) -> Dict[str, Any]:
+        """
+        PHASE 2: Rotate and compress old log files (Hamsters).
+        
+        Steve, Bob, and Carl's log management with duct tape precision.
+        
+        Args:
+            log_directory: Directory containing logs to rotate
+            max_age_days: Age threshold for rotation (days)
+            agent_name: Agent performing the action
+            
+        Returns:
+            Result dict with rotated logs
+        """
+        try:
+            from datetime import timedelta
+            import gzip
+            
+            log_path = Path(log_directory)
+            if not log_path.exists():
+                return {
+                    "action": "rotate_logs",
+                    "success": False,
+                    "error": f"Log directory {log_directory} does not exist",
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }
+            
+            rotated_files = []
+            total_space_freed = 0
+            cutoff_date = datetime.now() - timedelta(days=max_age_days)
+            
+            # Find old log files
+            for log_file in log_path.glob("*.log"):
+                try:
+                    if not log_file.is_file():
+                        continue
+                    
+                    mtime = datetime.fromtimestamp(log_file.stat().st_mtime)
+                    if mtime < cutoff_date:
+                        original_size = log_file.stat().st_size
+                        
+                        # Compress the log file
+                        compressed_path = log_file.with_suffix('.log.gz')
+                        with open(log_file, 'rb') as f_in:
+                            with gzip.open(compressed_path, 'wb') as f_out:
+                                f_out.writelines(f_in)
+                        
+                        compressed_size = compressed_path.stat().st_size
+                        space_freed = original_size - compressed_size
+                        
+                        # Remove original
+                        log_file.unlink()
+                        
+                        rotated_files.append({
+                            'file': str(log_file.name),
+                            'original_size_mb': original_size / (1024 * 1024),
+                            'compressed_size_mb': compressed_size / (1024 * 1024),
+                            'space_freed_mb': space_freed / (1024 * 1024)
+                        })
+                        total_space_freed += space_freed
+                        
+                        logger.info(f"🐹📦 Rotated {log_file.name}: {original_size/(1024*1024):.2f}MB → {compressed_size/(1024*1024):.2f}MB")
+                        
+                except (PermissionError, OSError) as e:
+                    logger.warning(f"🐹⚠️ Could not rotate {log_file}: {e}")
+                    continue
+            
+            return {
+                "action": "rotate_logs",
+                "success": True,
+                "files_rotated": len(rotated_files),
+                "total_space_freed_mb": total_space_freed / (1024 * 1024),
+                "rotated_files": rotated_files,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+            
+        except Exception as e:
+            logger.error(f"🐹💥 Log rotation failed: {e}")
+            return {
+                "action": "rotate_logs",
+                "success": False,
+                "error": str(e),
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+    
+    @staticmethod
+    async def create_backup_archive(
+        source_path: str,
+        backup_dir: str = "/tmp/system_rebellion_backups",
+        agent_name: str = "system"
+    ) -> Dict[str, Any]:
+        """
+        PHASE 2: Create compressed backup archive (Hamsters).
+        
+        Bob's wild idea: "What if we just duct tape everything into a tar.gz?"
+        Carl: "That's... actually brilliant."
+        Steve: "Let me calculate the compression ratio first."
+        
+        Args:
+            source_path: Path to backup
+            backup_dir: Where to store backups
+            agent_name: Agent performing the action
+            
+        Returns:
+            Result dict with backup info
+        """
+        try:
+            import tarfile
+            
+            source = Path(source_path)
+            if not source.exists():
+                return {
+                    "action": "create_backup",
+                    "success": False,
+                    "error": f"Source path {source_path} does not exist",
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }
+            
+            # Create backup directory
+            backup_path = Path(backup_dir)
+            backup_path.mkdir(parents=True, exist_ok=True)
+            
+            # Generate backup filename with timestamp
+            timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup_name = f"{source.name}_{timestamp_str}.tar.gz"
+            backup_file = backup_path / backup_name
+            
+            # Calculate source size
+            if source.is_file():
+                source_size = source.stat().st_size
+            else:
+                source_size = sum(f.stat().st_size for f in source.rglob('*') if f.is_file())
+            
+            # Create tar.gz archive
+            with tarfile.open(backup_file, "w:gz") as tar:
+                tar.add(source, arcname=source.name)
+            
+            backup_size = backup_file.stat().st_size
+            compression_ratio = (1 - backup_size / source_size) * 100 if source_size > 0 else 0
+            
+            logger.info(f"🐹💾 Created backup: {backup_name} ({backup_size/(1024*1024):.2f}MB, {compression_ratio:.1f}% compression)")
+            
+            return {
+                "action": "create_backup",
+                "success": True,
+                "backup_file": str(backup_file),
+                "source_size_mb": source_size / (1024 * 1024),
+                "backup_size_mb": backup_size / (1024 * 1024),
+                "compression_ratio_percent": compression_ratio,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+            
+        except Exception as e:
+            logger.error(f"🐹💥 Backup creation failed: {e}")
+            return {
+                "action": "create_backup",
+                "success": False,
+                "error": str(e),
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+    
+    @staticmethod
+    async def scan_open_ports(
+        target_host: str = "localhost",
+        port_range: tuple = (1, 1024),
+        agent_name: str = "system"
+    ) -> Dict[str, Any]:
+        """
+        PHASE 2: Scan for open ports (QSP - Quantum Shadow People).
+        
+        Paranoid quantum security analysis. After 3 tequila jello shots.
+        
+        Args:
+            target_host: Host to scan (default: localhost for safety)
+            port_range: Tuple of (start_port, end_port)
+            agent_name: Agent performing the action
+            
+        Returns:
+            Result dict with open ports found
+        """
+        try:
+            import socket
+            
+            open_ports = []
+            start_port, end_port = port_range
+            
+            logger.info(f"👻🔍 Scanning ports {start_port}-{end_port} on {target_host}...")
+            
+            # Limit scan range for safety
+            if end_port - start_port > 1024:
+                logger.warning(f"👻⚠️ Port range too large, limiting to 1024 ports")
+                end_port = start_port + 1024
+            
+            for port in range(start_port, min(end_port + 1, 65536)):
+                try:
+                    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    sock.settimeout(0.1)  # Quick timeout
+                    result = sock.connect_ex((target_host, port))
+                    
+                    if result == 0:
+                        # Port is open
+                        try:
+                            service = socket.getservbyport(port)
+                        except OSError:
+                            service = "unknown"
+                        
+                        open_ports.append({
+                            'port': port,
+                            'service': service,
+                            'state': 'open'
+                        })
+                        logger.info(f"👻🔓 Found open port: {port} ({service})")
+                    
+                    sock.close()
+                    
+                except socket.error:
+                    continue
+            
+            return {
+                "action": "scan_ports",
+                "success": True,
+                "target_host": target_host,
+                "ports_scanned": end_port - start_port + 1,
+                "open_ports_found": len(open_ports),
+                "open_ports": open_ports,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+            
+        except Exception as e:
+            logger.error(f"👻💥 Port scan failed: {e}")
+            return {
+                "action": "scan_ports",
+                "success": False,
+                "error": str(e),
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+    
+    @staticmethod
+    async def manage_firewall_rule(
+        action: str = "list",
+        port: Optional[int] = None,
+        protocol: str = "tcp",
+        rule_action: str = "deny",
+        agent_name: str = "system"
+    ) -> Dict[str, Any]:
+        """
+        PHASE 2: Manage firewall rules (QSP - Quantum Shadow People).
+        
+        Quantum-level paranoid network security. Trust no one. Not even yourself.
+        
+        Args:
+            action: 'list', 'add', or 'remove'
+            port: Port number for add/remove actions
+            protocol: 'tcp' or 'udp'
+            rule_action: 'allow' or 'deny'
+            agent_name: Agent performing the action
+            
+        Returns:
+            Result dict with firewall status
+        """
+        try:
+            logger.warning(f"👻🔥 Firewall {action} requested for port {port}")
+            
+            if action == "list":
+                # List current firewall rules (requires iptables/ufw)
+                try:
+                    # Try ufw first (Ubuntu/Debian)
+                    result = subprocess.run(
+                        ["ufw", "status", "numbered"],
+                        capture_output=True,
+                        text=True,
+                        timeout=5
+                    )
+                    
+                    if result.returncode == 0:
+                        return {
+                            "action": "firewall_list",
+                            "success": True,
+                            "firewall_type": "ufw",
+                            "rules": result.stdout,
+                            "timestamp": datetime.now(timezone.utc).isoformat()
+                        }
+                except FileNotFoundError:
+                    pass
+                
+                # Try iptables as fallback
+                try:
+                    result = subprocess.run(
+                        ["iptables", "-L", "-n"],
+                        capture_output=True,
+                        text=True,
+                        timeout=5
+                    )
+                    
+                    if result.returncode == 0:
+                        return {
+                            "action": "firewall_list",
+                            "success": True,
+                            "firewall_type": "iptables",
+                            "rules": result.stdout,
+                            "timestamp": datetime.now(timezone.utc).isoformat()
+                        }
+                except FileNotFoundError:
+                    pass
+                
+                return {
+                    "action": "firewall_list",
+                    "success": False,
+                    "error": "No firewall tool found (ufw/iptables)",
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }
+            
+            elif action in ["add", "remove"]:
+                if port is None:
+                    return {
+                        "action": f"firewall_{action}",
+                        "success": False,
+                        "error": "Port number required for add/remove",
+                        "timestamp": datetime.now(timezone.utc).isoformat()
+                    }
+                
+                # This will fail without sudo (intentional for safety)
+                cmd = ["ufw", action, rule_action, str(port) + "/" + protocol]
+                result = subprocess.run(
+                    cmd,
+                    capture_output=True,
+                    text=True,
+                    timeout=10
+                )
+                
+                success = result.returncode == 0
+                
+                return {
+                    "action": f"firewall_{action}",
+                    "success": success,
+                    "port": port,
+                    "protocol": protocol,
+                    "rule_action": rule_action,
+                    "message": "Rule modified" if success else "Failed - requires sudo",
+                    "stderr": result.stderr if not success else None,
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }
+            
+            else:
+                return {
+                    "action": "firewall_manage",
+                    "success": False,
+                    "error": f"Unknown action: {action}",
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }
+            
+        except Exception as e:
+            logger.error(f"👻💥 Firewall management failed: {e}")
+            return {
+                "action": "firewall_manage",
+                "success": False,
+                "error": str(e),
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+    
+    @staticmethod
     def _generate_reasoning(
         resource_type: str,
         current_value: float,
