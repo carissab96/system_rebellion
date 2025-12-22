@@ -488,9 +488,24 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
                 action = 'emergency_cache_clear'  # Terry's aggressive way
                 self.total_overrides += 1
             
-            # Execute cache clear
+            # Execute the action based on what was decided
             logger.info(f"🐌💨💨 Executing {action}! *spins shell frantically*")
-            cache_result = await SystemActions.emergency_cache_clear()
+            
+            # Route to the appropriate action
+            if action == 'adjust_process_priority':
+                cache_result = await SystemActions.adjust_process_priority(
+                    process_name='python',
+                    nice_value=5
+                )
+            elif action == 'restart_service':
+                cache_result = await SystemActions.restart_service(
+                    service_name='redis'
+                )
+            elif action == 'throttle_cpu_intensive_tasks':
+                cache_result = await SystemActions.throttle_cpu_intensive_tasks()
+            else:
+                # Default to emergency cache clear
+                cache_result = await SystemActions.emergency_cache_clear()
             
             # Broadcast action to WebSocket
             from app.services.agent_insight_emitter import emit_agent_insight
