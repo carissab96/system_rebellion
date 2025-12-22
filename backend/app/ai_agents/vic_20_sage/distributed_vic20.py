@@ -550,27 +550,32 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
         # Query historical effectiveness FIRST
         historical_data = await self._get_historical_effectiveness(resource_type)
         
-        # Base recommendations (defaults if no history)
+        # PHASE 2: Enhanced recommendations with context-aware action selection
+        # Choose action based on severity and overage level
         base_recommendations = {
             'cpu': {
-                'action': 'throttle_processes',
-                'details': f'CPU {overage:.1f}% over threshold',
-                'confidence': 0.70  # Lower base confidence - history will adjust
+                'action': 'adjust_process_priority' if overage < 50 else 'throttle_processes',
+                'details': f'CPU {overage:.1f}% over threshold - {"granular priority adjustment" if overage < 50 else "aggressive throttling"}',
+                'confidence': 0.70,
+                'alternative': 'restart_service' if severity == 'critical' and overage > 100 else None
             },
             'memory': {
                 'action': 'clear_cache',
                 'details': f'Memory {overage:.1f}% over threshold',
-                'confidence': 0.70
+                'confidence': 0.70,
+                'alternative': 'restart_service' if severity == 'critical' and overage > 150 else None
             },
             'disk': {
-                'action': 'cleanup_temp_files',
-                'details': f'Disk {overage:.1f}% over threshold',
-                'confidence': 0.70
+                'action': 'rotate_logs' if overage < 30 else 'cleanup_temp_files',
+                'details': f'Disk {overage:.1f}% over threshold - {"log rotation" if overage < 30 else "aggressive cleanup"}',
+                'confidence': 0.70,
+                'alternative': 'create_backup_archive' if overage > 80 else None
             },
             'network': {
-                'action': 'analyze_connections',
-                'details': f'Network {overage:.1f}% over threshold',
-                'confidence': 0.65
+                'action': 'scan_open_ports' if overage < 40 else 'analyze_connections',
+                'details': f'Network {overage:.1f}% over threshold - {"security scan" if overage < 40 else "connection analysis"}',
+                'confidence': 0.65,
+                'alternative': 'manage_firewall_rule' if severity == 'critical' else None
             }
         }
         
