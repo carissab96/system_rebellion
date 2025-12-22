@@ -456,10 +456,29 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
             logger.info(f"    VIC-20 suggests: {recommendation.get('action', 'unknown')}")
             logger.info("=" * 80)
             
-            # Terry's choice: follow VIC-20 or do it his way?
-            # (80% chance Terry ignores VIC-20 because he's FASTER!)
+            # PHASE 3: Terry's choice - now adaptive based on his success rate!
+            # Base: 80% chance Terry ignores VIC-20 because he's FASTER!
+            # But if his success rate is low, he learns to listen more
             import random
-            follow_vic20 = random.random() < 0.2  # 20% chance to follow
+            
+            # Adaptive override probability based on learning
+            if self.override_success_rate > 0.7:
+                # Terry's been right a lot - be MORE aggressive!
+                follow_probability = 0.10  # Only 10% chance to follow
+                logger.info(f"🐌💪 Success rate {self.override_success_rate:.0%} - MAXIMUM AGGRESSION!")
+            elif self.override_success_rate > 0.5:
+                # Normal Terry behavior
+                follow_probability = 0.20  # 20% chance to follow
+            elif self.override_success_rate > 0.3:
+                # Terry's struggling - listen more
+                follow_probability = 0.40  # 40% chance to follow
+                logger.info(f"🐌🤔 Success rate {self.override_success_rate:.0%} - maybe I should listen more...")
+            else:
+                # Terry's failing - actually listen to VIC-20
+                follow_probability = 0.60  # 60% chance to follow
+                logger.warning(f"🐌😓 Success rate {self.override_success_rate:.0%} - VIC-20 knows best...")
+            
+            follow_vic20 = random.random() < follow_probability
             
             if follow_vic20:
                 logger.info("🐌💭 *grudgingly* ...FINE. VIC-20's way. THIS TIME.")
