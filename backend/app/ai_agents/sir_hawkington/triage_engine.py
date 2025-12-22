@@ -533,8 +533,8 @@ class SirHawkingtonTriageEngine(AgentInstrumentationMixin, TriageEngineWithRedis
         
         self.routing_stats[triage_decision.routing.value] += 1
         
-        # Broadcast triage decision to all distributed agents via Redis
-        await self._broadcast_triage_decision(triage_decision, metrics_data, user_id)
+        # Broadcast triage decision to all distributed agents via Redis AND get the data for direct calls
+        triage_data = await self._broadcast_triage_decision(triage_decision, metrics_data, user_id)
         
         try:
             if triage_decision.routing == TriageRouting.STICK_DIRECT:
@@ -543,13 +543,13 @@ class SirHawkingtonTriageEngine(AgentInstrumentationMixin, TriageEngineWithRedis
                 
             elif triage_decision.routing == TriageRouting.VIC20_COORDINATION:
                 results = await self._route_to_vic20_coordination(
-                    metrics_data, triage_decision, user_id
+                    metrics_data, triage_decision, user_id, triage_data
                 )
                 routing_results['results']['vic_20_sage'] = results
                 
             elif triage_decision.routing == TriageRouting.VIC20_EMERGENCY:
                 results = await self._route_to_vic20_emergency(
-                    metrics_data, triage_decision, user_id
+                    metrics_data, triage_decision, user_id, triage_data
                 )
                 routing_results['results']['vic_20_sage'] = results
                 
@@ -642,12 +642,35 @@ class SirHawkingtonTriageEngine(AgentInstrumentationMixin, TriageEngineWithRedis
         self, 
         metrics_data: Dict[str, Any], 
         triage_decision: TriageDecision, 
-        user_id: Optional[str]
+        user_id: Optional[str],
+        triage_data: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Route to VIC-20 for coordination with specialist agents"""
+        """
+        Route to VIC-20 for coordination with specialist agents.
+        
+        PHASE 1 REFACTOR: Now uses direct call to VIC-20 instead of calling brain function.
+        """
         self.logger.debug("🧐 Routing to VIC-20 for specialist coordination")
         
         try:
+            # 🔗 PHASE 1 REFACTOR: Call VIC-20 directly via agent_manager
+            vic20_result = None
+            if hasattr(self, '_agent_manager') and self._agent_manager:
+                try:
+                    self.logger.info("🧐📞 Calling VIC-20 directly for coordination...")
+                    vic20_result = await self._agent_manager.call_agent(
+                        'vic_20_sage',
+                        'coordinate_from_triage',
+                        triage_data=triage_data
+                    )
+                    self.logger.info(f"🧐✅ VIC-20 responded: {vic20_result.get('success', False)}")
+                except Exception as e:
+                    self.logger.error(f"🧐💥 Error calling VIC-20 directly: {e}")
+                    vic20_result = {'success': False, 'error': str(e)}
+            else:
+                self.logger.debug("🧐 Agent manager not available, skipping direct call")
+            
+            # Continue with existing logic for backward compatibility
             # Emit coordination insight
             from app.services.agent_insight_emitter import emit_agent_insight
             await emit_agent_insight(
@@ -713,12 +736,35 @@ class SirHawkingtonTriageEngine(AgentInstrumentationMixin, TriageEngineWithRedis
         self, 
         metrics_data: Dict[str, Any], 
         triage_decision: TriageDecision, 
-        user_id: Optional[str]
+        user_id: Optional[str],
+        triage_data: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """🧐💥 MONOCLE YEET to VIC-20 for emergency multi-agent orchestration"""
+        """
+        🧐💥 MONOCLE YEET to VIC-20 for emergency multi-agent orchestration
+        
+        PHASE 1 REFACTOR: Now uses direct call to VIC-20 instead of calling brain function.
+        """
         self.logger.warning("🧐💥 MONOCLE YEETED TO VIC-20 - EMERGENCY ORCHESTRATION ACTIVATED!")
         
         try:
+            # 🔗 PHASE 1 REFACTOR: Call VIC-20 directly via agent_manager
+            vic20_result = None
+            if hasattr(self, '_agent_manager') and self._agent_manager:
+                try:
+                    self.logger.warning("🧐💥📞 Calling VIC-20 directly for EMERGENCY coordination...")
+                    vic20_result = await self._agent_manager.call_agent(
+                        'vic_20_sage',
+                        'coordinate_from_triage',
+                        triage_data=triage_data
+                    )
+                    self.logger.warning(f"🧐💥✅ VIC-20 emergency response: {vic20_result.get('success', False)}")
+                except Exception as e:
+                    self.logger.error(f"🧐💥💥 Error calling VIC-20 directly: {e}")
+                    vic20_result = {'success': False, 'error': str(e)}
+            else:
+                self.logger.debug("🧐 Agent manager not available, skipping direct call")
+            
+            # Continue with existing logic for backward compatibility
             emergency_type = (
                 'monocle_yeet' if triage_decision.monocle_yeeted else 'high_severity'
             )

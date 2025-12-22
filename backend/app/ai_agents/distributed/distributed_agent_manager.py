@@ -112,6 +112,15 @@ class DistributedAgentManager:
             # 🎯 HIERARCHY: Sir Hawkington is now the sole system monitor (no global monitor)
             logger.info("🎯 Sir Hawkington will handle all system monitoring and triage")
             
+            # 🔗 PHASE 1 REFACTOR: Pass agent_manager reference to agents for direct calls
+            logger.info("🔗 Wiring up direct agent-to-agent communication...")
+            vic20._agent_manager = self
+            sir_hawk._agent_manager = self
+            terry._agent_manager = self
+            hamsters._agent_manager = self
+            shadows._agent_manager = self
+            logger.info("✅ Direct communication channels established")
+            
             self._initialized = True
             logger.info(f"🌐 All {len(self.agents)} distributed agents initialized!")
             
