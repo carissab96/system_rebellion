@@ -519,6 +519,7 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
                     resource_type=resource_type,
                     action=action,
                     result=cache_result,
+                    severity=severity,
                     followed_vic20=follow_vic20
                 )
                 
