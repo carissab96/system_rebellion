@@ -594,8 +594,164 @@ class RecommendationEngine:
         else:
             return "low"
     
+    @staticmethod
+    async def adjust_process_priority(
+        process_name: Optional[str] = None,
+        pid: Optional[int] = None,
+        nice_value: int = 10,
+        agent_name: str = "system"
+    ) -> Dict[str, Any]:
+        """
+        PHASE 2: Adjust process priority (Terry - Meth Snail).
+        
+        More granular than CPU throttle - targets specific processes.
+        
+        Args:
+            process_name: Name of process to adjust (e.g., 'python', 'postgres')
+            pid: Specific process ID to adjust
+            nice_value: Nice value to set (0-19, higher = lower priority)
+            agent_name: Agent performing the action
+            
+        Returns:
+            Result dict with adjusted processes
+        """
+        try:
+            adjusted_processes = []
+            
+            if pid:
+                # Adjust specific process by PID
+                try:
+                    proc = psutil.Process(pid)
+                    old_nice = proc.nice()
+                    proc.nice(nice_value)
+                    adjusted_processes.append({
+                        'pid': pid,
+                        'name': proc.name(),
+                        'old_nice': old_nice,
+                        'new_nice': nice_value
+                    })
+                    logger.info(f"🐌⚙️ Adjusted process {pid} ({proc.name()}): nice {old_nice} → {nice_value}")
+                except (psutil.NoSuchProcess, psutil.AccessDenied) as e:
+                    logger.warning(f"🐌⚠️ Could not adjust process {pid}: {e}")
+            
+            elif process_name:
+                # Adjust all processes matching name
+                for proc in psutil.process_iter(['pid', 'name', 'nice']):
+                    try:
+                        if process_name.lower() in proc.info['name'].lower():
+                            old_nice = proc.info['nice']
+                            proc.nice(nice_value)
+                            adjusted_processes.append({
+                                'pid': proc.info['pid'],
+                                'name': proc.info['name'],
+                                'old_nice': old_nice,
+                                'new_nice': nice_value
+                            })
+                            logger.info(f"🐌⚙️ Adjusted {proc.info['name']} (PID {proc.info['pid']}): nice {old_nice} → {nice_value}")
+                    except (psutil.NoSuchProcess, psutil.AccessDenied):
+                        continue
+            
+            return {
+                "action": "adjust_process_priority",
+                "success": True,
+                "processes_adjusted": len(adjusted_processes),
+                "processes": adjusted_processes,
+                "nice_value": nice_value,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+            
+        except Exception as e:
+            logger.error(f"🐌💥 Process priority adjustment failed: {e}")
+            return {
+                "action": "adjust_process_priority",
+                "success": False,
+                "error": str(e),
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+    
+    @staticmethod
+    async def restart_service(
+        service_name: str,
+        agent_name: str = "system",
+        verify: bool = True
+    ) -> Dict[str, Any]:
+        """
+        PHASE 2: Restart a system service (Terry - Meth Snail).
+        
+        CAREFUL: This actually restarts services. Use with caution.
+        
+        Args:
+            service_name: Name of systemd service to restart
+            agent_name: Agent performing the action
+            verify: Whether to verify the action
+            
+        Returns:
+            Result dict with restart status
+        """
+        try:
+            logger.warning(f"🐌🔄 Attempting to restart service: {service_name}")
+            
+            # Check if service exists first
+            check_cmd = ["systemctl", "status", service_name]
+            check_result = subprocess.run(
+                check_cmd,
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            
+            if check_result.returncode not in [0, 3]:  # 0=running, 3=stopped
+                return {
+                    "action": "restart_service",
+                    "success": False,
+                    "error": f"Service {service_name} not found",
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }
+            
+            # Attempt restart (will fail without sudo, which is intentional for safety)
+            restart_cmd = ["systemctl", "restart", service_name]
+            restart_result = subprocess.run(
+                restart_cmd,
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            
+            success = restart_result.returncode == 0
+            
+            if success:
+                logger.info(f"🐌✅ Service {service_name} restarted successfully")
+            else:
+                logger.warning(f"🐌⚠️ Service restart failed (may need sudo): {restart_result.stderr}")
+            
+            return {
+                "action": "restart_service",
+                "success": success,
+                "service_name": service_name,
+                "message": "Restart successful" if success else "Restart failed - may require sudo permissions",
+                "stderr": restart_result.stderr if not success else None,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+            
+        except subprocess.TimeoutExpired:
+            logger.error(f"🐌💥 Service restart timed out: {service_name}")
+            return {
+                "action": "restart_service",
+                "success": False,
+                "error": "Restart timed out",
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+        except Exception as e:
+            logger.error(f"🐌💥 Service restart failed: {e}")
+            return {
+                "action": "restart_service",
+                "success": False,
+                "error": str(e),
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+    
+    @staticmethod
     def _generate_reasoning(
-        self,
         resource_type: str,
         current_value: float,
         threshold: float,
