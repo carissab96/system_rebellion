@@ -417,18 +417,21 @@ class SirHawkingtonTriageEngine(AgentInstrumentationMixin, TriageEngineWithRedis
         triage_decision: TriageDecision,
         metrics_data: Dict[str, Any],
         user_id: Optional[str]
-    ) -> None:
+    ) -> Dict[str, Any]:
         """
-        Broadcast triage decision to all distributed agents via Redis.
+        Broadcast triage decision to all distributed agents via Redis AND return the decision data.
         
-        This allows all agents to be aware of system-wide triage decisions
-        and prepare for potential routing to them.
+        Returns the triage decision data for direct agent-to-agent communication.
+        Also broadcasts to Redis for frontend observability and message history.
+        
+        Returns:
+            Dict containing the triage decision data with resource identification
         """
         try:
             # Check if we have a communication hub (distributed features enabled)
             if not hasattr(self, '_comm_hub') or self._comm_hub is None:
                 self.logger.debug("🧐 No comm hub available, skipping triage broadcast")
-                return
+                return {}
             
             # Determine priority based on severity
             from ..distributed.message_protocol import Priority
@@ -507,9 +510,14 @@ class SirHawkingtonTriageEngine(AgentInstrumentationMixin, TriageEngineWithRedis
                 f"{triage_decision.routing.value} (targets: {', '.join(triage_decision.target_agents)})"
             )
             
+            # Return the message data for direct agent-to-agent communication
+            return message_data
+            
         except Exception as e:
             # Don't fail triage routing if broadcast fails
             self.logger.error(f"🧐💥 Failed to broadcast triage decision: {e}", exc_info=True)
+            # Return empty dict on error
+            return {}
     
     async def _execute_triage_routing(
         self, 
