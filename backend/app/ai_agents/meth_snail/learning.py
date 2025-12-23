@@ -50,6 +50,12 @@ class LearningRecord:
     what_worked: Optional[str] = None
     what_failed: Optional[str] = None
     
+    # Personality Behaviors (reactive to real data)
+    shell_spins: int = 0
+    data_quality_score: float = 1.0
+    energy_drink_consumed: bool = False
+    hawk_veto: bool = False
+    
     # Metadata
     timestamp: str = ""
     agent_name: str = "meth_snail"
@@ -121,7 +127,7 @@ class TerryLearning:
         metrics_improved = improvement.get(context.resource_type, 0) < 0  # Negative = improvement
         overall_success = action_succeeded and metrics_improved
         
-        # 4. Create learning record
+        # 4. Create learning record (with personality behaviors!)
         record = LearningRecord(
             fingerprint_l1=fingerprints['level_1'],
             fingerprint_l2=fingerprints['level_2'],
@@ -138,6 +144,11 @@ class TerryLearning:
             improvement=improvement,
             what_worked=decision.action if overall_success else None,
             what_failed=decision.action if not overall_success else None,
+            # Personality behaviors from this experience
+            shell_spins=context.shell_spin_count,
+            data_quality_score=context.data_quality_score,
+            energy_drink_consumed=decision.energy_drink_consumed,
+            hawk_veto=decision.hawk_veto,
             timestamp=utc_now().isoformat(),
             agent_name='meth_snail'
         )

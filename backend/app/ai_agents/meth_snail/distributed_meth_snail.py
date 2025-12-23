@@ -198,6 +198,14 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
                     'full_metrics': full_metrics
                 })
                 
+                # Track shell spins from perception
+                shell_spin_count = len(perception.shell_spin_incidents)
+                if shell_spin_count > 0:
+                    logger.warning(
+                        f"🐌💫 {shell_spin_count} shell spin(s) during perception - "
+                        f"data quality: {context.data_quality_score:.2f}"
+                    )
+                
                 logger.info(f"🐌👁️ Perception complete - Terry sees the full picture")
                 
                 # STEP 2: REASONING - Analyze with ML validation
@@ -216,6 +224,19 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
                 
                 action_selector = TerryActionSelection()
                 decision = await action_selector.select_action(reasoning_result, context)
+                
+                # Log personality behaviors
+                if decision.energy_drink_consumed:
+                    logger.info(
+                        f"🐌☕ Energy drink #{action_selector.energy_drink_system.energy_drinks_today} consumed! "
+                        f"*chugs and spins shell faster*"
+                    )
+                
+                if decision.hawk_veto:
+                    logger.warning(
+                        f"🐌❌ HAWK VETO! Terry must follow VIC-20's recommendation. "
+                        f"Total vetoes: {action_selector.energy_drink_system.hawk_vetoes}"
+                    )
                 
                 logger.info(
                     f"🐌⚡ Action selected: {decision.action} "
@@ -283,7 +304,13 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
                     "current_value": current_value,
                     "threshold": threshold,
                     "confidence": decision.confidence,
-                    "root_cause": reasoning_result.root_cause
+                    "root_cause": reasoning_result.root_cause,
+                    # Personality behaviors
+                    "shell_spins": shell_spin_count,
+                    "data_quality_score": context.data_quality_score,
+                    "energy_drink_consumed": decision.energy_drink_consumed,
+                    "hawk_veto": decision.hawk_veto,
+                    "energy_drinks_today": action_selector.energy_drink_system.energy_drinks_today
                 }
             )
             
