@@ -183,7 +183,8 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
             )
             
             # Get database session for Terry v2 components
-            async with self.db_getter() as db:
+            # db_getter is an async generator - use async for loop
+            async for db in self.db_getter():
                 # STEP 1: PERCEPTION - Gather full context
                 from app.ai_agents.meth_snail.perception import TerryPerception
                 
@@ -263,6 +264,9 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
                     f"🐌📚 Learning stored: {decision.action} "
                     f"{'SUCCEEDED' if learning_record.success else 'FAILED'}"
                 )
+                
+                # Break after first iteration (async for loop pattern)
+                break
             
             # Broadcast action to WebSocket
             from app.services.agent_insight_emitter import emit_agent_insight
@@ -348,320 +352,6 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
             else:
                 logger.error(f"🐌❌ Cache clear failed: {cache_result.get('error')}")
             
-            return
-            
-            # OLD CODE BELOW - keeping for backward compatibility
-            coordination_type = payload.get('coordination_type', 'unknown')
-            
-            # Check if this is a resource recommendation from VIC-20
-            if coordination_type == 'resource_recommendation':
-                recommendation = message_data.get('recommendation', {})
-                
-                # Use choice engine to decide (Terry has VERY LOW trust!)
-                decision = self.choice_engine.should_follow_recommendation(
-                    recommendation=recommendation,
-                    current_situation={
-                        'resource_type': recommendation.get('resource_type', 'memory'),
-                        'current_value': recommendation.get('current_value', 0),
-                        'threshold': recommendation.get('threshold', 75)
-                    }
-                )
-                
-                logger.info(
-                    f"🐌💨 Terry's decision: "
-                    f"{'FINE, I\'LL TRY IT' if decision['followed_recommendation'] else 'NAH, MY WAY IS FASTER!'}"
-                )
-                logger.info(f"🐌💭 {decision['reasoning']}")
-                
-                # Execute the chosen action (usually Terry's own way!)
-                action = decision['final_action']
-                
-                if 'cache' in action or 'memory' in action:
-                    logger.info("🐌💨💨 EXECUTING AGGRESSIVE CACHE CLEAR! *spins shell frantically*")
-                    cache_result = await SystemActions.emergency_cache_clear()
-                    
-                    if cache_result['success']:
-                        logger.info(
-                            f"🐌✅ Cache cleared! Freed {cache_result['memory_freed_mb']:.2f} MB in "
-                            f"{cache_result.get('objects_collected', 0)} objects! GOTTA GO FAST!"
-                        )
-                        
-                        # Track override effectiveness for learning!
-                        if not decision['followed_recommendation']:
-                            self.total_overrides += 1
-                            
-                            # Check if Terry's way was actually better
-                            improvement = cache_result['improvement_percent']
-                            if improvement > 15:  # Terry's way worked well!
-                                self.successful_overrides += 1
-                                logger.info(
-                                    f"🐌✅ TERRY WAS RIGHT! Override successful! "
-                                    f"(Success rate: {self.successful_overrides}/{self.total_overrides})"
-                                )
-                            else:
-                                self.failed_overrides += 1
-                                logger.warning(
-                                    f"🐌⚠️ Maybe VIC-20 was right this time... "
-                                    f"(Success rate: {self.successful_overrides}/{self.total_overrides})"
-                                )
-                            
-                            # Update success rate
-                            self.override_success_rate = self.successful_overrides / max(1, self.total_overrides)
-                            
-                            # Report to The Stick for compliance tracking
-                            await self._report_override_to_stick(
-                                recommendation=recommendation,
-                                action_taken=action,
-                                result=cache_result,
-                                success=improvement > 15
-                            )
-                        
-                        # Record decision and effectiveness (STANDARD method)
-                        await self.make_decision_and_broadcast(
-                            decision_type="recommendation_response",
-                            input_data={
-                                "recommendation": recommendation.get('suggested_action'),
-                                "followed": decision['followed_recommendation'],
-                                "action_taken": action,
-                                "terry_says": "I'M FASTER THAN VIC-20!",  # PERSONALITY!
-                                "override_success_rate": self.override_success_rate
-                            },
-                            output_data={
-                                "result": cache_result,
-                                "effectiveness": cache_result['improvement_percent'],
-                                "speed": "MAXIMUM",  # PERSONALITY!
-                                "overrides": self.total_overrides,
-                                "successful_overrides": self.successful_overrides
-                            },
-                            confidence=decision['decision_score'],
-                            reasoning=decision['reasoning'],
-                            broadcast=True,
-                            priority=Priority.HIGH
-                        )
-                    else:
-                        logger.error(f"🐌❌ Cache clear failed: {cache_result.get('error')}")
-                
-                return
-            
-            # Handle other coordination types (legacy)
-            task_type = message_data.get('task_type', 'unknown')
-            priority = message_data.get('priority', 'normal')
-            recommendation = message_data.get('recommendation', '')
-            
-            logger.info(f"🐌📬 Coordination request from VIC-20: {task_type} (priority: {priority})")
-            
-            # Check if this task is for us
-            target_agent = message_data.get('target_agent', '')
-            if target_agent != 'meth_snail' and target_agent != 'all':
-                logger.debug(f"🐌 Task not for us (target: {target_agent}), ignoring")
-                return
-            
-            logger.info("🐌⚡ TASK ASSIGNED! Executing memory optimization!")
-            
-            # Record that we received a coordination request
-            await self.make_distributed_decision(
-                decision_type="coordination_task_received",
-                input_data={
-                    "task_type": task_type,
-                    "priority": priority,
-                    "recommendation": recommendation,
-                    "context": message_data.get('context', {})
-                },
-                output_data={
-                    "status": "executing",
-                    "action": "memory_optimization"
-                },
-                confidence=1.0
-            )
-            
-            # If HIGH priority, execute aggressive optimization
-            if priority in ['high', 'critical', 'emergency']:
-                logger.warning("🐌🔥 HIGH PRIORITY! Preparing AGGRESSIVE optimization!")
-                # Broadcast that we're taking action
-                await self.broadcast_to_agents(
-                    message_type='agent_action',
-                    data={
-                        "agent": "meth_snail",
-                        "action": "aggressive_memory_optimization",
-                        "priority": priority,
-                        "reason": recommendation
-                    },
-                    priority='high'
-                )
-                
-        except Exception as e:
-            logger.error(f"🐌💥 Error handling coordination request: {e}", exc_info=True)
-    
-    async def handle_coordination(self, coordination_request: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        PHASE 1 REFACTOR: Accept coordination request directly from VIC-20 (not via Redis).
-        
-        This is the new direct communication path:
-        VIC-20 calls this method directly and gets an immediate response.
-        
-        Flow:
-        1. Receive coordination request directly from VIC-20
-        2. Decide: follow VIC-20's recommendation OR do it my way (trust: 0.2)
-        3. Execute action (usually Terry's way because he's FASTER!)
-        4. Return result to VIC-20
-        5. Still broadcast to Redis for frontend observability
-        
-        Args:
-            coordination_request: Dict containing resource_type, recommendation, severity, etc.
-        
-        Returns:
-            Dict containing action result with success status and details
-        """
-        try:
-            resource_type = coordination_request.get('resource_type', 'unknown')
-            severity = coordination_request.get('severity', 'unknown')
-            recommendation = coordination_request.get('recommendation', {})
-            current_value = coordination_request.get('current_value', 0)
-            threshold = coordination_request.get('threshold', 0)
-            
-            logger.info("=" * 80)
-            logger.info(f"🐌📞 DIRECT CALL RECEIVED: VIC-20 → TERRY (Meth Snail)")
-            logger.info(f"    Resource: {resource_type} at {current_value:.1f}%")
-            logger.info(f"    VIC-20 suggests: {recommendation.get('action', 'unknown')}")
-            logger.info("=" * 80)
-            
-            # PHASE 3: Terry's choice - now adaptive based on his success rate!
-            # Base: 80% chance Terry ignores VIC-20 because he's FASTER!
-            # But if his success rate is low, he learns to listen more
-            import random
-            
-            # Adaptive override probability based on learning
-            if self.override_success_rate > 0.7:
-                # Terry's been right a lot - be MORE aggressive!
-                follow_probability = 0.10  # Only 10% chance to follow
-                logger.info(f"🐌💪 Success rate {self.override_success_rate:.0%} - MAXIMUM AGGRESSION!")
-            elif self.override_success_rate > 0.5:
-                # Normal Terry behavior
-                follow_probability = 0.20  # 20% chance to follow
-            elif self.override_success_rate > 0.3:
-                # Terry's struggling - listen more
-                follow_probability = 0.40  # 40% chance to follow
-                logger.info(f"🐌🤔 Success rate {self.override_success_rate:.0%} - maybe I should listen more...")
-            else:
-                # Terry's failing - actually listen to VIC-20
-                follow_probability = 0.60  # 60% chance to follow
-                logger.warning(f"🐌😓 Success rate {self.override_success_rate:.0%} - VIC-20 knows best...")
-            
-            follow_vic20 = random.random() < follow_probability
-            
-            if follow_vic20:
-                logger.info("🐌💭 *grudgingly* ...FINE. VIC-20's way. THIS TIME.")
-                action = recommendation.get('action', 'clear_cache')
-            else:
-                logger.info("🐌💨 NAH! VIC-20 is too SLOW! *chugs energy drink* MY WAY!")
-                action = 'emergency_cache_clear'  # Terry's aggressive way
-                self.total_overrides += 1
-            
-            # Execute the action based on what was decided
-            logger.info(f"🐌💨💨 Executing {action}! *spins shell frantically*")
-            
-            # Route to the appropriate action
-            if action == 'adjust_process_priority':
-                cache_result = await SystemActions.adjust_process_priority(
-                    process_name='python',
-                    nice_value=5
-                )
-            elif action == 'restart_service':
-                cache_result = await SystemActions.restart_service(
-                    service_name='redis'
-                )
-            elif action == 'throttle_cpu_intensive_tasks':
-                cache_result = await SystemActions.throttle_cpu_intensive_tasks()
-            else:
-                # Default to emergency cache clear
-                cache_result = await SystemActions.emergency_cache_clear()
-            
-            # Broadcast action to WebSocket
-            from app.services.agent_insight_emitter import emit_agent_insight
-            await emit_agent_insight(
-                from_agent="meth_snail",
-                to_agent="vic20_sage",
-                action="cache_clear_executed",
-                reasoning=f"{'Following VIC-20 recommendation' if follow_vic20 else 'Overriding VIC-20 - GOTTA GO FAST!'} - {resource_type} optimization",
-                context={
-                    "resource_type": resource_type,
-                    "action": action,
-                    "followed_vic20": follow_vic20,
-                    "severity": severity,
-                    "current_value": current_value,
-                    "threshold": threshold
-                }
-            )
-            
-            if cache_result['success']:
-                improvement = cache_result['improvement_percent']
-                logger.info(
-                    f"🐌✅ Cache cleared! Freed {cache_result['memory_freed_mb']:.2f} MB! "
-                    f"Memory: {cache_result['memory_before_percent']:.1f}% → "
-                    f"{cache_result['memory_after_percent']:.1f}% - GOTTA GO FAST!"
-                )
-                
-                # Broadcast success to WebSocket
-                await emit_agent_insight(
-                    from_agent="meth_snail",
-                    to_agent="vic20_sage",
-                    action="cache_clear_success",
-                    reasoning=f"Freed {cache_result['memory_freed_mb']:.2f} MB - {improvement:.1f}% improvement",
-                    context={
-                        "success": True,
-                        "memory_freed_mb": cache_result['memory_freed_mb'],
-                        "improvement_percent": improvement,
-                        "memory_before": cache_result['memory_before_percent'],
-                        "memory_after": cache_result['memory_after_percent'],
-                        "followed_vic20": follow_vic20
-                    }
-                )
-                
-                # Write action result to PostgreSQL
-                await self._write_action_result(
-                    resource_type=resource_type,
-                    action=action,
-                    result=cache_result,
-                    severity=severity,
-                    followed_vic20=follow_vic20
-                )
-                
-                # Report back to VIC-20 (via Redis for now)
-                await self._report_to_vic20(
-                    resource_type=resource_type,
-                    action=action,
-                    result=cache_result,
-                    followed_recommendation=follow_vic20
-                )
-                
-                # CC The Stick
-                await self._cc_the_stick(
-                    decision_type='specialist_action',
-                    resource_type=resource_type,
-                    action=action,
-                    result=cache_result,
-                    followed_vic20=follow_vic20
-                )
-                
-                # Return result to VIC-20
-                return {
-                    'success': True,
-                    'action': action,
-                    'followed_vic20': follow_vic20,
-                    'memory_freed_mb': cache_result['memory_freed_mb'],
-                    'improvement_percent': improvement,
-                    'memory_before': cache_result['memory_before_percent'],
-                    'memory_after': cache_result['memory_after_percent']
-                }
-            else:
-                logger.error(f"🐌❌ Cache clear failed: {cache_result.get('error')}")
-                return {
-                    'success': False,
-                    'error': cache_result.get('error', 'Unknown error'),
-                    'action': action,
-                    'followed_vic20': follow_vic20
-                }
-            
         except Exception as e:
             logger.error(f"🐌💥 Terry v2 coordination failed: {e}", exc_info=True)
             logger.error("   Falling back to basic cache clear...")
@@ -672,10 +362,33 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
                     logger.info(f"🐌✅ Fallback cache clear succeeded")
             except Exception as fallback_error:
                 logger.error(f"🐌💥 Even fallback failed: {fallback_error}")
-            return {
-                'success': False,
-                'error': str(e)
-            }
+    
+    async def handle_coordination(self, coordination_request: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        LEGACY: Direct coordination handler (kept for backward compatibility).
+        
+        New code should use _handle_coordination_request via message protocol.
+        This method exists for any direct calls from VIC-20.
+        """
+        logger.warning("🐌⚠️ Using legacy handle_coordination - should use message protocol instead")
+        
+        # Convert to message format and call new handler
+        from ..distributed.message_protocol import AgentMessage, MessageType, Priority
+        
+        message = AgentMessage(
+            message_type=MessageType.COORDINATION_REQUEST,
+            sender="vic20_sage",
+            payload=coordination_request,
+            priority=Priority.HIGH if coordination_request.get('severity') in ['high', 'critical'] else Priority.NORMAL
+        )
+        
+        await self._handle_coordination_request(message)
+        
+        return {
+            'success': True,
+            'message': 'Processed via Terry v2 agentic system'
+        }
+    
     
     async def analyze_metrics(
         self,
