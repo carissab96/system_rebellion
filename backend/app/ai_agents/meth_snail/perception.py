@@ -130,64 +130,63 @@ class TerryPerception:
             self.logger.info(f"   ✓ Retrieved {len(recent_actions)} recent actions")
             
             # 4. BUILD CONTEXT
-            try:
-                # Extract basic info from coordination request
-                resource_type = coordination_request.get('resource_type', 'unknown')
-                severity = coordination_request.get('severity', 'unknown')
-                current_value = coordination_request.get('current_value', 0)
-                threshold = coordination_request.get('threshold', 0)
-                vic20_recommendation = coordination_request.get('recommendation', {})
-                full_metrics = coordination_request.get('full_metrics', {})
-                
-                # Check data quality - shell spin if bad data (NO FAKE DATA)
-                missing_metrics = []
-                invalid_metrics = []
-                
-                if not full_metrics:
-                    missing_metrics.append('full_metrics')
-                else:
-                    # Validate critical metrics exist
-                    required = ['cpu_usage', 'memory_usage', 'disk_usage']
-                    for metric in required:
-                        if metric not in full_metrics:
-                            missing_metrics.append(metric)
-                        elif full_metrics[metric] is None or full_metrics[metric] < 0:
-                            invalid_metrics.append(metric)
-                
-                # SHELL SPIN if data is bad
-                if missing_metrics or invalid_metrics:
-                    await self._trigger_shell_spin(
-                        missing_metrics=missing_metrics,
-                        invalid_metrics=invalid_metrics,
-                        reason=f"Bad data in coordination request: missing={missing_metrics}, invalid={invalid_metrics}"
-                    )
-                
-                # Continue with degraded data - Terry will note low confidence
-                context = PerceptionContext(
-                    full_metrics=full_metrics,
-                    resource_type=resource_type,
-                    current_value=current_value,
-                    threshold=threshold,
-                    severity=severity,
-                    vic20_recommendation=vic20_recommendation,
-                    similar_situations=similar_situations,
-                    recent_actions=recent_actions,
-                    agent_state=self.agent_state,
-                    override_success_rate=self.agent_state.get('override_success_rate', 0.5),
-                    timestamp=utc_now().isoformat(),
-                    shell_spin_count=len(self.shell_spin_incidents),
-                    data_quality_score=self._calculate_data_quality(
-                        missing_metrics=missing_metrics,
-                        invalid_metrics=invalid_metrics
-                    )
+            # Extract basic info from coordination request
+            resource_type = coordination_request.get('resource_type', 'unknown')
+            severity = coordination_request.get('severity', 'unknown')
+            current_value = coordination_request.get('current_value', 0)
+            threshold = coordination_request.get('threshold', 0)
+            vic20_recommendation = coordination_request.get('recommendation', {})
+            full_metrics = coordination_request.get('full_metrics', {})
+            
+            # Check data quality - shell spin if bad data (NO FAKE DATA)
+            missing_metrics = []
+            invalid_metrics = []
+            
+            if not full_metrics:
+                missing_metrics.append('full_metrics')
+            else:
+                # Validate critical metrics exist
+                required = ['cpu_usage', 'memory_usage', 'disk_usage']
+                for metric in required:
+                    if metric not in full_metrics:
+                        missing_metrics.append(metric)
+                    elif full_metrics[metric] is None or full_metrics[metric] < 0:
+                        invalid_metrics.append(metric)
+            
+            # SHELL SPIN if data is bad
+            if missing_metrics or invalid_metrics:
+                await self._trigger_shell_spin(
+                    missing_metrics=missing_metrics,
+                    invalid_metrics=invalid_metrics,
+                    reason=f"Bad data in coordination request: missing={missing_metrics}, invalid={invalid_metrics}"
                 )
-                
-                self.logger.info("🐌✅ Perception complete - Terry sees the full picture!")
-                return context
-                
-            except Exception as e:
-                self.logger.error(f"🐌💥 Perception failed: {e}", exc_info=True)
-                raise
+            
+            # Continue with degraded data - Terry will note low confidence
+            context = PerceptionContext(
+                full_metrics=full_metrics,
+                resource_type=resource_type,
+                current_value=current_value,
+                threshold=threshold,
+                severity=severity,
+                vic20_recommendation=vic20_recommendation,
+                similar_situations=similar_situations,
+                recent_actions=recent_actions,
+                agent_state=self.agent_state,
+                override_success_rate=self.agent_state.get('override_success_rate', 0.5),
+                timestamp=utc_now().isoformat(),
+                shell_spin_count=len(self.shell_spin_incidents),
+                data_quality_score=self._calculate_data_quality(
+                    missing_metrics=missing_metrics,
+                    invalid_metrics=invalid_metrics
+                )
+            )
+            
+            self.logger.info("🐌✅ Perception complete - Terry sees the full picture!")
+            return context
+            
+        except Exception as e:
+            self.logger.error(f"🐌💥 Perception failed: {e}", exc_info=True)
+            raise
     
     async def _trigger_shell_spin(
         self,
