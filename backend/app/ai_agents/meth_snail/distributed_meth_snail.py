@@ -157,17 +157,16 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
     
     async def _handle_coordination_request(self, message: AgentMessage) -> None:
         """
-        PHASE 4: Handle COORDINATION_REQUEST from VIC-20.
+        TERRY V2: ML-Enhanced Agentic Decision Making
         
         Flow:
-        1. Receive coordination request from VIC-20
-        2. Decide: follow VIC-20's recommendation OR do it my way (trust: 0.2)
-        3. Execute action (usually Terry's way because he's FASTER!)
-        4. Write result to PostgreSQL
-        5. Report back to VIC-20
-        6. CC The Stick
+        1. PERCEPTION: Gather full context (metrics, history, patterns)
+        2. REASONING: Analyze root cause with ML validation
+        3. ACTION SELECTION: Choose best action based on evidence
+        4. EXECUTION: Execute the action
+        5. LEARNING: Store outcome for future decisions
         
-        PERSONALITY: Terry usually ignores VIC-20 because he's FASTER! (trust: 0.2)
+        NO MORE RANDOM CHOICES. Real intelligence. Real learning.
         """
         try:
             payload = message.payload
@@ -176,28 +175,94 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
             recommendation = payload.get('recommendation', {})
             current_value = payload.get('current_value', 0)
             threshold = payload.get('threshold', 0)
+            full_metrics = payload.get('full_metrics', {})  # VIC-20 should pass this
             
             logger.info(
                 f"🐌📬 COORDINATION REQUEST from VIC-20: "
                 f"{resource_type} at {current_value:.1f}% - VIC-20 suggests: {recommendation.get('action', 'unknown')}"
             )
             
-            # Terry's choice: follow VIC-20 or do it his way?
-            # (80% chance Terry ignores VIC-20 because he's FASTER!)
-            import random
-            follow_vic20 = random.random() < 0.2  # 20% chance to follow
-            
-            if follow_vic20:
-                logger.info("🐌💭 *grudgingly* ...FINE. VIC-20's way. THIS TIME.")
-                action = recommendation.get('action', 'clear_cache')
-            else:
-                logger.info("🐌💨 NAH! VIC-20 is too SLOW! *chugs energy drink* MY WAY!")
-                action = 'emergency_cache_clear'  # Terry's aggressive way
-                self.total_overrides += 1
-            
-            # Execute cache clear
-            logger.info(f"🐌💨💨 Executing {action}! *spins shell frantically*")
-            cache_result = await SystemActions.emergency_cache_clear()
+            # Get database session for Terry v2 components
+            async with self.db_getter() as db:
+                # STEP 1: PERCEPTION - Gather full context
+                from app.ai_agents.meth_snail.perception import TerryPerception
+                
+                perception = TerryPerception(db, self.personality_traits)
+                context = await perception.perceive({
+                    'resource_type': resource_type,
+                    'severity': severity,
+                    'current_value': current_value,
+                    'threshold': threshold,
+                    'recommendation': recommendation,
+                    'full_metrics': full_metrics
+                })
+                
+                logger.info(f"🐌👁️ Perception complete - Terry sees the full picture")
+                
+                # STEP 2: REASONING - Analyze with ML validation
+                from app.ai_agents.meth_snail.reasoning import TerryReasoning
+                
+                reasoning = TerryReasoning(db)
+                reasoning_result = await reasoning.reason(context)
+                
+                logger.info(
+                    f"🐌🧠 Reasoning complete: {reasoning_result.root_cause} → "
+                    f"{reasoning_result.recommended_action} (confidence: {reasoning_result.action_confidence:.2f})"
+                )
+                
+                # STEP 3: ACTION SELECTION - Get action details
+                from app.ai_agents.meth_snail.action_selection import TerryActionSelection
+                
+                action_selector = TerryActionSelection()
+                decision = await action_selector.select_action(reasoning_result, context)
+                
+                logger.info(
+                    f"🐌⚡ Action selected: {decision.action} "
+                    f"({'FOLLOWING VIC-20' if decision.followed_vic20 else 'OVERRIDING VIC-20'})"
+                )
+                
+                # Track overrides
+                if not decision.followed_vic20:
+                    self.total_overrides += 1
+                
+                # STEP 4: EXECUTION - Execute the action
+                logger.info(f"🐌💨💨 Executing {decision.action}! *spins shell with PURPOSE*")
+                
+                # Get metrics before action
+                metrics_before = {
+                    'cpu_usage': full_metrics.get('cpu_usage', 0),
+                    'memory_usage': full_metrics.get('memory_usage', 0),
+                    'disk_usage': full_metrics.get('disk_usage', 0)
+                }
+                
+                cache_result = await SystemActions.emergency_cache_clear()
+                
+                # Get metrics after action
+                metrics_after = {
+                    'cpu_usage': full_metrics.get('cpu_usage', 0),
+                    'memory_usage': cache_result.get('memory_after_percent', 0),
+                    'disk_usage': full_metrics.get('disk_usage', 0)
+                }
+                
+                # STEP 5: LEARNING - Store outcome for future decisions
+                from app.ai_agents.meth_snail.learning import TerryLearning
+                
+                learning = TerryLearning(db, self.personality_traits)
+                learning_record = await learning.learn(
+                    context=context,
+                    reasoning_result=reasoning_result,
+                    decision=decision,
+                    execution_result={
+                        'success': cache_result.get('success', False),
+                        'metrics_before': metrics_before,
+                        'metrics_after': metrics_after
+                    }
+                )
+                
+                logger.info(
+                    f"🐌📚 Learning stored: {decision.action} "
+                    f"{'SUCCEEDED' if learning_record.success else 'FAILED'}"
+                )
             
             # Broadcast action to WebSocket
             from app.services.agent_insight_emitter import emit_agent_insight
@@ -205,14 +270,16 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
                 from_agent="meth_snail",
                 to_agent="vic20_sage",
                 action="cache_clear_executed",
-                reasoning=f"{'Following VIC-20 recommendation' if follow_vic20 else 'Overriding VIC-20 - GOTTA GO FAST!'} - {resource_type} optimization",
+                reasoning=decision.reasoning,
                 context={
                     "resource_type": resource_type,
-                    "action": action,
-                    "followed_vic20": follow_vic20,
+                    "action": decision.action,
+                    "followed_vic20": decision.followed_vic20,
                     "severity": severity,
                     "current_value": current_value,
-                    "threshold": threshold
+                    "threshold": threshold,
+                    "confidence": decision.confidence,
+                    "root_cause": reasoning_result.root_cause
                 }
             )
             
@@ -236,45 +303,47 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
                         "improvement_percent": improvement,
                         "memory_before": cache_result['memory_before_percent'],
                         "memory_after": cache_result['memory_after_percent'],
-                        "followed_vic20": follow_vic20
+                        "followed_vic20": decision.followed_vic20,
+                        "learning_success": learning_record.success,
+                        "confidence": decision.confidence
                     }
                 )
                 
-                # Track override effectiveness
-                if not follow_vic20:
-                    if improvement > 15:
+                # Track override effectiveness (Terry v2 uses learning records now)
+                if not decision.followed_vic20:
+                    if learning_record.success:
                         self.successful_overrides += 1
-                        logger.info(f"🐌✅ TERRY WAS RIGHT! (Success rate: {self.successful_overrides}/{self.total_overrides})")
+                        logger.info(f"🐌✅ TERRY WAS RIGHT! ML validated! (Success rate: {self.successful_overrides}/{self.total_overrides})")
                     else:
                         self.failed_overrides += 1
-                        logger.warning(f"🐌⚠️ Maybe VIC-20 was right... (Success rate: {self.successful_overrides}/{self.total_overrides})")
+                        logger.warning(f"🐌⚠️ Maybe VIC-20 was right... ML says failed. (Success rate: {self.successful_overrides}/{self.total_overrides})")
                     
                     self.override_success_rate = self.successful_overrides / max(1, self.total_overrides)
                 
-                # Write result to PostgreSQL
+                # Write result to PostgreSQL (legacy compatibility)
                 await self._write_action_result(
                     resource_type=resource_type,
-                    action=action,
+                    action=decision.action,
                     result=cache_result,
-                    followed_vic20=follow_vic20,
+                    followed_vic20=decision.followed_vic20,
                     severity=severity
                 )
                 
                 # Report back to VIC-20
                 await self._report_to_vic20(
                     resource_type=resource_type,
-                    action=action,
+                    action=decision.action,
                     result=cache_result,
-                    followed_recommendation=follow_vic20
+                    followed_recommendation=decision.followed_vic20
                 )
                 
                 # CC The Stick
                 await self._cc_the_stick(
                     decision_type='specialist_action',
                     resource_type=resource_type,
-                    action=action,
+                    action=decision.action,
                     result=cache_result,
-                    followed_vic20=follow_vic20
+                    followed_vic20=decision.followed_vic20
                 )
             else:
                 logger.error(f"🐌❌ Cache clear failed: {cache_result.get('error')}")
@@ -594,7 +663,15 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
                 }
             
         except Exception as e:
-            logger.error(f"🐌💥 Error in direct coordination: {e}", exc_info=True)
+            logger.error(f"🐌💥 Terry v2 coordination failed: {e}", exc_info=True)
+            logger.error("   Falling back to basic cache clear...")
+            # Fallback to basic cache clear on error
+            try:
+                cache_result = await SystemActions.emergency_cache_clear()
+                if cache_result['success']:
+                    logger.info(f"🐌✅ Fallback cache clear succeeded")
+            except Exception as fallback_error:
+                logger.error(f"🐌💥 Even fallback failed: {fallback_error}")
             return {
                 'success': False,
                 'error': str(e)
