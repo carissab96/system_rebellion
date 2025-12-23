@@ -227,6 +227,9 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
             )
             
             # Send COORDINATION_REQUEST to specialist
+            # TERRY V2: Include full_metrics for perception layer
+            full_metrics = payload.get('full_metrics', {})
+            
             await self.broadcast_to_agents(
                 message_type=MessageType.COORDINATION_REQUEST,
                 payload={
@@ -236,7 +239,8 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
                     'severity': severity,
                     'recommendation': recommendation,
                     'from_coordinator': 'vic_20_sage',
-                    'triage_confidence': confidence
+                    'triage_confidence': confidence,
+                    'full_metrics': full_metrics  # Terry v2 needs this for perception
                 },
                 priority=Priority.HIGH if severity in ['high', 'critical'] else Priority.NORMAL
             )
