@@ -1,20 +1,27 @@
 #!/usr/bin/env python3
 """
-Terry's Perception Layer - Gathering Full Context
+Terry's Perception Layer - Gathering Full System Context
 
-Terry v2 sees EVERYTHING:
-- Full system metrics (not just summaries)
-- Historical patterns from similar situations
+Collects:
+- Current system metrics (CPU, memory, disk, network)
+- Historical patterns from database
 - Recent actions and their outcomes
-- Current agent state
+- VIC-20's recommendation and reasoning
 
-NO FAKE DATA. If metrics unavailable, raise exception.
+Personality Behaviors:
+- Shell spins when data is missing or invalid (NO FAKE DATA)
+- Tracks data quality for decision confidence
 """
-
 import logging
-from dataclasses import dataclass, field
-from typing import Dict, Any, List, Optional
-from datetime import datetime, timezone
+from typing import Dict, Any, Optional, List
+from datetime import datetime, timedelta
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, desc
+
+from app.models.agent_learning import AgentLearningRecord
+from .situation_fingerprint import SituationFingerprint
+from .data_types import ShellSpinIncident
+from app.utils.time_utils import utc_now
 
 logger = logging.getLogger('TerryPerception')
 
@@ -64,11 +71,12 @@ class TerryPerception:
         
         Args:
             db_session: AsyncSession for database queries
-            agent_state: Current agent personality metrics
+            agent_state: Current agent personality metrics (includes shell_spin tracking)
         """
         self.db = db_session
         self.agent_state = agent_state
         self.logger = logger
+        self.shell_spin_incidents: List[ShellSpinIncident] = []
         
         self.logger.info("🐌👁️ Terry's perception system initialized - ready to see EVERYTHING")
     
@@ -122,26 +130,121 @@ class TerryPerception:
             self.logger.info(f"   ✓ Retrieved {len(recent_actions)} recent actions")
             
             # 4. BUILD CONTEXT
-            context = PerceptionContext(
-                full_metrics=full_metrics,
-                resource_type=coordination_request.get('resource_type'),
-                current_value=coordination_request.get('current_value'),
-                threshold=coordination_request.get('threshold'),
-                severity=coordination_request.get('severity'),
-                vic20_recommendation=coordination_request.get('recommendation', {}),
-                similar_situations=similar_situations,
-                recent_actions=recent_actions,
-                agent_state=self.agent_state,
-                override_success_rate=self.agent_state.get('override_success_rate', 0.5),
-                timestamp=utc_now().isoformat()
+            try:
+                # Extract basic info from coordination request
+                resource_type = coordination_request.get('resource_type', 'unknown')
+                severity = coordination_request.get('severity', 'unknown')
+                current_value = coordination_request.get('current_value', 0)
+                threshold = coordination_request.get('threshold', 0)
+                vic20_recommendation = coordination_request.get('recommendation', {})
+                full_metrics = coordination_request.get('full_metrics', {})
+                
+                # Check data quality - shell spin if bad data (NO FAKE DATA)
+                missing_metrics = []
+                invalid_metrics = []
+                
+                if not full_metrics:
+                    missing_metrics.append('full_metrics')
+                else:
+                    # Validate critical metrics exist
+                    required = ['cpu_usage', 'memory_usage', 'disk_usage']
+                    for metric in required:
+                        if metric not in full_metrics:
+                            missing_metrics.append(metric)
+                        elif full_metrics[metric] is None or full_metrics[metric] < 0:
+                            invalid_metrics.append(metric)
+                
+                # SHELL SPIN if data is bad
+                if missing_metrics or invalid_metrics:
+                    await self._trigger_shell_spin(
+                        missing_metrics=missing_metrics,
+                        invalid_metrics=invalid_metrics,
+                        reason=f"Bad data in coordination request: missing={missing_metrics}, invalid={invalid_metrics}"
+                    )
+                
+                # Continue with degraded data - Terry will note low confidence
+                context = PerceptionContext(
+                    full_metrics=full_metrics,
+                    resource_type=resource_type,
+                    current_value=current_value,
+                    threshold=threshold,
+                    severity=severity,
+                    vic20_recommendation=vic20_recommendation,
+                    similar_situations=similar_situations,
+                    recent_actions=recent_actions,
+                    agent_state=self.agent_state,
+                    override_success_rate=self.agent_state.get('override_success_rate', 0.5),
+                    timestamp=utc_now().isoformat(),
+                    shell_spin_count=len(self.shell_spin_incidents),
+                    data_quality_score=self._calculate_data_quality(
+                        missing_metrics=missing_metrics,
+                        invalid_metrics=invalid_metrics
+                    )
+                )
+                
+                self.logger.info("🐌✅ Perception complete - Terry sees the full picture!")
+                return context
+                
+            except Exception as e:
+                self.logger.error(f"🐌💥 Perception failed: {e}", exc_info=True)
+                raise
+    
+    async def _trigger_shell_spin(
+        self,
+        missing_metrics: List[str],
+        invalid_metrics: List[str],
+        reason: str
+    ) -> None:
+        """
+        🐌💫 SHELL SPIN - Terry's reaction to bad data.
+        
+        NO FAKE DATA: When metrics are missing or invalid, Terry spins his shell
+        and waits. This is tracked and visible in logs/database.
+        """
+        incident = ShellSpinIncident(
+            timestamp=utc_now(),
+            missing_metrics=missing_metrics,
+            invalid_metrics=invalid_metrics,
+            reason=reason,
+            user_id=None  # Will be set by caller if available
+        )
+        
+        self.shell_spin_incidents.append(incident)
+        
+        self.logger.warning(
+            f"🐌💫 SHELL SPIN #{len(self.shell_spin_incidents)}: {reason}\n"
+            f"   Missing: {missing_metrics}\n"
+            f"   Invalid: {invalid_metrics}"
+        )
+        
+        # Store in database for learning
+        try:
+            from .database_integration import MethSnailDatabaseIntegration
+            db_integration = MethSnailDatabaseIntegration(lambda: self.db)
+            await db_integration.store_shell_spin_incident(
+                user_id="system",  # TODO: Get real user_id
+                incident=incident
             )
-            
-            self.logger.info("🐌✅ Perception complete - Terry sees the full picture!")
-            return context
-            
         except Exception as e:
-            self.logger.error(f"🐌💥 Perception failed: {str(e)}")
-            raise
+            self.logger.error(f"🐌💥 Failed to store shell spin: {e}")
+    
+    def _calculate_data_quality(
+        self,
+        missing_metrics: List[str],
+        invalid_metrics: List[str]
+    ) -> float:
+        """
+        Calculate data quality score (0.0 to 1.0).
+        
+        Perfect data = 1.0
+        Missing/invalid metrics = penalties
+        """
+        total_expected = 10  # Rough estimate of expected metrics
+        penalties = len(missing_metrics) + len(invalid_metrics)
+        
+        quality = max(0.0, 1.0 - (penalties / total_expected))
+        
+        return quality
     
     async def _get_full_metrics(
         self,

@@ -7,11 +7,17 @@ Maps root causes to available actions and selects the best one based on:
 - Historical success rates
 - Personality bias (Terry loves cache clears!)
 - Risk assessment
+
+Personality Behaviors:
+- Requests energy drink authorization from Hawk when overriding VIC-20
+- Hawk can VETO if Terry's had too many energy drinks
 """
 
 import logging
 from dataclasses import dataclass
 from typing import Dict, Any, List, Optional
+
+from .energy_drink_system import EnergyDrinkSystem
 
 logger = logging.getLogger('TerryActionSelection')
 
@@ -27,6 +33,8 @@ class ActionDecision:
     expected_outcome: str
     risk_level: str  # 'low', 'medium', 'high'
     reversible: bool
+    energy_drink_consumed: bool = False
+    hawk_veto: bool = False
 
 
 class TerryActionSelection:
@@ -86,6 +94,7 @@ class TerryActionSelection:
     def __init__(self):
         """Initialize action selection system"""
         self.logger = logger
+        self.energy_drink_system = EnergyDrinkSystem()
         self.logger.info("🐌⚡ Terry's action selection initialized - ready to choose!")
     
     async def select_action(
@@ -115,15 +124,41 @@ class TerryActionSelection:
         if recommended_action and recommended_action != 'unknown':
             self.logger.info(f"   ✓ Using reasoning engine's recommendation: {recommended_action}")
             
+            vic20_action = context.vic20_recommendation.get('action')
+            followed_vic20 = (recommended_action == vic20_action)
+            
+            # Check if Terry needs energy drink to override VIC-20
+            energy_drink_consumed = False
+            hawk_veto = False
+            reasoning = f"Using learned action {recommended_action} for {root_cause} (confidence: {confidence:.2f})"
+            
+            if not followed_vic20 and recommended_action in ['emergency_cache_clear', 'restart_service']:
+                authorization = await self.energy_drink_system.request_authorization(
+                    action=recommended_action,
+                    reason=f"Override VIC-20 to execute learned action {recommended_action}"
+                )
+                
+                if authorization.authorized:
+                    energy_drink_consumed = True
+                    reasoning += f" (Energy drink authorized by {authorization.authorized_by})"
+                else:
+                    # HAWK VETO - must follow VIC-20
+                    hawk_veto = True
+                    followed_vic20 = True
+                    recommended_action = vic20_action
+                    reasoning = f"Hawk vetoed override - following VIC-20: {authorization.authorization_notes}"
+            
             return ActionDecision(
                 action=recommended_action,
                 parameters=self._get_action_parameters(recommended_action, context),
-                confidence=confidence,
-                followed_vic20=reasoning_result.followed_vic20,
-                reasoning=reasoning_result.reasoning,
-                expected_outcome=f"Resolve {root_cause}",
+                confidence=confidence if not hawk_veto else 0.6,
+                followed_vic20=followed_vic20,
+                reasoning=reasoning,
+                expected_outcome=f"Resolve {root_cause} based on historical success",
                 risk_level=self.ACTION_RISKS.get(recommended_action, 'medium'),
-                reversible=True
+                reversible=True,
+                energy_drink_consumed=energy_drink_consumed,
+                hawk_veto=hawk_veto
             )
         
         # Otherwise, select from action map based on root cause
@@ -161,15 +196,40 @@ class TerryActionSelection:
         
         self.logger.info(f"   ✓ Selected: {action_name} (score: {action_score:.2f})")
         
+        # Check if Terry needs energy drink to override VIC-20
+        vic20_action = context.vic20_recommendation.get('action')
+        followed_vic20 = (action_name == vic20_action)
+        energy_drink_consumed = False
+        hawk_veto = False
+        reasoning = f"Selected {action_name} for {root_cause} based on action scoring"
+        
+        if not followed_vic20 and action_name in ['emergency_cache_clear', 'restart_service']:
+            authorization = await self.energy_drink_system.request_authorization(
+                action=action_name,
+                reason=f"Override VIC-20 to execute {action_name}"
+            )
+            
+            if authorization.authorized:
+                energy_drink_consumed = True
+                reasoning += f" (Energy drink authorized by {authorization.authorized_by})"
+            else:
+                # HAWK VETO - must follow VIC-20
+                hawk_veto = True
+                followed_vic20 = True
+                action_name = vic20_action
+                reasoning = f"Hawk vetoed override - following VIC-20: {authorization.authorization_notes}"
+        
         return ActionDecision(
             action=action_name,
             parameters=self._get_action_parameters(action_name, context),
-            confidence=min(0.95, action_score),  # Cap at 0.95
-            followed_vic20=(action_name == context.vic20_recommendation.get('action')),
-            reasoning=f"Selected {action_name} for {root_cause} based on action scoring",
+            confidence=min(0.95, action_score) if not hawk_veto else 0.6,
+            followed_vic20=followed_vic20,
+            reasoning=reasoning,
             expected_outcome=f"Resolve {root_cause}",
             risk_level=self.ACTION_RISKS.get(action_name, 'medium'),
-            reversible=True
+            reversible=True,
+            energy_drink_consumed=energy_drink_consumed,
+            hawk_veto=hawk_veto
         )
     
     def _score_actions(
