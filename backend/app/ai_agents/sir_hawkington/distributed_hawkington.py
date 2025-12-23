@@ -307,7 +307,7 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
         
         return decision
     
-    async def _handle_resource_alert(self, alert):
+    async def _handle_own_resource_alert(self, alert):
         """
         🎯 TRIAGE LOGIC: Sir Hawkington's primary role as system monitor.
         
@@ -323,6 +323,30 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
             alert: ResourceAlert from the monitor
         """
         print(f"\n🔔 HAWK ALERT CALLBACK TRIGGERED!")
+        print(f"   Alert payload: {alert.payload}")
+        
+        # Call the triage logic
+        await self._perform_triage(alert)
+    
+    async def _handle_resource_alert(self, message: AgentMessage):
+        """
+        Handle resource alerts from other agents via message bus.
+        
+        Args:
+            message: AgentMessage with resource alert from another agent
+        """
+        # Sir Hawkington is the sole system monitor, so he doesn't need to
+        # handle resource alerts from other agents - he generates them all
+        pass
+    
+    async def _perform_triage(self, alert):
+        """
+        Perform triage assessment and routing.
+        
+        Args:
+            alert: ResourceAlert from the monitor
+        """
+        print(f"\n🔔 PERFORMING TRIAGE!")
         print(f"   Alert payload: {alert.payload}")
         
         severity = alert.payload['severity']
