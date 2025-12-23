@@ -1,11 +1,16 @@
 from typing import List, Dict, Tuple
 import numpy as np
-#from sklearn.cluster import DBSCAN
-#from sklearn.preprocessing import StandardScaler
-from datetime import datetime, timedelta
+from sklearn.cluster import DBSCAN
+from sklearn.preprocessing import StandardScaler
+from datetime import datetime, timedelta, timezone
 import logging
 
 logger = logging.getLogger(__name__)
+
+def utc_now():
+    """Get current UTC time"""
+    return datetime.now(timezone.utc)
+
 
 class PatternLearner:
     """Advanced pattern learning for system optimization"""

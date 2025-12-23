@@ -1,6 +1,6 @@
 from typing import Dict, List, Optional
 import numpy as np
-#from sentence_transformers import SentenceTransformer
+from sentence_transformers import SentenceTransformer
 
 class PatternMatcher:
     def __init__(self):

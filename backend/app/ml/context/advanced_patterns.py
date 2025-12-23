@@ -1,12 +1,39 @@
 from typing import Dict, List, Tuple
 import numpy as np
-#from sklearn.ensemble import IsolationForest
-#from sklearn.preprocessing import StandardScaler
-#import tensorflow as tf
-from datetime import datetime, timedelta
+from sklearn.ensemble import IsolationForest
+from sklearn.preprocessing import StandardScaler
+import torch
+import torch.nn as nn
+from datetime import datetime, timedelta, timezone
 import logging
 
 logger = logging.getLogger(__name__)
+
+def utc_now():
+    """Get current UTC time"""
+    return datetime.now(timezone.utc)
+
+
+class LSTMPredictor(nn.Module):
+    """PyTorch LSTM model for sequence prediction"""
+    
+    def __init__(self, input_size=1, hidden_size=64, output_size=1):
+        super(LSTMPredictor, self).__init__()
+        self.hidden_size = hidden_size
+        self.lstm = nn.LSTM(input_size, hidden_size, batch_first=True)
+        self.fc1 = nn.Linear(hidden_size, 32)
+        self.relu = nn.ReLU()
+        self.fc2 = nn.Linear(32, output_size)
+        self.sigmoid = nn.Sigmoid()
+    
+    def forward(self, x):
+        lstm_out, _ = self.lstm(x)
+        out = self.fc1(lstm_out[:, -1, :])
+        out = self.relu(out)
+        out = self.fc2(out)
+        out = self.sigmoid(out)
+        return out
+
 
 class AdvancedPatternDetector:
     """Advanced pattern detection using multiple ML techniques"""
@@ -17,17 +44,9 @@ class AdvancedPatternDetector:
         self._build_sequence_model()
         
     def _build_sequence_model(self):
-        """Build LSTM model for sequence prediction"""
-        self.sequence_model = tf.keras.Sequential([
-            tf.keras.layers.LSTM(64, input_shape=(None, 10)),
-            tf.keras.layers.Dense(32, activation='relu'),
-            tf.keras.layers.Dense(1, activation='sigmoid')
-        ])
-        self.sequence_model.compile(
-            optimizer='adam',
-            loss='binary_crossentropy',
-            metrics=['accuracy']
-        )
+        """Build LSTM model for sequence prediction using PyTorch"""
+        self.sequence_model = LSTMPredictor(input_size=1, hidden_size=64, output_size=1)
+        self.sequence_model.eval()  # Set to evaluation mode
     
     def detect_anomalies(self, data: np.ndarray) -> List[bool]:
         """Detect anomalous patterns in data"""
@@ -37,16 +56,20 @@ class AdvancedPatternDetector:
     def predict_sequence(self, 
                         sequence: np.ndarray,
                         horizon: int = 5) -> np.ndarray:
-        """Predict future sequence values"""
+        """Predict future sequence values using PyTorch"""
         scaled_seq = self.scaler.fit_transform(sequence)
         predictions = []
         
-        for _ in range(horizon):
-            pred = self.sequence_model.predict(
-                scaled_seq[-10:].reshape(1, -1, 10)
-            )
-            predictions.append(pred[0, 0])
-            scaled_seq = np.append(scaled_seq, pred)
+        with torch.no_grad():
+            for _ in range(horizon):
+                # Take last 10 values and reshape for LSTM
+                input_seq = torch.FloatTensor(scaled_seq[-10:]).reshape(1, 10, 1)
+                # Predict next value
+                pred = self.sequence_model(input_seq)
+                pred_value = pred.item()
+                predictions.append(pred_value)
+                # Append prediction to sequence for next iteration
+                scaled_seq = np.append(scaled_seq, [[pred_value]], axis=0)
             
         return self.scaler.inverse_transform(
             np.array(predictions).reshape(-1, 1)
