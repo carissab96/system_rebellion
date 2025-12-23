@@ -9,14 +9,28 @@ Terry v2 doesn't just see "CPU is high" - he understands WHY:
 - Network-bound (network activity causing CPU load)
 
 Then combines root cause analysis with historical learning to make informed decisions.
+
+ML-ENHANCED: Uses pattern validation, anomaly detection, and temporal clustering
+for statistically validated decisions.
 """
 
 import logging
+import numpy as np
 from dataclasses import dataclass, field
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone
 
 logger = logging.getLogger('TerryReasoning')
+
+# Import ML components (graceful fallback if unavailable)
+try:
+    from app.ml.pattern_recognition.pattern_validator import PatternValidator
+    from app.ml.context.pattern_learning import PatternLearner
+    from app.ml.context.advanced_patterns import AdvancedPatternDetector
+    ML_AVAILABLE = True
+except ImportError as e:
+    logger.warning(f"ML components unavailable: {e}")
+    ML_AVAILABLE = False
 
 UTC = timezone.utc
 
@@ -86,7 +100,7 @@ class TerryReasoning:
     
     def __init__(self, db_session):
         """
-        Initialize reasoning engine.
+        Initialize reasoning engine with ML enhancement.
         
         Args:
             db_session: AsyncSession for database queries
@@ -94,16 +108,32 @@ class TerryReasoning:
         self.db = db_session
         self.logger = logger
         
-        self.logger.info("🐌🧠 Terry's reasoning engine initialized - ready to think!")
+        # Initialize ML components if available
+        self.ml_enabled = ML_AVAILABLE
+        if self.ml_enabled:
+            try:
+                self.pattern_validator = PatternValidator()
+                self.pattern_learner = PatternLearner()
+                self.anomaly_detector = AdvancedPatternDetector()
+                self.logger.info("🐌🧠🤖 Terry's ML-enhanced reasoning initialized!")
+            except Exception as e:
+                self.logger.warning(f"ML initialization failed: {e}, falling back to basic reasoning")
+                self.ml_enabled = False
+        else:
+            self.logger.info("🐌🧠 Terry's reasoning engine initialized (ML unavailable)")
     
     async def reason(self, context) -> ReasoningResult:
         """
         Analyze the situation and determine best action.
         
+        ML-ENHANCED: Adds pattern validation, anomaly detection, and temporal clustering
+        
         This is where Terry goes from reactive to intelligent:
         - Analyzes WHY the problem exists (root cause)
+        - ML validates this is a real pattern (not noise)
+        - Detects if this is an anomaly (truly unusual)
         - Learns from similar past situations
-        - Synthesizes a decision based on evidence + history
+        - Synthesizes a decision based on evidence + history + ML validation
         
         Args:
             context: PerceptionContext with full situational awareness
@@ -113,19 +143,61 @@ class TerryReasoning:
         """
         self.logger.info("🐌🧠 Terry reasoning about the situation...")
         
-        # 1. ROOT CAUSE ANALYSIS
+        # 1. ROOT CAUSE ANALYSIS (domain knowledge)
         root_cause = await self._analyze_root_cause(context)
         self.logger.info(f"   ✓ Root cause: {root_cause.cause} (confidence: {root_cause.confidence:.2f})")
         
-        # 2. HISTORICAL LEARNING
+        # 2. ML VALIDATION (if available)
+        ml_boost = 0.0
+        is_anomaly = False
+        
+        if self.ml_enabled:
+            # Validate this pattern is statistically significant
+            pattern_validation = await self._validate_pattern_ml(context, root_cause)
+            
+            # Detect if this is an anomaly
+            is_anomaly = await self._detect_anomaly_ml(context)
+            
+            if pattern_validation['is_valid']:
+                ml_boost = pattern_validation['confidence'] * 0.2
+                self.logger.info(f"   ✓ ML validated pattern (boost: +{ml_boost:.2f})")
+            else:
+                self.logger.info(f"   ⚠️ ML says pattern not statistically significant (samples: {pattern_validation.get('sample_count', 0)})")
+            
+            if is_anomaly:
+                self.logger.info(f"   🚨 ML detected anomaly - this is truly unusual!")
+        
+        # 3. HISTORICAL LEARNING (with ML boost)
         learning = await self._apply_historical_learning(context, root_cause)
+        learning.confidence_boost += ml_boost
         self.logger.info(f"   ✓ Found {learning.similar_situations_found} similar situations (match level: {learning.match_level})")
         
-        # 3. DECISION SYNTHESIS
+        # 4. DECISION SYNTHESIS (ML-aware)
         decision = await self._synthesize_decision(root_cause, learning, context)
+        
+        # Add ML insights to reasoning
+        if self.ml_enabled and is_anomaly:
+            decision.reasoning += " ML detected anomaly."
+        
         self.logger.info(f"   ✓ Decision: {decision.recommended_action} (confidence: {decision.action_confidence:.2f})")
         
         return decision
+    
+    async def _validate_pattern_ml(self, context, root_cause) -> Dict[str, Any]:
+        """
+        Validate pattern using ML PatternValidator.
+        
+        Requires 85% confidence and 5+ samples before trusting pattern.
+        """
+        from app.ai_agents.meth_snail.ml_helpers import validate_pattern_ml
+        return await validate_pattern_ml(self.pattern_validator, context, root_cause)
+    
+    async def _detect_anomaly_ml(self, context) -> bool:
+        """
+        Detect if current metrics are anomalous using IsolationForest.
+        """
+        from app.ai_agents.meth_snail.ml_helpers import detect_anomaly_ml
+        return await detect_anomaly_ml(self.anomaly_detector, context)
     
     async def _analyze_root_cause(self, context) -> RootCauseAnalysis:
         """

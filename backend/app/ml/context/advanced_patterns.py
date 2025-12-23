@@ -207,7 +207,7 @@ class OptimizationPlanner:
         # Add current observation
         self.workload_predictor.add_observation(
             user_id=user_id,
-            timestamp=utc_now()
+            timestamp=utc_now(),
             activity=current_context.get('current_activity', 'unknown'),
             resources={
                 'cpu': np.mean(current_context.get('cpu_usage', [0])),

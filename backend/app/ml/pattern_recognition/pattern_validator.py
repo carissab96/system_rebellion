@@ -1,6 +1,11 @@
 from typing import Dict, List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import numpy as np
+
+def utc_now():
+    """Get current UTC time"""
+    return datetime.now(timezone.utc)
+
 
 class PatternValidator:
     def __init__(self):
@@ -70,7 +75,7 @@ class PatternValidator:
 
     def _clean_old_samples(self, pattern_data: Dict):
         """Remove samples outside validation window"""
-        cutoff_time = utc_now()lf.validation_window
+        cutoff_time = utc_now() - self.validation_window
         pattern_data['samples'] = [
             sample for sample in pattern_data['samples']
             if sample['timestamp'] > cutoff_time
