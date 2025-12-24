@@ -14,14 +14,13 @@ Personality Behaviors:
 """
 import logging
 from typing import Dict, Any, Optional, List
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
 
 from app.models.agent_learning import AgentLearningRecord
 from .situation_fingerprint import SituationFingerprint
 from .data_types import ShellSpinIncident
-from app.utils.time_utils import utc_now
 
 logger = logging.getLogger('TerryPerception')
 
