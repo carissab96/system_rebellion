@@ -358,40 +358,23 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
                 'triage_confidence': confidence
             }
             
-            # Call specialist directly via agent_manager
-            specialist_result = None
-            if hasattr(self, '_agent_manager') and self._agent_manager:
-                try:
-                    logger.info("=" * 80)
-                    logger.info(f"🖥️📞 DIRECT CALL: VIC-20 → {specialist.upper()}")
-                    logger.info(f"    Action: {recommendation['action']}")
-                    logger.info(f"    Confidence: {recommendation['confidence']:.2f}")
-                    logger.info("=" * 80)
-                    
-                    specialist_result = await self._agent_manager.call_agent(
-                        specialist,
-                        'handle_coordination',
-                        coordination_request=coordination_request
-                    )
-                    
-                    logger.info("=" * 80)
-                    logger.info(f"🖥️✅ DIRECT CALL RESULT: {specialist.upper()} responded successfully={specialist_result.get('success', False)}")
-                    if specialist_result.get('success'):
-                        logger.info(f"    Action taken: {specialist_result.get('action', 'unknown')}")
-                        logger.info(f"    Followed VIC-20: {specialist_result.get('followed_vic20', 'unknown')}")
-                    logger.info("=" * 80)
-                except Exception as e:
-                    logger.error(f"🖥️💥 Error calling specialist {specialist}: {e}")
-                    specialist_result = {'success': False, 'error': str(e)}
-            else:
-                logger.debug("🖥️ Agent manager not available yet, skipping direct call")
+            # Send coordination request via message protocol (Terry v2 flow)
+            logger.info("=" * 80)
+            logger.info(f"🖥️📨 MESSAGE PROTOCOL: VIC-20 → {specialist.upper()}")
+            logger.info(f"    Action: {recommendation['action']}")
+            logger.info(f"    Confidence: {recommendation['confidence']:.2f}")
+            logger.info(f"    Using new message protocol for Terry v2 ML flow")
+            logger.info("=" * 80)
             
-            # Broadcast coordination to Redis for frontend observability
-            await self.broadcast_to_agents(
+            # Send COORDINATION_REQUEST message to specialist
+            await self.send_message(
                 message_type=MessageType.COORDINATION_REQUEST,
+                to_agent=specialist,
                 payload=coordination_request,
                 priority=Priority.HIGH if severity in ['high', 'critical'] else Priority.NORMAL
             )
+            
+            logger.info(f"🖥️✅ Coordination request sent to {specialist} via message protocol")
             
             # Broadcast coordination to WebSocket
             from app.services.agent_insight_emitter import emit_agent_insight
