@@ -41,6 +41,12 @@ from ..distributed.action_verification import (
 )
 from .decision_engine_sbcV3 import HamstersBrainV3, BeerLevel, DuctTapeGrade
 
+# Import Hamsters v2 ML layers
+from .perception import HamstersPerception, HamstersPerceptionContext
+from .reasoning import HamstersReasoning, StorageReasoning
+from .action_selection import HamstersActionSelection, StorageFixAction
+from .learning import HamstersLearning, HamstersLearningRecord
+
 
 logger = logging.getLogger("Hamsters.Distributed")
 
@@ -154,133 +160,175 @@ class HamstersDistributed(AgentDecisionEngine, HamstersBrainV3):
     
     async def _handle_coordination_request(self, message: AgentMessage) -> None:
         """
-        Handle coordination requests from VIC-20 - Steve, Bob, and Carl reach consensus.
+        🐹🐹🐹 HAMSTERS V2: ML-Enhanced Telepathic Consensus
         
-        PERSONALITY: Telepathic consensus with beer-powered decisions (trust: 0.8)
-        STRUCTURE: Standard AgentMessage parameter (required by base class)
+        Flow: Perception → Reasoning → Action Selection → Learning
+        
+        Steve, Bob, and Carl reach telepathic consensus using ML.
         
         Args:
             message: AgentMessage with coordination request from VIC-20
         """
+        logger.info(f"\n{'='*80}")
+        logger.info(f"🐹🎯 HAMSTERS V2 TELEPATHIC CONSENSUS INITIATED")
+        logger.info(f"{'='*80}")
+        
+        # Extract payload
+        payload = message.payload
+        resource_type = payload.get('resource_type', 'unknown')
+        severity = payload.get('severity', 'unknown')
+        recommendation = payload.get('recommendation', {})
+        current_value = payload.get('current_value', 0)
+        threshold = payload.get('threshold', 0)
+        
+        logger.info(
+            f"🐹📬 Coordination request from VIC-20: {resource_type} at {current_value:.1f}% "
+            f"(severity: {severity}, VIC-20 suggests: {recommendation.get('action', 'unknown')})"
+        )
+        
         try:
-            # Extract payload (STANDARD - matches Terry's pattern)
-            payload = message.payload
-            resource_type = payload.get('resource_type', 'unknown')
-            severity = payload.get('severity', 'unknown')
-            recommendation = payload.get('recommendation', {})
-            current_value = payload.get('current_value', 0)
-            threshold = payload.get('threshold', 0)
-            
-            logger.info(
-                f"🐹📬 COORDINATION REQUEST from VIC-20: "
-                f"{resource_type} at {current_value:.1f}% - VIC-20 suggests: {recommendation.get('action', 'unknown')}"
-            )
-            
-            # Use choice engine to decide whether to follow recommendation
-            decision = self.choice_engine.should_follow_recommendation(
-                recommendation=recommendation,
-                current_situation={
+            # Get database session for ML layers
+            async for db in self.db_getter():
+                # 🎯 STEP 1: PERCEPTION - Telepathic storage assessment
+                logger.info("🐹👁️ Perception phase (telepathic assessment)...")
+                perception = HamstersPerception(db, self.personality_traits)
+                
+                storage_alert = {
                     'resource_type': resource_type,
                     'current_value': current_value,
-                    'threshold': threshold
+                    'threshold': threshold,
+                    'severity': severity,
+                    'fragmentation': payload.get('fragmentation', 0.0),
+                    'available_space_gb': payload.get('available_space_gb', 0.0),
+                    'inode_usage': payload.get('inode_usage', 0.0)
                 }
-            )
-            
-            logger.info(
-                f"🐹🧠 Telepathic consensus reached: "
-                f"{'FOLLOW' if decision['followed_recommendation'] else 'OVERRIDE'} VIC-20's recommendation"
-            )
-            logger.info(f"🐹💭 {decision['reasoning']}")
-            
-            # Execute disk cleanup (Hamsters' specialty)
-            action = decision['final_action']
-            logger.info("🐹🔧 Executing disk cleanup with defrag!")
-            
-            # Broadcast action to WebSocket
-            from app.services.agent_insight_emitter import emit_agent_insight
-            await emit_agent_insight(
-                from_agent="hamsters",
-                to_agent="vic20_sage",
-                action="disk_cleanup_executed",
-                reasoning=f"{'Following VIC-20 recommendation' if decision['followed_recommendation'] else 'Overriding VIC-20 - HOLD MY BEER!'} - {resource_type} cleanup",
-                context={
-                    "resource_type": resource_type,
-                    "action": action,
-                    "followed_vic20": decision['followed_recommendation'],
-                    "severity": severity,
-                    "current_value": current_value,
-                    "threshold": threshold,
-                    "telepathic_consensus": True
-                }
-            )
-            
-            cleanup_result = await SystemActions.emergency_disk_cleanup(include_defrag=True)
-            
-            if cleanup_result['success']:
+                
+                context = await perception.perceive(storage_alert)
+                
+                # Log beer consumption
+                total_beers = context.steve_beers_today + context.bob_beers_today + context.carl_beers_today
+                if total_beers > 0:
+                    logger.info(
+                        f"🐹🍺 Beer consumption: Steve={context.steve_beers_today}, "
+                        f"Bob={context.bob_beers_today}, Carl={context.carl_beers_today} "
+                        f"(total: {total_beers})"
+                    )
+                
+                # Log duct tape
+                if context.duct_tape_assessment:
+                    logger.info(
+                        f"🐹📏 Carl's duct tape assessment: {context.duct_tape_assessment.total_rolls:.1f} rolls "
+                        f"({context.duct_tape_assessment.job_complexity} job)"
+                    )
+                
+                # Check Bob's cupboard status
+                if context.bob_proximity and context.bob_proximity.bob_at_cupboard:
+                    logger.warning(
+                        f"🐹⚠️ BOB AT SUPPLY CUPBOARD! Alerting The Stick! "
+                        f"Panic level: {context.bob_proximity.stick_panic_level:.2f}"
+                    )
+                
                 logger.info(
-                    f"🐹✅ Cleanup successful! Freed {cleanup_result['disk_freed_mb']:.2f} MB"
+                    f"🐹✅ Perception complete: complexity={context.complexity_level:.2f}, "
+                    f"ingenuity={context.ingenuity_required:.2f}"
                 )
                 
-                # Broadcast success to WebSocket
-                await emit_agent_insight(
-                    from_agent="hamsters",
-                    to_agent="vic20_sage",
-                    action="disk_cleanup_success",
-                    reasoning=f"Freed {cleanup_result['disk_freed_mb']:.2f} MB - {cleanup_result['improvement_percent']:.1f}% improvement",
-                    context={
-                        "success": True,
-                        "disk_freed_mb": cleanup_result['disk_freed_mb'],
-                        "improvement_percent": cleanup_result['improvement_percent'],
-                        "disk_before": cleanup_result.get('disk_before_percent', 0),
-                        "disk_after": cleanup_result.get('disk_after_percent', 0),
-                        "followed_vic20": decision['followed_recommendation'],
-                        "telepathic_consensus": True
-                    }
+                # 🎯 STEP 2: REASONING - Telepathic consensus
+                logger.info("🐹🧠 Reasoning phase (telepathic consensus)...")
+                reasoning_engine = HamstersReasoning(self.personality_traits)
+                reasoning = reasoning_engine.reason(context)
+                
+                logger.info(f"🐹💭 Steve: {reasoning.steve_assessment.recommended_fix}")
+                logger.info(f"🐹💭 Bob: {reasoning.bob_assessment.recommended_fix}")
+                logger.info(f"🐹💭 Carl: {reasoning.carl_assessment.recommended_fix}")
+                logger.info(
+                    f"🐹✅ Consensus reached: {reasoning.consensus_fix}, "
+                    f"confidence={reasoning.consensus_confidence:.2f}, "
+                    f"disagreement={reasoning.disagreement_level:.2f}"
                 )
                 
-                # Record decision and effectiveness
-                await self.make_distributed_decision(
-                    decision_type="recommendation_response",
-                    input_data={
-                        "recommendation": recommendation.get('action'),
-                        "followed": decision['followed_recommendation'],
-                        "action_taken": action
-                    },
-                    output_data={
-                        "result": cleanup_result,
-                        "effectiveness": cleanup_result['improvement_percent']
-                    },
-                    confidence=decision['decision_score'],
-                    reasoning=decision['reasoning']
+                # 🎯 STEP 3: ACTION SELECTION - Choose execution strategy
+                logger.info("🐹⚡ Action selection phase...")
+                action_selector = HamstersActionSelection(self.personality_traits)
+                action = action_selector.select_action(context, reasoning)
+                
+                logger.info(
+                    f"🐹✅ Action selected: {action.action_type}, "
+                    f"beers={action.total_beers_consumed}, "
+                    f"duct_tape={action.duct_tape_rolls:.1f} rolls"
                 )
                 
-                # 💾 WRITE TO POSTGRESQL: Store collective decision
-                if self.db_integration and self.user_id:
-                    try:
-                        await self.db_integration.store_collective_decision(
-                            user_id=self.user_id,
-                            decision_data={
-                                'decision_id': f"hamsters_{action}_{cleanup_result.get('timestamp', '')}",
-                                'intervention_type': action,
-                                'steve_assessment': 'Careful analysis of disk usage',
-                                'bob_suggestion': 'HOLD MY BEER! *aggressive cleanup*',
-                                'carl_calculation': f"Duct tape efficiency: {cleanup_result['improvement_percent']:.1f}%",
-                                'telepathic_consensus': True,
-                                'confidence': decision['decision_score'],
-                                'tools_required': ['beer', 'duct_tape', 'defrag_hammer'],
-                                'beer_consumption_estimate': 3,
-                                'human_translation': decision['reasoning'],
-                                'priority': 'disk_emergency'
-                            }
-                        )
-                        logger.info(f"🐹💾 Collective decision written to PostgreSQL")
-                    except Exception as e:
-                        logger.error(f"🐹💥 Failed to write to PostgreSQL: {e}")
-            else:
-                logger.error(f"🐹❌ Disk cleanup failed: {cleanup_result.get('error')}")
+                if action.sudo_command:
+                    logger.info(f"🐹🔧 Sudo command: {action.sudo_command}")
+                
+                # 🎯 STEP 4: LEARNING - Store consensus decision
+                logger.info("🐹📚 Learning phase...")
+                learning = HamstersLearning(db, self.user_id)
+                learning_record = await learning.learn(context, reasoning, action)
+                
+                logger.info(f"🐹💾 Learning record stored in PostgreSQL")
+                
+                # 🎯 STEP 5: EXECUTE ACTION - Run storage fix
+                logger.info(f"🐹🔧 Executing {action.action_type}...")
+                
+                # Execute cleanup (simplified for now - full sudo execution later)
+                cleanup_result = await SystemActions.emergency_disk_cleanup(include_defrag=True)
+                
+                if cleanup_result['success']:
+                    logger.info(
+                        f"🐹✅ Fix successful! Freed {cleanup_result['disk_freed_mb']:.2f} MB "
+                        f"({cleanup_result['improvement_percent']:.1f}% improvement)"
+                    )
+                    
+                    # Broadcast to WebSocket
+                    from app.services.agent_insight_emitter import emit_agent_insight
+                    await emit_agent_insight(
+                        from_agent="hamsters",
+                        to_agent="vic20_sage",
+                        action="storage_fix_success",
+                        reasoning=f"Telepathic consensus: {reasoning.consensus_fix}",
+                        context={
+                            "action_type": action.action_type,
+                            "disk_freed_mb": cleanup_result['disk_freed_mb'],
+                            "improvement_percent": cleanup_result['improvement_percent'],
+                            "total_beers": action.total_beers_consumed,
+                            "duct_tape_rolls": action.duct_tape_rolls,
+                            "steve_agreed": action.steve_agreed,
+                            "bob_agreed": action.bob_agreed,
+                            "carl_agreed": action.carl_agreed,
+                            "bob_at_cupboard": action.bob_at_cupboard
+                        }
+                    )
+                    
+                    # Update learning record with success
+                    await learning.update_outcome(
+                        learning_record,
+                        success=True,
+                        outcome_notes=f"Freed {cleanup_result['disk_freed_mb']:.2f} MB"
+                    )
+                else:
+                    logger.error(f"🐹❌ Fix failed: {cleanup_result.get('error')}")
+                    await learning.update_outcome(
+                        learning_record,
+                        success=False,
+                        outcome_notes=cleanup_result.get('error', 'Unknown error')
+                    )
+                
+                logger.info(f"{'='*80}")
+                logger.info(f"🐹✅ HAMSTERS V2 TELEPATHIC CONSENSUS COMPLETE")
+                logger.info(f"{'='*80}\n")
+                
+                break  # Exit db session loop
                 
         except Exception as e:
-            logger.error(f"🐹💥 Error handling coordination request: {e}", exc_info=True)
+            logger.error(f"🐹💥 Hamsters v2 consensus failed: {e}")
+            logger.exception(e)
+            
+            # Fallback to basic cleanup
+            logger.warning("🐹⚠️ Falling back to basic cleanup...")
+            cleanup_result = await SystemActions.emergency_disk_cleanup(include_defrag=True)
+            if cleanup_result['success']:
+                logger.info(f"🐹✅ Fallback cleanup succeeded")
     
     async def handle_coordination(self, coordination_request: Dict[str, Any]) -> Dict[str, Any]:
         """
