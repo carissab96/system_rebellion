@@ -39,6 +39,12 @@ from ..distributed.alert_escalation import (
 )
 from .decision_engine import SirHawkingtonBrainV2, DecisionType, MonocleState, AnalysisDepth
 
+# Import Hawk v2 ML layers
+from .perception import HawkPerception, HawkPerceptionContext
+from .reasoning import HawkReasoning, TriageReasoning
+from .action_selection import HawkActionSelection, TriageAction
+from .learning import HawkLearning, HawkLearningRecord
+
 
 logger = logging.getLogger("SirHawkington.Distributed")
 
@@ -341,105 +347,134 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
     
     async def _perform_triage(self, alert):
         """
-        Perform triage assessment and routing.
+        🎯 HAWK V2: ML-Enhanced Triage with Aristocratic Precision
+        
+        Flow: Perception → Reasoning → Action Selection → Learning
         
         Args:
             alert: ResourceAlert from the monitor
         """
-        print(f"\n🔔 PERFORMING TRIAGE!")
-        print(f"   Alert payload: {alert.payload}")
+        logger.info(f"\n{'='*80}")
+        logger.info(f"🧐🎯 HAWK V2 TRIAGE INITIATED")
+        logger.info(f"{'='*80}")
         
+        # Extract alert data
         severity = alert.payload['severity']
         current_value = alert.payload['current_value']
         threshold = alert.payload['threshold']
         resource_type = alert.payload.get('resource_type', 'unknown')
+        full_metrics = alert.payload.get('full_metrics', {})
         
         logger.warning(
             f"🧐⚠️ Sir Hawkington observes elevated {resource_type.upper()} usage: "
-            f"{current_value:.1f}% (threshold: {threshold:.1f}%) - "
-            f"Severity: {severity}"
-        )
-        print(f"🧐⚠️ Sir Hawkington observes elevated {resource_type.upper()} usage: {current_value:.1f}%")
-        
-        # 🎯 TRIAGE STEP 1: Assess severity and confidence
-        confidence = self._assess_confidence(current_value, threshold, severity)
-        should_escalate = self._should_escalate_to_vic20(severity, confidence)
-        
-        logger.info(
-            f"🧐🎯 Triage assessment: severity={severity}, confidence={confidence:.2f}, "
-            f"escalate_to_vic20={should_escalate}"
+            f"{current_value:.1f}% (threshold: {threshold:.1f}%) - Severity: {severity}"
         )
         
-        # 🎯 TRIAGE STEP 2: Log triage decision (CC The Stick)
-        if self.is_distributed:
-            triage_decision = await self.make_distributed_decision(
-                decision_type=f"triage_{resource_type}",
-                input_data={
-                    "resource_type": resource_type,
-                    "current_value": current_value,
-                    "threshold": threshold,
-                    "severity": severity
-                },
-                output_data={
-                    "confidence": confidence,
-                    "should_escalate": should_escalate,
-                    "monocle_state": self.current_monocle_state.value if hasattr(self, 'current_monocle_state') else "polished"
-                },
-                confidence=confidence,
-                reasoning=f"{resource_type.upper()} at {current_value:.1f}% exceeds threshold {threshold:.1f}%"
-            )
-            
-            # 💾 WRITE TO POSTGRESQL: Store triage decision in agent table + CMB
-            if self.db_integration and self.user_id:
-                try:
-                    from datetime import datetime, timezone
+        try:
+            # Get database session for ML layers
+            async for db in self.db_getter():
+                # 🎯 STEP 1: PERCEPTION - Gather context and assess data quality
+                logger.info("🧐👁️ Perception phase...")
+                perception = HawkPerception(db, self.personality_traits)
+                
+                alert_data = {
+                    'resource_type': resource_type,
+                    'current_value': current_value,
+                    'threshold': threshold,
+                    'severity': severity,
+                    'full_metrics': full_metrics
+                }
+                
+                context = await perception.perceive(alert_data)
+                
+                # Track monocle yeets
+                monocle_yeet_count = len(perception.monocle_yeet_incidents)
+                if monocle_yeet_count > 0:
+                    logger.warning(
+                        f"🧐💥 {monocle_yeet_count} monocle yeet(s) during perception - "
+                        f"data quality: {context.data_quality_score:.2f}"
+                    )
+                
+                # 🎯 STEP 2: REASONING - Analyze and determine escalation
+                logger.info("🧐🧠 Reasoning phase...")
+                reasoning_engine = HawkReasoning(self.personality_traits)
+                reasoning = reasoning_engine.reason(context)
+                
+                logger.info(
+                    f"🧐✅ Reasoning complete: escalate={reasoning.should_escalate}, "
+                    f"confidence={reasoning.confidence:.2f}, risk={reasoning.risk_level}"
+                )
+                
+                # 🎯 STEP 3: ACTION SELECTION - Choose triage action
+                logger.info("🧐⚡ Action selection phase...")
+                action_selector = HawkActionSelection(self.personality_traits)
+                action = action_selector.select_action(context, reasoning)
+                
+                logger.info(
+                    f"🧐✅ Action selected: {action.action_type} to {action.target_agent or 'none'}, "
+                    f"priority={action.priority}, monocle={action.monocle_state}"
+                )
+                
+                # Update monocle state for frontend
+                self.current_monocle_state = MonocleState(action.monocle_state)
+                
+                # 🎯 STEP 4: LEARNING - Store decision for future improvement
+                logger.info("🧐📚 Learning phase...")
+                learning = HawkLearning(db, self.user_id)
+                learning_record = await learning.learn(context, reasoning, action)
+                
+                logger.info(f"🧐💾 Learning record stored in PostgreSQL")
+                
+                # 🎯 STEP 5: EXECUTE ACTION - Escalate to VIC-20 if needed
+                if action.action_type == 'escalate' and self.is_distributed:
+                    logger.info(f"🧐📨 Escalating {resource_type} alert to VIC-20...")
+                    logger.info(f"🧐💬 Message: {action.message_to_vic20}")
                     
-                    # Map resource type to routing decision
-                    routing_map = {
-                        'cpu': 'meth_snail',
-                        'memory': 'meth_snail', 
-                        'disk': 'hamsters',
-                        'network': 'quantum_shadow_people',
-                        'swap': 'meth_snail'
-                    }
-                    routing_decision = routing_map.get(resource_type.lower() if isinstance(resource_type, str) else str(resource_type).lower(), 'vic20_sage')
+                    await self._send_triage_alert_to_vic20(
+                        resource_type=resource_type,
+                        current_value=current_value,
+                        threshold=threshold,
+                        severity=severity,
+                        confidence=action.confidence
+                    )
                     
-                    triage_data = {
-                        "resource_type": resource_type,
-                        "current_value": current_value,
-                        "threshold": threshold,
-                        "triage_severity": severity,  # REQUIRED field
-                        "routing_decision": routing_decision,  # REQUIRED field
-                        "target_agents": [routing_decision],
-                        "confidence": confidence,
-                        "should_escalate": should_escalate,
-                        "monocle_state": self.current_monocle_state.value if hasattr(self, 'current_monocle_state') else "polished",
-                        "monocle_yeeted": False,
-                        "timestamp": datetime.now(timezone.utc),
-                        "reasoning": f"Resource {resource_type} at {current_value}% exceeds threshold {threshold}%"
-                    }
-                    await self.db_integration.store_triage_decision(self.user_id, triage_data)
-                    logger.info(f"🧐💾 Triage decision written to PostgreSQL")
-                except Exception as e:
-                    logger.error(f"🧐💥 Failed to write triage to PostgreSQL: {e}")
+                    logger.info(f"🧐✅ Escalation complete")
+                else:
+                    logger.info(
+                        f"🧐⏸️ NOT escalating: action={action.action_type}, "
+                        f"risk={reasoning.risk_level}"
+                    )
+                
+                # CC The Stick for pattern learning
+                if self.is_distributed:
+                    await self._cc_the_stick("triage_decision", {
+                        'resource_type': resource_type,
+                        'action_type': action.action_type,
+                        'confidence': action.confidence,
+                        'monocle_state': action.monocle_state,
+                        'monocle_yeets': monocle_yeet_count
+                    })
+                
+                logger.info(f"{'='*80}")
+                logger.info(f"🧐✅ HAWK V2 TRIAGE COMPLETE")
+                logger.info(f"{'='*80}\n")
+                
+                break  # Exit db session loop
+                
+        except Exception as e:
+            logger.error(f"🧐💥 Hawk v2 triage failed: {e}")
+            logger.exception(e)
             
-            # CC The Stick for pattern learning
-            await self._cc_the_stick("triage_decision", triage_decision)
-        
-        # 🎯 TRIAGE STEP 3: Route to VIC-20 if threshold met
-        logger.info(f"🧐🔍 DEBUG: should_escalate={should_escalate}, is_distributed={self.is_distributed}")
-        if should_escalate and self.is_distributed:
-            logger.info(f"🧐📨 Escalating {resource_type} alert to VIC-20 for coordination...")
-            
-            await self._send_triage_alert_to_vic20(
-                resource_type=resource_type,
-                current_value=current_value,
-                threshold=threshold,
-                severity=severity,
-                confidence=confidence
-            )
-        else:
-            logger.info(f"🧐⏸️ NOT escalating: should_escalate={should_escalate}, is_distributed={self.is_distributed}")
+            # Fallback to basic escalation
+            logger.warning("🧐⚠️ Falling back to basic escalation...")
+            if self.is_distributed:
+                await self._send_triage_alert_to_vic20(
+                    resource_type=resource_type,
+                    current_value=current_value,
+                    threshold=threshold,
+                    severity=severity,
+                    confidence=0.5
+                )
     
     async def _coordination_capability(
         self,
