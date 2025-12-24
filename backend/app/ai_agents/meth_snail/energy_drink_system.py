@@ -10,16 +10,19 @@ This is a PERSONALITY BEHAVIOR - it makes Terry TERRY, not just an optimization 
 
 import logging
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .data_types import (
     EnergyDrinkRequest,
     EnergyDrinkAuthorization,
     EnergyDrinkType,
 )
-from app.utils.time_utils import utc_now
 
 logger = logging.getLogger('TerryEnergyDrinks')
+
+def utc_now() -> datetime:
+    """Get current UTC time"""
+    return datetime.now(timezone.utc)
 
 
 class EnergyDrinkSystem:
