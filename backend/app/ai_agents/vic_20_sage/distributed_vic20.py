@@ -367,9 +367,9 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
             logger.info("=" * 80)
             
             # Send COORDINATION_REQUEST message to specialist
-            await self.send_message(
-                message_type=MessageType.COORDINATION_REQUEST,
+            await self.send_message_to_agent(
                 to_agent=specialist,
+                message_type=MessageType.COORDINATION_REQUEST,
                 payload=coordination_request,
                 priority=Priority.HIGH if severity in ['high', 'critical'] else Priority.NORMAL
             )
