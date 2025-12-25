@@ -243,8 +243,8 @@ class VIC20Perception:
             query = (
                 select(AgentLearningRecord)
                 .where(AgentLearningRecord.agent_name == 'vic20_sage')
-                .where(AgentLearningRecord.decision_type.like(f'route_{resource_type}%'))
-                .order_by(desc(AgentLearningRecord.timestamp))
+                .where(AgentLearningRecord.resource_type == resource_type)
+                .order_by(desc(AgentLearningRecord.created_at))
                 .limit(10)
             )
             
@@ -258,7 +258,7 @@ class VIC20Perception:
                     'routed_to': record.output_data.get('target_specialist'),
                     'success': record.success,
                     'confidence': record.confidence,
-                    'timestamp': record.timestamp
+                    'timestamp': record.created_at
                 })
             
             logger.debug(f"🖥️📚 Found {len(similar)} similar routing decisions")
@@ -276,8 +276,7 @@ class VIC20Perception:
             query = (
                 select(AgentLearningRecord)
                 .where(AgentLearningRecord.agent_name == 'vic20_sage')
-                .where(AgentLearningRecord.decision_type.like('route_%'))
-                .order_by(desc(AgentLearningRecord.timestamp))
+                .order_by(desc(AgentLearningRecord.created_at))
                 .limit(20)
             )
             
@@ -290,7 +289,7 @@ class VIC20Perception:
                     'resource_type': record.input_data.get('resource_type'),
                     'specialist': record.output_data.get('target_specialist'),
                     'success': record.success,
-                    'timestamp': record.timestamp
+                    'timestamp': record.created_at
                 })
             
             logger.debug(f"🖥️📚 Found {len(outcomes)} recent coordination outcomes")

@@ -639,15 +639,18 @@ class MethSnailDatabaseIntegration(BaseDatabaseIntegration):
             self.logger.error(f"Failed to get historical performance: {e}")
             raise
 
-    async def store_decision(self, user_id: str, decision_data: dict) -> str:
+    async def store_decision_dict(self, user_id: str, decision_data: dict) -> str:
         """
-        Store an optimization decision with DUAL-WRITE pattern.
+        Store an optimization decision from dict with DUAL-WRITE pattern.
         
         WRITE 1: CentralMemoryBank (summary for cross-agent visibility)
         WRITE 2: MethSnailMemoryBank (structured agent-specific data)
         WRITE 3: Vector embedding (fire-and-forget, non-blocking)
         
         Terry's caffeinated decisions are preserved for posterity!
+        
+        Note: This is the dict-based version. For OptimizationDecision objects,
+        use store_decision() which calls store_optimization_decision().
         """
         if not self._initialized:
             await self.initialize()

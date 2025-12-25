@@ -24,7 +24,8 @@ from sqlalchemy import select, func
 from .data_types import (
     OptimizationPriority, 
     AnalysisDepth, 
-    OptimizationDecision, 
+    OptimizationDecision,
+    ShellSpinIncident,
     EnergyDrinkRequest,
     EnergyDrinkAuthorization,
     EnergyDrinkType,
@@ -37,58 +38,9 @@ from ..sir_hawkington.triage_engine import SirHawkingtonTriageEngine
 
 logger = logging.getLogger("MethSnail")
 
-class OptimizationPriority(Enum):
-    """The Meth Snail's optimization focus modes"""
-    SPEED = "speed"                    # GOTTA GO FAST
-    EFFICIENCY = "efficiency"          # Resource conservation
-    BALANCED = "balanced"              # The sweet spot
-    AGGRESSIVE = "aggressive"          # MAXIMUM OVERDRIVE
-    HIBERNATION = "hibernation"        # Low activity mode
-    SHELL_SPINNING = "shell_spinning"  # Waiting for real data
-
-class AnalysisDepth(Enum):
-    """How deep should the Meth Snail think?"""
-    BASIC = "basic"           # Quick WebSocket analysis
-    STANDARD = "standard"     # Normal depth
-    THOROUGH = "thorough"     # Full background optimization analysis
-
-@dataclass
-class ShellSpinIncident:
-    """Track when the Meth Snail spins his shell waiting for real data"""
-    timestamp: datetime
-    missing_metrics: List[str]
-    invalid_metrics: List[str]
-    reason: str
-    user_id: Optional[str] = None
-
-@dataclass
-class OptimizationDecision:
-    """The Meth Snail's optimization verdict"""
-    priority: OptimizationPriority
-    actions: List[Dict[str, Any]]
-    confidence: float                    # 0.0 to 1.0
-    rationale: str
-    estimated_impact: Dict[str, float]   # Expected improvements
-    urgency: str                         # immediate, soon, eventual
-    analysis_depth: AnalysisDepth
-    shell_spin_count: int               # How many times we spun waiting for data
-    data_quality_score: float           # 0.0 to 1.0
-    timestamp: datetime
-    
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary for JSON serialization"""
-        return {
-            'priority': self.priority.value,
-            'actions': self.actions,
-            'confidence': self.confidence,
-            'rationale': self.rationale,
-            'estimated_impact': self.estimated_impact,
-            'urgency': self.urgency,
-            'analysis_depth': self.analysis_depth.value,
-            'shell_spin_count': self.shell_spin_count,
-            'data_quality_score': self.data_quality_score,
-            'timestamp': self.timestamp.isoformat()
-        }
+# All type definitions now imported from data_types.py to avoid duplication
+# OptimizationPriority, AnalysisDepth, OptimizationDecision, ShellSpinIncident
+# are defined in data_types.py with complete safety protocol fields
 
 class MethSnailBrainV2:
     """
