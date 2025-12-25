@@ -233,8 +233,8 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
                 reasoning_result = reasoning.reason(context)  # Synchronous, not async
                 
                 logger.info(
-                    f"📏🧠 Reasoning complete: {reasoning_result.compliance_assessment} "
-                    f"(anxiety_trigger: {reasoning_result.anxiety_trigger})"
+                    f"📏🧠 Reasoning complete: {reasoning_result.logging_approach} "
+                    f"(anxiety_level: {reasoning_result.anxiety_level})"
                 )
                 
                 # STEP 3: ACTION SELECTION - Determine logging action

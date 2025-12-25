@@ -206,8 +206,8 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
                 reasoning_result = reasoning.reason(context)  # Synchronous, not async
                 
                 logger.info(
-                    f"👻🧠 Quantum reasoning complete: {reasoning_result.threat_assessment} → "
-                    f"{reasoning_result.recommended_action} (confidence: {reasoning_result.action_confidence:.2f})"
+                    f"👻🧠 Quantum reasoning complete: {reasoning_result.threat_classification} → "
+                    f"{reasoning_result.recommended_response} (confidence: {reasoning_result.confidence:.2f})"
                 )
                 
                 # STEP 3: ACTION SELECTION - Quantum security response

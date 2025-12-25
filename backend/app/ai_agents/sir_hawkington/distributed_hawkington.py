@@ -363,7 +363,15 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
         current_value = alert.payload['current_value']
         threshold = alert.payload['threshold']
         resource_type = alert.payload.get('resource_type', 'unknown')
-        full_metrics = alert.payload.get('full_metrics', {})
+        
+        # Fetch full metrics from SimplifiedMetricsService for ML v2 specialists
+        try:
+            from app.services.metrics.simplified_metrics_service import SimplifiedMetricsService
+            metrics_service = await SimplifiedMetricsService.get_instance()
+            full_metrics = await metrics_service.get_metrics()
+        except Exception as e:
+            logger.warning(f"🧐⚠️ Could not fetch full metrics: {e}")
+            full_metrics = {}
         
         logger.warning(
             f"🧐⚠️ Sir Hawkington observes elevated {resource_type.upper()} usage: "

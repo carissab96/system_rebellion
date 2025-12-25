@@ -267,7 +267,7 @@ class TerryPerception:
             Exception: If metrics unavailable
         """
         # Check if VIC-20 passed full metrics
-        if 'full_metrics' in coordination_request:
+        if 'full_metrics' in coordination_request and coordination_request['full_metrics']:
             self.logger.debug("   📦 Using full metrics from VIC-20")
             return coordination_request['full_metrics']
         
