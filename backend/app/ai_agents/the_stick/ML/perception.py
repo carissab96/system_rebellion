@@ -76,6 +76,7 @@ class StickPerceptionContext:
     # Anxiety triggers (personality)
     anxiety_level: float = 0.0  # 0.0-1.0
     bob_proximity: Optional[BobProximityEvent] = None
+    bob_proximity_event: Optional[BobProximityEvent] = None  # Alias for compatibility
     panic_attack_active: bool = False
     
     # Paper bag tracking

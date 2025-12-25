@@ -71,6 +71,7 @@ class QSPPerceptionContext:
     # Security metrics
     active_threats: List[SecurityThreat] = field(default_factory=list)
     threat_count: int = 0
+    threat_level: str = 'low'  # 'low', 'medium', 'high', 'critical', 'quantum'
     highest_severity: str = 'none'
     
     # Quantum state (personality)

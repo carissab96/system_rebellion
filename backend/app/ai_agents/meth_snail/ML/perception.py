@@ -21,7 +21,7 @@ from sqlalchemy import select, desc
 
 from app.models.agent_learning import AgentLearningRecord
 from .situation_fingerprint import SituationFingerprint
-from .data_types import ShellSpinIncident
+from ..data_types import ShellSpinIncident
 
 logger = logging.getLogger('TerryPerception')
 
