@@ -428,6 +428,228 @@ class MethSnailBrainV2:
             }
         return None
 
+    # === ANALYSIS DEPTH METHODS ===
+    
+    async def _basic_analysis(
+        self,
+        cpu_usage: float,
+        memory_usage: float,
+        disk_usage: float,
+        shell_spin_count: int,
+        data_quality_score: float
+    ) -> OptimizationDecision:
+        """
+        Basic analysis - quick decisions for WebSocket responses.
+        Minimal processing, fast return.
+        """
+        actions = []
+        confidence = 0.5
+        rationale = "Basic analysis"
+        
+        # Simple threshold checks
+        if cpu_usage and cpu_usage > 80:
+            actions.append({
+                'type': 'reduce_cpu',
+                'target': 'high_cpu_processes',
+                'urgency': 'immediate'
+            })
+            rationale = f"CPU usage high ({cpu_usage:.1f}%)"
+            confidence = 0.7
+        
+        if memory_usage and memory_usage > 85:
+            actions.append({
+                'type': 'clear_cache',
+                'target': 'memory',
+                'urgency': 'soon'
+            })
+            rationale = f"Memory usage high ({memory_usage:.1f}%)"
+            confidence = 0.7
+        
+        # Determine priority
+        priority = OptimizationPriority.SPEED if actions else OptimizationPriority.BALANCED
+        
+        return OptimizationDecision(
+            priority=priority,
+            actions=actions,
+            confidence=confidence * data_quality_score,
+            rationale=rationale,
+            estimated_impact={'cpu': -10.0, 'memory': -5.0} if actions else {},
+            urgency='immediate' if actions else 'eventual',
+            analysis_depth=AnalysisDepth.BASIC,
+            shell_spin_count=shell_spin_count,
+            data_quality_score=data_quality_score,
+            timestamp=utc_now()
+        )
+    
+    async def _standard_analysis(
+        self,
+        cpu_usage: float,
+        memory_usage: float,
+        disk_usage: float,
+        network_data: Any,
+        process_count: int,
+        shell_spin_count: int,
+        data_quality_score: float
+    ) -> OptimizationDecision:
+        """
+        Standard analysis - normal depth with network and process context.
+        Balanced speed vs thoroughness.
+        """
+        actions = []
+        confidence = 0.6
+        rationale = "Standard analysis"
+        
+        # More sophisticated checks
+        if cpu_usage and cpu_usage > 75:
+            actions.append({
+                'type': 'optimize_processes',
+                'target': 'cpu_intensive',
+                'urgency': 'soon',
+                'process_count': process_count
+            })
+            rationale = f"CPU optimization needed ({cpu_usage:.1f}%, {process_count} processes)"
+            confidence = 0.75
+        
+        if memory_usage and memory_usage > 80:
+            actions.append({
+                'type': 'memory_optimization',
+                'target': 'cache_and_buffers',
+                'urgency': 'soon'
+            })
+            rationale += f" + Memory pressure ({memory_usage:.1f}%)"
+            confidence = 0.8
+        
+        if disk_usage and disk_usage > 85:
+            actions.append({
+                'type': 'disk_cleanup',
+                'target': 'temp_files',
+                'urgency': 'eventual'
+            })
+        
+        # Network considerations
+        if network_data:
+            validated_network = self._validate_network_data(network_data)
+            if validated_network['valid']:
+                actions.append({
+                    'type': 'network_optimization',
+                    'sent_rate': validated_network['sent_rate'],
+                    'recv_rate': validated_network['recv_rate']
+                })
+        
+        priority = OptimizationPriority.BALANCED
+        if len(actions) > 2:
+            priority = OptimizationPriority.AGGRESSIVE
+        
+        return OptimizationDecision(
+            priority=priority,
+            actions=actions,
+            confidence=confidence * data_quality_score,
+            rationale=rationale,
+            estimated_impact={
+                'cpu': -15.0 if cpu_usage and cpu_usage > 75 else 0,
+                'memory': -10.0 if memory_usage and memory_usage > 80 else 0,
+                'disk': -5.0 if disk_usage and disk_usage > 85 else 0
+            },
+            urgency='soon' if actions else 'eventual',
+            analysis_depth=AnalysisDepth.STANDARD,
+            shell_spin_count=shell_spin_count,
+            data_quality_score=data_quality_score,
+            timestamp=utc_now()
+        )
+    
+    async def _thorough_analysis(
+        self,
+        cpu_usage: float,
+        memory_usage: float,
+        disk_usage: float,
+        network_data: Any,
+        process_count: int,
+        historical_data: Optional[List[Dict]],
+        shell_spin_count: int,
+        data_quality_score: float
+    ) -> OptimizationDecision:
+        """
+        Thorough analysis - full background optimization with historical context.
+        Maximum intelligence, takes longer.
+        """
+        actions = []
+        confidence = 0.7
+        rationale = "Thorough analysis with historical context"
+        
+        # Deep analysis with historical patterns
+        if cpu_usage and cpu_usage > 70:
+            # Check historical patterns
+            historical_cpu_high = False
+            if historical_data:
+                historical_cpu_high = any(
+                    h.get('cpu_usage', 0) > 70 
+                    for h in historical_data[-10:]
+                )
+            
+            actions.append({
+                'type': 'deep_cpu_optimization',
+                'target': 'all_processes',
+                'urgency': 'immediate' if cpu_usage > 85 else 'soon',
+                'historical_pattern': historical_cpu_high,
+                'process_count': process_count
+            })
+            rationale = f"Deep CPU analysis ({cpu_usage:.1f}%, pattern: {historical_cpu_high})"
+            confidence = 0.85
+        
+        if memory_usage and memory_usage > 75:
+            actions.append({
+                'type': 'comprehensive_memory_optimization',
+                'target': 'all_memory_consumers',
+                'urgency': 'soon',
+                'includes': ['cache', 'buffers', 'swap']
+            })
+            rationale += f" + Comprehensive memory optimization ({memory_usage:.1f}%)"
+            confidence = 0.9
+        
+        if disk_usage and disk_usage > 80:
+            actions.append({
+                'type': 'thorough_disk_cleanup',
+                'target': 'all_cleanable',
+                'urgency': 'eventual',
+                'includes': ['temp', 'logs', 'cache', 'old_files']
+            })
+        
+        # Network optimization with historical context
+        if network_data:
+            validated_network = self._validate_network_data(network_data)
+            if validated_network['valid']:
+                actions.append({
+                    'type': 'network_tuning',
+                    'sent_rate': validated_network['sent_rate'],
+                    'recv_rate': validated_network['recv_rate'],
+                    'optimization_level': 'thorough'
+                })
+        
+        # Determine priority based on severity and patterns
+        priority = OptimizationPriority.EFFICIENCY
+        if cpu_usage and cpu_usage > 85:
+            priority = OptimizationPriority.AGGRESSIVE
+        elif len(actions) > 3:
+            priority = OptimizationPriority.AGGRESSIVE
+        
+        return OptimizationDecision(
+            priority=priority,
+            actions=actions,
+            confidence=confidence * data_quality_score,
+            rationale=rationale,
+            estimated_impact={
+                'cpu': -20.0 if cpu_usage and cpu_usage > 70 else 0,
+                'memory': -15.0 if memory_usage and memory_usage > 75 else 0,
+                'disk': -10.0 if disk_usage and disk_usage > 80 else 0,
+                'overall_efficiency': 15.0
+            },
+            urgency='immediate' if (cpu_usage and cpu_usage > 85) else 'soon',
+            analysis_depth=AnalysisDepth.THOROUGH,
+            shell_spin_count=shell_spin_count,
+            data_quality_score=data_quality_score,
+            timestamp=utc_now()
+        )
+
     # === SAFETY PROTOCOL METHODS ===
     
     async def request_energy_drink_authorization(
