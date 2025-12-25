@@ -394,7 +394,7 @@ class TerryReasoning:
         
         Query historical learning records to see what worked/failed before.
         """
-        from app.ai_agents.meth_snail.situation_fingerprint import SituationFingerprint, FingerprintMatcher
+        from app.ai_agents.meth_snail.ML.situation_fingerprint import SituationFingerprint, FingerprintMatcher
         
         # Generate fingerprints for this situation
         fingerprints = SituationFingerprint.generate(

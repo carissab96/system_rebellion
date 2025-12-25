@@ -218,7 +218,7 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
                 
                 logger.info(
                     f"👻⚡ Action selected: {decision.action_type} "
-                    f"(quantum_state: {decision.quantum_state_after.state})"
+                    f"(quantum_state: {decision.quantum_state})"
                 )
                 
                 # STEP 4: EXECUTION - Execute quantum security action
