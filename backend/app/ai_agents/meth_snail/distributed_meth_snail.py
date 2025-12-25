@@ -186,7 +186,7 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
             # db_getter is an async generator - use async for loop
             async for db in self.db_getter():
                 # STEP 1: PERCEPTION - Gather full context
-                from app.ai_agents.meth_snail.perception import TerryPerception
+                from app.ai_agents.meth_snail.ML.perception import TerryPerception
                 
                 perception = TerryPerception(db, self.personality_traits)
                 context = await perception.perceive({
@@ -209,7 +209,7 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
                 logger.info(f"🐌👁️ Perception complete - Terry sees the full picture")
                 
                 # STEP 2: REASONING - Analyze with ML validation
-                from app.ai_agents.meth_snail.reasoning import TerryReasoning
+                from app.ai_agents.meth_snail.ML.reasoning import TerryReasoning
                 
                 reasoning = TerryReasoning(db)
                 reasoning_result = await reasoning.reason(context)
@@ -220,7 +220,7 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
                 )
                 
                 # STEP 3: ACTION SELECTION - Get action details
-                from app.ai_agents.meth_snail.action_selection import TerryActionSelection
+                from app.ai_agents.meth_snail.ML.action_selection import TerryActionSelection
                 
                 action_selector = TerryActionSelection()
                 decision = await action_selector.select_action(reasoning_result, context)
@@ -267,7 +267,7 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
                 }
                 
                 # STEP 5: LEARNING - Store outcome for future decisions
-                from app.ai_agents.meth_snail.learning import TerryLearning
+                from app.ai_agents.meth_snail.ML.learning import TerryLearning
                 
                 learning = TerryLearning(db, self.personality_traits)
                 learning_record = await learning.learn(

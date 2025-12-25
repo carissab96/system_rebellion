@@ -42,10 +42,10 @@ from ..distributed.action_verification import (
 from .decision_engine_sbcV3 import HamstersBrainV3, BeerLevel, DuctTapeGrade
 
 # Import Hamsters v2 ML layers
-from .perception import HamstersPerception, HamstersPerceptionContext
-from .reasoning import HamstersReasoning, StorageReasoning
-from .action_selection import HamstersActionSelection, StorageFixAction
-from .learning import HamstersLearning, HamstersLearningRecord
+from .ML.perception import HamstersPerception, HamstersPerceptionContext
+from .ML.reasoning import HamstersReasoning, StorageReasoning
+from .ML.action_selection import HamstersActionSelection, StorageFixAction
+from .ML.learning import HamstersLearning, HamstersLearningRecord
 
 
 logger = logging.getLogger("Hamsters.Distributed")

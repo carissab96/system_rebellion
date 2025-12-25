@@ -183,43 +183,103 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
     
     async def _handle_coordination_request(self, message: AgentMessage) -> None:
         """
-        Handle coordination requests - The Stick tracks compliance.
+        📏 THE STICK V2: ML-Enhanced Compliance Tracking
         
         PERSONALITY: Anxious compliance tracking, Bob-phobic, paper bag consumption
-        STRUCTURE: Standard AgentMessage parameter (required by base class)
+        ARCHITECTURE: Perception → Reasoning → Action Selection → Learning
         
         Args:
             message: AgentMessage with coordination request
         """
-        message_data = message.payload
-        coordination_type = message_data.get('coordination_type', 'unknown')
-        
-        # Check for BOB involvement (MAXIMUM ANXIETY!)
-        if 'bob' in str(message_data).lower() or message.from_agent == 'hamsters':
-            logger.warning("📏😰 BOB DETECTED IN COORDINATION! *anxiety intensifies*")
-            self.bob_proximity_events += 1
-            self._consume_paper_bag("bob_detected_in_coordination")
-            self.anxiety_level = AnxietyLevel.ANXIOUS  # Bob causes anxiety!
-        
-        logger.info(f"📏📋 Tracking coordination request: {coordination_type}")
-        self.total_actions_tracked += 1
-        
-        # Record for compliance tracking
-        await self.make_distributed_decision(
-            decision_type="coordination_compliance_tracked",
-            input_data={
-                "coordination_type": coordination_type,
-                "from_agent": message.from_agent,
-                "bob_involved": 'bob' in str(message_data).lower()
-            },
-            output_data={
-                "tracked": True,
-                "anxiety_level": self.anxiety_level.value if hasattr(self, 'anxiety_level') else "baseline",
-                "paper_bags_consumed": self.paper_bags_consumed
-            },
-            confidence=1.0,
-            reasoning="Compliance tracking complete"
-        )
+        try:
+            message_data = message.payload
+            coordination_type = message_data.get('coordination_type', 'unknown')
+            from_agent = message.from_agent
+            
+            logger.info(f"📏📋 Tracking coordination request: {coordination_type} from {from_agent}")
+            
+            # Get database session for The Stick v2 ML components
+            async for db in self.db_getter():
+                # STEP 1: PERCEPTION - Assess compliance event
+                from app.ai_agents.the_stick.ML.perception import StickPerception
+                
+                perception = StickPerception(db, self.personality_traits)
+                context = await perception.perceive({
+                    'coordination_type': coordination_type,
+                    'from_agent': from_agent,
+                    'message_data': message_data,
+                    'timestamp': message.timestamp
+                })
+                
+                # Check for BOB involvement (MAXIMUM ANXIETY!)
+                if context.bob_proximity_event:
+                    logger.warning("📏😰 BOB DETECTED IN COORDINATION! *anxiety intensifies*")
+                    self.bob_proximity_events += 1
+                    self._consume_paper_bag("bob_detected_in_coordination")
+                
+                logger.info(
+                    f"📏👁️ Perception complete - "
+                    f"anxiety_level: {context.anxiety_level:.2f}, bob_detected: {context.bob_proximity_event is not None}"
+                )
+                
+                # STEP 2: REASONING - Analyze compliance implications
+                from app.ai_agents.the_stick.ML.reasoning import StickReasoning
+                
+                reasoning = StickReasoning(db)
+                reasoning_result = await reasoning.reason(context)
+                
+                logger.info(
+                    f"📏🧠 Reasoning complete: {reasoning_result.compliance_assessment} "
+                    f"(anxiety_trigger: {reasoning_result.anxiety_trigger})"
+                )
+                
+                # STEP 3: ACTION SELECTION - Determine logging action
+                from app.ai_agents.the_stick.ML.action_selection import StickActionSelection
+                
+                action_selector = StickActionSelection()
+                decision = await action_selector.select_action(reasoning_result, context)
+                
+                # Log paper bag consumption
+                if decision.paper_bag_consumed:
+                    logger.info(
+                        f"📏🛍️ Paper bag #{decision.paper_bag_consumed.bag_number} consumed! "
+                        f"Reason: {decision.paper_bag_consumed.reason}"
+                    )
+                
+                logger.info(
+                    f"📏⚡ Action selected: {decision.action_type} "
+                    f"(anxiety_after: {decision.anxiety_level_after:.2f})"
+                )
+                
+                # STEP 4: EXECUTION - Log compliance event
+                self.total_actions_tracked += 1
+                
+                # STEP 5: LEARNING - Store compliance outcome
+                from app.ai_agents.the_stick.ML.learning import StickLearning
+                
+                learning = StickLearning(db, self.personality_traits)
+                learning_record = await learning.learn(
+                    context=context,
+                    reasoning_result=reasoning_result,
+                    decision=decision,
+                    execution_result={
+                        'success': True,
+                        'tracked': True,
+                        'total_actions_tracked': self.total_actions_tracked
+                    },
+                    user_id=self.user_id
+                )
+                
+                logger.info(
+                    f"📏✅ Compliance tracked! Total actions: {self.total_actions_tracked}, "
+                    f"Paper bags: {self.paper_bags_consumed}"
+                )
+                
+                break  # Exit async for loop after processing
+                
+        except Exception as e:
+            logger.error(f"📏💥 Error handling coordination request: {e}", exc_info=True)
+            self._consume_paper_bag("coordination_request_error")
     
     async def _handle_decision_log(self, message: AgentMessage) -> None:
         """

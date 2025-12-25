@@ -40,10 +40,10 @@ from ..distributed.alert_escalation import (
 from .decision_engine import SirHawkingtonBrainV2, DecisionType, MonocleState, AnalysisDepth
 
 # Import Hawk v2 ML layers
-from .perception import HawkPerception, HawkPerceptionContext
-from .reasoning import HawkReasoning, TriageReasoning
-from .action_selection import HawkActionSelection, TriageAction
-from .learning import HawkLearning, HawkLearningRecord
+from .ML.perception import HawkPerception, HawkPerceptionContext
+from .ML.reasoning import HawkReasoning, TriageReasoning
+from .ML.action_selection import HawkActionSelection, TriageAction
+from .ML.learning import HawkLearning, HawkLearningRecord
 
 
 logger = logging.getLogger("SirHawkington.Distributed")

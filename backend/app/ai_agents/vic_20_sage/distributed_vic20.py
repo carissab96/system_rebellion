@@ -45,10 +45,10 @@ from ..distributed.resource_prediction import (
 from .decision_engine import VIC20SageBrainV2
 
 # Import VIC-20 v2 ML layers
-from .perception import VIC20Perception, VIC20PerceptionContext
-from .reasoning import VIC20Reasoning, CoordinationReasoning
-from .action_selection import VIC20ActionSelection, CoordinationAction
-from .learning import VIC20Learning, VIC20LearningRecord
+from .ML.perception import VIC20Perception, VIC20PerceptionContext
+from .ML.reasoning import VIC20Reasoning, CoordinationReasoning
+from .ML.action_selection import VIC20ActionSelection, CoordinationAction
+from .ML.learning import VIC20Learning, VIC20LearningRecord
 
 
 logger = logging.getLogger("VIC20Sage.Distributed")

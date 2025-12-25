@@ -156,30 +156,132 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
     
     async def _handle_coordination_request(self, message: AgentMessage) -> None:
         """
-        Handle coordination requests from VIC-20 - QSP is PARANOID but complies.
+        👻 QSP V2: ML-Enhanced Quantum Security Analysis
         
-        PERSONALITY: Paranoid network security with tequila shots (trust: 0.4)
-        STRUCTURE: Standard AgentMessage parameter (required by base class)
+        PERSONALITY: Paranoid network security with quantum state tracking
+        ARCHITECTURE: Perception → Reasoning → Action Selection → Learning
         
         Args:
             message: AgentMessage with coordination request from VIC-20
         """
         try:
-            # Extract payload (STANDARD - matches Terry's pattern)
+            # Extract payload
             payload = message.payload
             resource_type = payload.get('resource_type', 'unknown')
             severity = payload.get('severity', 'unknown')
             recommendation = payload.get('recommendation', {})
             current_value = payload.get('current_value', 0)
             threshold = payload.get('threshold', 0)
+            full_metrics = payload.get('full_metrics', {})
             
             logger.info(
                 f"👻📬 COORDINATION REQUEST from VIC-20: "
                 f"{resource_type} at {current_value:.1f}% - VIC-20 suggests: {recommendation.get('action', 'unknown')}"
             )
             
-            # Use choice engine to decide (QSP has LOW trust - paranoid!)
-            decision = self.choice_engine.should_follow_recommendation(
+            # Get database session for QSP v2 ML components
+            async for db in self.db_getter():
+                # STEP 1: PERCEPTION - Quantum security assessment
+                from app.ai_agents.quantum_shadow_people.ML.perception import QSPPerception
+                
+                perception = QSPPerception(db, self.personality_traits)
+                context = await perception.perceive({
+                    'resource_type': resource_type,
+                    'severity': severity,
+                    'current_value': current_value,
+                    'threshold': threshold,
+                    'recommendation': recommendation,
+                    'full_metrics': full_metrics
+                })
+                
+                logger.info(
+                    f"👻👁️ Quantum perception complete - "
+                    f"threat_level: {context.threat_level}, quantum_state: {context.quantum_state.state}"
+                )
+                
+                # STEP 2: REASONING - Quantum threat analysis
+                from app.ai_agents.quantum_shadow_people.ML.reasoning import QSPReasoning
+                
+                reasoning = QSPReasoning(db)
+                reasoning_result = await reasoning.reason(context)
+                
+                logger.info(
+                    f"👻🧠 Quantum reasoning complete: {reasoning_result.threat_assessment} → "
+                    f"{reasoning_result.recommended_action} (confidence: {reasoning_result.action_confidence:.2f})"
+                )
+                
+                # STEP 3: ACTION SELECTION - Quantum security response
+                from app.ai_agents.quantum_shadow_people.ML.action_selection import QSPActionSelection
+                
+                action_selector = QSPActionSelection()
+                decision = await action_selector.select_action(reasoning_result, context)
+                
+                logger.info(
+                    f"👻⚡ Action selected: {decision.action_type} "
+                    f"(quantum_state: {decision.quantum_state_after.state})"
+                )
+                
+                # STEP 4: EXECUTION - Execute quantum security action
+                logger.info("👻🔒 EXECUTING QUANTUM NETWORK LOCKDOWN!")
+                
+                # Get metrics before action
+                metrics_before = {
+                    'cpu_usage': full_metrics.get('cpu_usage', 0),
+                    'memory_usage': full_metrics.get('memory_usage', 0),
+                    'network_connections': full_metrics.get('network_connections', 0)
+                }
+                
+                network_result = await SystemActions.throttle_network_operations()
+                
+                # Get metrics after action
+                metrics_after = {
+                    'cpu_usage': full_metrics.get('cpu_usage', 0),
+                    'memory_usage': full_metrics.get('memory_usage', 0),
+                    'network_connections': network_result.get('connections_after', 0)
+                }
+                
+                # STEP 5: LEARNING - Store quantum decision outcome
+                from app.ai_agents.quantum_shadow_people.ML.learning import QSPLearning
+                
+                learning = QSPLearning(db, self.personality_traits)
+                learning_record = await learning.learn(
+                    context=context,
+                    reasoning_result=reasoning_result,
+                    decision=decision,
+                    execution_result={
+                        'success': network_result.get('success', False),
+                        'metrics_before': metrics_before,
+                        'metrics_after': metrics_after,
+                        'connections_reduced': network_result.get('connections_reduced', 0)
+                    },
+                    user_id=self.user_id
+                )
+                
+                if network_result['success']:
+                    logger.info(
+                        f"👻✅ Network secured! Connections: {network_result['connections_before']} → "
+                        f"{network_result['connections_after']}. Quantum phase: {decision.quantum_state_after.state}"
+                    )
+                    
+                    # Broadcast to WebSocket
+                    from app.services.agent_insight_emitter import emit_agent_insight
+                    await emit_agent_insight(
+                        from_agent="quantum_shadow_people",
+                        to_agent="vic20_sage",
+                        action="security_scan_success",
+                        reasoning=f"Quantum security protocol executed: {reasoning_result.threat_assessment}",
+                        context={
+                            "success": True,
+                            "connections_reduced": network_result['connections_reduced'],
+                            "quantum_state": decision.quantum_state_after.state,
+                            "threat_level": context.threat_level
+                        }
+                    )
+                else:
+                    logger.error(f"👻❌ Network throttle failed: {network_result.get('error')}")
+                
+                # Use choice engine for legacy compatibility (but ML made the real decision)
+                legacy_decision = self.choice_engine.should_follow_recommendation(
                 recommendation=recommendation,
                 current_situation={
                     'resource_type': resource_type,
