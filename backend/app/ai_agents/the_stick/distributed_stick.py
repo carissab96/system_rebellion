@@ -35,6 +35,7 @@ from ..distributed.alert_escalation import (
     ResourceType as EscalationResourceType
 )
 from .decision_engine import TheStickBrainV3, AnxietyLevel
+from .paper_bag_economy import PaperBagEconomy, BagSupplyState
 
 
 logger = logging.getLogger("TheStick.Distributed")
@@ -97,8 +98,11 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
         self.total_actions_tracked = 0
         self.compliance_violations = 0
         self.bob_proximity_events = 0
-        self.paper_bags_consumed = 0
         self.anxiety_spikes = 0
+        
+        # 📏🛍️ PAPER BAG ECONOMY SYSTEM
+        self.paper_bag_economy = PaperBagEconomy()
+        self.paper_bags_consumed = 0  # Legacy counter (kept for compatibility)
         
         # Bob detection (MAXIMUM ANXIETY SOURCE!)
         self.bob_last_seen = None
@@ -272,8 +276,14 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
                 
                 logger.info(
                     f"📏✅ Compliance tracked! Total actions: {self.total_actions_tracked}, "
-                    f"Paper bags: {self.paper_bags_consumed}"
+                    f"Paper bags: {self.paper_bag_economy.bags_remaining}"
                 )
+                
+                # 🛍️ REWARD: Successful compliance documentation
+                self._reward_compliance_success()
+                
+                # Check for calm period reward
+                self._check_calm_period_reward()
                 
                 break  # Exit async for loop after processing
                 
@@ -574,19 +584,34 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
             logger.error(f"📏💥 Error handling hamster activity: {e}", exc_info=True)
             self._consume_paper_bag("error_handling")
     
-    def _consume_paper_bag(self, reason: str) -> None:
+    def _consume_paper_bag(self, reason: str, amount: int = None) -> None:
         """
         The Stick consumes a paper bag to manage anxiety.
         
-        This is The Stick's coping mechanism!
-        """
-        self.paper_bags_consumed += 1
-        self.paper_bag_inventory = max(0, self.paper_bag_inventory - 1)
+        Uses the Paper Bag Economy system for realistic inventory management.
         
-        logger.info(
-            f"📏😰 *breathes into paper bag* (Reason: {reason}) "
-            f"[Bags remaining: {self.paper_bag_inventory}]"
-        )
+        Args:
+            reason: Why the bag is being consumed
+            amount: Number of bags to consume (default: 1 for normal anxiety, 3 for Bob)
+        """
+        # Determine consumption amount based on reason
+        if amount is None:
+            if 'bob' in reason.lower():
+                amount = self.paper_bag_economy.BOB_CONSUMPTION  # 3 bags for Bob!
+            elif 'error' in reason.lower():
+                amount = self.paper_bag_economy.ERROR_CONSUMPTION  # 2 bags for errors
+            else:
+                amount = self.paper_bag_economy.ANXIETY_CONSUMPTION  # 1 bag for normal anxiety
+        
+        # Consume bags via economy system
+        event = self.paper_bag_economy.consume_bag(reason, amount)
+        
+        # Update legacy counter for compatibility
+        if event:
+            self.paper_bags_consumed += event.bags_changed * -1  # Convert negative to positive
+        
+        # Update personality traits for frontend
+        self.paper_bag_inventory = self.paper_bag_economy.bags_remaining
         
         # Broadcast anxiety event to WebSocket
         import asyncio
@@ -609,11 +634,113 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
         except Exception as e:
             logger.debug(f"Could not broadcast paper bag event: {e}")
         
-        if self.paper_bag_inventory < 10:
-            logger.warning(
-                f"📏😰😰 PAPER BAG INVENTORY LOW! Only {self.paper_bag_inventory} bags left! "
-                f"*ANXIETY INTENSIFIES*"
+        # Check for emergency state
+        if self.paper_bag_economy.emergency_mode_active:
+            logger.error(
+                f"📏😱💥 EMERGENCY MODE: NO BAGS REMAINING! "
+                f"*vibrates at quantum frequency* *writes everything three times*"
             )
+    
+    def _reward_compliance_success(self) -> None:
+        """
+        Reward The Stick with a paper bag for successful compliance documentation.
+        
+        This is how The Stick maintains his supply during stable periods.
+        """
+        event = self.paper_bag_economy.compliance_success_reward()
+        
+        # Update personality traits for frontend
+        self.paper_bag_inventory = self.paper_bag_economy.bags_remaining
+        
+        # Broadcast replenishment to WebSocket
+        import asyncio
+        try:
+            from app.services.agent_insight_emitter import emit_agent_insight
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.create_task(emit_agent_insight(
+                    from_agent="the_stick",
+                    to_agent="system",
+                    action="paper_bag_replenished",
+                    reasoning="Compliance success reward",
+                    context={
+                        "reason": "compliance_success",
+                        "bags_remaining": self.paper_bag_inventory,
+                        "supply_state": self.paper_bag_economy.get_supply_state().value
+                    }
+                ))
+        except Exception as e:
+            logger.debug(f"Could not broadcast replenishment event: {e}")
+    
+    def _check_calm_period_reward(self) -> None:
+        """
+        Check if enough time has passed without anxiety to award calm period reward.
+        
+        Called periodically to reward The Stick for system stability.
+        """
+        event = self.paper_bag_economy.check_calm_period_reward()
+        
+        if event:
+            # Update personality traits for frontend
+            self.paper_bag_inventory = self.paper_bag_economy.bags_remaining
+            
+            # Broadcast replenishment to WebSocket
+            import asyncio
+            try:
+                from app.services.agent_insight_emitter import emit_agent_insight
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    asyncio.create_task(emit_agent_insight(
+                        from_agent="the_stick",
+                        to_agent="system",
+                        action="paper_bag_replenished",
+                        reasoning="Calm period reward - system stability",
+                        context={
+                            "reason": "calm_period",
+                            "bags_remaining": self.paper_bag_inventory,
+                            "supply_state": self.paper_bag_economy.get_supply_state().value
+                        }
+                    ))
+            except Exception as e:
+                logger.debug(f"Could not broadcast replenishment event: {e}")
+    
+    async def vic20_emergency_resupply(self) -> None:
+        """
+        VIC-20 intervenes with emergency paper bag resupply.
+        
+        Called by VIC-20 when The Stick's bag supply reaches critical levels.
+        This is the coordination hierarchy working - VIC-20 takes care of The Stick.
+        """
+        event = self.paper_bag_economy.vic20_emergency_resupply()
+        
+        # Update personality traits for frontend
+        self.paper_bag_inventory = self.paper_bag_economy.bags_remaining
+        
+        logger.info(
+            f"📏🖥️✨ VIC-20 emergency resupply received! "
+            f"*deep breath of relief* Bags: {self.paper_bag_inventory}"
+        )
+        
+        # Broadcast to WebSocket
+        import asyncio
+        try:
+            from app.services.agent_insight_emitter import emit_agent_insight
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.create_task(emit_agent_insight(
+                    from_agent="vic20_sage",
+                    to_agent="the_stick",
+                    action="emergency_resupply",
+                    reasoning="VIC-20 noticed critical bag supply and arranged emergency resupply",
+                    context={
+                        "bags_added": self.paper_bag_economy.VIC20_RESUPPLY,
+                        "bags_remaining": self.paper_bag_inventory,
+                        "supply_state": self.paper_bag_economy.get_supply_state().value,
+                        "emergency_resolved": not self.paper_bag_economy.emergency_mode_active
+                    }
+                ))
+        except Exception as e:
+            logger.debug(f"Could not broadcast resupply event: {e}")
     
     async def track_agent_action(
         self,
