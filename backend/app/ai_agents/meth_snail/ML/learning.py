@@ -106,7 +106,7 @@ class TerryLearning:
         self.logger.info("🐌📚 Terry learning from this experience...")
         
         # 1. Generate fingerprints
-        from app.ai_agents.meth_snail.situation_fingerprint import SituationFingerprint
+        from app.ai_agents.meth_snail.ML.situation_fingerprint import SituationFingerprint
         
         fingerprints = SituationFingerprint.generate(
             resource_type=context.resource_type,

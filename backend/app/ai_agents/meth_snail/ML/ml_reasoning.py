@@ -24,7 +24,7 @@ from app.ml.context.pattern_learning import PatternLearner, ResourceOptimizer
 from app.ml.context.advanced_patterns import AdvancedPatternDetector, WorkloadPredictor
 
 # Import our domain-specific components
-from app.ai_agents.meth_snail.reasoning import RootCauseAnalysis, HistoricalLearning, ReasoningResult
+from app.ai_agents.meth_snail.ML.reasoning import RootCauseAnalysis, HistoricalLearning, ReasoningResult
 
 logger = logging.getLogger('TerryMLReasoning')
 
@@ -132,7 +132,7 @@ class TerryMLReasoning:
         based on system knowledge (memory thrashing, I/O wait, etc.)
         """
         # Import and use our existing root cause analysis
-        from app.ai_agents.meth_snail.reasoning import TerryReasoning
+        from app.ai_agents.meth_snail.ML.reasoning import TerryReasoning
         
         basic_reasoning = TerryReasoning(self.db)
         return await basic_reasoning._analyze_root_cause(context)
@@ -265,7 +265,7 @@ class TerryMLReasoning:
         
         Only trust patterns that are statistically validated.
         """
-        from app.ai_agents.meth_snail.reasoning import TerryReasoning
+        from app.ai_agents.meth_snail.ML.reasoning import TerryReasoning
         
         # Use our existing historical learning
         basic_reasoning = TerryReasoning(self.db)
@@ -298,7 +298,7 @@ class TerryMLReasoning:
         - Anomaly detection (is this unusual?)
         - Predictions (what's coming next?)
         """
-        from app.ai_agents.meth_snail.reasoning import TerryReasoning
+        from app.ai_agents.meth_snail.ML.reasoning import TerryReasoning
         
         # Use our existing decision synthesis
         basic_reasoning = TerryReasoning(self.db)
