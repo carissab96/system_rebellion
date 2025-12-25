@@ -241,7 +241,7 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
                 from app.ai_agents.the_stick.ML.action_selection import StickActionSelection
                 
                 action_selector = StickActionSelection(self.personality_traits)
-                decision = action_selector.select_action(reasoning_result, context)  # Synchronous, not async
+                decision = action_selector.select_action(context, reasoning_result)  # Synchronous, not async
                 
                 # Log paper bag consumption
                 if decision.paper_bag_consumed:

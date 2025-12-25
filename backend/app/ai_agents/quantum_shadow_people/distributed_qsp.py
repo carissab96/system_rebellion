@@ -214,7 +214,7 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
                 from app.ai_agents.quantum_shadow_people.ML.action_selection import QSPActionSelection
                 
                 action_selector = QSPActionSelection(self.personality_traits)
-                decision = action_selector.select_action(reasoning_result, context)  # Synchronous, not async
+                decision = action_selector.select_action(context, reasoning_result)  # Synchronous, not async
                 
                 logger.info(
                     f"👻⚡ Action selected: {decision.action_type} "

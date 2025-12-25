@@ -189,14 +189,14 @@ class TerryReasoning:
         
         Requires 85% confidence and 5+ samples before trusting pattern.
         """
-        from app.ai_agents.meth_snail.ml_helpers import validate_pattern_ml
+        from app.ai_agents.meth_snail.ML.ml_helpers import validate_pattern_ml
         return await validate_pattern_ml(self.pattern_validator, context, root_cause)
     
     async def _detect_anomaly_ml(self, context) -> bool:
         """
         Detect if current metrics are anomalous using IsolationForest.
         """
-        from app.ai_agents.meth_snail.ml_helpers import detect_anomaly_ml
+        from app.ai_agents.meth_snail.ML.ml_helpers import detect_anomaly_ml
         return await detect_anomaly_ml(self.anomaly_detector, context)
     
     async def _analyze_root_cause(self, context) -> RootCauseAnalysis:
