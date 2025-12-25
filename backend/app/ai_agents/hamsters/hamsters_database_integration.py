@@ -58,10 +58,6 @@ def serialize_for_json(obj):
         return serialize_for_json(obj.__dict__)
     else:
         return obj
-        
-def utc_now():
-    """Get current UTC time with timezone awareness"""
-    return datetime.now(timezone.utc)
 
 class HamstersDatabaseIntegration(BaseDatabaseIntegration):
     """

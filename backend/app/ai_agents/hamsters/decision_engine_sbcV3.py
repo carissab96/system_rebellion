@@ -16,6 +16,10 @@ import random
 
 from app.services.metrics.simplified_metrics_service import SimplifiedMetricsService
 
+def utc_now():
+    """Get current UTC time with timezone awareness"""
+    return datetime.now(timezone.utc)
+
 logger = logging.getLogger("Hamsters.Brain")
 
 class HamstersPriority(Enum):

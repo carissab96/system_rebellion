@@ -77,7 +77,7 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
         self.user_id = user_id
         
         # Set agent name for distributed features
-        self.agent_name = "vic_20_sage"
+        self.agent_name = "vic20_sage"
         
         # VIC-20's sage personality traits
         self.personality_traits = {
@@ -830,7 +830,7 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
         # VIC-20 doesn't directly fix resources, but coordinates others
         # His capability is his wisdom in selecting the right agent
         return AgentCapability(
-            agent_name="vic_20_sage",
+            agent_name="vic20_sage",
             resource_type=resource_type,
             estimated_improvement=0.0,  # VIC-20 coordinates, doesn't act directly
             confidence=0.95,  # Very confident in coordination
@@ -939,12 +939,10 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
         Wraps the existing analyze_metrics to add distributed tracking
         while preserving coordination logic.
         """
-        # Call the original analyze_metrics from VIC20SageBrainV2
-        decision = await super().analyze_metrics(
+        # Call the original process_metrics from VIC20SageBrainV2
+        decision = await self.process_metrics(
             metrics_data=metrics_data,
-            historical_data=historical_data,
-            user_context=user_context,
-            user_id=user_id
+            user_context=user_context
         )
         
         # If distributed features are enabled, record the decision

@@ -487,11 +487,9 @@ class HamstersDistributed(AgentDecisionEngine, HamstersBrainV3):
         Wraps the existing analyze_metrics to add distributed tracking
         while preserving telepathic consensus logic.
         """
-        # Call the original analyze_metrics from HamstersBrainV3
-        decision = await super().analyze_metrics(
+        # Call the original analyze_infrastructure from HamstersBrainV3
+        decision = await self.analyze_infrastructure(
             metrics_data=metrics_data,
-            historical_data=historical_data,
-            user_context=user_context,
             user_id=user_id
         )
         
