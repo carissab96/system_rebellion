@@ -98,7 +98,7 @@ class HawkPerception:
         logger.info(f"🧐👁️ Perceiving {resource_type} alert: {current_value:.1f}% (threshold: {threshold:.1f}%)")
         
         # Assess data quality
-        data_quality_score = self._assess_data_quality(full_metrics, resource_type)
+        data_quality_score, missing_metrics = self._assess_data_quality(full_metrics, resource_type)
         
         # Retrieve historical triage patterns
         similar_triages = await self._get_similar_triages(resource_type, current_value)
@@ -120,6 +120,7 @@ class HawkPerception:
             recent_escalations=recent_escalations,
             data_quality_score=data_quality_score,
             monocle_yeet_count=len(self.monocle_yeet_incidents),
+            missing_metrics=missing_metrics,
             historical_confidence=historical_confidence,
             pattern_match_confidence=pattern_match_confidence
         )
@@ -132,16 +133,18 @@ class HawkPerception:
         
         return context
     
-    def _assess_data_quality(self, full_metrics: Dict[str, Any], resource_type: str) -> float:
+    def _assess_data_quality(self, full_metrics: Dict[str, Any], resource_type: str) -> tuple[float, List[str]]:
         """
         Assess data quality and trigger monocle yeets if needed.
         
         Returns:
-            Data quality score (0.0 = terrible, 1.0 = perfect)
+            Tuple of (data_quality_score, missing_metrics)
+            - data_quality_score: 0.0 = terrible, 1.0 = perfect
+            - missing_metrics: List of missing metric names
         """
         if not full_metrics:
             self._trigger_monocle_yeet("No system metrics provided", resource_type)
-            return 0.0
+            return 0.0, []
         
         quality_score = 1.0
         missing_metrics = []
@@ -174,7 +177,7 @@ class HawkPerception:
                 resource_type
             )
         
-        return max(0.0, quality_score)
+        return max(0.0, quality_score), missing_metrics
     
     def _trigger_monocle_yeet(self, reason: str, resource_type: str):
         """
