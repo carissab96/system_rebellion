@@ -435,7 +435,8 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
                         current_value=current_value,
                         threshold=threshold,
                         severity=severity,
-                        confidence=action.confidence
+                        confidence=action.confidence,
+                        full_metrics=full_metrics  # Pass full metrics for specialist perception
                     )
                     
                     logger.info(f"🧐✅ Escalation complete")
@@ -473,7 +474,8 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
                     current_value=current_value,
                     threshold=threshold,
                     severity=severity,
-                    confidence=0.5
+                    confidence=0.5,
+                    full_metrics=full_metrics  # Pass full metrics even in fallback
                 )
     
     async def _coordination_capability(
@@ -726,12 +728,14 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
         current_value: float,
         threshold: float,
         severity: str,
-        confidence: float
+        confidence: float,
+        full_metrics: Dict[str, Any] = None
     ):
         """
         Send triage alert to VIC-20 for coordination.
         
         This is the key handoff in the hierarchy: Hawk → VIC-20
+        Includes full_metrics so specialists can make informed decisions.
         """
         triage_alert = AgentMessage(
             message_type=MessageType.TRIAGE_ALERT,
@@ -745,6 +749,7 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
                 "severity": severity,
                 "confidence": confidence,
                 "triage_commander": "sir_hawkington",
+                "full_metrics": full_metrics or {},  # Pass full metrics for specialist perception
                 "timestamp": str(self._get_current_time()) if hasattr(self, '_get_current_time') else None
             }
         )
