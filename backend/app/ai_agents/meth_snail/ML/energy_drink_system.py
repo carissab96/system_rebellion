@@ -12,7 +12,7 @@ import logging
 from typing import Optional
 from datetime import datetime, timezone
 
-from .data_types import (
+from app.ai_agents.meth_snail.data_types import (
     EnergyDrinkRequest,
     EnergyDrinkAuthorization,
     EnergyDrinkType,

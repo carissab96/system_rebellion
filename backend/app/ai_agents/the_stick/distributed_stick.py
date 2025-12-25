@@ -244,10 +244,10 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
                 decision = action_selector.select_action(context, reasoning_result)  # Synchronous, not async
                 
                 # Log paper bag consumption
-                if decision.paper_bag_consumed:
+                if decision.paper_bags_consumed > 0:
                     logger.info(
-                        f"📏🛍️ Paper bag #{decision.paper_bag_consumed.bag_number} consumed! "
-                        f"Reason: {decision.paper_bag_consumed.reason}"
+                        f"📏🛍️ {decision.paper_bags_consumed} paper bag(s) consumed! "
+                        f"Anxiety management in progress"
                     )
                 
                 logger.info(

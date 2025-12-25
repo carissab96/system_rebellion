@@ -254,7 +254,7 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
                 if network_result['success']:
                     logger.info(
                         f"👻✅ Network secured! Connections: {network_result['connections_before']} → "
-                        f"{network_result['connections_after']}. Quantum phase: {decision.quantum_state_after.state}"
+                        f"{network_result['connections_after']}. Quantum phase: {decision.quantum_state}"
                     )
                     
                     # Broadcast to WebSocket
@@ -267,7 +267,7 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
                         context={
                             "success": True,
                             "connections_reduced": network_result['connections_reduced'],
-                            "quantum_state": decision.quantum_state_after.state,
+                            "quantum_state": decision.quantum_state,
                             "threat_level": context.threat_level
                         }
                     )
