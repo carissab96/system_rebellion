@@ -3,58 +3,23 @@ from typing import Dict, Any, Optional, List, Tuple
 from enum import Enum
 import asyncio
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import statistics
 import random
 
-class AnxietyLevel(Enum):
-    CALM = "calm"  # 0-20%
-    NERVOUS = "nervous"  # 20-40%
-    ANXIOUS = "anxious"  # 40-60%
-    PANICKING = "panicking"  # 60-80%
-    FULL_PANIC = "full_panic"  # 80-100%
-    PAPER_BAG_BREATHING = "paper_bag_breathing"  # Emergency state
+# Import all type definitions from data_types.py to avoid duplication
+from .data_types import (
+    AnxietyLevel,
+    ComplianceState,
+    StickDecisionType,
+    StickDecision,
+    UserPattern,
+    ComplianceViolation
+)
 
-class ComplianceState(Enum):
-    COMPLIANT = "compliant"
-    MINOR_VIOLATION = "minor_violation"
-    MAJOR_VIOLATION = "major_violation"
-    CRITICAL_VIOLATION = "critical_violation"
-    OPTIMIZING = "optimizing"
-    LEARNING = "learning"
-    ANXIETY_DRIVEN_HYPERFOCUS = "anxiety_driven_hyperfocus"
-
-class StickDecisionType(Enum):
-    USER_PATTERN_OPTIMIZATION = "user_pattern_optimization"
-    CONFIGURATION_PROFILE_SWITCH = "configuration_profile_switch"
-    COMPLIANCE_ENFORCEMENT = "compliance_enforcement"
-    PREDICTIVE_CONFIGURATION = "predictive_configuration"
-    BEHAVIOR_ANOMALY_DETECTION = "behavior_anomaly_detection"
-    SYSTEM_PREPARATION = "system_preparation"
-    ANXIETY_TRIGGERED_SCAN = "anxiety_triggered_scan"
-    HAMSTER_PROXIMITY_ALERT = "hamster_proximity_alert"
-    PANIC_MODE_DOCUMENTATION = "panic_mode_documentation"
-
-@dataclass
-class StickDecision:
-    decision_type: StickDecisionType
-    compliance_state: ComplianceState
-    anxiety_level: AnxietyLevel
-    configuration_target: str
-    optimization_parameters: Dict[str, Any]
-    user_pattern_confidence: float
-    compliance_explanation: str
-    anxiety_explanation: str
-    technical_details: Dict[str, Any]
-    expected_improvement: float
-    confidence_level: float
-    paper_bags_consumed: int
-    timestamp: datetime
-    
-    @property
-    def is_panicking(self) -> bool:
-        """Check if The Stick is in panic mode"""
-        return self.anxiety_level in [AnxietyLevel.PANICKING, AnxietyLevel.FULL_PANIC, AnxietyLevel.PAPER_BAG_BREATHING]
+def utc_now() -> datetime:
+    """Get current UTC time"""
+    return datetime.now(timezone.utc)
 
 class TheStickBrainV3:
     """

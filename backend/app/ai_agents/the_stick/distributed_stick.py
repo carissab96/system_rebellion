@@ -199,7 +199,7 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
             logger.warning("📏😰 BOB DETECTED IN COORDINATION! *anxiety intensifies*")
             self.bob_proximity_events += 1
             self._consume_paper_bag("bob_detected_in_coordination")
-            self.current_anxiety_level = AnxietyLevel.ANXIOUS  # Bob causes anxiety!
+            self.anxiety_level = AnxietyLevel.ANXIOUS  # Bob causes anxiety!
         
         logger.info(f"📏📋 Tracking coordination request: {coordination_type}")
         self.total_actions_tracked += 1
@@ -214,7 +214,7 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
             },
             output_data={
                 "tracked": True,
-                "anxiety_level": self.current_anxiety_level.value if hasattr(self, 'current_anxiety_level') else "baseline",
+                "anxiety_level": self.anxiety_level.value if hasattr(self, 'anxiety_level') else "baseline",
                 "paper_bags_consumed": self.paper_bags_consumed
             },
             confidence=1.0,
@@ -543,7 +543,7 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
                         "reason": reason,
                         "bags_remaining": self.paper_bag_inventory,
                         "bags_consumed_total": self.paper_bags_consumed,
-                        "anxiety_level": self.current_anxiety_level.value if hasattr(self, 'current_anxiety_level') else "unknown"
+                        "anxiety_level": self.anxiety_level.value if hasattr(self, 'anxiety_level') else "unknown"
                     }
                 ))
         except Exception as e:
@@ -631,12 +631,11 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
         Wraps the existing analyze_metrics to add distributed tracking
         while preserving learning coordination logic.
         """
-        # Call the original analyze_metrics from TheStickBrainV3
-        decision = await super().analyze_metrics(
-            metrics_data=metrics_data,
+        # Call the original analyze_user_behavior from TheStickBrainV3
+        decision = await self.analyze_user_behavior(
+            system_metrics=metrics_data,
             historical_data=historical_data,
-            user_context=user_context,
-            user_id=user_id
+            user_context=user_context
         )
         
         # If distributed features are enabled, record the decision
