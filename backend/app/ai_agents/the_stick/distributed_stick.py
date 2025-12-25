@@ -229,8 +229,8 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
                 # STEP 2: REASONING - Analyze compliance implications
                 from app.ai_agents.the_stick.ML.reasoning import StickReasoning
                 
-                reasoning = StickReasoning(db)
-                reasoning_result = await reasoning.reason(context)
+                reasoning = StickReasoning(self.personality_traits)
+                reasoning_result = reasoning.reason(context)  # Synchronous, not async
                 
                 logger.info(
                     f"📏🧠 Reasoning complete: {reasoning_result.compliance_assessment} "
@@ -240,8 +240,8 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
                 # STEP 3: ACTION SELECTION - Determine logging action
                 from app.ai_agents.the_stick.ML.action_selection import StickActionSelection
                 
-                action_selector = StickActionSelection()
-                decision = await action_selector.select_action(reasoning_result, context)
+                action_selector = StickActionSelection(self.personality_traits)
+                decision = action_selector.select_action(reasoning_result, context)  # Synchronous, not async
                 
                 # Log paper bag consumption
                 if decision.paper_bag_consumed:
@@ -261,17 +261,12 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
                 # STEP 5: LEARNING - Store compliance outcome
                 from app.ai_agents.the_stick.ML.learning import StickLearning
                 
-                learning = StickLearning(db, self.personality_traits)
+                learning = StickLearning(db, self.user_id)
                 learning_record = await learning.learn(
                     context=context,
-                    reasoning_result=reasoning_result,
-                    decision=decision,
-                    execution_result={
-                        'success': True,
-                        'tracked': True,
-                        'total_actions_tracked': self.total_actions_tracked
-                    },
-                    user_id=self.user_id
+                    reasoning=reasoning_result,
+                    action=decision,
+                    outcome_success=True
                 )
                 
                 logger.info(

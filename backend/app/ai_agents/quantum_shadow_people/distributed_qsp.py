@@ -202,8 +202,8 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
                 # STEP 2: REASONING - Quantum threat analysis
                 from app.ai_agents.quantum_shadow_people.ML.reasoning import QSPReasoning
                 
-                reasoning = QSPReasoning(db)
-                reasoning_result = await reasoning.reason(context)
+                reasoning = QSPReasoning(self.personality_traits)
+                reasoning_result = reasoning.reason(context)  # Synchronous, not async
                 
                 logger.info(
                     f"👻🧠 Quantum reasoning complete: {reasoning_result.threat_assessment} → "
@@ -213,8 +213,8 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
                 # STEP 3: ACTION SELECTION - Quantum security response
                 from app.ai_agents.quantum_shadow_people.ML.action_selection import QSPActionSelection
                 
-                action_selector = QSPActionSelection()
-                decision = await action_selector.select_action(reasoning_result, context)
+                action_selector = QSPActionSelection(self.personality_traits)
+                decision = action_selector.select_action(reasoning_result, context)  # Synchronous, not async
                 
                 logger.info(
                     f"👻⚡ Action selected: {decision.action_type} "
@@ -243,18 +243,12 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
                 # STEP 5: LEARNING - Store quantum decision outcome
                 from app.ai_agents.quantum_shadow_people.ML.learning import QSPLearning
                 
-                learning = QSPLearning(db, self.personality_traits)
+                learning = QSPLearning(db, self.user_id)
                 learning_record = await learning.learn(
                     context=context,
-                    reasoning_result=reasoning_result,
-                    decision=decision,
-                    execution_result={
-                        'success': network_result.get('success', False),
-                        'metrics_before': metrics_before,
-                        'metrics_after': metrics_after,
-                        'connections_reduced': network_result.get('connections_reduced', 0)
-                    },
-                    user_id=self.user_id
+                    reasoning=reasoning_result,
+                    action=decision,
+                    outcome_success=network_result.get('success', False)
                 )
                 
                 if network_result['success']:
