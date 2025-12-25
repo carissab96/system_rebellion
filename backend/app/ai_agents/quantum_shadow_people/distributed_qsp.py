@@ -39,6 +39,7 @@ from ..distributed.action_verification import (
     ResourceType as VerificationResourceType
 )
 from .decision_engine import QuantumShadowPeopleBrainV2
+from .data_types import QSPDecision, QSPDecisionType, QuantumPhaseState
 
 
 logger = logging.getLogger("QuantumShadowPeople.Distributed")
@@ -395,17 +396,27 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
                 # Write to PostgreSQL
                 if self.db_integration and self.user_id:
                     try:
-                        quantum_decision = {
-                            'decision_id': f"qsp_{action}_{network_result.get('timestamp', '')}",
-                            'threat_level': severity,
-                            'quantum_state': 'secured',
-                            'paranoia_justified': True,
-                            'tequila_shots_required': 2,
-                            'action_taken': action,
-                            'connections_reduced': network_result['connections_reduced'],
-                            'confidence': decision['decision_score'],
-                            'human_translation': decision['reasoning']
-                        }
+                        from datetime import datetime, timezone
+                        quantum_decision = QSPDecision(
+                            decision_type=QSPDecisionType.INTERDIMENSIONAL_SECURITY,
+                            quantum_state=QuantumPhaseState.CORPOREAL,
+                            network_target=f"network_security_{severity}",
+                            optimization_parameters={
+                                'action_taken': action,
+                                'connections_reduced': network_result['connections_reduced'],
+                                'threat_level': severity
+                            },
+                            tequila_jello_shots_required=2,
+                            mysterious_explanation=decision['reasoning'],
+                            technical_details={
+                                'connections_before': network_result.get('connections_before', 0),
+                                'connections_after': network_result.get('connections_after', 0),
+                                'paranoia_justified': True
+                            },
+                            expected_improvement=float(network_result.get('connections_reduced', 0)),
+                            confidence_level=decision['decision_score'],
+                            timestamp=datetime.now(timezone.utc)
+                        )
                         await self.db_integration.store_decision(self.user_id, quantum_decision)
                         logger.info(f"👻💾 Quantum decision written to PostgreSQL")
                     except Exception as e:
@@ -451,12 +462,11 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
         Wraps the existing analyze_metrics to add distributed tracking
         while preserving quantum analysis logic.
         """
-        # Call the original analyze_metrics from QuantumShadowPeopleBrainV2
-        decision = await super().analyze_metrics(
-            metrics_data=metrics_data,
+        # Call the original analyze_network_metrics from QuantumShadowPeopleBrainV2
+        decision = await self.analyze_network_metrics(
+            network_data=metrics_data,
             historical_data=historical_data,
-            user_context=user_context,
-            user_id=user_id
+            user_context=user_context
         )
         
         # If distributed features are enabled, record the decision

@@ -18,7 +18,11 @@ import uuid
 import socket
 from collections import defaultdict
 
+# Import type definitions from data_types.py to avoid duplication
+from .data_types import QuantumPhaseState, QSPDecisionType, QSPDecision
+
 logger = logging.getLogger("QuantumShadowPeople")
+
 def datetime_to_iso(dt):
     """Convert datetime to ISO string for JSON serialization"""
     return dt.isoformat() if dt else None
@@ -40,59 +44,6 @@ def serialize_for_json(obj):
 def utc_now():
     """Get current UTC time with timezone awareness"""
     return datetime.now(timezone.utc)
-
-class QuantumPhaseState(Enum):
-    """QSP's dimensional states"""
-    CORPOREAL = "corporeal"
-    PHASED = "phased"
-    PARTIALLY_PHASED = "partially_phased"
-    QUANTUM_ENTANGLED = "quantum_entangled"
-    QUANTUM_SUPERPOSITION = "quantum_superposition"
-    INTERDIMENSIONAL = "interdimensional"
-    VOID_WALKER = "void_walker"
-    TEQUILA_JELLO_DIMENSION = "tequila_jello_dimension"
-
-class QSPDecisionType(Enum):
-    """Types of quantum network interventions"""
-    QUANTUM_PHASE_ROUTER = "quantum_phase_router"
-    TEQUILA_JELLO_OPTIMIZATION = "tequila_jello_optimization"
-    PHANTOM_PACKET_RECOVERY = "phantom_packet_recovery"
-    NETWORK_DIMENSION_SHIFT = "network_dimension_shift"
-    MYSTERIOUS_LATENCY_FIX = "mysterious_latency_fix"
-    SPECTRAL_BANDWIDTH_BOOST = "spectral_bandwidth_boost"
-    INTERDIMENSIONAL_SECURITY = "interdimensional_security"
-    PREEMPTIVE_QUANTUM_FIX = "preemptive_quantum_fix"
-
-@dataclass
-class QSPDecision:
-    """Quantum Shadow People's mysterious network decisions"""
-    decision_type: QSPDecisionType
-    quantum_state: QuantumPhaseState
-    network_target: str
-    optimization_parameters: Dict[str, Any]
-    tequila_jello_shots_required: int
-    mysterious_explanation: str
-    technical_details: Dict[str, Any]
-    expected_improvement: float
-    confidence_level: float
-    timestamp: datetime
-    comprehensibility_score: float = 0.3  # How well others understand this
-    
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary for storage/transmission"""
-        return {
-            'decision_type': self.decision_type.value,
-            'quantum_state': self.quantum_state.value,
-            'network_target': self.network_target,
-            'optimization_parameters': self.optimization_parameters,
-            'tequila_jello_shots_required': self.tequila_jello_shots_required,
-            'mysterious_explanation': self.mysterious_explanation,
-            'technical_details': self.technical_details,
-            'expected_improvement': self.expected_improvement,
-            'confidence_level': self.confidence_level,
-            'timestamp': self.timestamp.isoformat(),
-            'comprehensibility_score': self.comprehensibility_score
-        }
 
 class QuantumShadowPeopleBrainV2:
     """
