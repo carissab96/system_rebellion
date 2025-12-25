@@ -263,7 +263,7 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
                         from_agent="quantum_shadow_people",
                         to_agent="vic20_sage",
                         action="security_scan_success",
-                        reasoning=f"Quantum security protocol executed: {reasoning_result.threat_assessment}",
+                        reasoning=f"Quantum security protocol executed: {reasoning_result.threat_classification}",
                         context={
                             "success": True,
                             "connections_reduced": network_result['connections_reduced'],

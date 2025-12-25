@@ -507,7 +507,7 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
                 'success_rate': self.override_success_rate
             }
             
-            await self.db_integration.store_decision(
+            await self.db_integration.store_decision_dict(
                 user_id=self.user_id,
                 decision_data=action_data
             )

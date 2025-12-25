@@ -252,7 +252,7 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
                 
                 logger.info(
                     f"📏⚡ Action selected: {decision.action_type} "
-                    f"(anxiety_after: {decision.anxiety_level_after:.2f})"
+                    f"(anxiety_level: {decision.anxiety_level})"
                 )
                 
                 # STEP 4: EXECUTION - Log compliance event
