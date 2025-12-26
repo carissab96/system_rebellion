@@ -20,40 +20,37 @@ import uuid
 
 
 class MessageType(Enum):
-    """Types of messages agents can send"""
+    """
+    Simplified message types for ML architecture.
+    
+    With PostgreSQL handling state/decisions/learning, Redis pub/sub is now
+    focused purely on real-time coordination between agents.
+    
+    REMOVED (now in PostgreSQL):
+    - AGENT_STATE_CHANGE - State stored in database
+    - MEMORY_SHARE - Query database directly
+    - PATTERN_DISCOVERED - Query database directly
+    - LEARNING_UPDATE - Query database directly
+    - DECISION_BROADCAST - Use DECISION_LOG instead
+    
+    KEPT:
+    - AGENT_HEARTBEAT - Only way to tell if agent is alive
+    """
     # Resource monitoring
     RESOURCE_ALERT = "resource_alert"
-    RESOURCE_STATUS = "resource_status"
     
-    # Decision making
-    DECISION_REQUEST = "decision_request"
-    DECISION_RESPONSE = "decision_response"
-    DECISION_BROADCAST = "decision_broadcast"
-    
-    # Agent coordination
-    AGENT_HEARTBEAT = "agent_heartbeat"
-    AGENT_STATE_CHANGE = "agent_state_change"
+    # Agent coordination (real-time only)
+    AGENT_HEARTBEAT = "agent_heartbeat"        # Agent alive signal
     AGENT_QUERY = "agent_query"
     AGENT_RESPONSE = "agent_response"
     
-    # Triage and coordination (Task 3.4)
-    TRIAGE_DECISION = "triage_decision"
-    COORDINATION_REQUEST = "coordination_request"
-    COORDINATION_UPDATE = "coordination_update"
-    
-    # Hierarchy-specific (Hawk → VIC-20 → Specialists → Stick)
+    # Hierarchy-specific coordination (Hawk → VIC-20 → Specialists → Stick)
     TRIAGE_ALERT = "triage_alert"              # Hawk → VIC-20
-    RECOMMENDED_FIX = "recommended_fix"        # VIC-20 → Specialists
+    COORDINATION_REQUEST = "coordination_request"  # VIC-20 → Specialists
     ACTION_REPORT = "action_report"            # Specialists → VIC-20
     DECISION_LOG = "decision_log"              # Everyone → The Stick (CC)
     
-    # Memory and learning
-    MEMORY_SHARE = "memory_share"
-    PATTERN_DISCOVERED = "pattern_discovered"
-    LEARNING_UPDATE = "learning_update"
-    
     # System events
-    SYSTEM_EVENT = "system_event"
     EMERGENCY = "emergency"
 
 
