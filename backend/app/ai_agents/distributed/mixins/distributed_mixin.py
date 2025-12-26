@@ -337,7 +337,8 @@ class DistributedAgentMixin:
         if not self._comm_hub:
             raise RuntimeError("Distributed features not initialized")
         
-        await self._comm_hub.send_message(
+        # Use message_bus.send_to_agent() which has the correct signature
+        await self._comm_hub.message_bus.send_to_agent(
             to_agent=to_agent,
             message_type=message_type,
             payload=payload,
