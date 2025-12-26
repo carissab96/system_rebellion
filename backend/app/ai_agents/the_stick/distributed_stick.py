@@ -839,17 +839,7 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
                 
                 # Compliance issues are logged to database via CentralMemoryBank
                 # No need to broadcast - other agents query database for learning
-                if decision.get('compliance_status') == 'non_compliant':
-                    # Database write happens in decision storage
-                    pass
-                    # Removed LEARNING_UPDATE broadcast - use database queries
-                            "guidance": decision.get('guidance_provided', None),
-                            "severity": decision.get('severity', 'low')
-                        },
-                        priority=Priority.NORMAL
-                    )
-                    
-                    logger.info(f"🪵📚 Compliance issue broadcast - *patient reminder sent*")
+                # REMOVED: LEARNING_UPDATE broadcast - use database queries instead
                 
             except Exception as e:
                 logger.error(f"❌ Error recording distributed decision: {e}")
