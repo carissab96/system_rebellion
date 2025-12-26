@@ -271,8 +271,49 @@ class HamstersDistributed(AgentDecisionEngine, HamstersBrainV3):
                 # 🎯 STEP 5: EXECUTE ACTION - Run storage fix
                 logger.info(f"🐹🔧 Executing {action.action_type}...")
                 
-                # Execute cleanup (simplified for now - full sudo execution later)
-                cleanup_result = await SystemActions.emergency_disk_cleanup(include_defrag=True)
+                # Get REAL metrics BEFORE action from SimplifiedMetricsService
+                from app.services.metrics.simplified_metrics_service import SimplifiedMetricsService
+                metrics_service = await SimplifiedMetricsService.get_instance()
+                
+                try:
+                    before_metrics = await metrics_service.get_metrics(force_refresh=True)
+                    metrics_before = {
+                        'disk_usage': before_metrics.get('disk_usage', 0),
+                        'cpu_usage': before_metrics.get('cpu_usage', 0),
+                        'memory_usage': before_metrics.get('memory_usage', 0)
+                    }
+                    logger.info(f"🐹📊 Metrics BEFORE: Disk {metrics_before['disk_usage']:.1f}%")
+                except Exception as e:
+                    logger.error(f"🐹⚠️ Failed to get before metrics: {e}")
+                    metrics_before = {
+                        'disk_usage': full_metrics.get('disk_usage', 0),
+                        'cpu_usage': full_metrics.get('cpu_usage', 0),
+                        'memory_usage': full_metrics.get('memory_usage', 0)
+                    }
+                
+                # Execute the SELECTED action (not hardcoded defrag!)
+                from app.ai_agents.hamsters.ML.action_executor import HamstersActionExecutor
+                executor = HamstersActionExecutor()
+                cleanup_result = await executor.execute_action(action.action_type, {})
+                
+                # Get REAL metrics AFTER action from SimplifiedMetricsService
+                try:
+                    import asyncio
+                    await asyncio.sleep(1.0)  # Wait for action effects to propagate
+                    after_metrics = await metrics_service.get_metrics(force_refresh=True)
+                    metrics_after = {
+                        'disk_usage': after_metrics.get('disk_usage', 0),
+                        'cpu_usage': after_metrics.get('cpu_usage', 0),
+                        'memory_usage': after_metrics.get('memory_usage', 0)
+                    }
+                    logger.info(f"🐹📊 Metrics AFTER: Disk {metrics_after['disk_usage']:.1f}%")
+                except Exception as e:
+                    logger.error(f"🐹⚠️ Failed to get after metrics: {e}")
+                    metrics_after = {
+                        'disk_usage': cleanup_result.get('disk_after_percent', metrics_before['disk_usage']),
+                        'cpu_usage': metrics_before['cpu_usage'],
+                        'memory_usage': metrics_before['memory_usage']
+                    }
                 
                 if cleanup_result['success']:
                     logger.info(
@@ -304,8 +345,11 @@ class HamstersDistributed(AgentDecisionEngine, HamstersBrainV3):
                     await learning.update_outcome(
                         learning_record,
                         success=True,
-                        outcome_notes=f"Freed {cleanup_result['disk_freed_mb']:.2f} MB"
+                        outcome_notes=f"Freed {cleanup_result.get('disk_freed_mb', 0):.2f} MB"
                     )
+                    
+                    # Update action selector's adaptive bias based on outcome
+                    action_selector.update_defrag_bias(action.action_type, True)
                 else:
                     logger.error(f"🐹❌ Fix failed: {cleanup_result.get('error')}")
                     await learning.update_outcome(
@@ -313,6 +357,9 @@ class HamstersDistributed(AgentDecisionEngine, HamstersBrainV3):
                         success=False,
                         outcome_notes=cleanup_result.get('error', 'Unknown error')
                     )
+                    
+                    # Update action selector's adaptive bias based on outcome
+                    action_selector.update_defrag_bias(action.action_type, False)
                 
                 logger.info(f"{'='*80}")
                 logger.info(f"🐹✅ HAMSTERS V2 TELEPATHIC CONSENSUS COMPLETE")
@@ -324,9 +371,9 @@ class HamstersDistributed(AgentDecisionEngine, HamstersBrainV3):
             logger.error(f"🐹💥 Hamsters v2 consensus failed: {e}")
             logger.exception(e)
             
-            # Fallback to basic cleanup
+            # Fallback to basic cleanup (no defrag for safety)
             logger.warning("🐹⚠️ Falling back to basic cleanup...")
-            cleanup_result = await SystemActions.emergency_disk_cleanup(include_defrag=True)
+            cleanup_result = await SystemActions.emergency_disk_cleanup(include_defrag=False)
             if cleanup_result['success']:
                 logger.info(f"🐹✅ Fallback cleanup succeeded")
     

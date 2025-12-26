@@ -4,7 +4,8 @@ Hamsters' Action Selection Layer - Telepathic Consensus Execution
 
 Selects:
 - Storage fix action based on consensus
-- Sudo command construction (fstrim, defrag, etc.)
+- Exploration vs Exploitation (epsilon-greedy)
+- Adaptive defrag bias (learns when defrag is actually needed)
 - Execution strategy and parameters
 - Beer consumption finalization
 - Duct tape allocation
@@ -16,6 +17,7 @@ Personality behaviors integrated:
 - Stick panic alerts sent if Bob at cupboard
 """
 import logging
+import random
 from typing import Dict, Any, Optional, List
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -76,8 +78,43 @@ class HamstersActionSelection:
     🐹🐹🐹 "Consensus reached! *cracks beer* *measures duct tape* Let's fix this!"
     """
     
+    # Map storage issues to viable actions
+    # Hamsters handle: Disk/Storage issues
+    ACTION_MAP = {
+        'disk_full': [
+            'rotate_logs',          # Clear old logs first
+            'cleanup',              # Basic cleanup
+            'cleanup_with_defrag',  # If fragmentation is also high
+        ],
+        'high_fragmentation': [
+            'defrag_only',          # Just defrag
+            'cleanup_with_defrag',  # Cleanup + defrag
+        ],
+        'log_overflow': [
+            'rotate_logs',          # Logs are the problem
+            'cleanup',              # General cleanup
+        ],
+        'general_storage': [
+            'cleanup',              # Basic cleanup
+            'rotate_logs',          # Check logs
+        ],
+    }
+    
     def __init__(self, personality_traits: Dict[str, Any]):
         self.personality_traits = personality_traits
+        
+        # Exploration vs Exploitation
+        self.epsilon = 0.15  # 15% chance to explore (try non-preferred actions)
+        self.min_epsilon = 0.05  # Minimum exploration rate
+        self.epsilon_decay = 0.995  # Decay exploration over time
+        
+        # Adaptive defrag bias (starts high, decreases if defrag not effective)
+        self.defrag_bias = 1.3  # 30% bias toward defrag (Carl loves it!)
+        self.defrag_successes = 0
+        self.defrag_attempts = 0
+        
+        logger.info("🐹⚡ Hamsters' action selection initialized!")
+        logger.info(f"🐹🔬 Exploration rate: {self.epsilon:.1%}, Defrag bias: {self.defrag_bias:.2f}")
         
     def select_action(
         self,
@@ -173,6 +210,47 @@ class HamstersActionSelection:
             logger.info(f"🐹🔧 Sudo command: {sudo_command}")
         
         return action
+    
+    def update_defrag_bias(self, action: str, success: bool):
+        """
+        Update Hamsters' defrag bias based on outcomes.
+        
+        If defrag keeps failing or isn't needed, reduce the bias.
+        If other actions work better, reduce the bias.
+        
+        Args:
+            action: Action that was executed
+            success: Whether it succeeded
+        """
+        if 'defrag' in action:
+            self.defrag_attempts += 1
+            if success:
+                self.defrag_successes += 1
+            
+            # Calculate success rate
+            success_rate = self.defrag_successes / self.defrag_attempts
+            
+            # Adjust bias based on success rate
+            # If success rate < 60%, reduce bias toward 1.0 (no bias)
+            # If success rate > 80%, maintain or increase bias
+            if success_rate < 0.6:
+                self.defrag_bias = max(1.0, self.defrag_bias * 0.95)
+                logger.info(
+                    f"🐹📉 Defrag success rate low ({success_rate:.1%}) - "
+                    f"reducing bias to {self.defrag_bias:.2f}"
+                )
+            elif success_rate > 0.8 and self.defrag_bias < 1.3:
+                self.defrag_bias = min(1.3, self.defrag_bias * 1.02)
+                logger.debug(f"🐹📈 Defrag working well - bias: {self.defrag_bias:.2f}")
+        
+        elif success:
+            # Other action succeeded - slightly reduce defrag bias
+            # (Hamsters learn there are other good options)
+            self.defrag_bias = max(1.0, self.defrag_bias * 0.98)
+            logger.debug(
+                f"🐹💡 {action} worked! Learning alternatives exist. "
+                f"Defrag bias: {self.defrag_bias:.2f}"
+            )
     
     def _build_sudo_command(
         self,
