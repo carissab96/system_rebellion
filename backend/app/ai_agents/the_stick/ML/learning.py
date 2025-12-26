@@ -168,54 +168,48 @@ class StickLearning:
                 'anxiety_level': context.anxiety_level,
                 'anxiety_category': action.anxiety_level,
                 'panic_attack_active': context.panic_attack_active,
-                'panic_attack_managed': action.panic_attack_managed,
-                
-                # Paper bag consumption
                 'paper_bags_consumed': action.paper_bags_consumed,
-                'paper_bags_remaining': context.paper_bag_inventory,
-                'breathing_exercises_performed': action.breathing_exercises_performed,
-                
-                # Bob situation
+                'panic_attack_active': action.panic_attack_active,
+                'panic_attack_managed': action.panic_attack_managed,
                 'bob_detected': action.bob_detected,
-                'bob_threat_level': reasoning.bob_threat_level,
-                'bob_avoidance_strategy': reasoning.bob_avoidance_strategy,
                 'bob_avoidance_executed': action.bob_avoidance_executed,
                 'safe_distance_maintained': action.safe_distance_maintained,
-                
-                # Hamster translation
                 'hamster_messages_archived': action.hamster_messages_archived,
-                'translation_quality': action.translation_quality,
-                'hamster_messages_understood': reasoning.hamster_messages_understood,
-                
-                # Decision analysis
-                'decision_complexity_assessment': reasoning.decision_complexity_assessment,
-                'logging_urgency': reasoning.logging_urgency,
-                'logging_approach': reasoning.logging_approach,
-                
-                # Execution details
-                'immediate_logging': action.immediate_logging,
-                'estimated_logging_time': action.estimated_logging_time,
-                
-                # Evidence
-                'similar_event_precedent': reasoning.similar_event_precedent
+                'hamster_messages_understood': action.hamster_messages_understood,
+                'log_retention_days': action.log_retention_days,
+                'compression_applied': action.compression_applied
+            }
+            
+            # Prepare improvement metrics
+            improvement = {
+                'action_type': action.action_type,
+                'anxiety_managed': action.panic_attack_managed
             }
             
             # Create database record
             db_record = AgentLearningRecord(
-                user_id=self.user_id,
                 agent_name='the_stick',
-                decision_type=f'logging_{action.action_type}',
-                input_data=input_data,
-                output_data=output_data,
+                fingerprint_l1=fingerprint_l1,
+                fingerprint_l2=fingerprint_l2,
+                fingerprint_l3=fingerprint_l3,
+                resource_type=context.resource_type,
+                severity=context.severity,
+                root_cause=reasoning.root_cause,
+                process_category='logging',
+                action=action.action_type,
+                parameters=parameters,
                 confidence=action.confidence,
-                success=learning_record.success,
-                reasoning=reasoning.logging_approach,
-                timestamp=learning_record.timestamp
+                followed_vic20=True,  # Stick follows VIC-20's routing
+                success=learning_record.success if learning_record.success is not None else True,
+                improvement=improvement,
+                what_worked=reasoning.root_cause if learning_record.success else None,
+                what_failed=None if learning_record.success else reasoning.root_cause
             )
             
             self.db.add(db_record)
             await self.db.commit()
             
+            logger.debug(" Learning record stored in database")
             logger.debug("📊💾 Learning record stored in database")
             
         except Exception as e:

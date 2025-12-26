@@ -161,71 +161,64 @@ class HamstersLearning:
         Store learning record in PostgreSQL.
         """
         try:
-            # Prepare input data
-            input_data = {
+            # Create hierarchical fingerprints for storage fixes
+            fingerprint_l1 = f"{context.resource_type}"
+            fingerprint_l2 = f"{context.resource_type}_{context.severity}"
+            fingerprint_l3 = f"{context.resource_type}_{context.severity}_{action.action_type}"
+            
+            # Prepare parameters with all context and action details
+            parameters = {
                 'disk_usage_percent': context.disk_usage_percent,
                 'fragmentation_level': context.fragmentation_level,
                 'available_space_gb': context.available_space_gb,
                 'inode_usage_percent': context.inode_usage_percent,
                 'complexity_level': context.complexity_level,
-                'ingenuity_required': context.ingenuity_required
-            }
-            
-            # Prepare output data (includes personality behaviors)
-            output_data = {
+                'ingenuity_required': context.ingenuity_required,
                 'consensus_fix': action.consensus_fix,
                 'action_type': action.action_type,
                 'requires_sudo': action.requires_sudo,
                 'sudo_command': action.sudo_command,
                 'execution_strategy': action.execution_strategy,
-                'estimated_duration_minutes': action.estimated_duration_minutes,
-                
-                # Individual assessments
-                'steve_recommendation': reasoning.steve_assessment.recommended_fix,
-                'steve_confidence': reasoning.steve_assessment.confidence,
-                'steve_agreed': action.steve_agreed,
-                'bob_recommendation': reasoning.bob_assessment.recommended_fix,
-                'bob_confidence': reasoning.bob_assessment.confidence,
-                'bob_agreed': action.bob_agreed,
-                'carl_recommendation': reasoning.carl_assessment.recommended_fix,
-                'carl_confidence': reasoning.carl_assessment.confidence,
-                'carl_agreed': action.carl_agreed,
-                
-                # Consensus metrics
-                'consensus_confidence': action.confidence,
-                'disagreement_level': action.disagreement_level,
-                'consensus_strength': reasoning.consensus_strength,
-                
-                # Personality behaviors
                 'total_beers_consumed': action.total_beers_consumed,
+                'duct_tape_rolls': action.duct_tape_rolls,
                 'steve_beers': action.steve_beers,
                 'bob_beers': action.bob_beers,
                 'carl_beers': action.carl_beers,
-                'duct_tape_rolls': action.duct_tape_rolls,
-                'duct_tape_regular': action.duct_tape_breakdown.regular_rolls,
-                'duct_tape_premium': action.duct_tape_breakdown.premium_rolls,
-                'duct_tape_quantum': action.duct_tape_breakdown.quantum_rolls,
-                'duct_tape_carls_special': action.duct_tape_breakdown.carls_special_rolls,
-                'duct_tape_job_complexity': action.duct_tape_breakdown.job_complexity,
+                'steve_agreed': action.steve_agreed,
+                'bob_agreed': action.bob_agreed,
+                'carl_agreed': action.carl_agreed,
+                'consensus_strength': action.consensus_strength,
+                'disagreement_level': action.disagreement_level,
                 'bob_at_cupboard': action.bob_at_cupboard,
                 'stick_panic_alert': action.stick_panic_alert,
-                
-                # Risk assessment
                 'risk_level': reasoning.risk_level,
                 'urgency': reasoning.urgency
             }
             
+            # Prepare improvement metrics (space freed)
+            improvement = {
+                'estimated_space_freed_mb': action.estimated_space_freed,
+                'action_type': action.action_type
+            }
+            
             # Create database record
             db_record = AgentLearningRecord(
-                user_id=self.user_id,
                 agent_name='hamsters',
-                decision_type=f'storage_fix_{action.action_type}',
-                input_data=input_data,
-                output_data=output_data,
+                fingerprint_l1=fingerprint_l1,
+                fingerprint_l2=fingerprint_l2,
+                fingerprint_l3=fingerprint_l3,
+                resource_type=context.resource_type,
+                severity=context.severity,
+                root_cause=reasoning.root_cause,
+                process_category='storage',
+                action=action.action_type,
+                parameters=parameters,
                 confidence=action.confidence,
-                success=learning_record.success,
-                reasoning=reasoning.root_cause,
-                timestamp=learning_record.timestamp
+                followed_vic20=True,  # Hamsters follow VIC-20's routing
+                success=learning_record.success if learning_record.success is not None else True,
+                improvement=improvement,
+                what_worked=reasoning.root_cause if learning_record.success else None,
+                what_failed=None if learning_record.success else reasoning.root_cause
             )
             
             self.db.add(db_record)

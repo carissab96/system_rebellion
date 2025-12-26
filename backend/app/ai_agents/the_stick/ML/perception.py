@@ -446,7 +446,7 @@ class StickPerception:
         try:
             query = (
                 select(AgentLearningRecord)
-                .order_by(desc(AgentLearningRecord.timestamp))
+                .order_by(desc(AgentLearningRecord.created_at))
                 .limit(10)
             )
             
@@ -457,10 +457,10 @@ class StickPerception:
             for record in records:
                 decisions.append({
                     'agent': record.agent_name,
-                    'decision_type': record.decision_type,
+                    'decision_type': f"{record.resource_type}_{record.action}",
                     'confidence': record.confidence,
                     'success': record.success,
-                    'timestamp': record.timestamp
+                    'timestamp': record.created_at
                 })
             
             logger.debug(f"📊📚 Found {len(decisions)} recent decisions")
@@ -481,7 +481,7 @@ class StickPerception:
             query = (
                 select(AgentLearningRecord)
                 .where(AgentLearningRecord.agent_name == 'the_stick')
-                .order_by(desc(AgentLearningRecord.timestamp))
+                .order_by(desc(AgentLearningRecord.created_at))
                 .limit(5)
             )
             
@@ -491,10 +491,10 @@ class StickPerception:
             events = []
             for record in records:
                 events.append({
-                    'request_type': record.decision_type,
-                    'anxiety_level': record.output_data.get('anxiety_level', 0.0),
-                    'panic_attack': record.output_data.get('panic_attack_active', False),
-                    'timestamp': record.timestamp
+                    'request_type': record.action,
+                    'anxiety_level': record.parameters.get('anxiety_level', 0.0) if record.parameters else 0.0,
+                    'panic_attack': record.parameters.get('panic_attack_active', False) if record.parameters else False,
+                    'timestamp': record.created_at
                 })
             
             return events

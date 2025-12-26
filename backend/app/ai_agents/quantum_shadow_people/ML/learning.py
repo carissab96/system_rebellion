@@ -137,72 +137,65 @@ class QSPLearning:
         Store learning record in PostgreSQL.
         """
         try:
-            # Prepare input data
-            input_data = {
+            # Create hierarchical fingerprints for security responses
+            fingerprint_l1 = f"{context.resource_type}"
+            fingerprint_l2 = f"{context.resource_type}_{context.severity}"
+            fingerprint_l3 = f"{context.resource_type}_{context.severity}_{action.action_type}"
+            
+            # Prepare parameters with all context and action details
+            parameters = {
                 'threat_count': context.threat_count,
                 'highest_severity': context.highest_severity,
                 'network_anomalies': context.network_anomalies,
                 'suspicious_connections': context.suspicious_connections,
                 'failed_auth_attempts': context.failed_auth_attempts,
                 'threat_assessment_confidence': context.threat_assessment_confidence,
-                'response_urgency': context.response_urgency
-            }
-            
-            # Prepare output data (includes personality behaviors)
-            output_data = {
+                'response_urgency': context.response_urgency,
                 'response_type': action.action_type,
                 'response_strategy': action.response_strategy,
                 'priority': action.priority,
-                'confidence': action.confidence,
-                
-                # Quantum state (personality)
                 'quantum_state': action.quantum_state,
                 'existential_dread_level': action.existential_dread_level,
                 'quantum_coherence': action.quantum_coherence,
-                
-                # Threat analysis
                 'threat_classification': reasoning.threat_classification,
-                'root_cause': reasoning.root_cause,
-                'risk_level': reasoning.risk_level,
-                'potential_impact': reasoning.potential_impact,
-                
-                # Quantum reasoning
-                'quantum_state_impact': reasoning.quantum_state_impact,
-                'reasoning_coherence': reasoning.reasoning_coherence,
-                
-                # Hamster communication
-                'quantum_messages_sent': action.quantum_messages_sent,
                 'hamster_assistance_requested': action.hamster_assistance_requested,
-                'message_priority': action.message_priority,
-                
-                # Execution details
-                'immediate_action': action.immediate_action,
                 'requires_escalation': action.requires_escalation,
                 'estimated_resolution_time': action.estimated_resolution_time,
-                
-                # Evidence
                 'threat_indicators': reasoning.threat_indicators,
                 'historical_precedent': reasoning.historical_precedent,
                 'similar_threat_count': reasoning.similar_threat_count
             }
             
+            # Prepare improvement metrics
+            improvement = {
+                'action_type': action.action_type,
+                'quantum_state': action.quantum_state
+            }
+            
             # Create database record
             db_record = AgentLearningRecord(
-                user_id=self.user_id,
                 agent_name='quantum_shadow_people',
-                decision_type=f'security_response_{action.action_type}',
-                input_data=input_data,
-                output_data=output_data,
+                fingerprint_l1=fingerprint_l1,
+                fingerprint_l2=fingerprint_l2,
+                fingerprint_l3=fingerprint_l3,
+                resource_type=context.resource_type,
+                severity=context.severity,
+                root_cause=reasoning.root_cause,
+                process_category='security',
+                action=action.action_type,
+                parameters=parameters,
                 confidence=action.confidence,
-                success=learning_record.success,
-                reasoning=reasoning.root_cause,
-                timestamp=learning_record.timestamp
+                followed_vic20=True,  # QSP follows VIC-20's routing
+                success=learning_record.success if learning_record.success is not None else True,
+                improvement=improvement,
+                what_worked=reasoning.root_cause if learning_record.success else None,
+                what_failed=None if learning_record.success else reasoning.root_cause
             )
             
             self.db.add(db_record)
             await self.db.commit()
             
-            logger.debug("👻💾 Learning record stored in database")
+            logger.debug("Learning record stored in database")
             
         except Exception as e:
             logger.error(f"👻💥 Error storing learning record: {e}")

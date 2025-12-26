@@ -379,8 +379,8 @@ class QSPPerception:
             query = (
                 select(AgentLearningRecord)
                 .where(AgentLearningRecord.agent_name == 'quantum_shadow_people')
-                .where(AgentLearningRecord.decision_type.like('security_response%'))
-                .order_by(desc(AgentLearningRecord.timestamp))
+                .where(AgentLearningRecord.resource_type == 'network')
+                .order_by(desc(AgentLearningRecord.created_at))
                 .limit(10)
             )
             
@@ -390,12 +390,11 @@ class QSPPerception:
             similar = []
             for record in records:
                 similar.append({
-                    'alert_type': record.input_data.get('alert_type'),
-                    'severity': record.input_data.get('severity'),
-                    'response_type': record.output_data.get('response_type'),
+                    'threat_type': record.root_cause,
+                    'response_type': record.action,
                     'success': record.success,
-                    'quantum_state': record.output_data.get('quantum_state'),
-                    'timestamp': record.timestamp
+                    'quantum_state': record.parameters.get('quantum_state') if record.parameters else 'stable',
+                    'timestamp': record.created_at
                 })
             
             logger.debug(f"👻📚 Found {len(similar)} similar security threats")
@@ -413,7 +412,7 @@ class QSPPerception:
             query = (
                 select(AgentLearningRecord)
                 .where(AgentLearningRecord.agent_name == 'quantum_shadow_people')
-                .order_by(desc(AgentLearningRecord.timestamp))
+                .order_by(desc(AgentLearningRecord.created_at))
                 .limit(5)
             )
             
@@ -423,9 +422,9 @@ class QSPPerception:
             responses = []
             for record in records:
                 responses.append({
-                    'response_type': record.output_data.get('response_type'),
+                    'response_type': record.action,
                     'success': record.success,
-                    'timestamp': record.timestamp
+                    'timestamp': record.created_at
                 })
             
             return responses

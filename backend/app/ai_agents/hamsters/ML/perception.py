@@ -430,8 +430,8 @@ class HamstersPerception:
             query = (
                 select(AgentLearningRecord)
                 .where(AgentLearningRecord.agent_name == 'hamsters')
-                .where(AgentLearningRecord.decision_type.like('storage_fix%'))
-                .order_by(desc(AgentLearningRecord.timestamp))
+                .where(AgentLearningRecord.resource_type == 'disk')
+                .order_by(desc(AgentLearningRecord.created_at))
                 .limit(10)
             )
             
@@ -441,12 +441,12 @@ class HamstersPerception:
             similar = []
             for record in records:
                 similar.append({
-                    'disk_usage': record.input_data.get('disk_usage_percent'),
-                    'fix_type': record.output_data.get('fix_type'),
+                    'disk_usage': record.parameters.get('disk_usage_percent') if record.parameters else None,
+                    'fix_type': record.action,
                     'success': record.success,
-                    'beers_consumed': record.output_data.get('total_beers_consumed', 0),
-                    'duct_tape_used': record.output_data.get('duct_tape_rolls', 0),
-                    'timestamp': record.timestamp
+                    'beers_consumed': record.parameters.get('total_beers_consumed', 0) if record.parameters else 0,
+                    'duct_tape_used': record.parameters.get('duct_tape_rolls', 0) if record.parameters else 0,
+                    'timestamp': record.created_at
                 })
             
             logger.debug(f"🐹📚 Found {len(similar)} similar storage fixes")
@@ -464,8 +464,8 @@ class HamstersPerception:
             query = (
                 select(AgentLearningRecord)
                 .where(AgentLearningRecord.agent_name == 'hamsters')
-                .where(AgentLearningRecord.decision_type.like('sudo_%'))
-                .order_by(desc(AgentLearningRecord.timestamp))
+                .where(AgentLearningRecord.parameters['requires_sudo'].astext == 'true')
+                .order_by(desc(AgentLearningRecord.created_at))
                 .limit(5)
             )
             
@@ -475,9 +475,9 @@ class HamstersPerception:
             operations = []
             for record in records:
                 operations.append({
-                    'operation': record.decision_type,
+                    'operation': record.action,
                     'success': record.success,
-                    'timestamp': record.timestamp
+                    'timestamp': record.created_at
                 })
             
             return operations
