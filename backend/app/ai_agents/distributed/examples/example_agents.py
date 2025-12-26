@@ -288,16 +288,7 @@ class QuantumShadowPeopleDistributed(DistributedAgent):
         
         # Quantum observations stored in database, not broadcast
         # Other agents query database for learning
-        # await self.broadcast_message(
-        #     MessageType.MEMORY_SHARE,  # REMOVED
-        #     {
-        #         "observation": "network_state_change",
-        #         "quantum_certainty": 0.7,
-                "affected_nodes": [message.from_agent],
-                "shadow_consensus": "MONITORING"
-            },
-            priority=Priority.LOW
-        )
+        # REMOVED: MEMORY_SHARE broadcast - use database queries instead
     
     async def make_decision(
         self,

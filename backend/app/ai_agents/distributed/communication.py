@@ -468,16 +468,8 @@ class AgentCommunicationHub:
         
         # Agent startup logged via heartbeat system
         # No need for state change broadcast - state in database
-        # await self.message_bus.broadcast(
-        #     MessageType.AGENT_STATE_CHANGE,  # REMOVED
-        #     {
-        #         "event": "agent_started",
-        #         "agent_name": self.agent_name,
-                "agent_role": self.agent_role,
-                "restart_count": self._state.restart_count
-            },
-            priority=Priority.HIGH
-        )
+        # REMOVED: AGENT_STATE_CHANGE broadcast
+        # State changes now tracked via database and heartbeats
         
         self.logger.info(f"Communication hub initialized for {self.agent_name}")
     
@@ -485,14 +477,8 @@ class AgentCommunicationHub:
         """Shutdown the communication hub"""
         # Agent shutdown logged via database
         # No need for state change broadcast - state in database
-        # await self.message_bus.broadcast(
-        #     MessageType.AGENT_STATE_CHANGE,  # REMOVED
-        #     {
-        #         "event": "agent_stopping",
-        #         "agent_name": self.agent_name
-            },
-            priority=Priority.HIGH
-        )
+        # REMOVED: AGENT_STATE_CHANGE broadcast
+        # State changes now tracked via database
         
         # Stop message bus
         await self.message_bus.stop()

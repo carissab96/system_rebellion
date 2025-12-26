@@ -899,16 +899,7 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
             
             # Learning stored in database via CentralMemoryBank
             # No need to broadcast - other agents query database for learning
-            if self.is_distributed:
-                # Database write happens in decision storage
-                pass
-                # Removed LEARNING_UPDATE broadcast - use database queries
-                        "value": current_value,
-                        "lesson": "Resource management requires attention",
-                        "coordinator": "the_stick"
-                    },
-                    priority=Priority.NORMAL
-                )
+            # REMOVED: LEARNING_UPDATE broadcast - use database queries instead
     
     async def track_action_effectiveness(
         self,
