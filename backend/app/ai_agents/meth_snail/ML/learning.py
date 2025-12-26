@@ -124,8 +124,24 @@ class TerryLearning:
         
         # 3. Determine success
         action_succeeded = execution_result.get('success', False)
-        metrics_improved = improvement.get(context.resource_type, 0) < 0  # Negative = improvement
-        overall_success = action_succeeded and metrics_improved
+        
+        # Check if ANY metric improved (not just the trigger resource)
+        # Some actions help different resources or have indirect benefits
+        any_metric_improved = any(delta < -1.0 for delta in improvement.values())  # -1% threshold
+        
+        # Primary resource improvement (the one that triggered the alert)
+        primary_improved = improvement.get(context.resource_type, 0) < -0.5  # -0.5% threshold
+        
+        # Success if action executed AND (primary improved OR any metric improved significantly)
+        overall_success = action_succeeded and (primary_improved or any_metric_improved)
+        
+        # Log the decision logic for debugging
+        if action_succeeded and not overall_success:
+            self.logger.warning(
+                f"   ⚠️ Action {decision.action} succeeded but no metrics improved enough. "
+                f"Primary ({context.resource_type}): {improvement.get(context.resource_type, 0):.2f}%, "
+                f"All improvements: {improvement}"
+            )
         
         # 4. Create learning record (with personality behaviors!)
         record = LearningRecord(
