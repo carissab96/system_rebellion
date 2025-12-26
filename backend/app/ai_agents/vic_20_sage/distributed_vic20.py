@@ -150,25 +150,11 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
         
         logger.info("🖥️🎯 Week 4 systems integrated - Coordination, Escalation, Prediction ONLINE!")
         
-        # 🎯 PHASE 3: Subscribe to TRIAGE_ALERT from Sir Hawkington
-        try:
-            await self.subscribe_to_messages(
-                message_type=MessageType.TRIAGE_ALERT,
-                callback=self._handle_triage_alert_from_hawk
-            )
-            logger.info("🖥️📡 VIC-20 subscribed to TRIAGE_ALERT from Sir Hawkington - Coordination ready!")
-        except Exception as e:
-            logger.error(f"🖥️💥 Failed to subscribe to triage alerts: {e}")
+        # NO SUBSCRIPTIONS: Hawk and specialists call VIC-20 directly via send_to_agent()
+        # VIC-20 still PUBLISHES to Redis (for frontend WebSocket) but doesn't SUBSCRIBE
         
-        # 🎯 PHASE 4: Subscribe to ACTION_REPORT from specialists
-        try:
-            await self.subscribe_to_messages(
-                message_type=MessageType.ACTION_REPORT,
-                callback=self._handle_action_report
-            )
-            logger.info("🖥️📡 VIC-20 subscribed to ACTION_REPORT from specialists - Learning loop ready!")
-        except Exception as e:
-            logger.error(f"🖥️💥 Failed to subscribe to action reports: {e}")
+        logger.info("🖥️✅ Direct communication ready - Hawk and specialists will call via send_to_agent()")
+        logger.info("🖥️📡 VIC-20 coordination ready - no pub/sub subscriptions needed!")
     
     async def _handle_coordination_request(self, message: AgentMessage) -> None:
         """
