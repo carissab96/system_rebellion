@@ -4,6 +4,8 @@ QSP (Quantum Shadow People) Action Selection Layer - Quantum Security Response
 
 Selects:
 - Security response action based on quantum reasoning
+- Exploration vs Exploitation (epsilon-greedy)
+- Adaptive throttle bias (learns when throttling is actually needed)
 - Monitoring/blocking/escalation strategy
 - Quantum message transmission to Hamsters
 - Existential dread management
@@ -14,6 +16,7 @@ Personality behaviors integrated:
 - Hamster communication protocol
 """
 import logging
+import random
 from typing import Dict, Any, Optional, List
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -65,8 +68,44 @@ class QSPActionSelection:
     👻 "Selecting quantum response... *existential dread at {level}*"
     """
     
+    # Map security threats to viable actions
+    # QSP handles: Network security and monitoring
+    ACTION_MAP = {
+        'high_traffic': [
+            'monitor',          # Just watch first
+            'throttle_network', # Throttle if needed
+            'investigate',      # Deep analysis
+        ],
+        'suspicious_activity': [
+            'investigate',      # Analyze first
+            'throttle_network', # Throttle if confirmed
+            'block',            # Block if malicious
+        ],
+        'security_threat': [
+            'block',            # Block immediately
+            'throttle_network', # Throttle as backup
+            'escalate',         # Get Hamsters involved
+        ],
+        'normal_operations': [
+            'monitor',          # Just observe
+        ],
+    }
+    
     def __init__(self, personality_traits: Dict[str, Any]):
         self.personality_traits = personality_traits
+        
+        # Exploration vs Exploitation
+        self.epsilon = 0.15  # 15% chance to explore (try non-preferred actions)
+        self.min_epsilon = 0.05  # Minimum exploration rate
+        self.epsilon_decay = 0.995  # Decay exploration over time
+        
+        # Adaptive throttle bias (starts high, decreases if throttle not effective)
+        self.throttle_bias = 1.2  # 20% bias toward throttle (QSP's paranoia!)
+        self.throttle_successes = 0
+        self.throttle_attempts = 0
+        
+        logger.info("👻⚡ QSP's action selection initialized!")
+        logger.info(f"👻🔬 Exploration rate: {self.epsilon:.1%}, Throttle bias: {self.throttle_bias:.2f}")
         
     def select_action(
         self,
@@ -137,6 +176,45 @@ class QSPActionSelection:
             )
         
         return action
+    
+    def update_throttle_bias(self, action: str, success: bool):
+        """
+        Update QSP's throttle bias based on outcomes.
+        
+        If throttle keeps failing or isn't needed, reduce the bias.
+        If other actions work better, reduce the bias.
+        
+        Args:
+            action: Action that was executed
+            success: Whether it succeeded
+        """
+        if 'throttle' in action:
+            self.throttle_attempts += 1
+            if success:
+                self.throttle_successes += 1
+            
+            # Calculate success rate
+            success_rate = self.throttle_successes / self.throttle_attempts
+            
+            # Adjust bias based on success rate
+            if success_rate < 0.6:
+                self.throttle_bias = max(1.0, self.throttle_bias * 0.95)
+                logger.info(
+                    f"👻📉 Throttle success rate low ({success_rate:.1%}) - "
+                    f"reducing bias to {self.throttle_bias:.2f}"
+                )
+            elif success_rate > 0.8 and self.throttle_bias < 1.2:
+                self.throttle_bias = min(1.2, self.throttle_bias * 1.02)
+                logger.debug(f"👻📈 Throttle working well - bias: {self.throttle_bias:.2f}")
+        
+        elif success:
+            # Other action succeeded - slightly reduce throttle bias
+            # (QSP learns there are other good options)
+            self.throttle_bias = max(1.0, self.throttle_bias * 0.98)
+            logger.debug(
+                f"👻💡 {action} worked! Learning alternatives exist. "
+                f"Throttle bias: {self.throttle_bias:.2f}"
+            )
     
     def _determine_priority(self, risk_level: str, urgency: float) -> str:
         """
