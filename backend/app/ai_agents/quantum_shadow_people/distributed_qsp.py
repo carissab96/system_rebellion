@@ -286,14 +286,14 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
             )
             
             logger.info(
-                f"👻🔮 Quantum analysis complete: "
-                f"{'ACCEPTABLE' if decision['followed_recommendation'] else 'SUSPICIOUS - USING OWN PROTOCOL'}"
+                f"👻🔮 Legacy compatibility check: "
+                f"{'ACCEPTABLE' if legacy_legacy_decision['followed_recommendation'] else 'SUSPICIOUS - USING OWN PROTOCOL'}"
             )
-            logger.info(f"👻💭 {decision['reasoning']}")
+            logger.info(f"👻💭 Legacy reasoning: {legacy_legacy_decision['reasoning']}")
             
-            # Execute network throttle (QSP's specialty)
-            action = decision['final_action']
-            logger.info("👻🔒 EXECUTING QUANTUM NETWORK LOCKDOWN! *paranoid analysis intensifies*")
+            # Note: ML v2 already executed the action above, this is just legacy logging
+            action = legacy_legacy_decision['final_action']
+            logger.info("👻🔒 (Legacy path - action already executed by ML v2)")
             
             # Broadcast action to WebSocket
             from app.services.agent_insight_emitter import emit_agent_insight
@@ -301,11 +301,11 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
                 from_agent="quantum_shadow_people",
                 to_agent="vic20_sage",
                 action="security_scan_executed",
-                reasoning=f"{'Following VIC-20 recommendation' if decision['followed_recommendation'] else 'SUSPICIOUS - Using own protocol!'} - {resource_type} security lockdown",
+                reasoning=f"{'Following VIC-20 recommendation' if legacy_decision['followed_recommendation'] else 'SUSPICIOUS - Using own protocol!'} - {resource_type} security lockdown",
                 context={
                     "resource_type": resource_type,
                     "action": action,
-                    "followed_vic20": decision['followed_recommendation'],
+                    "followed_vic20": legacy_decision['followed_recommendation'],
                     "severity": severity,
                     "current_value": current_value,
                     "threshold": threshold,
@@ -333,7 +333,7 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
                         "connections_before": network_result['connections_before'],
                         "connections_after": network_result['connections_after'],
                         "connections_reduced": network_result['connections_reduced'],
-                        "followed_vic20": decision['followed_recommendation'],
+                        "followed_vic20": legacy_decision['followed_recommendation'],
                         "paranoia_justified": True,
                         "quantum_state": "secured"
                     }
@@ -344,7 +344,7 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
                     decision_type="recommendation_response",
                     input_data={
                         "recommendation": recommendation.get('action'),
-                        "followed": decision['followed_recommendation'],
+                        "followed": legacy_decision['followed_recommendation'],
                         "action_taken": action,
                         "paranoia_justified": True
                     },
@@ -353,8 +353,8 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
                         "connections_reduced": network_result['connections_reduced'],
                         "quantum_state": "secured"
                     },
-                    confidence=decision['decision_score'],
-                    reasoning=decision['reasoning']
+                    confidence=legacy_decision['decision_score'],
+                    reasoning=legacy_decision['reasoning']
                 )
                 
                 # 💾 WRITE TO POSTGRESQL: Store quantum decision
@@ -373,14 +373,14 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
                                 'connections_reduced': network_result.get('connections_reduced', 0)
                             },
                             tequila_jello_shots_required=self.tequila_shots_today,
-                            mysterious_explanation=decision['reasoning'],
+                            mysterious_explanation=legacy_decision['reasoning'],
                             technical_details={
                                 'action': action,
                                 'paranoia_justified': True,
                                 'threat_level': 'elevated'
                             },
                             expected_improvement=min(1.0, network_result.get('connections_reduced', 0) / 100.0),
-                            confidence_level=decision['decision_score'],
+                            confidence_level=legacy_decision['decision_score'],
                             timestamp=datetime.now(timezone.utc)
                         )
                         await self.db_integration.store_decision(self.user_id, quantum_decision)
@@ -439,12 +439,12 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
             
             logger.info(
                 f"👻🔮 Quantum analysis complete: "
-                f"{'ACCEPTABLE' if decision['followed_recommendation'] else 'SUSPICIOUS - USING OWN PROTOCOL'}"
+                f"{'ACCEPTABLE' if legacy_decision['followed_recommendation'] else 'SUSPICIOUS - USING OWN PROTOCOL'}"
             )
-            logger.info(f"👻💭 {decision['reasoning']}")
+            logger.info(f"👻💭 {legacy_decision['reasoning']}")
             
             # Execute network throttle (QSP's specialty)
-            action = decision['final_action']
+            action = legacy_decision['final_action']
             logger.info("👻🔒 EXECUTING QUANTUM NETWORK LOCKDOWN! *paranoid analysis intensifies*")
             
             # Broadcast action to WebSocket
@@ -453,11 +453,11 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
                 from_agent="quantum_shadow_people",
                 to_agent="vic20_sage",
                 action="security_scan_executed",
-                reasoning=f"{'Following VIC-20 recommendation' if decision['followed_recommendation'] else 'SUSPICIOUS - Using own protocol!'} - {resource_type} security lockdown",
+                reasoning=f"{'Following VIC-20 recommendation' if legacy_decision['followed_recommendation'] else 'SUSPICIOUS - Using own protocol!'} - {resource_type} security lockdown",
                 context={
                     "resource_type": resource_type,
                     "action": action,
-                    "followed_vic20": decision['followed_recommendation'],
+                    "followed_vic20": legacy_decision['followed_recommendation'],
                     "severity": severity,
                     "current_value": current_value,
                     "threshold": threshold,
@@ -485,7 +485,7 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
                         "connections_before": network_result['connections_before'],
                         "connections_after": network_result['connections_after'],
                         "connections_reduced": network_result['connections_reduced'],
-                        "followed_vic20": decision['followed_recommendation']
+                        "followed_vic20": legacy_decision['followed_recommendation']
                     }
                 )
                 
@@ -503,14 +503,14 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
                                 'threat_level': severity
                             },
                             tequila_jello_shots_required=2,
-                            mysterious_explanation=decision['reasoning'],
+                            mysterious_explanation=legacy_decision['reasoning'],
                             technical_details={
                                 'connections_before': network_result.get('connections_before', 0),
                                 'connections_after': network_result.get('connections_after', 0),
                                 'paranoia_justified': True
                             },
                             expected_improvement=float(network_result.get('connections_reduced', 0)),
-                            confidence_level=decision['decision_score'],
+                            confidence_level=legacy_decision['decision_score'],
                             timestamp=datetime.now(timezone.utc)
                         )
                         await self.db_integration.store_decision(self.user_id, quantum_decision)
@@ -522,7 +522,7 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
                 return {
                     'success': True,
                     'action': action,
-                    'followed_vic20': decision['followed_recommendation'],
+                    'followed_vic20': legacy_decision['followed_recommendation'],
                     'connections_before': network_result['connections_before'],
                     'connections_after': network_result['connections_after'],
                     'connections_reduced': network_result['connections_reduced'],
@@ -535,7 +535,7 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
                     'success': False,
                     'error': network_result.get('error', 'Unknown error'),
                     'action': action,
-                    'followed_vic20': decision['followed_recommendation']
+                    'followed_vic20': legacy_decision['followed_recommendation']
                 }
                 
         except Exception as e:
