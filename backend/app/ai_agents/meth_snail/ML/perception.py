@@ -223,7 +223,7 @@ class TerryPerception:
         
         # Store in database for learning
         try:
-            from .database_integration import MethSnailDatabaseIntegration
+            from app.ai_agents.meth_snail.database_integration import MethSnailDatabaseIntegration
             db_integration = MethSnailDatabaseIntegration(lambda: self.db)
             await db_integration.store_shell_spin_incident(
                 user_id="system",  # TODO: Get real user_id
@@ -355,7 +355,7 @@ class TerryPerception:
     
     async def _get_recent_actions(self, limit: int = 10) -> List[Dict[str, Any]]:
         """
-        Get Terry's recent actions from coordination_decisions table.
+        Get Terry's recent actions from agent_learning_records table.
         
         Args:
             limit: Number of recent actions to retrieve
@@ -365,12 +365,12 @@ class TerryPerception:
         """
         try:
             from sqlalchemy import select
-            from app.models.coordination import CoordinationDecision
+            from app.models.agent_learning import AgentLearningRecord
             
-            query = select(CoordinationDecision).where(
-                CoordinationDecision.agent_name == 'meth_snail'
+            query = select(AgentLearningRecord).where(
+                AgentLearningRecord.agent_name == 'meth_snail'
             ).order_by(
-                CoordinationDecision.created_at.desc()
+                AgentLearningRecord.created_at.desc()
             ).limit(limit)
             
             result = await self.db.execute(query)
@@ -379,9 +379,11 @@ class TerryPerception:
             recent = []
             for record in records:
                 recent.append({
-                    'action': record.action_taken,
+                    'action': record.action,
                     'resource_type': record.resource_type,
                     'success': record.success,
+                    'confidence': record.confidence,
+                    'improvement': record.improvement,
                     'created_at': record.created_at.isoformat()
                 })
             
