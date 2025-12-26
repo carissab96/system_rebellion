@@ -232,11 +232,12 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
                 f"(confidence: {recommendation['confidence']:.2f})"
             )
             
-            # Send COORDINATION_REQUEST to specialist
+            # Send COORDINATION_REQUEST to SPECIFIC specialist (not broadcast!)
             # TERRY V2: Include full_metrics for perception layer
             full_metrics = payload.get('full_metrics', {})
             
-            await self.broadcast_to_agents(
+            await self.send_to_agent(
+                to_agent=specialist,
                 message_type=MessageType.COORDINATION_REQUEST,
                 payload={
                     'resource_type': resource_type,
