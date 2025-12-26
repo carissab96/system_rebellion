@@ -5,7 +5,8 @@ Terry's Action Selection - Choosing What To Do
 Maps root causes to available actions and selects the best one based on:
 - Root cause analysis
 - Historical success rates
-- Personality bias (Terry loves cache clears!)
+- Exploration vs Exploitation (epsilon-greedy)
+- Adaptive personality bias (learns when cache clear isn't best)
 - Risk assessment
 
 Personality Behaviors:
@@ -14,6 +15,7 @@ Personality Behaviors:
 """
 
 import logging
+import random
 from dataclasses import dataclass
 from typing import Dict, Any, List, Optional
 
@@ -95,7 +97,19 @@ class TerryActionSelection:
         """Initialize action selection system"""
         self.logger = logger
         self.energy_drink_system = EnergyDrinkSystem()
+        
+        # Exploration vs Exploitation
+        self.epsilon = 0.15  # 15% chance to explore (try non-preferred actions)
+        self.min_epsilon = 0.05  # Minimum exploration rate
+        self.epsilon_decay = 0.995  # Decay exploration over time as Terry learns
+        
+        # Adaptive personality bias (starts high, decreases if cache clear fails often)
+        self.cache_clear_bias = 1.2  # 20% bias (can decrease to 1.0 = no bias)
+        self.cache_clear_successes = 0
+        self.cache_clear_attempts = 0
+        
         self.logger.info("🐌⚡ Terry's action selection initialized - ready to choose!")
+        self.logger.info(f"🐌🔬 Exploration rate: {self.epsilon:.1%}, Cache bias: {self.cache_clear_bias:.2f}")
     
     async def select_action(
         self,
@@ -183,16 +197,31 @@ class TerryActionSelection:
         # Score each viable action
         action_scores = self._score_actions(viable_actions, reasoning_result)
         
-        # Apply Terry's personality bias (loves cache clears!)
+        # Apply Terry's ADAPTIVE personality bias (learns when cache clear isn't best!)
         if 'emergency_cache_clear' in action_scores:
             original_score = action_scores['emergency_cache_clear']
-            action_scores['emergency_cache_clear'] *= 1.2  # 20% meth-fueled bias
-            self.logger.debug(f"   🐌💨 Terry's bias: cache_clear {original_score:.2f} → {action_scores['emergency_cache_clear']:.2f}")
+            action_scores['emergency_cache_clear'] *= self.cache_clear_bias
+            self.logger.debug(
+                f"   🐌💨 Terry's adaptive bias: cache_clear {original_score:.2f} → "
+                f"{action_scores['emergency_cache_clear']:.2f} (bias: {self.cache_clear_bias:.2f})"
+            )
         
-        # Select highest scoring action
-        best_action = max(action_scores.items(), key=lambda x: x[1])
-        action_name = best_action[0]
-        action_score = best_action[1]
+        # EXPLORATION vs EXPLOITATION (epsilon-greedy)
+        explore = random.random() < self.epsilon
+        
+        if explore and len(viable_actions) > 1:
+            # EXPLORE: Try a random action (not necessarily the best)
+            action_name = random.choice(viable_actions)
+            action_score = action_scores[action_name]
+            self.logger.info(f"   🐌🔬 EXPLORING: Trying {action_name} (ε={self.epsilon:.1%})")
+        else:
+            # EXPLOIT: Use highest scoring action
+            best_action = max(action_scores.items(), key=lambda x: x[1])
+            action_name = best_action[0]
+            action_score = best_action[1]
+        
+        # Decay exploration rate over time (Terry gets more confident as he learns)
+        self.epsilon = max(self.min_epsilon, self.epsilon * self.epsilon_decay)
         
         self.logger.info(f"   ✓ Selected: {action_name} (score: {action_score:.2f})")
         
@@ -368,3 +397,44 @@ class TerryActionSelection:
             parts.append("⚠️ Overriding VIC-20 based on historical learning")
         
         return "\n".join(parts)
+    
+    def update_cache_clear_bias(self, action: str, success: bool):
+        """
+        Update Terry's cache clear bias based on outcomes.
+        
+        If cache clear keeps failing, reduce the bias.
+        If other actions work better, reduce the bias.
+        
+        Args:
+            action: Action that was executed
+            success: Whether it succeeded
+        """
+        if action == 'emergency_cache_clear':
+            self.cache_clear_attempts += 1
+            if success:
+                self.cache_clear_successes += 1
+            
+            # Calculate success rate
+            success_rate = self.cache_clear_successes / self.cache_clear_attempts
+            
+            # Adjust bias based on success rate
+            # If success rate < 60%, reduce bias toward 1.0 (no bias)
+            # If success rate > 80%, maintain or increase bias
+            if success_rate < 0.6:
+                self.cache_clear_bias = max(1.0, self.cache_clear_bias * 0.95)
+                self.logger.info(
+                    f"🐌📉 Cache clear success rate low ({success_rate:.1%}) - "
+                    f"reducing bias to {self.cache_clear_bias:.2f}"
+                )
+            elif success_rate > 0.8 and self.cache_clear_bias < 1.2:
+                self.cache_clear_bias = min(1.2, self.cache_clear_bias * 1.02)
+                self.logger.debug(f"🐌📈 Cache clear working well - bias: {self.cache_clear_bias:.2f}")
+        
+        elif success:
+            # Other action succeeded - slightly reduce cache clear bias
+            # (Terry learns there are other good options)
+            self.cache_clear_bias = max(1.0, self.cache_clear_bias * 0.98)
+            self.logger.debug(
+                f"🐌💡 {action} worked! Learning alternatives exist. "
+                f"Cache bias: {self.cache_clear_bias:.2f}"
+            )

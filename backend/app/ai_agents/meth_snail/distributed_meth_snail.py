@@ -250,21 +250,54 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
                 # STEP 4: EXECUTION - Execute the action
                 logger.info(f"🐌💨💨 Executing {decision.action}! *spins shell with PURPOSE*")
                 
-                # Get metrics before action
-                metrics_before = {
-                    'cpu_usage': full_metrics.get('cpu_usage', 0),
-                    'memory_usage': full_metrics.get('memory_usage', 0),
-                    'disk_usage': full_metrics.get('disk_usage', 0)
-                }
+                # Get REAL metrics BEFORE action from SimplifiedMetricsService
+                from app.services.metrics.simplified_metrics_service import SimplifiedMetricsService
+                metrics_service = await SimplifiedMetricsService.get_instance()
                 
-                cache_result = await SystemActions.emergency_cache_clear()
+                try:
+                    before_metrics = await metrics_service.get_metrics(force_refresh=True)
+                    metrics_before = {
+                        'cpu_usage': before_metrics.get('cpu_usage', 0),
+                        'memory_usage': before_metrics.get('memory_usage', 0),
+                        'disk_usage': before_metrics.get('disk_usage', 0)
+                    }
+                    logger.info(f"🐌📊 Metrics BEFORE: CPU {metrics_before['cpu_usage']:.1f}%, "
+                               f"Memory {metrics_before['memory_usage']:.1f}%, "
+                               f"Disk {metrics_before['disk_usage']:.1f}%")
+                except Exception as e:
+                    logger.error(f"🐌⚠️ Failed to get before metrics: {e}")
+                    metrics_before = {
+                        'cpu_usage': full_metrics.get('cpu_usage', 0),
+                        'memory_usage': full_metrics.get('memory_usage', 0),
+                        'disk_usage': full_metrics.get('disk_usage', 0)
+                    }
                 
-                # Get metrics after action
-                metrics_after = {
-                    'cpu_usage': full_metrics.get('cpu_usage', 0),
-                    'memory_usage': cache_result.get('memory_after_percent', 0),
-                    'disk_usage': full_metrics.get('disk_usage', 0)
-                }
+                # Execute the SELECTED action (not hardcoded cache clear!)
+                from app.ai_agents.meth_snail.ML.action_executor import TerryActionExecutor
+                executor = TerryActionExecutor()
+                action_result = await executor.execute_action(decision.action, decision.parameters)
+                
+                # Get REAL metrics AFTER action from SimplifiedMetricsService
+                try:
+                    import asyncio
+                    await asyncio.sleep(1.0)  # Wait for action effects to propagate
+                    after_metrics = await metrics_service.get_metrics(force_refresh=True)
+                    metrics_after = {
+                        'cpu_usage': after_metrics.get('cpu_usage', 0),
+                        'memory_usage': after_metrics.get('memory_usage', 0),
+                        'disk_usage': after_metrics.get('disk_usage', 0)
+                    }
+                    logger.info(f"🐌📊 Metrics AFTER: CPU {metrics_after['cpu_usage']:.1f}%, "
+                               f"Memory {metrics_after['memory_usage']:.1f}%, "
+                               f"Disk {metrics_after['disk_usage']:.1f}%")
+                except Exception as e:
+                    logger.error(f"🐌⚠️ Failed to get after metrics: {e}")
+                    # Use action result metrics if available
+                    metrics_after = {
+                        'cpu_usage': action_result.get('cpu_after', metrics_before['cpu_usage']),
+                        'memory_usage': action_result.get('memory_after_percent', metrics_before['memory_usage']),
+                        'disk_usage': action_result.get('disk_after_percent', metrics_before['disk_usage'])
+                    }
                 
                 # STEP 5: LEARNING - Store outcome for future decisions
                 from app.ai_agents.meth_snail.ML.learning import TerryLearning
@@ -275,11 +308,14 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
                     reasoning_result=reasoning_result,
                     decision=decision,
                     execution_result={
-                        'success': cache_result.get('success', False),
+                        'success': action_result.get('success', False),
                         'metrics_before': metrics_before,
                         'metrics_after': metrics_after
                     }
                 )
+                
+                # Update action selector's adaptive bias based on outcome
+                action_selector.update_cache_clear_bias(decision.action, learning_record.success)
                 
                 logger.info(
                     f"🐌📚 Learning stored: {decision.action} "
@@ -294,7 +330,7 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
             await emit_agent_insight(
                 from_agent="meth_snail",
                 to_agent="vic20_sage",
-                action="cache_clear_executed",
+                action=f"{decision.action}_executed",
                 reasoning=decision.reasoning,
                 context={
                     "resource_type": resource_type,
@@ -310,30 +346,37 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
                     "data_quality_score": context.data_quality_score,
                     "energy_drink_consumed": decision.energy_drink_consumed,
                     "hawk_veto": decision.hawk_veto,
-                    "energy_drinks_today": action_selector.energy_drink_system.energy_drinks_today
+                    "energy_drinks_today": action_selector.energy_drink_system.energy_drinks_today,
+                    # Exploration tracking
+                    "exploration_rate": action_selector.epsilon,
+                    "cache_clear_bias": action_selector.cache_clear_bias
                 }
             )
             
-            if cache_result['success']:
-                improvement = cache_result['improvement_percent']
+            if action_result['success']:
+                # Calculate improvement from real metrics
+                cpu_improvement = metrics_before['cpu_usage'] - metrics_after['cpu_usage']
+                mem_improvement = metrics_before['memory_usage'] - metrics_after['memory_usage']
+                disk_improvement = metrics_before['disk_usage'] - metrics_after['disk_usage']
+                
                 logger.info(
-                    f"🐌✅ Cache cleared! Freed {cache_result['memory_freed_mb']:.2f} MB! "
-                    f"Memory: {cache_result['memory_before_percent']:.1f}% → "
-                    f"{cache_result['memory_after_percent']:.1f}% - GOTTA GO FAST!"
+                    f"🐌✅ {decision.action} succeeded! "
+                    f"CPU: {cpu_improvement:+.1f}%, Memory: {mem_improvement:+.1f}%, Disk: {disk_improvement:+.1f}%"
                 )
                 
                 # Broadcast success to WebSocket
                 await emit_agent_insight(
                     from_agent="meth_snail",
                     to_agent="vic20_sage",
-                    action="cache_clear_success",
-                    reasoning=f"Freed {cache_result['memory_freed_mb']:.2f} MB - {improvement:.1f}% improvement",
+                    action=f"{decision.action}_success",
+                    reasoning=f"Action completed - CPU: {cpu_improvement:+.1f}%, Memory: {mem_improvement:+.1f}%",
                     context={
                         "success": True,
-                        "memory_freed_mb": cache_result['memory_freed_mb'],
-                        "improvement_percent": improvement,
-                        "memory_before": cache_result['memory_before_percent'],
-                        "memory_after": cache_result['memory_after_percent'],
+                        "cpu_improvement": cpu_improvement,
+                        "memory_improvement": mem_improvement,
+                        "disk_improvement": disk_improvement,
+                        "metrics_before": metrics_before,
+                        "metrics_after": metrics_after,
                         "followed_vic20": decision.followed_vic20,
                         "learning_success": learning_record.success,
                         "confidence": decision.confidence
@@ -355,7 +398,7 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
                 await self._write_action_result(
                     resource_type=resource_type,
                     action=decision.action,
-                    result=cache_result,
+                    result=action_result,
                     followed_vic20=decision.followed_vic20,
                     severity=severity
                 )
@@ -364,7 +407,7 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
                 await self._report_to_vic20(
                     resource_type=resource_type,
                     action=decision.action,
-                    result=cache_result,
+                    result=action_result,
                     followed_recommendation=decision.followed_vic20
                 )
                 
@@ -373,19 +416,20 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
                     decision_type='specialist_action',
                     resource_type=resource_type,
                     action=decision.action,
-                    result=cache_result,
+                    result=action_result,
                     followed_vic20=decision.followed_vic20
                 )
             else:
-                logger.error(f"🐌❌ Cache clear failed: {cache_result.get('error')}")
+                logger.error(f"🐌❌ {decision.action} failed: {action_result.get('error')}")
             
         except Exception as e:
             logger.error(f"🐌💥 Terry v2 coordination failed: {e}", exc_info=True)
             logger.error("   Falling back to basic cache clear...")
             # Fallback to basic cache clear on error
             try:
-                cache_result = await SystemActions.emergency_cache_clear()
-                if cache_result['success']:
+                from app.ai_agents.distributed.system_actions import SystemActions
+                fallback_result = await SystemActions.emergency_cache_clear()
+                if fallback_result['success']:
                     logger.info(f"🐌✅ Fallback cache clear succeeded")
             except Exception as fallback_error:
                 logger.error(f"🐌💥 Even fallback failed: {fallback_error}")
