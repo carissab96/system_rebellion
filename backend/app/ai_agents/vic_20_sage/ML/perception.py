@@ -357,7 +357,11 @@ class VIC20Perception:
             
             # Recent activity is good (shows they're responsive)
             if specialist.last_coordination:
-                time_since = (utc_now() - specialist.last_coordination).total_seconds()
+                # Ensure timezone-aware comparison
+                last_coord = specialist.last_coordination
+                if last_coord.tzinfo is None:
+                    last_coord = last_coord.replace(tzinfo=UTC)
+                time_since = (utc_now() - last_coord).total_seconds()
                 recency_score = 1.0 if time_since < 300 else 0.5  # 5 minutes
             else:
                 recency_score = 0.5
