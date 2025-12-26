@@ -33,7 +33,7 @@ class AgentLearningRecord(Base):
     # Situation context
     resource_type = Column(String(20), nullable=False)
     severity = Column(String(20), nullable=False)
-    root_cause = Column(String(50))
+    root_cause = Column(String(500))  # Increased from 50 to 500 for detailed reasoning
     process_category = Column(String(20), index=True)  # 'python', 'database', 'web_server', 'system', 'other'
     
     # Action taken
@@ -45,8 +45,8 @@ class AgentLearningRecord(Base):
     # Outcome
     success = Column(Boolean, nullable=False, index=True)
     improvement = Column(JSON)  # Metrics deltas: {'cpu_usage': -15.2, 'memory_usage': -5.1}
-    what_worked = Column(String)
-    what_failed = Column(String)
+    what_worked = Column(String(500))  # Increased from unlimited to 500 for consistency
+    what_failed = Column(String(500))  # Increased from unlimited to 500 for consistency
     
     # Metadata
     created_at = Column(TIMESTAMP, server_default=func.now(), index=True)
