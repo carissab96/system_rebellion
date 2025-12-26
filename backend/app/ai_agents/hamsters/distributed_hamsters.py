@@ -134,12 +134,15 @@ class HamstersDistributed(AgentDecisionEngine, HamstersBrainV3):
             self._coordination_capability
         )
         
-        # NO SUBSCRIPTIONS: VIC-20 calls Hamsters directly via send_to_agent()
-        # Removed legacy pub/sub subscription to COORDINATION_REQUEST
+        # CRITICAL: Subscribe to COORDINATION_REQUEST from VIC-20
+        await self.subscribe_to_messages(
+            message_type=MessageType.COORDINATION_REQUEST,
+            callback=self._handle_coordination_request
+        )
         
         logger.info("🐹🎯 Week 4 systems integrated - Coordination & Verification ONLINE!")
         logger.info("🐹🤝 Telepathic consensus ready for team coordination!")
-        logger.info("🐹✅ Using direct communication (no pub/sub) - Ready for VIC-20 calls!")
+        logger.info("🐹📡 Subscribed to COORDINATION_REQUEST - Ready to receive from VIC-20!")
         
         # Initialize database integration for PostgreSQL writes
         if self.db_getter:
