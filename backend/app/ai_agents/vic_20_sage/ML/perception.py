@@ -181,8 +181,8 @@ class VIC20Perception:
             query = (
                 select(AgentLearningRecord)
                 .where(AgentLearningRecord.agent_name == agent_name)
-                .where(AgentLearningRecord.decision_type.like(f'coordination_{resource_type}%'))
-                .order_by(desc(AgentLearningRecord.timestamp))
+                .where(AgentLearningRecord.resource_type == resource_type)
+                .order_by(desc(AgentLearningRecord.created_at))
                 .limit(20)
             )
             
@@ -195,7 +195,7 @@ class VIC20Perception:
                 success_rate = successful / len(records)
                 
                 # Get last coordination time
-                last_coord = records[0].timestamp if records else None
+                last_coord = records[0].created_at if records else None
             else:
                 success_rate = 0.5  # Neutral if no history
                 last_coord = None
@@ -254,8 +254,8 @@ class VIC20Perception:
             similar = []
             for record in records:
                 similar.append({
-                    'resource_value': record.input_data.get('current_value'),
-                    'routed_to': record.output_data.get('target_specialist'),
+                    'resource_value': record.parameters.get('current_value') if record.parameters else None,
+                    'routed_to': record.action,
                     'success': record.success,
                     'confidence': record.confidence,
                     'timestamp': record.created_at
@@ -286,8 +286,8 @@ class VIC20Perception:
             outcomes = []
             for record in records:
                 outcomes.append({
-                    'resource_type': record.input_data.get('resource_type'),
-                    'specialist': record.output_data.get('target_specialist'),
+                    'resource_type': record.resource_type,
+                    'specialist': record.action,
                     'success': record.success,
                     'timestamp': record.created_at
                 })

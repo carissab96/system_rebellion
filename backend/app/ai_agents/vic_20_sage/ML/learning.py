@@ -135,20 +135,19 @@ class VIC20Learning:
         Store learning record in PostgreSQL.
         """
         try:
-            # Prepare input data
-            input_data = {
-                'resource_type': context.resource_type,
+            # Create hierarchical fingerprints for coordination routing
+            fingerprint_l1 = f"{context.resource_type}"
+            fingerprint_l2 = f"{context.resource_type}_{context.severity}"
+            fingerprint_l3 = f"{context.resource_type}_{context.severity}_{action.target_specialist}"
+            
+            # Prepare parameters with all context
+            parameters = {
                 'current_value': context.current_value,
                 'threshold': context.threshold,
-                'severity': context.severity,
                 'hawk_confidence': context.hawk_confidence,
                 'system_load': context.system_load,
                 'active_alerts': context.active_alerts,
-                'available_specialists_count': len(context.available_specialists)
-            }
-            
-            # Prepare output data
-            output_data = {
+                'available_specialists_count': len(context.available_specialists),
                 'target_specialist': action.target_specialist,
                 'routing_confidence': action.confidence,
                 'recommended_action': action.recommended_action,
@@ -159,17 +158,30 @@ class VIC20Learning:
                 'specialist_load': reasoning.specialist_load
             }
             
+            # Prepare improvement metrics (will be filled in when outcome is known)
+            improvement = {
+                'routed_to': action.target_specialist,
+                'routing_confidence': action.confidence
+            }
+            
             # Create database record
             db_record = AgentLearningRecord(
-                user_id=self.user_id,
                 agent_name='vic20_sage',
-                decision_type=f'route_{context.resource_type}',
-                input_data=input_data,
-                output_data=output_data,
+                fingerprint_l1=fingerprint_l1,
+                fingerprint_l2=fingerprint_l2,
+                fingerprint_l3=fingerprint_l3,
+                resource_type=context.resource_type,
+                severity=context.severity,
+                root_cause=reasoning.primary_reason,
+                process_category='coordination',
+                action=action.target_specialist,
+                parameters=parameters,
                 confidence=action.confidence,
-                success=learning_record.success,
-                reasoning=reasoning.primary_reason,
-                timestamp=learning_record.timestamp
+                followed_vic20=False,  # VIC-20 IS the coordinator
+                success=learning_record.success if learning_record.success is not None else True,
+                improvement=improvement,
+                what_worked=reasoning.primary_reason if learning_record.success else None,
+                what_failed=None if learning_record.success else reasoning.primary_reason
             )
             
             self.db.add(db_record)
