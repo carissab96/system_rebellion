@@ -963,10 +963,11 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
                     reasoning=decision.get('reasoning', 'Coordination decision made')
                 )
                 
-                # If multi-agent coordination needed, broadcast
+                # If multi-agent coordination needed, log to The Stick
                 if decision.get('agents_involved') and len(decision.get('agents_involved', [])) > 1:
-                    await self.broadcast_to_agents(
-                        message_type=MessageType.DECISION_BROADCAST,
+                    await self.send_to_agent(
+                        to_agent="the_stick",
+                        message_type=MessageType.DECISION_LOG,
                         payload={
                             "decision_type": "multi_agent_coordination",
                             "agents_involved": decision.get('agents_involved', []),

@@ -502,10 +502,11 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
                     reasoning=decision.rationale
                 )
                 
-                # If it's an aggressive optimization, broadcast to other agents
+                # If it's an aggressive optimization, log to The Stick
                 if decision.priority == OptimizationPriority.AGGRESSIVE:
-                    await self.broadcast_to_agents(
-                        message_type=MessageType.DECISION_BROADCAST,
+                    await self.send_to_agent(
+                        to_agent="the_stick",
+                        message_type=MessageType.DECISION_LOG,
                         payload={
                             "decision_type": "aggressive_optimization",
                             "priority": decision.priority.value,

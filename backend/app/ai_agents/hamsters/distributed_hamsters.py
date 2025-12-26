@@ -557,10 +557,11 @@ class HamstersDistributed(AgentDecisionEngine, HamstersBrainV3):
                     reasoning=decision.get('reasoning', 'Telepathic consensus reached')
                 )
                 
-                # If intervention needed, broadcast to other agents
+                # If intervention needed, log to The Stick
                 if decision.get('intervention_needed'):
-                    await self.broadcast_to_agents(
-                        message_type=MessageType.DECISION_BROADCAST,
+                    await self.send_to_agent(
+                        to_agent="the_stick",
+                        message_type=MessageType.DECISION_LOG,
                         payload={
                             "decision_type": "storage_intervention",
                             "disk_usage": metrics_data.get('disk_usage'),

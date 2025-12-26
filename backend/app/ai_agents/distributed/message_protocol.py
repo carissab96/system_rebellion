@@ -162,14 +162,11 @@ class DecisionMessage(AgentMessage):
         decision_data: Dict[str, Any],
         **kwargs
     ):
-        msg_type_map = {
-            "request": MessageType.DECISION_REQUEST,
-            "response": MessageType.DECISION_RESPONSE,
-            "broadcast": MessageType.DECISION_BROADCAST
-        }
+        # All decisions now logged to The Stick via DECISION_LOG
+        # No more broadcast/request/response - use direct coordination
         
         super().__init__(
-            message_type=msg_type_map.get(decision_type, MessageType.DECISION_BROADCAST),
+            message_type=MessageType.DECISION_LOG,
             from_agent=from_agent,
             priority=kwargs.pop("priority", Priority.NORMAL),
             payload={
@@ -220,8 +217,10 @@ class MemoryShareMessage(AgentMessage):
         memory_data: Dict[str, Any],
         **kwargs
     ):
+        # Memory sharing removed - use database queries instead
+        # This class is deprecated but kept for backward compatibility
         super().__init__(
-            message_type=MessageType.MEMORY_SHARE,
+            message_type=MessageType.DECISION_LOG,  # Changed from MEMORY_SHARE
             from_agent=from_agent,
             priority=Priority.LOW,
             payload={

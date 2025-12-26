@@ -243,10 +243,11 @@ class AgentDecisionEngine(DistributedAgentMixin, ABC):
             was_override=False  # Subclasses can override this
         )
         
-        # Broadcast if requested
+        # Log to The Stick if requested
         if broadcast and self.is_distributed:
-            await self.broadcast_to_agents(
-                message_type=MessageType.DECISION_BROADCAST,
+            await self.send_to_agent(
+                to_agent="the_stick",
+                message_type=MessageType.DECISION_LOG,
                 payload={
                     "decision_type": decision_type,
                     "agent": self.agent_name,

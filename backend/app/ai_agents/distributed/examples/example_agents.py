@@ -67,11 +67,12 @@ class SirHawkingtonDistributed(DistributedAgent):
             f"at {payload.get('current_value')}% - {severity} situation"
         )
         
-        # If critical, coordinate response
+        # If critical, log to The Stick
         if severity in ["critical", "emergency"]:
-            await self.broadcast_message(
-                MessageType.DECISION_BROADCAST,
-                {
+            await self.send_to_agent(
+                to_agent="the_stick",
+                message_type=MessageType.DECISION_LOG,
+                payload={
                     "decision": "resource_crisis_response",
                     "resource_type": resource_type,
                     "coordinator": self.agent_name,
@@ -142,10 +143,11 @@ class TerryMethSnailDistributed(DistributedAgent):
                 f"{payload.get('current_value')}% IS TOO SLOW!"
             )
             
-            # Broadcast optimization suggestion
-            await self.broadcast_message(
-                MessageType.DECISION_BROADCAST,
-                {
+            # Log optimization to The Stick
+            await self.send_to_agent(
+                to_agent="the_stick",
+                message_type=MessageType.DECISION_LOG,
+                payload={
                     "decision": "memory_optimization_needed",
                     "urgency": "MAXIMUM_SPEED",
                     "suggestion": "CLEAR ALL THE CACHES NOW",
@@ -215,10 +217,11 @@ class BobHamsterDistributed(DistributedAgent):
                 f"Must organize the storage burrow!"
             )
             
-            # Broadcast storage concern
-            await self.broadcast_message(
-                MessageType.DECISION_BROADCAST,
-                {
+            # Log storage concern to The Stick
+            await self.send_to_agent(
+                to_agent="the_stick",
+                message_type=MessageType.DECISION_LOG,
+                payload={
                     "decision": "disk_space_management",
                     "bob_anxiety_level": "ELEVATED",
                     "action": "Reviewing storage for optimization",
@@ -283,12 +286,13 @@ class QuantumShadowPeopleDistributed(DistributedAgent):
             f"across {payload.get('current_value')}% of probability space"
         )
         
-        # Broadcast quantum observation
-        await self.broadcast_message(
-            MessageType.MEMORY_SHARE,
-            {
-                "observation": "network_state_change",
-                "quantum_certainty": 0.7,
+        # Quantum observations stored in database, not broadcast
+        # Other agents query database for learning
+        # await self.broadcast_message(
+        #     MessageType.MEMORY_SHARE,  # REMOVED
+        #     {
+        #         "observation": "network_state_change",
+        #         "quantum_certainty": 0.7,
                 "affected_nodes": [message.from_agent],
                 "shadow_consensus": "MONITORING"
             },

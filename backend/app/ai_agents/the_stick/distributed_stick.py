@@ -837,13 +837,12 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
                     reasoning=decision.get('reasoning', 'Learning coordination decision')
                 )
                 
-                # If compliance issue detected, broadcast for awareness
+                # Compliance issues are logged to database via CentralMemoryBank
+                # No need to broadcast - other agents query database for learning
                 if decision.get('compliance_status') == 'non_compliant':
-                    await self.broadcast_to_agents(
-                        message_type=MessageType.LEARNING_UPDATE,
-                        payload={
-                            "update_type": "compliance_issue",
-                            "issue": decision.get('compliance_issue', 'unknown'),
+                    # Database write happens in decision storage
+                    pass
+                    # Removed LEARNING_UPDATE broadcast - use database queries
                             "guidance": decision.get('guidance_provided', None),
                             "severity": decision.get('severity', 'low')
                         },
@@ -898,13 +897,12 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
                 "The Stick carefully documents this for future learning."
             )
             
-            # Broadcast learning update
+            # Learning stored in database via CentralMemoryBank
+            # No need to broadcast - other agents query database for learning
             if self.is_distributed:
-                await self.broadcast_to_agents(
-                    message_type=MessageType.LEARNING_UPDATE,
-                    payload={
-                        "update_type": "critical_resource_event",
-                        "resource": alert.payload['resource_type'],
+                # Database write happens in decision storage
+                pass
+                # Removed LEARNING_UPDATE broadcast - use database queries
                         "value": current_value,
                         "lesson": "Resource management requires attention",
                         "coordinator": "the_stick"

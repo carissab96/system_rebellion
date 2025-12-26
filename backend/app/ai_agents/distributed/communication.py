@@ -174,8 +174,6 @@ class MessageBus:
                     channel = RedisChannels.emergency()
                 elif message.message_type == MessageType.RESOURCE_ALERT:
                     channel = RedisChannels.resource_alerts()
-                elif message.message_type in [MessageType.DECISION_REQUEST, MessageType.DECISION_RESPONSE]:
-                    channel = RedisChannels.decisions()
                 elif message.message_type == MessageType.AGENT_HEARTBEAT:
                     channel = RedisChannels.heartbeats()
                 else:
@@ -351,8 +349,8 @@ class MessageBus:
             message: The AgentMessage being sent
         """
         try:
-            # Skip heartbeats - too noisy for vector storage
-            if message.message_type == MessageType.AGENT_HEARTBEAT:
+            # Skip heartbeats and logs - too noisy for vector storage
+            if message.message_type in [MessageType.AGENT_HEARTBEAT, MessageType.DECISION_LOG]:
                 return
             
             # Import here to avoid circular imports
@@ -468,12 +466,13 @@ class AgentCommunicationHub:
         # Start message bus
         await self.message_bus.start()
         
-        # Send startup broadcast
-        await self.message_bus.broadcast(
-            MessageType.AGENT_STATE_CHANGE,
-            {
-                "event": "agent_started",
-                "agent_name": self.agent_name,
+        # Agent startup logged via heartbeat system
+        # No need for state change broadcast - state in database
+        # await self.message_bus.broadcast(
+        #     MessageType.AGENT_STATE_CHANGE,  # REMOVED
+        #     {
+        #         "event": "agent_started",
+        #         "agent_name": self.agent_name,
                 "agent_role": self.agent_role,
                 "restart_count": self._state.restart_count
             },
@@ -484,12 +483,13 @@ class AgentCommunicationHub:
     
     async def shutdown(self):
         """Shutdown the communication hub"""
-        # Send shutdown broadcast
-        await self.message_bus.broadcast(
-            MessageType.AGENT_STATE_CHANGE,
-            {
-                "event": "agent_stopping",
-                "agent_name": self.agent_name
+        # Agent shutdown logged via database
+        # No need for state change broadcast - state in database
+        # await self.message_bus.broadcast(
+        #     MessageType.AGENT_STATE_CHANGE,  # REMOVED
+        #     {
+        #         "event": "agent_stopping",
+        #         "agent_name": self.agent_name
             },
             priority=Priority.HIGH
         )
