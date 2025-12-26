@@ -47,6 +47,9 @@ class TerryActionSelection:
     """
     
     # Map root causes to viable actions
+    # Terry handles: CPU and Memory issues
+    # Hamsters handle: Disk/Storage issues
+    # QSP handles: Network issues
     ACTION_MAP = {
         'memory_thrashing': [
             'restart_service',  # Kill memory hog
@@ -69,18 +72,8 @@ class TerryActionSelection:
             'adjust_process_priority',  # Nice the CPU hogs
             'throttle_cpu_intensive_tasks',
         ],
-        'network_bound': [
-            'scan_open_ports',  # Identify network issues
-            'restart_service',  # Restart network services
-        ],
-        'disk_full': [
-            'rotate_logs',  # Clear old logs
-            'emergency_cache_clear',
-        ],
-        'network_congestion': [
-            'scan_open_ports',
-            'throttle_cpu_intensive_tasks',
-        ],
+        # Removed disk_full - that's Hamster territory!
+        # Removed network_bound and network_congestion - that's QSP territory!
     }
     
     # Risk levels for each action

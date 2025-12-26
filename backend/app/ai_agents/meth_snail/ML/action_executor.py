@@ -76,16 +76,19 @@ class TerryActionExecutor:
                     verify=True
                 )
             
+            # Disk actions should go to Hamsters, not Terry
             elif action == 'rotate_logs':
-                result = await RecommendationEngine.rotate_logs(
-                    log_directory=parameters.get('log_directory', '/var/log'),
-                    max_age_days=parameters.get('max_age_days', 7),
-                    agent_name='meth_snail'
+                self.logger.warning(f"🐌⚠️ {action} is Hamster territory - Terry shouldn't be doing disk work!")
+                self.logger.warning(f"🐌⚠️ Falling back to cache clear (memory/CPU is Terry's specialty)")
+                result = await SystemActions.emergency_cache_clear(
+                    agent_name='meth_snail',
+                    verify=True
                 )
             
+            # Network actions should go to QSP, not Terry
             elif action == 'scan_open_ports':
-                # TODO: Implement scan_open_ports in SystemActions
-                self.logger.warning(f"🐌⚠️ Action {action} not yet implemented - falling back to cache clear")
+                self.logger.warning(f"🐌⚠️ {action} is QSP territory - Terry shouldn't be doing network work!")
+                self.logger.warning(f"🐌⚠️ Falling back to cache clear (memory/CPU is Terry's specialty)")
                 result = await SystemActions.emergency_cache_clear(
                     agent_name='meth_snail',
                     verify=True
@@ -123,16 +126,16 @@ class TerryActionExecutor:
         """
         Get list of actions Terry can execute.
         
-        This enables self-discovery of capabilities.
+        Terry specializes in CPU and Memory optimization.
+        Disk actions → Hamsters
+        Network actions → QSP
         
         Returns:
             List of action names Terry can execute
         """
         return [
-            'emergency_cache_clear',
-            'adjust_process_priority',
-            'restart_service',
-            'throttle_cpu_intensive_tasks',
-            'rotate_logs',
-            'scan_open_ports'
+            'emergency_cache_clear',      # Memory optimization
+            'adjust_process_priority',    # CPU optimization
+            'restart_service',            # Memory/CPU recovery
+            'throttle_cpu_intensive_tasks'  # CPU throttling
         ]
