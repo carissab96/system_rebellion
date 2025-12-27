@@ -59,6 +59,8 @@ class LearningRecord:
     # Metadata
     timestamp: str = ""
     agent_name: str = "meth_snail"
+    learning_record_id: Optional[str] = None  # Database ID after storage
+    storage_success: bool = False  # Whether database storage succeeded
 
 
 class TerryLearning:
@@ -170,7 +172,8 @@ class TerryLearning:
         )
         
         # 5. Store in database
-        await self._store_learning(record)
+        storage_success = await self._store_learning(record)
+        record.storage_success = storage_success
         
         # 6. Update agent state
         await self._update_agent_state(record, decision)
@@ -218,12 +221,15 @@ class TerryLearning:
         
         return improvement
     
-    async def _store_learning(self, record: LearningRecord):
+    async def _store_learning(self, record: LearningRecord) -> bool:
         """
         Store learning record in database.
         
         Args:
             record: LearningRecord to store
+            
+        Returns:
+            True if storage succeeded, False otherwise
         """
         try:
             from app.models.agent_learning import AgentLearningRecord
@@ -250,11 +256,16 @@ class TerryLearning:
             self.db.add(db_record)
             await self.db.commit()
             
+            # Set the ID on the record so we can emit it
+            record.learning_record_id = str(db_record.id)
+            
             self.logger.debug(f"   ✓ Learning record stored in database (ID: {db_record.id})")
+            return True
             
         except Exception as e:
             self.logger.error(f"   💥 Failed to store learning record: {str(e)}")
             await self.db.rollback()
+            return False
     
     async def _update_agent_state(self, record: LearningRecord, decision):
         """

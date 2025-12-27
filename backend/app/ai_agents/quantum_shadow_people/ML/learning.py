@@ -65,6 +65,9 @@ class QSPLearningRecord:
     
     # Metadata
     timestamp: datetime = field(default_factory=utc_now)
+    learning_record_id: Optional[str] = None  # Database ID after storage
+    storage_success: bool = False  # Whether database storage succeeded
+    situation_fingerprint: Optional[str] = None  # Generated fingerprint for this situation
 
 
 class QSPLearning:
@@ -117,7 +120,11 @@ class QSPLearning:
         )
         
         # Store in database
-        await self._store_in_database(learning_record, context, reasoning, action)
+        storage_success = await self._store_in_database(learning_record, context, reasoning, action)
+        learning_record.storage_success = storage_success
+        
+        # Set fingerprint for emission
+        learning_record.situation_fingerprint = f"{context.resource_type}_{context.severity}_{action.action_type}"
         
         logger.info(
             f"👻✅ Learning recorded: {action.action_type}, "
@@ -132,9 +139,12 @@ class QSPLearning:
         context: QSPPerceptionContext,
         reasoning: SecurityReasoning,
         action: SecurityResponseAction
-    ):
+    ) -> bool:
         """
         Store learning record in PostgreSQL.
+        
+        Returns:
+            True if storage succeeded, False otherwise
         """
         try:
             # Create hierarchical fingerprints for security responses
@@ -195,11 +205,16 @@ class QSPLearning:
             self.db.add(db_record)
             await self.db.commit()
             
-            logger.debug("Learning record stored in database")
+            # Set the ID on the record so we can emit it
+            learning_record.learning_record_id = str(db_record.id)
+            
+            logger.debug(f"👻💾 Learning record stored in database (ID: {db_record.id})")
+            return True
             
         except Exception as e:
             logger.error(f"👻💥 Error storing learning record: {e}")
             await self.db.rollback()
+            return False
     
     async def update_outcome(
         self,

@@ -400,9 +400,10 @@ class HamstersDistributed(AgentDecisionEngine, HamstersBrainV3):
                             "duration_seconds": cleanup_result.get('duration_seconds', 0)
                         },
                         learning={
-                            "fingerprint": learning_record.situation_fingerprint,
-                            "stored": True,
-                            "learning_record_id": learning_record.learning_record_id
+                            "situation_fingerprint": learning_record.situation_fingerprint,
+                            "stored": learning_record.storage_success,
+                            "learning_record_id": learning_record.learning_record_id,
+                            "success": learning_record.success
                         }
                     )
                     

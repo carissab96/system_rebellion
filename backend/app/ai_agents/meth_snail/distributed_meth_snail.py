@@ -382,9 +382,12 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
                         "duration_seconds": action_result.get('duration_seconds', 0)
                     },
                     learning={
-                        "fingerprint": learning_record.situation_fingerprint,
-                        "stored": True,
-                        "learning_record_id": learning_record.learning_record_id
+                        "fingerprint_l1": learning_record.fingerprint_l1,
+                        "fingerprint_l2": learning_record.fingerprint_l2,
+                        "fingerprint_l3": learning_record.fingerprint_l3,
+                        "stored": learning_record.storage_success,
+                        "learning_record_id": learning_record.learning_record_id,
+                        "success": learning_record.success
                     }
                 )
                 
