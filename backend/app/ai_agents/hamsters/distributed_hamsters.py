@@ -180,6 +180,7 @@ class HamstersDistributed(AgentDecisionEngine, HamstersBrainV3):
         recommendation = payload.get('recommendation', {})
         current_value = payload.get('current_value', 0)
         threshold = payload.get('threshold', 0)
+        full_metrics = payload.get('full_metrics', {})  # For fallback if SimplifiedMetricsService fails
         
         logger.info(
             f"🐹📬 Coordination request from VIC-20: {resource_type} at {current_value:.1f}% "
@@ -188,7 +189,8 @@ class HamstersDistributed(AgentDecisionEngine, HamstersBrainV3):
         
         try:
             # Get database session for ML layers
-            async for db in self.db_getter():
+            db_gen = self.db_getter()
+            async for db in db_gen:
                 # 🎯 STEP 1: PERCEPTION - Telepathic storage assessment
                 logger.info("🐹👁️ Perception phase (telepathic assessment)...")
                 perception = HamstersPerception(db, self.personality_traits)

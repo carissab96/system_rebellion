@@ -180,7 +180,8 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
             )
             
             # Get database session for QSP v2 ML components
-            async for db in self.db_getter():
+            db_gen = self.db_getter()
+            async for db in db_gen:
                 # STEP 1: PERCEPTION - Quantum security assessment
                 from app.ai_agents.quantum_shadow_people.ML.perception import QSPPerception
                 
