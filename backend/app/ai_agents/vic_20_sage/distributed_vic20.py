@@ -389,7 +389,7 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
                     }
                     
                     # Send via message protocol
-                    await self.send_message_to_agent(
+                    await self.send_to_agent(
                         to_agent=action.target_specialist,
                         message_type=MessageType.COORDINATION_REQUEST,
                         payload=coordination_request,
@@ -455,7 +455,7 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
             logger.warning("🖥️⚠️ Falling back to basic routing...")
             specialist = self._route_to_specialist(resource_type)
             if specialist:
-                await self.send_message_to_agent(
+                await self.send_to_agent(
                     to_agent=specialist,
                     message_type=MessageType.COORDINATION_REQUEST,
                     payload=triage_data,
