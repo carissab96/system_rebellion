@@ -20,35 +20,15 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Increase text column sizes for agent learning records."""
-    op.alter_column('agent_learning_records', 'root_cause',
-                    existing_type=sa.String(length=50),
-                    type_=sa.String(length=500),
-                    existing_nullable=True)
-    
-    op.alter_column('agent_learning_records', 'what_worked',
-                    existing_type=sa.String(),
-                    type_=sa.String(length=500),
-                    existing_nullable=True)
-    
-    op.alter_column('agent_learning_records', 'what_failed',
-                    existing_type=sa.String(),
-                    type_=sa.String(length=500),
-                    existing_nullable=True)
+    # Use raw SQL for faster execution
+    op.execute('ALTER TABLE agent_learning_records ALTER COLUMN root_cause TYPE VARCHAR(500)')
+    op.execute('ALTER TABLE agent_learning_records ALTER COLUMN what_worked TYPE VARCHAR(500)')
+    op.execute('ALTER TABLE agent_learning_records ALTER COLUMN what_failed TYPE VARCHAR(500)')
 
 
 def downgrade() -> None:
     """Revert text column sizes back to original."""
-    op.alter_column('agent_learning_records', 'root_cause',
-                    existing_type=sa.String(length=500),
-                    type_=sa.String(length=50),
-                    existing_nullable=True)
-    
-    op.alter_column('agent_learning_records', 'what_worked',
-                    existing_type=sa.String(length=500),
-                    type_=sa.String(),
-                    existing_nullable=True)
-    
-    op.alter_column('agent_learning_records', 'what_failed',
-                    existing_type=sa.String(length=500),
-                    type_=sa.String(),
-                    existing_nullable=True)
+    # Use raw SQL for faster execution
+    op.execute('ALTER TABLE agent_learning_records ALTER COLUMN root_cause TYPE VARCHAR(50)')
+    op.execute('ALTER TABLE agent_learning_records ALTER COLUMN what_worked TYPE TEXT')
+    op.execute('ALTER TABLE agent_learning_records ALTER COLUMN what_failed TYPE TEXT')
