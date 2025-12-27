@@ -71,6 +71,9 @@ class StickLearningRecord:
     
     # Metadata
     timestamp: datetime = field(default_factory=utc_now)
+    learning_record_id: Optional[str] = None
+    storage_success: bool = False
+    situation_fingerprint: Optional[str] = None
 
 
 class StickLearning:
@@ -127,7 +130,9 @@ class StickLearning:
         )
         
         # Store in database
-        await self._store_in_database(learning_record, context, reasoning, action)
+        storage_success = await self._store_in_database(learning_record, context, reasoning, action)
+        learning_record.storage_success = storage_success
+        learning_record.situation_fingerprint = f"{context.resource_type}_{context.severity}_{action.action_type}"
         
         logger.info(
             f"📊✅ Learning recorded: {action.action_type}, "
@@ -143,9 +148,12 @@ class StickLearning:
         context: StickPerceptionContext,
         reasoning: LoggingReasoning,
         action: LoggingAction
-    ):
+    ) -> bool:
         """
         Store learning record in PostgreSQL.
+        
+        Returns:
+            True if storage succeeded, False otherwise
         """
         try:
             # Prepare input data
@@ -209,12 +217,14 @@ class StickLearning:
             self.db.add(db_record)
             await self.db.commit()
             
-            logger.debug(" Learning record stored in database")
-            logger.debug("📊💾 Learning record stored in database")
+            learning_record.learning_record_id = str(db_record.id)
+            logger.debug(f"📊💾 Learning record stored in database (ID: {db_record.id})")
+            return True
             
         except Exception as e:
             logger.error(f"📊💥 Error storing learning record: {e}")
             await self.db.rollback()
+            return False
     
     async def update_outcome(
         self,

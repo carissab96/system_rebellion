@@ -367,6 +367,47 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
                 
                 logger.info(f"🖥️💾 Learning record stored in PostgreSQL")
                 
+                # BROADCAST FULL DECISION CHAIN TO FRONTEND
+                from app.services.agent_decision_emitter import emit_agent_decision
+                
+                await emit_agent_decision(
+                    agent_name="vic20_sage",
+                    decision_id=learning_record.learning_record_id or "pending",
+                    perception={
+                        "resource_type": context.resource_type,
+                        "current_value": context.current_value,
+                        "threshold": context.threshold,
+                        "severity": context.severity,
+                        "hawk_confidence": context.hawk_confidence,
+                        "available_specialists": context.available_specialists,
+                        "system_load": context.system_load,
+                        "routing_confidence": context.routing_confidence
+                    },
+                    reasoning={
+                        "target_specialist": reasoning.target_specialist,
+                        "routing_confidence": reasoning.routing_confidence,
+                        "urgency_level": reasoning.urgency_level,
+                        "specialist_success_rate": reasoning.specialist_success_rate,
+                        "specialist_load": reasoning.specialist_load,
+                        "primary_reason": reasoning.primary_reason
+                    },
+                    action_selection={
+                        "chosen_action": action.action_type,
+                        "target_specialist": action.target_specialist,
+                        "recommended_action": action.recommended_action,
+                        "confidence": action.confidence,
+                        "priority": action.priority,
+                        "coordination_strategy": action.coordination_strategy,
+                        "fallback_specialists": action.fallback_specialists
+                    },
+                    learning={
+                        "situation_fingerprint": learning_record.situation_fingerprint,
+                        "stored": learning_record.storage_success,
+                        "learning_record_id": learning_record.learning_record_id,
+                        "success": learning_record.success
+                    }
+                )
+                
                 # 🎯 STEP 5: EXECUTE ACTION - Send to specialist
                 if action.action_type == 'route_to_specialist':
                     logger.info(f"🖥️📨 Routing to {action.target_specialist}...")

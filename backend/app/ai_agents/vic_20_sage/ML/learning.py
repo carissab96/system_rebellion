@@ -62,6 +62,9 @@ class VIC20LearningRecord:
     
     # Metadata
     timestamp: datetime = field(default_factory=utc_now)
+    learning_record_id: Optional[str] = None
+    storage_success: bool = False
+    situation_fingerprint: Optional[str] = None
 
 
 class VIC20Learning:
@@ -115,7 +118,9 @@ class VIC20Learning:
         )
         
         # Store in database
-        await self._store_in_database(learning_record, context, reasoning, action)
+        storage_success = await self._store_in_database(learning_record, context, reasoning, action)
+        learning_record.storage_success = storage_success
+        learning_record.situation_fingerprint = f"{context.resource_type}_{context.severity}_{action.target_specialist}"
         
         logger.info(
             f"🖥️✅ Learning recorded: routed to {action.target_specialist}, "
@@ -130,9 +135,12 @@ class VIC20Learning:
         context: VIC20PerceptionContext,
         reasoning: CoordinationReasoning,
         action: CoordinationAction
-    ):
+    ) -> bool:
         """
         Store learning record in PostgreSQL.
+        
+        Returns:
+            True if storage succeeded, False otherwise
         """
         try:
             # Create hierarchical fingerprints for coordination routing
@@ -187,11 +195,14 @@ class VIC20Learning:
             self.db.add(db_record)
             await self.db.commit()
             
-            logger.debug("🖥️💾 Learning record stored in database")
+            learning_record.learning_record_id = str(db_record.id)
+            logger.debug(f"🖥️💾 Learning record stored in database (ID: {db_record.id})")
+            return True
             
         except Exception as e:
             logger.error(f"🖥️💥 Error storing learning record: {e}")
             await self.db.rollback()
+            return False
     
     async def update_outcome(
         self,

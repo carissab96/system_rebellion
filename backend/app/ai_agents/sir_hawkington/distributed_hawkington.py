@@ -435,6 +435,46 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
                 
                 logger.info(f"🧐💾 Learning record stored in PostgreSQL")
                 
+                # BROADCAST FULL DECISION CHAIN TO FRONTEND
+                from app.services.agent_decision_emitter import emit_agent_decision
+                
+                await emit_agent_decision(
+                    agent_name="sir_hawkington",
+                    decision_id=learning_record.learning_record_id or "pending",
+                    perception={
+                        "resource_type": context.resource_type,
+                        "current_value": context.current_value,
+                        "threshold": context.threshold,
+                        "severity": context.severity,
+                        "data_quality_score": context.data_quality_score,
+                        "monocle_yeets": context.monocle_yeet_count,
+                        "similar_triages_found": len(context.similar_triages),
+                        "recent_escalations_count": len(context.recent_escalations)
+                    },
+                    reasoning={
+                        "should_escalate": reasoning.should_escalate,
+                        "risk_level": reasoning.risk_level,
+                        "confidence": reasoning.confidence,
+                        "primary_reason": reasoning.primary_reason,
+                        "evidence": reasoning.evidence if hasattr(reasoning, 'evidence') else {}
+                    },
+                    action_selection={
+                        "chosen_action": action.action_type,
+                        "target_agent": action.target_agent,
+                        "confidence": action.confidence,
+                        "priority": action.priority,
+                        "monocle_state": action.monocle_state,
+                        "aristocratic_confidence": action.aristocratic_confidence,
+                        "reasoning_summary": action.reasoning_summary
+                    },
+                    learning={
+                        "situation_fingerprint": learning_record.situation_fingerprint,
+                        "stored": learning_record.storage_success,
+                        "learning_record_id": learning_record.learning_record_id,
+                        "success": learning_record.success
+                    }
+                )
+                
                 # 🎯 STEP 5: EXECUTE ACTION - Escalate to VIC-20 if needed
                 if action.action_type == 'escalate' and self.is_distributed:
                     logger.info(f"🧐📨 Escalating {resource_type} alert to VIC-20...")

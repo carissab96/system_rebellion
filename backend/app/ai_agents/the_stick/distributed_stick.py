@@ -274,6 +274,44 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
                     f"Paper bags: {self.paper_bag_economy.bags_remaining}"
                 )
                 
+                # BROADCAST FULL DECISION CHAIN TO FRONTEND
+                from app.services.agent_decision_emitter import emit_agent_decision
+                
+                await emit_agent_decision(
+                    agent_name="the_stick",
+                    decision_id=learning_record.learning_record_id or "pending",
+                    perception={
+                        "decision_complexity": context.decision_complexity,
+                        "pending_decisions": context.pending_decisions,
+                        "error_rate": context.error_rate,
+                        "anxiety_level": context.anxiety_level,
+                        "panic_attack_active": context.panic_attack_active,
+                        "bob_detected": context.bob_detected,
+                        "recent_decisions_count": len(context.recent_decisions)
+                    },
+                    reasoning={
+                        "root_cause": reasoning_result.root_cause,
+                        "confidence": reasoning_result.confidence,
+                        "urgency": reasoning_result.urgency,
+                        "anxiety_impact": reasoning_result.anxiety_impact if hasattr(reasoning_result, 'anxiety_impact') else "unknown"
+                    },
+                    action_selection={
+                        "chosen_action": decision.action_type,
+                        "priority": decision.priority,
+                        "confidence": decision.confidence,
+                        "anxiety_level": decision.anxiety_level,
+                        "paper_bags_consumed": decision.paper_bags_consumed,
+                        "bob_detected": decision.bob_detected,
+                        "bob_avoidance_executed": decision.bob_avoidance_executed
+                    },
+                    learning={
+                        "situation_fingerprint": learning_record.situation_fingerprint,
+                        "stored": learning_record.storage_success,
+                        "learning_record_id": learning_record.learning_record_id,
+                        "success": learning_record.success
+                    }
+                )
+                
                 # 🛍️ REWARD: Successful compliance documentation
                 self._reward_compliance_success()
                 
