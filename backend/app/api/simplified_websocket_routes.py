@@ -560,6 +560,11 @@ async def system_metrics_socket(websocket: WebSocket):
                                     "distributed": getattr(agent, 'is_distributed', False),
                                     **agent_status
                                 })
+                                # DEBUG: Log actual fields being sent for first agent
+                                if agent_name == "meth_snail":
+                                    logger.info(f"🐌 TERRY PAYLOAD FIELDS: {list(agent_insights[agent_name].keys())}")
+                                    logger.info(f"🐌 shell_spin_count: {agent_insights[agent_name].get('shell_spin_count')}")
+                                    logger.info(f"🐌 energy_drinks_consumed: {agent_insights[agent_name].get('energy_drinks_consumed')}")
                         logger.debug("📊 Updated insights for %d distributed agents", len(agent_insights))
                     except Exception as e:
                         logger.error("Failed to get distributed agent status: %s", str(e))
