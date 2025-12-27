@@ -325,27 +325,20 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
         
         try:
             # Get database session for ML layers
-            async for db in self.db_getter():
+            from app.core.database import get_async_db
+            async for db in get_async_db():
+                
                 # 🎯 STEP 1: PERCEPTION - Gather coordination context
                 logger.info("🖥️👁️ Perception phase...")
-                perception = VIC20Perception(db, self.personality_traits)
-                
-                triage_alert = {
-                    'resource_type': resource_type,
-                    'current_value': current_value,
-                    'threshold': threshold,
-                    'severity': severity,
-                    'triage_confidence': confidence
-                }
-                
-                context = await perception.perceive(triage_alert)
+                perception = VIC20Perception()
+                context = await perception.perceive(triage_data, db)
                 
                 logger.info(
-                    f"🖥️✅ Perception complete: {len(context.available_specialists)} specialists, "
-                    f"routing_confidence={context.routing_confidence:.2f}"
+                    f"🖥️✅ Perception complete: {len(context.available_specialists)} specialists available, "
+                    f"system load: {context.system_load}"
                 )
                 
-                # 🎯 STEP 2: REASONING - Determine optimal routing
+                # 🎯 STEP 2: REASONING - Determine best specialist routing
                 logger.info("🖥️🧠 Reasoning phase...")
                 reasoning_engine = VIC20Reasoning(self.personality_traits)
                 reasoning = reasoning_engine.reason(context)
@@ -491,8 +484,6 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
                         'action_type': action.action_type,
                         'message': 'Monitoring situation'
                     }
-                
-                break  # Exit db session loop
                 
         except Exception as e:
             logger.error(f"🖥️💥 VIC-20 v2 coordination failed: {e}")
