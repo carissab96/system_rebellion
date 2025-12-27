@@ -257,6 +257,10 @@ interface AgentCardProps {
 const AgentCard: React.FC<AgentCardProps> = ({ agent, config, formatUptime }) => {
   const dist = agent.distributed;
   
+  // DEBUG: Log what fields we actually have
+  console.log(`🔍 ${agent.agent_name} fields:`, Object.keys(agent));
+  console.log(`🔍 ${agent.agent_name} data:`, agent);
+  
   // Determine health badge style - no fallback, show actual state
   const getHealthClass = (health: string | undefined): string => {
     switch (health?.toLowerCase()) {

@@ -107,11 +107,12 @@ const agentsSlice = createSlice({
         avg_confidence = confidenceValues.reduce((a, b) => a + b, 0) / confidenceValues.length;
       }
       
-      // Update display data - NO MAPPING, pass backend data directly
+      // Update display data - MERGE new data with existing to preserve both personality stats and ML decisions
       agent.display_data = {
+        ...(agent.display_data || {}), // Keep existing data
         agent_name,
-        status: memory.status || 'active',
-        last_activity: memory.timestamp || memory.last_heartbeat || new Date().toISOString(),
+        status: memory.status || agent.display_data?.status || 'active',
+        last_activity: memory.timestamp || memory.last_heartbeat || agent.display_data?.last_activity || new Date().toISOString(),
         summary_stats: {
           total_events: agent.recent_memories.length,
           recent_events_24h: agent.recent_memories.filter((m: any) => {
@@ -121,7 +122,7 @@ const agentsSlice = createSlice({
           }).length,
           avg_confidence
         },
-        // Pass all backend data directly - cards consume it as-is
+        // Merge all backend data - preserves both personality stats AND ML decisions
         ...memory
       };
       
