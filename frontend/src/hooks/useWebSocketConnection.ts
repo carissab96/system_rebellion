@@ -85,7 +85,7 @@ export const useWebSocketConnection = () => {
       if (payload.active_agents && Array.isArray(payload.active_agents)) {
         // Mark all agents as active
         payload.active_agents.forEach((agent_name: string) => {
-          // Backend sends agent names as-is (vic20_sage not vic_20_sage)
+          // Use agent name as-is from backend
           const normalizedName = agent_name;
           
           dispatch(addAgentMemory({

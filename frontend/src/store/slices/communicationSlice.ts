@@ -55,15 +55,15 @@ const initialState: CommunicationState = {
 // Based on the distributed agent protocol
 export const AGENT_HIERARCHY = {
   // Sir Hawkington monitors and triages to VIC-20 and The Stick
-  sir_hawkington: ['vic20_sage', 'the_stick'],
+  sir_hawkington: ['vic_20_sage', 'the_stick'],
   
   // VIC-20 coordinates with all specialists
-  vic20_sage: ['hamsters', 'meth_snail', 'quantum_shadow_people', 'the_stick'],
+  vic_20_sage: ['hamsters', 'meth_snail', 'quantum_shadow_people', 'the_stick'],
   
   // Specialists report back to VIC-20
-  hamsters: ['vic20_sage', 'the_stick'],
-  meth_snail: ['vic20_sage', 'the_stick'],
-  quantum_shadow_people: ['vic20_sage', 'the_stick'],
+  hamsters: ['vic_20_sage', 'the_stick'],
+  meth_snail: ['vic_20_sage', 'the_stick'],
+  quantum_shadow_people: ['vic_20_sage', 'the_stick'],
   
   // The Stick receives from everyone (universal logger)
   the_stick: [], // Receives only, doesn't initiate

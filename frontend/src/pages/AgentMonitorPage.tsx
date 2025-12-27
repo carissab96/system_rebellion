@@ -23,7 +23,7 @@ interface AgentStatus {
 
 const AGENTS = [
   { name: 'sir_hawkington', emoji: '🧐', displayName: 'Sir Hawkington' },
-  { name: 'vic20_sage', emoji: '🖥️', displayName: 'VIC-20 Sage' },
+  { name: 'vic_20_sage', emoji: '🖥️', displayName: 'VIC-20 Sage' },
   { name: 'meth_snail', emoji: '🐌', displayName: 'Terry (Meth Snail)' },
   { name: 'hamsters', emoji: '🐹', displayName: 'The Hamsters' },
   { name: 'quantum_shadow_people', emoji: '👻', displayName: 'Quantum Shadow People' },

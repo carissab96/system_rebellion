@@ -26,10 +26,9 @@ import qspIcon from '../../assets/icons/agents/qsp.png';
 
 // Agent display configuration - maps backend agent_name to display info
 // NO EMOJIS - use icons from assets
-// Backend sends: vic20_sage (no underscores) - frontend adapts to backend
 const AGENT_CONFIG: Record<string, { icon: string; displayName: string; styleClass: string }> = {
   sir_hawkington: { icon: sirHawkingtonIcon, displayName: 'Sir Hawkington', styleClass: 'sirHawkington' },
-  vic20_sage: { icon: vic20SageIcon, displayName: 'VIC-20 Sage', styleClass: 'vic20Sage' },
+  vic_20_sage: { icon: vic20SageIcon, displayName: 'VIC-20 Sage', styleClass: 'vic20Sage' },
   meth_snail: { icon: terryMethSnailIcon, displayName: 'Terry', styleClass: 'methSnail' },
   the_stick: { icon: theStickIcon, displayName: 'The Stick', styleClass: 'theStick' },
   hamsters: { icon: hamstersIcon, displayName: 'The Hamsters', styleClass: 'hamsters' },
@@ -530,7 +529,7 @@ const AgentPersonalityStats: React.FC<AgentPersonalityStatsProps> = ({ agent }) 
           </>
         );
 
-      case 'vic20_sage':
+      case 'vic_20_sage':
         return (
           <>
             {agent.totalAnalyses !== undefined && (

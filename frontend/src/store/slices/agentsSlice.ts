@@ -45,7 +45,7 @@ interface AgentsState {
     recent_memories: QuantumShadowPeopleMemory[];
     display_data: AgentDisplayData | null;
   };
-  vic20_sage: {
+  vic_20_sage: {
     recent_memories: VIC20Memory[];
     display_data: AgentDisplayData | null;
   };
@@ -61,12 +61,12 @@ const initialState: AgentsState = {
   meth_snail: { recent_memories: [], display_data: null },
   hamsters: { recent_memories: [], display_data: null },
   quantum_shadow_people: { recent_memories: [], display_data: null },
-  vic20_sage: { recent_memories: [], display_data: null },
+  vic_20_sage: { recent_memories: [], display_data: null },
   last_update: null,
   active_agents: []
 };
 
-type AgentName = 'sir_hawkington' | 'the_stick' | 'meth_snail' | 'hamsters' | 'quantum_shadow_people' | 'vic20_sage';
+type AgentName = 'sir_hawkington' | 'the_stick' | 'meth_snail' | 'hamsters' | 'quantum_shadow_people' | 'vic_20_sage';
 
 const agentsSlice = createSlice({
   name: 'agents',
@@ -172,7 +172,7 @@ const selectAgentsState = (state: { agents: AgentsState }) => state.agents;
 export const selectAllAgentDisplayData = createSelector(
   [selectAgentsState],
   (agentsState) => {
-    const agents: AgentName[] = ['sir_hawkington', 'the_stick', 'meth_snail', 'hamsters', 'quantum_shadow_people', 'vic20_sage'];
+    const agents: AgentName[] = ['sir_hawkington', 'the_stick', 'meth_snail', 'hamsters', 'quantum_shadow_people', 'vic_20_sage'];
     return agents
       .map(name => agentsState[name].display_data)
       .filter((data): data is AgentDisplayData => data !== null);

@@ -82,7 +82,7 @@ class WebSocketLogHandler(logging.Handler):
         if 'hawkington' in logger_lower or 'hawk' in logger_lower:
             return 'sir_hawkington'
         elif 'vic' in logger_lower or 'vic20' in logger_lower:
-            return 'vic_20_sage'
+            return 'vic20_sage'
         elif 'meth' in logger_lower or 'snail' in logger_lower or 'terry' in logger_lower:
             return 'meth_snail'
         elif 'stick' in logger_lower:
