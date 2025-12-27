@@ -330,8 +330,8 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
                 
                 # 🎯 STEP 1: PERCEPTION - Gather coordination context
                 logger.info("🖥️👁️ Perception phase...")
-                perception = VIC20Perception()
-                context = await perception.perceive(triage_data, db)
+                perception = VIC20Perception(db, self.personality_traits)
+                context = await perception.perceive(triage_data)
                 
                 logger.info(
                     f"🖥️✅ Perception complete: {len(context.available_specialists)} specialists available, "

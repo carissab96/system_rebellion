@@ -362,7 +362,7 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
                         "root_cause": reasoning_result.root_cause,
                         "confidence": reasoning_result.action_confidence,
                         "evidence": reasoning_result.evidence,
-                        "explanation": reasoning_result.explanation
+                        "reasoning": reasoning_result.reasoning
                     },
                     action_selection={
                         "chosen_action": decision.action,
