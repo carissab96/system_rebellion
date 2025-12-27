@@ -26,16 +26,6 @@ export const PersonalityBehaviors: React.FC<PersonalityBehaviorsProps> = ({
     perceptionKeys: perception ? Object.keys(perception) : [],
     agentDataKeys: agentData ? Object.keys(agentData) : []
   });
-  
-  // DEBUG: Log specific fields for Terry
-  if (agentName === 'meth_snail') {
-    console.log('🐌 Terry specific data:', {
-      energy_drink_system: personalityData.energy_drink_system,
-      energy_drinks_consumed: personalityData.energy_drinks_consumed,
-      shell_spin_count: personalityData.shell_spin_count,
-      shell_spin_incidents: personalityData.shell_spin_incidents
-    });
-  }
 
   // Terry (Meth Snail) - Energy drinks, shell spins
   if (agentName === 'meth_snail') {
@@ -89,7 +79,19 @@ export const PersonalityBehaviors: React.FC<PersonalityBehaviorsProps> = ({
 
   // Hamsters - Beer consumption, duct tape
   if (agentName === 'hamsters') {
-    consnpnst TERS' BEHAVIORS        <strong>Total Beers Today:</strong> {beerConsumption.total_beers_today}
+    const beerConsumption = personalityData.beer_consumption || {};
+    const ductTape = personalityData.duct_tape_assessment || personalityData.duct_tape_inventory || {};
+    const supplyCloset = personalityData.supply_closet || {};
+
+    return (
+      <div style={{ marginTop: '12px' }}>
+        <div style={{ fontSize: '12px', fontWeight: 'bold', marginBottom: '8px', color: '#ffaa4a' }}>
+          HAMSTERS' BEHAVIORS
+        </div>
+        
+        {beerConsumption.total_beers_today !== undefined && (
+          <div style={{ fontSize: '11px', marginBottom: '6px' }}>
+            <strong>Total Beers Today:</strong> {beerConsumption.total_beers_today}
           </div>
         )}
         
@@ -197,18 +199,7 @@ export const PersonalityBehaviors: React.FC<PersonalityBehaviorsProps> = ({
 
   // The Stick - Paper bags, anxiety
   if (agentName === 'the_stick') {
-    console.log('📏 The Stick specific data:', {
-      paper_bag_economy: personalityData.paper_bag_economy,
-      paper_bag_inventory: personalityData.paper_bag_inventory,
-      paper_bags_consumed: personalityData.paper_bags_consumed
-    });
-    
-    const paperBags = personalityData.paper_bag_economy || {
-      bags_remaining: personalityData.paper_bag_inventory,
-      bags_consumed_today: personalityData.paper_bags_consumed,
-      bags_consumed_total: personalityData.paper_bags_consumed,
-      anxiety_reduction_per_bag: 20.0
-    };
+    const paperBags = personalityData.paper_bag_economy || {};
     
     return (
       <div style={{ marginTop: '12px' }}>
@@ -239,19 +230,7 @@ export const PersonalityBehaviors: React.FC<PersonalityBehaviorsProps> = ({
 
   // QSP - Tequila, quantum states, paranoia
   if (agentName === 'quantum_shadow_people') {
-    const tequila = personalityData.tequila_ {
-    console.log('👻 QSP specific data:',sy
-      tequila_system: personalityData.tequila_system,
-      tequila_jello_shots: personalityData.tequila_jello_shots,
-      paranoia_level: personalityData.paranoia_level,
-      threats_detected: personalityData.threats_detected
-    });
-    stem || {};
-    
-      shots_today: personalityData.tequila_jello_shots,
-      paranoia_level: personalityData.paranoia_level,
-      threats_detected: personalityData.threats_detected,
-      false_alarms: personalityData.false_alarms
+    const tequila = personalityData.tequila_system || {};
     
     return (
       <div style={{ marginTop: '12px' }}>
