@@ -462,8 +462,8 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
                         decision_type='coordination_v2',
                         resource_type=resource_type,
                         specialist=action.target_specialist,
-                        recommendation=action.recommended_action,
-                        confidence=action.confidence
+                        recommendation={'action': action.recommended_action, 'confidence': action.confidence},
+                        severity=severity
                     )
                     
                     logger.info(f"{'='*80}")
