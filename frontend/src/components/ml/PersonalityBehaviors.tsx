@@ -17,6 +17,15 @@ export const PersonalityBehaviors: React.FC<PersonalityBehaviorsProps> = ({
 }) => {
   // Extract personality data from perception or agentData
   const personalityData = perception || agentData || {};
+  
+  // DEBUG: Log what we're receiving
+  console.log(`🔍 PersonalityBehaviors for ${agentName}:`, {
+    hasPerception: !!perception,
+    hasAgentData: !!agentData,
+    personalityData,
+    perceptionKeys: perception ? Object.keys(perception) : [],
+    agentDataKeys: agentData ? Object.keys(agentData) : []
+  });
 
   // Terry (Meth Snail) - Energy drinks, shell spins
   if (agentName === 'meth_snail') {
