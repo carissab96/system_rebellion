@@ -276,6 +276,8 @@ export const useWebSocketConnection = () => {
     // Handle ML v2 agent_decision messages (full decision chain)
     else if (payload.type === 'agent_decision') {
       console.log('🧠 ML v2 agent_decision received:', payload.agent_name);
+      console.log('📦 Full payload:', payload);
+      console.log('🔍 Perception data:', payload.perception);
       
       // Dispatch to agentsSlice with full decision chain
       dispatch(addAgentMemory({
@@ -291,6 +293,8 @@ export const useWebSocketConnection = () => {
           ml_decision: true // Flag to indicate this is ML v2 data
         }
       }));
+      
+      console.log('✅ Dispatched to Redux for agent:', payload.agent_name);
       
       // Also add to communications for activity feed
       const actionSummary = payload.action_selection?.chosen_action || 

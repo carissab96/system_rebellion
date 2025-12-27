@@ -275,6 +275,14 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, config, formatUptime }) =>
   // Cast to any to access dynamic personality fields from backend (real data)
   const agentData = agent as any;
   
+  // DEBUG: Log what data we have for this agent
+  console.log(`🎴 Rendering card for ${agent.agent_name}:`, {
+    hasPerception: !!agentData.perception,
+    hasMlDecision: !!agentData.ml_decision,
+    agentDataKeys: Object.keys(agentData),
+    perception: agentData.perception
+  });
+  
   return (
     <div className={`${styles.agentCard} ${styles[config.styleClass] || ''}`} style={{ position: 'relative' }}>
       {/* Real Data-Driven Personality Animations */}
