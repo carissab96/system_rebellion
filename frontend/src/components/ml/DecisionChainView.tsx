@@ -48,7 +48,7 @@ export const DecisionChainView: React.FC<DecisionChainViewProps> = ({ decision, 
             color: '#4a9eff',
             marginBottom: '8px'
           }}>
-            👁️ PERCEPTION
+            PERCEPTION
           </div>
           <div style={{
             fontSize: '11px',
@@ -72,7 +72,7 @@ export const DecisionChainView: React.FC<DecisionChainViewProps> = ({ decision, 
             color: '#ff9f4a',
             marginBottom: '8px'
           }}>
-            🧠 REASONING
+            REASONING
           </div>
           <div style={{ fontSize: '11px', color: '#ccc' }}>
             {decision.reasoning.root_cause && (
@@ -108,7 +108,7 @@ export const DecisionChainView: React.FC<DecisionChainViewProps> = ({ decision, 
             color: '#4aff9f',
             marginBottom: '8px'
           }}>
-            ⚡ ACTION SELECTION
+            ACTION SELECTION
           </div>
           <div style={{ fontSize: '11px', color: '#ccc' }}>
             {decision.action_selection.chosen_action && (
@@ -149,12 +149,12 @@ export const DecisionChainView: React.FC<DecisionChainViewProps> = ({ decision, 
             color: '#ff4a9f',
             marginBottom: '8px'
           }}>
-            💨 EXECUTION
+            EXECUTION
           </div>
           <div style={{ fontSize: '11px', color: '#ccc' }}>
             {decision.execution.success !== undefined && (
               <div style={{ marginBottom: '4px' }}>
-                <strong>Success:</strong> {decision.execution.success ? '✅ Yes' : '❌ No'}
+                <strong>Success:</strong> {decision.execution.success ? 'Yes' : 'No'}
               </div>
             )}
             {decision.execution.improvement_percentage !== undefined && (
@@ -200,7 +200,7 @@ export const DecisionChainView: React.FC<DecisionChainViewProps> = ({ decision, 
             color: '#9f4aff',
             marginBottom: '8px'
           }}>
-            📚 LEARNING
+            LEARNING
           </div>
           <div style={{ fontSize: '11px', color: '#ccc' }}>
             {decision.learning.situation_fingerprint && (
@@ -210,7 +210,7 @@ export const DecisionChainView: React.FC<DecisionChainViewProps> = ({ decision, 
             )}
             {decision.learning.stored !== undefined && (
               <div style={{ marginBottom: '4px' }}>
-                <strong>Stored:</strong> {decision.learning.stored ? '✅ Yes' : '❌ No'}
+                <strong>Stored:</strong> {decision.learning.stored ? 'Yes' : 'No'}
               </div>
             )}
             {decision.learning.learning_record_id && (

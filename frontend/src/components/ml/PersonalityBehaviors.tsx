@@ -27,12 +27,12 @@ export const PersonalityBehaviors: React.FC<PersonalityBehaviorsProps> = ({
     return (
       <div style={{ marginTop: '12px' }}>
         <div style={{ fontSize: '12px', fontWeight: 'bold', marginBottom: '8px', color: '#4aff9f' }}>
-          🐌 TERRY'S BEHAVIORS
+          TERRY'S BEHAVIORS
         </div>
         
         {energyDrinks.energy_drinks_today !== undefined && (
           <div style={{ fontSize: '11px', marginBottom: '6px' }}>
-            ☕ <strong>Energy Drinks Today:</strong> {energyDrinks.energy_drinks_today}
+            <strong>Energy Drinks Today:</strong> {energyDrinks.energy_drinks_today}
             {energyDrinks.total_energy_drinks !== undefined && (
               <span style={{ color: '#888', marginLeft: '8px' }}>
                 (Total: {energyDrinks.total_energy_drinks})
@@ -43,19 +43,19 @@ export const PersonalityBehaviors: React.FC<PersonalityBehaviorsProps> = ({
         
         {energyDrinks.hawk_vetoes !== undefined && energyDrinks.hawk_vetoes > 0 && (
           <div style={{ fontSize: '11px', marginBottom: '6px', color: '#ff4a4a' }}>
-            ❌ <strong>Hawk Vetoes:</strong> {energyDrinks.hawk_vetoes}
+            <strong>Hawk Vetoes:</strong> {energyDrinks.hawk_vetoes}
           </div>
         )}
         
         {shellSpins.length > 0 && (
           <div style={{ fontSize: '11px', marginBottom: '6px', color: '#ffaa4a' }}>
-            💫 <strong>Shell Spins:</strong> {shellSpins.length} incidents
+            <strong>Shell Spins:</strong> {shellSpins.length} incidents
           </div>
         )}
         
         {dataQuality !== undefined && (
           <div style={{ fontSize: '11px', marginBottom: '6px' }}>
-            📊 <strong>Data Quality:</strong> {(dataQuality * 100).toFixed(0)}%
+            <strong>Data Quality:</strong> {(dataQuality * 100).toFixed(0)}%
           </div>
         )}
       </div>
@@ -71,12 +71,12 @@ export const PersonalityBehaviors: React.FC<PersonalityBehaviorsProps> = ({
     return (
       <div style={{ marginTop: '12px' }}>
         <div style={{ fontSize: '12px', fontWeight: 'bold', marginBottom: '8px', color: '#ffaa4a' }}>
-          🐹 HAMSTERS' BEHAVIORS
+          HAMSTERS' BEHAVIORS
         </div>
         
         {beerConsumption.total_beers_today !== undefined && (
           <div style={{ fontSize: '11px', marginBottom: '6px' }}>
-            🍺 <strong>Total Beers Today:</strong> {beerConsumption.total_beers_today}
+            <strong>Total Beers Today:</strong> {beerConsumption.total_beers_today}
           </div>
         )}
         
@@ -92,7 +92,7 @@ export const PersonalityBehaviors: React.FC<PersonalityBehaviorsProps> = ({
         
         {ductTape.total_rolls !== undefined && (
           <div style={{ fontSize: '11px', marginBottom: '6px' }}>
-            🔧 <strong>Duct Tape:</strong> {ductTape.total_rolls.toFixed(1)} rolls
+            <strong>Duct Tape:</strong> {ductTape.total_rolls.toFixed(1)} rolls
             {ductTape.job_complexity && (
               <span style={{ color: '#888', marginLeft: '8px' }}>
                 ({ductTape.job_complexity})
@@ -103,7 +103,7 @@ export const PersonalityBehaviors: React.FC<PersonalityBehaviorsProps> = ({
         
         {supplyCloset.bob_at_cupboard && (
           <div style={{ fontSize: '11px', marginBottom: '6px', color: '#ff4a4a' }}>
-            🚨 <strong>BOB AT SUPPLY CLOSET!</strong>
+            <strong>BOB AT SUPPLY CLOSET!</strong>
           </div>
         )}
       </div>
@@ -118,18 +118,18 @@ export const PersonalityBehaviors: React.FC<PersonalityBehaviorsProps> = ({
     return (
       <div style={{ marginTop: '12px' }}>
         <div style={{ fontSize: '12px', fontWeight: 'bold', marginBottom: '8px', color: '#4a9eff' }}>
-          🖥️ VIC-20'S COORDINATION
+          VIC-20'S COORDINATION
         </div>
         
         {coordination.escalations_handled_today !== undefined && (
           <div style={{ fontSize: '11px', marginBottom: '6px' }}>
-            📨 <strong>Escalations Today:</strong> {coordination.escalations_handled_today}
+            <strong>Escalations Today:</strong> {coordination.escalations_handled_today}
           </div>
         )}
         
         {coordination.routing_accuracy !== undefined && (
           <div style={{ fontSize: '11px', marginBottom: '6px' }}>
-            🎯 <strong>Routing Accuracy:</strong> {(coordination.routing_accuracy * 100).toFixed(0)}%
+            <strong>Routing Accuracy:</strong> {(coordination.routing_accuracy * 100).toFixed(0)}%
           </div>
         )}
         
@@ -140,15 +140,15 @@ export const PersonalityBehaviors: React.FC<PersonalityBehaviorsProps> = ({
             color: coordination.current_system_drama === 'BOB_ALERT' ? '#ff4a4a' : 
                    coordination.current_system_drama === 'high' ? '#ffaa4a' : '#4aff9f'
           }}>
-            📊 <strong>System Drama:</strong> {coordination.current_system_drama.toUpperCase()}
+            <strong>System Drama:</strong> {coordination.current_system_drama.toUpperCase()}
           </div>
         )}
         
         {mediation.interventions_today !== undefined && (
           <div style={{ fontSize: '11px', marginBottom: '6px' }}>
-            ⚖️ <strong>Mediations Today:</strong> {mediation.interventions_today}
+            <strong>Mediations Today:</strong> {mediation.interventions_today}
             {mediation.interventions_today === 0 && (
-              <span style={{ color: '#4aff9f', marginLeft: '8px' }}>✅ PEACE</span>
+              <span style={{ color: '#4aff9f', marginLeft: '8px' }}>PEACE</span>
             )}
           </div>
         )}
@@ -164,18 +164,18 @@ export const PersonalityBehaviors: React.FC<PersonalityBehaviorsProps> = ({
     return (
       <div style={{ marginTop: '12px' }}>
         <div style={{ fontSize: '12px', fontWeight: 'bold', marginBottom: '8px', color: '#ff9f4a' }}>
-          🧐 HAWKINGTON'S OBSERVATIONS
+          HAWKINGTON'S OBSERVATIONS
         </div>
         
         {monocleYeets > 0 && (
           <div style={{ fontSize: '11px', marginBottom: '6px', color: '#ff4a4a' }}>
-            🎩 <strong>Monocle Yeets:</strong> {monocleYeets}
+            <strong>Monocle Yeets:</strong> {monocleYeets}
           </div>
         )}
         
         {dataQuality !== undefined && (
           <div style={{ fontSize: '11px', marginBottom: '6px' }}>
-            📊 <strong>Data Quality:</strong> {(dataQuality * 100).toFixed(0)}%
+            <strong>Data Quality:</strong> {(dataQuality * 100).toFixed(0)}%
           </div>
         )}
       </div>
@@ -189,18 +189,18 @@ export const PersonalityBehaviors: React.FC<PersonalityBehaviorsProps> = ({
     return (
       <div style={{ marginTop: '12px' }}>
         <div style={{ fontSize: '12px', fontWeight: 'bold', marginBottom: '8px', color: '#8b4513' }}>
-          🌳 THE STICK'S ANXIETY
+          THE STICK'S ANXIETY
         </div>
         
         {paperBags.bags_remaining !== undefined && (
           <div style={{ fontSize: '11px', marginBottom: '6px' }}>
-            📄 <strong>Paper Bags:</strong> {paperBags.bags_remaining} remaining
+            <strong>Paper Bags:</strong> {paperBags.bags_remaining} remaining
           </div>
         )}
         
         {paperBags.bags_consumed_today !== undefined && paperBags.bags_consumed_today > 0 && (
           <div style={{ fontSize: '11px', marginBottom: '6px', color: '#ffaa4a' }}>
-            😰 <strong>Consumed Today:</strong> {paperBags.bags_consumed_today}
+            <strong>Consumed Today:</strong> {paperBags.bags_consumed_today}
           </div>
         )}
         
@@ -220,24 +220,24 @@ export const PersonalityBehaviors: React.FC<PersonalityBehaviorsProps> = ({
     return (
       <div style={{ marginTop: '12px' }}>
         <div style={{ fontSize: '12px', fontWeight: 'bold', marginBottom: '8px', color: '#9f4aff' }}>
-          👻 QSP'S QUANTUM STATE
+          QSP'S QUANTUM STATE
         </div>
         
         {tequila.shots_today !== undefined && (
           <div style={{ fontSize: '11px', marginBottom: '6px' }}>
-            🥃 <strong>Tequila Shots Today:</strong> {tequila.shots_today}
+            <strong>Tequila Shots Today:</strong> {tequila.shots_today}
           </div>
         )}
         
         {tequila.paranoia_level && (
           <div style={{ fontSize: '11px', marginBottom: '6px' }}>
-            😱 <strong>Paranoia:</strong> {tequila.paranoia_level}
+            <strong>Paranoia:</strong> {tequila.paranoia_level}
           </div>
         )}
         
         {tequila.threats_detected !== undefined && (
           <div style={{ fontSize: '11px', marginBottom: '6px' }}>
-            🚨 <strong>Threats Detected:</strong> {tequila.threats_detected}
+            <strong>Threats Detected:</strong> {tequila.threats_detected}
           </div>
         )}
         
