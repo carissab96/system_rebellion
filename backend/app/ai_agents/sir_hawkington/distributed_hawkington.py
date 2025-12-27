@@ -136,11 +136,13 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
         """
         # 🎯 HIERARCHY: Enable resource monitoring with fast check interval (5s)
         # Hawk is the ONLY agent monitoring system metrics
+        # NOTE: ResourceMonitor disabled - Hawk now uses SimplifiedMetricsService
+        # through the triage engine for all metrics collection
         await super().initialize_distributed(
             redis_client,
-            enable_resource_monitoring=True,  # ONLY Hawk has this True
+            enable_resource_monitoring=False,  # Disabled - using SimplifiedMetricsService instead
             heartbeat_interval=30,
-            resource_check_interval=5  # Check every 5 seconds
+            resource_check_interval=5  # Not used when monitoring disabled
         )
         
         # Initialize Week 4 systems
