@@ -69,6 +69,10 @@ class BobProximityAlert:
 class HamstersPerceptionContext:
     """Everything the telepathic hamsters perceive about storage issues"""
     
+    # Coordination context (required for learning)
+    resource_type: str  # 'disk', 'storage', 'infrastructure'
+    severity: str  # 'low', 'medium', 'high', 'critical'
+    
     # Storage metrics
     disk_usage_percent: float
     fragmentation_level: float
@@ -207,6 +211,8 @@ class HamstersPerception:
         carl_beers = sum(e.beers_consumed for e in beer_events if e.hamster == 'carl')
         
         context = HamstersPerceptionContext(
+            resource_type=storage_alert.get('resource_type', 'disk'),
+            severity=storage_alert.get('severity', 'medium'),
             disk_usage_percent=disk_usage,
             fragmentation_level=storage_alert.get('fragmentation', 0.0),
             available_space_gb=storage_alert.get('available_space_gb', 0.0),
