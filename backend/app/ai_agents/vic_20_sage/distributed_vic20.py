@@ -381,7 +381,9 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
                         "hawk_confidence": context.hawk_confidence,
                         "available_specialists": context.available_specialists,
                         "system_load": context.system_load,
-                        "routing_confidence": context.routing_confidence
+                        "routing_confidence": context.routing_confidence,
+                        "coordination": self.coordination_stats.get_coordination_stats(),
+                        "mediation": self.coordination_stats.get_mediation_stats()
                     },
                     reasoning={
                         "target_specialist": reasoning.target_specialist,
