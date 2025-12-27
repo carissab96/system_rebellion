@@ -17,6 +17,7 @@ export interface AgentCommunication {
   summary?: string;
   confidence?: number;
   priority?: 'low' | 'medium' | 'high' | 'emergency';
+  reasoning?: string;
 }
 
 // Active pulse animation on a connection
