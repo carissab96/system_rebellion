@@ -273,6 +273,48 @@ export const useWebSocketConnection = () => {
         context: {},
       }));
     }
+    // Handle ML v2 agent_decision messages (full decision chain)
+    else if (payload.type === 'agent_decision') {
+      console.log('🧠 ML v2 agent_decision received:', payload.agent_name);
+      
+      // Dispatch to agentsSlice with full decision chain
+      dispatch(addAgentMemory({
+        agent_name: payload.agent_name as any,
+        memory: {
+          decision_id: payload.decision_id,
+          timestamp: payload.timestamp,
+          perception: payload.perception,
+          reasoning: payload.reasoning,
+          action_selection: payload.action_selection,
+          execution: payload.execution,
+          learning: payload.learning,
+          ml_decision: true // Flag to indicate this is ML v2 data
+        }
+      }));
+      
+      // Also add to communications for activity feed
+      const actionSummary = payload.action_selection?.chosen_action || 
+                           payload.action_selection?.action_type || 
+                           'decision';
+      
+      dispatch(addCommunication({
+        id: payload.decision_id || `decision-${Date.now()}`,
+        timestamp: payload.timestamp || new Date().toISOString(),
+        from_agent: payload.agent_name,
+        to_agent: 'system',
+        message_type: 'ML_DECISION',
+        summary: `${actionSummary} (confidence: ${payload.reasoning?.confidence || 0})`,
+        confidence: payload.reasoning?.confidence,
+        priority: payload.action_selection?.priority || 'medium',
+        action: actionSummary,
+        context: {
+          root_cause: payload.reasoning?.root_cause,
+          exploration: payload.action_selection?.exploration,
+          success: payload.execution?.success
+        },
+        reasoning: payload.reasoning?.reasoning || payload.reasoning?.primary_reason
+      }));
+    }
     // Ignore heartbeat messages - they're just keepalive pings
     else if (payload.type === 'heartbeat') {
       // Do nothing - heartbeats are not agent activity
