@@ -378,6 +378,7 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
                         'current_value': current_value,
                         'threshold': threshold,
                         'severity': severity,
+                        'full_metrics': triage_data.get('full_metrics', {}),  # Pass full metrics from Hawk
                         'recommendation': {
                             'action': action.recommended_action,
                             'confidence': action.confidence,

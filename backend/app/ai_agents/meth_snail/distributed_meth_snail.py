@@ -183,8 +183,9 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
             )
             
             # Get database session for Terry v2 components
-            # db_getter is an async generator - use async for loop
-            async for db in self.db_getter():
+            # db_getter() returns an async generator - call it then iterate
+            db_gen = self.db_getter()
+            async for db in db_gen:
                 # STEP 1: PERCEPTION - Gather full context
                 from app.ai_agents.meth_snail.ML.perception import TerryPerception
                 

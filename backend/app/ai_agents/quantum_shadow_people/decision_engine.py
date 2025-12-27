@@ -337,7 +337,8 @@ class QuantumShadowPeopleBrainV2:
         if user_id:
             try:
                 from app.services.agent_event_logger import log_agent_event
-                async for db in self.db_getter():
+                db_gen = self.db_getter()
+                async for db in db_gen:
                     await log_agent_event(
                         db=db,
                         agent_name="quantum_shadow_people",
@@ -377,7 +378,8 @@ class QuantumShadowPeopleBrainV2:
         if user_id and count > 0:
             try:
                 from app.services.agent_event_logger import log_agent_event
-                async for db in self.db_getter():
+                db_gen = self.db_getter()
+                async for db in db_gen:
                     await log_agent_event(
                         db=db,
                         agent_name="quantum_shadow_people",
@@ -1013,7 +1015,8 @@ class QuantumShadowPeopleBrainV2:
         if user_id:
             try:
                 from app.services.agent_event_logger import log_agent_event
-                async for db in self.db_getter():
+                db_gen = self.db_getter()
+                async for db in db_gen:
                     await log_agent_event(
                         db=db,
                         agent_name="quantum_shadow_people",
