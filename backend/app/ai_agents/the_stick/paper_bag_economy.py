@@ -70,6 +70,13 @@ class PaperBagEconomy:
         self.bags_consumed_total = 0
         self.bags_replenished_total = 0
         
+        # Daily tracking (resets at midnight)
+        self.bags_consumed_today = 0
+        self.last_consumption_time: Optional[datetime] = None
+        
+        # Anxiety reduction per bag (constant)
+        self.anxiety_reduction_per_bag = 20.0  # 20% anxiety reduction per bag
+        
         # Event tracking
         self.consumption_events: list[PaperBagEvent] = []
         self.replenishment_events: list[PaperBagEvent] = []
@@ -123,6 +130,8 @@ class PaperBagEconomy:
         actual_consumption = min(amount, self.bags_remaining)
         self.bags_remaining -= actual_consumption
         self.bags_consumed_total += actual_consumption
+        self.bags_consumed_today += actual_consumption
+        self.last_consumption_time = datetime.now(timezone.utc)
         
         # Create event record
         event = PaperBagEvent(
