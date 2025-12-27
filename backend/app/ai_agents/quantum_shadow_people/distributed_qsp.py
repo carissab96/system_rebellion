@@ -258,7 +258,62 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
                         f"{network_result['connections_after']}. Quantum phase: {decision.quantum_state}"
                     )
                     
-                    # Broadcast to WebSocket
+                    # BROADCAST FULL DECISION CHAIN TO FRONTEND
+                    from app.services.agent_decision_emitter import emit_agent_decision
+                    
+                    # Calculate improvement percentage
+                    connections_improvement = 0.0
+                    if network_result['connections_before'] > 0:
+                        connections_improvement = (
+                            network_result['connections_reduced'] 
+                            / network_result['connections_before'] 
+                            * 100.0
+                        )
+                    
+                    await emit_agent_decision(
+                        agent_name="quantum_shadow_people",
+                        decision_id=learning_record.learning_record_id,
+                        perception={
+                            "threat_level": context.threat_level,
+                            "quantum_state": context.quantum_state.state,
+                            "paranoia_level": context.paranoia_level,
+                            "existential_dread": context.existential_dread,
+                            "tequila_jello_shots_consumed": context.tequila_jello_shots_consumed,
+                            "network_connections": full_metrics.get('network_connections', 0),
+                            "suspicious_patterns_detected": len(context.suspicious_patterns) if hasattr(context, 'suspicious_patterns') else 0
+                        },
+                        reasoning={
+                            "threat_classification": reasoning_result.threat_classification,
+                            "confidence": reasoning_result.confidence,
+                            "recommended_response": reasoning_result.recommended_response,
+                            "paranoia_justified": reasoning_result.paranoia_justified,
+                            "quantum_analysis": reasoning_result.quantum_analysis if hasattr(reasoning_result, 'quantum_analysis') else None
+                        },
+                        action_selection={
+                            "chosen_action": decision.action_type,
+                            "alternatives_considered": reasoning_result.alternative_responses if hasattr(reasoning_result, 'alternative_responses') else [],
+                            "exploration": False,  # QSP doesn't use epsilon-greedy yet
+                            "confidence": decision.confidence,
+                            "quantum_state": decision.quantum_state,
+                            "requires_lockdown": decision.requires_lockdown if hasattr(decision, 'requires_lockdown') else False
+                        },
+                        execution={
+                            "metrics_before": metrics_before,
+                            "metrics_after": metrics_after,
+                            "success": network_result['success'],
+                            "improvement_percent": connections_improvement,
+                            "connections_before": network_result['connections_before'],
+                            "connections_after": network_result['connections_after'],
+                            "connections_reduced": network_result['connections_reduced']
+                        },
+                        learning={
+                            "fingerprint": learning_record.situation_fingerprint,
+                            "stored": True,
+                            "learning_record_id": learning_record.learning_record_id
+                        }
+                    )
+                    
+                    # Broadcast to WebSocket (legacy - keeping for backwards compatibility)
                     from app.services.agent_insight_emitter import emit_agent_insight
                     await emit_agent_insight(
                         from_agent="quantum_shadow_people",

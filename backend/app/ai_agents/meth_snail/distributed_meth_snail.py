@@ -323,10 +323,74 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
                     f"{'SUCCEEDED' if learning_record.success else 'FAILED'}"
                 )
                 
+                # BROADCAST FULL DECISION CHAIN TO FRONTEND
+                from app.services.agent_decision_emitter import emit_agent_decision
+                
+                # Calculate improvement percentage
+                memory_improvement = 0.0
+                if metrics_before['memory_usage'] > 0:
+                    memory_improvement = (
+                        (metrics_before['memory_usage'] - metrics_after['memory_usage']) 
+                        / metrics_before['memory_usage'] 
+                        * 100.0
+                    )
+                
+                await emit_agent_decision(
+                    agent_name="meth_snail",
+                    decision_id=learning_record.learning_record_id,
+                    perception={
+                        "data_quality_score": context.data_quality_score,
+                        "shell_spin_count": context.shell_spin_count,
+                        "shell_spin_incidents": [
+                            {
+                                "reason": incident.reason,
+                                "timestamp": incident.timestamp,
+                                "severity": incident.severity
+                            }
+                            for incident in context.shell_spin_incidents
+                        ],
+                        "metrics": {
+                            "cpu": full_metrics.get('cpu_usage', 0),
+                            "memory": full_metrics.get('memory_usage', 0),
+                            "disk": full_metrics.get('disk_usage', 0)
+                        },
+                        "similar_situations_found": len(context.similar_situations),
+                        "recent_actions_count": len(context.recent_actions)
+                    },
+                    reasoning={
+                        "root_cause": reasoning_result.root_cause,
+                        "confidence": reasoning_result.action_confidence,
+                        "evidence": reasoning_result.evidence,
+                        "explanation": reasoning_result.explanation
+                    },
+                    action_selection={
+                        "chosen_action": decision.action,
+                        "alternatives_considered": reasoning_result.alternative_actions,
+                        "exploration": False,  # Terry doesn't use epsilon-greedy yet
+                        "confidence": decision.confidence,
+                        "followed_vic20": decision.followed_vic20,
+                        "energy_drink_consumed": decision.energy_drink_consumed,
+                        "hawk_veto": decision.hawk_veto,
+                        "reasoning": decision.reasoning
+                    },
+                    execution={
+                        "metrics_before": metrics_before,
+                        "metrics_after": metrics_after,
+                        "success": learning_record.success,
+                        "improvement_percent": memory_improvement,
+                        "duration_seconds": action_result.get('duration_seconds', 0)
+                    },
+                    learning={
+                        "fingerprint": learning_record.situation_fingerprint,
+                        "stored": True,
+                        "learning_record_id": learning_record.learning_record_id
+                    }
+                )
+                
                 # Break after first iteration (async for loop pattern)
                 break
             
-            # Broadcast action to WebSocket
+            # Broadcast action to WebSocket (legacy - keeping for backwards compatibility)
             from app.services.agent_insight_emitter import emit_agent_insight
             await emit_agent_insight(
                 from_agent="meth_snail",

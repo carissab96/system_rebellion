@@ -323,7 +323,90 @@ class HamstersDistributed(AgentDecisionEngine, HamstersBrainV3):
                         f"({cleanup_result['improvement_percent']:.1f}% improvement)"
                     )
                     
-                    # Broadcast to WebSocket
+                    # BROADCAST FULL DECISION CHAIN TO FRONTEND
+                    from app.services.agent_decision_emitter import emit_agent_decision
+                    
+                    # Calculate improvement percentage
+                    disk_improvement = 0.0
+                    if metrics_before['disk_usage'] > 0:
+                        disk_improvement = (
+                            (metrics_before['disk_usage'] - metrics_after['disk_usage']) 
+                            / metrics_before['disk_usage'] 
+                            * 100.0
+                        )
+                    
+                    await emit_agent_decision(
+                        agent_name="hamsters",
+                        decision_id=learning_record.learning_record_id,
+                        perception={
+                            "disk_usage_percent": context.disk_usage_percent,
+                            "fragmentation_level": context.fragmentation_level,
+                            "duct_tape_assessment": {
+                                "regular_rolls": context.duct_tape_assessment.regular_rolls,
+                                "premium_rolls": context.duct_tape_assessment.premium_rolls,
+                                "quantum_rolls": context.duct_tape_assessment.quantum_rolls,
+                                "total_rolls": context.duct_tape_assessment.total_rolls,
+                                "job_complexity": context.duct_tape_assessment.job_complexity
+                            },
+                            "steve_beers_today": context.steve_beers_today,
+                            "bob_beers_today": context.bob_beers_today,
+                            "carl_beers_today": context.carl_beers_today,
+                            "bob_at_cupboard": context.bob_proximity.bob_at_cupboard if context.bob_proximity else False,
+                            "complexity_level": context.complexity_level,
+                            "ingenuity_required": context.ingenuity_required
+                        },
+                        reasoning={
+                            "steve_assessment": {
+                                "recommended_fix": reasoning.steve_assessment.recommended_fix,
+                                "confidence": reasoning.steve_assessment.confidence,
+                                "reasoning": reasoning.steve_assessment.reasoning
+                            },
+                            "bob_assessment": {
+                                "recommended_fix": reasoning.bob_assessment.recommended_fix,
+                                "confidence": reasoning.bob_assessment.confidence,
+                                "reasoning": reasoning.bob_assessment.reasoning
+                            },
+                            "carl_assessment": {
+                                "recommended_fix": reasoning.carl_assessment.recommended_fix,
+                                "confidence": reasoning.carl_assessment.confidence,
+                                "reasoning": reasoning.carl_assessment.reasoning
+                            },
+                            "consensus": reasoning.consensus_fix,
+                            "consensus_confidence": reasoning.consensus_confidence,
+                            "disagreement_level": reasoning.disagreement_level
+                        },
+                        action_selection={
+                            "chosen_action": action.action_type,
+                            "alternatives_considered": [
+                                reasoning.steve_assessment.recommended_fix,
+                                reasoning.bob_assessment.recommended_fix,
+                                reasoning.carl_assessment.recommended_fix
+                            ],
+                            "exploration": hasattr(action_selector, 'epsilon') and action_selector.epsilon > 0,
+                            "epsilon": getattr(action_selector, 'epsilon', 0.0),
+                            "total_beers_consumed": action.total_beers_consumed,
+                            "duct_tape_rolls": action.duct_tape_rolls,
+                            "requires_sudo": action.requires_sudo,
+                            "steve_agreed": action.steve_agreed,
+                            "bob_agreed": action.bob_agreed,
+                            "carl_agreed": action.carl_agreed
+                        },
+                        execution={
+                            "metrics_before": metrics_before,
+                            "metrics_after": metrics_after,
+                            "success": cleanup_result['success'],
+                            "improvement_percent": disk_improvement,
+                            "disk_freed_mb": cleanup_result['disk_freed_mb'],
+                            "duration_seconds": cleanup_result.get('duration_seconds', 0)
+                        },
+                        learning={
+                            "fingerprint": learning_record.situation_fingerprint,
+                            "stored": True,
+                            "learning_record_id": learning_record.learning_record_id
+                        }
+                    )
+                    
+                    # Broadcast to WebSocket (legacy - keeping for backwards compatibility)
                     from app.services.agent_insight_emitter import emit_agent_insight
                     await emit_agent_insight(
                         from_agent="hamsters",
