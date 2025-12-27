@@ -355,7 +355,8 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
                             "disk": full_metrics.get('disk_usage', 0)
                         },
                         "similar_situations_found": len(context.similar_situations),
-                        "recent_actions_count": len(context.recent_actions)
+                        "recent_actions_count": len(context.recent_actions),
+                        "energy_drink_system": action_selector.energy_drink_system.get_stats()
                     },
                     reasoning={
                         "root_cause": reasoning_result.root_cause,

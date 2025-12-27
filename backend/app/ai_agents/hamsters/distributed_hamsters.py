@@ -348,10 +348,18 @@ class HamstersDistributed(AgentDecisionEngine, HamstersBrainV3):
                                 "total_rolls": context.duct_tape_assessment.total_rolls,
                                 "job_complexity": context.duct_tape_assessment.job_complexity
                             },
-                            "steve_beers_today": context.steve_beers_today,
-                            "bob_beers_today": context.bob_beers_today,
-                            "carl_beers_today": context.carl_beers_today,
-                            "bob_at_cupboard": context.bob_proximity.bob_at_cupboard if context.bob_proximity else False,
+                            "beer_consumption": {
+                                "steve_beers_today": context.steve_beers_today,
+                                "bob_beers_today": context.bob_beers_today,
+                                "carl_beers_today": context.carl_beers_today,
+                                "total_beers_today": context.steve_beers_today + context.bob_beers_today + context.carl_beers_today
+                            },
+                            "supply_closet": {
+                                "bob_at_cupboard": context.bob_proximity.bob_at_cupboard if context.bob_proximity else False,
+                                "stick_panic_level": context.bob_proximity.stick_panic_level if context.bob_proximity else 0.0,
+                                "items_acquired": context.bob_proximity.items_acquired if context.bob_proximity else [],
+                                "time_of_raid": context.bob_proximity.time_of_raid.isoformat() if (context.bob_proximity and context.bob_proximity.time_of_raid) else None
+                            },
                             "complexity_level": context.complexity_level,
                             "ingenuity_required": context.ingenuity_required
                         },

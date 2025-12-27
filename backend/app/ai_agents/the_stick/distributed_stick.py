@@ -287,7 +287,14 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
                         "anxiety_level": context.anxiety_level,
                         "panic_attack_active": context.panic_attack_active,
                         "bob_detected": context.bob_detected,
-                        "recent_decisions_count": len(context.recent_decisions)
+                        "recent_decisions_count": len(context.recent_decisions),
+                        "paper_bag_economy": {
+                            "bags_remaining": self.paper_bag_economy.bags_remaining,
+                            "bags_consumed_today": self.paper_bag_economy.bags_consumed_today,
+                            "bags_consumed_total": self.paper_bag_economy.bags_consumed_total,
+                            "last_consumption_time": self.paper_bag_economy.last_consumption_time.isoformat() if self.paper_bag_economy.last_consumption_time else None,
+                            "anxiety_reduction_per_bag": self.paper_bag_economy.anxiety_reduction_per_bag
+                        }
                     },
                     reasoning={
                         "root_cause": reasoning_result.root_cause,

@@ -280,7 +280,13 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
                             "existential_dread": context.existential_dread,
                             "tequila_jello_shots_consumed": context.tequila_jello_shots_consumed,
                             "network_connections": full_metrics.get('network_connections', 0),
-                            "suspicious_patterns_detected": len(context.suspicious_patterns) if hasattr(context, 'suspicious_patterns') else 0
+                            "suspicious_patterns_detected": len(context.suspicious_patterns) if hasattr(context, 'suspicious_patterns') else 0,
+                            "tequila_system": {
+                                "shots_today": self.tequila_shots_today,
+                                "paranoia_level": self.paranoia_level,
+                                "threats_detected": self.threats_detected,
+                                "false_alarms": self.false_alarms
+                            }
                         },
                         reasoning={
                             "threat_classification": reasoning_result.threat_classification,
