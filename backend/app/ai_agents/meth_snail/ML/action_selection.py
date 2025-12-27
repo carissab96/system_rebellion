@@ -37,6 +37,9 @@ class ActionDecision:
     reversible: bool
     energy_drink_consumed: bool = False
     hawk_veto: bool = False
+    exploration: bool = False  # True if this was an exploration move (epsilon-greedy)
+    epsilon: float = 0.0  # Current exploration rate
+    alternatives_considered: List[str] = None  # What other actions were viable
 
 
 class TerryActionSelection:
@@ -165,7 +168,10 @@ class TerryActionSelection:
                 risk_level=self.ACTION_RISKS.get(recommended_action, 'medium'),
                 reversible=True,
                 energy_drink_consumed=energy_drink_consumed,
-                hawk_veto=hawk_veto
+                hawk_veto=hawk_veto,
+                exploration=False,  # Using learned action (exploitation)
+                epsilon=self.epsilon,
+                alternatives_considered=reasoning_result.alternatives if hasattr(reasoning_result, 'alternatives') else []
             )
         
         # Otherwise, select from action map based on root cause
@@ -201,6 +207,7 @@ class TerryActionSelection:
         
         # EXPLORATION vs EXPLOITATION (epsilon-greedy)
         explore = random.random() < self.epsilon
+        current_epsilon = self.epsilon  # Capture before decay
         
         if explore and len(viable_actions) > 1:
             # EXPLORE: Try a random action (not necessarily the best)
@@ -247,6 +254,9 @@ class TerryActionSelection:
             confidence=min(0.95, action_score) if not hawk_veto else 0.6,
             followed_vic20=followed_vic20,
             reasoning=reasoning,
+            exploration=explore,  # Track if this was exploration or exploitation
+            epsilon=current_epsilon,  # Current exploration rate
+            alternatives_considered=viable_actions,  # All viable actions considered
             expected_outcome=f"Resolve {root_cause}",
             risk_level=self.ACTION_RISKS.get(action_name, 'medium'),
             reversible=True,

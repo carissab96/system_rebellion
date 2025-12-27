@@ -365,8 +365,9 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
                     },
                     action_selection={
                         "chosen_action": decision.action,
-                        "alternatives_considered": reasoning_result.alternative_actions,
-                        "exploration": False,  # Terry doesn't use epsilon-greedy yet
+                        "alternatives_considered": decision.alternatives_considered if decision.alternatives_considered else [],
+                        "exploration": decision.exploration,
+                        "epsilon": decision.epsilon,
                         "confidence": decision.confidence,
                         "followed_vic20": decision.followed_vic20,
                         "energy_drink_consumed": decision.energy_drink_consumed,
