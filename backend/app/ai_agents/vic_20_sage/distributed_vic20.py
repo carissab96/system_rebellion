@@ -108,9 +108,14 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
         self.stick_anxiety_prevented = 0
         self.bob_messages_filtered = []
         
+        # 🖥️ COORDINATION & MEDIATION STATS (VIC-20's personality)
+        from .coordination_stats import VIC20CoordinationStats
+        self.coordination_stats = VIC20CoordinationStats()
+        
         logger.info("🖥️✨ VIC-20 Sage's distributed consciousness initialized - ORCHESTRATION PROTOCOLS ACTIVE!")
         logger.info("🖥️💡 Recommendation engine online - READY TO GUIDE AGENTS!")
         logger.info("🖥️🛡️ Bob mediation protocols active - STICK PROTECTION ENABLED!")
+        logger.info("🖥️📊 Coordination stats tracking enabled - MEASURING PEACE AND DRAMA!")
     
     async def initialize_distributed(self, redis_client):
         """
@@ -381,9 +386,7 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
                         "hawk_confidence": context.hawk_confidence,
                         "available_specialists": context.available_specialists,
                         "system_load": context.system_load,
-                        "routing_confidence": context.routing_confidence,
-                        "coordination": self.coordination_stats.get_coordination_stats(),
-                        "mediation": self.coordination_stats.get_mediation_stats()
+                        "routing_confidence": context.routing_confidence
                     },
                     reasoning={
                         "target_specialist": reasoning.target_specialist,
