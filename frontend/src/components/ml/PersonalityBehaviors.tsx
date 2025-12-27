@@ -29,14 +29,8 @@ export const PersonalityBehaviors: React.FC<PersonalityBehaviorsProps> = ({
 
   // Terry (Meth Snail) - Energy drinks, shell spins
   if (agentName === 'meth_snail') {
-    // Handle both system_update (top-level) and agent_decision (nested)
-    const energyDrinks = personalityData.energy_drink_system || {
-      energy_drinks_today: personalityData.energy_drinks_consumed || 0,
-      total_energy_drinks: personalityData.energy_drinks_consumed || 0,
-      hawk_vetoes: 0
-    };
+    const energyDrinks = personalityData.energy_drink_system || {};
     const shellSpins = personalityData.shell_spin_incidents || [];
-    const shellSpinCount = shellSpins.length || personalityData.shell_spin_count || 0;
     const dataQuality = personalityData.data_quality_score;
 
     return (
@@ -62,9 +56,9 @@ export const PersonalityBehaviors: React.FC<PersonalityBehaviorsProps> = ({
           </div>
         )}
         
-        {shellSpinCount > 0 && (
+        {shellSpins.length > 0 && (
           <div style={{ fontSize: '11px', marginBottom: '6px', color: '#ffaa4a' }}>
-            <strong>Shell Spins:</strong> {shellSpinCount} incidents
+            <strong>Shell Spins:</strong> {shellSpins.length} incidents
           </div>
         )}
         
@@ -73,13 +67,7 @@ export const PersonalityBehaviors: React.FC<PersonalityBehaviorsProps> = ({
             <strong>Data Quality:</strong> {(dataQuality * 100).toFixed(0)}%
           </div>
         )}
-    // Handle both system_update (top-level) and agent_de isi < (ne/ded)
-i   const v>
-      steve_beers_today: personalityData.hamster_status?.steve?.beer_count,
-      bob_beers_today: personalityData.hamster_status?.bob?.beer_count,
-      carl_beers_today: personalityData.hamster_status?.carl?.beer_count,
-      total_beers_today: personalityData.beer_consumption_today
-    
+      </div>
     );
   }
 
@@ -193,13 +181,7 @@ i   const v>
             <strong>Monocle Yeets:</strong> {monocleYeets}
           </div>
         )}
-    // Handle both system_update (top-level) and agent_de isi   (ne ed)
-   const 
-      bags_remaining: personalityData.paper_bag_inventory,
-      bags_consumed_today: personalityData.paper_bags_consumed,
-      bags_consumed_total: personalityData.paper_bags_consumed,
-      anxiety_reduction_per_bag: 20.0
-    
+        
         {dataQuality !== undefined && (
           <div style={{ fontSize: '11px', marginBottom: '6px' }}>
             <strong>Data Quality:</strong> {(dataQuality * 100).toFixed(0)}%
@@ -230,13 +212,7 @@ i   const v>
             <strong>Consumed Today:</strong> {paperBags.bags_consumed_today}
           </div>
         )}
-    // Handle both system_update (top-level) and agent_decision (nested)
         
-      shots_today: personalityData.tequila_jello_shots,
-      paranoia_level: personalityData.paranoia_level,
-      threats_detected: personalityData.threats_detected,
-      false_alarms: personalityData.false_alarms
-    
         {paperBags.anxiety_reduction_per_bag !== undefined && (
           <div style={{ fontSize: '10px', color: '#888', marginTop: '4px' }}>
             Each bag reduces anxiety by {paperBags.anxiety_reduction_per_bag}%
