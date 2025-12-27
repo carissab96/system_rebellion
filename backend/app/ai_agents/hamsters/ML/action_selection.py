@@ -133,8 +133,26 @@ class HamstersActionSelection:
         """
         logger.info(f"🐹⚡ Selecting storage fix action from consensus...")
         
-        # Determine action type
+        # EPSILON-GREEDY EXPLORATION: Sometimes try alternative actions
         action_type = reasoning.selected_fix_type
+        
+        if random.random() < self.epsilon:
+            # EXPLORE: Try a different action from the viable options
+            issue_type = self._identify_issue_type(context)
+            viable_actions = self.ACTION_MAP.get(issue_type, ['cleanup'])
+            
+            # Filter out the consensus action to force exploration
+            alternative_actions = [a for a in viable_actions if a != action_type]
+            
+            if alternative_actions:
+                action_type = random.choice(alternative_actions)
+                logger.info(
+                    f"🐹🔬 EXPLORING alternative action: {action_type} "
+                    f"(epsilon={self.epsilon:.1%})"
+                )
+                
+                # Decay epsilon over time (learn to exploit more)
+                self.epsilon = max(self.min_epsilon, self.epsilon * self.epsilon_decay)
         
         # Build sudo command if required
         sudo_command = None
@@ -210,6 +228,28 @@ class HamstersActionSelection:
             logger.info(f"🐹🔧 Sudo command: {sudo_command}")
         
         return action
+    
+    def _identify_issue_type(self, context: HamstersPerceptionContext) -> str:
+        """
+        Identify the type of storage issue for action mapping.
+        
+        Args:
+            context: Perception context
+            
+        Returns:
+            Issue type string for ACTION_MAP lookup
+        """
+        disk_usage = context.disk_usage_percent
+        fragmentation = context.fragmentation_level
+        
+        if disk_usage > 90:
+            return 'disk_full'
+        elif fragmentation > 0.6:
+            return 'high_fragmentation'
+        elif disk_usage > 80:
+            return 'log_overflow'
+        else:
+            return 'general_storage'
     
     def update_defrag_bias(self, action: str, success: bool):
         """

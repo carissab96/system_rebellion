@@ -294,25 +294,35 @@ class HamstersReasoning:
         fix_options: List[str]
     ) -> HamsterIndividualAssessment:
         """
-        Carl's duct tape-centric assessment.
+        Carl's assessment - duct tape calculations drive his decision.
         
-        Carl: "How much duct tape do we need?"
+        Carl measures everything in duct tape rolls.
         """
-        # Carl's decision based on duct tape requirements
+        # Carl's decision based on duct tape requirements AND actual metrics
         duct_tape = context.duct_tape_assessment
+        disk_usage = context.disk_usage_percent
+        fragmentation = context.fragmentation_level
         
         if duct_tape.quantum_rolls > 0:
             recommended = "quantum_fix - Bob's redneck engineering solution"
             confidence = 0.8
             reasoning = f"Quantum duct tape required ({duct_tape.quantum_rolls:.1f} rolls)"
-        elif duct_tape.total_rolls > 5.0:
+        elif fragmentation > 0.6:  # High fragmentation
             recommended = "defrag - Defragment filesystem (sudo)"
+            confidence = 0.75
+            reasoning = f"High fragmentation ({fragmentation:.1%}), needs {duct_tape.total_rolls:.1f} rolls"
+        elif disk_usage > 85:  # Disk very full
+            recommended = "cleanup - Clean up old files and logs"
             confidence = 0.7
-            reasoning = f"Complex job needs {duct_tape.total_rolls:.1f} rolls of tape"
-        else:
+            reasoning = f"Disk {disk_usage:.1f}% full, cleanup needed"
+        elif disk_usage > 75:  # Disk getting full
+            recommended = "rotate_logs - Rotate and compress logs"
+            confidence = 0.65
+            reasoning = f"Disk {disk_usage:.1f}% full, logs likely culprit"
+        else:  # Preventive maintenance
             recommended = "fstrim - TRIM unused blocks (sudo)"
             confidence = 0.6
-            reasoning = f"Simple job, only {duct_tape.total_rolls:.1f} rolls needed"
+            reasoning = f"Preventive maintenance, {duct_tape.total_rolls:.1f} rolls tape"
         
         # Carl's risk assessment (moderate, duct tape-adjusted)
         risk = context.complexity_level * self.carl_risk_tolerance
