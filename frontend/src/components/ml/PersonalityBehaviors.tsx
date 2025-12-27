@@ -29,8 +29,14 @@ export const PersonalityBehaviors: React.FC<PersonalityBehaviorsProps> = ({
 
   // Terry (Meth Snail) - Energy drinks, shell spins
   if (agentName === 'meth_snail') {
-    const energyDrinks = personalityData.energy_drink_system || {};
+    // Handle both system_update (top-level) and agent_decision (nested)
+    const energyDrinks = personalityData.energy_drink_system || {
+      energy_drinks_today: personalityData.energy_drinks_consumed || 0,
+      total_energy_drinks: personalityData.energy_drinks_consumed || 0,
+      hawk_vetoes: 0
+    };
     const shellSpins = personalityData.shell_spin_incidents || [];
+    const shellSpinCount = shellSpins.length || personalityData.shell_spin_count || 0;
     const dataQuality = personalityData.data_quality_score;
 
     return (
@@ -50,15 +56,15 @@ export const PersonalityBehaviors: React.FC<PersonalityBehaviorsProps> = ({
           </div>
         )}
         
-        {energyDrinks.hawk_vetoes !== undefined && energyDrinks.hawk_vetoes > 0 && (
-          <div style={{ fontSize: '11px', marginBottom: '6px', color: '#ff4a4a' }}>
+        {energyDrinks.hawk_vetoes !== undefined && (
+          <div style={{ fontSize: '11px', marginBottom: '6px', color: energyDrinks.hawk_vetoes > 0 ? '#ff4a4a' : '#888' }}>
             <strong>Hawk Vetoes:</strong> {energyDrinks.hawk_vetoes}
           </div>
         )}
         
-        {shellSpins.length > 0 && (
-          <div style={{ fontSize: '11px', marginBottom: '6px', color: '#ffaa4a' }}>
-            <strong>Shell Spins:</strong> {shellSpins.length} incidents
+        {shellSpinCount !== undefined && (
+          <div style={{ fontSize: '11px', marginBottom: '6px', color: shellSpinCount > 0 ? '#ffaa4a' : '#888' }}>
+            <strong>Shell Spins:</strong> {shellSpinCount} incidents
           </div>
         )}
         
@@ -176,8 +182,8 @@ export const PersonalityBehaviors: React.FC<PersonalityBehaviorsProps> = ({
           HAWKINGTON'S OBSERVATIONS
         </div>
         
-        {monocleYeets > 0 && (
-          <div style={{ fontSize: '11px', marginBottom: '6px', color: '#ff4a4a' }}>
+        {monocleYeets !== undefined && (
+          <div style={{ fontSize: '11px', marginBottom: '6px', color: monocleYeets > 0 ? '#ff9f4a' : '#888' }}>
             <strong>Monocle Yeets:</strong> {monocleYeets}
           </div>
         )}
@@ -207,8 +213,8 @@ export const PersonalityBehaviors: React.FC<PersonalityBehaviorsProps> = ({
           </div>
         )}
         
-        {paperBags.bags_consumed_today !== undefined && paperBags.bags_consumed_today > 0 && (
-          <div style={{ fontSize: '11px', marginBottom: '6px', color: '#ffaa4a' }}>
+        {paperBags.bags_consumed_today !== undefined && (
+          <div style={{ fontSize: '11px', marginBottom: '6px', color: paperBags.bags_consumed_today > 0 ? '#ffaa4a' : '#888' }}>
             <strong>Consumed Today:</strong> {paperBags.bags_consumed_today}
           </div>
         )}
@@ -250,8 +256,8 @@ export const PersonalityBehaviors: React.FC<PersonalityBehaviorsProps> = ({
           </div>
         )}
         
-        {tequila.false_alarms !== undefined && tequila.false_alarms > 0 && (
-          <div style={{ fontSize: '10px', color: '#888', marginTop: '4px' }}>
+        {tequila.false_alarms !== undefined && (
+          <div style={{ fontSize: '10px', color: tequila.false_alarms > 0 ? '#ffaa4a' : '#888', marginTop: '4px' }}>
             False alarms: {tequila.false_alarms}
           </div>
         )}

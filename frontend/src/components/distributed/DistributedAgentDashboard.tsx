@@ -378,8 +378,8 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, config, formatUptime }) =>
         agentData={agentData}
       />
 
-      {/* ML v2 Decision Chain - Show latest decision */}
-      {agentData.ml_decision && (
+      {/* ML v2 Decision Chain - Show latest decision if available */}
+      {(agentData.perception || agentData.reasoning || agentData.action_selection) && (
         <DecisionChainView 
           decision={{
             decision_id: agentData.decision_id,
