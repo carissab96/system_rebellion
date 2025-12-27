@@ -13,6 +13,8 @@ import styles from '../../styles/modules/AgentDashboard.module.css';
 import { AgentPersonalityAnimations } from './AgentPersonalityAnimations';
 import { SystemHealthNarrative } from './SystemHealthNarrative';
 import { AgentCoordinationFlow } from './AgentCoordinationFlow';
+import { DecisionChainView } from '../ml/DecisionChainView';
+import { PersonalityBehaviors } from '../ml/PersonalityBehaviors';
 
 // Agent icons
 import sirHawkingtonIcon from '../../assets/icons/agents/sir_hawkington.jpeg';
@@ -359,6 +361,29 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, config, formatUptime }) =>
 
       {/* Agent-Specific Personality Stats */}
       <AgentPersonalityStats agent={agent} />
+
+      {/* ML v2 Personality Behaviors - PROMINENT */}
+      <PersonalityBehaviors 
+        agentName={agent.agent_name}
+        perception={agentData.perception}
+        agentData={agentData}
+      />
+
+      {/* ML v2 Decision Chain - Show latest decision */}
+      {agentData.ml_decision && (
+        <DecisionChainView 
+          decision={{
+            decision_id: agentData.decision_id,
+            timestamp: agentData.timestamp,
+            perception: agentData.perception,
+            reasoning: agentData.reasoning,
+            action_selection: agentData.action_selection,
+            execution: agentData.execution,
+            learning: agentData.learning
+          }}
+          agentName={agent.agent_name}
+        />
+      )}
     </div>
   );
 };
