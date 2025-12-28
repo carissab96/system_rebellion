@@ -274,10 +274,34 @@ def main():
     # Configuration
     backend_host = "localhost"  # Change to 192.168.1.127 if running from HP
     backend_port = 8000
-    uri = f"ws://{backend_host}:{backend_port}/api/ws/system-metrics"
     
-    # Duration in seconds (default: 5 minutes)
-    duration = int(sys.argv[1]) if len(sys.argv) > 1 else 300
+    # Get token from environment variable or command line
+    import os
+    token = os.environ.get('WS_TOKEN', '')
+    
+    # Parse command line arguments
+    # Usage: ./script.py [duration] [token]
+    duration = 300  # default 5 minutes
+    if len(sys.argv) > 1:
+        try:
+            duration = int(sys.argv[1])
+        except ValueError:
+            # First arg might be token if not a number
+            token = sys.argv[1]
+            duration = 300
+    
+    if len(sys.argv) > 2:
+        token = sys.argv[2]
+    
+    # Build URI with token if provided
+    if token:
+        uri = f"ws://{backend_host}:{backend_port}/api/ws/system-metrics?token={token}"
+    else:
+        uri = f"ws://{backend_host}:{backend_port}/api/ws/system-metrics"
+        print("⚠️  WARNING: No token provided. Connection may fail.")
+        print("   Provide token via: WS_TOKEN=your_token ./script.py")
+        print("   Or: ./script.py 300 your_token")
+        print("")
     
     # Output file - use relative path from script location
     import os
