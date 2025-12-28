@@ -206,6 +206,15 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
                         f"🐌💫 {shell_spin_count} shell spin(s) during perception - "
                         f"data quality: {context.data_quality_score:.2f}"
                     )
+                    
+                    # Sync shell spins from perception to persistent brain state
+                    # Without this, spins are counted in temporary perception instance and lost
+                    self.shell_spin_incidents.extend(perception.shell_spin_incidents)
+                    self.metrics_quality_stats['shell_spins_total'] += shell_spin_count
+                    logger.info(
+                        f"🐌📊 Synced {shell_spin_count} shell spin(s) to brain state. "
+                        f"Total spins: {len(self.shell_spin_incidents)}"
+                    )
                 
                 logger.info(f"🐌👁️ Perception complete - Terry sees the full picture")
                 

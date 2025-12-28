@@ -404,6 +404,15 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
                         f"🧐💥 {monocle_yeet_count} monocle yeet(s) during perception - "
                         f"data quality: {context.data_quality_score:.2f}"
                     )
+                    
+                    # Sync monocle yeets from perception to persistent brain state
+                    # Without this, yeets are counted in temporary perception instance and lost
+                    self.monocle_yeet_incidents.extend(perception.monocle_yeet_incidents)
+                    self.metrics_quality_stats['monocle_yeets_total'] += monocle_yeet_count
+                    logger.info(
+                        f"🧐📊 Synced {monocle_yeet_count} yeet(s) to brain state. "
+                        f"Total yeets: {len(self.monocle_yeet_incidents)}"
+                    )
                 
                 # 🎯 STEP 2: REASONING - Analyze and determine escalation
                 logger.info("🧐🧠 Reasoning phase...")

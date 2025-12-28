@@ -215,6 +215,17 @@ class HamstersDistributed(AgentDecisionEngine, HamstersBrainV3):
                         f"Bob={context.bob_beers_today}, Carl={context.carl_beers_today} "
                         f"(total: {total_beers})"
                     )
+                    
+                    # Sync beer consumption from perception to persistent brain state
+                    # Without this, beers are counted in temporary perception instance and lost
+                    self.steve['beer_count'] += context.steve_beers_today
+                    self.bob['beer_count'] += context.bob_beers_today
+                    self.carl['beer_count'] += context.carl_beers_today
+                    self.beer_consumption_today += total_beers
+                    logger.info(
+                        f"🐹📊 Synced beer consumption to brain state. "
+                        f"Total today: {self.beer_consumption_today}"
+                    )
                 
                 # Log duct tape
                 if context.duct_tape_assessment:
