@@ -444,7 +444,7 @@ class VIC20SageBrainV2:
                 async for db in get_async_db():
                     await log_agent_event(
                         db=db,
-                        agent_name="vic20_sage",
+                        agent_name="vic_20_sage",
                         event_type="coordination_executed",
                         event_data={
                             "coordination_target": decision.coordination_target,
@@ -472,7 +472,7 @@ class VIC20SageBrainV2:
                 async for db in get_async_db():
                     await log_agent_event(
                         db=db,
-                        agent_name="vic20_sage",
+                        agent_name="vic_20_sage",
                         event_type="wisdom_dispensed",
                         event_data={
                             "wisdom_principle": wisdom,

@@ -242,7 +242,7 @@ class VIC20Perception:
         try:
             query = (
                 select(AgentLearningRecord)
-                .where(AgentLearningRecord.agent_name == 'vic20_sage')
+                .where(AgentLearningRecord.agent_name == 'vic_20_sage')
                 .where(AgentLearningRecord.resource_type == resource_type)
                 .order_by(desc(AgentLearningRecord.created_at))
                 .limit(10)
@@ -275,7 +275,7 @@ class VIC20Perception:
         try:
             query = (
                 select(AgentLearningRecord)
-                .where(AgentLearningRecord.agent_name == 'vic20_sage')
+                .where(AgentLearningRecord.agent_name == 'vic_20_sage')
                 .order_by(desc(AgentLearningRecord.created_at))
                 .limit(20)
             )

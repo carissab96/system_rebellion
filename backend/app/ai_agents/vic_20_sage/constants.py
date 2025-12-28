@@ -7,7 +7,7 @@ Event types, priorities, and coordination constants
 from enum import Enum
 
 # Agent identifier
-AGENT_NAME = "vic20_sage"
+AGENT_NAME = "vic_20_sage"
 
 class VIC20EventTypes(str, Enum):
     """Event types for VIC-20 Sage coordination in CMB"""

@@ -174,7 +174,7 @@ class VIC20Learning:
             
             # Create database record
             db_record = AgentLearningRecord(
-                agent_name='vic20_sage',
+                agent_name='vic_20_sage',
                 fingerprint_l1=fingerprint_l1,
                 fingerprint_l2=fingerprint_l2,
                 fingerprint_l3=fingerprint_l3,
@@ -246,7 +246,7 @@ class VIC20Learning:
                     func.cast(AgentLearningRecord.success, func.Integer())
                 ).label('successful_routings')
             ).where(
-                AgentLearningRecord.agent_name == 'vic20_sage'
+                AgentLearningRecord.agent_name == 'vic_20_sage'
             )
             
             result = await self.db.execute(query)
@@ -303,7 +303,7 @@ class VIC20Learning:
                 ).label('successful'),
                 func.avg(AgentLearningRecord.confidence).label('avg_confidence')
             ).where(
-                AgentLearningRecord.agent_name == 'vic20_sage'
+                AgentLearningRecord.agent_name == 'vic_20_sage'
             ).group_by(
                 AgentLearningRecord.output_data['target_specialist']
             )

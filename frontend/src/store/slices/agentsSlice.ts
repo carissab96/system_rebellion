@@ -110,7 +110,8 @@ const agentsSlice = createSlice({
       // Update display data - MERGE new data with existing to preserve both personality stats and ML decisions
       agent.display_data = {
         ...(agent.display_data || {}), // Keep existing data
-        agent_name,
+        ...memory, // Spread backend data first
+        agent_name, // Then force the correct agent_name from action payload
         status: memory.status || agent.display_data?.status || 'active',
         last_activity: memory.timestamp || memory.last_heartbeat || agent.display_data?.last_activity || new Date().toISOString(),
         summary_stats: {
@@ -121,9 +122,7 @@ const agentsSlice = createSlice({
             return memTime > dayAgo;
           }).length,
           avg_confidence
-        },
-        // Merge all backend data - preserves both personality stats AND ML decisions
-        ...memory
+        }
       };
       
       state.last_update = new Date().toISOString();

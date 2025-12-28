@@ -77,7 +77,7 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
         self.user_id = user_id
         
         # Set agent name for distributed features
-        self.agent_name = "vic20_sage"
+        self.agent_name = "vic_20_sage"
         
         # VIC-20's sage personality traits
         self.personality_traits = {
@@ -369,7 +369,7 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
                 from app.services.agent_decision_emitter import emit_agent_decision
                 
                 await emit_agent_decision(
-                    agent_name="vic20_sage",
+                    agent_name="vic_20_sage",
                     decision_id=learning_record.learning_record_id or "pending",
                     perception={
                         "resource_type": context.resource_type,
@@ -869,7 +869,7 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
         # VIC-20 doesn't directly fix resources, but coordinates others
         # His capability is his wisdom in selecting the right agent
         return AgentCapability(
-            agent_name="vic20_sage",
+            agent_name="vic_20_sage",
             resource_type=resource_type,
             estimated_improvement=0.0,  # VIC-20 coordinates, doesn't act directly
             confidence=0.95,  # Very confident in coordination
