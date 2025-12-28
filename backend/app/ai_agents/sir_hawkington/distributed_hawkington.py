@@ -406,8 +406,19 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
                     )
                     
                     # Sync monocle yeets from perception to persistent brain state
-                    # Without this, yeets are counted in temporary perception instance and lost
-                    self.monocle_yeet_incidents.extend(perception.monocle_yeet_incidents)
+                    # Convert ML perception incidents to brain's dataclass format
+                    from ..sir_hawkington.decision_engine import MonocleYeetIncident as BrainMonocleYeet
+                    for ml_incident in perception.monocle_yeet_incidents:
+                        brain_incident = BrainMonocleYeet(
+                            timestamp=ml_incident.timestamp,
+                            missing_metrics=[],  # ML perception doesn't track this granularly
+                            invalid_metrics=[],
+                            reason=ml_incident.reason,
+                            yeet_intensity="aristocratic_disgust",
+                            user_id=self.user_id
+                        )
+                        self.monocle_yeet_incidents.append(brain_incident)
+                    
                     self.metrics_quality_stats['monocle_yeets_total'] += monocle_yeet_count
                     logger.info(
                         f"🧐📊 Synced {monocle_yeet_count} yeet(s) to brain state. "
