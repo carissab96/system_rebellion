@@ -36,7 +36,7 @@ export const DecisionChainView: React.FC<DecisionChainViewProps> = ({ decision, 
         marginBottom: '12px',
         color: '#fff'
       }}>
-        ML Decision Chain
+        {agentName} - ML Decision Chain
       </div>
 
       {/* STEP 1: PERCEPTION */}
