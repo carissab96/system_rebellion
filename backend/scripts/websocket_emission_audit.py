@@ -211,6 +211,10 @@ def print_summary(log_file):
 async def monitor_websocket(uri: str, duration: int, output_file: str):
     """Monitor WebSocket for specified duration"""
     
+    # Ensure output directory exists
+    import os
+    os.makedirs(os.path.dirname(output_file), exist_ok=True)
+    
     with open(output_file, 'w') as log_file:
         log_message(f"🔌 WebSocket Emission Audit", log_file)
         log_message(f"Connecting to: {uri}", log_file)
