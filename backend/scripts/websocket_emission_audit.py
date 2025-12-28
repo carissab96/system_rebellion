@@ -279,9 +279,12 @@ def main():
     # Duration in seconds (default: 5 minutes)
     duration = int(sys.argv[1]) if len(sys.argv) > 1 else 300
     
-    # Output file
+    # Output file - use relative path from script location
+    import os
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    logs_dir = os.path.join(script_dir, "..", "logs")
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_file = f"/home/carissa/Documents/system_rebellion/backend/logs/websocket_audit_{timestamp}.log"
+    output_file = os.path.join(logs_dir, f"websocket_audit_{timestamp}.log")
     
     print(f"""
 ╔══════════════════════════════════════════════════════════════════════════════╗
