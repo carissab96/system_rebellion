@@ -275,9 +275,16 @@ def main():
     backend_host = "localhost"  # Change to 192.168.1.127 if running from HP
     backend_port = 8000
     
-    # Get token from environment variable or command line
+    # Get token from multiple sources (priority order):
+    # 1. Command line argument
+    # 2. Environment variable
+    # 3. .token file in scripts directory
     import os
-    token = os.environ.get('WS_TOKEN', '')
+    
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    token_file = os.path.join(script_dir, ".token")
+    
+    token = ''
     
     # Parse command line arguments
     # Usage: ./script.py [duration] [token]
@@ -293,14 +300,28 @@ def main():
     if len(sys.argv) > 2:
         token = sys.argv[2]
     
+    # If no token from command line, try environment variable
+    if not token:
+        token = os.environ.get('WS_TOKEN', '')
+    
+    # If still no token, try reading from .token file
+    if not token and os.path.exists(token_file):
+        try:
+            with open(token_file, 'r') as f:
+                token = f.read().strip()
+            print(f"✅ Token loaded from {token_file}")
+        except Exception as e:
+            print(f"⚠️  Failed to read token file: {e}")
+    
     # Build URI with token if provided
     if token:
         uri = f"ws://{backend_host}:{backend_port}/api/ws/system-metrics?token={token}"
     else:
         uri = f"ws://{backend_host}:{backend_port}/api/ws/system-metrics"
         print("⚠️  WARNING: No token provided. Connection may fail.")
-        print("   Provide token via: WS_TOKEN=your_token ./script.py")
-        print("   Or: ./script.py 300 your_token")
+        print("   Save token to file: echo 'your_token' > backend/scripts/.token")
+        print("   Or use environment: WS_TOKEN=your_token ./script.py")
+        print("   Or pass as argument: ./script.py 300 your_token")
         print("")
     
     # Output file - use relative path from script location
