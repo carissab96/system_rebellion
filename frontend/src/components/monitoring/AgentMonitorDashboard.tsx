@@ -41,7 +41,6 @@ const normalizeAgentName = (name: string): string => {
   const normalized = name?.toLowerCase().replace(/[-_\s]+/g, '_');
   // Map common variations
   const nameMap: Record<string, string> = {
-    'vic_20_sage': 'vic_20_sage',
     'vic20': 'vic_20_sage',
     'terry': 'meth_snail',
     'terry_meth_snail': 'meth_snail',
