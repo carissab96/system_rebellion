@@ -49,6 +49,11 @@ class TerryActionSelection:
     🐌⚡ "I know what to do now! And I have OPTIONS!"
     """
     
+    def __init__(self, comm_hub=None):
+        """Initialize with optional communication hub for cross-agent interactions"""
+        self.comm_hub = comm_hub
+        self._init_rest()
+    
     # Map root causes to viable actions
     # Terry handles: CPU and Memory issues
     # Hamsters handle: Disk/Storage issues
@@ -89,8 +94,8 @@ class TerryActionSelection:
         'restart_service': 'high',  # Disruptive
     }
     
-    def __init__(self):
-        """Initialize action selection system"""
+    def _init_rest(self):
+        """Initialize rest of action selection system (called from __init__)"""
         self.logger = logger
         self.energy_drink_system = EnergyDrinkSystem()
         
@@ -145,7 +150,8 @@ class TerryActionSelection:
             if not followed_vic20 and recommended_action in ['emergency_cache_clear', 'restart_service']:
                 authorization = await self.energy_drink_system.request_authorization(
                     action=recommended_action,
-                    reason=f"Override VIC-20 to execute learned action {recommended_action}"
+                    reason=f"Override VIC-20 to execute learned action {recommended_action}",
+                    comm_hub=self.comm_hub
                 )
                 
                 if authorization.authorized:

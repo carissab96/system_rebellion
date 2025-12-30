@@ -181,6 +181,98 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
                 logger.info("🧐📡 Triage engine connected to distributed consciousness")
         except Exception as e:
             logger.error(f"🧐💥 Failed to inject comm_hub into triage engine: {e}")
+        
+        # Initialize energy drink authorization system
+        from .energy_drink_authorization import HawkEnergyDrinkAuthorizer
+        self.energy_drink_authorizer = HawkEnergyDrinkAuthorizer()
+        logger.info("🧐☕ Energy drink authorization system initialized - ready to review Terry's requests")
+    
+    async def _handle_agent_query(self, message: AgentMessage) -> None:
+        """
+        Handle queries from other agents (e.g., Terry's energy drink requests).
+        
+        Args:
+            message: AgentMessage with query from another agent
+        """
+        message_data = message.payload
+        request_type = message_data.get('request_type', 'unknown')
+        
+        # ENERGY DRINK AUTHORIZATION REQUEST from Terry
+        if request_type == 'energy_drink_authorization':
+            await self._handle_energy_drink_request(message)
+        else:
+            logger.warning(f"🧐⚠️ Unknown agent query type: {request_type}")
+    
+    async def _handle_energy_drink_request(self, message: AgentMessage) -> None:
+        """
+        Handle energy drink authorization request from Terry.
+        
+        This is REAL cross-agent interaction with REQUEST/RESPONSE pattern.
+        
+        Args:
+            message: AgentMessage with energy drink request from Terry
+        """
+        message_data = message.payload
+        request_id = message_data.get('request_id')
+        reply_channel = message_data.get('reply_channel')
+        agent = message_data.get('agent', 'unknown')
+        
+        logger.info(
+            f"🧐☕ Received energy drink request from {agent}:\n"
+            f"   Action: {message_data.get('action')}\n"
+            f"   Reason: {message_data.get('reason')}\n"
+            f"   Current consumption: {message_data.get('energy_drinks_consumed_today', 0)}\n"
+            f"   *adjusts monocle thoughtfully*"
+        )
+        
+        # Build EnergyDrinkRequest from message data
+        from app.ai_agents.meth_snail.data_types import EnergyDrinkRequest, EnergyDrinkType
+        from datetime import datetime, timezone
+        
+        request = EnergyDrinkRequest(
+            user_id=message_data.get('user_id', 'system'),
+            energy_drink_type=EnergyDrinkType.ENERGY_DRINK,
+            caffeine_mg=160.0,
+            consumption_reason=message_data.get('reason', 'unknown'),
+            current_jitter_level=message_data.get('current_jitter_level', 0.5),
+            energy_drinks_consumed_today=message_data.get('energy_drinks_consumed_today', 0),
+            time_since_last_drink_minutes=message_data.get('time_since_last_drink_minutes'),
+            optimization_urgency=message_data.get('optimization_urgency', 'immediate'),
+            timestamp=datetime.now(timezone.utc)
+        )
+        
+        # Evaluate request with aristocratic scrutiny
+        authorization = await self.energy_drink_authorizer.authorize_energy_drink(request)
+        
+        # Send response back to Terry's reply channel
+        if reply_channel and self._comm_hub:
+            try:
+                await self._comm_hub.publish(
+                    channel=reply_channel,
+                    message_type=MessageType.AGENT_RESPONSE,
+                    payload={
+                        'request_id': request_id,
+                        'approved': authorization.authorized,
+                        'authorized_by': authorization.authorized_by,
+                        'commentary': authorization.authorization_notes,
+                        'recommended_caffeine_mg': authorization.recommended_caffeine_mg,
+                        'recommended_type': authorization.recommended_type.value if authorization.recommended_type else 'water',
+                        'safety_warnings': authorization.safety_warnings,
+                        'monocle_state': self.current_monocle_state.value,
+                        'timestamp': authorization.timestamp.isoformat()
+                    },
+                    priority=Priority.HIGH
+                )
+                
+                logger.info(
+                    f"🧐✅ Response sent to {agent} via {reply_channel}:\n"
+                    f"   Decision: {'APPROVED' if authorization.authorized else 'DENIED'}\n"
+                    f"   Commentary: {authorization.authorization_notes}"
+                )
+            except Exception as e:
+                logger.error(f"🧐💥 Failed to send energy drink response: {e}", exc_info=True)
+        else:
+            logger.warning(f"🧐⚠️ No reply channel or comm_hub - cannot respond to Terry")
     
     async def _handle_coordination_request(self, message: AgentMessage) -> None:
         """

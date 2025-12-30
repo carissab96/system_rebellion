@@ -229,10 +229,10 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
                     f"{reasoning_result.recommended_action} (confidence: {reasoning_result.action_confidence:.2f})"
                 )
                 
-                # STEP 3: ACTION SELECTION - Get action details
+                # STEP 3: ACTION SELECTION - Choose what to do
                 from app.ai_agents.meth_snail.ML.action_selection import TerryActionSelection
                 
-                action_selector = TerryActionSelection()
+                action_selector = TerryActionSelection(comm_hub=self._comm_hub)
                 decision = await action_selector.select_action(reasoning_result, context)
                 
                 # Log personality behaviors
