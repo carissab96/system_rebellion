@@ -260,7 +260,7 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
             # Broadcast coordination to WebSocket
             from app.services.agent_insight_emitter import emit_agent_insight
             await emit_agent_insight(
-                from_agent="vic20_sage",
+                from_agent="vic_20_sage",
                 to_agent=specialist,
                 action="coordinate_specialist",
                 reasoning=f"Routing {resource_type} alert to specialist - {recommendation['action']}",
@@ -441,7 +441,7 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
                     # Broadcast to WebSocket
                     from app.services.agent_insight_emitter import emit_agent_insight
                     await emit_agent_insight(
-                        from_agent="vic20_sage",
+                        from_agent="vic_20_sage",
                         to_agent=action.target_specialist,
                         action="coordinate_specialist",
                         reasoning=reasoning.primary_reason,

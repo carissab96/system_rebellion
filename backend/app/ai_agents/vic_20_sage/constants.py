@@ -89,11 +89,11 @@ COORDINATION_THRESHOLDS = {
 
 # Agent coordination relationships
 AGENT_SYNERGIES = {
-    'meth_snail': ['sir_hawkington', 'vic20_sage'],  # Optimization + Triage + Coordination
-    'hamsters': ['the_stick', 'vic20_sage'],         # Infrastructure + Documentation + Coordination
+    'meth_snail': ['sir_hawkington', 'vic_20_sage'],  # Optimization + Triage + Coordination
+    'hamsters': ['the_stick', 'vic_20_sage'],         # Infrastructure + Documentation + Coordination
     'sir_hawkington': ['meth_snail', 'quantum_shadow_people'],  # Triage + Optimization + Monitoring
-    'quantum_shadow_people': ['sir_hawkington', 'vic20_sage'],  # Monitoring + Triage + Coordination
-    'the_stick': ['hamsters', 'vic20_sage']          # Documentation + Infrastructure + Coordination
+    'quantum_shadow_people': ['sir_hawkington', 'vic_20_sage'],  # Monitoring + Triage + Coordination
+    'the_stick': ['hamsters', 'vic_20_sage']          # Documentation + Infrastructure + Coordination
 }
 
 # Known volatile agent combinations
