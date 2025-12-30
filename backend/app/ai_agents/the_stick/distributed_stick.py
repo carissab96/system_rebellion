@@ -255,8 +255,35 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
                     f"(anxiety_level: {decision.anxiety_level})"
                 )
                 
-                # STEP 4: EXECUTION - Log compliance event
+                # STEP 4: EXECUTION - Execute anxious communication action
+                from app.ai_agents.the_stick.ML.action_executor import StickActionExecutor
+                
+                executor = StickActionExecutor(comm_hub=self._comm_hub)
+                execution_result = await executor.execute_action(
+                    action=decision.action_type,
+                    parameters={
+                        'agent_name': from_agent,
+                        'coordination_type': coordination_type,
+                        'anxiety_level': context.anxiety_level,
+                        'bob_detected': context.bob_detected,
+                        'bob_location': context.bob_proximity.location if context.bob_proximity else None,
+                        'proximity_to_supply_closet': context.bob_proximity.distance_to_supply_closet if context.bob_proximity else 0.0
+                    }
+                )
+                
+                # Track paper bags consumed during execution
+                if execution_result.get('paper_bags_consumed', 0) > 0:
+                    bags_consumed = execution_result['paper_bags_consumed']
+                    for _ in range(bags_consumed):
+                        self._consume_paper_bag(f"action_execution_{decision.action_type}")
+                    logger.info(f"📏🛍️ {bags_consumed} additional paper bag(s) consumed during execution!")
+                
                 self.total_actions_tracked += 1
+                
+                logger.info(
+                    f"📏✅ Action executed: {execution_result.get('action')} - "
+                    f"Success: {execution_result.get('success', False)}"
+                )
                 
                 # STEP 5: LEARNING - Store compliance outcome
                 from app.ai_agents.the_stick.ML.learning import StickLearning

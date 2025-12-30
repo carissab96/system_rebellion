@@ -177,14 +177,39 @@ class StickActionSelection:
         bob_proximity: Optional[Any]
     ) -> str:
         """
-        Determine logging action type.
+        Determine logging/communication action type.
+        
+        The Stick now has soft enforcement tools:
+        - anxious_reminder: Gentle nagging about violations
+        - escalate_to_vic20: When reminders are ignored
+        - bob_panic_protocol: EMERGENCY when Bob detected
+        - pattern_alert: Proactive warnings about emerging patterns
+        - log_decision: Standard logging
         """
+        # BOB PANIC PROTOCOL (highest priority - survival!)
         if bob_proximity and bob_proximity.bob_detected:
+            # Check if Bob is near supply closet (EMERGENCY)
+            if hasattr(bob_proximity, 'distance_to_supply_closet'):
+                if bob_proximity.distance_to_supply_closet < 10.0:  # Within 10 meters
+                    return 'bob_panic_protocol'
+            # Otherwise just anxious logging
             return 'bob_evasion_log'
+        
+        # PANIC MODE (full panic attack)
         elif panic_active:
             return 'panic_log'
+        
+        # URGENT (emergency logging)
         elif priority == 'urgent':
             return 'emergency_log'
+        
+        # HIGH PRIORITY (might need escalation or reminder)
+        elif priority == 'high':
+            # TODO: Add logic to check violation history
+            # For now, default to anxious reminder if we detect repeated issues
+            return 'anxious_reminder'
+        
+        # NORMAL (standard logging)
         else:
             return 'log_decision'
     
