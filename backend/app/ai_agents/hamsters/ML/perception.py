@@ -22,7 +22,7 @@ from typing import Dict, Any, Optional, List
 from datetime import datetime, timedelta, timezone
 from dataclasses import dataclass, field
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc, func
+from sqlalchemy import select, desc, func, String
 
 from app.models.agent_learning import AgentLearningRecord
 
@@ -470,7 +470,7 @@ class HamstersPerception:
             query = (
                 select(AgentLearningRecord)
                 .where(AgentLearningRecord.agent_name == 'hamsters')
-                .where(AgentLearningRecord.parameters['requires_sudo'].astext == 'true')
+                .where(AgentLearningRecord.parameters['requires_sudo'].astext.cast(String) == 'true')
                 .order_by(desc(AgentLearningRecord.created_at))
                 .limit(5)
             )
