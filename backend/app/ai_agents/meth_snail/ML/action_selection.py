@@ -140,9 +140,22 @@ class TerryActionSelection:
         
         self.logger.info(f"🐌⚡ Selecting action for root cause: {root_cause}")
         
+        # EXPLORATION CHECK: Should Terry explore instead of exploiting learned action?
+        explore = random.random() < self.epsilon
+        viable_actions = self.ACTION_MAP.get(root_cause, [])
+        
+        if explore and len(viable_actions) > 1 and recommended_action and recommended_action != 'unknown':
+            # OVERRIDE historical learning to explore!
+            exploration_action = random.choice([a for a in viable_actions if a != recommended_action])
+            self.logger.info(
+                f"   🐌🔬 EXPLORING: Overriding learned action {recommended_action} → trying {exploration_action} (ε={self.epsilon:.1%})"
+            )
+            recommended_action = exploration_action
+            confidence = 0.6  # Lower confidence for exploration
+        
         # If reasoning engine already picked an action from historical learning, use it
         if recommended_action and recommended_action != 'unknown':
-            self.logger.info(f"   ✓ Using reasoning engine's recommendation: {recommended_action}")
+            self.logger.info(f"   ✓ Using action: {recommended_action}")
             
             vic20_action = context.vic20_recommendation.get('action')
             followed_vic20 = (recommended_action == vic20_action)
