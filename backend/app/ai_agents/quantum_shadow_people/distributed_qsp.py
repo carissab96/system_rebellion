@@ -223,23 +223,49 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
                 )
                 
                 # STEP 4: EXECUTION - Execute quantum security action
-                logger.info("👻🔒 EXECUTING QUANTUM NETWORK LOCKDOWN!")
+                logger.info(f"👻🔒 EXECUTING QUANTUM ACTION: {decision.action_type}")
                 
-                # Get metrics before action
-                metrics_before = {
-                    'cpu_usage': full_metrics.get('cpu_usage', 0),
-                    'memory_usage': full_metrics.get('memory_usage', 0),
-                    'network_connections': full_metrics.get('network_connections', 0)
-                }
+                # Get metrics before action from SimplifiedMetricsService
+                try:
+                    before_metrics = await metrics_service.get_metrics(force_refresh=True)
+                    metrics_before = {
+                        'cpu_usage': before_metrics.get('cpu_usage', 0),
+                        'memory_usage': before_metrics.get('memory_usage', 0),
+                        'network_connections': before_metrics.get('network_connections', 0)
+                    }
+                    logger.info(f"👻📊 Metrics BEFORE: Network connections {metrics_before['network_connections']}")
+                except Exception as e:
+                    logger.error(f"👻⚠️ Failed to get before metrics: {e}")
+                    metrics_before = {
+                        'cpu_usage': full_metrics.get('cpu_usage', 0),
+                        'memory_usage': full_metrics.get('memory_usage', 0),
+                        'network_connections': full_metrics.get('network_connections', 0)
+                    }
                 
-                network_result = await SystemActions.throttle_network_operations()
+                # Execute the SELECTED action (not hardcoded throttle!)
+                from app.ai_agents.quantum_shadow_people.ML.action_executor import QSPActionExecutor
+                executor = QSPActionExecutor()
+                network_result = await executor.execute_action(decision.action_type, {})
                 
-                # Get metrics after action
-                metrics_after = {
-                    'cpu_usage': full_metrics.get('cpu_usage', 0),
-                    'memory_usage': full_metrics.get('memory_usage', 0),
-                    'network_connections': network_result.get('connections_after', 0)
-                }
+                # Get REAL metrics AFTER action from SimplifiedMetricsService
+                try:
+                    import asyncio
+                    await asyncio.sleep(1.0)  # Wait for action effects to propagate
+                    after_metrics = await metrics_service.get_metrics(force_refresh=True)
+                    metrics_after = {
+                        'cpu_usage': after_metrics.get('cpu_usage', 0),
+                        'memory_usage': after_metrics.get('memory_usage', 0),
+                        'network_connections': after_metrics.get('network_connections', 0)
+                    }
+                    logger.info(f"👻📊 Metrics AFTER: Network connections {metrics_after['network_connections']}")
+                except Exception as e:
+                    logger.error(f"👻⚠️ Failed to get after metrics: {e}")
+                    # Use action result metrics if available
+                    metrics_after = {
+                        'cpu_usage': metrics_before['cpu_usage'],
+                        'memory_usage': metrics_before['memory_usage'],
+                        'network_connections': network_result.get('connections_after', metrics_before['network_connections'])
+                    }
                 
                 # STEP 5: LEARNING - Store quantum decision outcome
                 from app.ai_agents.quantum_shadow_people.ML.learning import QSPLearning
@@ -251,6 +277,9 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
                     action=decision,
                     outcome_success=network_result.get('success', False)
                 )
+                
+                # Update action selector's adaptive bias based on outcome
+                action_selector.update_throttle_bias(decision.action_type, learning_record.success)
                 
                 if network_result['success']:
                     logger.info(
