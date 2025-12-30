@@ -60,23 +60,28 @@ class TerryActionSelection:
     # QSP handles: Network issues
     ACTION_MAP = {
         'memory_thrashing': [
-            'restart_service',  # Kill memory hog
-            'emergency_cache_clear',  # Free up memory
+            'restart_service',  # Kill memory hog (aggressive - needs energy drink)
+            'emergency_cache_clear',  # Free up memory (aggressive - needs energy drink)
+            'adjust_process_priority',  # Less aggressive fallback
         ],
         'memory_leak': [
-            'restart_service',  # Reset leaked memory
-            'emergency_cache_clear',
+            'restart_service',  # Reset leaked memory (aggressive)
+            'emergency_cache_clear',  # Clear leaked cache (aggressive)
+            'adjust_process_priority',  # Temporary mitigation
         ],
         'memory_pressure': [
-            'emergency_cache_clear',
-            'adjust_process_priority',
+            'emergency_cache_clear',  # Aggressive clear (needs energy drink)
+            'clear_cache',  # Standard clear (no energy drink needed)
+            'adjust_process_priority',  # Gentle approach
         ],
         'io_wait': [
             'throttle_cpu_intensive_tasks',  # Reduce I/O pressure
             'adjust_process_priority',  # Deprioritize I/O hogs
+            'emergency_cache_clear',  # Nuclear option
         ],
         'cpu_bound': [
-            'emergency_cache_clear',  # Terry's favorite
+            'restart_service',  # Nuclear option (aggressive)
+            'emergency_cache_clear',  # Terry's favorite (aggressive)
             'adjust_process_priority',  # Nice the CPU hogs
             'throttle_cpu_intensive_tasks',
         ],
@@ -100,9 +105,9 @@ class TerryActionSelection:
         self.energy_drink_system = EnergyDrinkSystem()
         
         # Exploration vs Exploitation
-        self.epsilon = 0.15  # 15% chance to explore (try non-preferred actions)
-        self.min_epsilon = 0.05  # Minimum exploration rate
-        self.epsilon_decay = 0.995  # Decay exploration over time as Terry learns
+        self.epsilon = 0.35  # 35% chance to explore (try non-preferred actions) - INCREASED for diversity
+        self.min_epsilon = 0.15  # Minimum exploration rate - keep exploring even after learning
+        self.epsilon_decay = 0.998  # Slower decay - maintain exploration longer
         
         # Adaptive personality bias (starts high, decreases if cache clear fails often)
         self.cache_clear_bias = 1.2  # 20% bias (can decrease to 1.0 = no bias)
