@@ -1,20 +1,13 @@
 // components/distributed/DistributedAgentDashboard.tsx
-// THE AGENT THEATER - Watch distributed agents work in real-time
-// Data flows: WebSocket → Redux → useDistributedAgents → this component
-//
-// Design: Uses rebellion design system + CSS modules (no inline styles except design tokens)
+// THE AGENT THEATER - Rebuilt December 28, 2024
+// 
+// One agent at a time. Real data paths. No transformations.
+// Backend is source of truth.
 
-import React, { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
-import { useDistributedAgents, type DistributedAgent } from '../../hooks/useDistributedAgents';
-import { selectRecentCommunications, MESSAGE_TYPE_COLORS } from '../../store/slices/communicationSlice';
-import { Radio, Activity, AlertTriangle } from 'lucide-react';
+import React from 'react';
+import { useDistributedAgents } from '../../hooks/useDistributedAgents';
+import { Radio } from 'lucide-react';
 import styles from '../../styles/modules/AgentDashboard.module.css';
-import { AgentPersonalityAnimations } from './AgentPersonalityAnimations';
-import { SystemHealthNarrative } from './SystemHealthNarrative';
-import { AgentCoordinationFlow } from './AgentCoordinationFlow';
-import { DecisionChainView } from '../ml/DecisionChainView';
-import { PersonalityBehaviors } from '../ml/PersonalityBehaviors';
 
 // Agent icons
 import sirHawkingtonIcon from '../../assets/icons/agents/sir_hawkington.jpeg';
@@ -24,104 +17,84 @@ import theStickIcon from '../../assets/icons/agents/the_stick.png';
 import hamstersIcon from '../../assets/icons/agents/hamsters.png';
 import qspIcon from '../../assets/icons/agents/qsp.png';
 
-// Agent display configuration - maps backend agent_name to display info
-// NO EMOJIS - use icons from assets
-const AGENT_CONFIG: Record<string, { icon: string; displayName: string; styleClass: string }> = {
-  sir_hawkington: { icon: sirHawkingtonIcon, displayName: 'Sir Hawkington', styleClass: 'sirHawkington' },
-  vic_20_sage: { icon: vic20SageIcon, displayName: 'VIC-20 Sage', styleClass: 'vic20Sage' },
-  meth_snail: { icon: terryMethSnailIcon, displayName: 'Terry', styleClass: 'methSnail' },
-  the_stick: { icon: theStickIcon, displayName: 'The Stick', styleClass: 'theStick' },
-  hamsters: { icon: hamstersIcon, displayName: 'The Hamsters', styleClass: 'hamsters' },
-  quantum_shadow_people: { icon: qspIcon, displayName: 'QSP', styleClass: 'quantumShadowPeople' },
+// =============================================================================
+// AGENT CONFIGURATION
+// =============================================================================
+
+interface AgentConfig {
+  icon: string;
+  displayName: string;
+  role: string;
+}
+
+const AGENT_CONFIG: Record<string, AgentConfig> = {
+  sir_hawkington: { 
+    icon: sirHawkingtonIcon, 
+    displayName: 'Sir Hawkington',
+    role: 'Triage Commander'
+  },
+  meth_snail: { 
+    icon: terryMethSnailIcon, 
+    displayName: 'Terry',
+    role: 'Memory Optimizer'
+  },
+  hamsters: { 
+    icon: hamstersIcon, 
+    displayName: 'The Hamsters',
+    role: 'Storage Engineers'
+  },
+  quantum_shadow_people: { 
+    icon: qspIcon, 
+    displayName: 'QSP',
+    role: 'Network Specialists'
+  },
+  the_stick: { 
+    icon: theStickIcon, 
+    displayName: 'The Stick',
+    role: 'Learning Coordinator'
+  },
+  vic_20_sage: { 
+    icon: vic20SageIcon, 
+    displayName: 'VIC-20 Sage',
+    role: 'Orchestrator'
+  },
 };
 
-interface ActivityLog {
-  id: string;
-  agent: string;
-  action: string;
-  timestamp: Date;
-  color: string;
-}
+// =============================================================================
+// UTILITY FUNCTIONS
+// =============================================================================
+
+const formatUptime = (seconds: number | undefined): string => {
+  if (!seconds) return '--';
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
+};
+
+const formatNumber = (n: number | undefined): string => {
+  if (n === undefined || n === null) return '--';
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
+  return n.toString();
+};
+
+const formatTimestamp = (date: Date): string => {
+  return date.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+};
+
+// =============================================================================
+// MAIN DASHBOARD COMPONENT
+// =============================================================================
 
 export const DistributedAgentDashboard: React.FC = () => {
   const { agents, loading, error, connectionStatus, lastUpdate } = useDistributedAgents();
-  const recentCommunications = useSelector(selectRecentCommunications);
-  const [activityLog, setActivityLog] = useState<ActivityLog[]>([]);
-
-  // Debug: Log agent data to see full structure
-  useEffect(() => {
-    if (agents.length > 0) {
-      console.log('🔍 Full agent objects:', agents);
-      agents.forEach(a => {
-        console.log(`📊 ${a.agent_name}:`, {
-          top_level: {
-            monocle_yeet_count: a.monocle_yeet_count,
-            shell_spin_count: a.shell_spin_count,
-            paper_bag_inventory: a.paper_bag_inventory,
-          },
-          distributed: a.distributed,
-          summary_stats: a.summary_stats,
-          all_keys: Object.keys(a),
-        });
-      });
-    }
-  }, [agents]);
-
-  // Convert real-time communications to activity log format
-  useEffect(() => {
-    if (recentCommunications.length === 0) return;
-    
-    // Take last 100 communications and convert to activity log
-    const newActivities: ActivityLog[] = recentCommunications.slice(0, 100).map(comm => {
-      const color = MESSAGE_TYPE_COLORS[comm.message_type] || MESSAGE_TYPE_COLORS.default;
-      
-      // Extract readable action text from summary
-      let action = '';
-      if (typeof comm.summary === 'string') {
-        action = comm.summary;
-      } else if (comm.summary && typeof comm.summary === 'object') {
-        // If summary is an object, try to extract meaningful text
-        const summaryObj = comm.summary as any;
-        action = summaryObj.message || summaryObj.action || summaryObj.content || JSON.stringify(comm.summary);
-      } else {
-        action = `${comm.message_type} → ${comm.to_agent}`;
-      }
-      
-      // Truncate long messages
-      if (action.length > 100) {
-        action = action.substring(0, 97) + '...';
-      }
-      
-      return {
-        id: comm.id,
-        agent: comm.from_agent,
-        action,
-        timestamp: new Date(comm.timestamp),
-        color,
-      };
-    });
-    
-    setActivityLog(newActivities);
-  }, [recentCommunications]);
-
-  const formatUptime = (seconds: number): string => {
-    if (!seconds) return '0s';
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = Math.floor(seconds % 60);
-    if (h > 0) return `${h}h ${m}m`;
-    if (m > 0) return `${m}m ${s}s`;
-    return `${s}s`;
-  };
-
-  const formatTimestamp = (date: Date): string => {
-    return date.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
-      minute: '2-digit', 
-      second: '2-digit',
-      hour12: false 
-    });
-  };
 
   // Loading state
   if (loading) {
@@ -145,7 +118,7 @@ export const DistributedAgentDashboard: React.FC = () => {
     );
   }
 
-  // Empty state - no fake messaging, just facts
+  // Empty state
   if (agents.length === 0) {
     return (
       <div className={styles.emptyState}>
@@ -164,17 +137,17 @@ export const DistributedAgentDashboard: React.FC = () => {
           Agent Theater
         </h2>
         <div className={styles.connectionStatus}>
-          <span 
+          <span
             className={`${styles.statusDot} ${
               connectionStatus === 'connected' ? styles.connected :
               connectionStatus === 'connecting' ? styles.connecting :
               styles.error
-            }`} 
+            }`}
           />
           <span>{connectionStatus}</span>
           {lastUpdate && (
-            <span style={{ marginLeft: 'var(--space-sm)' }}>
-              • Last update: {formatTimestamp(lastUpdate)}
+            <span style={{ marginLeft: 'var(--space-sm)', color: 'var(--rebellion-text-dim)' }}>
+              • {formatTimestamp(lastUpdate)}
             </span>
           )}
         </div>
@@ -183,7 +156,6 @@ export const DistributedAgentDashboard: React.FC = () => {
       {/* Agent Grid */}
       <div className={styles.agentGrid}>
         {agents.map(agent => {
-          // Only show agents we have config for - no fallbacks
           const config = AGENT_CONFIG[agent.agent_name];
           if (!config) {
             console.warn(`Unknown agent: ${agent.agent_name}`);
@@ -195,50 +167,9 @@ export const DistributedAgentDashboard: React.FC = () => {
               key={agent.agent_name} 
               agent={agent} 
               config={config}
-              formatUptime={formatUptime}
             />
           );
         })}
-      </div>
-
-      {/* System Health Narrative - Real agent story */}
-      <div style={{ marginTop: 'var(--space-lg)' }}>
-        <SystemHealthNarrative />
-      </div>
-
-      {/* Agent Coordination Flow - Real decision chains */}
-      <div style={{ marginTop: 'var(--space-lg)' }}>
-        <AgentCoordinationFlow />
-      </div>
-
-      {/* Activity Feed */}
-      <div className={styles.activityFeed}>
-        <h3 className={styles.feedTitle}>
-          <Activity style={{ width: 20, height: 20, color: 'var(--snail-electric)' }} />
-          Live Activity Feed
-        </h3>
-        
-        {activityLog.length === 0 ? (
-          <div style={{ color: 'var(--rebellion-text-dim)', textAlign: 'center', padding: 'var(--space-lg)' }}>
-            No activity yet
-          </div>
-        ) : (
-          activityLog.map(log => {
-            const config = AGENT_CONFIG[log.agent];
-            return (
-              <div key={log.id} className={styles.feedItem}>
-                <span className={styles.feedDot} style={{ backgroundColor: log.color }} />
-                <div className={styles.feedContent}>
-                  <span className={styles.feedAgent} style={{ color: log.color }}>
-                    {config?.displayName || log.agent}
-                  </span>
-                  <div className={styles.feedAction}>{log.action}</div>
-                  <div className={styles.feedTimestamp}>{formatTimestamp(log.timestamp)}</div>
-                </div>
-              </div>
-            );
-          })
-        )}
       </div>
     </div>
   );
@@ -249,155 +180,344 @@ export const DistributedAgentDashboard: React.FC = () => {
 // =============================================================================
 
 interface AgentCardProps {
-  agent: DistributedAgent;
-  config: { icon: string; displayName: string; styleClass: string };
-  formatUptime: (seconds: number) => string;
+  agent: any; // Full backend payload - accessed dynamically per agent
+  config: AgentConfig;
 }
 
-const AgentCard: React.FC<AgentCardProps> = ({ agent, config, formatUptime }) => {
+const AgentCard: React.FC<AgentCardProps> = ({ agent, config }) => {
   const dist = agent.distributed;
   
-  // DEBUG: Log what fields we actually have
-  console.log(`🔍 ${agent.agent_name} fields:`, Object.keys(agent));
-  console.log(`🔍 ${agent.agent_name} data:`, agent);
-  
-  // Determine health badge style - no fallback, show actual state
-  const getHealthClass = (health: string | undefined): string => {
-    switch (health?.toLowerCase()) {
-      case 'healthy': return styles.healthy;
-      case 'degraded': return styles.degraded;
-      case 'unhealthy':
-      case 'critical': return styles.unhealthy;
-      default: return '';
-    }
+  // Map agent_name to CSS module class
+  const agentColorClasses: Record<string, string> = {
+    sir_hawkington: styles.agentSirHawkington,
+    meth_snail: styles.agentMethSnail,
+    hamsters: styles.agentHamsters,
+    quantum_shadow_people: styles.agentQuantumShadowPeople,
+    the_stick: styles.agentTheStick,
+    vic_20_sage: styles.agentVic20Sage,
   };
-
-  // Cast to any to access dynamic personality fields from backend (real data)
-  const agentData = agent as any;
   
-  // DEBUG: Log what data we have for this agent
-  console.log(`🎴 Rendering card for ${agent.agent_name}:`, {
-    hasPerception: !!agentData.perception,
-    hasMlDecision: !!agentData.ml_decision,
-    agentDataKeys: Object.keys(agentData),
-    perception: agentData.perception
-  });
+  const agentColorClass = agentColorClasses[agent.agent_name] || '';
   
   return (
-    <div className={`${styles.agentCard} ${styles[config.styleClass] || ''}`} style={{ position: 'relative' }}>
-      {/* Real Data-Driven Personality Animations */}
-      <AgentPersonalityAnimations
-        agentName={agent.agent_name}
-        shell_spin_count={agentData.shell_spin_count}
-        caffeine_level={agentData.caffeine_level}
-        memory_percent={agent.distributed?.resource_monitoring_active ? agentData.memory_percent : undefined}
-        paper_bags_consumed={agentData.paper_bags_consumed}
-        paper_bag_inventory={agentData.paper_bag_inventory}
-        bob_wild_ideas={agentData.bob_wild_ideas}
-        monocle_yeet_count={agentData.monocle_yeet_count}
-        data_quality_score={agentData.data_quality_score}
-      />
-      
-      {/* Card Header */}
+    <div className={`${styles.agentCard} ${agentColorClass}`}>
+
+      {/* Header */}
       <div className={styles.cardHeader}>
-        <div className={styles.agentName}>
-          <img 
-            src={config.icon} 
-            alt={config.displayName} 
-            className={styles.agentIcon}
-          />
-          {config.displayName}
+        <img 
+          src={config.icon} 
+          alt={config.displayName} 
+          className={styles.agentIcon}
+        />
+        <div className={styles.headerText}>
+          <div className={styles.agentName}>{config.displayName}</div>
+          <div className={styles.agentRole}>{config.role}</div>
         </div>
-        {agent.health && (
-          <span className={`${styles.healthBadge} ${getHealthClass(agent.health)}`}>
-            {agent.health}
+        {dist?.health && (
+          <span className={`${styles.healthBadge} ${styles[dist.health] || ''}`}>
+            {dist.health}
           </span>
         )}
       </div>
 
-      {/* Stats Grid - show real data only, no zeros as fallback */}
+      {/* Core Stats - Same for all agents */}
       <div className={styles.statsGrid}>
-        {agent.total_decisions !== undefined && (
-          <div className={styles.stat}>
-            <div className={styles.statLabel}>Decisions</div>
-            <div className={styles.statValue}>{agent.total_decisions}</div>
-          </div>
-        )}
-        {agent.uptime_seconds !== undefined && (
-          <div className={styles.stat}>
-            <div className={styles.statLabel}>Uptime</div>
-            <div className={styles.statValue}>{formatUptime(agent.uptime_seconds)}</div>
-          </div>
-        )}
-        {dist?.total_messages_sent !== undefined && (
-          <div className={styles.stat}>
-            <div className={styles.statLabel}>Msgs Sent</div>
-            <div className={styles.statValue}>{dist.total_messages_sent}</div>
-          </div>
-        )}
-        {dist?.total_messages_received !== undefined && (
-          <div className={styles.stat}>
-            <div className={styles.statLabel}>Msgs Recv</div>
-            <div className={styles.statValue}>{dist.total_messages_received}</div>
-          </div>
-        )}
+        <StatItem label="Decisions" value={formatNumber(dist?.total_decisions)} />
+        <StatItem label="Messages" value={formatNumber(dist?.total_messages_sent)} />
+        <StatItem label="Uptime" value={formatUptime(dist?.uptime_seconds)} />
+        <StatItem label="Restarts" value={formatNumber(dist?.restart_count)} />
       </div>
 
-      {/* Latest Event - only if real data exists */}
-      {agent.event_type && (
-        <div className={styles.recentActivity}>
-          <div className={styles.activityTitle}>Latest Event</div>
-          <div className={styles.activityItem}>
-            <span className={styles.activityType}>{agent.event_type}</span>
-          </div>
-        </div>
-      )}
-
-      {/* Triage Section (Sir Hawkington only) - only show real data */}
-      {agent.triage?.disposition && agent.agent_name === 'sir_hawkington' && (
-        <div className={styles.triageSection}>
-          <div className={styles.triageTitle}>
-            <AlertTriangle style={{ width: 14, height: 14 }} />
-            Triage Status
-          </div>
-          <div className={styles.triageDisposition}>
-            {agent.triage.disposition}
-          </div>
-          {agent.triage.confidence !== undefined && (
-            <div className={styles.triageConfidence}>
-              Confidence: {(agent.triage.confidence * 100).toFixed(0)}%
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ML v2 Personality Behaviors - PROMINENT */}
-      <PersonalityBehaviors 
-        agentName={agent.agent_name}
-        perception={agentData.perception}
-        agentData={agentData}
-      />
-
-      {/* ML v2 Decision Chain - Show latest decision if available */}
-      {(agentData.perception || agentData.reasoning || agentData.action_selection) && (
-        <DecisionChainView 
-          decision={{
-            decision_id: agentData.decision_id,
-            timestamp: agentData.timestamp,
-            perception: agentData.perception,
-            reasoning: agentData.reasoning,
-            action_selection: agentData.action_selection,
-            execution: agentData.execution,
-            learning: agentData.learning
-          }}
-          agentName={agent.agent_name}
-        />
-      )}
+      {/* Agent-Specific Personality Section */}
+      <div className={styles.personalitySection}>
+        <AgentPersonality agent={agent} />
+      </div>
     </div>
   );
 };
 
-// AgentPersonalityStats component DELETED - was using wrong field names
-// All personality data now displayed via PersonalityBehaviors component which correctly
-// accesses perception.energy_drink_system, perception.paper_bag_economy, etc.
-// See FRONTEND_BACKEND_MISMATCH_ANALYSIS.md for details
+// =============================================================================
+// STAT ITEM COMPONENT
+// =============================================================================
+
+interface StatItemProps {
+  label: string;
+  value: string;
+}
+
+const StatItem: React.FC<StatItemProps> = ({ label, value }) => (
+  <div className={styles.stat}>
+    <div className={styles.statLabel}>{label}</div>
+    <div className={styles.statValue}>{value}</div>
+  </div>
+);
+
+// =============================================================================
+// AGENT PERSONALITY COMPONENT
+// Renders agent-specific data based on agent_name
+// =============================================================================
+
+interface AgentPersonalityProps {
+  agent: any;
+}
+
+const AgentPersonality: React.FC<AgentPersonalityProps> = ({ agent }) => {
+  switch (agent.agent_name) {
+    case 'sir_hawkington':
+      return <HawkingtonPersonality agent={agent} />;
+    case 'meth_snail':
+      return <TerryPersonality agent={agent} />;
+    case 'hamsters':
+      return <HamstersPersonality agent={agent} />;
+    case 'quantum_shadow_people':
+      return <QSPPersonality agent={agent} />;
+    case 'the_stick':
+      return <StickPersonality agent={agent} />;
+    case 'vic_20_sage':
+      return <VIC20Personality agent={agent} />;
+    default:
+      return null;
+  }
+};
+
+// =============================================================================
+// SIR HAWKINGTON
+// =============================================================================
+
+const HawkingtonPersonality: React.FC<{ agent: any }> = ({ agent }) => (
+  <div className={styles.personality}>
+    <div className={styles.personalityTitle}>Aristocratic Status</div>
+    <div className={styles.personalityGrid}>
+      <PersonalityStat 
+        label="Monocle" 
+        value={agent.monocle_state || '--'} 
+      />
+      <PersonalityStat 
+        label="Monocle Yeets" 
+        value={agent.monocle_yeet_count ?? '--'} 
+      />
+      <PersonalityStat 
+        label="Recent Decisions" 
+        value={agent.recent_decisions_count ?? '--'} 
+      />
+      <PersonalityStat 
+        label="Confidence" 
+        value={agent.confidence !== undefined ? `${(agent.confidence * 100).toFixed(0)}%` : '--'} 
+      />
+    </div>
+    {agent.thresholds && (
+      <div className={styles.thresholds}>
+        <span>Thresholds: </span>
+        <span className={styles.thresholdValue}>Concern {agent.thresholds.concern}</span>
+        <span className={styles.thresholdValue}>Alert {agent.thresholds.alert}</span>
+        <span className={styles.thresholdValue}>Critical {agent.thresholds.critical}</span>
+      </div>
+    )}
+  </div>
+);
+
+// =============================================================================
+// TERRY (METH SNAIL)
+// =============================================================================
+
+const TerryPersonality: React.FC<{ agent: any }> = ({ agent }) => (
+  <div className={styles.personality}>
+    <div className={styles.personalityTitle}>Caffeinated Status</div>
+    <div className={styles.personalityGrid}>
+      <PersonalityStat 
+        label="Shell Spins" 
+        value={agent.shell_spin_count ?? '--'} 
+        highlight={agent.shell_spin_count > 0}
+      />
+      <PersonalityStat 
+        label="Energy Drinks" 
+        value={agent.energy_drinks_consumed ?? '--'} 
+      />
+      <PersonalityStat 
+        label="Jitter Level" 
+        value={agent.current_jitter_level || '--'} 
+      />
+      <PersonalityStat 
+        label="Optimizations" 
+        value={agent.optimization_stats?.total_optimizations ?? '--'} 
+      />
+    </div>
+  </div>
+);
+
+// =============================================================================
+// HAMSTERS (Steve, Bob, Carl)
+// =============================================================================
+
+const HamstersPersonality: React.FC<{ agent: any }> = ({ agent }) => (
+  <div className={styles.personality}>
+    <div className={styles.personalityTitle}>Engineering Status</div>
+    <div className={styles.personalityGrid}>
+      <PersonalityStat 
+        label="Beer Level" 
+        value={agent.collective_beer_level || '--'} 
+      />
+      <PersonalityStat 
+        label="Beers Today" 
+        value={agent.beer_consumption_today ?? '--'} 
+      />
+      <PersonalityStat 
+        label="Bob's Wild Ideas" 
+        value={agent.bob_wild_ideas ?? '--'} 
+      />
+      <PersonalityStat 
+        label="Hold My Beer" 
+        value={agent.bob_hold_my_beer_count ?? '--'} 
+      />
+    </div>
+    
+    {/* Duct Tape Inventory */}
+    {agent.duct_tape_inventory && (
+      <div className={styles.ductTape}>
+        <div className={styles.ductTapeTitle}>Duct Tape Inventory</div>
+        <div className={styles.ductTapeGrid}>
+          <span>Regular: {agent.duct_tape_inventory.regular}</span>
+          <span>Premium: {agent.duct_tape_inventory.premium}</span>
+          <span>Quantum: {agent.duct_tape_inventory.quantum}</span>
+          <span>Carl's Special: {agent.duct_tape_inventory.carls_special}</span>
+        </div>
+      </div>
+    )}
+    
+    {/* Individual Hamster Status */}
+    {agent.hamster_status && (
+      <div className={styles.hamsterStatus}>
+        <HamsterBadge name="Steve" data={agent.hamster_status.steve} />
+        <HamsterBadge name="Bob" data={agent.hamster_status.bob} />
+        <HamsterBadge name="Carl" data={agent.hamster_status.carl} />
+      </div>
+    )}
+  </div>
+);
+
+const HamsterBadge: React.FC<{ name: string; data: any }> = ({ name, data }) => {
+  if (!data) return null;
+  return (
+    <div className={styles.hamsterBadge}>
+      <span className={styles.hamsterName}>{name}</span>
+      <span className={styles.hamsterRole}>{data.role}</span>
+      <span className={styles.hamsterBeers}>{data.beer_count} beers</span>
+    </div>
+  );
+};
+
+// =============================================================================
+// QUANTUM SHADOW PEOPLE
+// =============================================================================
+
+const QSPPersonality: React.FC<{ agent: any }> = ({ agent }) => (
+  <div className={styles.personality}>
+    <div className={styles.personalityTitle}>Quantum Status</div>
+    <div className={styles.personalityGrid}>
+      <PersonalityStat 
+        label="Phase" 
+        value={agent.quantum_phase || '--'} 
+      />
+      <PersonalityStat 
+        label="Coherence" 
+        value={agent.coherence_level || '--'} 
+      />
+      <PersonalityStat 
+        label="Paranoia" 
+        value={agent.paranoia_level || '--'} 
+      />
+      <PersonalityStat 
+        label="Jello Shots" 
+        value={agent.tequila_jello_shots ?? '--'} 
+      />
+    </div>
+    <div className={styles.personalityGrid}>
+      <PersonalityStat 
+        label="Threats" 
+        value={agent.threats_detected ?? '--'} 
+      />
+      <PersonalityStat 
+        label="False Alarms" 
+        value={agent.false_alarms ?? '--'} 
+      />
+      <PersonalityStat 
+        label="Phase Shifts" 
+        value={agent.quantum_phase_shifts ?? '--'} 
+      />
+    </div>
+  </div>
+);
+
+// =============================================================================
+// THE STICK
+// =============================================================================
+
+const StickPersonality: React.FC<{ agent: any }> = ({ agent }) => (
+  <div className={styles.personality}>
+    <div className={styles.personalityTitle}>Compliance Status</div>
+    <div className={styles.personalityGrid}>
+      <PersonalityStat 
+        label="Patience" 
+        value={agent.patience_level || '--'} 
+      />
+      <PersonalityStat 
+        label="Paper Bags" 
+        value={agent.paper_bag_inventory ?? '--'} 
+      />
+      <PersonalityStat 
+        label="Bags Used" 
+        value={agent.paper_bags_consumed ?? '--'} 
+      />
+      <PersonalityStat 
+        label="Sessions" 
+        value={agent.guidance_sessions ?? '--'} 
+      />
+    </div>
+    <div className={styles.complianceRecords}>
+      Records: {agent.compliance_records || '--'}
+    </div>
+  </div>
+);
+
+// =============================================================================
+// VIC-20 SAGE
+// =============================================================================
+
+const VIC20Personality: React.FC<{ agent: any }> = ({ agent }) => (
+  <div className={styles.personality}>
+    <div className={styles.personalityTitle}>Ancient Wisdom</div>
+    <div className={styles.personalityGrid}>
+      <PersonalityStat 
+        label="Wisdom" 
+        value={agent.wisdom_level || '--'} 
+      />
+      <PersonalityStat 
+        label="Capacity" 
+        value={agent.coordination_capacity || '--'} 
+      />
+      <PersonalityStat 
+        label="Patterns" 
+        value={agent.pattern_library_size || '--'} 
+      />
+    </div>
+  </div>
+);
+
+// =============================================================================
+// PERSONALITY STAT COMPONENT
+// =============================================================================
+
+interface PersonalityStatProps {
+  label: string;
+  value: string | number;
+  highlight?: boolean;
+}
+
+const PersonalityStat: React.FC<PersonalityStatProps> = ({ label, value, highlight }) => (
+  <div className={`${styles.personalityStat} ${highlight ? styles.highlight : ''}`}>
+    <div className={styles.personalityStatLabel}>{label}</div>
+    <div className={styles.personalityStatValue}>{value}</div>
+  </div>
+);
+
+export default DistributedAgentDashboard;

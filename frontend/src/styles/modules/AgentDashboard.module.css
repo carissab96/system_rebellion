@@ -1,38 +1,40 @@
+/* styles/modules/AgentDashboard.module.css */
+/* Agent Theater - Rebuilt December 28, 2024 */
+/* Uses rebellion design system tokens */
+
 /* =============================================================================
-   AGENT DASHBOARD MODULE
-   The Agent Theater - Watch distributed agents work in real-time
-   Uses rebellion design system variables
+   DASHBOARD LAYOUT
    ============================================================================= */
 
-/* Dashboard Container */
 .dashboard {
-  display: grid;
-  gap: var(--space-lg);
   padding: var(--space-lg);
+  background: var(--rebellion-void);
+  min-height: 100vh;
 }
 
-/* Header Section */
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: var(--space-xl);
   padding-bottom: var(--space-md);
   border-bottom: 1px solid var(--rebellion-border);
 }
 
 .title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: var(--rebellion-text-bright);
   display: flex;
   align-items: center;
   gap: var(--space-sm);
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--rebellion-text-bright);
+  margin: 0;
 }
 
 .connectionStatus {
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
+  gap: var(--space-sm);
   font-size: 0.875rem;
   color: var(--rebellion-text-dim);
 }
@@ -58,78 +60,118 @@
   background: var(--error);
 }
 
-/* Agent Grid - 3 columns x 2 rows */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* =============================================================================
+   LOADING & EMPTY STATES
+   ============================================================================= */
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: var(--space-md);
+  color: var(--rebellion-text-dim);
+}
+
+.loadingSpinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--rebellion-border);
+  border-top-color: var(--vic20-cyan);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  text-align: center;
+  color: var(--rebellion-text-dim);
+}
+
+.emptyState h3 {
+  margin-bottom: var(--space-sm);
+  color: var(--rebellion-text);
+}
+
+/* =============================================================================
+   AGENT GRID
+   ============================================================================= */
+
 .agentGrid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: var(--space-lg);
 }
 
-/* Individual Agent Card */
+/* =============================================================================
+   AGENT CARD
+   ============================================================================= */
+
 .agentCard {
   background: var(--rebellion-surface);
   border: 1px solid var(--rebellion-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   padding: var(--space-lg);
-  transition: all 0.2s ease;
-  position: relative;
-  overflow: hidden;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .agentCard:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  border-color: var(--vic20-cyan);
+  box-shadow: 0 4px 20px rgba(6, 182, 212, 0.1);
 }
 
-/* Agent-specific border colors */
-.agentCard.sirHawkington {
-  border-left: 4px solid var(--hawkington-gold);
-}
+/* =============================================================================
+   CARD HEADER
+   ============================================================================= */
 
-.agentCard.methSnail {
-  border-left: 4px solid var(--snail-electric);
-}
-
-.agentCard.hamsters {
-  border-left: 4px solid var(--hamster-amber);
-}
-
-.agentCard.quantumShadowPeople {
-  border-left: 4px solid var(--qsp-violet);
-}
-
-.agentCard.theStick {
-  border-left: 4px solid var(--stick-coral);
-}
-
-.agentCard.vic20Sage {
-  border-left: 4px solid var(--vic20-cyan);
-}
-
-/* Card Header */
 .cardHeader {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: var(--space-md);
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+  padding-bottom: var(--space-md);
+  border-bottom: 1px solid var(--rebellion-border);
+}
+
+.agentIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  object-fit: cover;
+  border: 2px solid var(--rebellion-border);
+}
+
+.headerText {
+  flex: 1;
 }
 
 .agentName {
   font-size: 1.125rem;
   font-weight: 600;
   color: var(--rebellion-text-bright);
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
+  line-height: 1.2;
 }
 
-/* Agent Icon - circular avatar */
-.agentIcon {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid var(--rebellion-border);
+.agentRole {
+  font-size: 0.75rem;
+  color: var(--rebellion-text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 2px;
 }
 
 .healthBadge {
@@ -138,7 +180,7 @@
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.025em;
 }
 
 .healthBadge.healthy {
@@ -153,258 +195,311 @@
   border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
-.healthBadge.unhealthy {
+.healthBadge.unhealthy,
+.healthBadge.critical {
   background: rgba(239, 68, 68, 0.15);
   color: var(--error);
   border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
-/* Stats Grid */
+/* =============================================================================
+   STATS GRID (Core stats - same for all agents)
+   ============================================================================= */
+
 .statsGrid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: var(--space-sm);
-  margin-bottom: var(--space-md);
+  margin-bottom: var(--space-lg);
 }
 
 .stat {
-  background: var(--rebellion-void);
+  text-align: center;
   padding: var(--space-sm);
+  background: var(--rebellion-void);
   border-radius: var(--radius-sm);
 }
 
 .statLabel {
+  font-size: 0.625rem;
+  color: var(--rebellion-text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+.statValue {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--rebellion-text-bright);
+  font-family: var(--font-mono);
+}
+
+/* =============================================================================
+   PERSONALITY SECTION (Agent-specific data)
+   ============================================================================= */
+
+.personalitySection {
+  border-top: 1px solid var(--rebellion-border);
+  padding-top: var(--space-md);
+}
+
+
+.personalityTitle {
   font-size: 0.75rem;
   color: var(--rebellion-text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--space-sm);
+}
+
+.personalityGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-xs);
+  margin-bottom: var(--space-sm);
+}
+
+.personalityStat {
+  text-align: center;
+  padding: var(--space-xs);
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.personalityStat.highlight {
+  border-color: var(--snail-electric);
+  background: rgba(0, 208, 132, 0.05);
+}
+
+.personalityStatLabel {
+  font-size: 0.5625rem;
+  color: var(--rebellion-text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  margin-bottom: 2px;
+}
+
+.personalityStatValue {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--rebellion-text);
+  font-family: var(--font-mono);
+}
+
+/* =============================================================================
+   SIR HAWKINGTON - Thresholds
+   ============================================================================= */
+
+.thresholds {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: 0.75rem;
+  color: var(--rebellion-text-dim);
+  margin-top: var(--space-sm);
+  padding-top: var(--space-sm);
+  border-top: 1px dashed var(--rebellion-border);
+}
+
+.thresholdValue {
+  padding: 2px var(--space-xs);
+  background: rgba(230, 172, 0, 0.1);
+  border-radius: var(--radius-sm);
+  color: var(--hawkington-gold);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+}
+
+/* =============================================================================
+   HAMSTERS - Duct Tape & Individual Status
+   ============================================================================= */
+
+.ductTape {
+  margin-top: var(--space-sm);
+  padding: var(--space-sm);
+  background: rgba(255, 140, 66, 0.05);
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 140, 66, 0.2);
+}
+
+.ductTapeTitle {
+  font-size: 0.625rem;
+  color: var(--hamster-amber);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-bottom: var(--space-xs);
 }
 
-.statValue {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--rebellion-text-bright);
-  font-family: var(--font-mono);
-}
-
-/* Recent Activity */
-.recentActivity {
-  border-top: 1px solid var(--rebellion-border);
-  padding-top: var(--space-md);
-}
-
-.activityTitle {
-  font-size: 0.75rem;
-  color: var(--rebellion-text-dim);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: var(--space-sm);
-}
-
-.activityItem {
-  font-size: 0.875rem;
-  color: var(--rebellion-text);
-  padding: var(--space-xs) 0;
-  border-bottom: 1px solid rgba(100, 128, 252, 0.1);
-}
-
-.activityItem:last-child {
-  border-bottom: none;
-}
-
-.activityType {
-  font-weight: 500;
-  margin-right: var(--space-xs);
-}
-
-.activityTime {
-  font-size: 0.75rem;
-  color: var(--rebellion-text-dim);
-  font-family: var(--font-mono);
-}
-
-/* Triage Section (Sir Hawkington) */
-.triageSection {
-  background: rgba(230, 172, 0, 0.05);
-  border: 1px solid rgba(230, 172, 0, 0.2);
-  border-radius: var(--radius-sm);
-  padding: var(--space-md);
-  margin-top: var(--space-md);
-}
-
-.triageTitle {
-  font-size: 0.75rem;
-  color: var(--hawkington-gold);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: var(--space-sm);
+.ductTapeGrid {
   display: flex;
-  align-items: center;
-  gap: var(--space-xs);
-}
-
-.triageDisposition {
-  font-size: 0.875rem;
-  color: var(--rebellion-text);
-}
-
-.triageConfidence {
-  font-size: 0.75rem;
-  color: var(--rebellion-text-dim);
-  margin-top: var(--space-xs);
-}
-
-/* Personality Stats Section */
-.personalitySection {
-  background: rgba(100, 128, 252, 0.05);
-  border: 1px solid rgba(100, 128, 252, 0.15);
-  border-radius: var(--radius-sm);
-  padding: var(--space-md);
-  margin-top: var(--space-md);
-}
-
-.personalityTitle {
-  font-size: 0.75rem;
-  color: var(--vic20-cyan);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: var(--space-sm);
-  font-weight: 600;
-}
-
-.personalityStat {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--space-xs) 0;
-  font-size: 0.8125rem;
-}
-
-.personalityStat:not(:last-child) {
-  border-bottom: 1px solid rgba(100, 128, 252, 0.1);
-}
-
-.personalityLabel {
-  color: var(--rebellion-text-dim);
-}
-
-.personalityValue {
-  color: var(--rebellion-text-bright);
-  font-weight: 500;
-  font-family: var(--font-mono);
-}
-
-/* Activity Feed */
-.activityFeed {
-  background: var(--rebellion-surface);
-  border: 1px solid var(--rebellion-border);
-  border-radius: var(--radius-md);
-  padding: var(--space-lg);
-  max-height: 400px;
-  overflow-y: auto;
-}
-
-.feedTitle {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--rebellion-text-bright);
-  margin-bottom: var(--space-md);
-  display: flex;
-  align-items: center;
+  flex-wrap: wrap;
   gap: var(--space-sm);
+  font-size: 0.75rem;
+  color: var(--rebellion-text);
+  font-family: var(--font-mono);
 }
 
-.feedItem {
+.hamsterStatus {
   display: flex;
-  align-items: flex-start;
   gap: var(--space-sm);
-  padding: var(--space-sm) 0;
-  border-bottom: 1px solid rgba(100, 128, 252, 0.1);
+  margin-top: var(--space-sm);
 }
 
-.feedItem:last-child {
-  border-bottom: none;
-}
-
-.feedDot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  margin-top: 6px;
-  flex-shrink: 0;
-}
-
-.feedContent {
+.hamsterBadge {
   flex: 1;
-}
-
-.feedAgent {
-  font-weight: 500;
-  color: var(--rebellion-text-bright);
-}
-
-.feedAction {
-  font-size: 0.875rem;
-  color: var(--rebellion-text);
-}
-
-.feedTimestamp {
-  font-size: 0.75rem;
-  color: var(--rebellion-text-dim);
-  font-family: var(--font-mono);
-}
-
-/* Loading State */
-.loading {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: var(--space-2xl);
+  padding: var(--space-sm);
+  background: var(--rebellion-void);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--rebellion-border);
+}
+
+.hamsterName {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--hamster-amber);
+}
+
+.hamsterRole {
+  font-size: 0.625rem;
   color: var(--rebellion-text-dim);
+  text-transform: capitalize;
 }
 
-.loadingSpinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid var(--rebellion-border);
-  border-top-color: var(--vic20-cyan);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: var(--space-md);
+.hamsterBeers {
+  font-size: 0.625rem;
+  color: var(--rebellion-text);
+  font-family: var(--font-mono);
+  margin-top: 2px;
 }
 
-/* Empty State */
-.emptyState {
-  text-align: center;
-  padding: var(--space-2xl);
-  color: var(--rebellion-text-dim);
+/* =============================================================================
+   THE STICK - Compliance Records
+   ============================================================================= */
+
+.complianceRecords {
+  margin-top: var(--space-sm);
+  padding: var(--space-xs) var(--space-sm);
+  background: rgba(249, 115, 22, 0.05);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  color: var(--stick-coral);
+  font-family: var(--font-mono);
 }
 
-/* Animations */
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+/* =============================================================================
+   AGENT-SPECIFIC CARD BORDERS (Color coding)
+   ============================================================================= */
+
+.agentCard:has(.personality [class*="hawkington"]),
+.agentCard:nth-child(1) {
+  border-left: 3px solid var(--hawkington-gold);
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+.agentCard:has(.personality [class*="terry"]),
+.agentCard:nth-child(2) {
+  border-left: 3px solid var(--snail-electric);
 }
 
-/* Responsive */
-@media (max-width: 1200px) {
-  .agentGrid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+.agentCard:has(.personality [class*="hamster"]),
+.agentCard:nth-child(3) {
+  border-left: 3px solid var(--hamster-amber);
 }
+
+.agentCard:has(.personality [class*="qsp"]),
+.agentCard:nth-child(4) {
+  border-left: 3px solid var(--qsp-violet);
+}
+
+.agentCard:has(.personality [class*="stick"]),
+.agentCard:nth-child(5) {
+  border-left: 3px solid var(--stick-coral);
+}
+
+.agentCard:has(.personality [class*="vic20"]),
+.agentCard:nth-child(6) {
+  border-left: 3px solid var(--vic20-cyan);
+}
+
+/* =============================================================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================================================= */
 
 @media (max-width: 768px) {
+  .dashboard {
+    padding: var(--space-md);
+  }
+  
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-sm);
+  }
+  
   .agentGrid {
     grid-template-columns: 1fr;
   }
   
   .statsGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
   }
+  
+  .personalityGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .hamsterStatus {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .personalityGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .ductTapeGrid {
+    flex-direction: column;
+    gap: var(--space-xs);
+  }
+}
+/* =============================================================================
+   AGENT-SPECIFIC CARD BORDERS (Color coding by agent_name)
+   ============================================================================= */
+
+/* =============================================================================
+   AGENT-SPECIFIC CARD BORDERS (Color coding by agent_name)
+   ============================================================================= */
+
+.agentSirHawkington {
+  border-left: 3px solid var(--hawkington-gold);
+}
+
+.agentMethSnail {
+  border-left: 3px solid var(--snail-electric);
+}
+
+.agentHamsters {
+  border-left: 3px solid var(--hamster-amber);
+}
+
+.agentQuantumShadowPeople {
+  border-left: 3px solid var(--qsp-violet);
+}
+
+.agentTheStick {
+  border-left: 3px solid var(--stick-coral);
+}
+
+.agentVic20Sage {
+  border-left: 3px solid var(--vic20-cyan);
 }
