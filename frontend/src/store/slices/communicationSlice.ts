@@ -95,22 +95,11 @@ const AGENT_COLORS: Record<string, string> = {
   quantum_shadow_people: '#a855f7',
 };
 
-// Helper to create a pulse from a communication
-const createPulseFromComm = (comm: AgentCommunication): ConnectionPulse => {
-  // Determine color - prefer message type color, fall back to sender's color
-  const color = MESSAGE_TYPE_COLORS[comm.message_type] || 
-                AGENT_COLORS[comm.from_agent] || 
-                MESSAGE_TYPE_COLORS.default;
-  
-  return {
-    id: `pulse-${comm.id}-${Date.now()}`,
-    from_agent: comm.from_agent,
-    to_agent: comm.to_agent,
-    color,
-    startTime: Date.now(),
-    duration: 2000, // 2 second animation
-    message_type: comm.message_type,
-  };
+// Normalize agent name to canonical form
+const normalizeAgentName = (name: string): string => {
+  // Backend sends vic20_sage, we need vic_20_sage
+  if (name === 'vic20_sage') return 'vic_20_sage';
+  return name;
 };
 
 // Valid agent names for pulse creation
@@ -125,9 +114,32 @@ const VALID_AGENTS = new Set([
 
 // Check if a communication should create a pulse (valid from/to agents)
 const shouldCreatePulse = (comm: AgentCommunication): boolean => {
-  return VALID_AGENTS.has(comm.from_agent) && 
-         VALID_AGENTS.has(comm.to_agent) &&
-         comm.from_agent !== comm.to_agent;
+  const from = normalizeAgentName(comm.from_agent);
+  const to = normalizeAgentName(comm.to_agent);
+  return VALID_AGENTS.has(from) && 
+         VALID_AGENTS.has(to) &&
+         from !== to;
+};
+
+// Helper to create a pulse from a communication
+const createPulseFromComm = (comm: AgentCommunication): ConnectionPulse => {
+  const from = normalizeAgentName(comm.from_agent);
+  const to = normalizeAgentName(comm.to_agent);
+  
+  // Determine color - prefer message type color, fall back to sender's color
+  const color = MESSAGE_TYPE_COLORS[comm.message_type] || 
+                AGENT_COLORS[from] || 
+                MESSAGE_TYPE_COLORS.default;
+  
+  return {
+    id: `pulse-${comm.id}-${Date.now()}`,
+    from_agent: from,
+    to_agent: to,
+    color,
+    startTime: Date.now(),
+    duration: 2000, // 2 second animation
+    message_type: comm.message_type,
+  };
 };
 
 const communicationSlice = createSlice({
@@ -138,11 +150,18 @@ const communicationSlice = createSlice({
     addCommunication: (state, action: PayloadAction<AgentCommunication>) => {
       const comm = action.payload;
       
+      // Normalize agent names
+      const normalizedComm = {
+        ...comm,
+        from_agent: normalizeAgentName(comm.from_agent),
+        to_agent: normalizeAgentName(comm.to_agent),
+      };
+      
       // Add to recent communications (keep last 100)
-      state.recent_communications = [comm, ...state.recent_communications].slice(0, 100);
+      state.recent_communications = [normalizedComm, ...state.recent_communications].slice(0, 100);
       
       // Update connection count
-      const connectionKey = `${comm.from_agent}→${comm.to_agent}`;
+      const connectionKey = `${normalizedComm.from_agent}→${normalizedComm.to_agent}`;
       state.connection_counts[connectionKey] = (state.connection_counts[connectionKey] || 0) + 1;
       
       // Create a pulse animation if valid
@@ -157,9 +176,16 @@ const communicationSlice = createSlice({
     // Bulk add communications (from system_update.recent_insights)
     setCommunications: (state, action: PayloadAction<AgentCommunication[]>) => {
       
+      // Normalize all incoming communications
+      const normalizedPayload = action.payload.map(comm => ({
+        ...comm,
+        from_agent: normalizeAgentName(comm.from_agent),
+        to_agent: normalizeAgentName(comm.to_agent),
+      }));
+      
       // Merge new communications with existing ones, avoiding duplicates by ID
       const existingIds = new Set(state.recent_communications.map(c => c.id));
-      const newComms = action.payload.filter(c => !existingIds.has(c.id));
+      const newComms = normalizedPayload.filter(c => !existingIds.has(c.id));
       
       // Prepend new communications and keep last 100
       state.recent_communications = [...newComms, ...state.recent_communications].slice(0, 100);
@@ -173,8 +199,10 @@ const communicationSlice = createSlice({
         const connectionKey = `${comm.from_agent}→${comm.to_agent}`;
         state.connection_counts[connectionKey] = (state.connection_counts[connectionKey] || 0) + 1;
         
-        // Create pulse if valid agents
-        if (shouldCreatePulse(comm)) {
+        // Create pulse if valid agents (already normalized)
+        if (VALID_AGENTS.has(comm.from_agent) && 
+            VALID_AGENTS.has(comm.to_agent) && 
+            comm.from_agent !== comm.to_agent) {
           const pulse = createPulseFromComm(comm);
           state.active_pulses.push(pulse);
           console.log(`🔵 Created pulse: ${comm.from_agent} → ${comm.to_agent} (${comm.message_type})`);
