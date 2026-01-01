@@ -681,7 +681,7 @@ class SirHawkingtonTriageEngine(AgentInstrumentationMixin, TriageEngineWithRedis
             from app.services.agent_insight_emitter import emit_agent_insight
             await emit_agent_insight(
                 from_agent="sir_hawkington",
-                to_agent="vic20_sage",
+                to_agent="vic_20_sage",
                 action="request_coordination",
                 reasoning="Medium severity detected - specialist coordination required for optimal response",
                 context={
@@ -785,7 +785,7 @@ class SirHawkingtonTriageEngine(AgentInstrumentationMixin, TriageEngineWithRedis
             from app.services.agent_insight_emitter import emit_agent_insight
             await emit_agent_insight(
                 from_agent="sir_hawkington",
-                to_agent="vic20_sage",
+                to_agent="vic_20_sage",
                 action="emergency_escalation",
                 reasoning="🧐💥 EMERGENCY - System stress critical or data quality catastrophic - multi-agent orchestration required",
                 context={

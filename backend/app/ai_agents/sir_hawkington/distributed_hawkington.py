@@ -451,6 +451,7 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
         logger.info(f"\n{'='*80}")
         logger.info(f"🧐🎯 HAWK V2 TRIAGE INITIATED")
         logger.info(f"{'='*80}")
+        logger.info(f"🧐🔍 DEBUG: _perform_triage called with severity={severity}, value={current_value}")
         
         # Extract alert data
         severity = alert.payload['severity']
@@ -915,7 +916,22 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
                 "timestamp": str(self._get_current_time()) if hasattr(self, '_get_current_time') else None
             }
         )
-        
+         # 🎯 EMIT TO WEBSOCKET for frontend pulse visualization
+        from app.services.agent_insight_emitter import emit_agent_insight
+        await emit_agent_insight(
+            from_agent="sir_hawkington",
+            to_agent="vic_20_sage",
+            action="triage_escalation",
+            reasoning=f"Escalating {resource_type} alert: {current_value:.1f}% exceeds {threshold:.1f}% (severity: {severity})",
+            context={
+                "resource_type": resource_type,
+                "current_value": current_value,
+                "threshold": threshold,
+                "severity": severity,
+                "confidence": confidence,
+                "monocle_state": self.current_monocle_state.value
+            }
+    )
         # Send directly to VIC-20
         await self._comm_hub.send_message(triage_alert)
         
@@ -940,7 +956,17 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
                 "decision_data": decision_data,
                 "source_agent": "sir_hawkington",
                 "timestamp": str(self._get_current_time()) if hasattr(self, '_get_current_time') else None
-            }
+            } 
+        )
+
+        # 🎯 EMIT TO WEBSOCKET for frontend pulse visualization
+        from app.services.agent_insight_emitter import emit_agent_insight
+        await emit_agent_insight(
+            from_agent="sir_hawkington",
+            to_agent="the_stick",
+            action="decision_log",
+            reasoning=f"Logging {decision_type} decision for pattern learning",
+            context=decision_data
         )
         
         await self._comm_hub.send_message(decision_log)
