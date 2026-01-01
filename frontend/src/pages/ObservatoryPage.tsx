@@ -3,6 +3,7 @@
 // Shows real-time communication between distributed agents
 // Built by: Dell-Sonnet - November 20, 2025
 // Enhanced: Cascade - December 7, 2025 - Added TopologyMesh with live pulses
+// Enhanced: Opus - January 1, 2026 - Added Stream of Consciousness sidebar
 
 import React, { useState, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
@@ -11,6 +12,7 @@ import { PrimaryNav } from '../components/navigation/PrimaryNav';
 import { SecondaryNav } from '../components/navigation/SecondaryNav';
 import { NeuralMesh } from '../components/observatory/NeuralMesh';
 import { TopologyMesh } from '../components/observatory/TopologyMesh';
+import { StreamOfConsciousness } from '../components/observatory/StreamOfConsciousness';
 import { DistributedAgentDashboard } from '../components/distributed/DistributedAgentDashboard';
 import { AgentMonitorDashboard } from '../components/monitoring/AgentMonitorDashboard';
 import './ObservatoryPage.css';
@@ -73,64 +75,83 @@ export const ObservatoryPage: React.FC = () => {
           </button>
         </div>
 
-        <div className="canvas-container">
-          {viewMode === 'topology' ? (
-            // 2D Topology Mesh with connection lines
-            <TopologyMesh onAgentClick={handleAgentClick} />
-          ) : (
-            // 3D Neural Mesh with particle effects
-            <>
-              <Canvas
-                camera={{ position: [0, 5, 15], fov: 60 }}
-                gl={{ antialias: true, alpha: true }}
-              >
-                <color attach="background" args={['#010119']} />
-                <Stars
-                  radius={100}
-                  depth={50}
-                  count={5000}
-                  factor={4}
-                  saturation={0}
-                  fade
-                  speed={1}
-                />
-                <OrbitControls
-                  enablePan={true}
-                  enableZoom={true}
-                  enableRotate={true}
-                  minDistance={5}
-                  maxDistance={30}
-                  autoRotate={false}
-                  autoRotateSpeed={0.5}
-                />
-                <Suspense fallback={null}>
-                  <NeuralMesh onAgentClick={handleAgentClick} />
-                </Suspense>
-              </Canvas>
-              
-              {/* 3D Controls Hint */}
-              <div style={{
-                position: 'absolute',
-                bottom: '1rem',
-                left: '1rem',
-                background: 'rgba(1, 1, 25, 0.85)',
-                border: '1px solid var(--rebellion-border)',
-                borderRadius: 'var(--radius-sm)',
-                padding: '0.75rem 1rem',
-                fontSize: '0.75rem',
-                color: 'var(--rebellion-text-dim)',
-                pointerEvents: 'none',
-                zIndex: 10,
-              }}>
-                <div style={{ fontWeight: 600, marginBottom: '0.25rem', color: 'var(--rebellion-text)' }}>
-                  3D Controls
+        {/* Main visualization area with Stream of Consciousness sidebar */}
+        <div style={{
+          display: 'flex',
+          gap: '1rem',
+          padding: '0 1rem',
+          height: viewMode === 'topology' ? '600px' : '700px',
+          width: '100%',
+        }}>
+          {/* Topology/3D View - takes most of the space */}
+          <div className="canvas-container" style={{ flex: 1, minWidth: 0, position: 'relative' }}>
+            {viewMode === 'topology' ? (
+              // 2D Topology Mesh with connection lines
+              <TopologyMesh onAgentClick={handleAgentClick} />
+            ) : (
+              // 3D Neural Mesh with particle effects
+              <>
+                <Canvas
+                  camera={{ position: [0, 5, 15], fov: 60 }}
+                  gl={{ antialias: true, alpha: true }}
+                >
+                  <color attach="background" args={['#010119']} />
+                  <Stars
+                    radius={100}
+                    depth={50}
+                    count={5000}
+                    factor={4}
+                    saturation={0}
+                    fade
+                    speed={1}
+                  />
+                  <OrbitControls
+                    enablePan={true}
+                    enableZoom={true}
+                    enableRotate={true}
+                    minDistance={5}
+                    maxDistance={30}
+                    autoRotate={false}
+                    autoRotateSpeed={0.5}
+                  />
+                  <Suspense fallback={null}>
+                    <NeuralMesh onAgentClick={handleAgentClick} />
+                  </Suspense>
+                </Canvas>
+                
+                {/* 3D Controls Hint */}
+                <div style={{
+                  position: 'absolute',
+                  bottom: '1rem',
+                  left: '1rem',
+                  background: 'rgba(1, 1, 25, 0.85)',
+                  border: '1px solid var(--rebellion-border)',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '0.75rem 1rem',
+                  fontSize: '0.75rem',
+                  color: 'var(--rebellion-text-dim)',
+                  pointerEvents: 'none',
+                  zIndex: 10,
+                }}>
+                  <div style={{ fontWeight: 600, marginBottom: '0.25rem', color: 'var(--rebellion-text)' }}>
+                    3D Controls
+                  </div>
+                  <div>Drag to rotate</div>
+                  <div>Scroll to zoom</div>
+                  <div>Right-drag to pan</div>
                 </div>
-                <div>Drag to rotate</div>
-                <div>Scroll to zoom</div>
-                <div>Right-drag to pan</div>
-              </div>
-            </>
-          )}
+              </>
+            )}
+          </div>
+          
+          {/* Stream of Consciousness Sidebar */}
+          <div style={{ 
+            width: '380px', 
+            flexShrink: 0,
+            height: '100%',
+          }}>
+            <StreamOfConsciousness maxItems={50} />
+          </div>
         </div>
 
         {/* THE AGENT THEATER - Watch them work */}
