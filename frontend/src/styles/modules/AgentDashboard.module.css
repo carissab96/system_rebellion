@@ -478,7 +478,7 @@
 
 /* =============================================================================
    AGENT-SPECIFIC CARD BORDERS (Color coding by agent_name)
-   ============================================================================= */
+   ============================================================================= 
 
 .agentSirHawkington {
   border-left: 3px solid var(--hawkington-gold);
@@ -503,3 +503,4 @@
 .agentVic20Sage {
   border-left: 3px solid var(--vic20-cyan);
 }
+  */

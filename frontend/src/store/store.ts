@@ -1,7 +1,7 @@
 // store/index.ts
 import { configureStore } from '@reduxjs/toolkit';
 
-import agentTheaterReducer from './slices/agentTheaterSlice';
+// import agentTheaterReducer from './slices/agentTheaterSlice';
 import authReducer  from './slices/authSlice';
 import hamstersReducer from './slices/hamstersSlice';
 import methSnailReducer from './slices/methSnailSlice';
@@ -17,7 +17,7 @@ import communicationReducer from './slices/communicationSlice';
 export const store = configureStore({
 
     reducer: {
-    agentTheater: agentTheaterReducer,
+    // agentTheater: agentTheaterReducer,
     sirHawkington: sirHawkingtonReducer,
     methSnail: methSnailReducer,
     hamsters: hamstersReducer,

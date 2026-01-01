@@ -28,6 +28,145 @@ interface LocalConnectionState {
 
 const MAX_RETRIES = 5;
 
+// Agent names for routing detection
+const AGENT_NAMES = [
+  'sir_hawkington',
+  'vic_20_sage', 
+  'meth_snail',
+  'the_stick',
+  'hamsters',
+  'quantum_shadow_people'
+];
+
+// Aliases that might appear in messages
+const AGENT_ALIASES: Record<string, string> = {
+  'hawkington': 'sir_hawkington',
+  'hawk': 'sir_hawkington',
+  'vic20': 'vic_20_sage',
+  'vic-20': 'vic_20_sage',
+  'vic20_sage': 'vic_20_sage',
+  'terry': 'meth_snail',
+  'snail': 'meth_snail',
+  'stick': 'the_stick',
+  'hamster': 'hamsters',
+  'qsp': 'quantum_shadow_people',
+  'quantum': 'quantum_shadow_people',
+  'shadow': 'quantum_shadow_people',
+};
+
+/**
+ * Extract the target agent from a message based on content analysis
+ */
+const extractToAgent = (message: string, fromAgent: string, messageType?: string): string => {
+  const lowerMessage = message.toLowerCase();
+  
+  // 1. Check for explicit "to X" or "→ X" patterns
+  const toPatterns = [
+    /(?:sent to|route to|routing to|forwarding to|→)\s+(\w+)/i,
+    /coordination request sent to\s+(\w+)/i,
+    /requesting.*?from\s+(\w+)/i,
+  ];
+  
+  for (const pattern of toPatterns) {
+    const match = message.match(pattern);
+    if (match) {
+      const target = match[1].toLowerCase();
+      // Check if it's a known agent or alias
+      if (AGENT_NAMES.includes(target)) {
+        return target;
+      }
+      if (AGENT_ALIASES[target]) {
+        return AGENT_ALIASES[target];
+      }
+      // Partial match - check if any agent name contains this
+      const partialMatch = AGENT_NAMES.find(a => a.includes(target) || target.includes(a.replace('_', '')));
+      if (partialMatch && partialMatch !== fromAgent) {
+        return partialMatch;
+      }
+    }
+  }
+  
+  // 2. Check for agent mentions in the message
+  for (const [alias, agentName] of Object.entries(AGENT_ALIASES)) {
+    if (lowerMessage.includes(alias) && agentName !== fromAgent) {
+      // Make sure it's not just the sender being mentioned
+      const mentionContext = lowerMessage.split(alias)[0].slice(-20);
+      if (mentionContext.includes('to') || mentionContext.includes('→') || mentionContext.includes('request')) {
+        return agentName;
+      }
+    }
+  }
+  
+  // 3. Infer routing based on sender and message type
+  // Hawk sends triage alerts to VIC-20
+  if (fromAgent === 'sir_hawkington') {
+    if (lowerMessage.includes('triage') || lowerMessage.includes('emergency') || lowerMessage.includes('alert')) {
+      return 'vic_20_sage';
+    }
+    // Hawk also logs decisions to The Stick
+    if (lowerMessage.includes('decision') || lowerMessage.includes('log')) {
+      return 'the_stick';
+    }
+    return 'vic_20_sage'; // Default: Hawk talks to VIC-20
+  }
+  
+  // VIC-20 coordinates with specialists or logs to Stick
+  if (fromAgent === 'vic_20_sage') {
+    if (lowerMessage.includes('learning') || lowerMessage.includes('stored') || lowerMessage.includes('record')) {
+      return 'the_stick';
+    }
+    if (lowerMessage.includes('memory') || lowerMessage.includes('cache') || lowerMessage.includes('optimization')) {
+      return 'meth_snail';
+    }
+    if (lowerMessage.includes('storage') || lowerMessage.includes('disk') || lowerMessage.includes('consensus')) {
+      return 'hamsters';
+    }
+    if (lowerMessage.includes('network') || lowerMessage.includes('security') || lowerMessage.includes('anomaly')) {
+      return 'quantum_shadow_people';
+    }
+    if (lowerMessage.includes('specialist')) {
+      return 'meth_snail'; // Default specialist
+    }
+    return 'the_stick'; // Default: VIC-20 logs to Stick
+  }
+  
+  // Specialists report to VIC-20 or log to Stick
+  if (['meth_snail', 'hamsters', 'quantum_shadow_people'].includes(fromAgent)) {
+    if (lowerMessage.includes('log') || lowerMessage.includes('record') || lowerMessage.includes('learning')) {
+      return 'the_stick';
+    }
+    if (lowerMessage.includes('report') || lowerMessage.includes('complete') || lowerMessage.includes('result')) {
+      return 'vic_20_sage';
+    }
+    return 'vic_20_sage'; // Default: specialists report to VIC-20
+  }
+  
+  // The Stick mostly receives, but can send to VIC-20
+  if (fromAgent === 'the_stick') {
+    if (lowerMessage.includes('escalat') || lowerMessage.includes('alert') || lowerMessage.includes('concern')) {
+      return 'vic_20_sage';
+    }
+    return 'vic_20_sage';
+  }
+  
+  // 4. Message type based routing
+  if (messageType) {
+    const upperType = messageType.toUpperCase();
+    if (upperType.includes('TRIAGE') || upperType.includes('ALERT')) {
+      return fromAgent === 'sir_hawkington' ? 'vic_20_sage' : 'sir_hawkington';
+    }
+    if (upperType.includes('LOG') || upperType.includes('DECISION')) {
+      return 'the_stick';
+    }
+    if (upperType.includes('COORDINATION') || upperType.includes('REQUEST')) {
+      return fromAgent === 'vic_20_sage' ? 'meth_snail' : 'vic_20_sage';
+    }
+  }
+  
+  // 5. Fallback: broadcast (but this should be rare now)
+  return 'broadcast';
+};
+
 export const useWebSocketConnection = () => {
   const dispatch = useDispatch();
   const auth = useSelector((state: RootState) => state.auth);
@@ -179,22 +318,31 @@ export const useWebSocketConnection = () => {
           // Aggressively extract summary from nested structure
           const summary = extractMessage(insight) || `${insight.type || insight.message_type || 'activity'}`;
           
-          const comm = {
+          // Determine from_agent
+          const fromAgent = insight.from_agent || insight.agent_name || insight.sender || 'unknown';
+          
+          // Smart extraction of to_agent using our new function
+          const toAgent = insight.to_agent || 
+                         insight.recipient || 
+                         extractToAgent(summary, fromAgent, insight.message_type || insight.type);
+          
+          const comm: AgentCommunication = {
             id: insight.id || `insight-${Date.now()}-${index}`,
             timestamp: insight.timestamp || new Date().toISOString(),
-            from_agent: insight.from_agent || insight.agent_name || insight.sender || 'unknown',
-            to_agent: insight.to_agent || insight.recipient || 'broadcast',
+            from_agent: fromAgent,
+            to_agent: toAgent,
             message_type: insight.message_type || insight.type || insight.category?.toUpperCase() || 'AGENT_MESSAGE',
             summary,
             confidence: insight.confidence,
             priority: insight.priority || (insight.level === 'error' ? 'high' : insight.level === 'warning' ? 'medium' : 'low'),
-            action: insight.action,
+            action: insight.action || '',
             context: insight.context || {},
             reasoning: insight.reasoning,
           };
           
           if (index === 0) {
             console.log('💡 Transformed first communication:', comm);
+            console.log('   → Routing:', fromAgent, '→', toAgent);
           }
           
           return comm;
@@ -244,30 +392,34 @@ export const useWebSocketConnection = () => {
     else if (payload.type === 'agent_message' || payload.type === 'coordination_request' || 
              payload.type === 'triage_decision' || payload.type === 'agent_action') {
       const data = payload.data || payload;
-      if (data.from_agent || data.sender) {
-        dispatch(addCommunication({
-          id: `live-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-          timestamp: data.timestamp || new Date().toISOString(),
-          from_agent: data.from_agent || data.sender || 'unknown',
-          to_agent: data.to_agent || data.recipient || data.target || 'broadcast',
-          message_type: data.message_type || payload.type.toUpperCase(),
-          summary: data.summary || data.message || data.action,
-          confidence: data.confidence,
-          priority: data.priority,
-          action: data.action,
-          context: data.context || {},
-        }));
-      }
+      const fromAgent = data.from_agent || data.sender || 'unknown';
+      const message = data.summary || data.message || data.action || '';
+      
+      dispatch(addCommunication({
+        id: `live-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        timestamp: data.timestamp || new Date().toISOString(),
+        from_agent: fromAgent,
+        to_agent: data.to_agent || data.recipient || data.target || extractToAgent(message, fromAgent, payload.type),
+        message_type: data.message_type || payload.type.toUpperCase(),
+        summary: message,
+        confidence: data.confidence,
+        priority: data.priority,
+        action: data.action || '',
+        context: data.context || {},
+      }));
     }
     // Handle agent log messages from backend logging system
     else if (payload.type === 'agent_log') {
+      const fromAgent = payload.agent_name || 'system';
+      const message = payload.message || '';
+      
       dispatch(addCommunication({
         id: `log-${Date.now()}-${Math.random().toString(36).slice(2)}`,
         timestamp: payload.timestamp || new Date().toISOString(),
-        from_agent: payload.agent_name || 'system',
-        to_agent: 'system',
+        from_agent: fromAgent,
+        to_agent: extractToAgent(message, fromAgent, 'LOG'),
         message_type: payload.category?.toUpperCase() || 'LOG',
-        summary: payload.message,
+        summary: message,
         priority: payload.level === 'error' ? 'high' : payload.level === 'warning' ? 'medium' : 'low',
         action: '',
         context: {},
@@ -301,13 +453,16 @@ export const useWebSocketConnection = () => {
                            payload.action_selection?.action_type || 
                            'decision';
       
+      const fromAgent = payload.agent_name;
+      const message = `${actionSummary} (confidence: ${payload.reasoning?.confidence || 0})`;
+      
       dispatch(addCommunication({
         id: payload.decision_id || `decision-${Date.now()}`,
         timestamp: payload.timestamp || new Date().toISOString(),
-        from_agent: payload.agent_name,
-        to_agent: 'system',
+        from_agent: fromAgent,
+        to_agent: extractToAgent(message, fromAgent, 'ML_DECISION'),
         message_type: 'ML_DECISION',
-        summary: `${actionSummary} (confidence: ${payload.reasoning?.confidence || 0})`,
+        summary: message,
         confidence: payload.reasoning?.confidence,
         priority: payload.action_selection?.priority || 'medium',
         action: actionSummary,

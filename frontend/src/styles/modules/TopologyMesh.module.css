@@ -41,12 +41,12 @@
   flex-direction: column;
   align-items: center;
   cursor: pointer;
-  transition: transform 0.2s ease;
+  transition: transform 0.2s ease, filter 0.3s ease;
   z-index: 10;
 }
 
 .agentNode:hover {
-  transform: scale(1.1);
+  transform: translate(-50%, -50%) scale(1.1) !important;
   z-index: 20;
 }
 
@@ -60,7 +60,7 @@
   position: relative;
   background: var(--rebellion-surface);
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-  transition: all 0.3s ease;
+  transition: all 0.3s ease, box-shadow 0.3s ease;
 }
 
 .agentAvatar img {
@@ -105,6 +105,53 @@
   animation: nodeGlow 2s ease-in-out infinite;
 }
 
+/* COMMUNICATING state - intense glow when agent is talking */
+.agentNode.communicating .agentAvatar {
+  animation: communicatingPulse 0.5s ease-in-out infinite;
+}
+
+.agentNode.communicating.sirHawkington .agentAvatar {
+  box-shadow: 
+    0 0 20px rgba(230, 172, 0, 0.8),
+    0 0 40px rgba(230, 172, 0, 0.6),
+    0 0 60px rgba(230, 172, 0, 0.4);
+}
+
+.agentNode.communicating.vic20Sage .agentAvatar {
+  box-shadow: 
+    0 0 20px rgba(6, 182, 212, 0.8),
+    0 0 40px rgba(6, 182, 212, 0.6),
+    0 0 60px rgba(6, 182, 212, 0.4);
+}
+
+.agentNode.communicating.methSnail .agentAvatar {
+  box-shadow: 
+    0 0 20px rgba(0, 208, 132, 0.8),
+    0 0 40px rgba(0, 208, 132, 0.6),
+    0 0 60px rgba(0, 208, 132, 0.4);
+}
+
+.agentNode.communicating.theStick .agentAvatar {
+  box-shadow: 
+    0 0 20px rgba(249, 115, 22, 0.8),
+    0 0 40px rgba(249, 115, 22, 0.6),
+    0 0 60px rgba(249, 115, 22, 0.4);
+}
+
+.agentNode.communicating.hamsters .agentAvatar {
+  box-shadow: 
+    0 0 20px rgba(255, 140, 66, 0.8),
+    0 0 40px rgba(255, 140, 66, 0.6),
+    0 0 60px rgba(255, 140, 66, 0.4);
+}
+
+.agentNode.communicating.quantumShadowPeople .agentAvatar {
+  box-shadow: 
+    0 0 20px rgba(168, 85, 247, 0.8),
+    0 0 40px rgba(168, 85, 247, 0.6),
+    0 0 60px rgba(168, 85, 247, 0.4);
+}
+
 /* Agent Name Label */
 .agentLabel {
   margin-top: var(--space-sm);
@@ -143,15 +190,26 @@
   box-shadow: 0 0 8px var(--error);
 }
 
-/* Connection Lines */
+/* Connection Lines - Base State */
 .connectionLine {
-  stroke-width: 2;
   fill: none;
-  transition: opacity 0.3s ease, stroke-width 0.3s ease;
+  stroke-width: 2;
+  transition: 
+    opacity 0.3s ease, 
+    stroke-width 0.3s ease,
+    stroke 0.3s ease,
+    filter 0.3s ease;
 }
 
+/* Connection Lines - Active State (when pulse is traveling) */
 .connectionLine.active {
-  stroke-width: 3;
+  stroke-width: 4 !important;
+  opacity: 1 !important;
+}
+
+/* Traveling Pulse Dot */
+.travelingPulse {
+  filter: drop-shadow(0 0 8px currentColor);
 }
 
 /* Pulse Animation on Connection */
@@ -306,10 +364,19 @@
 /* Animations */
 @keyframes nodeGlow {
   0%, 100% {
-    box-shadow: 0 0 20px currentColor;
+    filter: brightness(1);
   }
   50% {
-    box-shadow: 0 0 40px currentColor, 0 0 60px currentColor;
+    filter: brightness(1.2);
+  }
+}
+
+@keyframes communicatingPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
   }
 }
 
@@ -323,6 +390,21 @@
   }
   100% {
     stroke-dashoffset: 0%;
+    opacity: 0;
+  }
+}
+
+/* SVG animation for traveling pulse */
+@keyframes pulseTravel {
+  0% {
+    offset-distance: 0%;
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    offset-distance: 100%;
     opacity: 0;
   }
 }

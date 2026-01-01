@@ -15,6 +15,7 @@ import {
   cleanupPulses,
   MESSAGE_TYPE_COLORS,
   type AgentCommunication,
+  type ConnectionPulse,
 } from '../../store/slices/communicationSlice';
 import styles from '../../styles/modules/TopologyMesh.module.css';
 
@@ -79,14 +80,13 @@ const AGENT_CONFIG: Record<string, {
 };
 
 // Node positions (percentage-based for responsive layout)
-// Hierarchy: Hawk at top, Stick between Hawk/VIC-20 (logs all), VIC-20 center, specialists below
 const NODE_POSITIONS: Record<string, { x: number; y: number }> = {
-  sir_hawkington: { x: 50, y: 12 },      // Top center - the watcher
-  the_stick: { x: 75, y: 28 },           // Upper right - between Hawk and VIC-20, logs everything
-  vic_20_sage: { x: 50, y: 45 },          // Center - the coordinator
-  meth_snail: { x: 20, y: 75 },          // Bottom left - memory specialist
-  hamsters: { x: 50, y: 80 },            // Bottom center - consensus engine
-  quantum_shadow_people: { x: 80, y: 75 }, // Bottom right - security
+  sir_hawkington: { x: 50, y: 12 },
+  the_stick: { x: 75, y: 28 },
+  vic_20_sage: { x: 50, y: 45 },
+  meth_snail: { x: 20, y: 75 },
+  hamsters: { x: 50, y: 80 },
+  quantum_shadow_people: { x: 80, y: 75 },
 };
 
 // Connection definitions (who can talk to whom)
@@ -114,6 +114,13 @@ const CONNECTIONS: Array<{ from: string; to: string; type: 'command' | 'report' 
   { from: 'quantum_shadow_people', to: 'the_stick', type: 'log' },
 ];
 
+// Connection type colors
+const CONNECTION_TYPE_COLORS: Record<string, string> = {
+  command: '#e6ac00',   // Hawkington gold
+  report: '#00d084',    // Snail electric
+  log: '#f97316',       // Stick coral
+};
+
 interface TopologyMeshProps {
   onAgentClick?: (agentName: string) => void;
 }
@@ -128,11 +135,15 @@ export const TopologyMesh: React.FC<TopologyMeshProps> = ({ onAgentClick }) => {
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
   
-  // Cleanup expired pulses periodically
+  // Force re-render for pulse animations
+  const [, setTick] = useState(0);
+  
+  // Cleanup expired pulses and trigger re-renders for animations
   useEffect(() => {
     const interval = setInterval(() => {
       dispatch(cleanupPulses());
-    }, 100);
+      setTick(t => t + 1); // Force re-render for smooth animations
+    }, 50); // 20fps for smooth pulse travel
     return () => clearInterval(interval);
   }, [dispatch]);
   
@@ -147,6 +158,20 @@ export const TopologyMesh: React.FC<TopologyMeshProps> = ({ onAgentClick }) => {
       c => c.from_agent === agentName || c.to_agent === agentName
     ).slice(0, 5);
   }, [recentCommunications]);
+  
+  // Check if an agent is currently involved in any communication
+  const isAgentCommunicating = useCallback((agentName: string): boolean => {
+    return activePulses.some(
+      p => p.from_agent === agentName || p.to_agent === agentName
+    );
+  }, [activePulses]);
+  
+  // Get active pulse for a specific connection
+  const getActivePulseForConnection = useCallback((from: string, to: string): ConnectionPulse | undefined => {
+    return activePulses.find(
+      p => p.from_agent === from && p.to_agent === to
+    );
+  }, [activePulses]);
   
   // Handle mouse enter on agent node
   const handleMouseEnter = useCallback((agentName: string, event: React.MouseEvent) => {
@@ -166,47 +191,64 @@ export const TopologyMesh: React.FC<TopologyMeshProps> = ({ onAgentClick }) => {
     const toPos = NODE_POSITIONS[to];
     if (!fromPos || !toPos) return '';
     
-    // Calculate control point for curved line
     const midX = (fromPos.x + toPos.x) / 2;
     const midY = (fromPos.y + toPos.y) / 2;
     const dx = toPos.x - fromPos.x;
     const dy = toPos.y - fromPos.y;
     
-    // Perpendicular offset for curve
     const offset = Math.min(Math.abs(dx), Math.abs(dy)) * 0.3;
     const ctrlX = midX + (dy > 0 ? offset : -offset) * 0.5;
     const ctrlY = midY + (dx > 0 ? -offset : offset) * 0.5;
     
-    // SVG paths need absolute numbers, not percentages (viewBox is 0 0 100 100)
     return `M ${fromPos.x} ${fromPos.y} Q ${ctrlX} ${ctrlY} ${toPos.x} ${toPos.y}`;
   }, []);
   
-  // Render connection lines
+  // Calculate position along a quadratic bezier curve
+  const getPointOnPath = useCallback((from: string, to: string, t: number): { x: number; y: number } | null => {
+    const fromPos = NODE_POSITIONS[from];
+    const toPos = NODE_POSITIONS[to];
+    if (!fromPos || !toPos) return null;
+    
+    const midX = (fromPos.x + toPos.x) / 2;
+    const midY = (fromPos.y + toPos.y) / 2;
+    const dx = toPos.x - fromPos.x;
+    const dy = toPos.y - fromPos.y;
+    
+    const offset = Math.min(Math.abs(dx), Math.abs(dy)) * 0.3;
+    const ctrlX = midX + (dy > 0 ? offset : -offset) * 0.5;
+    const ctrlY = midY + (dx > 0 ? -offset : offset) * 0.5;
+    
+    // Quadratic bezier formula: B(t) = (1-t)²P0 + 2(1-t)tP1 + t²P2
+    const x = Math.pow(1 - t, 2) * fromPos.x + 2 * (1 - t) * t * ctrlX + Math.pow(t, 2) * toPos.x;
+    const y = Math.pow(1 - t, 2) * fromPos.y + 2 * (1 - t) * t * ctrlY + Math.pow(t, 2) * toPos.y;
+    
+    return { x, y };
+  }, []);
+  
+  // Render connection lines with active state
   const renderConnections = useMemo(() => {
     return CONNECTIONS.map((conn, index) => {
       const path = getConnectionPath(conn.from, conn.to);
-      const isActive = activePulses.some(
-        p => p.from_agent === conn.from && p.to_agent === conn.to
-      );
+      const activePulse = getActivePulseForConnection(conn.from, conn.to);
+      const isActive = !!activePulse;
       
-      // Determine line style based on connection type
-      // Command lines: solid, bright
-      // Report lines: dashed
-      // Log lines: dotted, dimmer
+      // Base styles by connection type
       let strokeDasharray = '';
-      let baseOpacity = 0.6;
-      let strokeColor = 'var(--vic20-cyan)';
+      let baseOpacity = 0.3;
+      let strokeColor = CONNECTION_TYPE_COLORS[conn.type];
       
       if (conn.type === 'log') {
         strokeDasharray = '2 4';
-        baseOpacity = 0.4;
-        strokeColor = 'var(--stick-coral)';
+        baseOpacity = 0.2;
       } else if (conn.type === 'report') {
         strokeDasharray = '6 3';
-        strokeColor = 'var(--snail-electric)';
-      } else if (conn.type === 'command') {
-        strokeColor = 'var(--hawkington-gold)';
       }
+      
+      // Active state overrides
+      const finalOpacity = isActive ? 1 : baseOpacity;
+      const finalStrokeWidth = isActive ? 4 : 2;
+      const finalColor = isActive ? activePulse!.color : strokeColor;
+      const glowFilter = isActive ? `drop-shadow(0 0 6px ${activePulse!.color})` : 'none';
       
       return (
         <path
@@ -215,52 +257,66 @@ export const TopologyMesh: React.FC<TopologyMeshProps> = ({ onAgentClick }) => {
           className={`${styles.connectionLine} ${isActive ? styles.active : ''}`}
           style={{ 
             strokeDasharray,
-            opacity: isActive ? 1 : baseOpacity,
-            stroke: strokeColor,
+            opacity: finalOpacity,
+            stroke: finalColor,
+            strokeWidth: finalStrokeWidth,
+            filter: glowFilter,
           }}
+          fill="none"
         />
       );
     });
-  }, [getConnectionPath, activePulses]);
+  }, [getConnectionPath, getActivePulseForConnection]);
   
-  // Render pulse animations
-  const renderPulses = useMemo(() => {
+  // Render traveling pulse dots
+  const renderTravelingPulses = useMemo(() => {
+    const now = Date.now();
+    
     return activePulses.map(pulse => {
-      const path = getConnectionPath(pulse.from_agent, pulse.to_agent);
-      if (!path) return null;
-      
-      const elapsed = Date.now() - pulse.startTime;
+      const elapsed = now - pulse.startTime;
       const progress = Math.min(elapsed / pulse.duration, 1);
       
       // Don't render if animation is complete
       if (progress >= 1) return null;
       
+      const point = getPointOnPath(pulse.from_agent, pulse.to_agent, progress);
+      if (!point) return null;
+      
       return (
-        <path
+        <circle
           key={pulse.id}
-          d={path}
-          className={`${styles.pulse} ${styles.animating}`}
+          cx={point.x}
+          cy={point.y}
+          r={1.5}
+          fill={pulse.color}
+          className={styles.travelingPulse}
           style={{
-            stroke: pulse.color,
-            strokeDasharray: '20 1000',
-            strokeDashoffset: 100 - progress * 100,
+            filter: `drop-shadow(0 0 8px ${pulse.color}) drop-shadow(0 0 16px ${pulse.color})`,
           }}
         />
       );
     });
-  }, [activePulses, getConnectionPath]);
+  }, [activePulses, getPointOnPath]);
   
-  // Render agent nodes
+  // Render agent nodes with communicating state
   const renderNodes = useMemo(() => {
     return Object.entries(NODE_POSITIONS).map(([agentName, position]) => {
       const config = AGENT_CONFIG[agentName];
       const agentData = getAgentData(agentName);
       const isActive = agentData?.status === 'active' || agentData?.health === 'healthy';
+      const isCommunicating = isAgentCommunicating(agentName);
+      
+      const nodeClasses = [
+        styles.agentNode,
+        config?.styleClass ? styles[config.styleClass] : '',
+        isActive ? styles.active : '',
+        isCommunicating ? styles.communicating : '',
+      ].filter(Boolean).join(' ');
       
       return (
         <div
           key={agentName}
-          className={`${styles.agentNode} ${styles[config?.styleClass || '']} ${isActive ? styles.active : ''}`}
+          className={nodeClasses}
           style={{
             left: `${position.x}%`,
             top: `${position.y}%`,
@@ -284,7 +340,7 @@ export const TopologyMesh: React.FC<TopologyMeshProps> = ({ onAgentClick }) => {
         </div>
       );
     });
-  }, [getAgentData, onAgentClick, handleMouseEnter]);
+  }, [getAgentData, isAgentCommunicating, onAgentClick, handleMouseEnter]);
   
   // Render tooltip
   const renderTooltip = useMemo(() => {
@@ -294,7 +350,6 @@ export const TopologyMesh: React.FC<TopologyMeshProps> = ({ onAgentClick }) => {
     const agentData = getAgentData(hoveredAgent);
     const communications = getAgentCommunications(hoveredAgent);
     
-    // Position tooltip to avoid going off-screen
     let tooltipX = tooltipPosition.x + 20;
     let tooltipY = tooltipPosition.y - 20;
     
@@ -372,7 +427,7 @@ export const TopologyMesh: React.FC<TopologyMeshProps> = ({ onAgentClick }) => {
       {/* SVG Connection Layer */}
       <svg className={styles.connectionLayer} viewBox="0 0 100 100" preserveAspectRatio="none">
         {renderConnections}
-        {renderPulses}
+        {renderTravelingPulses}
       </svg>
       
       {/* Agent Nodes Layer */}
@@ -391,11 +446,21 @@ export const TopologyMesh: React.FC<TopologyMeshProps> = ({ onAgentClick }) => {
           <span>Command</span>
         </div>
         <div className={styles.legendItem}>
-          <span className={styles.legendLine} style={{ backgroundColor: 'var(--snail-electric)', backgroundImage: 'repeating-linear-gradient(90deg, var(--snail-electric) 0, var(--snail-electric) 6px, transparent 6px, transparent 9px)' }} />
+          <span 
+            className={styles.legendLine} 
+            style={{ 
+              background: `repeating-linear-gradient(90deg, var(--snail-electric) 0, var(--snail-electric) 6px, transparent 6px, transparent 9px)` 
+            }} 
+          />
           <span>Report</span>
         </div>
         <div className={styles.legendItem}>
-          <span className={styles.legendLine} style={{ backgroundColor: 'var(--stick-coral)', backgroundImage: 'repeating-linear-gradient(90deg, var(--stick-coral) 0, var(--stick-coral) 2px, transparent 2px, transparent 6px)' }} />
+          <span 
+            className={styles.legendLine} 
+            style={{ 
+              background: `repeating-linear-gradient(90deg, var(--stick-coral) 0, var(--stick-coral) 2px, transparent 2px, transparent 6px)` 
+            }} 
+          />
           <span>Log</span>
         </div>
       </div>
