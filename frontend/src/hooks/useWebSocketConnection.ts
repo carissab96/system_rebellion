@@ -390,10 +390,12 @@ export const useWebSocketConnection = () => {
     }
     // Handle real-time agent messages (for live pulse animations)
     else if (payload.type === 'agent_message' || payload.type === 'coordination_request' || 
-             payload.type === 'triage_decision' || payload.type === 'agent_action') {
+             payload.type === 'triage_decision' || payload.type === 'agent_action' ||
+             payload.type === 'agent_insight') 
+             {
       const data = payload.data || payload;
       const fromAgent = data.from_agent || data.sender || 'unknown';
-      const message = data.summary || data.message || data.action || '';
+      const message = data.summary || data.message || data.reasoning || data.action || '';
       
       dispatch(addCommunication({
         id: `live-${Date.now()}-${Math.random().toString(36).slice(2)}`,
@@ -406,6 +408,7 @@ export const useWebSocketConnection = () => {
         priority: data.priority,
         action: data.action || '',
         context: data.context || {},
+        reasoning: data.reasoning,
       }));
     }
     // Handle agent log messages from backend logging system
@@ -423,6 +426,7 @@ export const useWebSocketConnection = () => {
         priority: payload.level === 'error' ? 'high' : payload.level === 'warning' ? 'medium' : 'low',
         action: '',
         context: {},
+        reasoning: payload.reasoning,
       }));
     }
     // Handle ML v2 agent_decision messages (full decision chain)
