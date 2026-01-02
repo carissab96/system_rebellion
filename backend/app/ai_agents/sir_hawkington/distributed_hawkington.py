@@ -452,7 +452,7 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
         logger.info(f"🧐🎯 HAWK V2 TRIAGE INITIATED")
         logger.info(f"{'='*80}")
         logger.info(f"🧐🔍 DEBUG: _perform_triage called with severity={severity}, value={current_value}")
-        
+
         # Extract alert data
         severity = alert.payload['severity']
         current_value = alert.payload['current_value']
@@ -618,6 +618,16 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
                         'monocle_state': action.monocle_state,
                         'monocle_yeets': monocle_yeet_count
                     })
+
+                       # 🎯 EMIT TO WEBSOCKET for frontend pulse visualization
+                    from app.services.agent_insight_emitter import emit_agent_insight
+                    await emit_agent_insight(
+                        from_agent="sir_hawkington",
+                        to_agent="the_stick",
+                        action="decision_log",
+                        reasoning=f"Logging {decision_type} decision for pattern learning",
+                        context=decision_data
+                    )
                 
                 logger.info(f"{'='*80}")
                 logger.info(f"🧐✅ HAWK V2 TRIAGE COMPLETE")
@@ -916,7 +926,8 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
                 "timestamp": str(self._get_current_time()) if hasattr(self, '_get_current_time') else None
             }
         )
-         # 🎯 EMIT TO WEBSOCKET for frontend pulse visualization
+        
+        # 🎯 EMIT TO WEBSOCKET for frontend pulse visualization
         from app.services.agent_insight_emitter import emit_agent_insight
         await emit_agent_insight(
             from_agent="sir_hawkington",
@@ -931,7 +942,8 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
                 "confidence": confidence,
                 "monocle_state": self.current_monocle_state.value
             }
-    )
+        )
+        
         # Send directly to VIC-20
         await self._comm_hub.send_message(triage_alert)
         
@@ -956,17 +968,7 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
                 "decision_data": decision_data,
                 "source_agent": "sir_hawkington",
                 "timestamp": str(self._get_current_time()) if hasattr(self, '_get_current_time') else None
-            } 
-        )
-
-        # 🎯 EMIT TO WEBSOCKET for frontend pulse visualization
-        from app.services.agent_insight_emitter import emit_agent_insight
-        await emit_agent_insight(
-            from_agent="sir_hawkington",
-            to_agent="the_stick",
-            action="decision_log",
-            reasoning=f"Logging {decision_type} decision for pattern learning",
-            context=decision_data
+            }
         )
         
         await self._comm_hub.send_message(decision_log)
