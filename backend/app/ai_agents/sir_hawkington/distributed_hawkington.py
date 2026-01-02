@@ -618,15 +618,21 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
                         'monocle_state': action.monocle_state,
                         'monocle_yeets': monocle_yeet_count
                     })
-
-                       # 🎯 EMIT TO WEBSOCKET for frontend pulse visualization
+                    
+                    # 🎯 EMIT TO WEBSOCKET for frontend pulse visualization
                     from app.services.agent_insight_emitter import emit_agent_insight
                     await emit_agent_insight(
                         from_agent="sir_hawkington",
                         to_agent="the_stick",
                         action="decision_log",
-                        reasoning=f"Logging {decision_type} decision for pattern learning",
-                        context=decision_data
+                        reasoning=f"Logging triage_decision for pattern learning: {action.action_type} on {resource_type}",
+                        context={
+                            'resource_type': resource_type,
+                            'action_type': action.action_type,
+                            'confidence': action.confidence,
+                            'monocle_state': action.monocle_state,
+                            'monocle_yeets': monocle_yeet_count
+                        }
                     )
                 
                 logger.info(f"{'='*80}")
