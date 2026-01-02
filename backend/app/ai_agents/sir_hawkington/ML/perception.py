@@ -268,12 +268,20 @@ class HawkPerception:
     def _calculate_historical_confidence(self, similar_triages: List[Dict[str, Any]]) -> float:
         """
         Calculate confidence based on historical success rate.
+        
+        NOTE: Excludes learning records with success=None (not yet evaluated)
         """
         if not similar_triages:
-            return 0.5  # Neutral confidence with no history
+            return 0.7  # Start with higher confidence for new resource types
         
-        successful = sum(1 for t in similar_triages if t.get('success', False))
-        return successful / len(similar_triages)
+        # Only count triages that have been evaluated (success is not None)
+        evaluated_triages = [t for t in similar_triages if t.get('success') is not None]
+        
+        if not evaluated_triages:
+            return 0.7  # No evaluated history yet, use higher default
+        
+        successful = sum(1 for t in evaluated_triages if t.get('success', False))
+        return successful / len(evaluated_triages)
     
     def _calculate_pattern_match_confidence(
         self,

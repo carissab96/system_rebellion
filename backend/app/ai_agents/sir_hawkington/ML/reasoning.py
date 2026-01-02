@@ -61,8 +61,9 @@ class HawkReasoning:
         self.personality_traits = personality_traits
         
         # Escalation thresholds (can be tuned based on learning)
-        self.escalation_threshold = 0.6
-        self.critical_threshold = 0.8
+        # Lower thresholds to ensure Hawk escalates ongoing alerts
+        self.escalation_threshold = 0.5  # Was 0.6 - too conservative
+        self.critical_threshold = 0.7    # Was 0.8 - too conservative
         
     def reason(self, context: HawkPerceptionContext) -> TriageReasoning:
         """
