@@ -150,14 +150,14 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
         
         # 🎯 INITIALIZE ORIGINAL RESOURCE MONITOR WITH ALERT CALLBACKS
         from app.optimization.resource_monitor import ResourceMonitor
-        self.resource_monitor = ResourceMonitor()
-        await self.resource_monitor.initialize()
+        self._resource_monitor = ResourceMonitor()
+        await self._resource_monitor.initialize()
         
         # Register Hawk's _handle_own_resource_alert as callback
-        self.resource_monitor.register_alert_callback(self._handle_own_resource_alert)
+        self._resource_monitor.register_alert_callback(self._handle_own_resource_alert)
         
         # Start monitoring with alerts
-        await self.resource_monitor.start_monitoring_with_alerts()
+        await self._resource_monitor.start_monitoring_with_alerts()
         logger.info("🧐📊 Original ResourceMonitor started with ML v2 triage callbacks!")
         
         # Initialize Week 4 systems
