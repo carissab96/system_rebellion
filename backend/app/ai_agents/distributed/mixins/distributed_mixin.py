@@ -413,7 +413,7 @@ class DistributedAgentMixin:
             "personality_traits": state.personality_traits or {},
             "last_heartbeat": state.last_heartbeat,
             "resource_monitoring_enabled": self._resource_monitor is not None,
-            "resource_monitoring_active": self._resource_monitor.is_running if self._resource_monitor else False
+            "resource_monitoring_active": self._resource_monitor.is_monitoring if self._resource_monitor else False
         }
     
     async def get_recent_decisions(self, count: int = 10) -> list:
