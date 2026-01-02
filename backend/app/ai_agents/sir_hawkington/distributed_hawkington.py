@@ -1073,3 +1073,15 @@ async def create_distributed_hawkington(redis_client, db_getter=None):
     await hawkington.initialize_distributed(redis_client)
     logger.info("🧐✨ Sir Hawkington's distributed consciousness fully awakened")
     return hawkington
+
+
+async def get_distributed_hawk():
+    """
+    Get the distributed Hawk instance from the agent manager.
+    Returns None if not initialized.
+    """
+    from app.ai_agents.distributed.distributed_agent_manager import get_distributed_manager
+    manager = get_distributed_manager()
+    if manager and "sir_hawkington" in manager.agents:
+        return manager.agents["sir_hawkington"]
+    return None

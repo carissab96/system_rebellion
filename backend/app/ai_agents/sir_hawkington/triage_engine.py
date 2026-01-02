@@ -321,6 +321,27 @@ class SirHawkingtonTriageEngine(AgentInstrumentationMixin, TriageEngineWithRedis
             user_id=user_id
         )
         
+        # 🎯 CONNECT ML v2 PIPELINE: Trigger distributed Hawk's ML layers
+        try:
+            from app.ai_agents.sir_hawkington.distributed_hawkington import get_distributed_hawk
+            distributed_hawk = await get_distributed_hawk()
+            if distributed_hawk and hasattr(distributed_hawk, '_perform_triage'):
+                # Create ResourceAlert-like object for ML v2 pipeline
+                from dataclasses import dataclass
+                @dataclass
+                class ResourceAlert:
+                    payload: dict
+                
+                alert = ResourceAlert(payload={
+                    'severity': 'medium' if hawkington_decision and hawkington_decision.metrics.get('stress_score', 0) > 0.5 else 'normal',
+                    'current_value': hawkington_decision.metrics.get('stress_score', 0) if hawkington_decision else 0,
+                    'threshold': 0.5,
+                    'resource_type': 'system_metrics'
+                })
+                await distributed_hawk._perform_triage(alert)
+        except Exception as e:
+            self.logger.debug(f"🧐 ML v2 pipeline not available: {e}")
+        
         if hawkington_decision is None:
             self.monocle_yeet_incidents += 1
             return TriageDecision(
