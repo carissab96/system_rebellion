@@ -3,7 +3,7 @@
 
 import psutil
 from typing import Dict, Any, List, Optional, Tuple, Callable, Awaitable
-from datetime import datetime
+from datetime import datetime, timezone
 import asyncio
 import logging
 import socket
@@ -15,6 +15,11 @@ from collections import Counter
 import os
 from enum import Enum
 from dataclasses import dataclass
+
+
+def utc_now() -> datetime:
+    """Return current UTC time with timezone info"""
+    return datetime.now(timezone.utc)
 
 
 class ResourceType(Enum):
