@@ -24,7 +24,7 @@ import logging
 from typing import Dict, Any, Optional
 
 from ..distributed.base_decision_engine import AgentDecisionEngine
-from ..distributed.resource_monitor import ResourceType
+from app.optimization.resource_monitor import ResourceType
 from ..distributed.message_protocol import MessageType, Priority, AgentMessage
 from ..distributed.system_actions import SystemActions
 from ..distributed.agent_autonomy import AgentChoiceEngine

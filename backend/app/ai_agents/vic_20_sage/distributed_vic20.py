@@ -24,7 +24,7 @@ from typing import Dict, Any, Optional, List
 from datetime import datetime, timezone, timedelta
 
 from ..distributed.base_decision_engine import AgentDecisionEngine
-from ..distributed.resource_monitor import ResourceType
+from app.optimization.resource_monitor import ResourceType
 from ..distributed.message_protocol import MessageType, Priority, AgentMessage
 from ..distributed.system_actions import RecommendationEngine
 from ..distributed.coordination import (

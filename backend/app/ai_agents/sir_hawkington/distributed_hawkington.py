@@ -23,7 +23,7 @@ import logging
 from typing import Dict, Any, Optional
 
 from ..distributed.base_decision_engine import AgentDecisionEngine
-from ..distributed.resource_monitor import ResourceType
+from app.optimization.resource_monitor import ResourceType
 from ..distributed.message_protocol import MessageType, Priority, AgentMessage
 from ..distributed.system_actions import SystemActions
 from ..distributed.coordination import (
@@ -130,20 +130,31 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
     
     async def initialize_distributed(self, redis_client):
         """
-        Initialize distributed features and inject comm_hub into triage engine.
+        Initialize distributed features and wire original ResourceMonitor.
         
-        This extends the base initialization to also enable triage broadcasting.
+        This extends the base initialization to enable the ORIGINAL ResourceMonitor
+        with alert callbacks that trigger Hawk's ML v2 triage system.
         """
-        # 🎯 HIERARCHY: Enable resource monitoring with fast check interval (5s)
-        # Hawk is the ONLY agent monitoring system metrics
-        # NOTE: ResourceMonitor disabled - Hawk now uses SimplifiedMetricsService
-        # through the triage engine for all metrics collection
+        # 🎯 HIERARCHY: Hawk is the ONLY agent monitoring system metrics
+        # Using ORIGINAL ResourceMonitor from app/optimization (rich psutil data)
         await super().initialize_distributed(
             redis_client,
-            enable_resource_monitoring=False,  # Disabled - using SimplifiedMetricsService instead
+            enable_resource_monitoring=False,  # Disabled - using original ResourceMonitor instead
             heartbeat_interval=30,
             resource_check_interval=5  # Not used when monitoring disabled
         )
+        
+        # 🎯 INITIALIZE ORIGINAL RESOURCE MONITOR WITH ALERT CALLBACKS
+        from app.optimization.resource_monitor import ResourceMonitor
+        self.resource_monitor = ResourceMonitor()
+        await self.resource_monitor.initialize()
+        
+        # Register Hawk's _handle_own_resource_alert as callback
+        self.resource_monitor.register_alert_callback(self._handle_own_resource_alert)
+        
+        # Start monitoring with alerts
+        await self.resource_monitor.start_monitoring_with_alerts()
+        logger.info("🧐📊 Original ResourceMonitor started with ML v2 triage callbacks!")
         
         # Initialize Week 4 systems
         self.coordination_manager = get_coordination_manager()

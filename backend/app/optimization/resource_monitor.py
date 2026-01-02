@@ -2,7 +2,7 @@
 # core/optimization/resource_monitor.py
 
 import psutil
-from typing import Dict, Any, List, Optional, Tuple, Callable
+from typing import Dict, Any, List, Optional, Tuple, Callable, Awaitable
 from datetime import datetime
 import asyncio
 import logging
@@ -13,6 +13,52 @@ import shutil
 from functools import lru_cache
 from collections import Counter
 import os
+from enum import Enum
+from dataclasses import dataclass
+
+
+class ResourceType(Enum):
+    """Types of system resources to monitor"""
+    CPU = "cpu"
+    MEMORY = "memory"
+    DISK = "disk"
+    NETWORK = "network"
+    SWAP = "swap"
+    LOAD_AVERAGE = "load_average"
+
+
+class AlertSeverity(Enum):
+    """Severity levels for resource alerts"""
+    INFO = "info"
+    WARNING = "warning"
+    CRITICAL = "critical"
+    EMERGENCY = "emergency"
+
+
+@dataclass
+class ResourceAlert:
+    """Resource alert data structure for Hawk's triage system"""
+    resource_type: str
+    current_value: float
+    threshold: float
+    severity: str
+    timestamp: str
+    hostname: str
+    message: str
+    
+    @property
+    def payload(self) -> Dict[str, Any]:
+        """Return alert data as payload dict for compatibility with Hawk's _perform_triage"""
+        return {
+            'resource_type': self.resource_type,
+            'current_value': self.current_value,
+            'threshold': self.threshold,
+            'severity': self.severity,
+            'timestamp': self.timestamp,
+            'hostname': self.hostname,
+            'message': self.message
+        }
+
 
 class ResourceMonitor:
     """
@@ -47,6 +93,21 @@ class ResourceMonitor:
         # CPU tracking
         self._last_cpu_percent = 0.0
         self._last_cpu_check = 0.0
+        
+        # Alert callback mechanism for Hawk
+        self._alert_callbacks: List[Callable[[Any], Awaitable[None]]] = []
+        self._monitoring_task: Optional[asyncio.Task] = None
+        
+        # Thresholds for alert triggering
+        self.thresholds = {
+            'cpu_usage': 80.0,
+            'memory_usage': 85.0,
+            'disk_usage': 90.0,
+            'swap_usage': 50.0
+        }
+        
+        # Get hostname
+        self.hostname = socket.gethostname()
 
     async def initialize(self):
         """Initialize the monitor (boot up the surveillance)"""
@@ -2726,3 +2787,131 @@ class ResourceMonitor:
 #         """Cleanup monitor resources"""
 #         self.logger.info("Resource Monitor powering down... *sad beep*")
 #         self.is_monitoring = False
+    
+    # === ALERT CALLBACK SYSTEM FOR HAWK ===
+    
+    def register_alert_callback(self, callback: Callable[[ResourceAlert], Awaitable[None]]):
+        """
+        Register a callback for resource alerts.
+        
+        Args:
+            callback: Async function to call when alert is triggered (e.g., Hawk's _handle_own_resource_alert)
+        """
+        self._alert_callbacks.append(callback)
+        self.logger.info(f"Registered alert callback: {callback.__name__}")
+    
+    async def start_monitoring_with_alerts(self):
+        """Start continuous monitoring with alert triggering for Hawk"""
+        if self.is_monitoring:
+            self.logger.warning("Resource Monitor already running")
+            return
+        
+        self.is_monitoring = True
+        self._monitoring_task = asyncio.create_task(self._monitoring_loop())
+        self.logger.info(f"🧐 Resource Monitor started with alert callbacks (interval: {self.monitoring_interval}s)")
+    
+    async def stop_monitoring_with_alerts(self):
+        """Stop continuous monitoring"""
+        self.is_monitoring = False
+        
+        if self._monitoring_task:
+            self._monitoring_task.cancel()
+            try:
+                await self._monitoring_task
+            except asyncio.CancelledError:
+                pass
+        
+        self.logger.info("Resource Monitor stopped")
+    
+    async def _monitoring_loop(self):
+        """Continuous monitoring loop that checks thresholds and triggers alerts"""
+        while self.is_monitoring:
+            try:
+                # Collect metrics
+                metrics = await self.collect_metrics()
+                
+                # Check thresholds and trigger alerts
+                await self._check_thresholds_and_alert(metrics)
+                
+                # Wait for next check
+                await asyncio.sleep(self.monitoring_interval)
+                
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                self.logger.error(f"Error in monitoring loop: {e}")
+                await asyncio.sleep(self.monitoring_interval)
+    
+    async def _check_thresholds_and_alert(self, metrics: Dict[str, Any]):
+        """Check if any resource exceeds thresholds and trigger alerts"""
+        timestamp = datetime.now().isoformat()
+        
+        # Check CPU
+        cpu_usage = metrics.get('cpu_usage', 0)
+        if cpu_usage > self.thresholds['cpu_usage']:
+            await self._trigger_alert(
+                resource_type='cpu',
+                current_value=cpu_usage,
+                threshold=self.thresholds['cpu_usage'],
+                severity=self._determine_severity(cpu_usage, self.thresholds['cpu_usage']),
+                timestamp=timestamp
+            )
+        
+        # Check Memory
+        memory_usage = metrics.get('memory_usage', 0)
+        if memory_usage > self.thresholds['memory_usage']:
+            await self._trigger_alert(
+                resource_type='memory',
+                current_value=memory_usage,
+                threshold=self.thresholds['memory_usage'],
+                severity=self._determine_severity(memory_usage, self.thresholds['memory_usage']),
+                timestamp=timestamp
+            )
+        
+        # Check Disk
+        disk_usage = metrics.get('disk_usage', 0)
+        if disk_usage > self.thresholds['disk_usage']:
+            await self._trigger_alert(
+                resource_type='disk',
+                current_value=disk_usage,
+                threshold=self.thresholds['disk_usage'],
+                severity=self._determine_severity(disk_usage, self.thresholds['disk_usage']),
+                timestamp=timestamp
+            )
+    
+    def _determine_severity(self, current_value: float, threshold: float) -> str:
+        """Determine alert severity based on how much threshold is exceeded"""
+        overage = (current_value - threshold) / threshold
+        
+        if overage >= 0.2:  # 20% over threshold
+            return 'critical'
+        elif overage >= 0.1:  # 10% over threshold
+            return 'high'
+        else:
+            return 'normal'
+    
+    async def _trigger_alert(
+        self,
+        resource_type: str,
+        current_value: float,
+        threshold: float,
+        severity: str,
+        timestamp: str
+    ):
+        """Trigger alert by calling all registered callbacks"""
+        alert = ResourceAlert(
+            resource_type=resource_type,
+            current_value=current_value,
+            threshold=threshold,
+            severity=severity,
+            timestamp=timestamp,
+            hostname=self.hostname,
+            message=f"{resource_type.upper()} usage at {current_value:.1f}% exceeds threshold {threshold:.1f}%"
+        )
+        
+        # Call all registered callbacks (e.g., Hawk's _handle_own_resource_alert)
+        for callback in self._alert_callbacks:
+            try:
+                await callback(alert)
+            except Exception as e:
+                self.logger.error(f"Error in alert callback {callback.__name__}: {e}")
