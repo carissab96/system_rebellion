@@ -125,6 +125,10 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
             "catastrophic": 0
         }
         
+        # STATE-BASED ALERTING: Track alert states to prevent frontend spam
+        self._alert_states = {}  # {resource_type: {'state': 'NEW'|'ONGOING'|'RESOLVED', 'last_emission_time': datetime, 'severity': str}}
+        self._alert_cooldown_seconds = 60  # Only re-emit ONGOING alerts every 60 seconds
+        
         logger.info("🧐 Sir Hawkington's distributed consciousness initialized")
         logger.info("🧐📢 Alert escalation protocols active - Distinguished triage!")
     
@@ -450,6 +454,63 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
         # handle resource alerts from other agents - he generates them all
         pass
     
+    def _should_emit_alert(self, resource_type: str, severity: str) -> tuple[bool, str]:
+        """
+        Determine if alert should be emitted to frontend based on state tracking.
+        
+        Returns:
+            (should_emit: bool, alert_state: str)
+        """
+        from datetime import datetime, timezone
+        
+        current_time = datetime.now(timezone.utc)
+        
+        # Check if we have previous state for this resource
+        if resource_type not in self._alert_states:
+            # NEW alert - emit immediately
+            self._alert_states[resource_type] = {
+                'state': 'NEW',
+                'last_emission_time': current_time,
+                'severity': severity
+            }
+            logger.info(f"🧐🆕 NEW alert for {resource_type} - emitting to frontend")
+            return (True, 'NEW')
+        
+        # We have previous state - check if it's still ongoing
+        prev_state = self._alert_states[resource_type]
+        time_since_last_emission = (current_time - prev_state['last_emission_time']).total_seconds()
+        
+        # Check if severity changed
+        if prev_state['severity'] != severity:
+            # Severity changed - emit immediately
+            self._alert_states[resource_type] = {
+                'state': 'ONGOING',
+                'last_emission_time': current_time,
+                'severity': severity
+            }
+            logger.info(f"🧐⚠️ {resource_type} severity changed: {prev_state['severity']} → {severity} - emitting")
+            return (True, 'SEVERITY_CHANGE')
+        
+        # Same severity - check cooldown
+        if time_since_last_emission < self._alert_cooldown_seconds:
+            # Still in cooldown - don't emit
+            logger.info(
+                f"🧐🔇 {resource_type} alert suppressed (cooldown: {time_since_last_emission:.0f}s / {self._alert_cooldown_seconds}s)"
+            )
+            self.cooldown_prevented_alerts += 1
+            return (False, 'ONGOING_COOLDOWN')
+        
+        # Cooldown expired - emit reminder
+        self._alert_states[resource_type]['last_emission_time'] = current_time
+        logger.info(f"🧐🔔 {resource_type} ONGOING reminder (cooldown expired) - emitting")
+        return (True, 'ONGOING_REMINDER')
+    
+    def _clear_alert_state(self, resource_type: str):
+        """Clear alert state when resource returns to normal (RESOLVED)"""
+        if resource_type in self._alert_states:
+            logger.info(f"🧐✅ {resource_type} alert RESOLVED - clearing state")
+            del self._alert_states[resource_type]
+    
     async def _perform_triage(self, alert):
         """
         🎯 HAWK V2: ML-Enhanced Triage with Aristocratic Precision
@@ -559,45 +620,52 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
                 
                 logger.info(f"🧐💾 Learning record stored in PostgreSQL")
                 
-                # BROADCAST FULL DECISION CHAIN TO FRONTEND
-                from app.services.agent_decision_emitter import emit_agent_decision
+                # 🎯 STATE-BASED EMISSION: Check if we should emit to frontend
+                should_emit, alert_state = self._should_emit_alert(resource_type, severity)
                 
-                await emit_agent_decision(
-                    agent_name="sir_hawkington",
-                    decision_id=learning_record.learning_record_id or "pending",
-                    perception={
-                        "resource_type": context.resource_type,
-                        "current_value": context.current_value,
-                        "threshold": context.threshold,
-                        "severity": context.severity,
-                        "data_quality_score": context.data_quality_score,
-                        "monocle_yeets": context.monocle_yeet_count,
-                        "similar_triages_found": len(context.similar_triages),
-                        "recent_escalations_count": len(context.recent_escalations)
-                    },
-                    reasoning={
-                        "should_escalate": reasoning.should_escalate,
-                        "risk_level": reasoning.risk_level,
-                        "confidence": reasoning.confidence,
-                        "primary_reason": reasoning.primary_reason,
-                        "evidence": reasoning.evidence if hasattr(reasoning, 'evidence') else {}
-                    },
-                    action_selection={
-                        "chosen_action": action.action_type,
-                        "target_agent": action.target_agent,
-                        "confidence": action.confidence,
-                        "priority": action.priority,
-                        "monocle_state": action.monocle_state,
-                        "aristocratic_confidence": action.aristocratic_confidence,
-                        "reasoning_summary": action.reasoning_summary
-                    },
-                    learning={
-                        "situation_fingerprint": learning_record.situation_fingerprint,
-                        "stored": learning_record.storage_success,
-                        "learning_record_id": learning_record.learning_record_id,
-                        "success": learning_record.success
-                    }
-                )
+                if should_emit:
+                    # BROADCAST FULL DECISION CHAIN TO FRONTEND
+                    from app.services.agent_decision_emitter import emit_agent_decision
+                    
+                    await emit_agent_decision(
+                        agent_name="sir_hawkington",
+                        decision_id=learning_record.learning_record_id or "pending",
+                        perception={
+                            "resource_type": context.resource_type,
+                            "current_value": context.current_value,
+                            "threshold": context.threshold,
+                            "severity": context.severity,
+                            "data_quality_score": context.data_quality_score,
+                            "monocle_yeets": context.monocle_yeet_count,
+                            "similar_triages_found": len(context.similar_triages),
+                            "recent_escalations_count": len(context.recent_escalations),
+                            "alert_state": alert_state  # NEW/ONGOING_REMINDER/SEVERITY_CHANGE
+                        },
+                        reasoning={
+                            "should_escalate": reasoning.should_escalate,
+                            "risk_level": reasoning.risk_level,
+                            "confidence": reasoning.confidence,
+                            "primary_reason": reasoning.primary_reason,
+                            "evidence": reasoning.evidence if hasattr(reasoning, 'evidence') else {}
+                        },
+                        action_selection={
+                            "chosen_action": action.action_type,
+                            "target_agent": action.target_agent,
+                            "confidence": action.confidence,
+                            "priority": action.priority,
+                            "monocle_state": action.monocle_state,
+                            "aristocratic_confidence": action.aristocratic_confidence,
+                            "reasoning_summary": action.reasoning_summary
+                        },
+                        learning={
+                            "situation_fingerprint": learning_record.situation_fingerprint,
+                            "stored": learning_record.storage_success,
+                            "learning_record_id": learning_record.learning_record_id,
+                            "success": learning_record.success
+                        }
+                    )
+                else:
+                    logger.info(f"🧐🔇 Skipping frontend emission (state: {alert_state})")
                 
                 # 🎯 STEP 5: EXECUTE ACTION - Escalate to VIC-20 if needed
                 if action.action_type == 'escalate' and self.is_distributed:
@@ -630,21 +698,23 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
                         'monocle_yeets': monocle_yeet_count
                     })
                     
-                    # 🎯 EMIT TO WEBSOCKET for frontend pulse visualization
-                    from app.services.agent_insight_emitter import emit_agent_insight
-                    await emit_agent_insight(
-                        from_agent="sir_hawkington",
-                        to_agent="the_stick",
-                        action="decision_log",
-                        reasoning=f"Logging triage_decision for pattern learning: {action.action_type} on {resource_type}",
-                        context={
-                            'resource_type': resource_type,
-                            'action_type': action.action_type,
-                            'confidence': action.confidence,
-                            'monocle_state': action.monocle_state,
-                            'monocle_yeets': monocle_yeet_count
-                        }
-                    )
+                    # 🎯 EMIT TO WEBSOCKET for frontend pulse visualization (only if we emitted decision)
+                    if should_emit:
+                        from app.services.agent_insight_emitter import emit_agent_insight
+                        await emit_agent_insight(
+                            from_agent="sir_hawkington",
+                            to_agent="the_stick",
+                            action="decision_log",
+                            reasoning=f"Logging triage_decision for pattern learning: {action.action_type} on {resource_type}",
+                            context={
+                                'resource_type': resource_type,
+                                'action_type': action.action_type,
+                                'confidence': action.confidence,
+                                'monocle_state': action.monocle_state,
+                                'monocle_yeets': monocle_yeet_count,
+                                'alert_state': alert_state
+                            }
+                        )
                 
                 logger.info(f"{'='*80}")
                 logger.info(f"🧐✅ HAWK V2 TRIAGE COMPLETE")
