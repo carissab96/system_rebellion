@@ -118,7 +118,7 @@ export const StreamOfConsciousness: React.FC<StreamOfConsciousnessProps> = ({
       {/* Header */}
       <div className={styles.streamHeader}>
         <div className={styles.streamTitle}>
-          <span className={styles.titleText}>STREAM OF CONSCIOUSNESS</span>
+          <span className={styles.titleText}>Live Agent Activity Feed</span>
           <span className={`${styles.liveIndicator} ${communications.length > 0 ? styles.active : ''}`}>
             ● LIVE
           </span>

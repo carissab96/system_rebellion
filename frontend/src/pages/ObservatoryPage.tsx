@@ -13,6 +13,7 @@ import { SecondaryNav } from '../components/navigation/SecondaryNav';
 import { NeuralMesh } from '../components/observatory/NeuralMesh';
 import { TopologyMesh } from '../components/observatory/TopologyMesh';
 import { StreamOfConsciousness } from '../components/observatory/StreamOfConsciousness';
+import Footer from '../components/common/Footer';
 import { DistributedAgentDashboard } from '../components/distributed/DistributedAgentDashboard';
 import { AgentMonitorDashboard } from '../components/monitoring/AgentMonitorDashboard';
 import './ObservatoryPage.css';
@@ -150,7 +151,7 @@ export const ObservatoryPage: React.FC = () => {
             flexShrink: 0,
             height: '100%',
           }}>
-            <StreamOfConsciousness maxItems={50} />
+            <StreamOfConsciousness maxItems={100} />
           </div>
         </div>
 
@@ -182,6 +183,7 @@ export const ObservatoryPage: React.FC = () => {
           <AgentMonitorDashboard />
         </div>
       </main>
+      <Footer />
     </div>
   );
 };

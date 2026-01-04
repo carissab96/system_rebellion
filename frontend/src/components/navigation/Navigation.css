@@ -25,6 +25,9 @@
 }
 
 .brand-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-bold);
   color: var(--rebellion-text-bright);
@@ -34,6 +37,12 @@
 
 .brand-link:hover {
   color: var(--rebellion-cyan);
+}
+
+.brand-logo-img {
+  height: 120px;
+  width: auto;
+  object-fit: contain;
 }
 
 .brand-name {

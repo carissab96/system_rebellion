@@ -3,8 +3,14 @@
 /* "Authentication is the gateway to consciousness" */
 /* Clean, professional, accessible */
 
-.login-container {
+.login-page {
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
+}
+
+.login-container {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -245,7 +251,15 @@
 .btn-primary {
   background: linear-gradient(135deg, var(--rebellion-cyan), var(--vic20-cyan));
   color: var(--rebellion-void);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
   box-shadow: 0 4px 12px rgba(38, 208, 206, 0.3);
+  justify-content: center;
+  display: flex;
+  width: 100%;
+  text-decoration: none;
+  padding: var(--space-md) var(--space-xl);
 }
 
 .btn-primary:hover:not(:disabled) {

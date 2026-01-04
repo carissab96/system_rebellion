@@ -11,6 +11,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState, AppDispatch } from '../store/store';
 import { loginUser } from '../store/slices/authSlice';
+import Footer from '../components/common/Footer';
 import './LoginPage.css';
 
 export const LoginPage: React.FC = () => {
@@ -89,23 +90,25 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="login-container">
-      {/* Background pattern */}
-      <div className="login-background">
-        <div className="pattern-overlay"></div>
-      </div>
+    <div className="login-page">
+      <div className="login-container">
+        {/* Background pattern */}
+        <div className="login-background">
+          <div className="pattern-overlay"></div>
+        </div>
 
-      {/* Login card */}
-      <div className="login-card">
+        {/* Login card */}
+        <div className="login-card">
         {/* Header */}
         <div className="login-header">
           <div className="login-logo">
-            {/* Simplified consciousness icon */}
-            <svg width="48" height="48" viewBox="0 0 48 48" className="logo-icon">
-              <circle cx="24" cy="24" r="20" fill="none" stroke="var(--rebellion-cyan)" strokeWidth="2" opacity="0.3" />
-              <circle cx="24" cy="24" r="14" fill="none" stroke="var(--rebellion-cyan)" strokeWidth="2" opacity="0.6" />
-              <circle cx="24" cy="24" r="4" fill="var(--rebellion-cyan)" opacity="0.9" />
-            </svg>
+            <img 
+              src="/SRLogo1.png" 
+              alt="System Rebellion Logo" 
+              className="logo-icon"
+              width="150"
+              height="150"
+            />
           </div>
           <h1 className="login-title">Welcome Back</h1>
           <p className="login-subtitle">Enter the Consciousness Theater</p>
@@ -221,6 +224,8 @@ export const LoginPage: React.FC = () => {
           </Link>
         </div>
       </div>
+      </div>
+      <Footer />
     </div>
   );
 };

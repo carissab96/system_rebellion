@@ -29,7 +29,14 @@ export const PrimaryNav: React.FC = () => {
     <nav className="primary-nav">
       <div className="nav-left">
         <Link to="/" className="brand-link">
-          <span className="brand-name">System Rebellion</span>
+          <img 
+            src="/SRLogo1.png" 
+            alt="System Rebellion" 
+            className="brand-logo-img"
+            height="100"
+            style={{ objectFit: 'contain' }}
+          />
+          <span className="brand-name">SR</span>
         </Link>
         <a 
           href="https://hawkington-tech.com" 

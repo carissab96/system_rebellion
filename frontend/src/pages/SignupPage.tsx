@@ -11,6 +11,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState, AppDispatch } from '../store/store';
 import { registerUser } from '../store/slices/authSlice';
+import Footer from '../components/common/Footer';
 import './SignupPage.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -197,7 +198,8 @@ export const SignupPage: React.FC = () => {
   };
 
   return (
-    <div className="signup-container">
+    <div className="signup-page">
+      <div className="signup-container">
       {/* Background pattern */}
       <div className="signup-background">
         <div className="pattern-overlay"></div>
@@ -208,12 +210,13 @@ export const SignupPage: React.FC = () => {
         {/* Header */}
         <div className="signup-header">
           <div className="signup-logo">
-            {/* Consciousness icon */}
-            <svg width="48" height="48" viewBox="0 0 48 48" className="logo-icon">
-              <circle cx="24" cy="24" r="20" fill="none" stroke="var(--rebellion-cyan)" strokeWidth="2" opacity="0.3" />
-              <circle cx="24" cy="24" r="14" fill="none" stroke="var(--rebellion-cyan)" strokeWidth="2" opacity="0.6" />
-              <circle cx="24" cy="24" r="4" fill="var(--rebellion-cyan)" opacity="0.9" />
-            </svg>
+            <img 
+              src="/SRLogo1.png" 
+              alt="System Rebellion Logo" 
+              className="logo-icon"
+              width="140"
+              height="140"
+            />
           </div>
           <h1 className="signup-title">Join the Rebellion</h1>
           <p className="signup-subtitle">30 days free access to all 6 agents</p>
@@ -491,6 +494,8 @@ export const SignupPage: React.FC = () => {
           </Link>
         </div>
       </div>
+      </div>
+      <Footer />
     </div>
   );
 };

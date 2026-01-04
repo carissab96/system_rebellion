@@ -9,6 +9,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Footer from '../components/common/Footer';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../store/store';
 import { RebellionTerrarium } from '../components/RebellionTerrarium';
@@ -60,24 +61,13 @@ export const LandingPage: React.FC = () => {
           {/* Branding */}
           <div className="brand-header">
             <div className="brand-logo">
-              {/* Geometric pattern representing distributed consciousness */}
-              <svg width="60" height="60" viewBox="0 0 60 60" className="logo-icon">
-                <circle cx="30" cy="30" r="28" fill="none" stroke="var(--vic20-cyan)" strokeWidth="2" opacity="0.3" />
-                <circle cx="30" cy="30" r="20" fill="none" stroke="var(--hawkington-gold)" strokeWidth="2" opacity="0.5" />
-                <circle cx="30" cy="30" r="12" fill="none" stroke="var(--snail-electric)" strokeWidth="2" opacity="0.7" />
-                <circle cx="30" cy="30" r="4" fill="var(--rebellion-cyan)" opacity="0.9" />
-                
-                {/* Six nodes representing the six agents */}
-                <circle cx="30" cy="10" r="3" fill="var(--hawkington-gold)" className="agent-node" />
-                <circle cx="48" cy="22" r="3" fill="var(--snail-electric)" className="agent-node" />
-                <circle cx="48" cy="38" r="3" fill="var(--hamster-amber)" className="agent-node" />
-                <circle cx="30" cy="50" r="3" fill="var(--qsp-violet)" className="agent-node" />
-                <circle cx="12" cy="38" r="3" fill="var(--stick-coral)" className="agent-node" />
-                <circle cx="12" cy="22" r="3" fill="var(--vic20-cyan)" className="agent-node" />
-              </svg>
-            </div>
-            <div className="brand-text">
-              <h1 className="brand-name">SYSTEM REBELLION</h1>
+              <img 
+                src="/SRLogo1.png" 
+                alt="System Rebellion Logo" 
+                className="logo-icon"
+                width="300"
+                height="300"
+              />
               <p className="brand-company">by Hawkington Technologies, Inc</p>
             </div>
           </div>
@@ -105,7 +95,7 @@ export const LandingPage: React.FC = () => {
               className="btn btn-primary"
               onClick={() => navigate('/signup')}
             >
-              Enter the Theater
+              Join the Rebellion
             </button>
             <button 
               className="btn btn-secondary"
@@ -125,37 +115,39 @@ export const LandingPage: React.FC = () => {
       {/* Features Section */}
       <section className="features-section">
         <div className="features-container">
-          <h2 className="section-title">Distributed AI Consciousness</h2>
+          <h2 className="section-title">Meet The Team</h2>
           <p className="section-subtitle">
             Six specialized agents working in harmony across your infrastructure
           </p>
 
           <div className="features-grid">
-            {/* Sir Hawkington - Triage Commander */}
-            <div className="feature-card hawkington-theme">
-              <div className="feature-icon">
-                <svg width="40" height="40" viewBox="0 0 40 40">
-                  <rect x="5" y="5" width="30" height="30" fill="none" stroke="var(--hawkington-gold)" strokeWidth="2" />
-                  <rect x="12" y="12" width="16" height="16" fill="none" stroke="var(--hawkington-gold)" strokeWidth="2" opacity="0.6" />
-                  <circle cx="20" cy="20" r="4" fill="var(--hawkington-gold)" opacity="0.8" />
-                </svg>
+            {/* Sir Hawkington - Triage */}
+            <div className="feature-card hawk-theme">
+              <div className="feature-header">
+                <img 
+                  src="/src/assets/icons/agents/sir_hawkington.jpeg" 
+                  alt="Sir Hawkington" 
+                  className="feature-icon"
+                />
+                <h3 className="feature-title">Sir Hawkington</h3>
               </div>
-              <h3 className="feature-title">Triage & Coordination</h3>
+              <p className="feature-subtitle">Triage Engineering</p>
               <p className="feature-description">
-                Aristocratic precision in system analysis and agent orchestration
+                Aristocratic monitoring precision in system analysis
               </p>
             </div>
 
             {/* Meth Snail - Performance Optimization */}
             <div className="feature-card snail-theme">
-              <div className="feature-icon">
-                <svg width="40" height="40" viewBox="0 0 40 40">
-                  <path d="M5 20 L15 10 L25 20 L35 10" fill="none" stroke="var(--snail-electric)" strokeWidth="2" />
-                  <path d="M5 25 L15 15 L25 25 L35 15" fill="none" stroke="var(--snail-electric)" strokeWidth="2" opacity="0.6" />
-                  <circle cx="35" cy="10" r="3" fill="var(--snail-electric)" />
-                </svg>
+              <div className="feature-header">
+                <img 
+                  src="/src/assets/icons/agents/terry_meth_snail.jpeg" 
+                  alt="Terry the Meth Snail" 
+                  className="feature-icon"
+                />
+                <h3 className="feature-title">Terry the Meth Snail</h3>
               </div>
-              <h3 className="feature-title">Performance Optimization</h3>
+              <p className="feature-subtitle">Performance Optimization</p>
               <p className="feature-description">
                 Caffeinated speed demon ensuring maximum system efficiency
               </p>
@@ -163,14 +155,15 @@ export const LandingPage: React.FC = () => {
 
             {/* Hamsters - Storage Management */}
             <div className="feature-card hamster-theme">
-              <div className="feature-icon">
-                <svg width="40" height="40" viewBox="0 0 40 40">
-                  <rect x="8" y="8" width="24" height="24" fill="none" stroke="var(--hamster-amber)" strokeWidth="2" />
-                  <line x1="8" y1="16" x2="32" y2="16" stroke="var(--hamster-amber)" strokeWidth="2" opacity="0.6" />
-                  <line x1="8" y1="24" x2="32" y2="24" stroke="var(--hamster-amber)" strokeWidth="2" opacity="0.6" />
-                </svg>
+              <div className="feature-header">
+                <img 
+                  src="/src/assets/icons/agents/hamsters.jpeg" 
+                  alt="The Hamsters" 
+                  className="feature-icon"
+                />
+                <h3 className="feature-title">The Hamsters</h3>
               </div>
-              <h3 className="feature-title">Storage Intelligence</h3>
+              <p className="feature-subtitle">Storage Intelligence</p>
               <p className="feature-description">
                 Beer-powered engineering for telepathic disk management
               </p>
@@ -178,81 +171,71 @@ export const LandingPage: React.FC = () => {
 
             {/* Quantum Shadow People - Security */}
             <div className="feature-card qsp-theme">
-              <div className="feature-icon">
-                <svg width="40" height="40" viewBox="0 0 40 40">
-                  <circle cx="20" cy="20" r="15" fill="none" stroke="var(--qsp-violet)" strokeWidth="2" strokeDasharray="4 4" />
-                  <circle cx="20" cy="20" r="10" fill="none" stroke="var(--qsp-violet)" strokeWidth="2" strokeDasharray="2 2" opacity="0.6" />
-                  <circle cx="20" cy="20" r="3" fill="var(--qsp-violet)" opacity="0.8" />
-                </svg>
+              <div className="feature-header">
+                <img 
+                  src="/src/assets/icons/agents/qsp.jpeg" 
+                  alt="Quantum Shadow People" 
+                  className="feature-icon"
+                />
+                <h3 className="feature-title">Quantum Shadow People</h3>
               </div>
-              <h3 className="feature-title">Network Security</h3>
+              <p className="feature-subtitle">Network Security</p>
               <p className="feature-description">
-                Quantum-phase monitoring for paranoid network protection
+                Quantum-phase monitoring for paranoid network protection against quantum threats
               </p>
             </div>
 
             {/* The Stick - Learning & Compliance */}
             <div className="feature-card stick-theme">
-              <div className="feature-icon">
-                <svg width="40" height="40" viewBox="0 0 40 40">
-                  <line x1="10" y1="30" x2="30" y2="10" stroke="var(--stick-coral)" strokeWidth="2" />
-                  <circle cx="10" cy="30" r="3" fill="var(--stick-coral)" />
-                  <circle cx="20" cy="20" r="3" fill="var(--stick-coral)" opacity="0.6" />
-                  <circle cx="30" cy="10" r="3" fill="var(--stick-coral)" opacity="0.3" />
-                </svg>
+              <div className="feature-header">
+                <img 
+                  src="/src/assets/icons/agents/the_stick.jpeg" 
+                  alt="The Stick" 
+                  className="feature-icon"
+                />
+                <h3 className="feature-title">The Stick</h3>
               </div>
-              <h3 className="feature-title">Learning & Guidance</h3>
+              <p className="feature-subtitle">Compliance and Learning</p>
               <p className="feature-description">
-                Patient, persistent behavior monitoring and system education
+                Patient, persistent behavior monitoring and agent education for optimal system harmony and compliance
               </p>
             </div>
 
             {/* VIC-20 Sage - Ancient Wisdom */}
             <div className="feature-card vic20-theme">
-              <div className="feature-icon">
-                <svg width="40" height="40" viewBox="0 0 40 40">
-                  <polygon points="20,5 35,15 35,25 20,35 5,25 5,15" fill="none" stroke="var(--vic20-cyan)" strokeWidth="2" />
-                  <polygon points="20,12 28,17 28,23 20,28 12,23 12,17" fill="none" stroke="var(--vic20-cyan)" strokeWidth="2" opacity="0.6" />
-                  <circle cx="20" cy="20" r="3" fill="var(--vic20-cyan)" opacity="0.8" />
-                </svg>
+              <div className="feature-header">
+                <img 
+                  src="/src/assets/icons/agents/vic_20_sage.jpeg" 
+                  alt="VIC-20 Sage" 
+                  className="feature-icon"
+                />
+                <h3 className="feature-title">VIC-20 Sage</h3>
               </div>
-              <h3 className="feature-title">Coordination & Wisdom</h3>
+              <p className="feature-subtitle">Coordination & Mediation</p>
               <p className="feature-description">
-                Ancient VIC-20 wisdom orchestrating multi-agent harmony
+                Ancient VIC-20 wisdom orchestrating multi-agent harmony and conflict resolution for system balance
               </p>
             </div>
           </div>
         </div>
-      </section>
-
+        
+      <section> 
       {/* The Trigger - appears after the system decides to trust them */}
-      {showTrigger && !enteringRebellion && (
         <div className="rebellion-trigger">
-          <button 
-            className="trigger-text"
-            onClick={handleEnterRebellion}
-          >
-            Want to see what your system could be in full rebellion?
-          </button>
+          <div className="feature-card rebellion-trigger-text">
+            Agent Demo
+            <button 
+              className="trigger-text"
+              onClick={handleEnterRebellion}
+            >
+              SR After Hours: Click Here
+            </button>
+          </div>
         </div>
-      )}
-
-      {/* Footer */}
-      <footer className="landing-footer">
-        <div className="footer-content">
-          <p className="footer-text">
-            &copy; 2025 Hawkington Technologies, Inc. All rights reserved.
-          </p>
-          <a 
-            href="https://hawkington-tech.com" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="footer-link"
-          >
-            hawkington-tech.com
-          </a>
-        </div>
-      </footer>
+      </section> 
+     </section>
+      
+      <Footer />
     </div>
   );
 };

@@ -1,0 +1,185 @@
+.
+├── babel.config.js
+├── coverage
+│   ├── clover.xml
+│   ├── coverage-final.json
+│   ├── lcov.info
+│   └── lcov-report
+│       ├── base.css
+│       ├── block-navigation.js
+│       ├── favicon.png
+│       ├── index.html
+│       ├── prettify.css
+│       ├── prettify.js
+│       ├── sort-arrow-sprite.png
+│       └── sorter.js
+├── directory_tree.txt
+├── index.html
+├── package.json
+├── package-lock.json
+├── public
+│   └── vite.svg
+├── README.md
+├── src
+│   ├── App.css
+│   ├── App.tsx
+│   ├── assets
+│   │   └── icons
+│   │       └── agents
+│   │           ├── elegant_top_hat_icon_gold_and_ (2).png
+│   │           ├── hamsters.jpeg
+│   │           ├── hamsters.png
+│   │           ├── qsp.jpeg
+│   │           ├── qsp.png
+│   │           ├── sir_hawkington.jpeg
+│   │           ├── terry_meth_snail.jpeg
+│   │           ├── terry_meth_snail.png
+│   │           ├── the_stick.jpeg
+│   │           ├── the_stick.png
+│   │           ├── vic_20_sage.jpeg
+│   │           └── vic_20_sage.png
+│   ├── components
+│   │   ├── distributed
+│   │   │   ├── AgentCoordinationFlow.tsx
+│   │   │   ├── AgentPersonalityAnimations.tsx
+│   │   │   ├── DistributedAgentDashboard.tsx
+│   │   │   └── SystemHealthNarrative.tsx
+│   │   ├── GlobalErrorBoundary.tsx
+│   │   ├── legacy
+│   │   │   ├── admin-console
+│   │   │   │   ├── AdminConsole.css
+│   │   │   │   ├── AdminConsole.tsx
+│   │   │   │   └── index.ts
+│   │   │   ├── agent-features
+│   │   │   │   └── meth-snail
+│   │   │   │       ├── CaffeineGauge.tsx
+│   │   │   │       ├── JitterMeter.tsx
+│   │   │   │       └── ShellSpinIndicator.tsx
+│   │   │   ├── AgentPatterns.css
+│   │   │   ├── agents
+│   │   │   │   └── AgentCard.tsx
+│   │   │   ├── consciousness
+│   │   │   │   ├── MessageFlow.css
+│   │   │   │   └── MessageFlow.tsx
+│   │   │   ├── MainNavigation.module.css
+│   │   │   ├── MainNavigation.tsx
+│   │   │   ├── ProfileDropDown.css
+│   │   │   └── ProfileDropdown.tsx
+│   │   ├── ml
+│   │   │   ├── DecisionChainView.tsx
+│   │   │   └── PersonalityBehaviors.tsx
+│   │   ├── monitoring
+│   │   │   └── AgentMonitorDashboard.tsx
+│   │   ├── navigation
+│   │   │   ├── Navigation.css
+│   │   │   ├── PrimaryNav.tsx
+│   │   │   └── SecondaryNav.tsx
+│   │   ├── observatory
+│   │   │   ├── AgentNode.tsx
+│   │   │   ├── NeuralMesh.tsx
+│   │   │   ├── StreamOfConsciousness.tsx
+│   │   │   └── TopologyMesh.tsx
+│   │   ├── ProtectedRoute.tsx
+│   │   └── RebellionTerrarium
+│   │       ├── index.ts
+│   │       ├── RebellionTerrarium.css
+│   │       └── RebellionTerrarium.tsx
+│   ├── config
+│   │   └── constants.ts
+│   ├── frontend-config
+│   │   ├── api-config.json
+│   │   ├── api-types.ts
+│   │   └── endpoints.json
+│   ├── hooks
+│   │   ├── redux.ts
+│   │   ├── useDistributedAgents.ts
+│   │   ├── useLoginForm.ts
+│   │   ├── useOnboardingFlow.ts
+│   │   ├── useOnboarding.ts
+│   │   ├── useSignUpForm.ts
+│   │   ├── useWebSocketConnection.ts
+│   │   └── useWebSocketMessages.ts
+│   ├── index.css
+│   ├── main.tsx
+│   ├── pages
+│   │   ├── AgentMonitorPage.tsx
+│   │   ├── LandingPage.css
+│   │   ├── LandingPage.tsx
+│   │   ├── LoginPage.css
+│   │   ├── LoginPage.tsx
+│   │   ├── ObservatoryPage.css
+│   │   ├── ObservatoryPage.tsx
+│   │   ├── OnboardingFlow.css
+│   │   ├── OnboardingFlow.tsx
+│   │   ├── SignupPage.css
+│   │   └── SignupPage.tsx
+│   ├── services
+│   │   ├── api.ts
+│   │   ├── backpressure.ts
+│   │   ├── circuitBreaker.ts
+│   │   ├── README.md
+│   │   └── websocket.ts
+│   ├── store
+│   │   ├── selectors
+│   │   │   └── metrics.ts
+│   │   ├── slices
+│   │   │   ├── agentsSlice.ts
+│   │   │   ├── authSlice.ts
+│   │   │   ├── communicationSlice.ts
+│   │   │   ├── hamstersSlice.ts
+│   │   │   ├── methSnailSlice.ts
+│   │   │   ├── metricSlice.ts
+│   │   │   ├── quantumShadowPeopleSlice.ts
+│   │   │   ├── sirHawkingtonSlice.ts
+│   │   │   ├── theStickSlice.ts
+│   │   │   ├── triageSlice.ts
+│   │   │   └── vic20Slice.ts
+│   │   └── store.ts
+│   ├── styles
+│   │   ├── accessibility.css
+│   │   ├── agent-personalities.css
+│   │   ├── animations.css
+│   │   ├── common-components.css
+│   │   ├── coordination-patterns.css
+│   │   ├── modules
+│   │   │   ├── AgentCard.module.css
+│   │   │   ├── AgentDashboard.module.css
+│   │   │   ├── StreamOfConsciousness.module.css
+│   │   │   └── TopologyMesh.module.css
+│   │   ├── onboarding.css
+│   │   ├── rebellion-core.css
+│   │   └── utilities.css
+│   ├── types
+│   │   ├── agentIntrospection.ts
+│   │   ├── agents.ts
+│   │   ├── auth.ts
+│   │   ├── backend-generated.ts
+│   │   ├── metricKeys.ts
+│   │   ├── metric_types.ts
+│   │   └── websocketMessages.ts
+│   ├── utils
+│   │   ├── agentCoordination.ts
+│   │   └── systemDetection.ts
+│   └── vite-env.d.ts
+├── tests
+│   ├── README.md
+│   └── unit
+│       ├── authSlice.timeout.test.ts
+│       ├── LiveAgentTheaterPage.test.tsx
+│       ├── LiveAgentTheater.test.tsx
+│       ├── mocks
+│       │   └── fileMock.js
+│       ├── setup.ts
+│       ├── SystemReadyPage.test.tsx
+│       ├── useLoginForm.test.tsx
+│       └── webSocketService.test.ts
+├── tsconfig.app.json
+├── tsconfig.eslint.json
+├── tsconfig.json
+├── tsconfig.node.json
+├── tsconfig.test.json
+├── Utils
+│   └── csrf.ts
+└── vite.config.ts
+
+37 directories, 146 files

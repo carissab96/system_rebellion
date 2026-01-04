@@ -143,9 +143,9 @@
   /* In rebellion-core.css, add these enhanced variables */
 :root {
   /* Keep existing dark theme */
-  --rebellion-cyan: #26D0CE;  /* That beautiful landing page cyan */
-  --rebellion-cyan-dim: rgba(38, 208, 206, 0.1);
-  --rebellion-cyan-glow: 0 0 20px rgba(38, 208, 206, 0.3);
+  --rebellion-cyan: #06B6D4;  /* Logo cyan - slightly more blue */
+  --rebellion-cyan-dim: rgba(6, 182, 212, 0.1);
+  --rebellion-cyan-glow: 0 0 20px rgba(6, 182, 212, 0.3);
   
   /* Step indicator colors */
   --step-active: var(--rebellion-cyan);
