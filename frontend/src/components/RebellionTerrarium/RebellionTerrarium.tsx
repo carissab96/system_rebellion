@@ -7,8 +7,10 @@
 // No new endpoints. Backend is source of truth.
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useSelector } from 'react-redux';
+import { selectRecentCommunications } from '../../store/slices/communicationSlice';
 import { WebSocketService } from '../../services/websocket';
-import { WS_BASE_URL, API_BASE_URL } from '../../config/constants';
+import { WS_BASE_URL } from '../../config/constants';
 import './RebellionTerrarium.css';
 
 // Agent icons - no emojis, just the real deal
@@ -21,6 +23,7 @@ import stickIcon from '../../assets/icons/agents/the_stick.png';
 
 interface RebellionTerrariumProps {
   onExit: () => void;
+  isExiting?: boolean;
 }
 
 interface AgentData {
@@ -65,21 +68,37 @@ interface AgentRosterMessage {
 
 type WSMessage = SystemUpdateMessage | AgentRosterMessage | { type: string; [key: string]: unknown };
 
-interface ActivityItem {
-  id: string;
-  agent: string;
-  message: string;
-  timestamp: string;
-  type: 'insight' | 'event' | 'triage';
-}
+// Agent display name mapping to match StreamOfConsciousness conventions
+const AGENT_DISPLAY_NAMES: Record<string, string> = {
+  sir_hawkington: 'Sir Hawkington',
+  vic_20_sage: 'VIC-20',
+  meth_snail: 'Terry',
+  the_stick: 'The Stick',
+  hamsters: 'Hamsters',
+  quantum_shadow_people: 'QSP',
+};
 
-export const RebellionTerrarium: React.FC<RebellionTerrariumProps> = ({ onExit }) => {
+// Demo activity feed for unauthenticated users (static, for landing page demo only)
+const DEMO_FEED = [
+  { id: 'demo-1', from_agent: 'sir_hawkington', summary: 'CPU threshold exceeded - routing to VIC-20', message_type: 'TRIAGE_ALERT' },
+  { id: 'demo-2', from_agent: 'vic_20_sage', summary: 'Coordinating with Terry for performance optimization', message_type: 'COORDINATION_REQUEST' },
+  { id: 'demo-3', from_agent: 'meth_snail', summary: 'Cache clear executed - 23% improvement', message_type: 'ACTION_REPORT' },
+  { id: 'demo-4', from_agent: 'the_stick', summary: 'Decision logged - learning pattern stored', message_type: 'DECISION_LOG' },
+  { id: 'demo-5', from_agent: 'hamsters', summary: 'Disk cleanup consensus reached - Steve: cautious, Bob: aggressive, Carl: 3.5 rolls duct tape', message_type: 'ACTION_REPORT' },
+  { id: 'demo-6', from_agent: 'quantum_shadow_people', summary: 'Network anomaly detected - paranoia level elevated', message_type: 'ALERT' },
+  { id: 'demo-7', from_agent: 'sir_hawkington', summary: 'Memory usage normalized - standing down', message_type: 'TRIAGE_ALERT' },
+  { id: 'demo-8', from_agent: 'vic_20_sage', summary: 'System harmony restored - mediation count: 0', message_type: 'COORDINATION_REQUEST' },
+];
+
+export const RebellionTerrarium: React.FC<RebellionTerrariumProps> = ({ onExit, isExiting = false }) => {
   const [agents, setAgents] = useState<Record<string, AgentData>>({});
   const [activeAgentNames, setActiveAgentNames] = useState<string[]>([]);
-  const [activityFeed, setActivityFeed] = useState<ActivityItem[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Get real-time communications from Redux (same source as StreamOfConsciousness)
+  const communications = useSelector(selectRecentCommunications);
   
   // Animation states (QSP phasing is React-controlled, others are pure CSS)
   const [qspVisible, setQspVisible] = useState(true);
@@ -119,44 +138,15 @@ export const RebellionTerrarium: React.FC<RebellionTerrariumProps> = ({ onExit }
     }
   }, []);
 
-  // Connect to WebSocket - use demo endpoint if not authenticated
+  // Connect to WebSocket - authenticated users use shared service, others skip WebSocket
   useEffect(() => {
     const token = localStorage.getItem('access_token');
-    const wsEndpoint = token ? '/api/ws/system-metrics' : '/api/ws/demo-metrics';
     
-    // For demo mode, create a simple WebSocket directly (no auth needed)
+    // Only connect WebSocket if authenticated
     if (!token) {
-      const wsUrl = `${WS_BASE_URL || 'ws://localhost:8000'}${wsEndpoint}`;
-      const demoWs = new WebSocket(wsUrl);
-      
-      demoWs.onopen = () => {
-        console.log('Demo WebSocket connected');
-        setIsConnected(true);
-      };
-      
-      demoWs.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          handleMessage(data);
-        } catch (e) {
-          console.error('Failed to parse demo message:', e);
-        }
-      };
-      
-      demoWs.onerror = (err) => {
-        console.error('Demo WebSocket error:', err);
-        setIsConnected(false);
-        setIsLoading(false);
-      };
-      
-      demoWs.onclose = () => {
-        console.log('Demo WebSocket closed');
-        setIsConnected(false);
-      };
-      
-      return () => {
-        demoWs.close();
-      };
+      console.log('No auth token - skipping WebSocket connection');
+      setIsLoading(false);
+      return;
     }
 
     // Authenticated mode - use the shared WebSocketService
@@ -167,17 +157,23 @@ export const RebellionTerrarium: React.FC<RebellionTerrariumProps> = ({ onExit }
       // Subscribe to messages
       const unsubscribe = wsService.subscribe(handleMessage);
       
-      // Connect
-      wsService.ensureConnected(wsEndpoint);
-      wsService.waitUntilOpen(10000)
-        .then(() => {
-          setIsConnected(true);
-        })
-        .catch((err) => {
-          console.error('WebSocket connection failed:', err);
-          setIsConnected(false);
-          setIsLoading(false);
-        });
+      // Check if already connected
+      if (wsService.isConnected()) {
+        setIsConnected(true);
+        setIsLoading(false);
+      } else {
+        // Wait for connection
+        wsService.waitUntilOpen(10000)
+          .then(() => {
+            setIsConnected(true);
+            setIsLoading(false);
+          })
+          .catch((err) => {
+            console.error('WebSocket connection failed:', err);
+            setIsConnected(false);
+            setIsLoading(false);
+          });
+      }
 
       return () => {
         unsubscribe();
@@ -197,41 +193,6 @@ export const RebellionTerrarium: React.FC<RebellionTerrariumProps> = ({ onExit }
     }, 7000);
 
     return () => clearInterval(qspInterval);
-  }, []);
-
-  // Fetch real activity feed from the reports endpoint
-  useEffect(() => {
-    const fetchActivityFeed = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/reports/demo-feed?hours=1&limit=15`);
-        if (response.ok) {
-          const data = await response.json();
-          if (data.feed && Array.isArray(data.feed)) {
-            setActivityFeed(data.feed.map((item: { id: string; agent: string; message: string; timestamp: string; type: string }) => ({
-              id: item.id,
-              agent: item.agent,
-              message: item.message,
-              timestamp: item.timestamp,
-              type: item.type as 'insight' | 'event' | 'triage'
-            })));
-            setError(null); // Clear any previous error
-          }
-        } else {
-          setError(`Feed unavailable (${response.status})`);
-        }
-      } catch (err) {
-        console.error('Failed to fetch activity feed:', err);
-        setError('Unable to connect to activity feed');
-      }
-    };
-
-    // Fetch immediately
-    fetchActivityFeed();
-    
-    // Then refresh every 10 seconds
-    const interval = setInterval(fetchActivityFeed, 10000);
-    
-    return () => clearInterval(interval);
   }, []);
 
   // Show reveal text after 3 seconds
@@ -330,9 +291,14 @@ export const RebellionTerrarium: React.FC<RebellionTerrariumProps> = ({ onExit }
   const hasAnyAgent = Object.keys(agents).length > 0 || activeAgentNames.length > 0;
 
   return (
-    <div className="terrarium-viewport">
+    <div className={`terrarium-viewport ${isExiting ? 'exiting' : ''}`}>
       {/* The star grid background */}
       <div className="terrarium-grid"></div>
+      
+      {/* The reveal text - moved to top as subtitle */}
+      <div className={`terrarium-reveal ${showReveal ? 'visible' : ''}`}>
+        <span className="reveal-text">This happened last night while you slept.</span>
+      </div>
       
       {/* Connection status */}
       <div className="connection-indicator">
@@ -455,36 +421,47 @@ export const RebellionTerrarium: React.FC<RebellionTerrariumProps> = ({ onExit }
           <div className="activity-feed">
             <div className="feed-header">
               <span className="feed-title">LIVE FEED</span>
-              <span className={`feed-status ${isConnected ? 'live' : 'demo'}`}>
-                {isConnected ? '● LIVE' : '○ DEMO'}
+              <span className={`feed-status ${communications.length > 0 ? 'live' : 'demo'}`}>
+                {communications.length > 0 ? '● LIVE' : '○ DEMO'}
               </span>
             </div>
             <div className="feed-items">
-              {error ? (
-                <div className="feed-item feed-error">
-                  <span className="feed-message">{error}</span>
-                </div>
-              ) : activityFeed.length > 0 ? (
-                activityFeed.map((item) => (
-                  <div key={item.id} className={`feed-item feed-${item.type}`}>
-                    <span className="feed-agent">{item.agent}</span>
-                    <span className="feed-message">{item.message}</span>
-                  </div>
-                ))
+              {communications.length > 0 ? (
+                communications.slice(0, 15).map((comm) => {
+                  const displayName = AGENT_DISPLAY_NAMES[comm.from_agent] || comm.from_agent;
+                  const messageType = comm.message_type?.toUpperCase() || '';
+                  const feedType = messageType.includes('TRIAGE') || messageType.includes('ALERT') ? 'triage' 
+                    : messageType.includes('ERROR') ? 'error' 
+                    : 'insight';
+                  
+                  return (
+                    <div key={comm.id} className={`feed-item feed-${feedType}`}>
+                      <span className="feed-agent">{displayName}</span>
+                      <span className="feed-message">{comm.summary || comm.action}</span>
+                    </div>
+                  );
+                })
               ) : (
-                <div className="feed-item feed-waiting">
-                  <span className="feed-message">Agents initializing...</span>
-                </div>
+                // Show demo feed for unauthenticated users
+                DEMO_FEED.map((item) => {
+                  const displayName = AGENT_DISPLAY_NAMES[item.from_agent] || item.from_agent;
+                  const messageType = item.message_type?.toUpperCase() || '';
+                  const feedType = messageType.includes('TRIAGE') || messageType.includes('ALERT') ? 'triage' 
+                    : messageType.includes('ERROR') ? 'error' 
+                    : 'insight';
+                  
+                  return (
+                    <div key={item.id} className={`feed-item feed-${feedType}`}>
+                      <span className="feed-agent">{displayName}</span>
+                      <span className="feed-message">{item.summary}</span>
+                    </div>
+                  );
+                })
               )}
             </div>
           </div>
         </>
       )}
-      
-      {/* The reveal text */}
-      <div className={`terrarium-reveal ${showReveal ? 'visible' : ''}`}>
-        <span className="reveal-text">This happened last night while you slept.</span>
-      </div>
       
       {/* Exit back to corporate land */}
       <button className="terrarium-exit" onClick={onExit}>

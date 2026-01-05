@@ -13,9 +13,18 @@
   animation: terrarium-emerge 1s ease-out forwards;
 }
 
+.terrarium-viewport.exiting {
+  animation: terrarium-fade-out 0.8s ease-out forwards;
+}
+
 @keyframes terrarium-emerge {
   0% { opacity: 0; }
   100% { opacity: 1; }
+}
+
+@keyframes terrarium-fade-out {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
 }
 
 /* =============================================================================
@@ -464,7 +473,7 @@
    ============================================================================= */
 
 .stick-zone {
-  bottom: 15%;
+  bottom: 5%;
   left: 50%;
   transform: translateX(-50%);
 }
@@ -563,9 +572,9 @@
 
 .activity-feed {
   position: absolute;
-  top: 50%;
+  top: 22%;
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, 0);
   width: 320px;
   max-height: 280px;
   background: rgba(23, 23, 40, 0.85);
@@ -573,6 +582,7 @@
   border-radius: 8px;
   overflow: hidden;
   backdrop-filter: blur(8px);
+  z-index: 50;
 }
 
 .feed-header {
@@ -732,11 +742,13 @@
 
 .terrarium-reveal {
   position: absolute;
-  bottom: 12%;
+  top: 4rem;
   left: 50%;
   transform: translateX(-50%);
   opacity: 0;
   transition: opacity 1.5s ease-out;
+  z-index: 100;
+  text-align: center;
 }
 
 .terrarium-reveal.visible {
@@ -745,10 +757,11 @@
 
 .reveal-text {
   font-family: var(--font-mono, monospace);
-  font-size: 1rem;
+  font-size: 0.875rem;
   color: var(--rebellion-text, #b7cdf0);
   letter-spacing: 0.08em;
-  opacity: 0.8;
+  opacity: 0.7;
+  font-weight: 400;
 }
 
 /* =============================================================================

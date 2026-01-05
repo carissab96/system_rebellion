@@ -1,3 +1,73 @@
+# System Rebellion
+
+Personality-driven AI system monitoring. Not a dashboard. A crew.
+
+## Quick Start
+
+### Prerequisites
+- Docker
+- Docker Compose
+
+### Setup
+
+**1. Clone the repo**
+
+    git clone [your-repo-url]
+    cd system-rebellion
+
+**2. Configure your environment**
+
+    cp .env.example .env
+
+Then generate a secret key and paste it into `.env`:
+
+    python -c "import secrets; print(secrets.token_hex(32))"
+
+All other environment variables are pre-configured in `.env.example`
+
+**3. Run it**
+
+    docker-compose up --build
+
+**4. Open your browser**
+
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:8000
+
+## What You'll See
+
+- **Topology mesh** — lights up with real-time system activity
+- **Activity feed** — watch the agents communicate, coordinate, panic
+
+## Meet the Crew
+
+| Agent | Role | Vibe |
+|-------|------|------|
+| Sir Hawkington Von Monitorious III | Triage | Monocle. Earl Grey. Standards. |
+| Terry the Meth Snail | CPU/RAM | Energy drink addiction. Vibrates. |
+| The Stick | Compliance | Panic attacks. Misses nothing. |
+| The Hamsters (Steve, Bob, Carl) | Hardware/Storage | Duct tape. Beer. 3am energy. |
+| Quantum Shadow People | Network Security | Interdimensional. Tequila jello shots. |
+| VIC-20 | Coordinator | 1982 Commodore. Ancient wisdom. |
+
+## Tech Stack
+
+- Frontend: Vite + React
+- Backend: FastAPI (uvicorn)
+- Redis (pub/sub for inter-agent communication)
+- PostgreSQL + pgvector
+- WebSockets (real-time frontend updates)
+- Docker
+
+## Built By
+
+One founder. And AI. 300,000 lines of production code.
+
+## Questions?
+
+bayscarissa706@gmail.com or bayscarissa15@gmail.com
+
+
 ## ⚖️ License & Code Access
 
 **This is proprietary software.** 

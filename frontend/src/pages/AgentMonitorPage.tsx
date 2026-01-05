@@ -1,4 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
+import { PrimaryNav } from '../components/navigation/PrimaryNav';
+import { SecondaryNav } from '../components/navigation/SecondaryNav';
+import Footer from '../components/common/Footer';
 
 interface AgentEvent {
   timestamp: string;
@@ -189,21 +192,32 @@ export default function AgentMonitorPage() {
     }
   };
 
+  const handleRefresh = () => {
+    console.log('Manual refresh triggered');
+  };
+
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-6">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">🎯 Agent Monitor Dashboard</h1>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <div className={`w-3 h-3 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500'}`} />
-            <span className="text-sm">{connected ? 'Connected' : 'Disconnected'}</span>
+    <div className="min-h-screen bg-gray-900 text-white">
+      <PrimaryNav />
+      <SecondaryNav 
+        currentView="Agent Monitor"
+        onRefresh={handleRefresh}
+      />
+      
+      <div className="p-6">
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold mb-2">🎯 Agent Monitor Dashboard</h1>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div className={`w-3 h-3 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500'}`} />
+              <span className="text-sm">{connected ? 'Connected' : 'Disconnected'}</span>
+            </div>
+            <span className="text-sm text-gray-400">
+              {Array.from(agents.values()).filter(a => a.status === 'active').length} / {agents.size} agents active
+            </span>
           </div>
-          <span className="text-sm text-gray-400">
-            {Array.from(agents.values()).filter(a => a.status === 'active').length} / {agents.size} agents active
-          </span>
         </div>
-      </div>
 
       {/* Agent Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -261,6 +275,8 @@ export default function AgentMonitorPage() {
           );
         })}
       </div>
+      </div>
+      <Footer />
     </div>
   );
 }

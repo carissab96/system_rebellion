@@ -20,9 +20,9 @@ export const LandingPage: React.FC = () => {
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   
   // Terrarium trigger states
-  const [showTrigger, setShowTrigger] = useState(false);
   const [enteringRebellion, setEnteringRebellion] = useState(false);
   const [showTerrarium, setShowTerrarium] = useState(false);
+  const [exitingTerrarium, setExitingTerrarium] = useState(false);
 
   // If already authenticated, go straight to the theater
   useEffect(() => {
@@ -30,14 +30,6 @@ export const LandingPage: React.FC = () => {
       navigate('/theater');
     }
   }, [isAuthenticated, navigate]);
-  
-  // The invitation appears after 3 seconds - the system deciding to trust them
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowTrigger(true);
-    }, 3000);
-    return () => clearTimeout(timer);
-  }, []);
   
   // The transition handler - no auth needed, uses public demo WebSocket
   const handleEnterRebellion = () => {
@@ -48,9 +40,20 @@ export const LandingPage: React.FC = () => {
     }, 1200);
   };
   
+  // Handle exit from terrarium with fade transition
+  const handleExitTerrarium = () => {
+    setExitingTerrarium(true);
+    // Wait for fade out, then hide terrarium and show landing page
+    setTimeout(() => {
+      setShowTerrarium(false);
+      setExitingTerrarium(false);
+      setEnteringRebellion(false);
+    }, 800);
+  };
+  
   // If they've entered, show the terrarium
   if (showTerrarium) {
-    return <RebellionTerrarium onExit={() => setShowTerrarium(false)} />;
+    return <RebellionTerrarium onExit={handleExitTerrarium} isExiting={exitingTerrarium} />;
   }
 
   return (
@@ -65,9 +68,12 @@ export const LandingPage: React.FC = () => {
                 src="/SRLogo1.png" 
                 alt="System Rebellion Logo" 
                 className="logo-icon"
-                width="300"
-                height="300"
+                width="150"
+                height="150"
               />
+            </div>
+            <div className="brand-text">
+              <h1 className="brand-name">System Rebellion</h1>
               <p className="brand-company">by Hawkington Technologies, Inc</p>
             </div>
           </div>
@@ -122,7 +128,7 @@ export const LandingPage: React.FC = () => {
 
           <div className="features-grid">
             {/* Sir Hawkington - Triage */}
-            <div className="feature-card hawk-theme">
+            <div className="feature-card hawkington-theme">
               <div className="feature-header">
                 <img 
                   src="/src/assets/icons/agents/sir_hawkington.jpeg" 
