@@ -222,7 +222,7 @@ async def lifespan(app: FastAPI):
                 # Initialize distributed agent consciousness system (Week 5 Task 5.4: Single unified system)
                 try:
                     redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
-                    logger.info(f"🌐 Initializing distributed agent consciousness (Redis: {redis_url})...")
+                    logger.info(f"🌐 Initializing distributed agentsr (Redis: {redis_url})...")
                     
                     # Get system user ID for agent database writes
                     from sqlalchemy import select
@@ -345,7 +345,7 @@ def create_application() -> FastAPI:
     # Create FastAPI app with lifespan
     app = FastAPI(
         title="System Rebellion - AI-Powered System Monitoring",
-        description="Quantum Optimization Platform with AI Consciousness | Featuring Sir Hawkington & The Virtual Misfits",
+        description="Quantum Optimization Platform with AI agents | Featuring Sir Hawkington, VIC20 and the Specialists",
         version="1.0.0",
         lifespan=lifespan
     )
@@ -486,7 +486,7 @@ def create_application() -> FastAPI:
     
     # Add Meth Snail API Router
     app.include_router(
-        meth_snail_router,
+        meth_snail.router
         prefix="/api/meth-snail",
         tags=["Meth Snail"]
     )
@@ -530,7 +530,7 @@ def create_application() -> FastAPI:
     app.include_router(
         reports.router,
         prefix="/api",
-        tags=["Reports"]
+        tags=["Reports"]/
     )
     
     # Note: agent_insights and agent_events routers already registered above (lines 362-383)
