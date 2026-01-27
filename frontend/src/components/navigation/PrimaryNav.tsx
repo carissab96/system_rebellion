@@ -29,13 +29,6 @@ export const PrimaryNav: React.FC = () => {
     <nav className="primary-nav">
       <div className="nav-left">
         <Link to="/" className="brand-link">
-          <img 
-            src="/SRLogo1.png" 
-            alt="System Rebellion" 
-            className="brand-logo-img"
-            height="100"
-            style={{ objectFit: 'contain' }}
-          />
           <span className="brand-name">SR</span>
         </Link>
         <a 
@@ -46,6 +39,16 @@ export const PrimaryNav: React.FC = () => {
         >
           by Hawkington Technologies Inc
         </a>
+      </div>
+
+      <div className="nav-center">
+        {isAuthenticated && (
+          <div className="nav-links">
+            <Link to="/observatory" className="nav-link">Observatory</Link>
+            <Link to="/agent-theater" className="nav-link">Agent Theater</Link>
+            <Link to="/agent-monitor" className="nav-link">Agent Monitor</Link>
+          </div>
+        )}
       </div>
 
       <div className="nav-right">

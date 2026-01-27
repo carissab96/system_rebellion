@@ -8,6 +8,12 @@
   background: var(--rebellion-void);
   color: var(--rebellion-text);
   overflow-x: hidden;
+  animation: landing-fade-in 0.8s ease-out forwards;
+}
+
+@keyframes landing-fade-in {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
 }
 
 /* ============================================================================
@@ -48,12 +54,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-lg);
+  gap: var(--space-xl);
   margin-bottom: var(--space-2xl);
 }
 
 .brand-logo {
   filter: drop-shadow(0 0 15px rgba(6, 182, 212, 0.4));
+  flex-shrink: 0;
+}
+
+.logo-icon {
+  display: block;
 }
 
 .logo-icon .agent-node {
@@ -81,21 +92,24 @@
 }
 
 .brand-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   text-align: left;
 }
 
 .brand-name {
-  font-size: 3rem;
-  font-weight: 800;
+  font-size: 2.5rem;
+  font-weight: 700;
   background: linear-gradient(135deg, var(--rebellion-cyan), var(--vic20-cyan), var(--hawkington-gold));
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-size: 200% 200%;
   animation: gradient-shift 6s ease infinite;
-  letter-spacing: -0.02em;
-  line-height: 1;
-  margin-bottom: var(--space-xs);
+  letter-spacing: 0.05em;
+  line-height: 1.1;
+  margin: 0 0 var(--space-xs) 0;
 }
 
 @keyframes gradient-shift {
@@ -108,20 +122,21 @@
 }
 
 .brand-company {
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   color: var(--rebellion-text-dim);
-  font-weight: 500;
+  font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
+  margin: 0;
 }
 
 /* Tagline */
 .hero-tagline {
-  margin-bottom: var(--space-2xl);
+  margin-bottom: var(--space-xl);
 }
 
 .tagline-primary {
-  font-size: 2.5rem;
+  font-size: 2rem;
   font-weight: 700;
   color: var(--rebellion-text-bright);
   margin-bottom: var(--space-md);
@@ -137,7 +152,7 @@
 
 /* Description */
 .hero-description {
-  margin-bottom: var(--space-2xl);
+  margin-bottom: var(--space-xl);
 }
 
 .description-text {
@@ -167,26 +182,26 @@
 .hero-actions {
   display: flex;
   gap: var(--space-md);
-  justify-content: center;
-  flex-wrap: wrap;
+  padding-left: 45%;
+  margin-top: var(--space-lg);
+  margin-bottom: var(--space-lg);
 }
 
 .btn {
-  padding: var(--space-md) var(--space-2xl);
-  font-size: 1rem;
+  padding: var(--space-sm) var(--space-lg);
+  font-size: 0.75rem;
   font-weight: 600;
   border-radius: var(--radius-md);
-  border: none;
-  cursor: pointer;
-  transition: all 0.3s ease;
   font-family: var(--font-system);
-  letter-spacing: 0.025em;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .btn-primary {
   background-color: transparent;
   color: #06B6D4;
   border: 2px solid #06B6D4;
+
 }
 
 .btn-primary:hover {
@@ -208,6 +223,8 @@
 .btn-secondary:hover {
   background-color: rgba(6, 182, 212, 0.1);
   transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(6, 182, 212, 0.5);
+
 }
 
  .btn-secondary:active {
@@ -268,7 +285,7 @@
 
 .section-title {
   font-size: 2.5rem;
-  color: var(--rebellion-cyan)
+  color: var(--rebellion-cyan);
   font-weight: 700;
   text-align: center;
   margin-bottom: var(--space-md);

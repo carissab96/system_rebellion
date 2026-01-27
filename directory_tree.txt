@@ -1,0 +1,914 @@
+.
+├── assets
+│   └── images
+│       └── ai-agents
+│           ├── logo5
+│           ├── logo5.jpeg
+│           ├── quantum-shadow-people.jpeg
+│           └── sirHawkingtonVonMonitoriousIII.jpg
+├── backend
+│   ├── alembic
+│   │   ├── env.py
+│   │   ├── README
+│   │   ├── script.py.mako
+│   │   └── versions
+│   │       ├── 2025_08_24_2136-93f94a61463c_baseline_migration_for_new_memory_.py
+│   │       ├── 2025_10_09_1951-afae548fcd28_add_agent_specific_memory_tables.py
+│   │       ├── 2025_10_11_2021-275af0769985_add_foreign_key_to_user_id.py
+│   │       ├── 2025_10_12_0107-dcdfe9d57387_add_user_id_to_agent_learning_.py
+│   │       ├── 2025_10_14_1252-5dea6e23a9b2_add_three_tier_agent_event_system.py
+│   │       ├── 2025_10_20_1226-3ea74a8cb1b5_add_performance_indexes.py
+│   │       ├── 2025_11_28_0258-3734e17210c3_add_vector_tables_for_semantic_search.py
+│   │       ├── 2025_12_05_1236-b1daa7a52da4_drop_central_memory_bank_foreign_keys_.py
+│   │       ├── 2025_12_09_0131-9e60a1bdc15d_update_agent_interaction_vectors_db_.py
+│   │       ├── 2025_12_22_1233-84bbeb827a40_add_agent_learning_records_table_for_.py
+│   │       └── 2025_12_26_1422-9f7a27569c0a_increase_agent_learning_text_column_.py
+│   ├── alembic.ini
+│   ├── app
+│   │   ├── ai_agents
+│   │   │   ├── agent_instrumentation.py
+│   │   │   ├── agent_interactions.py
+│   │   │   ├── agent_introspection.py
+│   │   │   ├── agent_learning.py
+│   │   │   ├── base_agent.py
+│   │   │   ├── constants.py
+│   │   │   ├── distributed
+│   │   │   │   ├── action_verification.py
+│   │   │   │   ├── agent_autonomy.py
+│   │   │   │   ├── agent_state.py
+│   │   │   │   ├── alert_escalation.py
+│   │   │   │   ├── base_database_integration.py
+│   │   │   │   ├── base_decision_engine.py
+│   │   │   │   ├── behavior_tracker.py
+│   │   │   │   ├── bridges
+│   │   │   │   │   ├── __init__.py
+│   │   │   │   │   └── triage_bridge.py
+│   │   │   │   ├── communication.py
+│   │   │   │   ├── consciousness_sync.py
+│   │   │   │   ├── coordination.py
+│   │   │   │   ├── distributed_agent_manager.py
+│   │   │   │   ├── distributed_agent.py
+│   │   │   │   ├── event_logger.py
+│   │   │   │   ├── examples
+│   │   │   │   │   ├── example_agents.py
+│   │   │   │   │   └── README.md
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── message_protocol.py
+│   │   │   │   ├── mixins
+│   │   │   │   │   ├── distributed_mixin.py
+│   │   │   │   │   └── __init__.py
+│   │   │   │   ├── README.md
+│   │   │   │   ├── resource_monitor.py
+│   │   │   │   ├── resource_prediction.py
+│   │   │   │   └── system_actions.py
+│   │   │   ├── hamsters
+│   │   │   │   ├── constants.py
+│   │   │   │   ├── data_types.py
+│   │   │   │   ├── decision_engine_sbcV3.py
+│   │   │   │   ├── distributed_hamsters.py
+│   │   │   │   ├── hamsters_database_integration.py
+│   │   │   │   ├── hamsters_field_mapping.md
+│   │   │   │   ├── __init__.py
+│   │   │   │   └── ML
+│   │   │   │       ├── action_executor.py
+│   │   │   │       ├── action_selection.py
+│   │   │   │       ├── learning.py
+│   │   │   │       ├── perception.py
+│   │   │   │       └── reasoning.py
+│   │   │   ├── __init__.py
+│   │   │   ├── legacy
+│   │   │   │   ├── agent_manager.py
+│   │   │   │   ├── agents_config.yaml
+│   │   │   │   ├── hamsters_api_routes_refactored.py
+│   │   │   │   ├── master_agent_database.py
+│   │   │   │   ├── master_websocket_router.py
+│   │   │   │   ├── README.md
+│   │   │   │   └── websocket_handlers
+│   │   │   │       ├── hamsters_websocket_integration.py
+│   │   │   │       ├── hawks_websocket_integration.py
+│   │   │   │       ├── meth_snail_websocket_handler.py
+│   │   │   │       ├── qsp_websocket_integration.py
+│   │   │   │       ├── README.md
+│   │   │   │       ├── sticks_websocket_integration.py
+│   │   │   │       └── vic20_websocket_handler.py
+│   │   │   ├── LEGACY_AUDIT.md
+│   │   │   ├── meth_snail
+│   │   │   │   ├── constants.py
+│   │   │   │   ├── database_integration.py
+│   │   │   │   ├── data_types.py
+│   │   │   │   ├── decision_engine.py
+│   │   │   │   ├── distributed_meth_snail.py
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── meth_snail_endpoints.py
+│   │   │   │   ├── ML
+│   │   │   │   │   ├── action_executor.py
+│   │   │   │   │   ├── action_selection.py
+│   │   │   │   │   ├── energy_drink_system.py
+│   │   │   │   │   ├── learning.py
+│   │   │   │   │   ├── ml_helpers.py
+│   │   │   │   │   ├── ml_reasoning.py
+│   │   │   │   │   ├── perception.py
+│   │   │   │   │   ├── reasoning.py
+│   │   │   │   │   └── situation_fingerprint.py
+│   │   │   │   └── snail_field_mapping.md
+│   │   │   ├── permissions.py
+│   │   │   ├── quantum_shadow_people
+│   │   │   │   ├── constants.py
+│   │   │   │   ├── database_integration.py
+│   │   │   │   ├── data_types.py
+│   │   │   │   ├── decision_engine.py
+│   │   │   │   ├── distributed_qsp.py
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── ML
+│   │   │   │   │   ├── action_executor.py
+│   │   │   │   │   ├── action_selection.py
+│   │   │   │   │   ├── learning.py
+│   │   │   │   │   ├── perception.py
+│   │   │   │   │   └── reasoning.py
+│   │   │   │   └── qsp_field_mapping.md
+│   │   │   ├── README.md
+│   │   │   ├── sir_hawkington
+│   │   │   │   ├── constants.py
+│   │   │   │   ├── database_integration.py
+│   │   │   │   ├── data_types.py
+│   │   │   │   ├── decision_engine.py
+│   │   │   │   ├── distributed_hawkington.py
+│   │   │   │   ├── energy_drink_authorization.py
+│   │   │   │   ├── hawk_field_mapping.md
+│   │   │   │   ├── hawk_redis_patch
+│   │   │   │   │   ├── enhanced_redis.py
+│   │   │   │   │   ├── redis_cache.py
+│   │   │   │   │   └── triage_engine_redis_patch.py
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── ML
+│   │   │   │   │   ├── action_selection.py
+│   │   │   │   │   ├── learning.py
+│   │   │   │   │   ├── perception.py
+│   │   │   │   │   └── reasoning.py
+│   │   │   │   └── triage_engine.py
+│   │   │   ├── system_rebellion_todo_23_July.md
+│   │   │   ├── the_stick
+│   │   │   │   ├── compliance_engine.py
+│   │   │   │   ├── constants.py
+│   │   │   │   ├── database_integration.py
+│   │   │   │   ├── data_types.py
+│   │   │   │   ├── decision_engine.py
+│   │   │   │   ├── distributed_stick.py
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── ML
+│   │   │   │   │   ├── action_executor.py
+│   │   │   │   │   ├── action_selection.py
+│   │   │   │   │   ├── learning.py
+│   │   │   │   │   ├── perception.py
+│   │   │   │   │   └── reasoning.py
+│   │   │   │   ├── paper_bag_economy.py
+│   │   │   │   └── stick_field_mapping.md
+│   │   │   └── vic_20_sage
+│   │   │       ├── constants.py
+│   │   │       ├── coordination_stats.py
+│   │   │       ├── database_integration.py
+│   │   │       ├── data_types.py
+│   │   │       ├── decision_engine.py
+│   │   │       ├── distributed_vic20.py
+│   │   │       ├── __init__.py
+│   │   │       ├── ML
+│   │   │       │   ├── action_selection.py
+│   │   │       │   ├── learning.py
+│   │   │       │   ├── perception.py
+│   │   │       │   └── reasoning.py
+│   │   │       └── vic20_field_mapping.md
+│   │   ├── api
+│   │   │   ├── agent_events_websocket.py
+│   │   │   ├── agent_insights_websocket.py
+│   │   │   ├── agent_logs_websocket.py
+│   │   │   ├── deps.py
+│   │   │   ├── endpoints
+│   │   │   │   ├── auth.py
+│   │   │   │   ├── auto_tuner.py
+│   │   │   │   ├── csrf.py
+│   │   │   │   ├── distributed_agents.py
+│   │   │   │   ├── health.py
+│   │   │   │   ├── onboarding.py
+│   │   │   │   ├── reports.py
+│   │   │   │   ├── system_logs.py
+│   │   │   │   └── users.py
+│   │   │   ├── __init__.py
+│   │   │   ├── metrics_routes.py
+│   │   │   ├── minimal_websocket_routes.py
+│   │   │   ├── simplified_websocket_routes.py
+│   │   │   ├── system.py
+│   │   │   ├── websocket_auth.py
+│   │   │   └── websockets.py
+│   │   ├── core
+│   │   │   ├── auth.py
+│   │   │   ├── background_tasks.py
+│   │   │   ├── base.py
+│   │   │   ├── cache.py
+│   │   │   ├── config.py
+│   │   │   ├── database.py
+│   │   │   ├── dependencies.py
+│   │   │   ├── init_db.py
+│   │   │   ├── __init__.py
+│   │   │   ├── lazy_init.py
+│   │   │   ├── learning_helpers.py
+│   │   │   ├── middleware.py
+│   │   │   ├── redis.py
+│   │   │   ├── resilience
+│   │   │   │   ├── backpressure.py
+│   │   │   │   ├── circuit_breaker.py
+│   │   │   │   ├── error_recovery.py
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── metric_transformer.py
+│   │   │   │   └── README.md
+│   │   │   ├── security.py
+│   │   │   ├── seed_db.legacy.py
+│   │   │   ├── types.py
+│   │   │   └── websocket_log_handler.py
+│   │   ├── __init__.py
+│   │   ├── ml
+│   │   │   ├── context
+│   │   │   │   ├── advanced_patterns.py
+│   │   │   │   ├── context_manager.py
+│   │   │   │   ├── context_model.py
+│   │   │   │   └── pattern_learning.py
+│   │   │   ├── pattern_recognition
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── pattern_analyzer.py
+│   │   │   │   ├── pattern_matcher.py
+│   │   │   │   └── pattern_validator.py
+│   │   │   └── predictive_optimization
+│   │   │       └── __init__.py
+│   │   ├── models
+│   │   │   ├── agent_events.py
+│   │   │   ├── agent_learning.py
+│   │   │   ├── agent_memory_banks.py
+│   │   │   ├── agent_memory.py
+│   │   │   ├── __init__.py
+│   │   │   ├── legacy_model_files
+│   │   │   │   ├── agent_coordination_models.py
+│   │   │   │   ├── agent_decision_models.py
+│   │   │   │   ├── agent_memory.legacy.py
+│   │   │   │   ├── ai_agent_tracking.py
+│   │   │   │   ├── hamsters_model.py
+│   │   │   │   ├── meth_snail_model.py
+│   │   │   │   ├── qsp_models.py
+│   │   │   │   ├── sir_hawkington_model.py
+│   │   │   │   ├── the_stick_model.py
+│   │   │   │   ├── triage_decision_models.py
+│   │   │   │   ├── tuning_history.py
+│   │   │   │   └── vic20_sage_model.py
+│   │   │   ├── metrics_aggregates.py
+│   │   │   ├── metrics.py
+│   │   │   ├── user.py
+│   │   │   └── vector_tables.py
+│   │   ├── optimization
+│   │   │   ├── auto_tuner_db_helpers.legacy.py
+│   │   │   ├── auto_tuner.legacy.py
+│   │   │   ├── __init__.py
+│   │   │   ├── legacy
+│   │   │   │   └── resource_monitor.py
+│   │   │   ├── metric_keys.py
+│   │   │   ├── pattern_analyzer.py
+│   │   │   ├── resource_monitor.py
+│   │   │   └── system_permissions.py
+│   │   ├── schemas
+│   │   │   ├── agent_coordination.py
+│   │   │   ├── agent_decision.py
+│   │   │   ├── agent_learning.py
+│   │   │   ├── agent_memory_banks.py
+│   │   │   ├── agent_memory_global_patterns.py
+│   │   │   ├── agent_memory.py
+│   │   │   ├── ai_agent_tracking.py
+│   │   │   ├── auth.py
+│   │   │   ├── hamsters.py
+│   │   │   ├── __init__.py
+│   │   │   ├── meth_snail.py
+│   │   │   ├── metrics_aggregates.py
+│   │   │   ├── metrics.py
+│   │   │   ├── qsp.py
+│   │   │   ├── README.md
+│   │   │   ├── response_models.py
+│   │   │   ├── sir_hawkington.py
+│   │   │   ├── system_metrics.py
+│   │   │   ├── the_stick.py
+│   │   │   ├── token.py
+│   │   │   ├── user.py
+│   │   │   └── vic20_sage.py
+│   │   ├── services
+│   │   │   ├── agent_decision_emitter.py
+│   │   │   ├── agent_event_logger.py
+│   │   │   ├── agent_initialization.py
+│   │   │   ├── agent_insight_emitter.py
+│   │   │   ├── agent_memory_service.py
+│   │   │   ├── auth_service.py
+│   │   │   ├── cache_service.py.disable
+│   │   │   ├── embedding_service.py
+│   │   │   ├── legacy
+│   │   │   │   ├── basic_backend_metrics
+│   │   │   │   │   ├── simple_cpu_metrics.py
+│   │   │   │   │   ├── simple_disk_metrics.py
+│   │   │   │   │   ├── simple_memory_metrics.py
+│   │   │   │   │   ├── simple_network_metrics.py
+│   │   │   │   │   ├── test_metrics_service.py
+│   │   │   │   │   ├── test_resource_monitor.py
+│   │   │   │   │   ├── test_simplified_system.py
+│   │   │   │   │   ├── test_system_metrics_service.py
+│   │   │   │   │   └── test_websocket_metrics.py
+│   │   │   │   └── metrics
+│   │   │   │       ├── cpu_metrics_service.py
+│   │   │   │       ├── cpu_metrics_transformer.py
+│   │   │   │       ├── disk_metrics_service.py
+│   │   │   │       ├── memory_metrics_service.py
+│   │   │   │       ├── metrics_service.py
+│   │   │   │       ├── network_metrics_service.py
+│   │   │   │       ├── system_metrics_service2.py
+│   │   │   │       └── system_metrics_service.py
+│   │   │   ├── memory_redis_patch
+│   │   │   │   ├── agent_memory_service_with_cache.py
+│   │   │   │   ├── health.py
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── memory_cache_mixin.py
+│   │   │   │   ├── redis_client.py
+│   │   │   │   ├── task_queue.py
+│   │   │   │   └── workers
+│   │   │   │       └── db_processor.py
+│   │   │   ├── memory_writer_async.py
+│   │   │   ├── metrics
+│   │   │   │   ├── simplified_cpu_service.py
+│   │   │   │   ├── simplified_disk_service.py
+│   │   │   │   ├── simplified_memory_service.py
+│   │   │   │   ├── simplified_metrics_service.py
+│   │   │   │   └── simplified_network_service.py
+│   │   │   ├── metrics_aggregation_service.py
+│   │   │   ├── metrics_repository.py
+│   │   │   ├── report_generator.py
+│   │   │   ├── system_log_service.py
+│   │   │   └── vector_storage.py
+│   │   ├── tests
+│   │   │   ├── conftest.py
+│   │   │   ├── integration
+│   │   │   │   └── test_triage_engine_integration.py
+│   │   │   ├── test_postgres.py
+│   │   │   ├── unit
+│   │   │   │   └── test_enhanced_redis.py
+│   │   │   └── utils
+│   │   │       └── redis_mock.py
+│   │   └── utils
+│   │       ├── agent_preferences.py
+│   │       ├── exceptions.py
+│   │       ├── __init__.py
+│   │       ├── json_safety.py
+│   │       └── timing.py
+│   ├── dev-tools
+│   │   ├── analysis
+│   │   │   ├── agent_introspection_ast.py
+│   │   │   └── resource_monitor_ast.py
+│   │   ├── archives
+│   │   │   ├── fix_database_architecture.py
+│   │   │   ├── fix_database_urls.py
+│   │   │   ├── fix_websocket_imports.py
+│   │   │   ├── meth_snail_tables_migration.py
+│   │   │   └── requirements.txt.bak
+│   │   ├── debug
+│   │   │   ├── debug_dashboard_hardcore.py
+│   │   │   ├── debug_dashboard.py
+│   │   │   ├── debug_metrics_service_methods.py
+│   │   │   └── debug_self_issue.py
+│   │   ├── scripts
+│   │   │   ├── analyze_agent_concepts.py
+│   │   │   ├── analyze_agent_memory.py
+│   │   │   ├── analyze_agent_models.py
+│   │   │   ├── backend_cleanup.sh
+│   │   │   ├── check_dependencies.py
+│   │   │   ├── check_schema.py
+│   │   │   ├── create_superuser.py
+│   │   │   ├── create_test_user.py
+│   │   │   ├── find_memory_operations.py
+│   │   │   ├── find_memory_ops.py
+│   │   │   ├── memory_migration_report.md
+│   │   │   ├── quick_health_check.py
+│   │   │   ├── setup_permissions.py
+│   │   │   └── update_memory_operations.py
+│   │   └── tests
+│   │       ├── check_websocket_routes.py
+│   │       ├── tests
+│   │       │   ├── test_agent_events.py
+│   │       │   ├── test_agent_events_websocket.py
+│   │       │   ├── test_agent_flow.py
+│   │       │   ├── test_agent_memory_flow.py
+│   │       │   ├── test_all_purified_services.py
+│   │       │   ├── test_auth.py
+│   │       │   ├── test_broadcast.py
+│   │       │   ├── test_coroutine_fixes.py
+│   │       │   ├── test_db_init.py
+│   │       │   ├── test_hamsters_database_integration.py
+│   │       │   ├── test_hawkington_central_memory_migration.py
+│   │       │   ├── test_hawkington_dual_write.py
+│   │       │   ├── test_instrumentation.py
+│   │       │   ├── test_memory_path.py
+│   │       │   ├── test_meth_snail_db_quick.py
+│   │       │   ├── test_meth_snail_integration.py
+│   │       │   ├── test_migrations.py
+│   │       │   ├── test_qsp_complete_flow.py
+│   │       │   ├── test_realtime_metrics_flow.py
+│   │       │   ├── test_the_stick_db_quick.py
+│   │       │   ├── test_triage_revolution.py
+│   │       │   ├── test_websocket_fix.py
+│   │       │   ├── test_websocket.py
+│   │       │   └── websocket_debug.py
+│   │       └── TESTS
+│   │           ├── fix_remaining_issues.py
+│   │           ├── sir_hawkington_real_integration.py
+│   │           ├── test_meth_snail_brain.py
+│   │           ├── test_meth_snail_endpoints.py
+│   │           ├── test_meth_snail_websocket.py
+│   │           ├── test_real_data_flow.py
+│   │           ├── test_sir_hawkington_brain.py
+│   │           └── test_sir_hawkington.py
+│   ├── docs
+│   │   ├── architecture
+│   │   │   ├── AGENT_ARCHITECTURE_ANALYSIS.md
+│   │   │   ├── AGENT_FUNCTIONALITY_LOSS_ANALYSIS.md
+│   │   │   ├── AGENT_INSIGHTS_WEBSOCKET_IMPLEMENTATION.md
+│   │   │   ├── AGENT_THEATER_INTEGRATION.md
+│   │   │   ├── AGENT_VISUALIZATION_GUIDE.md
+│   │   │   ├── CORRECT_WEBSOCKET_ARCHITECTURE.md
+│   │   │   └── PHASE_2_ALL_AGENTS_COMPLETE.md
+│   │   ├── DUPLICATE_ANALYSIS.md
+│   │   ├── guides
+│   │   │   ├── AGENT_VISUALIZATION_GUIDE.md
+│   │   │   ├── DUAL_WRITE_MIGRATION_STRATEGY.md
+│   │   │   └── POSTGRESQL_MIGRATION_GUIDE.md
+│   │   ├── implementation
+│   │   │   ├── AGENT_INSIGHTS_WEBSOCKET_IMPLEMENTATION.md
+│   │   │   ├── AGENT_THEATER_INTEGRATION.md
+│   │   │   ├── COMPLETION_REPORT.md
+│   │   │   ├── CORRECT_WEBSOCKET_ARCHITECTURE.md
+│   │   │   ├── DUAL_WRITE_IMPLEMENTATION_SUMMARY.md
+│   │   │   ├── DUAL_WRITE_INTEGRATION_TESTING.md
+│   │   │   ├── FINAL_WEBSOCKET_IMPLEMENTATION.md
+│   │   │   ├── FRONTEND_INTEGRATION_ACTION_PLAN.md
+│   │   │   ├── FRONTEND_INTEGRATION_COMPLETE_STEP1.md
+│   │   │   ├── FRONTEND_WEBSOCKET_INTEGRATION_STATUS.md
+│   │   │   ├── IMPLEMENTATION_STATUS.md
+│   │   │   ├── IMPLEMENTATION_SUMMARY.md
+│   │   │   ├── PHASE_1_COMPLETE.md
+│   │   │   ├── PHASE_2_ALL_AGENTS_COMPLETE.md
+│   │   │   ├── PHASE_2_COMPLETE_FIRST_THREE.md
+│   │   │   ├── PHASE_2_INTEGRATION_STATUS.md
+│   │   │   ├── REDIS_IMPLEMENTATION.md
+│   │   │   ├── SEPARATE_WEBSOCKET_SERVICES_COMPLETE.md
+│   │   │   ├── WEBSOCKET_CONNECTION_FIX.md
+│   │   │   ├── WEBSOCKET_DEBUG_SUMMARY.md
+│   │   │   ├── WEBSOCKET_ENDPOINT_COMPLETE.md
+│   │   │   ├── WEBSOCKET_EVENT_ANALYSIS.md
+│   │   │   ├── WEBSOCKET_EVENTS_IMPLEMENTATION.md
+│   │   │   └── WEBSOCKET_FREEZE_FIX.md
+│   │   ├── launch_docs
+│   │   │   └── hti_launch_dev.md
+│   │   ├── memory_bank_schema.md
+│   │   ├── README.md
+│   │   └── WEBSOCKET_EMISSIONS_MAP.md
+│   ├── filter_logs.sh
+│   ├── frontend-config
+│   │   ├── api-config.json
+│   │   ├── api-types.ts
+│   │   └── endpoints.json
+│   ├── __init__.py
+│   ├── logs
+│   │   ├── backend_20251130_082413.log.save
+│   │   ├── backend 20251201_092127.log\012\012
+│   │   ├── dump.rdb
+│   │   └── EOF
+│   ├── main.py
+│   ├── markdown_docs
+│   │   ├── AGENT_ARCHITECTURE_ANALYSIS.md
+│   │   ├── AGENT_FUNCTIONALITY_LOSS_ANALYSIS.md
+│   │   ├── AGENT_INSIGHTS_WEBSOCKET_IMPLEMENTATION.md
+│   │   ├── AGENT_THEATER_INTEGRATION.md
+│   │   ├── AGENT_VISUALIZATION_GUIDE.md
+│   │   ├── AST_INTROSPECTION_README.md
+│   │   ├── COMPLETION_REPORT.md
+│   │   ├── CORRECT_WEBSOCKET_ARCHITECTURE.md
+│   │   ├── DUAL_WRITE_IMPLEMENTATION_SUMMARY.md
+│   │   ├── DUAL_WRITE_INTEGRATION_TESTING.md
+│   │   ├── DUAL_WRITE_MIGRATION_STRATEGY.md
+│   │   ├── FINAL_WEBSOCKET_IMPLEMENTATION.md
+│   │   ├── FIXES_APPLIED.md
+│   │   ├── FRONTEND_INTEGRATION_ACTION_PLAN.md
+│   │   ├── FRONTEND_INTEGRATION_COMPLETE_STEP1.md
+│   │   ├── FRONTEND_RESTRUCTURE_PLAN.md
+│   │   ├── FRONTEND_WEBSOCKET_INTEGRATION_STATUS.md
+│   │   ├── IMPLEMENTATION_STATUS.md
+│   │   ├── IMPLEMENTATION_SUMMARY.md
+│   │   ├── JSON_SERIALIZATION_FIX.md
+│   │   ├── PHASE_1_COMPLETE.md
+│   │   ├── PHASE_2_ALL_AGENTS_COMPLETE.md
+│   │   ├── PHASE_2_COMPLETE_FIRST_THREE.md
+│   │   ├── PHASE_2_INTEGRATION_STATUS.md
+│   │   ├── PHASE_2_PROGRESS.md
+│   │   ├── POSTGRESQL_INSTALLATION_PARROT.md
+│   │   ├── POSTGRESQL_MIGRATION_GUIDE.md
+│   │   ├── QUICK_REFERENCE.md
+│   │   ├── REDIS_IMPLEMENTATION.md
+│   │   ├── SEPARATE_WEBSOCKET_SERVICES_COMPLETE.md
+│   │   ├── WEBSOCKET_CONNECTION_FIX.md
+│   │   ├── WEBSOCKET_DEBUG_SUMMARY.md
+│   │   ├── WEBSOCKET_ENDPOINT_COMPLETE.md
+│   │   ├── WEBSOCKET_EVENT_ANALYSIS.md
+│   │   ├── WEBSOCKET_EVENTS_IMPLEMENTATION.md
+│   │   └── WEBSOCKET_FREEZE_FIX.md
+│   ├── migrations
+│   │   └── create_agent_learning_records.sql
+│   ├── poetry.lock
+│   ├── Procfile
+│   ├── pyproject.toml
+│   ├── pytest.ini
+│   ├── requirements_freeze.txt
+│   ├── requirements.in
+│   ├── requirements.txt
+│   ├── run_with_logging.sh
+│   ├── scripts
+│   │   ├── add_vector_writes_all_agents.py
+│   │   ├── AGENT_COMMUNICATION_MAP.md
+│   │   ├── agent_introspection_data.json
+│   │   ├── demo_week4_integration.py
+│   │   ├── extract_endpoints.py
+│   │   ├── frontend-config
+│   │   │   ├── api-config.json
+│   │   │   ├── api-types.ts
+│   │   │   └── endpoints.json
+│   │   ├── generate_frontend_types.py
+│   │   ├── INTROSPECTION_SUMMARY.md
+│   │   ├── migration
+│   │   │   ├── migrate_sqlite_to_postgres.py
+│   │   │   └── reset_postgres_db.py
+│   │   ├── quick_db_check.py
+│   │   ├── README.md
+│   │   ├── SETUP_HOTKEYS.md
+│   │   ├── setup_pgvector.py
+│   │   ├── setup-ssh-keys.sh
+│   │   ├── shutdown-rebellion.sh
+│   │   ├── start_research_recording.py
+│   │   ├── TROUBLESHOOTING.md
+│   │   ├── wake-backend.sh
+│   │   ├── wake-frontend.sh
+│   │   ├── wake-redis.sh
+│   │   ├── wake-the-misfits.sh
+│   │   └── websocket_emission_audit.py
+│   ├── setup.py
+│   ├── show_startup.sh
+│   ├── tests
+│   │   ├── distributed
+│   │   │   ├── test_agent_coordination.py
+│   │   │   ├── test_consciousness_checkpoint.py
+│   │   │   ├── test_decision_history.py
+│   │   │   ├── test_decision_history_triage.py
+│   │   │   ├── test_distributed_mixin.py
+│   │   │   ├── test_triage_bridge.py
+│   │   │   ├── test_triage_broadcasting.py
+│   │   │   ├── test_week4_task4_1.py
+│   │   │   ├── test_week4_task4_2.py
+│   │   │   ├── test_week4_task4_3.py
+│   │   │   ├── test_week4_task4_4.py
+│   │   │   ├── test_week4_task4_5.py
+│   │   │   ├── test_week5_task5_1.py
+│   │   │   ├── test_week5_task5_1_simple.py
+│   │   │   └── test_week5_task5_2.py
+│   │   ├── integration
+│   │   │   ├── test_agent_resurrection.py
+│   │   │   ├── test_distributed_agents.py
+│   │   │   ├── test_distributed_agents_standalone.py
+│   │   │   ├── test_distributed_config.py
+│   │   │   ├── test_real_websocket_endpoint.py
+│   │   │   ├── test_websocket_with_auth.py
+│   │   │   └── test_week3_triage_flow.py
+│   │   ├── logs
+│   │   │   └── agent_events
+│   │   │       ├── session_20251214_161255.jsonl
+│   │   │       ├── session_20251214_161733.jsonl
+│   │   │       └── session_20251214_162239.jsonl
+│   │   ├── README.md
+│   │   ├── test_agent_database_integrations.py
+│   │   ├── test_agent_manager_distributed.py
+│   │   ├── test_all_distributed_agents.py
+│   │   ├── test_db_connection.py
+│   │   ├── test_db_integration_live.py
+│   │   ├── test_db_writes.py
+│   │   ├── test_embeddings.py
+│   │   ├── test_lazy_init_distributed.py
+│   │   ├── test_ml_blueprint_complete.py
+│   │   ├── test_ml_imports_minimal.py
+│   │   ├── test_ml_syntax_check.py
+│   │   ├── test_phase2_hawk_triage.py
+│   │   ├── test_phase2_simple.py
+│   │   ├── test_phase3_phase4_hierarchy.py
+│   │   ├── test_sir_hawkington_distributed.py
+│   │   ├── test_triage_flow_diagnostic.py
+│   │   ├── test_vector_system.py
+│   │   ├── test_vic20_feedback_loop.py
+│   │   ├── test_vic20_history_query.py
+│   │   ├── test_week3_triage_integration.py
+│   │   ├── test_ws_connection.py
+│   │   └── unit
+│   │       ├── fix_remaining_issues.py
+│   │       ├── sir_hawkington_real_integration.py
+│   │       ├── test_agent_events.py
+│   │       ├── test_agent_events_websocket.py
+│   │       ├── test_agent_flow.py
+│   │       ├── test_agent_memory_flow.py
+│   │       ├── test_all_purified_services.py
+│   │       ├── test_auth.py
+│   │       ├── test_broadcast.py
+│   │       ├── test_coroutine_fixes.py
+│   │       ├── test_db_init.py
+│   │       ├── test_hamsters_database_integration.py
+│   │       ├── test_hawkington_central_memory_migration.py
+│   │       ├── test_hawkington_dual_write.py
+│   │       ├── test_instrumentation.py
+│   │       ├── test_memory_path.py
+│   │       ├── test_meth_snail_brain.py
+│   │       ├── test_meth_snail_db_quick.py
+│   │       ├── test_meth_snail_endpoints.py
+│   │       ├── test_meth_snail_integration.py
+│   │       ├── test_meth_snail_websocket.py
+│   │       ├── test_migrations.py
+│   │       ├── test_qsp_complete_flow.py
+│   │       ├── test_real_data_flow.py
+│   │       ├── test_realtime_metrics_flow.py
+│   │       ├── test_sir_hawkington_brain.py
+│   │       ├── test_sir_hawkington.py
+│   │       ├── test_the_stick_db_quick.py
+│   │       ├── test_triage_revolution.py
+│   │       ├── test_websocket_fix.py
+│   │       ├── test_websocket.py
+│   │       └── websocket_debug.py
+│   ├── tools
+│   │   └── psutil_monitor.py
+│   └── watch_db.sh
+├── directory_tree.txt
+├── Dockerfile
+├── docs
+│   ├── archive
+│   │   ├── AGENT_DATABASE_FIXES_NEEDED.md
+│   │   ├── AGENT_DATABASE_WRITES_STATUS.md
+│   │   ├── AGENT_DB_REFACTOR.md
+│   │   ├── AGENT_MONITOR_DEBUG.md
+│   │   ├── AGENT_THEATER_GUIDE.md
+│   │   ├── CLEANUP_PLAN.md
+│   │   ├── CONSCIOUSNESS_THEATER_VISION.md
+│   │   ├── CONTEXT_HANDOFF.md
+│   │   ├── DUAL_METRICS_SYSTEMS_ANALYSIS.md
+│   │   ├── FRONTEND_AUDIT.md
+│   │   ├── FRONTEND_BACKEND_MISMATCH_ANALYSIS.md
+│   │   ├── FRONTEND_REBUILD_PLAN.md
+│   │   ├── HIERARCHY_REFACTOR_PLAN.md
+│   │   ├── LIVE_TEST_STATUS.md
+│   │   ├── METRICS_PAYLOAD_COMPLETE_ANALYSIS.md
+│   │   ├── METRICS_PAYLOAD_FIX.md
+│   │   ├── PERSONALITY_PAYLOAD_AUDIT.md
+│   │   ├── PHASE_1_AGENT_PUBSUB.md
+│   │   ├── PHASE_1_SYSTEMATIC_PLAN.md
+│   │   ├── PHASE_2_HYBRID_STORAGE.md
+│   │   ├── PHASE_3_EVENT_SOURCING.md
+│   │   ├── PYDANTIC_V2_MIGRATION_PROGRESS.md
+│   │   ├── SESSION_SNAPSHOT_NOV16_2025.md
+│   │   ├── SHORT_TERM_FIXES.md
+│   │   ├── STANDARDIZATION_PROGRESS.md
+│   │   ├── VECTOR_WRITES_DEBUG_SESSION.md
+│   │   ├── WEBSOCKET_CHANNEL_ANALYSIS.md
+│   │   ├── WEBSOCKET_CLEANUP.md
+│   │   ├── WEBSOCKET_FIX.md
+│   │   └── WEBSOCKET_PAYLOAD_ANALYSIS.md
+│   ├── completed-tasks
+│   │   ├── CLEANUP_SUMMARY.md
+│   │   ├── COMMUNICATION_FIX_SUMMARY.md
+│   │   ├── HP_CONTINUITY_COMPLETE.md
+│   │   ├── RESEARCH_SYSTEM_COMPLETE.md
+│   │   ├── STANDARDIZATION_COMPLETE.md
+│   │   ├── WAKE_SCRIPTS_COMPLETE.md
+│   │   ├── WEBSOCKET_CONSOLIDATION_COMPLETE.md
+│   │   ├── WEEK3_COMPLETE.md
+│   │   ├── WEEK3_TASK3.2_COMPLETE.md
+│   │   ├── WEEK4_COMPLETE.md
+│   │   ├── WEEK4_TASK4.1_COMPLETE.md
+│   │   ├── WEEK4_TASK4.1_PROGRESS.md
+│   │   ├── WEEK4_TASK4.1_SUMMARY.md
+│   │   ├── WEEK4_TASK4.2_COMPLETE.md
+│   │   ├── WEEK4_TASK4.3_COMPLETE.md
+│   │   ├── WEEK4_TASK4.4_COMPLETE.md
+│   │   ├── WEEK5_TASK5.1_COMPLETE.md
+│   │   └── WEEK5_TASK5.2_COMPLETE.md
+│   ├── deployment
+│   │   ├── AUTH_PERFORMANCE_FIX.md
+│   │   ├── DELL_SETUP_INSTRUCTIONS.md
+│   │   ├── DISTRIBUTED_AGENTS_QUICKSTART.md
+│   │   ├── HP_DEPLOYMENT_GUIDE.md
+│   │   ├── PHASE2_TEST_INSTRUCTIONS.md
+│   │   └── SETUP_HP_FRONTEND.md
+│   ├── planning
+│   │   ├── AGENTIC_FRAMEWORK_ARCHITECTURE.md
+│   │   ├── COMMUNICATION_ARCHITECTURE.md
+│   │   ├── DISTRIBUTED_AGENTS_SUMMARY.md
+│   │   ├── DISTRIBUTED_INTEGRATION_PLAN.md
+│   │   ├── ML_ARCHITECTURE_FOR_ALL_AGENTS.md
+│   │   ├── SYSTEM_ARCHITECTURE_MAP.md
+│   │   ├── TRIAGE_ARCHITECTURE.md
+│   │   └── WEEK4_AGENT_INTEGRATION_PLAN.md
+│   └── README.md
+├── dump.rdb
+├── frontend
+│   ├── babel.config.js
+│   ├── directory_tree.txt
+│   ├── index.html
+│   ├── package.json
+│   ├── package-lock.json
+│   ├── public
+│   │   └── vite.svg
+│   ├── README.md
+│   ├── src
+│   │   ├── App.css
+│   │   ├── App.tsx
+│   │   ├── assets
+│   │   │   └── icons
+│   │   │       └── agents
+│   │   │           ├── elegant_top_hat_icon_gold_and_ (2).png
+│   │   │           ├── hamsters.jpeg
+│   │   │           ├── hamsters.png
+│   │   │           ├── qsp.jpeg
+│   │   │           ├── qsp.png
+│   │   │           ├── sir_hawkington.jpeg
+│   │   │           ├── terry_meth_snail.jpeg
+│   │   │           ├── terry_meth_snail.png
+│   │   │           ├── the_stick.jpeg
+│   │   │           ├── the_stick.png
+│   │   │           ├── vic_20_sage.jpeg
+│   │   │           └── vic_20_sage.png
+│   │   ├── components
+│   │   │   ├── distributed
+│   │   │   │   ├── AgentCoordinationFlow.tsx
+│   │   │   │   ├── AgentPersonalityAnimations.tsx
+│   │   │   │   ├── DistributedAgentDashboard.tsx
+│   │   │   │   └── SystemHealthNarrative.tsx
+│   │   │   ├── GlobalErrorBoundary.tsx
+│   │   │   ├── legacy
+│   │   │   │   ├── admin-console
+│   │   │   │   │   ├── AdminConsole.css
+│   │   │   │   │   ├── AdminConsole.tsx
+│   │   │   │   │   └── index.ts
+│   │   │   │   ├── agent-features
+│   │   │   │   │   └── meth-snail
+│   │   │   │   │       ├── CaffeineGauge.tsx
+│   │   │   │   │       ├── JitterMeter.tsx
+│   │   │   │   │       └── ShellSpinIndicator.tsx
+│   │   │   │   ├── AgentPatterns.css
+│   │   │   │   ├── agents
+│   │   │   │   │   └── AgentCard.tsx
+│   │   │   │   ├── consciousness
+│   │   │   │   │   ├── MessageFlow.css
+│   │   │   │   │   └── MessageFlow.tsx
+│   │   │   │   ├── MainNavigation.module.css
+│   │   │   │   ├── MainNavigation.tsx
+│   │   │   │   ├── ProfileDropDown.css
+│   │   │   │   └── ProfileDropdown.tsx
+│   │   │   ├── ml
+│   │   │   │   ├── DecisionChainView.tsx
+│   │   │   │   └── PersonalityBehaviors.tsx
+│   │   │   ├── monitoring
+│   │   │   │   └── AgentMonitorDashboard.tsx
+│   │   │   ├── navigation
+│   │   │   │   ├── Navigation.css
+│   │   │   │   ├── PrimaryNav.tsx
+│   │   │   │   └── SecondaryNav.tsx
+│   │   │   ├── observatory
+│   │   │   │   ├── AgentNode.tsx
+│   │   │   │   ├── NeuralMesh.tsx
+│   │   │   │   ├── StreamOfConsciousness.tsx
+│   │   │   │   └── TopologyMesh.tsx
+│   │   │   ├── ProtectedRoute.tsx
+│   │   │   └── RebellionTerrarium
+│   │   │       ├── index.ts
+│   │   │       ├── RebellionTerrarium.css
+│   │   │       └── RebellionTerrarium.tsx
+│   │   ├── config
+│   │   │   └── constants.ts
+│   │   ├── frontend-config
+│   │   │   ├── api-config.json
+│   │   │   ├── api-types.ts
+│   │   │   └── endpoints.json
+│   │   ├── hooks
+│   │   │   ├── redux.ts
+│   │   │   ├── useDistributedAgents.ts
+│   │   │   ├── useLoginForm.ts
+│   │   │   ├── useOnboardingFlow.ts
+│   │   │   ├── useOnboarding.ts
+│   │   │   ├── useSignUpForm.ts
+│   │   │   ├── useWebSocketConnection.ts
+│   │   │   └── useWebSocketMessages.ts
+│   │   ├── index.css
+│   │   ├── main.tsx
+│   │   ├── pages
+│   │   │   ├── AgentMonitorPage.tsx
+│   │   │   ├── LandingPage.css
+│   │   │   ├── LandingPage.tsx
+│   │   │   ├── LoginPage.css
+│   │   │   ├── LoginPage.tsx
+│   │   │   ├── ObservatoryPage.css
+│   │   │   ├── ObservatoryPage.tsx
+│   │   │   ├── OnboardingFlow.css
+│   │   │   ├── OnboardingFlow.tsx
+│   │   │   ├── SignupPage.css
+│   │   │   └── SignupPage.tsx
+│   │   ├── services
+│   │   │   ├── api.ts
+│   │   │   ├── backpressure.ts
+│   │   │   ├── circuitBreaker.ts
+│   │   │   ├── README.md
+│   │   │   └── websocket.ts
+│   │   ├── store
+│   │   │   ├── selectors
+│   │   │   │   └── metrics.ts
+│   │   │   ├── slices
+│   │   │   │   ├── agentsSlice.ts
+│   │   │   │   ├── authSlice.ts
+│   │   │   │   ├── communicationSlice.ts
+│   │   │   │   ├── hamstersSlice.ts
+│   │   │   │   ├── methSnailSlice.ts
+│   │   │   │   ├── metricSlice.ts
+│   │   │   │   ├── quantumShadowPeopleSlice.ts
+│   │   │   │   ├── sirHawkingtonSlice.ts
+│   │   │   │   ├── theStickSlice.ts
+│   │   │   │   ├── triageSlice.ts
+│   │   │   │   └── vic20Slice.ts
+│   │   │   └── store.ts
+│   │   ├── styles
+│   │   │   ├── accessibility.css
+│   │   │   ├── agent-personalities.css
+│   │   │   ├── animations.css
+│   │   │   ├── common-components.css
+│   │   │   ├── coordination-patterns.css
+│   │   │   ├── modules
+│   │   │   │   ├── AgentCard.module.css
+│   │   │   │   ├── AgentDashboard.module.css
+│   │   │   │   ├── StreamOfConsciousness.module.css
+│   │   │   │   └── TopologyMesh.module.css
+│   │   │   ├── onboarding.css
+│   │   │   ├── rebellion-core.css
+│   │   │   └── utilities.css
+│   │   ├── types
+│   │   │   ├── agentIntrospection.ts
+│   │   │   ├── agents.ts
+│   │   │   ├── auth.ts
+│   │   │   ├── backend-generated.ts
+│   │   │   ├── metricKeys.ts
+│   │   │   ├── metric_types.ts
+│   │   │   └── websocketMessages.ts
+│   │   ├── utils
+│   │   │   ├── agentCoordination.ts
+│   │   │   └── systemDetection.ts
+│   │   └── vite-env.d.ts
+│   ├── tests
+│   │   ├── README.md
+│   │   └── unit
+│   │       ├── authSlice.timeout.test.ts
+│   │       ├── LiveAgentTheaterPage.test.tsx
+│   │       ├── LiveAgentTheater.test.tsx
+│   │       ├── mocks
+│   │       │   └── fileMock.js
+│   │       ├── setup.ts
+│   │       ├── SystemReadyPage.test.tsx
+│   │       ├── useLoginForm.test.tsx
+│   │       └── webSocketService.test.ts
+│   ├── tsconfig.app.json
+│   ├── tsconfig.eslint.json
+│   ├── tsconfig.json
+│   ├── tsconfig.node.json
+│   ├── tsconfig.test.json
+│   ├── Utils
+│   │   └── csrf.ts
+│   └── vite.config.ts
+├── legacy_backup
+│   ├── backend
+│   │   └── api
+│   │       ├── agent_events_websocket.py
+│   │       ├── agent_insights_websocket.py
+│   │       └── agent_insights_websocket_v2.py
+│   └── frontend
+│       └── components
+│           └── agent-theater
+│               ├── AgentTheaterNew.tsx
+│               ├── AgentTheater_old.tsx
+│               └── AgentTheater.tsx
+├── Makefile
+├── netlify.toml
+├── package.json
+├── package-lock.json
+├── PROPRIETARY_SOFTWARE_LICENSE.md
+├── README.md
+├── render.yaml
+├── requirements_backup.txt
+├── run_with_logging.sh
+├── start_backend_network.sh
+└── windsurf_deployment.yaml
+
+126 directories, 786 files

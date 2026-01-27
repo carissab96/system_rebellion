@@ -13,6 +13,7 @@ import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
 import { OnboardingFlow } from './pages/OnboardingFlow';
 import AgentMonitorPage from './pages/AgentMonitorPage';
+import { AgentTheaterPage } from './pages/AgentTheaterPage';
 import './index.css';
 
 function App() {
@@ -46,13 +47,14 @@ function App() {
     <Router>
       <Routes>
         {/* Public routes */}
-        <Route path="/" element={auth.isAuthenticated ? <Navigate to="/observatory" replace /> : <LandingPage />} />
+        <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={auth.isAuthenticated ? <Navigate to="/observatory" replace /> : <LoginPage />} />
         <Route path="/signup" element={auth.isAuthenticated ? <Navigate to="/onboarding" replace /> : <SignupPage />} />
         
         {/* Protected routes */}
         <Route path="/onboarding" element={auth.isAuthenticated ? <OnboardingFlow /> : <Navigate to="/login" replace />} />
         <Route path="/observatory" element={auth.isAuthenticated ? <ObservatoryPage /> : <Navigate to="/login" replace />} />
+        <Route path="/agent-theater" element={auth.isAuthenticated ? <AgentTheaterPage /> : <Navigate to="/login" replace />} />
         <Route path="/agent-monitor" element={auth.isAuthenticated ? <AgentMonitorPage /> : <Navigate to="/login" replace />} />
         
         {/* Catch all */}

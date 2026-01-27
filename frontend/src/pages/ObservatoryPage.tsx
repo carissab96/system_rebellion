@@ -14,8 +14,6 @@ import { NeuralMesh } from '../components/observatory/NeuralMesh';
 import { TopologyMesh } from '../components/observatory/TopologyMesh';
 import { StreamOfConsciousness } from '../components/observatory/StreamOfConsciousness';
 import Footer from '../components/common/Footer';
-import { DistributedAgentDashboard } from '../components/distributed/DistributedAgentDashboard';
-import { AgentMonitorDashboard } from '../components/monitoring/AgentMonitorDashboard';
 import './ObservatoryPage.css';
 
 export const ObservatoryPage: React.FC = () => {
@@ -153,34 +151,6 @@ export const ObservatoryPage: React.FC = () => {
           }}>
             <StreamOfConsciousness maxItems={100} />
           </div>
-        </div>
-
-        {/* THE AGENT THEATER - Watch them work */}
-        <div className="dashboard-container" style={{ 
-          padding: '2rem', 
-          maxWidth: '1600px', 
-          margin: '0 auto',
-          background: 'linear-gradient(180deg, rgba(1,1,25,0) 0%, rgba(1,1,25,0.8) 100%)'
-        }}>
-          <div className="text-center mb-8">
-            <h2 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-cyan-400 to-green-400 mb-2">
-              THE AGENT THEATER
-            </h2>
-            <p className="text-slate-400 text-sm">
-              Distributed agent activity in real-time
-            </p>
-          </div>
-          <DistributedAgentDashboard />
-        </div>
-
-        {/* AGENT MONITOR - Backend event streaming */}
-        <div className="dashboard-container" style={{ 
-          padding: '2rem', 
-          maxWidth: '1600px', 
-          margin: '2rem auto 0',
-          background: 'linear-gradient(180deg, rgba(1,1,25,0.8) 0%, rgba(1,1,25,0.9) 100%)'
-        }}>
-          <AgentMonitorDashboard />
         </div>
       </main>
       <Footer />
