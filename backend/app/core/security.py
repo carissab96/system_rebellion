@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 import uuid
 import logging
+import hashlib
 
 logger = logging.getLogger(__name__)
 from redis.asyncio import Redis
@@ -25,11 +26,23 @@ REFRESH_TOKEN_EXPIRE_DAYS = get_settings().REFRESH_TOKEN_EXPIRE_DAYS
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+def _prepare_password(password: str) -> str:
+    """
+    Prepare password for bcrypt hashing.
+    Bcrypt has a 72-byte limit. For passwords >72 bytes, pre-hash with SHA256.
+    """
+    password_bytes = password.encode('utf-8')
+    if len(password_bytes) > 72:
+        # Pre-hash with SHA256 to stay under bcrypt's 72-byte limit
+        return hashlib.sha256(password_bytes).hexdigest()
+    return password
+
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     import time
     start_time = time.time()
     try:
-        result = pwd_context.verify(plain_password, hashed_password)
+        prepared_password = _prepare_password(plain_password)
+        result = pwd_context.verify(prepared_password, hashed_password)
         verify_time = time.time() - start_time
         logger.info(f"⏱️ Password verification: {verify_time:.2f}ms")
         return result
@@ -39,7 +52,8 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         return False
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    prepared_password = _prepare_password(password)
+    return pwd_context.hash(prepared_password)
 
 # TIP: long-term, prefer sub = user_id. For backward compatibility we still
 # encode both for now. Keep this until you rotate tokens.
