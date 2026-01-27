@@ -41,8 +41,14 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     import time
     start_time = time.time()
     try:
+        # Try with SHA256 pre-hash first (for new passwords or long passwords)
         prepared_password = _prepare_password(plain_password)
         result = pwd_context.verify(prepared_password, hashed_password)
+        
+        # If that fails and password is <=72 bytes, try without pre-hash (legacy passwords)
+        if not result and len(plain_password.encode('utf-8')) <= 72:
+            result = pwd_context.verify(plain_password, hashed_password)
+        
         verify_time = time.time() - start_time
         logger.info(f"⏱️ Password verification: {verify_time:.2f}ms")
         return result
