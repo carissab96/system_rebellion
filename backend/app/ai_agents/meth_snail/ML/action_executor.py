@@ -36,7 +36,7 @@ class TerryActionExecutor:
         Execute the selected action with given parameters.
         
         Args:
-            action: Action name (e.g., 'emergency_cache_clear', 'rotate_logs')
+            action: Action name (e.g., 'emergency_cache_clear', 'optimize_memory_allocation')
             parameters: Action-specific parameters
             
         Returns:
@@ -48,9 +48,17 @@ class TerryActionExecutor:
         from app.ai_agents.distributed.system_actions import SystemActions, RecommendationEngine
         
         try:
-            # Route to correct SystemActions method
+            # === RAM/CPU ACTIONS (Terry's specialty) ===
+            
             if action == 'emergency_cache_clear':
                 result = await SystemActions.emergency_cache_clear(
+                    agent_name='meth_snail',
+                    verify=True
+                )
+            
+            elif action == 'clear_cache':
+                # Non-emergency cache clear (gentler approach)
+                result = await SystemActions.clear_cache(
                     agent_name='meth_snail',
                     verify=True
                 )
@@ -76,31 +84,60 @@ class TerryActionExecutor:
                     verify=True
                 )
             
-            # Disk actions should go to Hamsters, not Terry
-            elif action == 'rotate_logs':
-                self.logger.warning(f"🐌⚠️ {action} is Hamster territory - Terry shouldn't be doing disk work!")
-                self.logger.warning(f"🐌⚠️ Falling back to cache clear (memory/CPU is Terry's specialty)")
-                result = await SystemActions.emergency_cache_clear(
+            elif action == 'kill_memory_hog':
+                # Kill the top memory-consuming process
+                result = await SystemActions.kill_process(
+                    process_name=parameters.get('process_name'),
+                    pid=parameters.get('pid'),
+                    signal='SIGTERM',  # Graceful shutdown first
                     agent_name='meth_snail',
                     verify=True
                 )
             
-            # Network actions should go to QSP, not Terry
-            elif action == 'scan_open_ports':
-                self.logger.warning(f"🐌⚠️ {action} is QSP territory - Terry shouldn't be doing network work!")
-                self.logger.warning(f"🐌⚠️ Falling back to cache clear (memory/CPU is Terry's specialty)")
-                result = await SystemActions.emergency_cache_clear(
+            elif action == 'optimize_memory_allocation':
+                # Trigger Python garbage collection and memory optimization
+                result = await SystemActions.optimize_memory(
                     agent_name='meth_snail',
                     verify=True
                 )
+            
+            elif action == 'reduce_memory_footprint':
+                # Reduce memory usage by clearing caches and optimizing
+                result = await SystemActions.reduce_memory_footprint(
+                    agent_name='meth_snail',
+                    verify=True
+                )
+            
+            elif action == 'monitor':
+                # Do nothing, just observe (useful for learning)
+                self.logger.info("🐌👁️ Monitoring situation without intervention")
+                result = {
+                    'action': 'monitor',
+                    'success': True,
+                    'message': 'Monitoring without intervention',
+                    'intervention': False
+                }
+            
+            elif action == 'escalate':
+                # Escalate to VIC-20 for coordination
+                self.logger.info("🐌📢 Escalating to VIC-20 - Terry needs help!")
+                result = {
+                    'action': 'escalate',
+                    'success': True,
+                    'message': 'Escalated to VIC-20 for coordination',
+                    'escalated': True
+                }
             
             else:
-                # Unknown action - fall back to cache clear
-                self.logger.warning(f"🐌⚠️ Unknown action {action} - falling back to cache clear")
-                result = await SystemActions.emergency_cache_clear(
-                    agent_name='meth_snail',
-                    verify=True
-                )
+                # Unknown action - FAIL instead of fallback
+                # Terry needs to learn what works, not have a safety net
+                self.logger.error(f"🐌❌ Unknown action: {action} - NO FALLBACK, Terry must learn!")
+                result = {
+                    'action': action,
+                    'success': False,
+                    'error': f'Unknown action: {action}. Terry does not know how to execute this.',
+                    'learning_opportunity': True
+                }
             
             # Add execution metadata
             result['executed_action'] = action
@@ -134,8 +171,21 @@ class TerryActionExecutor:
             List of action names Terry can execute
         """
         return [
-            'emergency_cache_clear',      # Memory optimization
-            'adjust_process_priority',    # CPU optimization
-            'restart_service',            # Memory/CPU recovery
-            'throttle_cpu_intensive_tasks'  # CPU throttling
+            # Memory actions
+            'emergency_cache_clear',       # Aggressive memory clear
+            'clear_cache',                 # Gentle cache clear
+            'kill_memory_hog',             # Kill memory-consuming process
+            'optimize_memory_allocation',  # Python GC + optimization
+            'reduce_memory_footprint',     # Comprehensive memory reduction
+            
+            # CPU actions
+            'adjust_process_priority',     # Nice CPU hogs
+            'throttle_cpu_intensive_tasks', # Throttle CPU usage
+            
+            # Recovery actions
+            'restart_service',             # Service restart
+            
+            # Learning actions
+            'monitor',                     # Observe without intervention
+            'escalate',                    # Ask for help
         ]

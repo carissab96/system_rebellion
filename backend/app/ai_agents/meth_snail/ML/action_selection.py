@@ -59,44 +59,110 @@ class TerryActionSelection:
     # Hamsters handle: Disk/Storage issues
     # QSP handles: Network issues
     ACTION_MAP = {
+        # === MEMORY ISSUES ===
         'memory_thrashing': [
-            'restart_service',  # Kill memory hog (aggressive - needs energy drink)
-            'emergency_cache_clear',  # Free up memory (aggressive - needs energy drink)
-            'adjust_process_priority',  # Less aggressive fallback
+            'kill_memory_hog',           # Kill the memory-consuming process
+            'restart_service',           # Restart service to reset memory
+            'reduce_memory_footprint',   # Comprehensive memory reduction
+            'emergency_cache_clear',     # Aggressive cache clear
+            'adjust_process_priority',   # Reduce priority of memory hogs
         ],
         'memory_leak': [
-            'restart_service',  # Reset leaked memory (aggressive)
-            'emergency_cache_clear',  # Clear leaked cache (aggressive)
-            'adjust_process_priority',  # Temporary mitigation
+            'restart_service',           # Reset leaked memory (best solution)
+            'kill_memory_hog',           # Kill leaking process
+            'optimize_memory_allocation', # Trigger GC to reclaim leaked memory
+            'reduce_memory_footprint',   # Reduce overall footprint
+            'emergency_cache_clear',     # Clear caches
         ],
         'memory_pressure': [
-            'emergency_cache_clear',  # Aggressive clear (needs energy drink)
-            'clear_cache',  # Standard clear (no energy drink needed)
-            'adjust_process_priority',  # Gentle approach
+            'clear_cache',               # Gentle cache clear (try first)
+            'optimize_memory_allocation', # Python GC optimization
+            'reduce_memory_footprint',   # Comprehensive reduction
+            'emergency_cache_clear',     # Aggressive clear if needed
+            'adjust_process_priority',   # Reduce priority of memory users
+            'monitor',                   # Sometimes just observe
         ],
-        'io_wait': [
-            'throttle_cpu_intensive_tasks',  # Reduce I/O pressure
-            'adjust_process_priority',  # Deprioritize I/O hogs
-            'emergency_cache_clear',  # Nuclear option
+        'memory_fragmentation': [
+            'optimize_memory_allocation', # Trigger GC to defragment
+            'restart_service',           # Reset memory allocation
+            'reduce_memory_footprint',   # Reduce fragmentation
+            'monitor',                   # Observe if it resolves naturally
         ],
+        'swap_usage': [
+            'kill_memory_hog',           # Free up RAM to reduce swap
+            'reduce_memory_footprint',   # Reduce memory usage
+            'emergency_cache_clear',     # Clear caches to free RAM
+            'restart_service',           # Reset memory state
+            'adjust_process_priority',   # Reduce priority of swap users
+        ],
+        
+        # === CPU ISSUES ===
         'cpu_bound': [
-            'restart_service',  # Nuclear option (aggressive)
-            'emergency_cache_clear',  # Terry's favorite (aggressive)
-            'adjust_process_priority',  # Nice the CPU hogs
-            'throttle_cpu_intensive_tasks',
+            'throttle_cpu_intensive_tasks', # Throttle CPU usage
+            'adjust_process_priority',   # Nice the CPU hogs
+            'kill_memory_hog',           # Kill CPU-intensive process
+            'restart_service',           # Restart if process stuck
+            'monitor',                   # Observe if it's temporary
         ],
-        # Removed disk_full - that's Hamster territory!
-        # Removed network_bound and network_congestion - that's QSP territory!
+        'cpu_spike': [
+            'adjust_process_priority',   # Nice the spiking process
+            'throttle_cpu_intensive_tasks', # Throttle CPU
+            'monitor',                   # Often spikes are temporary
+            'kill_memory_hog',           # Kill if it's a runaway process
+        ],
+        'high_context_switching': [
+            'adjust_process_priority',   # Reduce priority of context switchers
+            'throttle_cpu_intensive_tasks', # Reduce overall CPU load
+            'optimize_memory_allocation', # May reduce thrashing
+            'monitor',                   # Observe pattern
+        ],
+        
+        # === COMBINED ISSUES ===
+        'io_wait': [
+            'adjust_process_priority',   # Deprioritize I/O hogs
+            'throttle_cpu_intensive_tasks', # Reduce I/O pressure
+            'monitor',                   # I/O wait often resolves
+            'escalate',                  # May need Hamster help for disk
+        ],
+        'resource_contention': [
+            'adjust_process_priority',   # Rebalance priorities
+            'throttle_cpu_intensive_tasks', # Reduce contention
+            'optimize_memory_allocation', # Optimize resource usage
+            'monitor',                   # Observe contention pattern
+        ],
+        
+        # === UNKNOWN/UNCERTAIN ===
+        'unknown': [
+            'monitor',                   # Observe first
+            'optimize_memory_allocation', # Safe optimization
+            'clear_cache',               # Gentle intervention
+            'escalate',                  # Ask for help if unclear
+        ],
+        'insufficient_data': [
+            'monitor',                   # Gather more data
+            'escalate',                  # Ask VIC-20 for guidance
+        ],
     }
     
     # Risk levels for each action
     ACTION_RISKS = {
-        'emergency_cache_clear': 'low',  # Safe, just clears cache
-        'adjust_process_priority': 'low',  # Reversible
+        # Memory actions
+        'emergency_cache_clear': 'low',        # Safe, just clears cache
+        'clear_cache': 'low',                  # Very safe, gentle clear
+        'optimize_memory_allocation': 'low',   # Safe, just triggers GC
+        'reduce_memory_footprint': 'low',      # Safe, comprehensive cleanup
+        'kill_memory_hog': 'high',             # Kills process - disruptive
+        
+        # CPU actions
+        'adjust_process_priority': 'low',      # Reversible
         'throttle_cpu_intensive_tasks': 'medium',  # May slow things down
-        'rotate_logs': 'low',  # Safe
-        'scan_open_ports': 'low',  # Read-only
-        'restart_service': 'high',  # Disruptive
+        
+        # Recovery actions
+        'restart_service': 'high',             # Disruptive
+        
+        # Learning actions
+        'monitor': 'low',                      # No intervention
+        'escalate': 'low',                     # Just asks for help
     }
     
     def _init_rest(self):
@@ -349,6 +415,35 @@ class TerryActionSelection:
         if action == 'emergency_cache_clear':
             return {}
         
+        elif action == 'clear_cache':
+            return {}
+        
+        elif action == 'optimize_memory_allocation':
+            return {}
+        
+        elif action == 'reduce_memory_footprint':
+            return {}
+        
+        elif action == 'monitor':
+            return {}
+        
+        elif action == 'escalate':
+            return {'reason': context.vic20_recommendation.get('action', 'unknown situation')}
+        
+        elif action == 'kill_memory_hog':
+            # Kill the top memory process
+            top_processes = context.full_metrics.get('memory', {}).get('top_processes', [])
+            if not top_processes:
+                # Fallback to CPU top processes
+                top_processes = context.full_metrics.get('cpu', {}).get('top_processes', [])
+            
+            if top_processes:
+                return {
+                    'process_name': top_processes[0].get('name', 'python'),
+                    'pid': top_processes[0].get('pid')
+                }
+            return {'process_name': 'python', 'pid': None}
+        
         elif action == 'adjust_process_priority':
             # Try to nice the top CPU process
             top_processes = context.full_metrics.get('cpu', {}).get('top_processes', [])
@@ -376,12 +471,6 @@ class TerryActionSelection:
             return {'service_name': 'redis'}
         
         elif action == 'throttle_cpu_intensive_tasks':
-            return {}
-        
-        elif action == 'rotate_logs':
-            return {}
-        
-        elif action == 'scan_open_ports':
             return {}
         
         else:

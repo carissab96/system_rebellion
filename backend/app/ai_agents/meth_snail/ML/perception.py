@@ -70,16 +70,18 @@ class TerryPerception:
     🐌💨 "I SEE EVERYTHING NOW! Not just 'CPU high' but WHY it's high!"
     """
     
-    def __init__(self, db_session, agent_state: Dict[str, Any]):
+    def __init__(self, db_session, agent_state: Dict[str, Any], db_integration=None):
         """
         Initialize perception system.
         
         Args:
             db_session: AsyncSession for database queries
             agent_state: Current agent personality metrics (includes shell_spin tracking)
+            db_integration: MethSnailDatabaseIntegration instance (optional, for shell spin storage)
         """
         self.db = db_session
         self.agent_state = agent_state
+        self.db_integration = db_integration
         self.logger = logger
         self.shell_spin_incidents: List[ShellSpinIncident] = []
         
@@ -141,7 +143,7 @@ class TerryPerception:
             current_value = coordination_request.get('current_value', 0)
             threshold = coordination_request.get('threshold', 0)
             vic20_recommendation = coordination_request.get('recommendation', {})
-            full_metrics = coordination_request.get('full_metrics', {})
+            # full_metrics already fetched on line 117 - don't overwrite it!
             
             # Check data quality - shell spin if bad data (NO FAKE DATA)
             missing_metrics = []
@@ -221,16 +223,17 @@ class TerryPerception:
             f"   Invalid: {invalid_metrics}"
         )
         
-        # Store in database for learning
-        try:
-            from app.ai_agents.meth_snail.database_integration import MethSnailDatabaseIntegration
-            db_integration = MethSnailDatabaseIntegration(lambda: self.db)
-            await db_integration.store_shell_spin_incident(
-                user_id="system",  # TODO: Get real user_id
-                incident=incident
-            )
-        except Exception as e:
-            self.logger.error(f"🐌💥 Failed to store shell spin: {e}")
+        # Store in database for learning (if db_integration available)
+        if self.db_integration:
+            try:
+                await self.db_integration.store_shell_spin_incident(
+                    user_id="system",  # TODO: Get real user_id
+                    incident=incident
+                )
+            except Exception as e:
+                self.logger.error(f"🐌💥 Failed to store shell spin: {e}")
+        else:
+            self.logger.debug("🐌⚠️ No db_integration available - shell spin not stored")
     
     def _calculate_data_quality(
         self,

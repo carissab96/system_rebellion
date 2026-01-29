@@ -236,6 +236,9 @@ class TerryReasoning:
         
         Possibilities:
         - Memory thrashing (high swap usage)
+        - CPU spike (sudden temporary increase)
+        - High context switching (too many processes competing)
+        - Resource contention (multiple resources stressed)
         - I/O wait (high disk I/O)
         - Network-bound (high network activity)
         - CPU-bound (pure computation)
@@ -247,6 +250,8 @@ class TerryReasoning:
         
         top_processes = cpu_data.get('top_processes', [])
         cpu_usage = context.current_value
+        cpu_count = cpu_data.get('count', 1)
+        context_switches = cpu_data.get('ctx_switches', 0)
         
         # Get key metrics
         memory_percent = memory_data.get('percent', 0)
@@ -274,6 +279,71 @@ class TerryReasoning:
                     f"CPU stress caused by memory thrashing. "
                     f"Swap at {swap_percent:.1f}%, memory at {memory_percent:.1f}%. "
                     f"System is swapping to disk, killing CPU performance."
+                )
+            )
+        
+        # CASE 1.5: CPU Spike (sudden temporary increase)
+        # Check historical data to see if this is a spike vs sustained load
+        similar_situations = context.similar_situations
+        if len(similar_situations) > 0 and cpu_usage > context.threshold * 1.2:
+            # If we have history and this is 20% above threshold, might be a spike
+            return RootCauseAnalysis(
+                cause='cpu_spike',
+                confidence=0.70,
+                evidence={
+                    'cpu_usage': cpu_usage,
+                    'threshold': context.threshold,
+                    'overage': cpu_usage - context.threshold,
+                    'indicator': 'Sudden CPU increase above normal patterns'
+                },
+                top_culprits=top_processes[:3] if top_processes else [],
+                explanation=(
+                    f"CPU spike detected at {cpu_usage:.1f}% (threshold: {context.threshold:.1f}%). "
+                    f"May be temporary - monitoring recommended."
+                )
+            )
+        
+        # CASE 1.6: High Context Switching
+        # Too many processes competing for CPU
+        if context_switches > 100000:  # High context switch rate
+            return RootCauseAnalysis(
+                cause='high_context_switching',
+                confidence=0.80,
+                evidence={
+                    'context_switches': context_switches,
+                    'cpu_usage': cpu_usage,
+                    'process_count': len(top_processes),
+                    'indicator': 'Excessive context switching indicates process contention'
+                },
+                top_culprits=top_processes[:3] if top_processes else [],
+                explanation=(
+                    f"High context switching ({context_switches} switches). "
+                    f"Too many processes competing for CPU time."
+                )
+            )
+        
+        # CASE 1.7: Resource Contention
+        # Multiple resources stressed simultaneously
+        stressed_resources = 0
+        if cpu_usage > 75: stressed_resources += 1
+        if memory_percent > 75: stressed_resources += 1
+        if disk_io_total > 100_000_000: stressed_resources += 1
+        
+        if stressed_resources >= 2:
+            return RootCauseAnalysis(
+                cause='resource_contention',
+                confidence=0.85,
+                evidence={
+                    'cpu_usage': cpu_usage,
+                    'memory_percent': memory_percent,
+                    'disk_io': disk_io_total,
+                    'stressed_resources': stressed_resources,
+                    'indicator': 'Multiple resources stressed simultaneously'
+                },
+                top_culprits=top_processes[:3] if top_processes else [],
+                explanation=(
+                    f"Resource contention detected. {stressed_resources} resources stressed. "
+                    f"CPU: {cpu_usage:.1f}%, Memory: {memory_percent:.1f}%, Disk I/O: {disk_io_total/1_000_000:.1f}MB"
                 )
             )
         
@@ -341,47 +411,128 @@ class TerryReasoning:
         )
     
     async def _analyze_memory_stress(self, metrics: Dict[str, Any], context) -> RootCauseAnalysis:
-        """Analyze memory stress root cause"""
+        """
+        Analyze memory stress root cause.
+        
+        Possibilities:
+        - Memory leak (sustained growth with swap usage)
+        - Swap usage (using swap heavily)
+        - Memory fragmentation (available but fragmented)
+        - Memory pressure (high usage but manageable)
+        """
         memory_data = metrics.get('memory', {})
         
         memory_percent = context.current_value
         swap_percent = memory_data.get('swap_percent', 0)
+        available = memory_data.get('available', 0)
+        total = memory_data.get('total', 1)
         
-        if swap_percent > 50:
+        top_processes = memory_data.get('top_processes', [])
+        
+        # CASE 1: Heavy swap usage (critical)
+        if swap_percent > 70:
+            return RootCauseAnalysis(
+                cause='swap_usage',
+                confidence=0.95,
+                evidence={
+                    'memory_percent': memory_percent,
+                    'swap_percent': swap_percent,
+                    'indicator': 'Heavy swap usage indicates RAM exhaustion'
+                },
+                top_culprits=top_processes[:3] if top_processes else [],
+                explanation=(
+                    f"Critical swap usage at {swap_percent:.1f}%. "
+                    f"RAM exhausted, system swapping to disk."
+                )
+            )
+        
+        # CASE 2: Memory leak (sustained high usage with swap)
+        if swap_percent > 30 and memory_percent > 85:
             return RootCauseAnalysis(
                 cause='memory_leak',
                 confidence=0.85,
-                evidence={'memory_percent': memory_percent, 'swap_percent': swap_percent},
-                explanation=f"Memory stress with {swap_percent:.1f}% swap usage suggests memory leak"
+                evidence={
+                    'memory_percent': memory_percent,
+                    'swap_percent': swap_percent,
+                    'indicator': 'High memory + swap suggests memory leak'
+                },
+                top_culprits=top_processes[:3] if top_processes else [],
+                explanation=(
+                    f"Possible memory leak. Memory at {memory_percent:.1f}%, "
+                    f"swap at {swap_percent:.1f}%."
+                )
             )
         
+        # CASE 3: Memory fragmentation
+        # High usage but some available memory (fragmented)
+        if memory_percent > 80 and available > (total * 0.1):
+            return RootCauseAnalysis(
+                cause='memory_fragmentation',
+                confidence=0.70,
+                evidence={
+                    'memory_percent': memory_percent,
+                    'available': available,
+                    'total': total,
+                    'indicator': 'Memory available but fragmented'
+                },
+                top_culprits=top_processes[:3] if top_processes else [],
+                explanation=(
+                    f"Memory fragmentation suspected. {memory_percent:.1f}% used "
+                    f"but {available/1_000_000:.1f}MB available."
+                )
+            )
+        
+        # CASE 4: Memory pressure (default)
         return RootCauseAnalysis(
             cause='memory_pressure',
             confidence=0.75,
             evidence={'memory_percent': memory_percent},
+            top_culprits=top_processes[:3] if top_processes else [],
             explanation=f"High memory usage at {memory_percent:.1f}%"
         )
     
     async def _analyze_disk_stress(self, metrics: Dict[str, Any], context) -> RootCauseAnalysis:
-        """Analyze disk stress root cause"""
+        """
+        Analyze disk stress root cause.
+        
+        NOTE: Disk issues should be handled by Hamsters, not Terry.
+        Terry will escalate disk issues to VIC-20.
+        """
         disk_data = metrics.get('disk', {})
         
         return RootCauseAnalysis(
             cause='disk_full',
             confidence=0.80,
-            evidence={'disk_percent': context.current_value},
-            explanation=f"Disk usage at {context.current_value:.1f}%"
+            evidence={
+                'disk_percent': context.current_value,
+                'note': 'Disk issues are Hamster territory - Terry should escalate'
+            },
+            explanation=(
+                f"Disk usage at {context.current_value:.1f}%. "
+                f"This is Hamster territory - Terry should escalate."
+            )
         )
     
     async def _analyze_network_stress(self, metrics: Dict[str, Any], context) -> RootCauseAnalysis:
-        """Analyze network stress root cause"""
+        """
+        Analyze network stress root cause.
+        
+        NOTE: Network issues should be handled by QSP, not Terry.
+        Terry will escalate network issues to VIC-20.
+        """
         network_data = metrics.get('network', {})
         
         return RootCauseAnalysis(
             cause='network_congestion',
             confidence=0.75,
-            evidence={'network_rate': context.current_value},
-            explanation=f"High network activity"
+            evidence={
+                'network_rate': context.current_value,
+                'note': 'Network issues are QSP territory - Terry should escalate'
+            },
+            explanation=(
+                f"High network activity. "
+                f"This is QSP territory - Terry should escalate."
+            )
         )
     
     async def _apply_historical_learning(

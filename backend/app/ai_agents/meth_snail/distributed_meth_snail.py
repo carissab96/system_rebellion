@@ -189,7 +189,8 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
                 # STEP 1: PERCEPTION - Gather full context
                 from app.ai_agents.meth_snail.ML.perception import TerryPerception
                 
-                perception = TerryPerception(db, self.personality_traits)
+                # Pass db_integration so perception can store shell spins
+                perception = TerryPerception(db, self.personality_traits, db_integration=self.db_integration)
                 context = await perception.perceive({
                     'resource_type': resource_type,
                     'severity': severity,
