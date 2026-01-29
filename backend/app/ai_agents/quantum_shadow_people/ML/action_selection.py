@@ -71,23 +71,95 @@ class QSPActionSelection:
     # Map security threats to viable actions
     # QSP handles: Network security and monitoring
     ACTION_MAP = {
+        # === TRAFFIC ISSUES ===
         'high_traffic': [
-            'monitor',          # Just watch first
-            'throttle_network', # Throttle if needed
-            'investigate',      # Deep analysis
+            'monitor',              # Just watch first
+            'analyze_traffic',      # Analyze patterns
+            'rate_limit',           # Apply rate limiting
+            'throttle_network',     # Throttle if needed
         ],
+        'ddos_attack': [
+            'rate_limit',           # Rate limit immediately
+            'block',                # Block attacking IPs
+            'update_firewall_rules', # Update firewall
+            'escalate',             # Get help
+        ],
+        'bandwidth_saturation': [
+            'throttle_network',     # Throttle bandwidth
+            'rate_limit',           # Limit connections
+            'close_suspicious_connections', # Close heavy users
+            'analyze_traffic',      # Find the hog
+        ],
+        
+        # === SECURITY THREATS ===
         'suspicious_activity': [
-            'investigate',      # Analyze first
-            'throttle_network', # Throttle if confirmed
-            'block',            # Block if malicious
+            'investigate',          # Analyze first
+            'scan_ports',           # Check for vulnerabilities
+            'monitor',              # Watch closely
+            'block',                # Block if confirmed
         ],
-        'security_threat': [
-            'block',            # Block immediately
-            'throttle_network', # Throttle as backup
-            'escalate',         # Get Hamsters involved
+        'intrusion_attempt': [
+            'block',                # Block immediately
+            'update_firewall_rules', # Update firewall
+            'scan_ports',           # Check vulnerabilities
+            'escalate',             # Alert coordination
         ],
+        'brute_force_attack': [
+            'block',                # Block attacker
+            'rate_limit',           # Limit auth attempts
+            'update_firewall_rules', # Add firewall rules
+            'escalate',             # Alert coordination
+        ],
+        'port_scan_detected': [
+            'block',                # Block scanner
+            'update_firewall_rules', # Close unnecessary ports
+            'investigate',          # Analyze intent
+            'monitor',              # Watch for more
+        ],
+        'unauthorized_access': [
+            'block',                # Block immediately
+            'close_suspicious_connections', # Kill sessions
+            'update_firewall_rules', # Lock down
+            'escalate',             # Critical alert
+        ],
+        
+        # === ANOMALIES ===
+        'network_anomaly': [
+            'investigate',          # Analyze anomaly
+            'analyze_traffic',      # Check patterns
+            'quantum_scan',         # Quantum-level scan
+            'monitor',              # Observe
+        ],
+        'quantum_fluctuation': [
+            'quantum_scan',         # QSP's specialty
+            'investigate',          # Deep analysis
+            'monitor',              # Watch quantum state
+            'escalate',             # May need help
+        ],
+        
+        # === NORMAL OPERATIONS ===
         'normal_operations': [
-            'monitor',          # Just observe
+            'monitor',              # Just observe
+            'scan_ports',           # Periodic security check
+        ],
+        'preventive_scan': [
+            'scan_ports',           # Check vulnerabilities
+            'quantum_scan',         # Quantum check
+            'analyze_traffic',      # Baseline traffic
+            'monitor',              # Passive monitoring
+        ],
+        
+        # === UNKNOWN/UNCERTAIN ===
+        'unknown': [
+            'monitor',              # Observe first
+            'investigate',          # Analyze
+            'quantum_scan',         # Quantum analysis
+            'escalate',             # Ask for help
+        ],
+        'insufficient_data': [
+            'monitor',              # Gather more data
+            'analyze_traffic',      # Collect baseline
+            'escalate',             # Ask VIC-20 for guidance
         ],
     }
     
@@ -264,9 +336,23 @@ class QSPActionSelection:
         Estimate resolution time in minutes.
         """
         base_times = {
+            # Monitoring actions
             'monitor': 60,
             'investigate': 30,
+            'scan_ports': 20,
+            'analyze_traffic': 25,
+            'quantum_scan': 15,
+            
+            # Defensive actions
+            'throttle_network': 10,
+            'rate_limit': 8,
+            'close_suspicious_connections': 5,
+            
+            # Aggressive actions
             'block': 5,
+            'update_firewall_rules': 12,
+            
+            # Learning actions
             'escalate': 10,
             'quantum_intervention': 15
         }

@@ -225,19 +225,68 @@ class QSPReasoning:
         context: QSPPerceptionContext
     ) -> str:
         """
-        Determine root cause of security threat.
+        Determine root cause of network security threat.
+        
+        Possibilities:
+        - Traffic issues (high traffic, DDoS, bandwidth saturation)
+        - Security threats (intrusion, brute force, unauthorized access)
+        - Anomalies (network anomaly, quantum fluctuation)
+        - Normal operations / preventive
+        - Unknown/insufficient data
         """
         if not threat:
-            return "No active threats detected"
+            # No active threat - check if preventive scan needed
+            if context.network_anomalies > 0:
+                return "network_anomaly"
+            return "normal_operations"
         
-        if context.failed_auth_attempts > 10:
-            return "Multiple failed authentication attempts - possible brute force attack"
+        # CRITICAL: DDoS attack detected
+        if context.suspicious_connections > 100:
+            return "ddos_attack"
+        
+        # BRUTE FORCE: Multiple failed auth attempts
+        elif context.failed_auth_attempts > 10:
+            return "brute_force_attack"
+        
+        # UNAUTHORIZED ACCESS: Successful unauthorized connections
+        elif context.suspicious_connections > 20:
+            return "unauthorized_access"
+        
+        # INTRUSION ATTEMPT: Suspicious connections
         elif context.suspicious_connections > 5:
-            return "Suspicious network connections detected - possible intrusion"
+            return "intrusion_attempt"
+        
+        # PORT SCAN: Multiple port probes detected
+        elif context.network_anomalies > 10:
+            return "port_scan_detected"
+        
+        # BANDWIDTH SATURATION: High traffic volume
+        elif context.network_anomalies > 5:
+            return "bandwidth_saturation"
+        
+        # NETWORK ANOMALY: General anomalies
         elif context.network_anomalies > 0:
-            return f"Network anomalies detected ({context.network_anomalies} anomalies)"
+            return "network_anomaly"
+        
+        # QUANTUM FLUCTUATION: QSP's quantum state is unstable
+        elif context.quantum_state and context.quantum_state.coherence < 0.5:
+            return "quantum_fluctuation"
+        
+        # HIGH TRAFFIC: Elevated but not critical
+        elif threat.severity in ['medium', 'high']:
+            return "high_traffic"
+        
+        # SUSPICIOUS ACTIVITY: Low-level threats
+        elif threat.severity == 'low':
+            return "suspicious_activity"
+        
+        # PREVENTIVE SCAN: No threats, just routine check
+        elif not context.active_threats:
+            return "preventive_scan"
+        
+        # INSUFFICIENT DATA: Not enough info
         else:
-            return threat.description or "Unknown security threat"
+            return "insufficient_data"
     
     def _select_response_strategy(
         self,
