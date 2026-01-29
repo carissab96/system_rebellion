@@ -81,22 +81,77 @@ class HamstersActionSelection:
     # Map storage issues to viable actions
     # Hamsters handle: Disk/Storage issues
     ACTION_MAP = {
+        # === DISK SPACE ISSUES ===
         'disk_full': [
-            'rotate_logs',          # Clear old logs first
-            'cleanup',              # Basic cleanup
-            'cleanup_with_defrag',  # If fragmentation is also high
+            'rotate_logs',           # Clear old logs first
+            'compress_logs',         # Compress instead of delete
+            'clear_temp_files',      # Clear /tmp
+            'clear_package_cache',   # Clear apt/yum cache
+            'cleanup',               # Basic cleanup
+            'archive_old_files',     # Archive before delete
         ],
-        'high_fragmentation': [
-            'defrag_only',          # Just defrag
-            'cleanup_with_defrag',  # Cleanup + defrag
+        'disk_critical': [
+            'clear_temp_files',      # Fastest space recovery
+            'rotate_logs',           # Clear logs immediately
+            'clear_package_cache',   # Quick cache clear
+            'cleanup',               # Emergency cleanup
         ],
         'log_overflow': [
-            'rotate_logs',          # Logs are the problem
-            'cleanup',              # General cleanup
+            'rotate_logs',           # Logs are the problem
+            'compress_logs',         # Compress old logs
+            'archive_old_files',     # Archive logs
+            'cleanup',               # General cleanup
         ],
+        'temp_files_bloat': [
+            'clear_temp_files',      # Clear /tmp and temp dirs
+            'cleanup',               # General cleanup
+            'monitor',               # Sometimes temp files clear themselves
+        ],
+        'package_cache_bloat': [
+            'clear_package_cache',   # Clear apt/yum cache
+            'cleanup',               # General cleanup
+        ],
+        
+        # === DISK PERFORMANCE ISSUES ===
+        'high_fragmentation': [
+            'defrag_only',           # Just defrag
+            'fstrim',                # TRIM for SSDs
+            'cleanup_with_defrag',   # Cleanup + defrag
+        ],
+        'ssd_performance': [
+            'fstrim',                # TRIM unused blocks
+            'defrag_only',           # Light defrag
+            'monitor',               # SSDs often self-optimize
+        ],
+        'slow_disk_io': [
+            'fstrim',                # TRIM for SSDs
+            'defrag_only',           # Defragment
+            'cleanup',               # Remove I/O bottlenecks
+        ],
+        
+        # === GENERAL ISSUES ===
         'general_storage': [
-            'cleanup',              # Basic cleanup
-            'rotate_logs',          # Check logs
+            'cleanup',               # Basic cleanup
+            'rotate_logs',           # Check logs
+            'fstrim',                # Optimize disk
+            'monitor',               # Sometimes no action needed
+        ],
+        'preventive_maintenance': [
+            'fstrim',                # Regular TRIM
+            'compress_logs',         # Compress old logs
+            'cleanup',               # Light cleanup
+            'monitor',               # Just observe
+        ],
+        
+        # === UNKNOWN/UNCERTAIN ===
+        'unknown': [
+            'monitor',               # Observe first
+            'cleanup',               # Safe cleanup
+            'escalate',              # Ask for help if unclear
+        ],
+        'insufficient_data': [
+            'monitor',               # Gather more data
+            'escalate',              # Ask VIC-20 for guidance
         ],
     }
     
@@ -385,9 +440,26 @@ class HamstersActionSelection:
         Estimate fix duration in minutes.
         """
         base_durations = {
-            'fstrim': 5,
-            'defrag': 30,
+            # Cleanup actions
             'cleanup': 10,
+            'cleanup_with_defrag': 40,
+            'clear_temp_files': 5,
+            'clear_package_cache': 8,
+            
+            # Log management
+            'rotate_logs': 7,
+            'compress_logs': 15,
+            'archive_old_files': 20,
+            
+            # Disk optimization
+            'fstrim': 5,
+            'defrag_only': 30,
+            
+            # Learning actions
+            'monitor': 0,
+            'escalate': 1,
+            
+            # Legacy
             'quantum_fix': 45,  # Bob's fixes take longer
             'inode_cleanup': 15
         }
