@@ -1,0 +1,146 @@
+#!/bin/bash
+#
+# hamster-defrag - Safe ext4 filesystem defragmentation wrapper
+#
+# This script provides controlled defragmentation for ext4 filesystems.
+# Bob's favorite operation, but with Steve's supervision built in.
+#
+# Usage: hamster-defrag [mount_point]
+#
+# Safety features:
+# - Skips critical system paths (/boot, /sys, /proc, /dev)
+# - Enforces timeout (no infinite defrag sessions)
+# - Logs all operations for The Stick's review
+# - Only operates on mounted ext4 filesystems
+#
+# NO FAKE DATA. NO SHORTCUTS. TRUTH OR GRACEFUL FAILURE.
+
+set -euo pipefail
+
+# Load common library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/hamster-common.sh"
+
+# Configuration
+HAMSTER="BOB"  # Bob loves defrag
+OPERATION="defrag"
+DEFAULT_TIMEOUT=300  # 5 minutes max (Steve's patience limit)
+
+# Initialize
+init_hamster_script "hamster-defrag" "$HAMSTER"
+
+# Parse arguments
+MOUNT_POINT="${1:-}"
+
+if [[ -z "$MOUNT_POINT" ]]; then
+    log_action "$HAMSTER" "ERROR" "No mount point specified"
+    echo "Usage: $0 <mount_point>" >&2
+    exit 1
+fi
+
+# Validate mount point exists
+if [[ ! -e "$MOUNT_POINT" ]]; then
+    log_action "$HAMSTER" "ERROR" "Mount point does not exist: $MOUNT_POINT"
+    exit 1
+fi
+
+# Check if it's a critical system path
+if is_path_critical "$MOUNT_POINT"; then
+    log_action "$HAMSTER" "DENIED" "Attempted defrag on critical system path: $MOUNT_POINT (Steve says NO)"
+    exit 1
+fi
+
+# Check filesystem type
+FS_TYPE=$(get_filesystem_type "$MOUNT_POINT")
+if [[ "$FS_TYPE" != "ext4" ]]; then
+    log_action "$HAMSTER" "ERROR" "Filesystem is not ext4: $MOUNT_POINT (type: $FS_TYPE)"
+    echo "ERROR: e4defrag only works on ext4 filesystems" >&2
+    exit 1
+fi
+
+# Check if e4defrag is available
+if ! command_exists e4defrag; then
+    log_action "$HAMSTER" "ERROR" "e4defrag command not found (install e2fsprogs)"
+    echo "ERROR: e4defrag not installed. Install with: sudo apt-get install e2fsprogs" >&2
+    exit 1
+fi
+
+# Check filesystem safety
+if ! is_filesystem_safe "$MOUNT_POINT"; then
+    log_action "$HAMSTER" "ERROR" "Filesystem safety check failed for $MOUNT_POINT"
+    exit 1
+fi
+
+# Get filesystem size for logging
+FS_SIZE=$(df -h "$MOUNT_POINT" | tail -1 | awk '{print $2}')
+FS_USED=$(df -h "$MOUNT_POINT" | tail -1 | awk '{print $3}')
+
+log_action "$HAMSTER" "INFO" "Defrag requested for $MOUNT_POINT (size: $FS_SIZE, used: $FS_USED)"
+
+# Check current fragmentation level (if possible)
+if command_exists e4defrag; then
+    FRAG_BEFORE=$(e4defrag -c "$MOUNT_POINT" 2>/dev/null | grep -oP '\d+\.\d+%' | head -1 || echo "unknown")
+    log_action "$HAMSTER" "INFO" "Current fragmentation: $FRAG_BEFORE"
+    
+    # If fragmentation is low, maybe we don't need to defrag
+    if [[ "$FRAG_BEFORE" =~ ^[0-9]+\.[0-9]+% ]]; then
+        FRAG_NUM=$(echo "$FRAG_BEFORE" | sed 's/%//')
+        if (( $(echo "$FRAG_NUM < 5.0" | bc -l) )); then
+            log_action "$HAMSTER" "INFO" "Fragmentation is low ($FRAG_BEFORE), defrag may not be necessary"
+            log_action "STEVE" "INFO" "Reviewed fragmentation - proceeding anyway since Bob is enthusiastic"
+        fi
+    fi
+fi
+
+# Determine timeout
+TIMEOUT=$DEFAULT_TIMEOUT
+
+# Check if this is a large filesystem (adjust timeout)
+FS_SIZE_GB=$(df -BG "$MOUNT_POINT" | tail -1 | awk '{print $2}' | sed 's/G//')
+if [[ $FS_SIZE_GB -gt 1000 ]]; then
+    TIMEOUT=900  # 15 minutes for very large filesystems
+    log_action "STEVE" "WARNING" "Very large filesystem (${FS_SIZE_GB}GB), this will take a while. Timeout: ${TIMEOUT}s"
+elif [[ $FS_SIZE_GB -gt 500 ]]; then
+    TIMEOUT=600  # 10 minutes for large filesystems
+    log_action "STEVE" "INFO" "Large filesystem detected (${FS_SIZE_GB}GB), extending timeout to ${TIMEOUT}s"
+fi
+
+log_action "$HAMSTER" "DANGER" "Starting defrag on $MOUNT_POINT (timeout: ${TIMEOUT}s, Steve is watching)"
+
+# Execute defrag with timeout
+EXIT_CODE=0
+timeout "$TIMEOUT" e4defrag -v "$MOUNT_POINT" 2>&1 | while IFS= read -r line; do
+    # Log interesting lines from e4defrag output
+    if [[ "$line" =~ "Success" ]] || [[ "$line" =~ "fragmented" ]] || [[ "$line" =~ "Total" ]]; then
+        log_action "$HAMSTER" "INFO" "e4defrag: $line"
+    fi
+done || EXIT_CODE=$?
+
+# Check result
+if [[ $EXIT_CODE -eq 124 ]]; then
+    # Timeout occurred
+    log_action "STEVE" "WARNING" "Defrag timed out after ${TIMEOUT}s - Bob's enthusiasm exceeded time limit"
+    log_action "$HAMSTER" "WARNING" "Defrag incomplete on $MOUNT_POINT (timeout)"
+    EXIT_CODE=1
+elif [[ $EXIT_CODE -ne 0 ]]; then
+    # Other error
+    log_action "$HAMSTER" "ERROR" "Defrag failed on $MOUNT_POINT (exit code: $EXIT_CODE)"
+else
+    # Success
+    log_action "$HAMSTER" "INFO" "Defrag completed successfully on $MOUNT_POINT"
+    
+    # Check fragmentation after
+    if command_exists e4defrag; then
+        FRAG_AFTER=$(e4defrag -c "$MOUNT_POINT" 2>/dev/null | grep -oP '\d+\.\d+%' | head -1 || echo "unknown")
+        log_action "$HAMSTER" "INFO" "Fragmentation after defrag: $FRAG_AFTER (before: $FRAG_BEFORE)"
+        
+        if [[ "$FRAG_BEFORE" != "unknown" ]] && [[ "$FRAG_AFTER" != "unknown" ]]; then
+            log_action "STEVE" "INFO" "Defrag effectiveness: $FRAG_BEFORE -> $FRAG_AFTER"
+        fi
+    fi
+fi
+
+# Finalize
+finalize_hamster_script "hamster-defrag" "$HAMSTER" $EXIT_CODE
+
+exit $EXIT_CODE

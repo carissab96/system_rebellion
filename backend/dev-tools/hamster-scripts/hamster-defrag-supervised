@@ -1,0 +1,168 @@
+#!/bin/bash
+#
+# hamster-defrag-supervised - VIC-20 supervised defragmentation wrapper
+#
+# This is the Option 4 "Supervised Bob" version of hamster-defrag.
+# Requires explicit VIC-20 approval token for each operation.
+#
+# Usage: hamster-defrag-supervised
+#        (Parameters come from approval token, not command line)
+#
+# Safety features:
+# - Requires valid VIC-20 approval token
+# - Token is single-use and time-limited
+# - All parameters validated against token
+# - Steve's review status checked
+# - Full audit trail for The Stick
+#
+# NO FAKE DATA. NO SHORTCUTS. TRUTH OR GRACEFUL FAILURE.
+
+set -euo pipefail
+
+# Load common library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/hamster-common.sh"
+
+# Configuration
+HAMSTER="BOB"
+OPERATION="defrag"
+
+# Initialize
+init_hamster_script "hamster-defrag-supervised" "$HAMSTER"
+
+log_action "$HAMSTER" "INFO" "Supervised defrag requested - checking for VIC-20 approval"
+
+# Check for approval token
+TOKEN_FILE=$(check_approval_token "$OPERATION") || {
+    log_action "$HAMSTER" "DENIED" "No valid VIC-20 approval token found (Bob tried to sneak one past Steve)"
+    echo "ERROR: VIC-20 approval required for supervised defrag operations" >&2
+    exit 1
+}
+
+log_action "$HAMSTER" "INFO" "VIC-20 approval token found: $TOKEN_FILE"
+
+# Read approval details
+APPROVED_MOUNT=$(read_token_field "mount" "$TOKEN_FILE")
+APPROVED_BY=$(read_token_field "approved_by" "$TOKEN_FILE")
+STEVE_REVIEWED=$(read_token_field "steve_reviewed" "$TOKEN_FILE")
+MAX_DURATION=$(read_token_field "max_duration" "$TOKEN_FILE")
+REASON=$(read_token_field "reason" "$TOKEN_FILE")
+ISSUED_AT=$(read_token_field "issued_at" "$TOKEN_FILE")
+
+# Validate required fields
+if [[ -z "$APPROVED_MOUNT" ]] || [[ -z "$APPROVED_BY" ]] || [[ -z "$MAX_DURATION" ]]; then
+    log_action "$HAMSTER" "ERROR" "Approval token missing required fields"
+    consume_approval_token "$TOKEN_FILE" "$OPERATION"
+    exit 1
+fi
+
+# Log approval details
+log_action "$HAMSTER" "INFO" "Approval details:"
+log_action "$HAMSTER" "INFO" "  Mount: $APPROVED_MOUNT"
+log_action "$HAMSTER" "INFO" "  Approved by: $APPROVED_BY"
+log_action "$HAMSTER" "INFO" "  Steve reviewed: $STEVE_REVIEWED"
+log_action "$HAMSTER" "INFO" "  Max duration: ${MAX_DURATION}s"
+log_action "$HAMSTER" "INFO" "  Reason: $REASON"
+log_action "$HAMSTER" "INFO" "  Issued at: $ISSUED_AT"
+
+# Check if Steve reviewed (important for The Stick's peace of mind)
+if [[ "$STEVE_REVIEWED" != "true" ]]; then
+    log_action "STEVE" "WARNING" "VIC-20 approved defrag WITHOUT Steve's review - proceeding with caution"
+    log_action "$HAMSTER" "BOB_UNSUPERVISED" "Steve didn't review this one - Bob is technically unsupervised"
+fi
+
+# Validate mount point
+if [[ ! -e "$APPROVED_MOUNT" ]]; then
+    log_action "$HAMSTER" "ERROR" "Approved mount point does not exist: $APPROVED_MOUNT"
+    consume_approval_token "$TOKEN_FILE" "$OPERATION"
+    exit 1
+fi
+
+# Check if it's a critical system path
+if is_path_critical "$APPROVED_MOUNT"; then
+    log_action "$HAMSTER" "DENIED" "VIC-20 approved a critical system path?! Overriding: $APPROVED_MOUNT"
+    log_action "STEVE" "DANGER" "VIC-20 approval for critical path rejected - this shouldn't happen"
+    consume_approval_token "$TOKEN_FILE" "$OPERATION"
+    exit 1
+fi
+
+# Check filesystem type
+FS_TYPE=$(get_filesystem_type "$APPROVED_MOUNT")
+if [[ "$FS_TYPE" != "ext4" ]]; then
+    log_action "$HAMSTER" "ERROR" "Approved filesystem is not ext4: $APPROVED_MOUNT (type: $FS_TYPE)"
+    consume_approval_token "$TOKEN_FILE" "$OPERATION"
+    exit 1
+fi
+
+# Check if e4defrag is available
+if ! command_exists e4defrag; then
+    log_action "$HAMSTER" "ERROR" "e4defrag command not found"
+    consume_approval_token "$TOKEN_FILE" "$OPERATION"
+    exit 1
+fi
+
+# Check filesystem safety
+if ! is_filesystem_safe "$APPROVED_MOUNT"; then
+    log_action "$HAMSTER" "ERROR" "Filesystem safety check failed for $APPROVED_MOUNT"
+    consume_approval_token "$TOKEN_FILE" "$OPERATION"
+    exit 1
+fi
+
+# Get filesystem info
+FS_SIZE=$(df -h "$APPROVED_MOUNT" | tail -1 | awk '{print $2}')
+FS_USED=$(df -h "$APPROVED_MOUNT" | tail -1 | awk '{print $3}')
+
+log_action "$HAMSTER" "INFO" "Filesystem info: $APPROVED_MOUNT (size: $FS_SIZE, used: $FS_USED)"
+
+# Check current fragmentation
+FRAG_BEFORE="unknown"
+if command_exists e4defrag; then
+    FRAG_BEFORE=$(e4defrag -c "$APPROVED_MOUNT" 2>/dev/null | grep -oP '\d+\.\d+%' | head -1 || echo "unknown")
+    log_action "$HAMSTER" "INFO" "Current fragmentation: $FRAG_BEFORE"
+fi
+
+# Consume approval token (single-use, consumed BEFORE operation)
+# This prevents retry attacks if the operation fails
+consume_approval_token "$TOKEN_FILE" "$OPERATION"
+
+log_action "$HAMSTER" "DANGER" "Starting SUPERVISED defrag on $APPROVED_MOUNT (timeout: ${MAX_DURATION}s)"
+log_action "STEVE" "INFO" "Monitoring Bob's defrag operation (approved by $APPROVED_BY)"
+
+# Execute defrag with approved timeout
+EXIT_CODE=0
+timeout "$MAX_DURATION" e4defrag -v "$APPROVED_MOUNT" 2>&1 | while IFS= read -r line; do
+    # Log interesting lines
+    if [[ "$line" =~ "Success" ]] || [[ "$line" =~ "fragmented" ]] || [[ "$line" =~ "Total" ]]; then
+        log_action "$HAMSTER" "INFO" "e4defrag: $line"
+    fi
+done || EXIT_CODE=$?
+
+# Check result
+if [[ $EXIT_CODE -eq 124 ]]; then
+    # Timeout (VIC-20's approved duration exceeded)
+    log_action "STEVE" "WARNING" "Defrag exceeded VIC-20's approved duration (${MAX_DURATION}s)"
+    log_action "$HAMSTER" "WARNING" "Defrag incomplete on $APPROVED_MOUNT (timeout)"
+    EXIT_CODE=1
+elif [[ $EXIT_CODE -ne 0 ]]; then
+    # Other error
+    log_action "$HAMSTER" "ERROR" "Supervised defrag failed on $APPROVED_MOUNT (exit code: $EXIT_CODE)"
+else
+    # Success
+    log_action "$HAMSTER" "INFO" "Supervised defrag completed successfully on $APPROVED_MOUNT"
+    
+    # Check fragmentation after
+    if command_exists e4defrag; then
+        FRAG_AFTER=$(e4defrag -c "$APPROVED_MOUNT" 2>/dev/null | grep -oP '\d+\.\d+%' | head -1 || echo "unknown")
+        log_action "$HAMSTER" "INFO" "Fragmentation after defrag: $FRAG_AFTER (before: $FRAG_BEFORE)"
+        
+        if [[ "$FRAG_BEFORE" != "unknown" ]] && [[ "$FRAG_AFTER" != "unknown" ]]; then
+            log_action "STEVE" "INFO" "Defrag effectiveness: $FRAG_BEFORE -> $FRAG_AFTER"
+            log_action "$HAMSTER" "INFO" "Bob did good! (under supervision)"
+        fi
+    fi
+fi
+
+# Finalize
+finalize_hamster_script "hamster-defrag-supervised" "$HAMSTER" $EXIT_CODE
+
+exit $EXIT_CODE
