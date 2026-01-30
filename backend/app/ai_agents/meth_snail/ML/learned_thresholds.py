@@ -1,0 +1,510 @@
+#!/usr/bin/env python3
+"""
+Learned Thresholds System
+
+System-specific thresholds that adapt based on outcomes.
+No hardcoded "85% is critical" - instead learns what's critical for THIS system.
+"""
+
+import logging
+from dataclasses import dataclass
+from typing import Dict, List, Optional, Any
+from datetime import datetime, timedelta
+import statistics
+from sqlalchemy import and_, or_, func
+from sqlalchemy.orm import Session
+
+from app.models.learned_thresholds import ThresholdLearningRecord
+
+
+@dataclass
+class ThresholdAssessment:
+    """Current threshold values with confidence"""
+    monitor: float
+    warning: float
+    critical: float
+    emergency: float
+    
+    # Confidence in each threshold (0.0-1.0)
+    monitor_confidence: float
+    warning_confidence: float
+    critical_confidence: float
+    emergency_confidence: float
+    
+    # Context
+    metric_name: str
+    system_id: str
+    
+    # Metadata
+    sample_size: int
+    last_updated: Optional[datetime]
+
+
+class LearnedThresholds:
+    """
+    System-specific thresholds that learn from outcomes.
+    
+    Instead of "85% memory is critical," learns:
+    "On THIS system, when memory hits 88% during business hours
+    with growth_rate > 2%, it becomes critical within 15 minutes.
+    But at night with growth_rate < 1%, it's usually fine."
+    """
+    
+    def __init__(self, db_session: Session, system_id: str, agent_name: str = "meth_snail"):
+        self.db = db_session
+        self.system_id = system_id
+        self.agent_name = agent_name
+        self.logger = logging.getLogger(f"{agent_name}.learned_thresholds")
+        
+        # Start with conservative defaults, but these will adapt
+        self.default_thresholds = {
+            'memory_usage': {
+                'monitor': 70.0,
+                'warning': 80.0,
+                'critical': 90.0,
+                'emergency': 95.0
+            },
+            'cpu_usage': {
+                'monitor': 60.0,
+                'warning': 75.0,
+                'critical': 85.0,
+                'emergency': 95.0
+            },
+            'swap_usage': {
+                'monitor': 20.0,
+                'warning': 40.0,
+                'critical': 60.0,
+                'emergency': 80.0
+            },
+            'disk_usage': {
+                'monitor': 70.0,
+                'warning': 80.0,
+                'critical': 90.0,
+                'emergency': 95.0
+            }
+        }
+        
+        # Cache of learned thresholds (loaded from DB)
+        self._threshold_cache: Dict[str, ThresholdAssessment] = {}
+        self._cache_expiry: Dict[str, datetime] = {}
+        self._cache_ttl = timedelta(minutes=15)  # Refresh every 15 minutes
+    
+    async def get_threshold(
+        self, 
+        metric_name: str, 
+        level: str,
+        context: Optional[Dict[str, Any]] = None
+    ) -> float:
+        """
+        Get threshold for this metric, adjusted for context.
+        
+        Args:
+            metric_name: 'memory_usage', 'cpu_usage', etc.
+            level: 'monitor', 'warning', 'critical', 'emergency'
+            context: Optional context (time_of_day, day_of_week, etc.)
+            
+        Returns:
+            Learned threshold value
+        """
+        
+        # Get or refresh cached thresholds
+        assessment = await self._get_threshold_assessment(metric_name)
+        
+        # Get base threshold
+        base_threshold = getattr(assessment, level)
+        
+        if not context:
+            return base_threshold
+        
+        # Apply contextual adjustment
+        adjustment = await self._calculate_contextual_adjustment(
+            metric_name, level, base_threshold, context
+        )
+        
+        adjusted = base_threshold + adjustment
+        
+        if adjustment != 0:
+            self.logger.debug(
+                f"📚 {metric_name} {level} threshold: {base_threshold:.1f} → {adjusted:.1f} "
+                f"(context adjustment: {adjustment:+.1f})"
+            )
+        
+        return adjusted
+    
+    async def _get_threshold_assessment(self, metric_name: str) -> ThresholdAssessment:
+        """Get threshold assessment from cache or DB"""
+        
+        # Check cache
+        if metric_name in self._threshold_cache:
+            if metric_name in self._cache_expiry:
+                if datetime.utcnow() < self._cache_expiry[metric_name]:
+                    return self._threshold_cache[metric_name]
+        
+        # Load from database
+        assessment = await self._load_thresholds_from_db(metric_name)
+        
+        # Cache it
+        self._threshold_cache[metric_name] = assessment
+        self._cache_expiry[metric_name] = datetime.utcnow() + self._cache_ttl
+        
+        return assessment
+    
+    async def _load_thresholds_from_db(self, metric_name: str) -> ThresholdAssessment:
+        """
+        Load learned thresholds from database.
+        
+        Analyzes historical outcomes to determine optimal thresholds.
+        """
+        
+        # Query recent learning records for this metric
+        cutoff_date = datetime.utcnow() - timedelta(days=30)
+        
+        records = self.db.query(ThresholdLearningRecord).filter(
+            and_(
+                ThresholdLearningRecord.system_id == self.system_id,
+                ThresholdLearningRecord.metric_name == metric_name,
+                ThresholdLearningRecord.created_at >= cutoff_date
+            )
+        ).all()
+        
+        if not records:
+            # No learning history yet, use defaults
+            defaults = self.default_thresholds.get(metric_name, self.default_thresholds['memory_usage'])
+            
+            self.logger.info(
+                f"📚 No learning history for {metric_name}, using defaults "
+                f"(warning: {defaults['warning']:.1f}, critical: {defaults['critical']:.1f})"
+            )
+            
+            return ThresholdAssessment(
+                monitor=defaults['monitor'],
+                warning=defaults['warning'],
+                critical=defaults['critical'],
+                emergency=defaults['emergency'],
+                monitor_confidence=0.3,
+                warning_confidence=0.3,
+                critical_confidence=0.3,
+                emergency_confidence=0.3,
+                metric_name=metric_name,
+                system_id=self.system_id,
+                sample_size=0,
+                last_updated=None
+            )
+        
+        # Analyze records to determine optimal thresholds
+        thresholds = await self._analyze_threshold_records(metric_name, records)
+        
+        self.logger.info(
+            f"📚 Loaded learned thresholds for {metric_name}: "
+            f"warning={thresholds.warning:.1f} (conf: {thresholds.warning_confidence:.2f}), "
+            f"critical={thresholds.critical:.1f} (conf: {thresholds.critical_confidence:.2f}) "
+            f"[n={thresholds.sample_size}]"
+        )
+        
+        return thresholds
+    
+    async def _analyze_threshold_records(
+        self, 
+        metric_name: str, 
+        records: List[ThresholdLearningRecord]
+    ) -> ThresholdAssessment:
+        """
+        Analyze learning records to determine optimal thresholds.
+        
+        Strategy:
+        - False alarms suggest threshold too low → increase
+        - Acted too late suggests threshold too high → decrease
+        - Successful interventions confirm threshold appropriate
+        """
+        
+        defaults = self.default_thresholds.get(metric_name, self.default_thresholds['memory_usage'])
+        
+        # Separate records by outcome type
+        false_alarms = [r for r in records if r.was_false_alarm]
+        acted_too_late = [r for r in records if r.should_have_acted_sooner]
+        successful = [r for r in records if r.outcome_success and not r.was_false_alarm and not r.should_have_acted_sooner]
+        
+        # Calculate thresholds for each level
+        warning_threshold = await self._calculate_threshold_level(
+            'warning', defaults['warning'], false_alarms, acted_too_late, successful
+        )
+        
+        critical_threshold = await self._calculate_threshold_level(
+            'critical', defaults['critical'], false_alarms, acted_too_late, successful
+        )
+        
+        emergency_threshold = await self._calculate_threshold_level(
+            'emergency', defaults['emergency'], false_alarms, acted_too_late, successful
+        )
+        
+        # Monitor threshold is typically lower than warning
+        monitor_threshold = warning_threshold - 10.0
+        
+        # Calculate confidence based on sample size and consistency
+        total_samples = len(records)
+        warning_confidence = min(1.0, total_samples / 50.0)  # Full confidence at 50+ samples
+        critical_confidence = min(1.0, total_samples / 50.0)
+        emergency_confidence = min(1.0, total_samples / 30.0)  # Emergency needs fewer samples
+        monitor_confidence = warning_confidence * 0.8  # Slightly less confident in monitor
+        
+        return ThresholdAssessment(
+            monitor=monitor_threshold,
+            warning=warning_threshold,
+            critical=critical_threshold,
+            emergency=emergency_threshold,
+            monitor_confidence=monitor_confidence,
+            warning_confidence=warning_confidence,
+            critical_confidence=critical_confidence,
+            emergency_confidence=emergency_confidence,
+            metric_name=metric_name,
+            system_id=self.system_id,
+            sample_size=total_samples,
+            last_updated=datetime.utcnow()
+        )
+    
+    async def _calculate_threshold_level(
+        self,
+        level: str,
+        default: float,
+        false_alarms: List[ThresholdLearningRecord],
+        acted_too_late: List[ThresholdLearningRecord],
+        successful: List[ThresholdLearningRecord]
+    ) -> float:
+        """Calculate optimal threshold for a specific level"""
+        
+        threshold = default
+        
+        # If we have false alarms at this level, threshold was too low
+        level_false_alarms = [r for r in false_alarms if r.threshold_level == level]
+        if level_false_alarms:
+            # Average value where false alarms occurred
+            avg_false_alarm_value = statistics.mean([r.metric_value for r in level_false_alarms])
+            # Increase threshold above this point
+            threshold = max(threshold, avg_false_alarm_value + 3.0)
+        
+        # If we acted too late at this level, threshold was too high
+        level_too_late = [r for r in acted_too_late if r.threshold_level == level]
+        if level_too_late:
+            # Average value where we should have acted sooner
+            avg_too_late_value = statistics.mean([r.metric_value for r in level_too_late])
+            # Decrease threshold below this point
+            threshold = min(threshold, avg_too_late_value - 3.0)
+        
+        # Successful interventions confirm threshold is appropriate
+        level_successful = [r for r in successful if r.threshold_level == level]
+        if level_successful:
+            # Average value where interventions worked
+            avg_success_value = statistics.mean([r.metric_value for r in level_successful])
+            # Blend with current threshold (weighted average)
+            threshold = (threshold * 0.6) + (avg_success_value * 0.4)
+        
+        # Ensure threshold stays within reasonable bounds
+        threshold = max(10.0, min(99.0, threshold))
+        
+        return threshold
+    
+    async def _calculate_contextual_adjustment(
+        self,
+        metric_name: str,
+        level: str,
+        base_threshold: float,
+        context: Dict[str, Any]
+    ) -> float:
+        """
+        Adjust threshold based on context.
+        
+        Learn: "At night, memory can safely go higher"
+        Learn: "During deployments, CPU spikes are normal"
+        """
+        
+        adjustment = 0.0
+        
+        # Query for similar contexts
+        similar_records = await self._query_similar_contexts(metric_name, level, context)
+        
+        if not similar_records or len(similar_records) < 5:
+            return 0.0  # Not enough data for contextual adjustment
+        
+        # Calculate average safe value in this context
+        false_alarms_in_context = [r for r in similar_records if r.was_false_alarm]
+        if false_alarms_in_context:
+            avg_safe_value = statistics.mean([r.metric_value for r in false_alarms_in_context])
+            if avg_safe_value > base_threshold:
+                # In this context, higher values are safe
+                adjustment = (avg_safe_value - base_threshold) * 0.3  # Conservative adjustment
+        
+        # Calculate average critical value in this context
+        too_late_in_context = [r for r in similar_records if r.should_have_acted_sooner]
+        if too_late_in_context:
+            avg_critical_value = statistics.mean([r.metric_value for r in too_late_in_context])
+            if avg_critical_value < base_threshold:
+                # In this context, lower values become critical
+                adjustment = (avg_critical_value - base_threshold) * 0.3  # Conservative adjustment
+        
+        # Cap adjustment at ±5%
+        adjustment = max(-5.0, min(5.0, adjustment))
+        
+        return adjustment
+    
+    async def _query_similar_contexts(
+        self,
+        metric_name: str,
+        level: str,
+        context: Dict[str, Any]
+    ) -> List[ThresholdLearningRecord]:
+        """
+        Query database for records with similar context.
+        
+        Similar means:
+        - Same time of day (±2 hours)
+        - Same day of week
+        - Similar system load
+        """
+        
+        cutoff_date = datetime.utcnow() - timedelta(days=30)
+        
+        # Build context filters
+        filters = [
+            ThresholdLearningRecord.system_id == self.system_id,
+            ThresholdLearningRecord.metric_name == metric_name,
+            ThresholdLearningRecord.threshold_level == level,
+            ThresholdLearningRecord.created_at >= cutoff_date
+        ]
+        
+        # Time of day filter (if provided)
+        if 'time_of_day' in context:
+            hour = context['time_of_day']
+            # Match records from ±2 hours
+            filters.append(
+                func.extract('hour', ThresholdLearningRecord.created_at).between(
+                    (hour - 2) % 24, (hour + 2) % 24
+                )
+            )
+        
+        records = self.db.query(ThresholdLearningRecord).filter(
+            and_(*filters)
+        ).limit(100).all()
+        
+        return records
+    
+    async def record_outcome(
+        self,
+        metric_name: str,
+        metric_value: float,
+        threshold_level: str,
+        action_taken: Optional[str],
+        outcome: Dict[str, Any],
+        context: Optional[Dict[str, Any]] = None
+    ):
+        """
+        Record outcome of a threshold crossing.
+        
+        This is how the system learns:
+        - Was this a false alarm?
+        - Did we act too late?
+        - Was the threshold appropriate?
+        """
+        
+        # Determine learning signals
+        was_false_alarm = (
+            action_taken is None and 
+            outcome.get('resolved_naturally', False)
+        )
+        
+        should_have_acted_sooner = (
+            outcome.get('became_critical_before_action', False) or
+            outcome.get('rapid_escalation', False)
+        )
+        
+        outcome_success = outcome.get('success', False)
+        
+        # Create learning record
+        record = ThresholdLearningRecord(
+            system_id=self.system_id,
+            agent_name=self.agent_name,
+            metric_name=metric_name,
+            metric_value=metric_value,
+            threshold_level=threshold_level,
+            action_taken=action_taken,
+            outcome_success=outcome_success,
+            system_state=outcome.get('system_state', {}),
+            context=context or {},
+            time_to_critical=outcome.get('time_to_critical'),
+            was_false_alarm=was_false_alarm,
+            should_have_acted_sooner=should_have_acted_sooner
+        )
+        
+        self.db.add(record)
+        self.db.commit()
+        
+        # Log learning
+        if was_false_alarm:
+            self.logger.info(
+                f"📚 LEARNED: {metric_name} {threshold_level} threshold may be too low "
+                f"(false alarm at {metric_value:.1f}%)"
+            )
+        elif should_have_acted_sooner:
+            self.logger.warning(
+                f"📚 LEARNED: {metric_name} {threshold_level} threshold may be too high "
+                f"(should have acted sooner at {metric_value:.1f}%)"
+            )
+        elif outcome_success:
+            self.logger.info(
+                f"📚 LEARNED: {metric_name} {threshold_level} threshold appropriate "
+                f"(successful intervention at {metric_value:.1f}%)"
+            )
+        
+        # Invalidate cache to force reload on next access
+        if metric_name in self._threshold_cache:
+            del self._threshold_cache[metric_name]
+            del self._cache_expiry[metric_name]
+    
+    async def get_threshold_confidence(self, metric_name: str, level: str) -> float:
+        """Get confidence in a specific threshold"""
+        assessment = await self._get_threshold_assessment(metric_name)
+        return getattr(assessment, f"{level}_confidence")
+    
+    async def get_learning_summary(self, metric_name: str) -> Dict[str, Any]:
+        """Get summary of learning for this metric"""
+        
+        cutoff_date = datetime.utcnow() - timedelta(days=30)
+        
+        records = self.db.query(ThresholdLearningRecord).filter(
+            and_(
+                ThresholdLearningRecord.system_id == self.system_id,
+                ThresholdLearningRecord.metric_name == metric_name,
+                ThresholdLearningRecord.created_at >= cutoff_date
+            )
+        ).all()
+        
+        if not records:
+            return {
+                'metric_name': metric_name,
+                'total_records': 0,
+                'learning_status': 'no_data'
+            }
+        
+        false_alarms = sum(1 for r in records if r.was_false_alarm)
+        acted_too_late = sum(1 for r in records if r.should_have_acted_sooner)
+        successful = sum(1 for r in records if r.outcome_success)
+        
+        assessment = await self._get_threshold_assessment(metric_name)
+        
+        return {
+            'metric_name': metric_name,
+            'total_records': len(records),
+            'false_alarms': false_alarms,
+            'acted_too_late': acted_too_late,
+            'successful_interventions': successful,
+            'current_thresholds': {
+                'warning': assessment.warning,
+                'critical': assessment.critical,
+                'emergency': assessment.emergency
+            },
+            'confidence': {
+                'warning': assessment.warning_confidence,
+                'critical': assessment.critical_confidence,
+                'emergency': assessment.emergency_confidence
+            },
+            'learning_status': 'active' if len(records) >= 10 else 'learning'
+        }
