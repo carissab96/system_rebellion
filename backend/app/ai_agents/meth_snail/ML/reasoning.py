@@ -638,23 +638,52 @@ class TerryReasoning:
         vic20_confidence = context.vic20_recommendation.get('confidence', 0.5)
         
         # Start with historical learning if available
+        # BUT: Don't blindly follow history - check if aggressive action is actually needed
         if learning.most_successful_action and learning.confidence_boost > 0:
-            recommended_action = learning.most_successful_action
-            confidence = learning.success_rates.get(recommended_action, 0.5)
-            confidence += learning.confidence_boost
-            followed_vic20 = (recommended_action == vic20_action)
+            historical_action = learning.most_successful_action
             
-            reasoning = (
-                f"Based on {learning.similar_situations_found} similar situations "
-                f"(match level {learning.match_level}), {recommended_action} has "
-                f"{confidence:.0%} success rate. Root cause: {root_cause.cause}. "
-                f"{root_cause.explanation}"
-            )
+            # Check if situation is severe enough for aggressive action
+            # If root cause is minor (cpu_spike, normal_operations), prefer monitoring
+            minor_causes = ['cpu_spike', 'normal_operations', 'preventive_check']
+            aggressive_actions = ['emergency_cache_clear', 'restart_service', 'kill_process']
             
-            override_reason = None if followed_vic20 else (
-                f"Historical data shows {recommended_action} works better than "
-                f"VIC-20's {vic20_action} for this situation"
-            )
+            # If history suggests aggressive action but situation is minor, downgrade to monitor
+            if root_cause.cause in minor_causes and historical_action in aggressive_actions:
+                self.logger.info(
+                    f"   🐌🧠 Historical learning suggests {historical_action}, but "
+                    f"root cause '{root_cause.cause}' is minor. Recommending 'monitor' instead."
+                )
+                recommended_action = 'monitor'
+                confidence = 0.7  # Moderate confidence in monitoring
+                followed_vic20 = (recommended_action == vic20_action)
+                
+                reasoning = (
+                    f"Root cause '{root_cause.cause}' is minor (confidence: {root_cause.confidence:.0%}). "
+                    f"While history shows {historical_action} worked before, monitoring is more appropriate. "
+                    f"{root_cause.explanation}"
+                )
+                
+                override_reason = None if followed_vic20 else (
+                    f"Situation not severe enough for {historical_action} - monitoring instead"
+                )
+            else:
+                # Situation is severe enough - use historical learning
+                recommended_action = historical_action
+                confidence = learning.success_rates.get(recommended_action, 0.5)
+                confidence += learning.confidence_boost
+                followed_vic20 = (recommended_action == vic20_action)
+                
+                reasoning = (
+                    f"Based on {learning.similar_situations_found} similar situations "
+                    f"(match level {learning.match_level}), {recommended_action} has "
+                    f"{confidence:.0%} success rate. Root cause: {root_cause.cause}. "
+                    f"{root_cause.explanation}"
+                )
+                
+                override_reason = None if followed_vic20 else (
+                    f"Historical data shows {recommended_action} works better than "
+                    f"VIC-20's {vic20_action} for this situation"
+                )
         else:
             # No historical data - follow VIC-20 but with low confidence
             recommended_action = vic20_action
