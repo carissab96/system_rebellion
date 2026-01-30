@@ -642,47 +642,97 @@ class TerryReasoning:
         if learning.most_successful_action and learning.confidence_boost > 0:
             historical_action = learning.most_successful_action
             
-            # Check if situation is severe enough for aggressive action
-            # If root cause is minor (cpu_spike, normal_operations), prefer monitoring
-            minor_causes = ['cpu_spike', 'normal_operations', 'preventive_check']
+            # DYNAMIC SEVERITY ASSESSMENT - No hardcoded lists!
+            # Calculate severity based on:
+            # 1. Root cause confidence (how sure are we this is the problem?)
+            # 2. Current metric value vs threshold (how bad is it?)
+            # 3. Historical success rate (does this action actually help?)
+            
+            severity_score = 0.0
+            
+            # Factor 1: Root cause confidence (0.0 - 0.4 points)
+            # High confidence in diagnosis = higher severity
+            severity_score += root_cause.confidence * 0.4
+            
+            # Factor 2: Metric overage (0.0 - 0.4 points)
+            # How far over threshold are we?
+            if context.threshold > 0:
+                overage = (context.current_value - context.threshold) / context.threshold
+                severity_score += min(0.4, overage * 0.4)
+            
+            # Factor 3: Historical success rate (0.0 - 0.2 points)
+            # If this action has high success rate, situation might be more severe
+            historical_success = learning.success_rates.get(historical_action, 0.5)
+            severity_score += historical_success * 0.2
+            
+            # Severity thresholds (learned through experience):
+            # < 0.4: Low severity - monitor
+            # 0.4-0.7: Medium severity - gentle actions (clear_cache, optimize)
+            # > 0.7: High severity - aggressive actions (emergency_cache_clear, restart_service)
+            
             aggressive_actions = ['emergency_cache_clear', 'restart_service', 'kill_process']
             
-            # If history suggests aggressive action but situation is minor, downgrade to monitor
-            if root_cause.cause in minor_causes and historical_action in aggressive_actions:
+            # If severity is low but history suggests aggressive action, downgrade to monitor
+            if severity_score < 0.4 and historical_action in aggressive_actions:
                 self.logger.info(
-                    f"   🐌🧠 Historical learning suggests {historical_action}, but "
-                    f"root cause '{root_cause.cause}' is minor. Recommending 'monitor' instead."
+                    f"   🐌🧠 Severity score {severity_score:.2f} is LOW (root cause confidence: {root_cause.confidence:.0%}, "
+                    f"overage: {overage:.1%}). Historical learning suggests {historical_action}, but "
+                    f"downgrading to 'monitor' to learn if aggressive action is actually needed."
                 )
                 recommended_action = 'monitor'
                 confidence = 0.7  # Moderate confidence in monitoring
                 followed_vic20 = (recommended_action == vic20_action)
                 
                 reasoning = (
-                    f"Root cause '{root_cause.cause}' is minor (confidence: {root_cause.confidence:.0%}). "
-                    f"While history shows {historical_action} worked before, monitoring is more appropriate. "
+                    f"Severity score {severity_score:.2f}/1.0 (LOW). Root cause '{root_cause.cause}' "
+                    f"confidence: {root_cause.confidence:.0%}, metric overage: {overage:.1%}. "
+                    f"While history shows {historical_action} worked before, monitoring is more appropriate "
+                    f"to learn if aggressive action is truly needed. {root_cause.explanation}"
+                )
+                
+                override_reason = None if followed_vic20 else (
+                    f"Severity score too low ({severity_score:.2f}) for {historical_action} - monitoring to learn patterns"
+                )
+            
+            # If severity is medium but action is very aggressive, consider gentler alternative
+            elif 0.4 <= severity_score < 0.7 and historical_action in ['restart_service', 'kill_process']:
+                self.logger.info(
+                    f"   🐌🧠 Severity score {severity_score:.2f} is MEDIUM. Historical learning suggests "
+                    f"{historical_action}, but trying gentler 'clear_cache' first to learn optimal response."
+                )
+                recommended_action = 'clear_cache'
+                confidence = 0.75
+                followed_vic20 = (recommended_action == vic20_action)
+                
+                reasoning = (
+                    f"Severity score {severity_score:.2f}/1.0 (MEDIUM). Root cause '{root_cause.cause}'. "
+                    f"Trying gentler action before escalating to {historical_action}. "
                     f"{root_cause.explanation}"
                 )
                 
                 override_reason = None if followed_vic20 else (
-                    f"Situation not severe enough for {historical_action} - monitoring instead"
+                    f"Medium severity ({severity_score:.2f}) - trying gentler approach before {historical_action}"
                 )
+            
             else:
-                # Situation is severe enough - use historical learning
+                # Severity is high enough - use historical learning
+                self.logger.info(
+                    f"   🐌🧠 Severity score {severity_score:.2f} is HIGH. Using historical learning: {historical_action}"
+                )
                 recommended_action = historical_action
                 confidence = learning.success_rates.get(recommended_action, 0.5)
                 confidence += learning.confidence_boost
                 followed_vic20 = (recommended_action == vic20_action)
                 
                 reasoning = (
-                    f"Based on {learning.similar_situations_found} similar situations "
-                    f"(match level {learning.match_level}), {recommended_action} has "
+                    f"Severity score {severity_score:.2f}/1.0 (HIGH). Based on {learning.similar_situations_found} "
+                    f"similar situations (match level {learning.match_level}), {recommended_action} has "
                     f"{confidence:.0%} success rate. Root cause: {root_cause.cause}. "
                     f"{root_cause.explanation}"
                 )
                 
                 override_reason = None if followed_vic20 else (
-                    f"Historical data shows {recommended_action} works better than "
-                    f"VIC-20's {vic20_action} for this situation"
+                    f"High severity ({severity_score:.2f}) - historical data shows {recommended_action} works best"
                 )
         else:
             # No historical data - follow VIC-20 but with low confidence
