@@ -7,7 +7,6 @@ Create Date: 2026-01-30 13:10:00.000000
 """
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = 'a1b2c3d4e5f6'
@@ -28,8 +27,8 @@ def upgrade():
         sa.Column('threshold_level', sa.String(length=20), nullable=False),
         sa.Column('action_taken', sa.String(length=100), nullable=True),
         sa.Column('outcome_success', sa.Boolean(), nullable=True),
-        sa.Column('system_state', postgresql.JSON(astext_type=sa.Text()), nullable=True),
-        sa.Column('context', postgresql.JSON(astext_type=sa.Text()), nullable=True),
+        sa.Column('system_state', sa.JSON(), nullable=True),
+        sa.Column('context', sa.JSON(), nullable=True),
         sa.Column('time_to_critical', sa.Float(), nullable=True),
         sa.Column('was_false_alarm', sa.Boolean(), nullable=True, server_default='false'),
         sa.Column('should_have_acted_sooner', sa.Boolean(), nullable=True, server_default='false'),
@@ -52,14 +51,14 @@ def upgrade():
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('agent_name', sa.String(length=50), nullable=False),
         sa.Column('action', sa.String(length=100), nullable=False),
-        sa.Column('pre_metrics', postgresql.JSON(astext_type=sa.Text()), nullable=False),
-        sa.Column('post_metrics', postgresql.JSON(astext_type=sa.Text()), nullable=False),
+        sa.Column('pre_metrics', sa.JSON(), nullable=False),
+        sa.Column('post_metrics', sa.JSON(), nullable=False),
         sa.Column('metric_pattern_fingerprint', sa.String(length=255), nullable=False),
         sa.Column('success', sa.Boolean(), nullable=False),
         sa.Column('improvement', sa.Float(), nullable=False),
         sa.Column('primary_metric', sa.String(length=100), nullable=True),
         sa.Column('severity_score', sa.Float(), nullable=False),
-        sa.Column('other_actions_considered', postgresql.JSON(astext_type=sa.Text()), nullable=True),
+        sa.Column('other_actions_considered', sa.JSON(), nullable=True),
         sa.Column('created_at', sa.TIMESTAMP(), server_default=sa.text('now()'), nullable=True),
         sa.PrimaryKeyConstraint('id')
     )
@@ -85,7 +84,7 @@ def upgrade():
         sa.Column('value_15min_later', sa.Float(), nullable=True),
         sa.Column('value_30min_later', sa.Float(), nullable=True),
         sa.Column('value_1hr_later', sa.Float(), nullable=True),
-        sa.Column('context', postgresql.JSON(astext_type=sa.Text()), nullable=True),
+        sa.Column('context', sa.JSON(), nullable=True),
         sa.Column('context_fingerprint', sa.String(length=255), nullable=True),
         sa.PrimaryKeyConstraint('id')
     )
