@@ -89,7 +89,9 @@ class TerryLearning:
         context,
         reasoning_result,
         decision,
-        execution_result
+        execution_result,
+        central_memory_id: Optional[str] = None,
+        user_id: Optional[str] = None
     ) -> LearningRecord:
         """
         Store this experience for future reference.
@@ -101,6 +103,8 @@ class TerryLearning:
             reasoning_result: ReasoningResult from reasoning engine
             decision: ActionDecision from action selection
             execution_result: ExecutionResult from action execution
+            central_memory_id: Link to CentralMemoryBank (for learned thresholds)
+            user_id: User ID for learning event emissions
             
         Returns:
             LearningRecord that was stored
@@ -175,10 +179,56 @@ class TerryLearning:
         storage_success = await self._store_learning(record)
         record.storage_success = storage_success
         
-        # 6. Update agent state
+        # 6. NEW: Record in learned thresholds and action effectiveness systems
+        if hasattr(decision, 'action_selector') and decision.action_selector:
+            try:
+                # Get metrics
+                metrics_before = execution_result.get('metrics_before', {})
+                metrics_after = execution_result.get('metrics_after', {})
+                
+                # Record in action effectiveness (emits learning event)
+                await decision.action_selector.action_effectiveness.record_outcome(
+                    action=decision.action,
+                    pre_metrics=metrics_before,
+                    post_metrics=metrics_after,
+                    severity=self._calculate_severity_score(context.severity),
+                    success=overall_success,
+                    other_actions_considered=[alt.get('action') for alt in decision.alternatives_considered] if decision.alternatives_considered else [],
+                    central_memory_id=central_memory_id,
+                    user_id=user_id
+                )
+                
+                # Record in learned thresholds if threshold was crossed (emits learning event)
+                if hasattr(decision, 'threshold_crossed') and decision.threshold_crossed:
+                    primary_metric = f"{context.resource_type}_usage"
+                    await decision.action_selector.learned_thresholds.record_outcome(
+                        metric_name=primary_metric,
+                        metric_value=metrics_before.get(primary_metric, 0.0),
+                        threshold_level=decision.threshold_crossed,
+                        action_taken=decision.action,
+                        outcome={
+                            'success': overall_success,
+                            'system_state': metrics_before,
+                            'resolved_naturally': False,
+                            'became_critical_before_action': False,
+                            'rapid_escalation': False
+                        },
+                        context={
+                            'time_of_day': utc_now().hour,
+                            'day_of_week': utc_now().weekday(),
+                            'root_cause': reasoning_result.root_cause
+                        },
+                        user_id=user_id
+                    )
+                
+                self.logger.debug("   ✓ Recorded in learned thresholds and action effectiveness systems")
+            except Exception as e:
+                self.logger.warning(f"   ⚠️ Failed to record in learned systems (non-critical): {e}")
+        
+        # 7. Update agent state
         await self._update_agent_state(record, decision)
         
-        # 7. Share with The Stick
+        # 8. Share with The Stick
         await self._share_with_stick(record)
         
         if overall_success:
@@ -187,6 +237,17 @@ class TerryLearning:
             self.logger.info(f"   ✗ FAILURE. {decision.action} didn't work. Learning from it.")
         
         return record
+    
+    def _calculate_severity_score(self, severity_str: str) -> float:
+        """Convert severity string to numeric score for learned systems"""
+        severity_map = {
+            'low': 0.3,
+            'moderate': 0.5,
+            'high': 0.7,
+            'critical': 0.9,
+            'emergency': 1.0
+        }
+        return severity_map.get(severity_str.lower(), 0.5)
     
     def _calculate_improvement(
         self,
