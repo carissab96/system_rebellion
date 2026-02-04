@@ -76,6 +76,9 @@ class ActionOutcomeRecord(Base):
     agent_name = Column(String(50), nullable=False, index=True)
     action = Column(String(100), nullable=False, index=True)
     
+    # Link back to CentralMemoryBank for vector similarity queries
+    central_memory_id = Column(String(36), index=True)
+    
     # Metrics before and after
     pre_metrics = Column(JSON, nullable=False)
     post_metrics = Column(JSON, nullable=False)

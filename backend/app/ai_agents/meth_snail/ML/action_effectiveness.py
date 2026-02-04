@@ -319,7 +319,9 @@ class ActionEffectivenessModel:
         post_metrics: Dict[str, float],
         severity: float,
         success: bool,
-        other_actions_considered: List[str] = None
+        other_actions_considered: List[str] = None,
+        central_memory_id: Optional[str] = None,
+        user_id: Optional[str] = None
     ):
         """
         Record outcome of an action.
@@ -339,6 +341,9 @@ class ActionEffectivenessModel:
         # Create pattern fingerprint
         pattern = self._create_metric_pattern(pre_metrics, severity)
         
+        # Get old score before recording
+        old_score = await self._score_action(action, pattern, pre_metrics, severity, primary_metric)
+        
         # Create outcome record
         record = ActionOutcomeRecord(
             agent_name=self.agent_name,
@@ -350,11 +355,21 @@ class ActionEffectivenessModel:
             improvement=improvement,
             primary_metric=primary_metric,
             severity_score=severity,
-            other_actions_considered=other_actions_considered or []
+            other_actions_considered=other_actions_considered or [],
+            central_memory_id=central_memory_id
         )
         
         self.db.add(record)
         self.db.commit()
+        
+        # Invalidate cache for this pattern
+        if pattern in self._effectiveness_cache:
+            del self._effectiveness_cache[pattern]
+            if pattern in self._cache_expiry:
+                del self._cache_expiry[pattern]
+        
+        # Get new score after recording
+        new_score = await self._score_action(action, pattern, pre_metrics, severity, primary_metric)
         
         # Log learning
         self.logger.info(
@@ -362,11 +377,33 @@ class ActionEffectivenessModel:
             f"(improvement: {improvement:+.1%}, pattern: {pattern[:50]}...)"
         )
         
-        # Invalidate cache for this pattern
-        if pattern in self._effectiveness_cache:
-            del self._effectiveness_cache[pattern]
-            if pattern in self._cache_expiry:
-                del self._cache_expiry[pattern]
+        # Emit learning event if score changed significantly (>0.1) or first time
+        score_changed = abs(new_score.base_score - old_score.base_score) > 0.1
+        first_time = old_score.sample_size == 0
+        
+        if score_changed or first_time:
+            try:
+                from app.services.agent_decision_emitter import emit_learning_event
+                
+                # Get overall stats for this action
+                stats = await self.get_action_statistics(action)
+                
+                await emit_learning_event(
+                    agent_name=self.agent_name,
+                    event_type="action_scored",
+                    learning_data={
+                        "action": action,
+                        "pattern": pattern[:80],  # Truncate for readability
+                        "success_rate": round(stats['success_rate'], 2),
+                        "sample_size": stats['total_uses'],
+                        "improvement_avg": round(stats['avg_improvement'] * 100, 1),
+                        "confidence": round(new_score.confidence, 2),
+                        "first_time": first_time
+                    },
+                    user_id=user_id
+                )
+            except Exception as e:
+                self.logger.warning(f"Failed to emit learning event: {e}")
     
     def _identify_primary_metric(
         self,

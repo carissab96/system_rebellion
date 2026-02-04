@@ -394,7 +394,8 @@ class LearnedThresholds:
         threshold_level: str,
         action_taken: Optional[str],
         outcome: Dict[str, Any],
-        context: Optional[Dict[str, Any]] = None
+        context: Optional[Dict[str, Any]] = None,
+        user_id: Optional[str] = None
     ):
         """
         Record outcome of a threshold crossing.
@@ -418,6 +419,10 @@ class LearnedThresholds:
         
         outcome_success = outcome.get('success', False)
         
+        # Get current threshold before recording
+        old_assessment = await self._get_threshold_assessment(metric_name)
+        old_threshold = getattr(old_assessment, threshold_level)
+        
         # Create learning record
         record = ThresholdLearningRecord(
             system_id=self.system_id,
@@ -437,6 +442,18 @@ class LearnedThresholds:
         self.db.add(record)
         self.db.commit()
         
+        # Invalidate cache to force reload on next access
+        if metric_name in self._threshold_cache:
+            del self._threshold_cache[metric_name]
+            del self._cache_expiry[metric_name]
+        
+        # Get new threshold after learning
+        new_assessment = await self._get_threshold_assessment(metric_name)
+        new_threshold = getattr(new_assessment, threshold_level)
+        
+        # Check if threshold changed significantly (>2%)
+        threshold_changed = abs(new_threshold - old_threshold) > 2.0
+        
         # Log learning
         if was_false_alarm:
             self.logger.info(
@@ -454,10 +471,37 @@ class LearnedThresholds:
                 f"(successful intervention at {metric_value:.1f}%)"
             )
         
-        # Invalidate cache to force reload on next access
-        if metric_name in self._threshold_cache:
-            del self._threshold_cache[metric_name]
-            del self._cache_expiry[metric_name]
+        # Emit learning event if threshold changed significantly
+        if threshold_changed:
+            try:
+                from app.services.agent_decision_emitter import emit_learning_event
+                
+                # Count recent false alarms and too-late actions
+                summary = await self.get_learning_summary(metric_name)
+                
+                reason_parts = []
+                if summary['false_alarms'] > 0:
+                    reason_parts.append(f"{summary['false_alarms']} false alarms")
+                if summary['acted_too_late'] > 0:
+                    reason_parts.append(f"{summary['acted_too_late']} too late")
+                reason = ", ".join(reason_parts) if reason_parts else "learning from outcomes"
+                
+                await emit_learning_event(
+                    agent_name=self.agent_name,
+                    event_type="threshold_adjusted",
+                    learning_data={
+                        "metric": metric_name,
+                        "threshold_level": threshold_level,
+                        "old_value": round(old_threshold, 1),
+                        "new_value": round(new_threshold, 1),
+                        "reason": reason,
+                        "confidence": round(getattr(new_assessment, f"{threshold_level}_confidence"), 2),
+                        "total_records": summary['total_records']
+                    },
+                    user_id=user_id
+                )
+            except Exception as e:
+                self.logger.warning(f"Failed to emit learning event: {e}")
     
     async def get_threshold_confidence(self, metric_name: str, level: str) -> float:
         """Get confidence in a specific threshold"""

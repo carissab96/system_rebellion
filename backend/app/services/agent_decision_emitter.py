@@ -258,3 +258,107 @@ async def emit_personality_behavior(
         
     except Exception as e:
         logger.warning(f"⚠️ Failed to emit personality behavior (non-critical): {e}")
+
+
+async def emit_learning_event(
+    agent_name: str,
+    event_type: str,
+    learning_data: Dict[str, Any],
+    user_id: Optional[str] = None
+) -> None:
+    """
+    Emit a learning event via WebSocket for real-time learning visibility.
+    
+    Event types:
+    - 'threshold_adjusted': Threshold changed based on false alarms or late actions
+    - 'action_scored': Action effectiveness recorded for a pattern
+    - 'pattern_recorded': New metric pattern stored for forecasting
+    - 'forecast_generated': Proactive action recommended based on forecast
+    
+    NO FAKE DATA - only emit when actual learning happens.
+    
+    Args:
+        agent_name: Agent that learned something
+        event_type: Type of learning event
+        learning_data: Details about what was learned
+        user_id: User ID (optional)
+    
+    Example - Threshold adjusted:
+        await emit_learning_event(
+            agent_name="meth_snail",
+            event_type="threshold_adjusted",
+            learning_data={
+                "metric": "memory_usage",
+                "threshold_level": "warning",
+                "old_value": 80.0,
+                "new_value": 85.0,
+                "reason": "5 false alarms in last 24h",
+                "confidence": 0.75,
+                "total_records": 45
+            }
+        )
+    
+    Example - Action scored:
+        await emit_learning_event(
+            agent_name="meth_snail",
+            event_type="action_scored",
+            learning_data={
+                "action": "restart_service",
+                "pattern": "cpu_high_memory_thrashing",
+                "success_rate": 0.87,
+                "sample_size": 23,
+                "improvement_avg": 15.2,
+                "confidence": 0.82
+            }
+        )
+    
+    Example - Pattern recorded:
+        await emit_learning_event(
+            agent_name="meth_snail",
+            event_type="pattern_recorded",
+            learning_data={
+                "metric": "memory_usage",
+                "starting_value": 72.0,
+                "predicted_15min": 88.0,
+                "context": "weekday_afternoon_high_load",
+                "pattern_id": 45
+            }
+        )
+    
+    Example - Forecast generated:
+        await emit_learning_event(
+            agent_name="meth_snail",
+            event_type="forecast_generated",
+            learning_data={
+                "metric": "memory_usage",
+                "current_value": 75.0,
+                "predicted_value": 92.0,
+                "time_to_threshold": 28,  # minutes
+                "confidence": 0.75,
+                "recommended_action": "clear_cache",
+                "proactive": True
+            }
+        )
+    """
+    try:
+        from app.api.websockets import get_websocket_manager
+        ws_manager = get_websocket_manager()
+        
+        if len(ws_manager.active_connections) == 0:
+            return
+        
+        timestamp = datetime.now(timezone.utc)
+        
+        await ws_manager.broadcast_json({
+            "type": "learning_event",
+            "agent_name": agent_name,
+            "event_type": event_type,
+            "learning_data": learning_data,
+            "user_id": user_id,
+            "timestamp": timestamp.isoformat()
+        })
+        
+        logger.info(f"🧠 Learning: {agent_name} - {event_type}")
+        
+    except Exception as e:
+        logger.warning(f"⚠️ Failed to emit learning event (non-critical): {e}")
