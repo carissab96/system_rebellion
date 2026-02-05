@@ -506,15 +506,9 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
             
         except Exception as e:
             logger.error(f"🐌💥 Terry v2 coordination failed: {e}", exc_info=True)
-            logger.error("   Falling back to basic cache clear...")
-            # Fallback to basic cache clear on error
-            try:
-                from app.ai_agents.distributed.system_actions import SystemActions
-                fallback_result = await SystemActions.emergency_cache_clear()
-                if fallback_result['success']:
-                    logger.info(f"🐌✅ Fallback cache clear succeeded")
-            except Exception as fallback_error:
-                logger.error(f"🐌💥 Even fallback failed: {fallback_error}")
+            logger.error("   NO FALLBACK - Terry must learn from failures!")
+            # Re-raise so we can see what's actually breaking
+            raise
     
     async def handle_coordination(self, coordination_request: Dict[str, Any]) -> Dict[str, Any]:
         """
