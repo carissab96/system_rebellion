@@ -90,6 +90,7 @@ class TerryLearning:
         reasoning_result,
         decision,
         execution_result,
+        action_selector=None,
         central_memory_id: Optional[str] = None,
         user_id: Optional[str] = None
     ) -> LearningRecord:
