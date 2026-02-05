@@ -175,19 +175,19 @@ class TerryLearning:
             agent_name='meth_snail'
         )
         
-        # 5. Store in database
-        storage_success = await self._store_learning(record)
+        # 5. Store in database (returns central_memory_id)
+        storage_success, central_memory_id = await self._store_learning(record)
         record.storage_success = storage_success
         
         # 6. NEW: Record in learned thresholds and action effectiveness systems
-        if hasattr(decision, 'action_selector') and decision.action_selector:
+        if action_selector and central_memory_id:
             try:
                 # Get metrics
                 metrics_before = execution_result.get('metrics_before', {})
                 metrics_after = execution_result.get('metrics_after', {})
                 
                 # Record in action effectiveness (emits learning event)
-                await decision.action_selector.action_effectiveness.record_outcome(
+                await action_selector.action_effectiveness.record_outcome(
                     action=decision.action,
                     pre_metrics=metrics_before,
                     post_metrics=metrics_after,
@@ -201,7 +201,7 @@ class TerryLearning:
                 # Record in learned thresholds if threshold was crossed (emits learning event)
                 if hasattr(decision, 'threshold_crossed') and decision.threshold_crossed:
                     primary_metric = f"{context.resource_type}_usage"
-                    await decision.action_selector.learned_thresholds.record_outcome(
+                    await action_selector.learned_thresholds.record_outcome(
                         metric_name=primary_metric,
                         metric_value=metrics_before.get(primary_metric, 0.0),
                         threshold_level=decision.threshold_crossed,
@@ -282,7 +282,7 @@ class TerryLearning:
         
         return improvement
     
-    async def _store_learning(self, record: LearningRecord) -> bool:
+    async def _store_learning(self, record: LearningRecord) -> tuple[bool, Optional[str]]:
         """
         Store learning record in database.
         
@@ -290,11 +290,17 @@ class TerryLearning:
             record: LearningRecord to store
             
         Returns:
-            True if storage succeeded, False otherwise
+            Tuple of (success: bool, central_memory_id: Optional[str])
         """
         try:
+            import uuid
             from app.models.agent_learning import AgentLearningRecord
+            from app.models.agent_memory_banks import CentralMemoryBank
             
+            # Generate central_memory_id
+            central_memory_id = str(uuid.uuid4())
+            
+            # Store in AgentLearningRecord (agent-specific table)
             db_record = AgentLearningRecord(
                 agent_name=record.agent_name,
                 fingerprint_l1=record.fingerprint_l1,
@@ -315,18 +321,44 @@ class TerryLearning:
             )
             
             self.db.add(db_record)
-            await self.db.commit()
+            await self.db.flush()  # Get the ID without committing
             
             # Set the ID on the record so we can emit it
             record.learning_record_id = str(db_record.id)
             
-            self.logger.debug(f"   ✓ Learning record stored in database (ID: {db_record.id})")
-            return True
+            # Also store in CentralMemoryBank (cross-agent table)
+            central_memory = CentralMemoryBank(
+                memory_id=central_memory_id,
+                agent_name=record.agent_name,
+                event_type="learning_outcome",
+                title=f"{record.action} → {'SUCCESS' if record.success else 'FAILURE'}",
+                description=f"Action: {record.action}, Root cause: {record.root_cause}",
+                details={
+                    'fingerprint_l1': record.fingerprint_l1,
+                    'fingerprint_l2': record.fingerprint_l2,
+                    'fingerprint_l3': record.fingerprint_l3,
+                    'action': record.action,
+                    'success': record.success,
+                    'improvement': record.improvement,
+                    'followed_vic20': record.followed_vic20,
+                    'energy_drink_consumed': record.energy_drink_consumed,
+                    'hawk_veto': record.hawk_veto,
+                    'learning_record_id': str(db_record.id)
+                },
+                priority=3 if record.success else 4,
+                occurred_at=utc_now()
+            )
+            
+            self.db.add(central_memory)
+            await self.db.commit()
+            
+            self.logger.debug(f"   ✓ Learning stored: AgentLearningRecord (ID: {db_record.id}), CentralMemoryBank (ID: {central_memory_id})")
+            return True, central_memory_id
             
         except Exception as e:
             self.logger.error(f"   💥 Failed to store learning record: {str(e)}")
             await self.db.rollback()
-            return False
+            return False, None
     
     async def _update_agent_state(self, record: LearningRecord, decision):
         """

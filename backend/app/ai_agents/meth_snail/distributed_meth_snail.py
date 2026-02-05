@@ -322,7 +322,9 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
                         'success': action_result.get('success', False),
                         'metrics_before': metrics_before,
                         'metrics_after': metrics_after
-                    }
+                    },
+                    action_selector=action_selector,
+                    user_id=self.user_id
                 )
                 
                 # Update action selector's adaptive bias based on outcome
