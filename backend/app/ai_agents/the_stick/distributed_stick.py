@@ -142,9 +142,21 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
                 self.StickMemoryEntry = StickMemoryEntry  # Store for later use
                 
                 logger.info("📏💾 Database integration initialized")
+                
+                # OPUS 4.6 CHANGE: Instantiate StickLearning ONCE during initialization
+                # instead of per-call in handlers. Avoids unnecessary construction cost,
+                # preserves state across validations if StickLearning ever accumulates it.
+                # Get a database session for StickLearning
+                async for db in self.db_getter():
+                    from .ML.learning import StickLearning
+                    self.learning = StickLearning(db, self.user_id)
+                    logger.info("📏🔍 StickLearning initialized for validation")
+                    break  # Only need one session to create the instance
+                    
             except Exception as e:
                 logger.error(f"📏💥 Failed to initialize database: {e}", exc_info=True)
                 self.db_integration = None
+                self.learning = None
         
         # Initialize Week 4 systems
         self.verification_manager = get_verification_manager()
@@ -152,6 +164,11 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
         
         logger.info("📏🎯 Week 4 systems integrated - Verification & Escalation tracking ONLINE!")
         logger.info("📏📋 The Stick will track EVERYTHING! (Anxiety-driven hypervigilance activated)")
+        
+        # Start validation sweep loop
+        import asyncio
+        asyncio.create_task(self._validation_sweep_loop())
+        logger.info("📏🔍 Validation sweep loop started (every 2 hours)")
         
         # 🎯 PHASE 5: Subscribe to DECISION_LOG from ALL agents
         try:
@@ -362,11 +379,15 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
         """
         PHASE 5: Handle DECISION_LOG from any agent.
         
+        Enhanced: Check if decision involved cross-agent learning and validate real-time.
+        
         Flow:
         1. Receive DECISION_LOG
-        2. Add to buffer
-        3. When buffer full → batch write to PostgreSQL with vector embeddings
-        4. Track anxiety (Bob causes 3x anxiety!)
+        2. Check for cross-agent learning interaction
+        3. If found, validate immediately
+        4. Add to buffer
+        5. When buffer full → batch write to PostgreSQL with vector embeddings
+        6. Track anxiety (Bob causes 3x anxiety!)
         
         PERSONALITY: Anxious but thorough, remembers EVERYTHING (eidetic memory)
         """
@@ -387,6 +408,45 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
                 f"📏📬 DECISION_LOG from {from_agent}: {decision_type} "
                 f"{'🚨 BOB ALERT!' if is_bob else ''}"
             )
+            
+            # Check if this decision involved cross-agent learning
+            if payload and 'learning_interaction_id' in payload:
+                interaction_id = payload['learning_interaction_id']
+                logger.info(f"📏🔍 Real-time validation triggered for {interaction_id}")
+                
+                try:
+                    # OPUS 4.6 CHANGE: Single session context for query + validation + recording.
+                    # Previously: Handler opened a session to query, then record_validation
+                    # opened its OWN session internally. Nested sessions risk deadlock
+                    # on connection-pooled backends. Now everything runs in one session.
+                    async with self.db_integration.get_managed_session() as session:
+                        # Query the interaction
+                        from sqlalchemy import select
+                        from app.models.agent_memory_banks import AgentLearningInteractions
+                        
+                        query = select(AgentLearningInteractions).where(
+                            AgentLearningInteractions.interaction_id == interaction_id
+                        )
+                        result = await session.execute(query)
+                        interaction = result.scalar_one_or_none()
+                        
+                        if interaction and not interaction.validated_by_stick:
+                            # OPUS 4.6 CHANGE: Use self.learning instead of instantiating new
+                            audit_entry = await self.learning.validate_cross_agent_learning(
+                                interaction
+                            )
+                            # OPUS 4.6 CHANGE: Pass session to avoid nested session creation
+                            await self.db_integration.record_validation(
+                                interaction, audit_entry, session=session
+                            )
+                            await session.commit()
+                            
+                            logger.info(
+                                f"📏✅ Real-time validation complete: "
+                                f"{audit_entry.validation_result}"
+                            )
+                except Exception as e:
+                    logger.error(f"📏💥 Real-time validation failed: {e}")
             
             # Add to buffer
             from datetime import datetime
@@ -1054,6 +1114,58 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
         }
         
         return status
+    
+    async def _validation_sweep_loop(self):
+        """
+        Background task: Periodically validate unvalidated learning interactions.
+        
+        Runs every 2 hours as fallback to catch anything missed by real-time validation.
+        """
+        import asyncio
+        await asyncio.sleep(60)  # Wait 1 minute after startup
+        
+        while True:
+            try:
+                logger.info("📏🔍 Starting scheduled validation sweep...")
+                
+                if self.db_integration and self.learning:
+                    # OPUS 4.6 CHANGE: Use self.learning instead of instantiating new.
+                    # Pass session through to avoid nested session creation.
+                    async with self.db_integration.get_managed_session() as session:
+                        stats = await self.learning.validate_unvalidated_interactions(
+                            session=session
+                        )
+                        
+                        # Now record all validations with the same session
+                        if 'interactions' in stats and 'audit_entries' in stats:
+                            for i, interaction in enumerate(stats['interactions']):
+                                if i < len(stats['audit_entries']):
+                                    audit_entry = stats['audit_entries'][i]
+                                    await self.db_integration.record_validation(
+                                        interaction, audit_entry, session=session
+                                    )
+                        
+                        # OPUS 4.6 CHANGE: Batch commit at the end
+                        await session.commit()
+                        
+                        logger.info(
+                            f"📏📊 Validation sweep complete: "
+                            f"{stats['validated']} validated, {stats['failed']} failed"
+                        )
+                        
+                        # Increase anxiety if many validations failed
+                        if stats['total_checked'] > 0:
+                            failure_rate = stats['failed'] / stats['total_checked']
+                            if failure_rate > 0.3:  # More than 30% failed
+                                self.paper_bag_economy.consume_bag(
+                                    reason="High validation failure rate detected!"
+                                )
+                
+            except Exception as e:
+                logger.error(f"📏💥 Validation sweep error: {e}")
+            
+            # Wait 2 hours before next sweep
+            await asyncio.sleep(7200)
     
     def __repr__(self):
         """Patient string representation"""

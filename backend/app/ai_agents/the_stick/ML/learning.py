@@ -435,3 +435,255 @@ class StickLearning:
         except Exception as e:
             logger.error(f"📊💥 Error getting hamster translation stats: {e}")
             return {}
+    
+    async def validate_cross_agent_learning(
+        self,
+        interaction,
+        config=None
+    ):
+        """
+        Validate a cross-agent learning interaction.
+        
+        The Stick's job: Ensure agents are learning CORRECTLY from each other.
+        
+        Args:
+            interaction: AgentLearningInteractions instance to validate
+            config: Optional ValidationConfig override (defaults to global VALIDATION_CONFIG)
+            
+        Returns:
+            ValidationAuditEntry with validation decision and reasoning
+        """
+        from ..validation_config import VALIDATION_CONFIG
+        from ..data_types import ValidationAuditEntry
+        from app.models.agent_memory_banks import AgentLearningInteractions
+        
+        config = config or VALIDATION_CONFIG
+        thresholds = config.get_active_thresholds()
+        
+        logger.info(f"📏🔍 Validating learning interaction {interaction.interaction_id}")
+        logger.info(f"   Source: {interaction.source_agent} → Target: {interaction.target_agent}")
+        logger.info(f"   Thresholds: {thresholds['threshold_state']}")
+        
+        # Calculate interaction age
+        now = datetime.now(timezone.utc)
+        age_delta = now - interaction.timestamp
+        age_hours = age_delta.total_seconds() / 3600
+        
+        # Validation checks
+        validation_failures = []
+        
+        # Check 1: Age
+        if age_hours > thresholds['max_age_hours']:
+            validation_failures.append(
+                f"Interaction too old: {age_hours:.1f}h > {thresholds['max_age_hours']}h"
+            )
+        
+        # Check 2: Effectiveness score
+        if interaction.effectiveness_score is not None:
+            if interaction.effectiveness_score < thresholds['min_effectiveness']:
+                validation_failures.append(
+                    f"Effectiveness too low: {interaction.effectiveness_score:.2f} < {thresholds['min_effectiveness']}"
+                )
+        else:
+            validation_failures.append("No effectiveness score available")
+        
+        # Check 3: Success rate (if improvement_measured available)
+        if interaction.improvement_measured is not None:
+            # Treat improvement as proxy for success rate
+            if interaction.improvement_measured < thresholds['min_success_rate']:
+                validation_failures.append(
+                    f"Success rate too low: {interaction.improvement_measured:.2f} < {thresholds['min_success_rate']}"
+                )
+        
+        # Determine validation result
+        validation_passed = len(validation_failures) == 0
+        
+        # Build reasoning
+        if validation_passed:
+            reasoning = (
+                f"✅ Validation PASSED. "
+                f"Effectiveness: {interaction.effectiveness_score:.2f}, "
+                f"Age: {age_hours:.1f}h, "
+                f"Thresholds: {thresholds['threshold_state']}"
+            )
+        else:
+            reasoning = (
+                f"❌ Validation FAILED. "
+                f"Failures: {'; '.join(validation_failures)}"
+            )
+        
+        # Check if this is a retry
+        was_retry = interaction.cross_validation_count > 0
+        
+        # Create audit entry
+        audit_entry = ValidationAuditEntry(
+            timestamp=now,
+            interaction_id=interaction.interaction_id,
+            source_agent=interaction.source_agent,
+            target_agent=interaction.target_agent,
+            learning_type=interaction.learning_type,
+            validation_result=validation_passed,
+            reasoning=reasoning,
+            thresholds_applied=thresholds,
+            threshold_state=thresholds['threshold_state'],
+            was_retry=was_retry,
+            retry_count=interaction.cross_validation_count,
+            effectiveness_score=interaction.effectiveness_score,
+            success_rate=interaction.improvement_measured,
+            interaction_age_hours=age_hours,
+            stick_anxiety_level=self._calculate_validation_anxiety(validation_passed)
+        )
+        
+        logger.info(f"📏✅ Validation result: {reasoning}")
+        
+        return audit_entry
+    
+    async def validate_unvalidated_interactions(
+        self,
+        max_age_days: int = 7,
+        session=None  # OPUS 4.6 CHANGE: Accept optional session from caller
+    ) -> Dict[str, Any]:
+        """
+        Sweep through unvalidated learning interactions and validate them.
+        
+        The Stick's anxiety-driven thoroughness ensures NO learning goes unvalidated.
+        
+        Args:
+            max_age_days: Skip interactions older than this (default 7 days)
+            session: Optional existing session from caller
+            
+        Returns:
+            Statistics on validated interactions
+        """
+        logger.info("📏🔍 Starting validation sweep for unvalidated interactions...")
+        
+        from sqlalchemy import select, and_, or_
+        from sqlalchemy.sql import func
+        from datetime import timedelta
+        from app.models.agent_memory_banks import AgentLearningInteractions
+        
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=max_age_days)
+        now = datetime.now(timezone.utc)
+        
+        try:
+            active_session = session or self.db
+            
+            # OPUS 4.6 CHANGE: Added retry window filtering.
+            # Previously: Query only checked validated_by_stick == False and age.
+            # Problem: Failed validations stay validated_by_stick == False, so
+            # the next sweep immediately re-validates them — ignoring the 24-hour
+            # retry window specified in the failure metadata.
+            # 
+            # Now: We filter out interactions that have failed validation AND
+            # haven't reached their retry_after window yet.
+            #
+            # NOTE: The JSON field query syntax below assumes PostgreSQL with JSONB.
+            
+            query = select(AgentLearningInteractions).where(
+                and_(
+                    AgentLearningInteractions.validated_by_stick == False,
+                    AgentLearningInteractions.timestamp >= cutoff_date,
+                    # Include interactions that either:
+                    # 1. Have never been validated (cross_validation_count == 0), OR
+                    # 2. Have been validated before but retry window has elapsed
+                    or_(
+                        AgentLearningInteractions.cross_validation_count == 0,
+                        # Previously failed — check retry window
+                        # This handles the case where adaptation_method contains
+                        # retry_after timestamp from a previous failed validation
+                        and_(
+                            AgentLearningInteractions.cross_validation_count > 0,
+                            # PostgreSQL JSONB syntax for retry window check
+                            AgentLearningInteractions.adaptation_method['retry_after'].astext <= now.isoformat()
+                        )
+                    )
+                )
+            ).order_by(AgentLearningInteractions.timestamp.desc())
+            
+            result = await active_session.execute(query)
+            interactions = result.scalars().all()
+            
+            logger.info(f"📏📊 Found {len(interactions)} unvalidated interactions")
+            
+            validated_count = 0
+            failed_count = 0
+            skipped_count = 0
+            audit_entries = []
+            
+            for interaction in interactions:
+                # Validate the interaction
+                audit_entry = await self.validate_cross_agent_learning(interaction)
+                audit_entries.append(audit_entry)
+                
+                # Note: record_validation will be called from distributed_stick.py
+                # to avoid needing db_integration reference here
+                
+                if audit_entry.validation_result:
+                    validated_count += 1
+                else:
+                    failed_count += 1
+            
+            stats = {
+                'total_checked': len(interactions),
+                'validated': validated_count,
+                'failed': failed_count,
+                'skipped': skipped_count,
+                'validation_rate': (
+                    validated_count / len(interactions) if interactions else 0.0
+                ),
+                'audit_entries': audit_entries,
+                'interactions': interactions  # Return for caller to record
+            }
+            
+            logger.info(
+                f"📏✅ Validation sweep complete: "
+                f"{validated_count} passed, {failed_count} failed, "
+                f"{skipped_count} skipped (retry window)"
+            )
+            
+            return stats
+            
+        except Exception as e:
+            logger.error(f"📏💥 Error during validation sweep: {e}")
+            return {
+                'total_checked': 0,
+                'validated': 0,
+                'failed': 0,
+                'skipped': 0,
+                'validation_rate': 0.0,
+                'error': str(e)
+            }
+    
+    def _calculate_validation_anxiety(self, validation_passed: bool) -> float:
+        """
+        Calculate The Stick's anxiety level during validation.
+        Failed validations increase anxiety.
+        
+        OPUS 4.6 NOTE: This is intentionally simple for Phase 1.
+        Current behavior: binary 25.0 (pass) or 40.0 (fail).
+        
+        POST-LAUNCH ENHANCEMENT (flag for Phase 2+):
+        Should factor in:
+        - Failure RATE over rolling window (not just single result)
+        - Consecutive failures (streak detection)
+        - Ratio of validated to unvalidated interactions system-wide
+        - Time since last successful validation
+        - Agent-specific failure patterns (e.g., Terry always failing = 
+          different anxiety profile than random failures across agents)
+        
+        Example future signature:
+            def _calculate_validation_anxiety(
+                self, 
+                validation_passed: bool,
+                recent_failure_rate: float,
+                consecutive_failures: int,
+                system_validation_ratio: float
+            ) -> float:
+        
+        For now: simple binary is sufficient. The interface exists.
+        The Stick will develop more nuanced anxiety when there's data to be anxious about.
+        """
+        base_anxiety = 25.0
+        if not validation_passed:
+            base_anxiety += 15.0  # Failed validation = more anxiety
+        return min(base_anxiety, 100.0)

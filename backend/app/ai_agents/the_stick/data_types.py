@@ -137,3 +137,37 @@ class StickMemoryEntry:
     related_hamsters: List[str]
     compliance_impact: str
     never_forget: bool  # Some things The Stick NEVER forgets
+
+@dataclass
+class ValidationAuditEntry:
+    """
+    Audit trail for The Stick's validation decisions.
+    Written to CentralMemoryBank for VIC-20's oversight.
+    """
+    timestamp: datetime
+    interaction_id: str
+    source_agent: str
+    target_agent: str
+    learning_type: str
+    
+    # Validation result
+    validation_result: bool  # pass or fail
+    reasoning: str           # WHY it passed or failed
+    
+    # Threshold snapshot (critical for audit)
+    thresholds_applied: Dict[str, Any]  # snapshot of active thresholds
+    threshold_state: str                 # "initial" or "mature"
+    
+    # Re-validation tracking
+    was_retry: bool = False
+    previous_validation_id: Optional[str] = None
+    retry_count: int = 0
+    
+    # Validation metrics
+    effectiveness_score: Optional[float] = None
+    success_rate: Optional[float] = None
+    pattern_similarity: Optional[float] = None
+    interaction_age_hours: Optional[float] = None
+    
+    # The Stick's anxiety level during validation
+    stick_anxiety_level: float = 25.0
