@@ -546,6 +546,17 @@ class LearnedThresholds:
                 )
             ).all()
             
+            # Determine trigger reason from learning records
+            false_alarm_count = sum(1 for r in records if r.was_false_alarm)
+            acted_too_late_count = sum(1 for r in records if r.should_have_acted_sooner)
+            
+            # Determine primary trigger reason
+            trigger_reason = None
+            if false_alarm_count > acted_too_late_count:
+                trigger_reason = "false_alarms"
+            elif acted_too_late_count > 0:
+                trigger_reason = "too_late"
+            
             # Call The Stick's validation
             async for db in db_getter():
                 from app.ai_agents.the_stick.ML.learning import StickLearning
@@ -564,7 +575,8 @@ class LearnedThresholds:
                     threshold_level=threshold_level,
                     learned_value=learned_value,
                     default_value=default_value,
-                    sample_size=len(records)
+                    sample_size=len(records),
+                    trigger_reason=trigger_reason
                 )
                 
                 # Record audit trail using standard record_validation()

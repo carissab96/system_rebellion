@@ -513,11 +513,17 @@ class ActionEffectivenessModel:
             
             # Calculate statistics
             successful_attempts = sum(1 for r in records if r.success)
-            success_rate = successful_attempts / len(records) if records else 0.0
+            raw_success_rate = successful_attempts / len(records) if records else 0.0
             
-            # Calculate score consistency (simplified: assume 1.0 for now)
-            # In production, this would compare learned score vs raw success rate
-            score_consistency = 1.0
+            # Get the learned effectiveness score from the action effectiveness model
+            # This would come from score_all_actions() or similar
+            # For now, use a placeholder that Terry would provide
+            action_scores = await self.score_all_actions(metric_pattern)
+            effectiveness_score = next((s.score for s in action_scores if s.action == action), raw_success_rate)
+            
+            # Get previous score for volatility check (if available)
+            # Query historical scores from a previous validation or learning cycle
+            previous_score = None  # TODO: Implement historical score tracking
             
             # Call The Stick's validation
             async for db in db_getter():
@@ -535,9 +541,10 @@ class ActionEffectivenessModel:
                     agent_name=self.agent_name,
                     action=action,
                     metric_pattern=metric_pattern,
-                    success_rate=success_rate,
+                    effectiveness_score=effectiveness_score,
+                    raw_success_rate=raw_success_rate,
                     sample_size=len(records),
-                    score_consistency=score_consistency
+                    previous_score=previous_score
                 )
                 
                 # Record audit trail using standard record_validation()

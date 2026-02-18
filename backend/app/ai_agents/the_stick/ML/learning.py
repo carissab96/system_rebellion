@@ -696,6 +696,7 @@ class StickLearning:
         learned_value: float,
         default_value: float,
         sample_size: int,
+        trigger_reason: str = None,
         config=None
     ):
         """
@@ -704,8 +705,9 @@ class StickLearning:
         The Stick's job: Ensure Terry's ML learning produces REASONABLE thresholds.
         
         Validation checks:
-        1. Sufficient sample size (not learning from 2 data points)
-        2. Reasonable shift magnitude (not jumping 80% → 96% in one adjustment)
+        1. Sample size >= min_threshold_sample_size
+        2. Shift magnitude <= max_threshold_shift_magnitude
+        3. Direction consistency with trigger reason (catches learning logic errors)
         
         Args:
             agent_name: Agent that learned this threshold (e.g., 'meth_snail')
@@ -714,6 +716,7 @@ class StickLearning:
             learned_value: The threshold value Terry learned
             default_value: The default/baseline threshold
             sample_size: Number of learning records used
+            trigger_reason: Why threshold was adjusted ('false_alarms', 'missed_actions', 'too_late')
             config: Optional ValidationConfig override
             
         Returns:
@@ -730,8 +733,8 @@ class StickLearning:
             f"📏🔍 Validating learned threshold: {agent_name}.{metric_name}.{threshold_level} = {learned_value:.1f}"
         )
         
-        # Calculate shift magnitude (normalized 0.0-1.0)
-        shift_magnitude = abs(learned_value - default_value) / 100.0
+        # Calculate shift magnitude (as ratio of old threshold)
+        shift_magnitude = abs(learned_value - default_value) / default_value if default_value != 0 else 0.0
         
         # Validation checks
         validation_failures = []
@@ -739,14 +742,34 @@ class StickLearning:
         # Check 1: Sample size
         if sample_size < thresholds['min_threshold_sample_size']:
             validation_failures.append(
-                f"Insufficient samples: {sample_size} < {thresholds['min_threshold_sample_size']}"
+                f"Insufficient data: {sample_size} samples < {thresholds['min_threshold_sample_size']} minimum"
             )
         
         # Check 2: Shift magnitude
         if shift_magnitude > thresholds['max_threshold_shift_magnitude']:
             validation_failures.append(
-                f"Excessive shift: {shift_magnitude:.2f} > {thresholds['max_threshold_shift_magnitude']}"
+                f"Threshold shift too large: {shift_magnitude:.2f} > {thresholds['max_threshold_shift_magnitude']:.2f}"
             )
+        
+        # Check 3: Direction consistency with trigger reason
+        # This catches actual learning errors - if Terry sees false alarms and lowers threshold (more sensitive),
+        # something is broken in the learning logic
+        if trigger_reason:
+            threshold_went_up = learned_value > default_value
+            threshold_went_down = learned_value < default_value
+            
+            if trigger_reason == "false_alarms":
+                # False alarms mean threshold should go UP (less sensitive)
+                if threshold_went_down:
+                    validation_failures.append(
+                        f"Direction inconsistent: false_alarms should move threshold UP (less sensitive), got DOWN"
+                    )
+            elif trigger_reason in ["missed_actions", "too_late"]:
+                # Missed actions or acting too late means threshold should go DOWN (more sensitive)
+                if threshold_went_up:
+                    validation_failures.append(
+                        f"Direction inconsistent: {trigger_reason} should move threshold DOWN (more sensitive), got UP"
+                    )
         
         # Determine validation result
         validation_passed = len(validation_failures) == 0
@@ -759,6 +782,8 @@ class StickLearning:
                 f"shift: {shift_magnitude:.2f}), "
                 f"samples: {sample_size}"
             )
+            if trigger_reason:
+                reasoning += f", trigger: {trigger_reason}"
         else:
             reasoning = (
                 f"❌ Threshold REJECTED. "
@@ -792,9 +817,10 @@ class StickLearning:
         agent_name: str,
         action: str,
         metric_pattern: str,
-        success_rate: float,
+        effectiveness_score: float,
+        raw_success_rate: float,
         sample_size: int,
-        score_consistency: float = 1.0,
+        previous_score: float = None,
         config=None
     ):
         """
@@ -803,16 +829,18 @@ class StickLearning:
         The Stick's job: Ensure Terry's ML learning produces RELIABLE action recommendations.
         
         Validation checks:
-        1. Sufficient attempts (not recommending based on 1 success)
-        2. Score consistency (learned score vs raw success rate shouldn't diverge wildly)
+        1. Sample size >= min_action_sample_size
+        2. Score volatility <= max_action_score_volatility (if previous score exists)
+        3. Score consistency with raw data (catches model drift)
         
         Args:
             agent_name: Agent that learned this (e.g., 'meth_snail')
             action: Action being validated (e.g., 'restart_service')
             metric_pattern: Pattern fingerprint for this learning
-            success_rate: Learned success rate (0.0-1.0)
+            effectiveness_score: Learned effectiveness score from model (0.0-1.0)
+            raw_success_rate: Raw success rate from outcomes (0.0-1.0)
             sample_size: Number of attempts
-            score_consistency: How consistent the score is with raw success rate (0.0-1.0)
+            previous_score: Previous effectiveness score for volatility check (optional)
             config: Optional ValidationConfig override
             
         Returns:
@@ -827,7 +855,7 @@ class StickLearning:
         
         logger.info(
             f"📏🔍 Validating action effectiveness: {agent_name}.{action} "
-            f"(success_rate: {success_rate:.2f}, samples: {sample_size})"
+            f"(score: {effectiveness_score:.2f}, raw_rate: {raw_success_rate:.2f}, samples: {sample_size})"
         )
         
         # Validation checks
@@ -836,13 +864,23 @@ class StickLearning:
         # Check 1: Sample size
         if sample_size < thresholds['min_action_sample_size']:
             validation_failures.append(
-                f"Insufficient attempts: {sample_size} < {thresholds['min_action_sample_size']}"
+                f"Insufficient data: {sample_size} outcomes < {thresholds['min_action_sample_size']} minimum"
             )
         
-        # Check 2: Score consistency
-        if score_consistency < thresholds['min_action_consistency']:
+        # Check 2: Score volatility (if we have previous score)
+        if previous_score is not None:
+            score_delta = abs(effectiveness_score - previous_score)
+            if score_delta > thresholds['max_action_score_volatility']:
+                validation_failures.append(
+                    f"Score volatility too high: {score_delta:.2f} > {thresholds['max_action_score_volatility']:.2f}"
+                )
+        
+        # Check 3: Score consistency with raw data
+        # This catches scoring model drift - if model says 0.9 but raw success is 0.4, model is wrong
+        score_gap = abs(effectiveness_score - raw_success_rate)
+        if score_gap > thresholds['min_action_consistency']:
             validation_failures.append(
-                f"Low consistency: {score_consistency:.2f} < {thresholds['min_action_consistency']}"
+                f"Score diverges from raw data: score={effectiveness_score:.2f}, raw_success_rate={raw_success_rate:.2f}, gap={score_gap:.2f} > {thresholds['min_action_consistency']:.2f}"
             )
         
         # Determine validation result
@@ -852,10 +890,12 @@ class StickLearning:
         if validation_passed:
             reasoning = (
                 f"✅ Action VALIDATED. "
-                f"Success rate: {success_rate:.2f}, "
-                f"samples: {sample_size}, "
-                f"consistency: {score_consistency:.2f}"
+                f"Score: {effectiveness_score:.2f}, "
+                f"raw rate: {raw_success_rate:.2f}, "
+                f"samples: {sample_size}"
             )
+            if previous_score is not None:
+                reasoning += f", volatility: {abs(effectiveness_score - previous_score):.2f}"
         else:
             reasoning = (
                 f"❌ Action REJECTED. "
@@ -876,8 +916,9 @@ class StickLearning:
             reasoning=reasoning,
             thresholds_applied=thresholds,
             threshold_state=thresholds['threshold_state'],
-            success_rate=success_rate,  # Maps directly
-            pattern_similarity=score_consistency,  # Reuse field: consistency
+            success_rate=raw_success_rate,  # Maps directly to raw success rate
+            effectiveness_score=effectiveness_score,  # Learned score from model
+            pattern_similarity=1.0 - score_gap,  # Reuse field: consistency (inverted gap)
             stick_anxiety_level=self._calculate_validation_anxiety(validation_passed)
         )
         
