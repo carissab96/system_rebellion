@@ -359,8 +359,10 @@ class ActionEffectivenessModel:
                 return audit_entry.validation_result
                 
         except Exception as e:
-            self.logger.error(f"🐹💥 Validation request failed: {e}")
-            return True  # Don't block on validation failure
+            self.logger.error(f"🐹💥 THE STICK VALIDATION FAILED: {e}", exc_info=True)
+            self.logger.error("   Learning cannot proceed without validation. This is a critical failure.")
+            from app.ai_agents.exceptions import ValidationSystemFailure
+            raise ValidationSystemFailure(f"The Stick validation system failed: {e}") from e
     
     async def get_action_statistics(self) -> Dict[str, Any]:
         """Get statistics about action effectiveness learning"""

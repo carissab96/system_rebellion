@@ -235,12 +235,10 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
                     }
                     logger.info(f"👻📊 Metrics BEFORE: Network connections {metrics_before['network_connections']}")
                 except Exception as e:
-                    logger.error(f"👻⚠️ Failed to get before metrics: {e}")
-                    metrics_before = {
-                        'cpu_usage': full_metrics.get('cpu_usage', 0),
-                        'memory_usage': full_metrics.get('memory_usage', 0),
-                        'network_connections': full_metrics.get('network_connections', 0)
-                    }
+                    logger.error(f"👻💥 METRICS SERVICE FAILED: {e}", exc_info=True)
+                    logger.error("   Cannot execute action without fresh metrics. This is a critical failure.")
+                    from app.ai_agents.exceptions import MetricsServiceFailure
+                    raise MetricsServiceFailure(f"Unable to get current system metrics: {e}") from e
                 
                 # Execute the SELECTED action (not hardcoded throttle!)
                 from app.ai_agents.quantum_shadow_people.ML.action_executor import QSPActionExecutor
@@ -259,13 +257,10 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
                     }
                     logger.info(f"👻📊 Metrics AFTER: Network connections {metrics_after['network_connections']}")
                 except Exception as e:
-                    logger.error(f"👻⚠️ Failed to get after metrics: {e}")
-                    # Use action result metrics if available
-                    metrics_after = {
-                        'cpu_usage': metrics_before['cpu_usage'],
-                        'memory_usage': metrics_before['memory_usage'],
-                        'network_connections': network_result.get('connections_after', metrics_before['network_connections'])
-                    }
+                    logger.error(f"👻💥 METRICS SERVICE FAILED: {e}", exc_info=True)
+                    logger.error("   Cannot verify action results without fresh metrics. This is a critical failure.")
+                    from app.ai_agents.exceptions import MetricsServiceFailure
+                    raise MetricsServiceFailure(f"Unable to get post-action system metrics: {e}") from e
                 
                 # STEP 5: LEARNING - Store quantum decision outcome
                 from app.ai_agents.quantum_shadow_people.ML.learning import QSPLearning
@@ -559,7 +554,85 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
                 logger.error(f"👻❌ Network throttle failed: {network_result.get('error')}")
                 
         except Exception as e:
-            logger.error(f"👻💥 Error handling coordination request: {e}", exc_info=True)
+            logger.error(f"👻💥 QSP ML PIPELINE FAILED: {e}", exc_info=True)
+            logger.error(
+                "   ML-informed decision UNAVAILABLE. "
+                "   Checking if emergency action needed to prevent security breach."
+            )
+            
+            # Import emergency action utilities
+            from app.services.system_failure_emitter import emit_system_failure_event, record_emergency_action
+            
+            # Emit failure event - EVERYONE sees this
+            await emit_system_failure_event(
+                agent_name="quantum_shadow_people",
+                failure_type="ML_PIPELINE_FAILURE",
+                error=str(e),
+                emergency_action_taken=False,  # Will update if we take action
+                context={
+                    "resource_type": resource_type,
+                    "current_value": current_value,
+                    "threshold": threshold,
+                    "severity": severity
+                }
+            )
+            
+            # Emergency action ONLY if there's an active critical threat
+            # Check for: high suspicious connections, failed auth attempts, or critical severity
+            threat_indicators = {
+                'suspicious_connections': full_metrics.get('suspicious_connections', 0),
+                'failed_auth_attempts': full_metrics.get('failed_auth_attempts', 0),
+                'network_anomalies': full_metrics.get('network_anomalies', 0)
+            }
+            
+            is_critical_threat = (
+                severity in ["critical", "emergency"] or
+                threat_indicators['suspicious_connections'] > 50 or
+                threat_indicators['failed_auth_attempts'] > 20 or
+                threat_indicators['network_anomalies'] > 10
+            )
+            
+            if is_critical_threat:
+                logger.error(
+                    f"🚨 ACTIVE CRITICAL THREAT + ML DOWN: "
+                    f"Emergency block to prevent security breach"
+                )
+                logger.error(f"   Threat indicators: {threat_indicators}")
+                
+                # Emergency network throttle/block
+                from app.ai_agents.distributed.system_actions import SystemActions
+                block_result = await SystemActions.throttle_network_operations()
+                
+                # Record emergency action with proper flagging
+                await record_emergency_action(
+                    agent="quantum_shadow_people",
+                    action="emergency_network_throttle",
+                    reason=f"ML_PIPELINE_FAILURE + active_critical_threat (severity={severity})",
+                    ml_informed=False,  # THIS IS KEY - not a learned decision
+                    metrics_before={"threat_indicators": threat_indicators},
+                    metrics_after={"connections_throttled": block_result.get('connections_reduced', 0)},
+                    success=block_result.get('success', False)
+                )
+                
+                if block_result['success']:
+                    logger.error(
+                        f"🚨 Emergency throttle succeeded. "
+                        f"Connections reduced: {block_result.get('connections_reduced', 0)}"
+                    )
+                    logger.error("   ⚠️ THIS WAS NOT ML-INFORMED. FIX THE ML PIPELINE. ⚠️")
+                else:
+                    logger.error(f"🚨 Emergency throttle FAILED: {block_result.get('error')}")
+            else:
+                # No critical threat - safe to fail without action
+                logger.error(
+                    f"   No active critical threat detected. "
+                    f"   Threat indicators: {threat_indicators}"
+                )
+                logger.error("   No emergency action needed. FIX THE ML PIPELINE.")
+                
+                # Re-raise to make failure visible up the chain
+                from app.ai_agents.exceptions import MLPipelineFailure
+                raise MLPipelineFailure(f"QSP ML pipeline failed: {e}") from e
     
     async def handle_coordination(self, coordination_request: Dict[str, Any]) -> Dict[str, Any]:
         """

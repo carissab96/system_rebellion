@@ -251,9 +251,11 @@ class HamstersLearning:
             return True
             
         except Exception as e:
-            logger.error(f"🐹❌ Failed to store learning record: {e}")
+            logger.error(f"🐹💥 DATABASE WRITE FAILED: {e}", exc_info=True)
+            logger.error("   Learning record could not be stored. This is a critical failure.")
             await self.db.rollback()
-            return False
+            from app.ai_agents.exceptions import DatabaseWriteFailure
+            raise DatabaseWriteFailure(f"Failed to store learning record: {e}") from e
     
     async def update_outcome(
         self,

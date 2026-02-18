@@ -297,12 +297,10 @@ class HamstersDistributed(AgentDecisionEngine, HamstersBrainV3):
                     }
                     logger.info(f"🐹📊 Metrics BEFORE: Disk {metrics_before['disk_usage']:.1f}%")
                 except Exception as e:
-                    logger.error(f"🐹⚠️ Failed to get before metrics: {e}")
-                    metrics_before = {
-                        'disk_usage': full_metrics.get('disk_usage', 0),
-                        'cpu_usage': full_metrics.get('cpu_usage', 0),
-                        'memory_usage': full_metrics.get('memory_usage', 0)
-                    }
+                    logger.error(f"🐹💥 METRICS SERVICE FAILED: {e}", exc_info=True)
+                    logger.error("   Cannot execute action without fresh metrics. This is a critical failure.")
+                    from app.ai_agents.exceptions import MetricsServiceFailure
+                    raise MetricsServiceFailure(f"Unable to get current system metrics: {e}") from e
                 
                 # Execute the SELECTED action (not hardcoded defrag!)
                 from app.ai_agents.hamsters.ML.action_executor import HamstersActionExecutor
@@ -321,12 +319,10 @@ class HamstersDistributed(AgentDecisionEngine, HamstersBrainV3):
                     }
                     logger.info(f"🐹📊 Metrics AFTER: Disk {metrics_after['disk_usage']:.1f}%")
                 except Exception as e:
-                    logger.error(f"🐹⚠️ Failed to get after metrics: {e}")
-                    metrics_after = {
-                        'disk_usage': cleanup_result.get('disk_after_percent', metrics_before['disk_usage']),
-                        'cpu_usage': metrics_before['cpu_usage'],
-                        'memory_usage': metrics_before['memory_usage']
-                    }
+                    logger.error(f"🐹💥 METRICS SERVICE FAILED: {e}", exc_info=True)
+                    logger.error("   Cannot verify action results without fresh metrics. This is a critical failure.")
+                    from app.ai_agents.exceptions import MetricsServiceFailure
+                    raise MetricsServiceFailure(f"Unable to get post-action system metrics: {e}") from e
                 
                 if cleanup_result['success']:
                     logger.info(
@@ -521,14 +517,68 @@ class HamstersDistributed(AgentDecisionEngine, HamstersBrainV3):
                 break  # Exit db session loop
                 
         except Exception as e:
-            logger.error(f"🐹💥 Hamsters v2 consensus failed: {e}")
-            logger.exception(e)
+            logger.error(f"🐹💥 HAMSTERS ML PIPELINE FAILED: {e}", exc_info=True)
+            logger.error(
+                "   ML-informed decision UNAVAILABLE. "
+                "   Checking if emergency action needed to prevent catastrophe."
+            )
             
-            # Fallback to basic cleanup (no defrag for safety)
-            logger.warning("🐹⚠️ Falling back to basic cleanup...")
-            cleanup_result = await SystemActions.emergency_disk_cleanup(include_defrag=False)
-            if cleanup_result['success']:
-                logger.info(f"🐹✅ Fallback cleanup succeeded")
+            # Import emergency action utilities
+            from app.services.system_failure_emitter import emit_system_failure_event, record_emergency_action
+            
+            # Emit failure event - EVERYONE sees this
+            await emit_system_failure_event(
+                agent_name="hamsters",
+                failure_type="ML_PIPELINE_FAILURE",
+                error=str(e),
+                emergency_action_taken=False,  # Will update if we take action
+                context={
+                    "resource_type": resource_type,
+                    "current_value": current_value,
+                    "threshold": threshold,
+                    "severity": severity
+                }
+            )
+            
+            # Emergency action ONLY if disk is critical
+            if current_value >= 95.0:
+                logger.error(
+                    f"� DISK CRITICAL ({current_value:.1f}%) + ML DOWN: "
+                    "Emergency cleanup to prevent system failure"
+                )
+                
+                cleanup_result = await SystemActions.emergency_disk_cleanup(include_defrag=False)
+                
+                # Record emergency action with proper flagging
+                await record_emergency_action(
+                    agent="hamsters",
+                    action="emergency_disk_cleanup",
+                    reason=f"ML_PIPELINE_FAILURE + disk_critical_{current_value:.1f}%",
+                    ml_informed=False,  # THIS IS KEY - not a learned decision
+                    metrics_before={"disk_usage": current_value},
+                    metrics_after={"disk_usage": cleanup_result.get('disk_after_percent', current_value)},
+                    success=cleanup_result.get('success', False)
+                )
+                
+                if cleanup_result['success']:
+                    logger.error(
+                        f"🚨 Emergency cleanup succeeded. "
+                        f"Disk: {current_value:.1f}% → {cleanup_result.get('disk_after_percent', 0):.1f}%"
+                    )
+                    logger.error("   ⚠️ THIS WAS NOT ML-INFORMED. FIX THE ML PIPELINE. ⚠️")
+                else:
+                    logger.error(f"� Emergency cleanup FAILED: {cleanup_result.get('error')}")
+            else:
+                # Disk is not critical - safe to fail without action
+                logger.error(
+                    f"   Disk at {current_value:.1f}% - not critical. "
+                    "   No emergency action needed."
+                )
+                logger.error("   FIX THE ML PIPELINE.")
+                
+                # Re-raise to make failure visible up the chain
+                from app.ai_agents.exceptions import MLPipelineFailure
+                raise MLPipelineFailure(f"Hamsters ML pipeline failed: {e}") from e
     
     async def handle_coordination(self, coordination_request: Dict[str, Any]) -> Dict[str, Any]:
         """

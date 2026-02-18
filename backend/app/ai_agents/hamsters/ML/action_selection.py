@@ -226,8 +226,10 @@ class HamstersActionSelection:
                         f"(score={action_scores[0].score:.2f}, confidence={action_scores[0].confidence:.2f})"
                     )
             except Exception as e:
-                logger.warning(f"🐹⚠️ Action effectiveness query failed (tables may not exist yet): {e}")
-                # Continue with default action_type from reasoning
+                logger.error(f"🐹💥 ML ACTION SELECTION FAILED: {e}", exc_info=True)
+                logger.error("   Action effectiveness model is broken. Agent cannot make informed decision.")
+                from app.ai_agents.exceptions import ActionSelectionFailure
+                raise ActionSelectionFailure(f"Action effectiveness model failed: {e}") from e
         
         if random.random() < self.epsilon:
             # EXPLORE: Try a different action from the viable options
