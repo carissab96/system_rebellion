@@ -508,6 +508,81 @@ class LearnedThresholds:
         assessment = await self._get_threshold_assessment(metric_name)
         return getattr(assessment, f"{level}_confidence")
     
+    async def request_stick_validation(
+        self,
+        metric_name: str,
+        threshold_level: str,
+        db_getter
+    ) -> bool:
+        """
+        Request The Stick to validate a learned threshold.
+        
+        Integration point: Terry learns → The Stick validates → audit trail created.
+        
+        Args:
+            metric_name: Metric being thresholded (e.g., 'memory_usage')
+            threshold_level: Level being validated (e.g., 'warning', 'critical')
+            db_getter: Database session getter for The Stick
+            
+        Returns:
+            True if validated, False if rejected
+        """
+        try:
+            # Get threshold assessment
+            assessment = await self._get_threshold_assessment(metric_name)
+            learned_value = getattr(assessment, threshold_level)
+            
+            # Get default value
+            defaults = self.default_thresholds.get(metric_name, self.default_thresholds['memory_usage'])
+            default_value = defaults[threshold_level]
+            
+            # Get learning metadata
+            cutoff_date = datetime.utcnow() - timedelta(days=30)
+            records = self.db.query(ThresholdLearningRecord).filter(
+                and_(
+                    ThresholdLearningRecord.system_id == self.system_id,
+                    ThresholdLearningRecord.metric_name == metric_name,
+                    ThresholdLearningRecord.created_at >= cutoff_date
+                )
+            ).all()
+            
+            # Call The Stick's validation
+            async for db in db_getter():
+                from app.ai_agents.the_stick.ML.learning import StickLearning
+                from app.ai_agents.the_stick.database_integration import StickDatabaseIntegration
+                
+                # Get user_id from first record or use system default
+                user_id = records[0].user_id if records else "system"
+                
+                stick_learning = StickLearning(db, user_id)
+                stick_db = StickDatabaseIntegration(db_getter)
+                
+                # Validate - returns standard ValidationAuditEntry
+                audit_entry = stick_learning.validate_learned_threshold(
+                    agent_name=self.agent_name,
+                    metric_name=metric_name,
+                    threshold_level=threshold_level,
+                    learned_value=learned_value,
+                    default_value=default_value,
+                    sample_size=len(records)
+                )
+                
+                # Record audit trail using standard record_validation()
+                # Note: This is a mock interaction for validation purposes
+                # The interaction_id in audit_entry already contains the necessary info
+                await stick_db.record_validation(None, audit_entry)
+                
+                self.logger.info(
+                    f"🐌📏 Threshold validation result: {audit_entry.validation_result} "
+                    f"({metric_name}.{threshold_level})"
+                )
+                
+                return audit_entry.validation_result
+                
+        except Exception as e:
+            self.logger.error(f"Failed to request Stick validation: {e}")
+            return False  # Conservative: if validation fails, assume not validated
+    
     async def get_learning_summary(self, metric_name: str) -> Dict[str, Any]:
         """Get summary of learning for this metric"""
         

@@ -14,7 +14,7 @@ class StickEventTypes(str, Enum):
     CROSS_AGENT_INSIGHT = "cross_agent_insight"  # NEW
     GLOBAL_PATTERN_PROMOTED = "global_pattern_promoted"  # NEW
     CRITICAL_MEMORY_PINNED = "critical_memory_pinned"  # NEW
-    VALIDATION_AUDIT = "validation_audit"  # Cross-agent learning validation
+    VALIDATION_AUDIT = "validation_audit"  # Universal validation audit (uses learning_type discriminator)
 
 AGENT_NAME = "the_stick"
 

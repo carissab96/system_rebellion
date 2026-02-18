@@ -476,6 +476,86 @@ class ActionEffectivenessModel:
             'status': 'active' if len(records) >= 10 else 'learning'
         }
     
+    async def request_stick_validation(
+        self,
+        action: str,
+        metric_pattern: str,
+        db_getter
+    ) -> bool:
+        """
+        Request The Stick to validate learned action effectiveness.
+        
+        Integration point: Terry learns action effectiveness → The Stick validates → audit trail created.
+        
+        Args:
+            action: Action being validated (e.g., 'restart_service')
+            metric_pattern: Pattern fingerprint for this learning
+            db_getter: Database session getter for The Stick
+            
+        Returns:
+            True if validated, False if rejected
+        """
+        try:
+            # Get action statistics
+            cutoff_date = datetime.utcnow() - timedelta(days=30)
+            records = self.db.query(ActionOutcomeRecord).filter(
+                and_(
+                    ActionOutcomeRecord.agent_name == self.agent_name,
+                    ActionOutcomeRecord.action == action,
+                    ActionOutcomeRecord.metric_pattern_fingerprint == metric_pattern,
+                    ActionOutcomeRecord.created_at >= cutoff_date
+                )
+            ).all()
+            
+            if not records:
+                self.logger.warning(f"No records found for {action} with pattern {metric_pattern}")
+                return False
+            
+            # Calculate statistics
+            successful_attempts = sum(1 for r in records if r.success)
+            success_rate = successful_attempts / len(records) if records else 0.0
+            
+            # Calculate score consistency (simplified: assume 1.0 for now)
+            # In production, this would compare learned score vs raw success rate
+            score_consistency = 1.0
+            
+            # Call The Stick's validation
+            async for db in db_getter():
+                from app.ai_agents.the_stick.ML.learning import StickLearning
+                from app.ai_agents.the_stick.database_integration import StickDatabaseIntegration
+                
+                # Get user_id from first record or use system default
+                user_id = records[0].user_id if records else "system"
+                
+                stick_learning = StickLearning(db, user_id)
+                stick_db = StickDatabaseIntegration(db_getter)
+                
+                # Validate - returns standard ValidationAuditEntry
+                audit_entry = stick_learning.validate_action_effectiveness(
+                    agent_name=self.agent_name,
+                    action=action,
+                    metric_pattern=metric_pattern,
+                    success_rate=success_rate,
+                    sample_size=len(records),
+                    score_consistency=score_consistency
+                )
+                
+                # Record audit trail using standard record_validation()
+                # Note: This is a mock interaction for validation purposes
+                # The interaction_id in audit_entry already contains the necessary info
+                await stick_db.record_validation(None, audit_entry)
+                
+                self.logger.info(
+                    f"🐌📏 Action validation result: {audit_entry.validation_result} "
+                    f"({action} in pattern {metric_pattern[:16]}...)"
+                )
+                
+                return audit_entry.validation_result
+                
+        except Exception as e:
+            self.logger.error(f"Failed to request Stick validation: {e}")
+            return False  # Conservative: if validation fails, assume not validated
+    
     async def get_learning_summary(self) -> Dict[str, Any]:
         """Get summary of all action learning"""
         

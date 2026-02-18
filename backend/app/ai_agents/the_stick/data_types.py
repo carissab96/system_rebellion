@@ -143,12 +143,22 @@ class ValidationAuditEntry:
     """
     Audit trail for The Stick's validation decisions.
     Written to CentralMemoryBank for VIC-20's oversight.
+    
+    Uses learning_type as discriminator:
+    - "cross_agent_learning" - Cross-agent learning interactions
+    - "threshold_adjustment" - Terry's learned threshold adjustments
+    - "action_effectiveness" - Terry's action effectiveness scoring
+    
+    Fields map differently based on learning_type:
+    - For cross-agent: source_agent != target_agent, all metrics used
+    - For threshold: source_agent == target_agent (both Terry), effectiveness_score = shift magnitude
+    - For action: source_agent == target_agent (both Terry), success_rate maps directly
     """
     timestamp: datetime
     interaction_id: str
     source_agent: str
     target_agent: str
-    learning_type: str
+    learning_type: str  # Discriminator: "cross_agent_learning", "threshold_adjustment", "action_effectiveness"
     
     # Validation result
     validation_result: bool  # pass or fail
@@ -163,11 +173,11 @@ class ValidationAuditEntry:
     previous_validation_id: Optional[str] = None
     retry_count: int = 0
     
-    # Validation metrics
-    effectiveness_score: Optional[float] = None
-    success_rate: Optional[float] = None
-    pattern_similarity: Optional[float] = None
-    interaction_age_hours: Optional[float] = None
+    # Validation metrics (interpretation depends on learning_type)
+    effectiveness_score: Optional[float] = None  # Cross-agent: effectiveness | Threshold: shift magnitude | Action: N/A
+    success_rate: Optional[float] = None         # Cross-agent: success rate | Threshold: N/A | Action: success rate
+    pattern_similarity: Optional[float] = None   # Cross-agent: similarity | Threshold: N/A | Action: consistency
+    interaction_age_hours: Optional[float] = None  # Age of the learning record
     
     # The Stick's anxiety level during validation
     stick_anxiety_level: float = 25.0

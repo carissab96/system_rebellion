@@ -687,3 +687,200 @@ class StickLearning:
         if not validation_passed:
             base_anxiety += 15.0  # Failed validation = more anxiety
         return min(base_anxiety, 100.0)
+    
+    def validate_learned_threshold(
+        self,
+        agent_name: str,
+        metric_name: str,
+        threshold_level: str,
+        learned_value: float,
+        default_value: float,
+        sample_size: int,
+        config=None
+    ):
+        """
+        Validate Terry's learned threshold.
+        
+        The Stick's job: Ensure Terry's ML learning produces REASONABLE thresholds.
+        
+        Validation checks:
+        1. Sufficient sample size (not learning from 2 data points)
+        2. Reasonable shift magnitude (not jumping 80% → 96% in one adjustment)
+        
+        Args:
+            agent_name: Agent that learned this threshold (e.g., 'meth_snail')
+            metric_name: Metric being thresholded (e.g., 'memory_usage')
+            threshold_level: Level being learned (e.g., 'warning', 'critical')
+            learned_value: The threshold value Terry learned
+            default_value: The default/baseline threshold
+            sample_size: Number of learning records used
+            config: Optional ValidationConfig override
+            
+        Returns:
+            ValidationAuditEntry with learning_type="threshold_adjustment"
+        """
+        from ..validation_config import VALIDATION_CONFIG
+        from ..data_types import ValidationAuditEntry
+        
+        config = config or VALIDATION_CONFIG
+        thresholds = config.get_active_thresholds()
+        now = datetime.now(timezone.utc)
+        
+        logger.info(
+            f"📏🔍 Validating learned threshold: {agent_name}.{metric_name}.{threshold_level} = {learned_value:.1f}"
+        )
+        
+        # Calculate shift magnitude (normalized 0.0-1.0)
+        shift_magnitude = abs(learned_value - default_value) / 100.0
+        
+        # Validation checks
+        validation_failures = []
+        
+        # Check 1: Sample size
+        if sample_size < thresholds['min_threshold_sample_size']:
+            validation_failures.append(
+                f"Insufficient samples: {sample_size} < {thresholds['min_threshold_sample_size']}"
+            )
+        
+        # Check 2: Shift magnitude
+        if shift_magnitude > thresholds['max_threshold_shift_magnitude']:
+            validation_failures.append(
+                f"Excessive shift: {shift_magnitude:.2f} > {thresholds['max_threshold_shift_magnitude']}"
+            )
+        
+        # Determine validation result
+        validation_passed = len(validation_failures) == 0
+        
+        # Build reasoning
+        if validation_passed:
+            reasoning = (
+                f"✅ Threshold VALIDATED. "
+                f"Learned: {learned_value:.1f} (default: {default_value:.1f}, "
+                f"shift: {shift_magnitude:.2f}), "
+                f"samples: {sample_size}"
+            )
+        else:
+            reasoning = (
+                f"❌ Threshold REJECTED. "
+                f"Failures: {'; '.join(validation_failures)}"
+            )
+        
+        # Create audit entry using standard ValidationAuditEntry
+        # learning_type="threshold_adjustment" discriminates this from cross-agent learning
+        interaction_id = f"{agent_name}_{metric_name}_{threshold_level}_{now.isoformat()}"
+        
+        audit_entry = ValidationAuditEntry(
+            timestamp=now,
+            interaction_id=interaction_id,
+            source_agent=agent_name,
+            target_agent=agent_name,  # Terry validating Terry's own learning
+            learning_type="threshold_adjustment",
+            validation_result=validation_passed,
+            reasoning=reasoning,
+            thresholds_applied=thresholds,
+            threshold_state=thresholds['threshold_state'],
+            effectiveness_score=shift_magnitude,  # Reuse field: shift magnitude
+            stick_anxiety_level=self._calculate_validation_anxiety(validation_passed)
+        )
+        
+        logger.info(f"📏✅ Threshold validation result: {reasoning}")
+        
+        return audit_entry
+    
+    def validate_action_effectiveness(
+        self,
+        agent_name: str,
+        action: str,
+        metric_pattern: str,
+        success_rate: float,
+        sample_size: int,
+        score_consistency: float = 1.0,
+        config=None
+    ):
+        """
+        Validate Terry's learned action effectiveness.
+        
+        The Stick's job: Ensure Terry's ML learning produces RELIABLE action recommendations.
+        
+        Validation checks:
+        1. Sufficient attempts (not recommending based on 1 success)
+        2. Score consistency (learned score vs raw success rate shouldn't diverge wildly)
+        
+        Args:
+            agent_name: Agent that learned this (e.g., 'meth_snail')
+            action: Action being validated (e.g., 'restart_service')
+            metric_pattern: Pattern fingerprint for this learning
+            success_rate: Learned success rate (0.0-1.0)
+            sample_size: Number of attempts
+            score_consistency: How consistent the score is with raw success rate (0.0-1.0)
+            config: Optional ValidationConfig override
+            
+        Returns:
+            ValidationAuditEntry with learning_type="action_effectiveness"
+        """
+        from ..validation_config import VALIDATION_CONFIG
+        from ..data_types import ValidationAuditEntry
+        
+        config = config or VALIDATION_CONFIG
+        thresholds = config.get_active_thresholds()
+        now = datetime.now(timezone.utc)
+        
+        logger.info(
+            f"📏🔍 Validating action effectiveness: {agent_name}.{action} "
+            f"(success_rate: {success_rate:.2f}, samples: {sample_size})"
+        )
+        
+        # Validation checks
+        validation_failures = []
+        
+        # Check 1: Sample size
+        if sample_size < thresholds['min_action_sample_size']:
+            validation_failures.append(
+                f"Insufficient attempts: {sample_size} < {thresholds['min_action_sample_size']}"
+            )
+        
+        # Check 2: Score consistency
+        if score_consistency < thresholds['min_action_consistency']:
+            validation_failures.append(
+                f"Low consistency: {score_consistency:.2f} < {thresholds['min_action_consistency']}"
+            )
+        
+        # Determine validation result
+        validation_passed = len(validation_failures) == 0
+        
+        # Build reasoning
+        if validation_passed:
+            reasoning = (
+                f"✅ Action VALIDATED. "
+                f"Success rate: {success_rate:.2f}, "
+                f"samples: {sample_size}, "
+                f"consistency: {score_consistency:.2f}"
+            )
+        else:
+            reasoning = (
+                f"❌ Action REJECTED. "
+                f"Failures: {'; '.join(validation_failures)}"
+            )
+        
+        # Create audit entry using standard ValidationAuditEntry
+        # learning_type="action_effectiveness" discriminates this from cross-agent learning
+        interaction_id = f"{agent_name}_{action}_{metric_pattern[:16]}_{now.isoformat()}"
+        
+        audit_entry = ValidationAuditEntry(
+            timestamp=now,
+            interaction_id=interaction_id,
+            source_agent=agent_name,
+            target_agent=agent_name,  # Terry validating Terry's own learning
+            learning_type="action_effectiveness",
+            validation_result=validation_passed,
+            reasoning=reasoning,
+            thresholds_applied=thresholds,
+            threshold_state=thresholds['threshold_state'],
+            success_rate=success_rate,  # Maps directly
+            pattern_similarity=score_consistency,  # Reuse field: consistency
+            stick_anxiety_level=self._calculate_validation_anxiety(validation_passed)
+        )
+        
+        logger.info(f"📏✅ Action validation result: {reasoning}")
+        
+        return audit_entry
