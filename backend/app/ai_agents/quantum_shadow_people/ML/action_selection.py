@@ -216,23 +216,27 @@ class QSPActionSelection:
         
         # If action effectiveness model available, use learned scores
         if self.action_effectiveness:
-            metric_pattern = self.action_effectiveness._generate_pattern_fingerprint(
-                {
-                    'threat_count': context.threat_count,
-                    'failed_auth_attempts': context.failed_auth_attempts,
-                    'network_anomalies': context.network_anomalies
-                },
-                context.severity
-            )
-            action_scores = await self.action_effectiveness.score_all_actions(metric_pattern)
-            
-            # Use learned best action if confidence is high enough
-            if action_scores and action_scores[0].confidence > 0.5:
-                action_type = action_scores[0].action
-                logger.info(
-                    f"👻🧠 Using learned best action: {action_type} "
-                    f"(score={action_scores[0].score:.2f}, confidence={action_scores[0].confidence:.2f})"
+            try:
+                metric_pattern = self.action_effectiveness._generate_pattern_fingerprint(
+                    {
+                        'threat_count': context.threat_count,
+                        'failed_auth_attempts': context.failed_auth_attempts,
+                        'network_anomalies': context.network_anomalies
+                    },
+                    context.severity
                 )
+                action_scores = await self.action_effectiveness.score_all_actions(metric_pattern)
+                
+                # Use learned best action if confidence is high enough
+                if action_scores and action_scores[0].confidence > 0.5:
+                    action_type = action_scores[0].action
+                    logger.info(
+                        f"👻🧠 Using learned best action: {action_type} "
+                        f"(score={action_scores[0].score:.2f}, confidence={action_scores[0].confidence:.2f})"
+                    )
+            except Exception as e:
+                logger.warning(f"👻⚠️ Action effectiveness query failed (tables may not exist yet): {e}")
+                # Continue with default action_type from reasoning
         
         # Determine priority
         priority = self._determine_priority(reasoning.risk_level, context.response_urgency)

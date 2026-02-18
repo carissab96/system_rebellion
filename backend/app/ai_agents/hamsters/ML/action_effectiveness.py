@@ -103,10 +103,9 @@ class ActionEffectivenessModel:
         records = await self.db.execute(
             self.db.query(ActionOutcomeRecord).filter(
                 and_(
-                    ActionOutcomeRecord.system_id == self.system_id,
                     ActionOutcomeRecord.agent_name == self.agent_name,
                     ActionOutcomeRecord.action == action,
-                    ActionOutcomeRecord.metric_pattern == metric_pattern,
+                    ActionOutcomeRecord.metric_pattern_fingerprint == metric_pattern,
                     ActionOutcomeRecord.created_at >= cutoff_date
                 )
             )
@@ -129,8 +128,8 @@ class ActionEffectivenessModel:
         successful = sum(1 for r in records if r.success)
         success_rate = successful / sample_size
         
-        # Calculate average improvement (space freed, performance gained, etc.)
-        improvements = [r.improvement_score for r in records if r.improvement_score is not None]
+        # Calculate average improvement (how much did it help?)
+        improvements = [r.improvement for r in records if r.improvement is not None]
         avg_improvement = sum(improvements) / len(improvements) if improvements else 0.0
         
         # Calculate recency-weighted score
@@ -195,17 +194,16 @@ class ActionEffectivenessModel:
         improvement_score = self._calculate_improvement(pre_metrics, post_metrics)
         
         record = ActionOutcomeRecord(
-            system_id=self.system_id,
             agent_name=self.agent_name,
             action=action,
-            metric_pattern=metric_pattern,
+            metric_pattern_fingerprint=metric_pattern,
             pre_metrics=pre_metrics,
             post_metrics=post_metrics,
-            severity=severity,
+            severity_score=float(1.0 if severity == 'critical' else 0.5),
             success=success,
-            improvement_score=improvement_score,
-            outcome_notes=outcome_notes,
-            created_at=datetime.now(timezone.utc)
+            improvement=improvement_score,
+            primary_metric='disk_usage_percent',
+            other_actions_considered=[]
         )
         
         self.db.add(record)
@@ -373,7 +371,6 @@ class ActionEffectivenessModel:
             records = await self.db.execute(
                 self.db.query(ActionOutcomeRecord).filter(
                     and_(
-                        ActionOutcomeRecord.system_id == self.system_id,
                         ActionOutcomeRecord.agent_name == self.agent_name,
                         ActionOutcomeRecord.action == action
                     )
@@ -384,7 +381,7 @@ class ActionEffectivenessModel:
             if records:
                 successful = sum(1 for r in records if r.success)
                 success_rate = successful / len(records)
-                avg_improvement = sum(r.improvement_score for r in records if r.improvement_score) / len(records)
+                avg_improvement = sum(r.improvement for r in records if r.improvement) / len(records)
                 
                 stats[action] = {
                     'attempts': len(records),

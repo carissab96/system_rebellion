@@ -1,21 +1,18 @@
-"""add central_memory_id_to_action_outcomes
+"""add central_memory_id to action_outcome_records
 
-Revision ID: c0ecfec9e5af
-Revises: 58e893ae4e16
-Create Date: 2026-02-18 10:06:29.021308
+Revision ID: b2c3d4e5f6g7
+Revises: a1b2c3d4e5f6
+Create Date: 2026-02-04 13:50:00.000000
+
 """
-
-from typing import Sequence, Union
-
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = 'c0ecfec9e5af'
-down_revision: Union[str, None] = '58e893ae4e16'
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+revision = 'b2c3d4e5f6g7'
+down_revision = 'a1b2c3d4e5f6'
+branch_labels = None
+depends_on = None
 
 
 def upgrade():

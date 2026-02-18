@@ -229,14 +229,14 @@ class LearnedThresholds:
             system_id=self.system_id,
             agent_name=self.agent_name,
             metric_name=metric_name,
+            metric_value=metric_value,
             threshold_level=threshold_level,
-            threshold_value=current_threshold,
-            metric_value_at_trigger=metric_value,
-            was_successful=was_successful,
+            action_taken=None,  # Not tracking specific action here
+            outcome_success=was_successful,
+            system_state={},  # Could add other metrics here
+            context={},  # Could add time of day, etc.
             was_false_alarm=was_false_alarm,
-            should_have_acted_sooner=should_have_acted_sooner,
-            outcome_notes=outcome_notes,
-            created_at=datetime.now(timezone.utc)
+            should_have_acted_sooner=should_have_acted_sooner
         )
         
         self.db.add(record)
