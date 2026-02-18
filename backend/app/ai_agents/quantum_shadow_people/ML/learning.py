@@ -77,9 +77,19 @@ class QSPLearning:
     👻 "Recording quantum observation for future pattern recognition..."
     """
     
-    def __init__(self, db: AsyncSession, user_id: str):
+    def __init__(self, db: AsyncSession, user_id: str, system_id: str = "default"):
         self.db = db
         self.user_id = user_id
+        self.system_id = system_id
+        
+        # Initialize learned thresholds and action effectiveness
+        from .learned_thresholds import LearnedThresholds
+        from .action_effectiveness import ActionEffectivenessModel
+        
+        self.learned_thresholds = LearnedThresholds(db, system_id)
+        self.action_effectiveness = ActionEffectivenessModel(db, system_id)
+        
+        logger.info("👻🧠 QSP learning with adaptive thresholds enabled!")
         
     async def learn(
         self,
@@ -222,22 +232,71 @@ class QSPLearning:
         success: bool,
         threat_resolved: bool,
         false_positive: bool = False,
-        outcome_notes: Optional[str] = None
+        false_negative: bool = False,
+        outcome_notes: Optional[str] = None,
+        pre_metrics: Optional[Dict[str, float]] = None,
+        post_metrics: Optional[Dict[str, float]] = None
     ):
         """
         Update a learning record with outcome information.
         
         This is called after the response executes and we know if it succeeded.
+        Records outcomes in both learned thresholds and action effectiveness.
+        
+        CRITICAL: false_positive and false_negative are tracked separately.
         """
         learning_record.success = success
         learning_record.threat_resolved = threat_resolved
         learning_record.false_positive = false_positive
         learning_record.outcome_notes = outcome_notes
         
-        logger.info(
-            f"👻📝 Updated learning record: success={success}, "
-            f"resolved={threat_resolved}, false_positive={false_positive}"
-        )
+        # Log with appropriate urgency for false negatives
+        if false_negative:
+            logger.warning(
+                f"👻🚨 FALSE NEGATIVE: Updated learning record - MISSED THREAT "
+                f"(success={success}, resolved={threat_resolved})"
+            )
+        else:
+            logger.info(
+                f"👻📝 Updated learning record: success={success}, "
+                f"resolved={threat_resolved}, false_positive={false_positive}"
+            )
+        
+        # Record in learned thresholds if we have threshold data
+        if pre_metrics and 'failed_auth_attempts' in pre_metrics:
+            # Record for failed auth threshold
+            await self.learned_thresholds.record_outcome(
+                metric_name='failed_auth_attempts',
+                metric_value=pre_metrics.get('failed_auth_attempts', 0),
+                threshold_level='warning' if pre_metrics.get('failed_auth_attempts', 0) < 15 else 'critical',
+                was_successful=success,
+                was_false_positive=false_positive,
+                was_false_negative=false_negative,
+                outcome_notes=outcome_notes
+            )
+            
+            # Record for network anomalies threshold if relevant
+            if 'network_anomalies' in pre_metrics:
+                await self.learned_thresholds.record_outcome(
+                    metric_name='network_anomalies',
+                    metric_value=pre_metrics.get('network_anomalies', 0),
+                    threshold_level='warning' if pre_metrics.get('network_anomalies', 0) < 10 else 'critical',
+                    was_successful=success,
+                    was_false_positive=false_positive,
+                    was_false_negative=false_negative,
+                    outcome_notes=outcome_notes
+                )
+        
+        # Record in action effectiveness
+        if pre_metrics and post_metrics:
+            await self.action_effectiveness.record_outcome(
+                action=learning_record.response_type,
+                pre_metrics=pre_metrics,
+                post_metrics=post_metrics,
+                severity='warning' if pre_metrics.get('threat_count', 0) < 5 else 'critical',
+                success=success,
+                outcome_notes=outcome_notes
+            )
         
         # TODO: Update database record with outcome
         # This requires querying by timestamp and updating the success field

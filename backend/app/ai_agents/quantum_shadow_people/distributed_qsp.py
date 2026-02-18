@@ -214,8 +214,8 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
                 # STEP 3: ACTION SELECTION - Quantum security response
                 from app.ai_agents.quantum_shadow_people.ML.action_selection import QSPActionSelection
                 
-                action_selector = QSPActionSelection(self.personality_traits)
-                decision = action_selector.select_action(context, reasoning_result)  # Synchronous, not async
+                action_selector = QSPActionSelection(self.personality_traits, db, self.system_id)
+                decision = await action_selector.select_action(context, reasoning_result)
                 
                 logger.info(
                     f"👻⚡ Action selected: {decision.action_type} "
@@ -363,8 +363,84 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
                             "threat_level": context.threat_level
                         }
                     )
+                    # Update learning record with success and metrics
+                    pre_metrics_dict = {
+                        'threat_count': context.threat_count,
+                        'failed_auth_attempts': context.failed_auth_attempts,
+                        'network_anomalies': context.network_anomalies
+                    }
+                    post_metrics_dict = {
+                        'threat_count': 0,  # Threat resolved
+                        'failed_auth_attempts': 0,
+                        'network_anomalies': 0
+                    }
+                    
+                    # Determine if this was a false positive or false negative
+                    # False positive: escalated a non-threat
+                    # False negative: missed a real threat (would be detected after the fact)
+                    false_positive = False  # TODO: Implement false positive detection
+                    false_negative = False  # TODO: Implement false negative detection
+                    
+                    await learning.update_outcome(
+                        learning_record,
+                        success=True,
+                        threat_resolved=True,
+                        false_positive=false_positive,
+                        false_negative=false_negative,
+                        outcome_notes=f"Reduced {network_result['connections_reduced']} connections",
+                        pre_metrics=pre_metrics_dict,
+                        post_metrics=post_metrics_dict
+                    )
+                    
+                    # Request The Stick validation for learned thresholds and action effectiveness
+                    from app.core.database import get_async_db
+                    try:
+                        # Validate learned thresholds
+                        await learning.learned_thresholds.request_stick_validation(
+                            metric_name='failed_auth_attempts',
+                            threshold_level='warning' if context.failed_auth_attempts < 15 else 'critical',
+                            learned_value=await learning.learned_thresholds.get_threshold('failed_auth_attempts', 'warning'),
+                            default_value=5,
+                            db_getter=get_async_db
+                        )
+                        
+                        # Validate action effectiveness
+                        await learning.action_effectiveness.request_stick_validation(
+                            action=decision.action_type,
+                            metric_pattern=learning.action_effectiveness._generate_pattern_fingerprint(
+                                pre_metrics_dict, context.severity
+                            ),
+                            db_getter=get_async_db
+                        )
+                        
+                        logger.info("👻📏 Validation requests sent to The Stick (PRIORITY 9/10)")
+                    except Exception as e:
+                        logger.error(f"👻⚠️ Validation request failed: {e}")
                 else:
                     logger.error(f"👻❌ Network throttle failed: {network_result.get('error')}")
+                    
+                    # Update learning record with failure
+                    pre_metrics_dict = {
+                        'threat_count': context.threat_count,
+                        'failed_auth_attempts': context.failed_auth_attempts,
+                        'network_anomalies': context.network_anomalies
+                    }
+                    post_metrics_dict = {
+                        'threat_count': context.threat_count,  # Threat not resolved
+                        'failed_auth_attempts': context.failed_auth_attempts,
+                        'network_anomalies': context.network_anomalies
+                    }
+                    
+                    await learning.update_outcome(
+                        learning_record,
+                        success=False,
+                        threat_resolved=False,
+                        false_positive=False,
+                        false_negative=False,
+                        outcome_notes=network_result.get('error', 'Unknown error'),
+                        pre_metrics=pre_metrics_dict,
+                        post_metrics=post_metrics_dict
+                    )
                 
                 # Use choice engine for legacy compatibility (but ML made the real decision)
                 legacy_decision = self.choice_engine.should_follow_recommendation(

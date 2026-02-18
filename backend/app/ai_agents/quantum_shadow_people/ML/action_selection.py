@@ -163,8 +163,23 @@ class QSPActionSelection:
         ],
     }
     
-    def __init__(self, personality_traits: Dict[str, Any]):
+    def __init__(self, personality_traits: Dict[str, Any], db=None, system_id: str = "default"):
         self.personality_traits = personality_traits
+        self.db = db
+        self.system_id = system_id
+        
+        # Learned thresholds and action effectiveness (initialized lazily)
+        self.learned_thresholds = None
+        self.action_effectiveness = None
+        
+        # Initialize learning systems if db available
+        if self.db:
+            from .learned_thresholds import LearnedThresholds
+            from .action_effectiveness import ActionEffectivenessModel
+            
+            self.learned_thresholds = LearnedThresholds(db, system_id)
+            self.action_effectiveness = ActionEffectivenessModel(db, system_id)
+            logger.info("👻🧠 Learned thresholds and action effectiveness enabled!")
         
         # Exploration vs Exploitation
         self.epsilon = 0.15  # 15% chance to explore (try non-preferred actions)
@@ -179,7 +194,7 @@ class QSPActionSelection:
         logger.info("👻⚡ QSP's action selection initialized!")
         logger.info(f"👻🔬 Exploration rate: {self.epsilon:.1%}, Throttle bias: {self.throttle_bias:.2f}")
         
-    def select_action(
+    async def select_action(
         self,
         context: QSPPerceptionContext,
         reasoning: SecurityReasoning
@@ -198,6 +213,26 @@ class QSPActionSelection:
         
         # Determine action type
         action_type = reasoning.response_type
+        
+        # If action effectiveness model available, use learned scores
+        if self.action_effectiveness:
+            metric_pattern = self.action_effectiveness._generate_pattern_fingerprint(
+                {
+                    'threat_count': context.threat_count,
+                    'failed_auth_attempts': context.failed_auth_attempts,
+                    'network_anomalies': context.network_anomalies
+                },
+                context.severity
+            )
+            action_scores = await self.action_effectiveness.score_all_actions(metric_pattern)
+            
+            # Use learned best action if confidence is high enough
+            if action_scores and action_scores[0].confidence > 0.5:
+                action_type = action_scores[0].action
+                logger.info(
+                    f"👻🧠 Using learned best action: {action_type} "
+                    f"(score={action_scores[0].score:.2f}, confidence={action_scores[0].confidence:.2f})"
+                )
         
         # Determine priority
         priority = self._determine_priority(reasoning.risk_level, context.response_urgency)
