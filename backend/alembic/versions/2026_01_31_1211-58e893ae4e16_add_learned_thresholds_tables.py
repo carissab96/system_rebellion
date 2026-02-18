@@ -1,18 +1,22 @@
-"""add learned thresholds tables
+"""add_learned_thresholds_tables
 
-Revision ID: a1b2c3d4e5f6
-Revises: 9f7a27569c0a
-Create Date: 2026-01-30 13:10:00.000000
-
+Revision ID: 58e893ae4e16
+Revises: a1b2c3d4e5f6
+Create Date: 2026-01-31 12:11:16.677419
 """
+
+from typing import Sequence, Union
+
 from alembic import op
 import sqlalchemy as sa
 
+
 # revision identifiers, used by Alembic.
-revision = 'a1b2c3d4e5f6'
-down_revision = '9f7a27569c0a'
-branch_labels = None
-depends_on = None
+revision: str = '58e893ae4e16'
+down_revision: Union[str, None] = '9f7a27569c0a'
+branch_labels: Union[str, Sequence[str], None] = None
+depends_on: Union[str, Sequence[str], None] = None
+
 
 
 def upgrade():
@@ -35,7 +39,7 @@ def upgrade():
         sa.Column('created_at', sa.TIMESTAMP(), server_default=sa.text('now()'), nullable=True),
         sa.PrimaryKeyConstraint('id')
     )
-    
+
     # Create indexes for threshold_learning_records
     op.create_index('ix_threshold_learning_records_id', 'threshold_learning_records', ['id'])
     op.create_index('ix_threshold_learning_records_system_id', 'threshold_learning_records', ['system_id'])
@@ -44,7 +48,7 @@ def upgrade():
     op.create_index('ix_threshold_learning_records_created_at', 'threshold_learning_records', ['created_at'])
     op.create_index('idx_system_metric_time', 'threshold_learning_records', ['system_id', 'metric_name', 'created_at'])
     op.create_index('idx_metric_value', 'threshold_learning_records', ['metric_name', 'metric_value'])
-    
+
     # Create action_outcome_records table
     op.create_table(
         'action_outcome_records',
@@ -62,8 +66,8 @@ def upgrade():
         sa.Column('created_at', sa.TIMESTAMP(), server_default=sa.text('now()'), nullable=True),
         sa.PrimaryKeyConstraint('id')
     )
-    
-    # Create indexes for action_outcome_records
+
+ # Create indexes for action_outcome_records
     op.create_index('ix_action_outcome_records_id', 'action_outcome_records', ['id'])
     op.create_index('ix_action_outcome_records_agent_name', 'action_outcome_records', ['agent_name'])
     op.create_index('ix_action_outcome_records_action', 'action_outcome_records', ['action'])
@@ -72,7 +76,7 @@ def upgrade():
     op.create_index('ix_action_outcome_records_created_at', 'action_outcome_records', ['created_at'])
     op.create_index('idx_agent_action_pattern', 'action_outcome_records', ['agent_name', 'action', 'metric_pattern_fingerprint'])
     op.create_index('idx_pattern_success', 'action_outcome_records', ['metric_pattern_fingerprint', 'success'])
-    
+
     # Create metric_pattern_history table
     op.create_table(
         'metric_pattern_history',
@@ -88,7 +92,7 @@ def upgrade():
         sa.Column('context_fingerprint', sa.String(length=255), nullable=True),
         sa.PrimaryKeyConstraint('id')
     )
-    
+
     # Create indexes for metric_pattern_history
     op.create_index('ix_metric_pattern_history_id', 'metric_pattern_history', ['id'])
     op.create_index('ix_metric_pattern_history_system_id', 'metric_pattern_history', ['system_id'])
@@ -111,7 +115,7 @@ def downgrade():
     op.drop_index('ix_metric_pattern_history_system_id', table_name='metric_pattern_history')
     op.drop_index('ix_metric_pattern_history_id', table_name='metric_pattern_history')
     op.drop_table('metric_pattern_history')
-    
+
     # Drop action_outcome_records table and indexes
     op.drop_index('idx_pattern_success', table_name='action_outcome_records')
     op.drop_index('idx_agent_action_pattern', table_name='action_outcome_records')
@@ -122,7 +126,7 @@ def downgrade():
     op.drop_index('ix_action_outcome_records_agent_name', table_name='action_outcome_records')
     op.drop_index('ix_action_outcome_records_id', table_name='action_outcome_records')
     op.drop_table('action_outcome_records')
-    
+
     # Drop threshold_learning_records table and indexes
     op.drop_index('idx_metric_value', table_name='threshold_learning_records')
     op.drop_index('idx_system_metric_time', table_name='threshold_learning_records')
@@ -132,3 +136,4 @@ def downgrade():
     op.drop_index('ix_threshold_learning_records_system_id', table_name='threshold_learning_records')
     op.drop_index('ix_threshold_learning_records_id', table_name='threshold_learning_records')
     op.drop_table('threshold_learning_records')
+
