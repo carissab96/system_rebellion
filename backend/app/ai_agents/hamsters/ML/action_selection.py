@@ -155,8 +155,23 @@ class HamstersActionSelection:
         ],
     }
     
-    def __init__(self, personality_traits: Dict[str, Any]):
+    def __init__(self, personality_traits: Dict[str, Any], db=None, system_id: str = "default"):
         self.personality_traits = personality_traits
+        self.db = db
+        self.system_id = system_id
+        
+        # Learned thresholds and action effectiveness (initialized lazily)
+        self.learned_thresholds = None
+        self.action_effectiveness = None
+        
+        # Initialize learning systems if db available
+        if self.db:
+            from .learned_thresholds import LearnedThresholds
+            from .action_effectiveness import ActionEffectivenessModel
+            
+            self.learned_thresholds = LearnedThresholds(db, system_id)
+            self.action_effectiveness = ActionEffectivenessModel(db, system_id)
+            logger.info("🐹🧠 Learned thresholds and action effectiveness enabled!")
         
         # Exploration vs Exploitation
         self.epsilon = 0.15  # 15% chance to explore (try non-preferred actions)
@@ -171,7 +186,7 @@ class HamstersActionSelection:
         logger.info("🐹⚡ Hamsters' action selection initialized!")
         logger.info(f"🐹🔬 Exploration rate: {self.epsilon:.1%}, Defrag bias: {self.defrag_bias:.2f}")
         
-    def select_action(
+    async def select_action(
         self,
         context: HamstersPerceptionContext,
         reasoning: StorageReasoning
@@ -190,6 +205,25 @@ class HamstersActionSelection:
         
         # EPSILON-GREEDY EXPLORATION: Sometimes try alternative actions
         action_type = reasoning.selected_fix_type
+        
+        # If action effectiveness model available, use learned scores
+        if self.action_effectiveness:
+            metric_pattern = self.action_effectiveness._generate_pattern_fingerprint(
+                {
+                    'disk_usage_percent': context.disk_usage_percent,
+                    'fragmentation_level': context.fragmentation_level
+                },
+                context.severity
+            )
+            action_scores = await self.action_effectiveness.score_all_actions(metric_pattern)
+            
+            # Use learned best action if confidence is high enough
+            if action_scores and action_scores[0].confidence > 0.5:
+                action_type = action_scores[0].action
+                logger.info(
+                    f"🐹🧠 Using learned best action: {action_type} "
+                    f"(score={action_scores[0].score:.2f}, confidence={action_scores[0].confidence:.2f})"
+                )
         
         if random.random() < self.epsilon:
             # EXPLORE: Try a different action from the viable options

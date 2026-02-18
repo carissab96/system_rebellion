@@ -89,9 +89,19 @@ class HamstersLearning:
     🐹🐹🐹 "Recording consensus outcome for future beer calculations..."
     """
     
-    def __init__(self, db: AsyncSession, user_id: str):
+    def __init__(self, db: AsyncSession, user_id: str, system_id: str = "default"):
         self.db = db
         self.user_id = user_id
+        self.system_id = system_id
+        
+        # Initialize learned thresholds and action effectiveness
+        from .learned_thresholds import LearnedThresholds
+        from .action_effectiveness import ActionEffectivenessModel
+        
+        self.learned_thresholds = LearnedThresholds(db, system_id)
+        self.action_effectiveness = ActionEffectivenessModel(db, system_id)
+        
+        logger.info("🐹🧠 Hamsters learning with adaptive thresholds enabled!")
         
     async def learn(
         self,
@@ -250,12 +260,15 @@ class HamstersLearning:
         learning_record: HamstersLearningRecord,
         success: bool,
         execution_time: Optional[float] = None,
-        outcome_notes: Optional[str] = None
+        outcome_notes: Optional[str] = None,
+        pre_metrics: Optional[Dict[str, float]] = None,
+        post_metrics: Optional[Dict[str, float]] = None
     ):
         """
         Update a learning record with outcome information.
         
         This is called after the fix executes and we know if it succeeded.
+        Records outcomes in both learned thresholds and action effectiveness.
         """
         learning_record.success = success
         learning_record.execution_time_seconds = execution_time
@@ -265,6 +278,46 @@ class HamstersLearning:
             f"🐹📝 Updated learning record: success={success}, "
             f"execution_time={execution_time}s, notes={outcome_notes or 'none'}"
         )
+        
+        # Record in learned thresholds if we have threshold data
+        if pre_metrics and 'disk_usage_percent' in pre_metrics:
+            # Determine if this was a false alarm or if we acted too late
+            was_false_alarm = success and pre_metrics.get('disk_usage_percent', 0) < 75
+            should_have_acted_sooner = not success and pre_metrics.get('disk_usage_percent', 0) > 95
+            
+            # Record for disk usage threshold
+            await self.learned_thresholds.record_outcome(
+                metric_name='disk_usage',
+                metric_value=pre_metrics.get('disk_usage_percent', 0),
+                threshold_level='warning' if pre_metrics.get('disk_usage_percent', 0) < 90 else 'critical',
+                was_successful=success,
+                was_false_alarm=was_false_alarm,
+                should_have_acted_sooner=should_have_acted_sooner,
+                outcome_notes=outcome_notes
+            )
+            
+            # Record for fragmentation threshold if relevant
+            if 'fragmentation_level' in pre_metrics:
+                await self.learned_thresholds.record_outcome(
+                    metric_name='fragmentation',
+                    metric_value=pre_metrics.get('fragmentation_level', 0),
+                    threshold_level='warning' if pre_metrics.get('fragmentation_level', 0) < 40 else 'critical',
+                    was_successful=success,
+                    was_false_alarm=was_false_alarm,
+                    should_have_acted_sooner=should_have_acted_sooner,
+                    outcome_notes=outcome_notes
+                )
+        
+        # Record in action effectiveness
+        if pre_metrics and post_metrics:
+            await self.action_effectiveness.record_outcome(
+                action=learning_record.action_type,
+                pre_metrics=pre_metrics,
+                post_metrics=post_metrics,
+                severity='warning' if pre_metrics.get('disk_usage_percent', 0) < 90 else 'critical',
+                success=success,
+                outcome_notes=outcome_notes
+            )
         
         # TODO: Update database record with outcome
         # This requires querying by timestamp and updating the success field

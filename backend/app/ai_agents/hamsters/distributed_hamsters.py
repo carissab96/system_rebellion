@@ -446,21 +446,69 @@ class HamstersDistributed(AgentDecisionEngine, HamstersBrainV3):
                         }
                     )
                     
-                    # Update learning record with success
+                    # Update learning record with success and metrics
+                    pre_metrics_dict = {
+                        'disk_usage_percent': metrics_before['disk_usage'],
+                        'fragmentation_level': context.fragmentation_level
+                    }
+                    post_metrics_dict = {
+                        'disk_usage_percent': metrics_after['disk_usage'],
+                        'fragmentation_level': context.fragmentation_level  # TODO: Get actual post-fragmentation
+                    }
+                    
                     await learning.update_outcome(
                         learning_record,
                         success=True,
-                        outcome_notes=f"Freed {cleanup_result.get('disk_freed_mb', 0):.2f} MB"
+                        outcome_notes=f"Freed {cleanup_result.get('disk_freed_mb', 0):.2f} MB",
+                        pre_metrics=pre_metrics_dict,
+                        post_metrics=post_metrics_dict
                     )
+                    
+                    # Request The Stick validation for learned thresholds and action effectiveness
+                    from app.core.database import get_async_db
+                    try:
+                        # Validate learned thresholds
+                        await learning.learned_thresholds.request_stick_validation(
+                            metric_name='disk_usage',
+                            threshold_level='warning' if metrics_before['disk_usage'] < 90 else 'critical',
+                            learned_value=await learning.learned_thresholds.get_threshold('disk_usage', 'warning'),
+                            default_value=80.0,
+                            db_getter=get_async_db
+                        )
+                        
+                        # Validate action effectiveness
+                        await learning.action_effectiveness.request_stick_validation(
+                            action=action.action_type,
+                            metric_pattern=learning.action_effectiveness._generate_pattern_fingerprint(
+                                pre_metrics_dict, context.severity
+                            ),
+                            db_getter=get_async_db
+                        )
+                        
+                        logger.info("🐹📏 Validation requests sent to The Stick")
+                    except Exception as e:
+                        logger.error(f"🐹⚠️ Validation request failed: {e}")
                     
                     # Update action selector's adaptive bias based on outcome
                     action_selector.update_defrag_bias(action.action_type, True)
                 else:
                     logger.error(f"🐹❌ Fix failed: {cleanup_result.get('error')}")
+                    
+                    pre_metrics_dict = {
+                        'disk_usage_percent': metrics_before['disk_usage'],
+                        'fragmentation_level': context.fragmentation_level
+                    }
+                    post_metrics_dict = {
+                        'disk_usage_percent': metrics_after['disk_usage'],
+                        'fragmentation_level': context.fragmentation_level
+                    }
+                    
                     await learning.update_outcome(
                         learning_record,
                         success=False,
-                        outcome_notes=cleanup_result.get('error', 'Unknown error')
+                        outcome_notes=cleanup_result.get('error', 'Unknown error'),
+                        pre_metrics=pre_metrics_dict,
+                        post_metrics=post_metrics_dict
                     )
                     
                     # Update action selector's adaptive bias based on outcome
