@@ -4,9 +4,8 @@ Terry's Action Selection - Choosing What To Do
 
 Maps root causes to available actions and selects the best one based on:
 - Root cause analysis
-- Historical success rates
+- Historical success rates (effectiveness model is primary)
 - Exploration vs Exploitation (epsilon-greedy)
-- Adaptive personality bias (learns when cache clear isn't best)
 - Risk assessment
 
 Personality Behaviors:
@@ -16,12 +15,58 @@ Personality Behaviors:
 
 import logging
 import random
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, Any, List, Optional
 
 from .energy_drink_system import EnergyDrinkSystem
 
 logger = logging.getLogger('TerryActionSelection')
+
+
+# === MODULE-LEVEL CONFIGS ===
+
+# Single source of truth for action risk levels.
+# No .get() with silent defaults anywhere — if action isn't here, it's a bug.
+ACTION_RISK_CONFIG = {
+    'emergency_cache_clear': 'low',
+    'clear_cache': 'low',
+    'optimize_memory_allocation': 'low',
+    'reduce_memory_footprint': 'low',
+    'kill_memory_hog': 'high',
+    'adjust_process_priority': 'low',
+    'throttle_cpu_intensive_tasks': 'medium',
+    'restart_service': 'high',
+    'monitor': 'low',
+    'escalate': 'low',
+}
+
+# Actions that require energy drink authorization to override VIC-20
+OVERRIDE_REQUIRES_AUTH = frozenset(['emergency_cache_clear', 'restart_service'])
+
+# Exploration config — will be replaced by DB persistence post-launch
+EXPLORATION_CONFIG = {
+    'initial_epsilon': 0.35,
+    'min_epsilon': 0.15,
+    'decay_rate': 0.998,
+}
+
+# Parameter extraction config — replaces _get_action_parameters if/elif chain.
+# Each action maps to a callable (lambda) or a method name string.
+# Actions not listed here take no parameters (empty dict).
+PARAMETERIZED_ACTIONS = {
+    'escalate': lambda ctx: {'reason': ctx.vic20_recommendation.get('action', 'unknown situation')},
+    'kill_memory_hog': '_extract_kill_params',
+    'adjust_process_priority': '_extract_renice_params',
+    'restart_service': '_extract_restart_params',
+}
+
+# Process-to-service mapping — configurable, not buried in an elif
+PROCESS_SERVICE_MAP = {
+    'python': 'gunicorn',
+    'postgres': 'postgresql',
+    'redis': 'redis',
+    'nginx': 'nginx',
+}
 
 
 @dataclass
@@ -39,7 +84,7 @@ class ActionDecision:
     hawk_veto: bool = False
     exploration: bool = False  # True if this was an exploration move (epsilon-greedy)
     epsilon: float = 0.0  # Current exploration rate
-    alternatives_considered: List[str] = None  # What other actions were viable
+    alternatives_considered: List[str] = field(default_factory=list)  # What other actions were viable
 
 
 class TerryActionSelection:
@@ -49,9 +94,11 @@ class TerryActionSelection:
     🐌⚡ "I know what to do now! And I have OPTIONS!"
     """
     
-    def __init__(self, comm_hub=None):
+    def __init__(self, comm_hub=None, db=None, system_id: str = "default"):
         """Initialize with optional communication hub for cross-agent interactions"""
         self.comm_hub = comm_hub
+        self.db = db
+        self.system_id = system_id
         self._init_rest()
     
     # Map root causes to viable actions
@@ -144,44 +191,40 @@ class TerryActionSelection:
         ],
     }
     
-    # Risk levels for each action
-    ACTION_RISKS = {
-        # Memory actions
-        'emergency_cache_clear': 'low',        # Safe, just clears cache
-        'clear_cache': 'low',                  # Very safe, gentle clear
-        'optimize_memory_allocation': 'low',   # Safe, just triggers GC
-        'reduce_memory_footprint': 'low',      # Safe, comprehensive cleanup
-        'kill_memory_hog': 'high',             # Kills process - disruptive
-        
-        # CPU actions
-        'adjust_process_priority': 'low',      # Reversible
-        'throttle_cpu_intensive_tasks': 'medium',  # May slow things down
-        
-        # Recovery actions
-        'restart_service': 'high',             # Disruptive
-        
-        # Learning actions
-        'monitor': 'low',                      # No intervention
-        'escalate': 'low',                     # Just asks for help
-    }
-    
     def _init_rest(self):
         """Initialize rest of action selection system (called from __init__)"""
         self.logger = logger
         self.energy_drink_system = EnergyDrinkSystem()
         
-        # Exploration vs Exploitation
-        self.epsilon = 0.35  # 35% chance to explore (try non-preferred actions) - INCREASED for diversity
-        self.min_epsilon = 0.15  # Minimum exploration rate - keep exploring even after learning
-        self.epsilon_decay = 0.998  # Slower decay - maintain exploration longer
+        # Exploration vs Exploitation — values from module-level config
+        self.epsilon = EXPLORATION_CONFIG['initial_epsilon']
         
-        # Adaptive personality bias (starts high, decreases if cache clear fails often)
-        self.cache_clear_bias = 1.2  # 20% bias (can decrease to 1.0 = no bias)
-        self.cache_clear_successes = 0
-        self.cache_clear_attempts = 0
+        # Lazy-init ML subsystems (require db session)
+        self._action_effectiveness = None
+        self._learned_thresholds = None
         
         self.logger.info("🐌⚡ Terry's action selection initialized - ready to choose!")
-        self.logger.info(f"🐌🔬 Exploration rate: {self.epsilon:.1%}, Cache bias: {self.cache_clear_bias:.2f}")
+        self.logger.info(f"🐌🔬 Exploration rate: {self.epsilon:.1%}")
+    
+    @property
+    def action_effectiveness(self):
+        """Lazy-init ActionEffectivenessModel — requires db session"""
+        if self._action_effectiveness is None:
+            if self.db is None:
+                raise RuntimeError("TerryActionSelection requires a db session to use ActionEffectivenessModel")
+            from app.ai_agents.meth_snail.ML.action_effectiveness import ActionEffectivenessModel
+            self._action_effectiveness = ActionEffectivenessModel(self.db, agent_name="meth_snail")
+        return self._action_effectiveness
+    
+    @property
+    def learned_thresholds(self):
+        """Lazy-init LearnedThresholds — requires db session"""
+        if self._learned_thresholds is None:
+            if self.db is None:
+                raise RuntimeError("TerryActionSelection requires a db session to use LearnedThresholds")
+            from app.ai_agents.meth_snail.ML.learned_thresholds import LearnedThresholds
+            self._learned_thresholds = LearnedThresholds(self.db, self.system_id, agent_name="meth_snail")
+        return self._learned_thresholds
     
     async def select_action(
         self,
@@ -189,305 +232,329 @@ class TerryActionSelection:
         context
     ) -> ActionDecision:
         """
-        Choose the best action based on reasoning and personality.
-        
-        Terry loves cache clears, but he'll learn when they don't work.
-        
-        Args:
-            reasoning_result: ReasoningResult from reasoning engine
-            context: PerceptionContext with full situational awareness
-            
-        Returns:
-            ActionDecision with chosen action and parameters
+        Single-path action selection. Effectiveness model is primary.
+        Reasoning result is a boost signal, not a bypass.
         """
         root_cause = reasoning_result.root_cause
-        recommended_action = reasoning_result.recommended_action
-        confidence = reasoning_result.action_confidence
-        
         self.logger.info(f"🐌⚡ Selecting action for root cause: {root_cause}")
         
-        # EXPLORATION CHECK: Should Terry explore instead of exploiting learned action?
-        explore = random.random() < self.epsilon
-        viable_actions = self.ACTION_MAP.get(root_cause, [])
+        # 1. Decay epsilon once per call
+        current_epsilon = self.epsilon
+        self.epsilon = max(
+            EXPLORATION_CONFIG['min_epsilon'],
+            self.epsilon * EXPLORATION_CONFIG['decay_rate']
+        )
+        explore = random.random() < current_epsilon
         
-        if explore and len(viable_actions) > 1 and recommended_action and recommended_action != 'unknown':
-            # OVERRIDE historical learning to explore!
-            exploration_action = random.choice([a for a in viable_actions if a != recommended_action])
-            self.logger.info(
-                f"   🐌🔬 EXPLORING: Overriding learned action {recommended_action} → trying {exploration_action} (ε={self.epsilon:.1%})"
-            )
-            recommended_action = exploration_action
-            confidence = 0.6  # Lower confidence for exploration
-        
-        # If reasoning engine already picked an action from historical learning, use it
-        if recommended_action and recommended_action != 'unknown':
-            self.logger.info(f"   ✓ Using action: {recommended_action}")
-            
-            vic20_action = context.vic20_recommendation.get('action')
-            followed_vic20 = (recommended_action == vic20_action)
-            
-            # Check if Terry needs energy drink to override VIC-20
-            energy_drink_consumed = False
-            hawk_veto = False
-            reasoning = f"Using learned action {recommended_action} for {root_cause} (confidence: {confidence:.2f})"
-            
-            if not followed_vic20 and recommended_action in ['emergency_cache_clear', 'restart_service']:
-                authorization = await self.energy_drink_system.request_authorization(
-                    action=recommended_action,
-                    reason=f"Override VIC-20 to execute learned action {recommended_action}",
-                    comm_hub=self.comm_hub
-                )
-                
-                if authorization.authorized:
-                    energy_drink_consumed = True
-                    reasoning += f" (Energy drink authorized by {authorization.authorized_by})"
-                else:
-                    # HAWK VETO - must follow VIC-20
-                    hawk_veto = True
-                    followed_vic20 = True
-                    recommended_action = vic20_action
-                    reasoning = f"Hawk vetoed override - following VIC-20: {authorization.authorization_notes}"
-            
-            return ActionDecision(
-                action=recommended_action,
-                parameters=self._get_action_parameters(recommended_action, context),
-                confidence=confidence if not hawk_veto else 0.6,
-                followed_vic20=followed_vic20,
-                reasoning=reasoning,
-                expected_outcome=f"Resolve {root_cause} based on historical success",
-                risk_level=self.ACTION_RISKS.get(recommended_action, 'medium'),
-                reversible=True,
-                energy_drink_consumed=energy_drink_consumed,
-                hawk_veto=hawk_veto,
-                exploration=False,  # Using learned action (exploitation)
-                epsilon=self.epsilon,
-                alternatives_considered=reasoning_result.alternatives if hasattr(reasoning_result, 'alternatives') else []
-            )
-        
-        # Otherwise, select from action map based on root cause
+        # 2. Get viable actions for this root cause
         viable_actions = self.ACTION_MAP.get(root_cause, [])
         
         if not viable_actions:
-            # No known actions for this root cause - fall back to VIC-20
-            self.logger.warning(f"   ⚠️ No known actions for {root_cause}, using VIC-20's recommendation")
-            vic20_action = context.vic20_recommendation.get('action', 'emergency_cache_clear')
-            
-            return ActionDecision(
-                action=vic20_action,
-                parameters=self._get_action_parameters(vic20_action, context),
-                confidence=context.vic20_recommendation.get('confidence', 0.5),
-                followed_vic20=True,
-                reasoning=f"No learned actions for {root_cause}, following VIC-20",
-                expected_outcome="Unknown",
-                risk_level=self.ACTION_RISKS.get(vic20_action, 'medium'),
-                reversible=True
-            )
+            decision = self._handle_no_viable_actions(root_cause, context, current_epsilon)
+            await self._emit_decision_to_stick(decision, root_cause, {})
+            return decision
         
-        # Score each viable action
-        action_scores = self._score_actions(viable_actions, reasoning_result)
+        # 3. Score ALL viable actions through effectiveness model — ALWAYS
+        action_scores = await self._score_viable_actions(viable_actions, reasoning_result, context)
         
-        # Apply Terry's ADAPTIVE personality bias (learns when cache clear isn't best!)
-        if 'emergency_cache_clear' in action_scores:
-            original_score = action_scores['emergency_cache_clear']
-            action_scores['emergency_cache_clear'] *= self.cache_clear_bias
+        # 4. Apply reasoning recommendation as a boost signal, not a bypass
+        recommended = reasoning_result.recommended_action
+        if recommended and recommended in action_scores and recommended != 'unknown':
+            boost = min(0.15, reasoning_result.action_confidence * 0.2)
+            action_scores[recommended] = min(0.95, action_scores[recommended] + boost)
             self.logger.debug(
-                f"   🐌💨 Terry's adaptive bias: cache_clear {original_score:.2f} → "
-                f"{action_scores['emergency_cache_clear']:.2f} (bias: {self.cache_clear_bias:.2f})"
+                f"   🐌📊 Reasoning recommends '{recommended}' — boosted by {boost:.2f}"
             )
         
-        # EXPLORATION vs EXPLOITATION (epsilon-greedy)
-        explore = random.random() < self.epsilon
-        current_epsilon = self.epsilon  # Capture before decay
-        
+        # 5. Exploration vs exploitation
         if explore and len(viable_actions) > 1:
-            # EXPLORE: Try a random action (not necessarily the best)
             action_name = random.choice(viable_actions)
-            action_score = action_scores[action_name]
-            self.logger.info(f"   🐌🔬 EXPLORING: Trying {action_name} (ε={self.epsilon:.1%})")
+            action_score = action_scores.get(action_name, 0.5)
+            self.logger.info(f"   🐌🔬 EXPLORING: {action_name} (ε={current_epsilon:.1%})")
         else:
-            # EXPLOIT: Use highest scoring action
-            best_action = max(action_scores.items(), key=lambda x: x[1])
-            action_name = best_action[0]
-            action_score = best_action[1]
+            action_name, action_score = max(action_scores.items(), key=lambda x: x[1])
         
-        # Decay exploration rate over time (Terry gets more confident as he learns)
-        self.epsilon = max(self.min_epsilon, self.epsilon * self.epsilon_decay)
+        # 6. Risk lookup — no silent defaults
+        risk_level = self._get_risk_level(action_name)
         
-        self.logger.info(f"   ✓ Selected: {action_name} (score: {action_score:.2f})")
+        # 7. VIC-20 alignment + energy drink authorization
+        vic20_result = await self._check_vic20_alignment(action_name, context, current_epsilon)
         
-        # Check if Terry needs energy drink to override VIC-20
-        vic20_action = context.vic20_recommendation.get('action')
-        followed_vic20 = (action_name == vic20_action)
-        energy_drink_consumed = False
-        hawk_veto = False
-        reasoning = f"Selected {action_name} for {root_cause} based on action scoring"
-        
-        if not followed_vic20 and action_name in ['emergency_cache_clear', 'restart_service']:
-            authorization = await self.energy_drink_system.request_authorization(
-                action=action_name,
-                reason=f"Override VIC-20 to execute {action_name}"
-            )
-            
-            if authorization.authorized:
-                energy_drink_consumed = True
-                reasoning += f" (Energy drink authorized by {authorization.authorized_by})"
-            else:
-                # HAWK VETO - must follow VIC-20
-                hawk_veto = True
-                followed_vic20 = True
-                action_name = vic20_action
-                reasoning = f"Hawk vetoed override - following VIC-20: {authorization.authorization_notes}"
-        
-        return ActionDecision(
-            action=action_name,
-            parameters=self._get_action_parameters(action_name, context),
-            confidence=min(0.95, action_score) if not hawk_veto else 0.6,
-            followed_vic20=followed_vic20,
-            reasoning=reasoning,
-            exploration=explore,  # Track if this was exploration or exploitation
-            epsilon=current_epsilon,  # Current exploration rate
-            alternatives_considered=viable_actions,  # All viable actions considered
+        # 8. Build decision
+        decision = ActionDecision(
+            action=vic20_result['final_action'],
+            parameters=self._get_action_parameters(vic20_result['final_action'], context),
+            confidence=min(0.95, action_score) if not vic20_result['hawk_veto'] else 0.6,
+            followed_vic20=vic20_result['followed_vic20'],
+            reasoning=vic20_result['reasoning'],
             expected_outcome=f"Resolve {root_cause}",
-            risk_level=self.ACTION_RISKS.get(action_name, 'medium'),
+            risk_level=risk_level,
             reversible=True,
-            energy_drink_consumed=energy_drink_consumed,
-            hawk_veto=hawk_veto
+            energy_drink_consumed=vic20_result['energy_drink_consumed'],
+            hawk_veto=vic20_result['hawk_veto'],
+            exploration=explore,
+            epsilon=current_epsilon,
+            alternatives_considered=viable_actions,
         )
+        
+        # 9. Emit to The Stick — EVERY decision
+        await self._emit_decision_to_stick(decision, root_cause, action_scores)
+        
+        return decision
     
-    def _score_actions(
+    async def _score_viable_actions(
+        self,
+        viable_actions: List[str],
+        reasoning_result,
+        context
+    ) -> Dict[str, float]:
+        """Score all viable actions. Effectiveness model primary, heuristic fallback."""
+        if self.db is not None:
+            try:
+                primary_metric = f"{context.resource_type}_usage"
+                severity = self._severity_to_float(reasoning_result)
+                all_scores = await self.action_effectiveness.score_all_actions(
+                    current_metrics=context.full_metrics,
+                    severity=severity,
+                    primary_metric=primary_metric
+                )
+                scores = {
+                    s.action: s.base_score for s in all_scores
+                    if s.action in viable_actions
+                }
+                unscored = set(viable_actions) - set(scores.keys())
+                for action in unscored:
+                    self.logger.warning(
+                        f"🐌⚠️ Action '{action}' viable but not scored by "
+                        f"effectiveness model — using heuristic"
+                    )
+                    scores[action] = self._heuristic_score_single(
+                        action, severity, primary_metric, reasoning_result
+                    )
+                return scores
+            except Exception as e:
+                self.logger.error(
+                    f"🐌💥 Effectiveness model failed: {e} — falling back to heuristic"
+                )
+        return self._score_actions_heuristic(viable_actions, reasoning_result)
+    
+    def _heuristic_score_single(
+        self,
+        action: str,
+        severity: float,
+        primary_metric: str,
+        reasoning_result
+    ) -> float:
+        """Heuristic score for a single action not covered by the effectiveness model."""
+        score = 0.5
+        what_worked = getattr(reasoning_result, 'what_worked_before', [])
+        what_failed = getattr(reasoning_result, 'what_failed_before', [])
+        if action in what_worked:
+            score += 0.3
+        if action in what_failed:
+            score -= 0.2
+        return max(0.1, min(0.95, score))
+    
+    def _score_actions_heuristic(
         self,
         viable_actions: List[str],
         reasoning_result
     ) -> Dict[str, float]:
         """
-        Score each viable action based on historical success.
-        
-        Args:
-            viable_actions: List of actions that could work for this root cause
-            reasoning_result: ReasoningResult with historical learning
-            
-        Returns:
-            Dictionary mapping action names to scores (0.0 - 1.0)
+        Heuristic scoring fallback when ActionEffectivenessModel is unavailable.
+        Uses reasoning_result history signals only.
         """
         scores = {}
-        
-        # Get historical success rates
-        what_worked = reasoning_result.what_worked_before
-        what_failed = reasoning_result.what_failed_before
-        
+        what_worked = getattr(reasoning_result, 'what_worked_before', [])
+        what_failed = getattr(reasoning_result, 'what_failed_before', [])
         for action in viable_actions:
-            # Start with base score
             score = 0.5
-            
-            # Boost if it worked before
             if action in what_worked:
                 score += 0.3
-            
-            # Penalize if it failed before
             if action in what_failed:
                 score -= 0.2
-            
-            # Ensure score stays in valid range
-            score = max(0.1, min(0.95, score))
-            
-            scores[action] = score
-        
+            scores[action] = max(0.1, min(0.95, score))
         return scores
     
-    def _get_action_parameters(
+    def _get_risk_level(self, action: str) -> str:
+        """Risk lookup — no silent default. Logs at ERROR if action missing."""
+        risk = ACTION_RISK_CONFIG.get(action)
+        if risk is None:
+            self.logger.error(
+                f"🐌💥 Action '{action}' has no risk level in ACTION_RISK_CONFIG. "
+                f"This is a vocabulary gap. Defaulting to 'high' for safety."
+            )
+            return 'high'
+        return risk
+    
+    async def _check_vic20_alignment(
         self,
-        action: str,
-        context
+        action_name: str,
+        context,
+        current_epsilon: float
     ) -> Dict[str, Any]:
-        """
-        Get parameters for the chosen action.
+        """Check VIC-20 alignment and handle energy drink authorization if needed."""
+        vic20_action = context.vic20_recommendation.get('action')
+        followed_vic20 = (action_name == vic20_action)
+        energy_drink_consumed = False
+        hawk_veto = False
+        reasoning = f"Selected {action_name} based on effectiveness scoring"
         
-        Some actions need specific parameters based on context.
+        if not followed_vic20 and action_name in OVERRIDE_REQUIRES_AUTH:
+            authorization = await self.energy_drink_system.request_authorization(
+                action=action_name,
+                reason=f"Override VIC-20 to execute {action_name}",
+                comm_hub=self.comm_hub
+            )
+            if authorization.authorized:
+                energy_drink_consumed = True
+                reasoning += f" (Energy drink authorized by {authorization.authorized_by})"
+            else:
+                hawk_veto = True
+                followed_vic20 = True
+                action_name = vic20_action
+                reasoning = f"Hawk vetoed override — following VIC-20: {authorization.authorization_notes}"
         
-        Args:
-            action: Action name
-            context: PerceptionContext
-            
-        Returns:
-            Dictionary of parameters for the action
-        """
-        # Most actions don't need parameters
-        if action == 'emergency_cache_clear':
-            return {}
-        
-        elif action == 'clear_cache':
-            return {}
-        
-        elif action == 'optimize_memory_allocation':
-            return {}
-        
-        elif action == 'reduce_memory_footprint':
-            return {}
-        
-        elif action == 'monitor':
-            return {}
-        
-        elif action == 'escalate':
-            return {'reason': context.vic20_recommendation.get('action', 'unknown situation')}
-        
-        elif action == 'kill_memory_hog':
-            # Kill the top memory process
-            top_processes = context.full_metrics.get('memory', {}).get('top_processes', [])
-            if not top_processes:
-                # Fallback to CPU top processes
-                top_processes = context.full_metrics.get('cpu', {}).get('top_processes', [])
-            
-            if top_processes:
-                return {
-                    'process_name': top_processes[0].get('name', 'python'),
-                    'pid': top_processes[0].get('pid')
-                }
-            return {'process_name': 'python', 'pid': None}
-        
-        elif action == 'adjust_process_priority':
-            # Try to nice the top CPU process
-            top_processes = context.full_metrics.get('cpu', {}).get('top_processes', [])
-            if top_processes:
-                return {
-                    'process_name': top_processes[0].get('name', 'python'),
-                    'nice_value': 10  # Lower priority
-                }
-            return {'process_name': 'python', 'nice_value': 10}
-        
-        elif action == 'restart_service':
-            # Restart the service causing issues
-            top_processes = context.full_metrics.get('cpu', {}).get('top_processes', [])
-            if top_processes:
-                process_name = top_processes[0].get('name', 'redis')
-                # Map process names to service names
-                service_map = {
-                    'python': 'gunicorn',
-                    'postgres': 'postgresql',
-                    'redis': 'redis',
-                    'nginx': 'nginx',
-                }
-                service_name = service_map.get(process_name, 'redis')
-                return {'service_name': service_name}
-            return {'service_name': 'redis'}
-        
-        elif action == 'throttle_cpu_intensive_tasks':
-            return {}
-        
+        return {
+            'final_action': action_name,
+            'followed_vic20': followed_vic20,
+            'energy_drink_consumed': energy_drink_consumed,
+            'hawk_veto': hawk_veto,
+            'reasoning': reasoning,
+        }
+    
+    def _handle_no_viable_actions(
+        self,
+        root_cause: str,
+        context,
+        epsilon: float
+    ) -> ActionDecision:
+        """Explicit handler when ACTION_MAP has no entry for root_cause. Stick-notified."""
+        vic20_action = context.vic20_recommendation.get('action')
+        if not vic20_action:
+            self.logger.error(
+                f"🐌💥 No viable actions for '{root_cause}' AND no VIC-20 recommendation. "
+                f"Terry is completely blind."
+            )
+            vic20_action = 'monitor'
         else:
+            self.logger.warning(
+                f"🐌⚠️ No viable actions for '{root_cause}' — following VIC-20: {vic20_action}"
+            )
+        
+        return ActionDecision(
+            action=vic20_action,
+            parameters=self._get_action_parameters(vic20_action, context),
+            confidence=context.vic20_recommendation.get('confidence', 0.3),
+            followed_vic20=True,
+            reasoning=f"No viable actions for {root_cause} — following VIC-20",
+            expected_outcome="Unknown",
+            risk_level=self._get_risk_level(vic20_action),
+            reversible=True,
+            epsilon=epsilon,
+        )
+    
+    async def _emit_decision_to_stick(
+        self,
+        decision: ActionDecision,
+        root_cause: str,
+        scores: Dict[str, float]
+    ) -> None:
+        """Emit every action selection decision to The Stick. No exceptions."""
+        try:
+            from app.services.agent_insight_emitter import emit_agent_insight
+            await emit_agent_insight(
+                from_agent='meth_snail',
+                to_agent='the_stick',
+                action='action_selected',
+                reasoning=f"{decision.action} for {root_cause}",
+                context={
+                    'decision_type': 'action_selection',
+                    'action': decision.action,
+                    'root_cause': root_cause,
+                    'confidence': decision.confidence,
+                    'exploration': decision.exploration,
+                    'epsilon': decision.epsilon,
+                    'followed_vic20': decision.followed_vic20,
+                    'hawk_veto': decision.hawk_veto,
+                    'energy_drink': decision.energy_drink_consumed,
+                    'risk_level': decision.risk_level,
+                    'all_scores': {k: round(v, 3) for k, v in scores.items()},
+                    'alternatives': decision.alternatives_considered,
+                }
+            )
+        except Exception as e:
+            self.logger.error(f"🐌💥 Failed to emit decision to Stick: {e}")
+    
+    def _severity_to_float(self, reasoning_result) -> float:
+        """Convert reasoning severity string to 0.0-1.0 float for effectiveness model"""
+        severity_map = {
+            'low': 0.3, 'moderate': 0.5, 'high': 0.7, 'critical': 0.9, 'emergency': 1.0
+        }
+        severity_str = getattr(reasoning_result, 'severity', 'moderate')
+        if isinstance(severity_str, str):
+            return severity_map.get(severity_str.lower(), 0.5)
+        return float(severity_str) if severity_str else 0.5
+    
+    def _get_action_parameters(self, action: str, context) -> Dict[str, Any]:
+        """Config-driven parameter extraction — replaces if/elif chain."""
+        handler = PARAMETERIZED_ACTIONS.get(action)
+        if handler is None:
             return {}
+        if callable(handler):
+            return handler(context)
+        return getattr(self, handler)(context)
+    
+    def _extract_kill_params(self, context) -> Dict[str, Any]:
+        top_processes = (
+            context.full_metrics.get('memory', {}).get('top_processes', [])
+            or context.full_metrics.get('cpu', {}).get('top_processes', [])
+        )
+        if not top_processes:
+            self.logger.warning(
+                "🐌⚠️ No process data available for kill_memory_hog — "
+                "primitive will identify target from /proc"
+            )
+            return {}
+        return {
+            'process_name': top_processes[0].get('name'),
+            'pid': top_processes[0].get('pid'),
+        }
+    
+    def _extract_renice_params(self, context) -> Dict[str, Any]:
+        top_processes = context.full_metrics.get('cpu', {}).get('top_processes', [])
+        if not top_processes:
+            self.logger.warning(
+                "🐌⚠️ No process data available for adjust_process_priority — "
+                "primitive will identify target from /proc"
+            )
+            return {}
+        return {
+            'process_name': top_processes[0].get('name'),
+            'nice_value': 10,
+        }
+    
+    def _extract_restart_params(self, context) -> Dict[str, Any]:
+        top_processes = context.full_metrics.get('cpu', {}).get('top_processes', [])
+        if not top_processes:
+            self.logger.error(
+                "🐌💥 No process data for restart_service — "
+                "cannot determine which service to restart"
+            )
+            return {}
+        process_name = top_processes[0].get('name', '')
+        service_name = PROCESS_SERVICE_MAP.get(process_name)
+        if service_name is None:
+            self.logger.warning(
+                f"🐌⚠️ Process '{process_name}' not in PROCESS_SERVICE_MAP — "
+                f"primitive will receive process name as service name"
+            )
+            service_name = process_name
+        return {'service_name': service_name}
     
     def explain_decision(self, decision: ActionDecision) -> str:
-        """
-        Generate human-readable explanation of the decision.
-        
-        Args:
-            decision: ActionDecision to explain
-            
-        Returns:
-            Natural language explanation
-        """
+        """Generate human-readable explanation of the decision."""
         parts = []
-        
         parts.append("🐌⚡ TERRY'S DECISION:")
         parts.append("")
         parts.append(f"ACTION: {decision.action}")
@@ -500,57 +567,21 @@ class TerryActionSelection:
         parts.append(f"EXPECTED OUTCOME:")
         parts.append(f"  {decision.expected_outcome}")
         parts.append("")
-        
         if decision.parameters:
             parts.append(f"PARAMETERS:")
             for key, value in decision.parameters.items():
                 parts.append(f"  {key}: {value}")
             parts.append("")
-        
         if decision.followed_vic20:
             parts.append("✓ Following VIC-20's recommendation")
         else:
             parts.append("⚠️ Overriding VIC-20 based on historical learning")
-        
         return "\n".join(parts)
     
     def update_cache_clear_bias(self, action: str, success: bool):
         """
-        Update Terry's cache clear bias based on outcomes.
-        
-        If cache clear keeps failing, reduce the bias.
-        If other actions work better, reduce the bias.
-        
-        Args:
-            action: Action that was executed
-            success: Whether it succeeded
+        DEPRECATED: cache_clear_bias has been absorbed into ActionEffectivenessModel.
+        The effectiveness model now tracks per-action success rates directly.
+        This method is kept for call-site compatibility but is a no-op.
         """
-        if action == 'emergency_cache_clear':
-            self.cache_clear_attempts += 1
-            if success:
-                self.cache_clear_successes += 1
-            
-            # Calculate success rate
-            success_rate = self.cache_clear_successes / self.cache_clear_attempts
-            
-            # Adjust bias based on success rate
-            # If success rate < 60%, reduce bias toward 1.0 (no bias)
-            # If success rate > 80%, maintain or increase bias
-            if success_rate < 0.6:
-                self.cache_clear_bias = max(1.0, self.cache_clear_bias * 0.95)
-                self.logger.info(
-                    f"🐌📉 Cache clear success rate low ({success_rate:.1%}) - "
-                    f"reducing bias to {self.cache_clear_bias:.2f}"
-                )
-            elif success_rate > 0.8 and self.cache_clear_bias < 1.2:
-                self.cache_clear_bias = min(1.2, self.cache_clear_bias * 1.02)
-                self.logger.debug(f"🐌📈 Cache clear working well - bias: {self.cache_clear_bias:.2f}")
-        
-        elif success:
-            # Other action succeeded - slightly reduce cache clear bias
-            # (Terry learns there are other good options)
-            self.cache_clear_bias = max(1.0, self.cache_clear_bias * 0.98)
-            self.logger.debug(
-                f"🐌💡 {action} worked! Learning alternatives exist. "
-                f"Cache bias: {self.cache_clear_bias:.2f}"
-            )
+        pass

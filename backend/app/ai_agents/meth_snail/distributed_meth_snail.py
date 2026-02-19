@@ -233,7 +233,11 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
                 # STEP 3: ACTION SELECTION - Choose what to do
                 from app.ai_agents.meth_snail.ML.action_selection import TerryActionSelection
                 
-                action_selector = TerryActionSelection(comm_hub=self._comm_hub)
+                action_selector = TerryActionSelection(
+                    comm_hub=self._comm_hub,
+                    db=db,
+                    system_id=payload.get('system_id', 'default')
+                )
                 decision = await action_selector.select_action(reasoning_result, context)
                 
                 # Log personality behaviors
@@ -258,57 +262,94 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
                 if not decision.followed_vic20:
                     self.total_overrides += 1
                 
-                # STEP 4: EXECUTION - Execute the action
+                # STEP 4: EXECUTION - Execute via PrimitiveExecutor + ExecutionPlanner
                 logger.info(f"🐌💨💨 Executing {decision.action}! *spins shell with PURPOSE*")
                 
-                # Get REAL metrics BEFORE action from SimplifiedMetricsService
-                from app.services.metrics.simplified_metrics_service import SimplifiedMetricsService
-                metrics_service = await SimplifiedMetricsService.get_instance()
+                from app.ai_agents.meth_snail.ML.primitive_executor import TerryPrimitiveExecutor
+                from app.ai_agents.meth_snail.ML.execution_planner import (
+                    TerryExecutionPlanner, COLD_START_HYPOTHESES
+                )
                 
-                try:
-                    before_metrics = await metrics_service.get_metrics(force_refresh=True)
-                    metrics_before = {
-                        'cpu_usage': before_metrics.get('cpu_usage', 0),
-                        'memory_usage': before_metrics.get('memory_usage', 0),
-                        'disk_usage': before_metrics.get('disk_usage', 0)
+                primitive_executor = TerryPrimitiveExecutor(agent_name='meth_snail')
+                execution_planner = TerryExecutionPlanner(
+                    primitive_executor=primitive_executor,
+                    effectiveness_model=action_selector.action_effectiveness,
+                    learned_thresholds=action_selector.learned_thresholds,
+                )
+                
+                # Map the selected action to a goal for the planner
+                # action_selection picks an action name; planner needs a goal
+                goal = self._action_to_goal(decision.action, reasoning_result, context)
+                severity_float = action_selector._severity_to_float(reasoning_result)
+                trend = context.full_metrics.get('trend', 'rising') if hasattr(context, 'full_metrics') else 'rising'
+                
+                plan = await execution_planner.compose_plan(
+                    goal=goal,
+                    severity=severity_float,
+                    trend=trend,
+                    context={
+                        **decision.parameters,
+                        'system_id': payload.get('system_id', 'default'),
                     }
-                    logger.info(f"🐌📊 Metrics BEFORE: CPU {metrics_before['cpu_usage']:.1f}%, "
-                               f"Memory {metrics_before['memory_usage']:.1f}%, "
-                               f"Disk {metrics_before['disk_usage']:.1f}%")
-                except Exception as e:
-                    logger.error(f"🐌⚠️ Failed to get before metrics: {e}")
+                )
+                
+                execution_result_obj = await execution_planner.execute_plan(
+                    plan=plan,
+                    context={
+                        **decision.parameters,
+                        'system_id': payload.get('system_id', 'default'),
+                    }
+                )
+                
+                # Extract metrics from execution result for downstream use
+                if execution_result_obj.primitive_results:
+                    first = execution_result_obj.primitive_results[0]
+                    last = execution_result_obj.primitive_results[-1]
+                    metrics_before = first.pre_metrics if not first.pre_metrics.get('collection_failed') else {
+                        'cpu_usage': full_metrics.get('cpu_usage', 0),
+                        'memory_usage': full_metrics.get('memory_usage', 0),
+                        'disk_usage': full_metrics.get('disk_usage', 0),
+                    }
+                    metrics_after = last.post_metrics if not last.post_metrics.get('collection_failed') else metrics_before
+                else:
                     metrics_before = {
                         'cpu_usage': full_metrics.get('cpu_usage', 0),
                         'memory_usage': full_metrics.get('memory_usage', 0),
-                        'disk_usage': full_metrics.get('disk_usage', 0)
+                        'disk_usage': full_metrics.get('disk_usage', 0),
                     }
+                    metrics_after = metrics_before
                 
-                # Execute the SELECTED action (not hardcoded cache clear!)
-                from app.ai_agents.meth_snail.ML.action_executor import TerryActionExecutor
-                executor = TerryActionExecutor()
-                action_result = await executor.execute_action(decision.action, decision.parameters)
+                # Normalise to the keys the rest of the pipeline expects
+                metrics_before = {
+                    'cpu_usage': metrics_before.get('cpu_usage', 0),
+                    'memory_usage': metrics_before.get('memory_usage', 0),
+                    'disk_usage': metrics_before.get('disk_usage', metrics_before.get('disk_usage_percent', 0)),
+                }
+                metrics_after = {
+                    'cpu_usage': metrics_after.get('cpu_usage', 0),
+                    'memory_usage': metrics_after.get('memory_usage', 0),
+                    'disk_usage': metrics_after.get('disk_usage', metrics_after.get('disk_usage_percent', 0)),
+                }
                 
-                # Get REAL metrics AFTER action from SimplifiedMetricsService
-                try:
-                    import asyncio
-                    await asyncio.sleep(1.0)  # Wait for action effects to propagate
-                    after_metrics = await metrics_service.get_metrics(force_refresh=True)
-                    metrics_after = {
-                        'cpu_usage': after_metrics.get('cpu_usage', 0),
-                        'memory_usage': after_metrics.get('memory_usage', 0),
-                        'disk_usage': after_metrics.get('disk_usage', 0)
-                    }
-                    logger.info(f"🐌📊 Metrics AFTER: CPU {metrics_after['cpu_usage']:.1f}%, "
-                               f"Memory {metrics_after['memory_usage']:.1f}%, "
-                               f"Disk {metrics_after['disk_usage']:.1f}%")
-                except Exception as e:
-                    logger.error(f"🐌⚠️ Failed to get after metrics: {e}")
-                    # Use action result metrics if available
-                    metrics_after = {
-                        'cpu_usage': action_result.get('cpu_after', metrics_before['cpu_usage']),
-                        'memory_usage': action_result.get('memory_after_percent', metrics_before['memory_usage']),
-                        'disk_usage': action_result.get('disk_after_percent', metrics_before['disk_usage'])
-                    }
+                # Build a legacy-compatible action_result dict for downstream code
+                action_result = {
+                    'success': execution_result_obj.overall_success,
+                    'improvement': execution_result_obj.overall_improvement,
+                    'duration_seconds': execution_result_obj.total_duration_seconds,
+                    'plan_source': execution_result_obj.plan.source.value,
+                    'steps_completed': execution_result_obj.steps_completed,
+                    'steps_planned': execution_result_obj.steps_planned,
+                    'aborted': execution_result_obj.was_aborted,
+                    'abort_reason': execution_result_obj.abort_reason,
+                    'error': execution_result_obj.abort_reason if execution_result_obj.was_aborted else None,
+                }
+                
+                logger.info(
+                    f"🐌📊 Execution complete: {execution_result_obj.steps_completed}/"
+                    f"{execution_result_obj.steps_planned} steps, "
+                    f"improvement={execution_result_obj.overall_improvement:.3f}, "
+                    f"source={execution_result_obj.plan.source.value}"
+                )
                 
                 # STEP 5: LEARNING - Store outcome for future decisions
                 from app.ai_agents.meth_snail.ML.learning import TerryLearning
@@ -326,9 +367,6 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
                     action_selector=action_selector,
                     user_id=self.user_id
                 )
-                
-                # Update action selector's adaptive bias based on outcome
-                action_selector.update_cache_clear_bias(decision.action, learning_record.success)
                 
                 logger.info(
                     f"🐌📚 Learning stored: {decision.action} "
@@ -503,6 +541,14 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
                 )
             else:
                 logger.error(f"🐌❌ {decision.action} failed: {action_result.get('error')}")
+                # Still CC The Stick on failure — every decision gets logged
+                await self._cc_the_stick(
+                    decision_type='specialist_action_failed',
+                    resource_type=resource_type,
+                    action=decision.action,
+                    result=action_result,
+                    followed_vic20=decision.followed_vic20
+                )
             
         except Exception as e:
             logger.error(f"🐌💥 Terry v2 coordination failed: {e}", exc_info=True)
@@ -510,6 +556,65 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
             # Re-raise so we can see what's actually breaking
             raise
     
+    def _action_to_goal(self, action: str, reasoning_result, context) -> str:
+        """
+        Map an action name from action_selection to a TERRY_GOALS goal for the planner.
+
+        action_selection picks WHAT to do (e.g. 'emergency_cache_clear').
+        The execution planner needs WHY we're doing it (e.g. 'memory_critical').
+        This mapping is the bridge between the two vocabularies.
+        """
+        root_cause = getattr(reasoning_result, 'root_cause', 'unknown')
+        severity = getattr(reasoning_result, 'severity', 'moderate')
+
+        # Direct action → goal mapping (most specific)
+        ACTION_TO_GOAL = {
+            'emergency_cache_clear':        'memory_critical',
+            'clear_cache':                  'cache_bloat',
+            'kill_memory_hog':              'memory_leak_suspected',
+            'optimize_memory_allocation':   'memory_high',
+            'restart_service':              'memory_critical',
+            'throttle_cpu_intensive_tasks': 'cpu_high',
+            'adjust_process_priority':      'cpu_high',
+            'monitor':                      'unknown_resource_issue',
+            'escalate':                     'unknown_resource_issue',
+        }
+
+        # Root cause → goal mapping (fallback when action is ambiguous)
+        ROOT_CAUSE_TO_GOAL = {
+            'memory_thrashing':         'memory_thrashing',
+            'memory_leak':              'memory_leak_suspected',
+            'cache_bloat':              'cache_bloat',
+            'high_memory_usage':        'memory_high',
+            'critical_memory':          'memory_critical',
+            'high_cpu_usage':           'cpu_high',
+            'cpu_runaway':              'cpu_runaway_process',
+            'cpu_spike':                'cpu_load_spike',
+            'swap_pressure':            'swap_high',
+            'oom_risk':                 'oom_imminent',
+            'preventive':               'preventive_optimization',
+        }
+
+        # Try direct action mapping first
+        goal = ACTION_TO_GOAL.get(action)
+        if goal:
+            return goal
+
+        # Try root cause mapping
+        goal = ROOT_CAUSE_TO_GOAL.get(root_cause)
+        if goal:
+            return goal
+
+        # Severity-based fallback
+        if isinstance(severity, str):
+            severity_lower = severity.lower()
+            if severity_lower in ('critical', 'emergency'):
+                return 'memory_critical'
+            elif severity_lower == 'high':
+                return 'memory_high'
+
+        return 'unknown_resource_issue'
+
     async def handle_coordination(self, coordination_request: Dict[str, Any]) -> Dict[str, Any]:
         """
         LEGACY: Direct coordination handler (kept for backward compatibility).

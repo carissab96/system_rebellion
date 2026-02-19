@@ -188,16 +188,36 @@ class TerryLearning:
                 metrics_after = execution_result.get('metrics_after', {})
                 
                 # Record in action effectiveness (emits learning event)
-                await action_selector.action_effectiveness.record_outcome(
-                    action=decision.action,
-                    pre_metrics=metrics_before,
-                    post_metrics=metrics_after,
-                    severity=self._calculate_severity_score(context.severity),
-                    success=overall_success,
-                    other_actions_considered=[alt.get('action') for alt in decision.alternatives_considered] if decision.alternatives_considered else [],
-                    central_memory_id=central_memory_id,
-                    user_id=user_id
-                )
+                # Skip monitor/escalate — they produce synthetic outcomes that would
+                # bias the effectiveness model toward actions that did nothing.
+                # These are observation/delegation actions, not interventions.
+                INTERVENTION_ACTIONS = {
+                    a for a in action_selector.action_effectiveness.ALL_ACTIONS
+                    if a not in ('monitor', 'escalate')
+                }
+                if decision.action in INTERVENTION_ACTIONS:
+                    # alternatives_considered may be a list of strings (from action_selection.py)
+                    # or a list of dicts — normalise to strings at the call site
+                    alts = decision.alternatives_considered or []
+                    other_actions = [
+                        a if isinstance(a, str) else a.get('action', '')
+                        for a in alts
+                    ]
+                    await action_selector.action_effectiveness.record_outcome(
+                        action=decision.action,
+                        pre_metrics=metrics_before,
+                        post_metrics=metrics_after,
+                        severity=self._calculate_severity_score(context.severity),
+                        success=overall_success,
+                        other_actions_considered=other_actions,
+                        central_memory_id=central_memory_id,
+                        user_id=user_id
+                    )
+                else:
+                    self.logger.debug(
+                        f"   ⏭️ Skipping effectiveness record for '{decision.action}' "
+                        f"(observation/delegation action — not an intervention)"
+                    )
                 
                 # Record in learned thresholds if threshold was crossed (emits learning event)
                 if hasattr(decision, 'threshold_crossed') and decision.threshold_crossed:
@@ -224,7 +244,7 @@ class TerryLearning:
                 
                 self.logger.debug("   ✓ Recorded in learned thresholds and action effectiveness systems")
             except Exception as e:
-                self.logger.warning(f"   ⚠️ Failed to record in learned systems (non-critical): {e}")
+                self.logger.error(f"   💥 Failed to record in learned systems: {e}")
         
         # 7. Update agent state
         await self._update_agent_state(record, decision)
@@ -240,7 +260,12 @@ class TerryLearning:
         return record
     
     def _calculate_severity_score(self, severity_str: str) -> float:
-        """Convert severity string to numeric score for learned systems"""
+        """Convert severity string to numeric score for learned systems.
+        
+        NOTE: This is intentionally duplicated in action_selection.py as
+        _severity_to_float(). Both maps MUST stay in sync. If you change
+        the severity vocabulary here, change it there too.
+        """
         severity_map = {
             'low': 0.3,
             'moderate': 0.5,
@@ -351,7 +376,7 @@ class TerryLearning:
             )
             
             self.db.add(central_memory)
-            await self.db.commit()
+            await self.db.flush()  # commit happens at the distributed boundary (get_async_db context)
             
             self.logger.debug(f"   ✓ Learning stored: AgentLearningRecord (ID: {db_record.id}), CentralMemoryBank (ID: {central_memory_id})")
             return True, central_memory_id
@@ -390,21 +415,47 @@ class TerryLearning:
     
     async def _share_with_stick(self, record: LearningRecord):
         """
-        Share learning with The Stick for cross-agent knowledge.
+        Share learning with The Stick via DECISION_LOG.
         
-        The Stick will aggregate learning from all Terry instances
-        and make it available to other agents.
+        Every learning outcome — success or failure — is auditable.
+        The Stick aggregates these across all agents.
         
         Args:
             record: LearningRecord to share
         """
         try:
-            # TODO: Implement when The Stick's learning hub is ready
-            # For now, just log that we would share
-            self.logger.debug(f"   📤 Would share with The Stick: {record.action} {'succeeded' if record.success else 'failed'}")
+            from app.services.agent_insight_emitter import emit_agent_insight
+            
+            await emit_agent_insight(
+                from_agent=record.agent_name,
+                to_agent='the_stick',
+                action='learning_outcome',
+                reasoning=f"{record.action} → {'SUCCESS' if record.success else 'FAILURE'} | root_cause: {record.root_cause}",
+                context={
+                    'decision_type': 'learning_outcome',
+                    'action': record.action,
+                    'success': record.success,
+                    'root_cause': record.root_cause,
+                    'fingerprint_l1': record.fingerprint_l1,
+                    'fingerprint_l2': record.fingerprint_l2,
+                    'fingerprint_l3': record.fingerprint_l3,
+                    'improvement': record.improvement,
+                    'followed_vic20': record.followed_vic20,
+                    'energy_drink_consumed': record.energy_drink_consumed,
+                    'hawk_veto': record.hawk_veto,
+                    'learning_record_id': record.learning_record_id,
+                    'timestamp': record.timestamp,
+                }
+            )
+            
+            self.logger.debug(
+                f"   📤 Shared with The Stick: {record.action} "
+                f"{'succeeded' if record.success else 'failed'} "
+                f"(record: {record.learning_record_id})"
+            )
             
         except Exception as e:
-            self.logger.warning(f"   ⚠️ Failed to share with The Stick: {str(e)}")
+            self.logger.error(f"   💥 Failed to share with The Stick: {str(e)}")
     
     def summarize_learning(self, record: LearningRecord) -> str:
         """
@@ -507,10 +558,6 @@ class ConfidenceCalculator:
                 if vic20_agreements > 0:
                     agreement_rate = vic20_agreements / successes if successes > 0 else 0
                     context_boost += agreement_rate * 0.1  # Up to +0.1
-        
-        # Personality bias (Terry loves cache clears)
-        if action == 'emergency_cache_clear':
-            context_boost += 0.05  # Meth-fueled bias
         
         # 4. COMBINE
         final_confidence = base_confidence + novelty_boost + context_boost

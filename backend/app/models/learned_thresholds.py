@@ -154,3 +154,72 @@ class MetricPatternHistory(Base):
             f"start={self.starting_value:.1f}, "
             f"15min={self.value_15min_later:.1f})>"
         )
+
+
+class LearnedSequence(Base):
+    """
+    A learned execution sequence — an ordered list of primitives that
+    has proven effective for a given goal in a given context.
+
+    Lifecycle: cold_start → experience → stick_validated → promoted
+                                                         → deprecated
+
+    This is NOT an action outcome record. It's a strategy composed from
+    multiple action outcomes. It has its own confidence tracking, sample
+    size, and Stick validation status. Sequences are discovered when cold
+    start hypotheses succeed and promoted when The Stick validates them.
+    """
+    __tablename__ = 'learned_sequences'
+
+    id = Column(Integer, primary_key=True, autoincrement=True, index=True)
+    agent_name = Column(String(50), nullable=False, index=True)
+    system_id = Column(String(255), nullable=False, index=True)
+    goal = Column(String(100), nullable=False, index=True)   # From goal vocabulary
+
+    # The sequence itself — ordered list of primitive names
+    primitives = Column(JSON, nullable=False)
+
+    # Effectiveness tracking
+    effectiveness_score = Column(Float, default=0.0)
+    confidence = Column(Float, default=0.0)         # Based on sample size
+    sample_size = Column(Integer, default=0)
+    success_count = Column(Integer, default=0)
+    success_rate = Column(Float, default=0.0)       # success_count / sample_size
+    avg_improvement = Column(Float, default=0.0)
+    avg_duration_seconds = Column(Float, default=0.0)
+
+    # Intervention context — for predictive engine (post-launch)
+    # Sparsely populated until predictive engine comes online.
+    # Costs nothing now, saves a migration later.
+    intervention_type = Column(String(20), default='reactive')  # reactive, preemptive, maintenance
+    trigger_severity = Column(Float, nullable=True)   # 0.0-1.0, avg severity at trigger
+    trigger_trend = Column(String(20), nullable=True) # rising, stable, falling
+
+    # Lifecycle
+    first_discovered = Column(TIMESTAMP, server_default=func.now())
+    last_used = Column(TIMESTAMP, nullable=True)
+    stick_validated = Column(Boolean, default=False)
+    promoted = Column(Boolean, default=False)           # Promoted for general use
+    deprecated = Column(Boolean, default=False)         # No longer effective
+    deprecated_reason = Column(String(500), nullable=True)
+
+    # Provenance
+    learned_from = Column(String(50), default='experience')  # experience, cross_agent, cold_start
+    parent_sequence_id = Column(Integer, nullable=True)      # If evolved from another sequence
+
+    __table_args__ = (
+        Index('idx_learned_seq_agent_goal', 'agent_name', 'goal'),
+        Index('idx_learned_seq_system_goal', 'system_id', 'goal'),
+        Index('idx_learned_seq_active', 'agent_name', 'goal', 'deprecated', 'confidence'),
+    )
+
+    def __repr__(self):
+        return (
+            f"<LearnedSequence("
+            f"id={self.id}, "
+            f"agent={self.agent_name}, "
+            f"goal='{self.goal}', "
+            f"primitives={self.primitives}, "
+            f"effectiveness={self.effectiveness_score:.2f}, "
+            f"samples={self.sample_size})>"
+        )

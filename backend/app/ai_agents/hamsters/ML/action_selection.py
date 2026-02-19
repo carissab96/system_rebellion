@@ -24,6 +24,8 @@ from datetime import datetime, timezone
 
 from .perception import HamstersPerceptionContext, BeerConsumptionEvent, DuctTapeCalculation
 from .reasoning import StorageReasoning, HamsterIndividualAssessment
+from .execution_planner import STORAGE_GOALS, COLD_START_HYPOTHESES
+from app.ai_agents.exceptions import MLPipelineFailure
 
 logger = logging.getLogger('HamstersActionSelection')
 
@@ -38,8 +40,9 @@ def utc_now() -> datetime:
 class StorageFixAction:
     """Hamsters' selected storage fix action"""
     
-    # Core action
-    action_type: str  # 'fstrim', 'defrag', 'cleanup', 'quantum_fix'
+    # Goal — a problem statement from STORAGE_GOALS vocabulary.
+    # The ExecutionPlanner resolves this into a primitive sequence at runtime.
+    goal: str  # e.g. 'disk_full', 'fragmentation_high', 'log_overflow'
     requires_sudo: bool
     sudo_command: Optional[str]
     
@@ -78,82 +81,10 @@ class HamstersActionSelection:
     🐹🐹🐹 "Consensus reached! *cracks beer* *measures duct tape* Let's fix this!"
     """
     
-    # Map storage issues to viable actions
-    # Hamsters handle: Disk/Storage issues
-    ACTION_MAP = {
-        # === DISK SPACE ISSUES ===
-        'disk_full': [
-            'rotate_logs',           # Clear old logs first
-            'compress_logs',         # Compress instead of delete
-            'clear_temp_files',      # Clear /tmp
-            'clear_package_cache',   # Clear apt/yum cache
-            'cleanup',               # Basic cleanup
-            'archive_old_files',     # Archive before delete
-        ],
-        'disk_critical': [
-            'clear_temp_files',      # Fastest space recovery
-            'rotate_logs',           # Clear logs immediately
-            'clear_package_cache',   # Quick cache clear
-            'cleanup',               # Emergency cleanup
-        ],
-        'log_overflow': [
-            'rotate_logs',           # Logs are the problem
-            'compress_logs',         # Compress old logs
-            'archive_old_files',     # Archive logs
-            'cleanup',               # General cleanup
-        ],
-        'temp_files_bloat': [
-            'clear_temp_files',      # Clear /tmp and temp dirs
-            'cleanup',               # General cleanup
-            'monitor',               # Sometimes temp files clear themselves
-        ],
-        'package_cache_bloat': [
-            'clear_package_cache',   # Clear apt/yum cache
-            'cleanup',               # General cleanup
-        ],
-        
-        # === DISK PERFORMANCE ISSUES ===
-        'high_fragmentation': [
-            'defrag_only',           # Just defrag
-            'fstrim',                # TRIM for SSDs
-            'cleanup_with_defrag',   # Cleanup + defrag
-        ],
-        'ssd_performance': [
-            'fstrim',                # TRIM unused blocks
-            'defrag_only',           # Light defrag
-            'monitor',               # SSDs often self-optimize
-        ],
-        'slow_disk_io': [
-            'fstrim',                # TRIM for SSDs
-            'defrag_only',           # Defragment
-            'cleanup',               # Remove I/O bottlenecks
-        ],
-        
-        # === GENERAL ISSUES ===
-        'general_storage': [
-            'cleanup',               # Basic cleanup
-            'rotate_logs',           # Check logs
-            'fstrim',                # Optimize disk
-            'monitor',               # Sometimes no action needed
-        ],
-        'preventive_maintenance': [
-            'fstrim',                # Regular TRIM
-            'compress_logs',         # Compress old logs
-            'cleanup',               # Light cleanup
-            'monitor',               # Just observe
-        ],
-        
-        # === UNKNOWN/UNCERTAIN ===
-        'unknown': [
-            'monitor',               # Observe first
-            'cleanup',               # Safe cleanup
-            'escalate',              # Ask for help if unclear
-        ],
-        'insufficient_data': [
-            'monitor',               # Gather more data
-            'escalate',              # Ask VIC-20 for guidance
-        ],
-    }
+    # Goal vocabulary — what problems can the Hamsters identify?
+    # The ExecutionPlanner resolves goals into primitive sequences.
+    # ACTION_MAP is gone. The planner owns the how; the selector owns the what.
+    STORAGE_GOALS = STORAGE_GOALS
     
     def __init__(self, personality_traits: Dict[str, Any], db=None, system_id: str = "default"):
         self.personality_traits = personality_traits
@@ -174,17 +105,19 @@ class HamstersActionSelection:
             logger.info("🐹🧠 Learned thresholds and action effectiveness enabled!")
         
         # Exploration vs Exploitation
-        self.epsilon = 0.15  # 15% chance to explore (try non-preferred actions)
+        self.epsilon = 0.15  # 15% chance to explore (try non-preferred goals)
         self.min_epsilon = 0.05  # Minimum exploration rate
         self.epsilon_decay = 0.995  # Decay exploration over time
-        
-        # Adaptive defrag bias (starts high, decreases if defrag not effective)
-        self.defrag_bias = 1.3  # 30% bias toward defrag (Carl loves it!)
-        self.defrag_successes = 0
-        self.defrag_attempts = 0
+
+        # NOTE: defrag_bias removed. The ExecutionPlanner is the authority on
+        # when to defrag — it queries LearnedSequence and composes primitive
+        # sequences. A separate bias counter here would create two parallel
+        # learning channels that can disagree. Carl's love of defrag is
+        # expressed through cold start hypotheses in execution_planner.py,
+        # not through a bias that bypasses the learned sequence system.
         
         logger.info("🐹⚡ Hamsters' action selection initialized!")
-        logger.info(f"🐹🔬 Exploration rate: {self.epsilon:.1%}, Defrag bias: {self.defrag_bias:.2f}")
+        logger.info(f"🐹🔬 Exploration rate: {self.epsilon:.1%} (planner owns execution strategy)")
         
     async def select_action(
         self,
@@ -203,56 +136,30 @@ class HamstersActionSelection:
         """
         logger.info(f"🐹⚡ Selecting storage fix action from consensus...")
         
-        # EPSILON-GREEDY EXPLORATION: Sometimes try alternative actions
-        action_type = reasoning.selected_fix_type
-        
-        # If action effectiveness model available, use learned scores
-        if self.action_effectiveness:
-            try:
-                metric_pattern = self.action_effectiveness._generate_pattern_fingerprint(
-                    {
-                        'disk_usage_percent': context.disk_usage_percent,
-                        'fragmentation_level': context.fragmentation_level
-                    },
-                    context.severity
-                )
-                action_scores = await self.action_effectiveness.score_all_actions(metric_pattern)
-                
-                # Use learned best action if confidence is high enough
-                if action_scores and action_scores[0].confidence > 0.5:
-                    action_type = action_scores[0].action
-                    logger.info(
-                        f"🐹🧠 Using learned best action: {action_type} "
-                        f"(score={action_scores[0].score:.2f}, confidence={action_scores[0].confidence:.2f})"
-                    )
-            except Exception as e:
-                logger.error(f"🐹💥 ML ACTION SELECTION FAILED: {e}", exc_info=True)
-                logger.error("   Action effectiveness model is broken. Agent cannot make informed decision.")
-                from app.ai_agents.exceptions import ActionSelectionFailure
-                raise ActionSelectionFailure(f"Action effectiveness model failed: {e}") from e
-        
+        # Identify the storage goal — WHAT problem are we solving?
+        # The ExecutionPlanner will figure out HOW to solve it.
+        goal = await self._identify_issue_type(context)
+
+        # EPSILON-GREEDY EXPLORATION: Sometimes try an alternative goal framing.
+        # With the new architecture, exploration means trying a different goal
+        # classification (e.g. treating disk_high as log_overflow to see if
+        # log-focused primitives work better). The planner handles the rest.
         if random.random() < self.epsilon:
-            # EXPLORE: Try a different action from the viable options
-            issue_type = self._identify_issue_type(context)
-            viable_actions = self.ACTION_MAP.get(issue_type, ['cleanup'])
-            
-            # Filter out the consensus action to force exploration
-            alternative_actions = [a for a in viable_actions if a != action_type]
-            
-            if alternative_actions:
-                action_type = random.choice(alternative_actions)
+            alternative_goals = [g for g in self.STORAGE_GOALS if g != goal]
+            if alternative_goals:
+                explored_goal = random.choice(alternative_goals)
                 logger.info(
-                    f"🐹🔬 EXPLORING alternative action: {action_type} "
-                    f"(epsilon={self.epsilon:.1%})"
+                    f"🐹🔬 EXPLORING alternative goal: {explored_goal} "
+                    f"(was: {goal}, epsilon={self.epsilon:.1%})"
                 )
-                
-                # Decay epsilon over time (learn to exploit more)
+                goal = explored_goal
                 self.epsilon = max(self.min_epsilon, self.epsilon * self.epsilon_decay)
         
-        # Build sudo command if required
+        # Build sudo command hint — the planner will use this if the first
+        # primitive in the composed sequence requires sudo.
         sudo_command = None
         if reasoning.requires_sudo:
-            sudo_command = self._build_sudo_command(action_type, context)
+            sudo_command = self._build_sudo_command(goal, context)
         
         # Determine priority
         priority = self._determine_priority(reasoning.urgency)
@@ -291,7 +198,7 @@ class HamstersActionSelection:
         duration = self._estimate_duration(action_type, context.disk_usage_percent)
         
         action = StorageFixAction(
-            action_type=action_type,
+            goal=goal,
             requires_sudo=reasoning.requires_sudo,
             sudo_command=sudo_command,
             priority=priority,
@@ -314,113 +221,112 @@ class HamstersActionSelection:
         )
         
         logger.info(
-            f"🐹✅ Action selected: {action_type}, "
+            f"🐹✅ Goal selected: {goal}, "
             f"beers={total_beers}, duct_tape={action.duct_tape_rolls:.1f} rolls, "
             f"strategy={execution_strategy}"
         )
         
         if sudo_command:
-            logger.info(f"🐹🔧 Sudo command: {sudo_command}")
+            logger.info(f"🐹🔧 Sudo hint: {sudo_command}")
         
         return action
     
-    def _identify_issue_type(self, context: HamstersPerceptionContext) -> str:
+    async def _identify_issue_type(self, context: HamstersPerceptionContext) -> str:
         """
-        Identify the type of storage issue for action mapping.
-        
-        Args:
-            context: Perception context
-            
-        Returns:
-            Issue type string for ACTION_MAP lookup
+        Identify the storage goal — WHAT problem needs solving.
+
+        Returns a goal string from STORAGE_GOALS vocabulary.
+        The ExecutionPlanner resolves this into a primitive sequence.
+
+        Pulls from learned_thresholds so adaptive thresholds flow into
+        goal classification, not just into the decision to act.
         """
         disk_usage = context.disk_usage_percent
         fragmentation = context.fragmentation_level
-        
-        if disk_usage > 90:
-            return 'disk_full'
-        elif fragmentation > 0.6:
-            return 'high_fragmentation'
-        elif disk_usage > 80:
-            return 'log_overflow'
+        inode_usage = context.inode_usage_percent
+
+        if self.learned_thresholds:
+            disk_critical = await self.learned_thresholds.get_threshold('disk_usage', 'critical')
+            disk_warning = await self.learned_thresholds.get_threshold('disk_usage', 'warning')
+            frag_warning = await self.learned_thresholds.get_threshold('fragmentation', 'warning')
+            inode_critical = await self.learned_thresholds.get_threshold('inode_usage', 'critical')
+            inode_warning = await self.learned_thresholds.get_threshold('inode_usage', 'warning')
         else:
-            return 'general_storage'
-    
-    def update_defrag_bias(self, action: str, success: bool):
-        """
-        Update Hamsters' defrag bias based on outcomes.
-        
-        If defrag keeps failing or isn't needed, reduce the bias.
-        If other actions work better, reduce the bias.
-        
-        Args:
-            action: Action that was executed
-            success: Whether it succeeded
-        """
-        if 'defrag' in action:
-            self.defrag_attempts += 1
-            if success:
-                self.defrag_successes += 1
-            
-            # Calculate success rate
-            success_rate = self.defrag_successes / self.defrag_attempts
-            
-            # Adjust bias based on success rate
-            # If success rate < 60%, reduce bias toward 1.0 (no bias)
-            # If success rate > 80%, maintain or increase bias
-            if success_rate < 0.6:
-                self.defrag_bias = max(1.0, self.defrag_bias * 0.95)
-                logger.info(
-                    f"🐹📉 Defrag success rate low ({success_rate:.1%}) - "
-                    f"reducing bias to {self.defrag_bias:.2f}"
-                )
-            elif success_rate > 0.8 and self.defrag_bias < 1.3:
-                self.defrag_bias = min(1.3, self.defrag_bias * 1.02)
-                logger.debug(f"🐹📈 Defrag working well - bias: {self.defrag_bias:.2f}")
-        
-        elif success:
-            # Other action succeeded - slightly reduce defrag bias
-            # (Hamsters learn there are other good options)
-            self.defrag_bias = max(1.0, self.defrag_bias * 0.98)
-            logger.debug(
-                f"🐹💡 {action} worked! Learning alternatives exist. "
-                f"Defrag bias: {self.defrag_bias:.2f}"
+            logger.error(
+                "🐹💥 LEARNED THRESHOLDS UNAVAILABLE in _identify_issue_type — "
+                "cannot classify storage issue without adaptive thresholds"
             )
-    
+            raise MLPipelineFailure(
+                "Cannot identify issue type without learned thresholds. "
+                "Ensure db is passed to HamstersActionSelection."
+            )
+
+        # --- Combination checks first (most specific) ---
+
+        # Inode exhaustion: inodes full even if disk has space
+        if inode_usage > inode_critical:
+            logger.warning(
+                f"🐹🔴 Inode exhaustion: {inode_usage:.1f}% "
+                f"(critical threshold: {inode_critical:.1f}%)"
+            )
+            return 'inode_exhaustion'
+
+        # Inode warning
+        if inode_usage > inode_warning:
+            logger.info(f"🐹🟡 Inode pressure: {inode_usage:.1f}%")
+            return 'inode_high'
+
+        # Disk critical AND fragmented: compound goal
+        if disk_usage > disk_critical and fragmentation > frag_warning:
+            logger.warning(
+                f"🐹🔴 Disk critical + fragmentation: disk={disk_usage:.1f}%, "
+                f"frag={fragmentation:.1f}%"
+            )
+            return 'disk_full_and_fragmented'
+
+        # Disk critical alone
+        if disk_usage > disk_critical:
+            return 'disk_full'
+
+        # High fragmentation (performance issue, not space)
+        if fragmentation > frag_warning:
+            return 'fragmentation_high'
+
+        # Disk warning + inode warning: log overflow likely
+        if disk_usage > disk_warning and inode_usage > inode_warning:
+            logger.info(
+                f"🐹🟡 Disk warning + inode pressure: disk={disk_usage:.1f}%, "
+                f"inodes={inode_usage:.1f}%"
+            )
+            return 'log_overflow'
+
+        # Disk warning alone
+        if disk_usage > disk_warning:
+            return 'disk_high'
+
+        return 'preventive_maintenance'
+
     def _build_sudo_command(
         self,
-        action_type: str,
+        goal: str,
         context: HamstersPerceptionContext
-    ) -> str:
+    ) -> Optional[str]:
         """
-        Build sudo command for storage fix.
-        
-        Hamsters have sudo access for:
-        - fstrim: TRIM unused blocks
-        - defrag: Defragment filesystem
-        - quantum_fix: Bob's redneck engineering (various commands)
+        Build a sudo command hint for the goal.
+
+        This is informational — the PrimitiveExecutor handles actual sudo
+        execution per-primitive. This hint is logged and included in the
+        action record for audit purposes.
         """
-        if action_type == 'fstrim':
-            # TRIM all mounted filesystems
+        if goal in ('ssd_needs_trim', 'slow_disk_io', 'preventive_maintenance'):
             return "sudo fstrim -av"
-        
-        elif action_type == 'defrag':
-            # Defragment filesystem (e4defrag for ext4)
+        elif goal in ('fragmentation_critical', 'fragmentation_high'):
             return "sudo e4defrag -c /"
-        
-        elif action_type == 'quantum_fix':
-            # Bob's quantum duct tape fix (multiple commands)
-            commands = [
-                "sudo fstrim -av",
-                "sudo sync",
-                "sudo e4defrag -c /",
-                "# Bob's special sauce goes here"
-            ]
-            return " && ".join(commands)
-        
+        elif goal == 'disk_full_and_fragmented':
+            return "sudo fstrim -av && sudo e4defrag -c /"
         else:
             return None
-    
+
     def _determine_priority(self, urgency: str) -> str:
         """
         Determine action priority level.
@@ -479,29 +385,23 @@ class HamstersActionSelection:
         """
         Estimate fix duration in minutes.
         """
+        # TODO(post-launch): Replace with learned duration estimates from
+        # ExecutionResult.total_duration_seconds recorded in learning.py.
+        # These are goal-level estimates; actual duration depends on the
+        # primitive sequence the planner composes.
         base_durations = {
-            # Cleanup actions
-            'cleanup': 10,
-            'cleanup_with_defrag': 40,
-            'clear_temp_files': 5,
-            'clear_package_cache': 8,
-            
-            # Log management
-            'rotate_logs': 7,
-            'compress_logs': 15,
-            'archive_old_files': 20,
-            
-            # Disk optimization
-            'fstrim': 5,
-            'defrag_only': 30,
-            
-            # Learning actions
-            'monitor': 0,
-            'escalate': 1,
-            
-            # Legacy
-            'quantum_fix': 45,  # Bob's fixes take longer
-            'inode_cleanup': 15
+            'disk_full':                10,
+            'disk_high':                10,
+            'fragmentation_critical':   60,
+            'fragmentation_high':       30,
+            'inode_exhaustion':         10,
+            'inode_high':               10,
+            'log_overflow':             7,
+            'slow_disk_io':             10,
+            'ssd_needs_trim':           5,
+            'disk_full_and_fragmented': 70,
+            'preventive_maintenance':   5,
+            'unknown_storage_issue':    10,
         }
         
         base = base_durations.get(action_type, 10)

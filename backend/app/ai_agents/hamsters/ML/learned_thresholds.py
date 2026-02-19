@@ -14,12 +14,29 @@ import logging
 from typing import Dict, Any, Optional, Tuple
 from datetime import datetime, timedelta, timezone
 from dataclasses import dataclass
-from sqlalchemy import and_, func
+from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.threshold_learning import ThresholdLearningRecord
 
 logger = logging.getLogger('HamstersLearnedThresholds')
+
+# Threshold learning configuration.
+# Extracted from _calculate_threshold_level() so they can be tuned without
+# touching the algorithm. Asymmetric by design: missing a critical event
+# (too_late) is worse than a false alarm, so too_late_adjustment is more
+# aggressive than false_alarm_adjustment.
+THRESHOLD_LEARNING_CONFIG = {
+    'false_alarm_trigger': 0.3,       # False alarm rate that triggers upward adjustment
+    'too_late_trigger': 0.2,          # Too-late rate that triggers downward adjustment
+    'false_alarm_adjustment': 0.03,   # 3% increase per evaluation (less aggressive)
+    'too_late_adjustment': 0.07,      # 7% decrease per evaluation (more aggressive)
+    'threshold_ceiling': 95.0,        # Never raise threshold above 95%
+    'threshold_floor': 50.0,          # Never lower threshold below 50%
+    'min_samples_for_learning': 5,    # Minimum records before learning kicks in
+    'learning_window_days': 30,       # How far back to look
+    'confidence_normalization': 20.0, # Sample size for full confidence
+}
 
 # Storage-specific defaults (industry standard starting points)
 DEFAULT_THRESHOLDS = {
@@ -99,19 +116,18 @@ class LearnedThresholds:
         Returns ThresholdAssessment with learned values or defaults.
         """
         # Get learning records from last 30 days
-        cutoff_date = datetime.utcnow() - timedelta(days=30)
-        
-        records = await self.db.execute(
-            self.db.query(ThresholdLearningRecord).filter(
-                and_(
-                    ThresholdLearningRecord.system_id == self.system_id,
-                    ThresholdLearningRecord.agent_name == self.agent_name,
-                    ThresholdLearningRecord.metric_name == metric_name,
-                    ThresholdLearningRecord.created_at >= cutoff_date
-                )
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=30)
+
+        stmt = select(ThresholdLearningRecord).where(
+            and_(
+                ThresholdLearningRecord.system_id == self.system_id,
+                ThresholdLearningRecord.agent_name == self.agent_name,
+                ThresholdLearningRecord.metric_name == metric_name,
+                ThresholdLearningRecord.created_at >= cutoff_date
             )
         )
-        records = records.scalars().all()
+        result = await self.db.execute(stmt)
+        records = result.scalars().all()
         
         if not records or len(records) < 5:
             # Not enough data - use defaults
@@ -153,52 +169,70 @@ class LearnedThresholds:
     ) -> Tuple[float, float]:
         """
         Calculate learned threshold from records.
-        
-        Logic:
-        - False alarms (triggered unnecessarily) → raise threshold (less sensitive)
-        - Missed actions (should have acted sooner) → lower threshold (more sensitive)
-        - Successful interventions → reinforce current threshold
-        
+
+        Both false-alarm and too-late signals fire independently and contribute
+        a net adjustment. They are NOT mutually exclusive — a system can have
+        both signals simultaneously (oscillating around the threshold). The
+        asymmetric weighting means too-late wins in a tie: missing a critical
+        event is worse than a false alarm.
+
+        Baseline is always the industry-standard default, not a field from the
+        record (ThresholdLearningRecord has no threshold_value column).
+
         Returns:
             (threshold_value, confidence)
         """
+        config = THRESHOLD_LEARNING_CONFIG
         level_records = [r for r in records if r.threshold_level == level]
-        
+
         if not level_records:
-            # No data for this level - use default
             metric_name = records[0].metric_name if records else 'disk_usage'
             default = DEFAULT_THRESHOLDS.get(metric_name, {})
             return default.get(level, 80.0), 0.0
-        
+
         # Count outcomes
         false_alarms = sum(1 for r in level_records if r.was_false_alarm)
         acted_too_late = sum(1 for r in level_records if r.should_have_acted_sooner)
-        successful = sum(1 for r in level_records if r.was_successful)
-        
-        # Get baseline (most recent default or learned value)
-        baseline = level_records[-1].threshold_value
-        
-        # Adjustment logic
-        total_outcomes = len(level_records)
-        false_alarm_rate = false_alarms / total_outcomes
-        too_late_rate = acted_too_late / total_outcomes
-        success_rate = successful / total_outcomes
-        
-        # If too many false alarms, raise threshold (less sensitive)
-        if false_alarm_rate > 0.3:
-            adjustment = baseline * 0.05  # 5% increase
-            new_threshold = min(baseline + adjustment, 95.0)  # Cap at 95%
-        # If acting too late, lower threshold (more sensitive)
-        elif too_late_rate > 0.2:
-            adjustment = baseline * 0.05  # 5% decrease
-            new_threshold = max(baseline - adjustment, 50.0)  # Floor at 50%
-        # Otherwise maintain current threshold
-        else:
-            new_threshold = baseline
-        
+        successful = sum(1 for r in level_records if r.outcome_success)
+        total = len(level_records)
+
+        false_alarm_rate = false_alarms / total
+        too_late_rate = acted_too_late / total
+        success_rate = successful / total
+
+        # Baseline from industry-standard defaults.
+        # ThresholdLearningRecord stores metric_value (the reading at intervention
+        # time), not threshold_value. The default IS the baseline — learning
+        # adjusts from it, and the adjustment accumulates across evaluations
+        # through the records themselves.
+        metric_name = level_records[0].metric_name
+        default = DEFAULT_THRESHOLDS.get(metric_name, {})
+        baseline = default.get(level, 80.0)
+
+        # Net adjustment — both signals contribute independently.
+        adjustment = 0.0
+
+        if false_alarm_rate > config['false_alarm_trigger']:
+            # Too sensitive — raise threshold (less aggressive)
+            adjustment += baseline * config['false_alarm_adjustment']
+
+        if too_late_rate > config['too_late_trigger']:
+            # Not sensitive enough — lower threshold (more aggressive)
+            adjustment -= baseline * config['too_late_adjustment']
+
+        # Apply net adjustment and enforce boundaries
+        new_threshold = baseline + adjustment
+        new_threshold = max(
+            config['threshold_floor'],
+            min(new_threshold, config['threshold_ceiling'])
+        )
+
         # Confidence based on sample size and success rate
-        confidence = min(success_rate * (total_outcomes / 20.0), 1.0)
-        
+        confidence = min(
+            success_rate * (total / config['confidence_normalization']),
+            1.0
+        )
+
         return new_threshold, confidence
     
     async def record_outcome(
@@ -240,8 +274,9 @@ class LearnedThresholds:
         )
         
         self.db.add(record)
-        await self.db.commit()
-        
+        # Flush to assign ID without committing — caller owns the transaction boundary
+        await self.db.flush()
+
         self.logger.info(
             f"🐹📏 Recorded threshold learning: {metric_name}.{threshold_level} "
             f"(value={metric_value:.1f}, threshold={current_threshold:.1f}, "
@@ -270,23 +305,28 @@ class LearnedThresholds:
             True if validation passed, False otherwise
         """
         if not db_getter:
-            self.logger.warning("🐹⚠️ No db_getter provided for validation")
-            return True  # Skip validation if no db_getter
+            self.logger.error(
+                "🐹💥 No db_getter provided for Stick validation — "
+                "validation system cannot function without database access"
+            )
+            from app.ai_agents.exceptions import ValidationSystemFailure
+            raise ValidationSystemFailure(
+                "Stick validation requires db_getter — cannot silently skip validation"
+            )
         
         try:
             # Get learning metadata
-            cutoff_date = datetime.utcnow() - timedelta(days=30)
-            records = await self.db.execute(
-                self.db.query(ThresholdLearningRecord).filter(
-                    and_(
-                        ThresholdLearningRecord.system_id == self.system_id,
-                        ThresholdLearningRecord.agent_name == self.agent_name,
-                        ThresholdLearningRecord.metric_name == metric_name,
-                        ThresholdLearningRecord.created_at >= cutoff_date
-                    )
+            cutoff_date = datetime.now(timezone.utc) - timedelta(days=30)
+            stmt = select(ThresholdLearningRecord).where(
+                and_(
+                    ThresholdLearningRecord.system_id == self.system_id,
+                    ThresholdLearningRecord.agent_name == self.agent_name,
+                    ThresholdLearningRecord.metric_name == metric_name,
+                    ThresholdLearningRecord.created_at >= cutoff_date
                 )
             )
-            records = records.scalars().all()
+            result = await self.db.execute(stmt)
+            records = result.scalars().all()
             
             # Determine trigger reason from learning records
             false_alarm_count = sum(1 for r in records if r.was_false_alarm)
@@ -305,10 +345,7 @@ class LearnedThresholds:
                 from app.ai_agents.the_stick.ML.learning import StickLearning
                 from app.ai_agents.the_stick.database_integration import StickDatabaseIntegration
                 
-                # Get user_id from first record or use system default
-                user_id = records[0].user_id if records else "system"
-                
-                stick_learning = StickLearning(db, user_id)
+                stick_learning = StickLearning(db, "system")
                 stick_db = StickDatabaseIntegration(db_getter)
                 
                 # Validate - returns standard ValidationAuditEntry
@@ -369,3 +406,66 @@ class LearnedThresholds:
             }
         
         return summary
+
+    async def is_below_threshold(
+        self,
+        metric_name: str,
+        current_value: float,
+        level: str = 'warning'
+    ) -> bool:
+        """
+        Check if a metric value is below the learned threshold.
+
+        Used by ExecutionPlanner for mid-sequence goal satisfaction checks.
+        "Is disk usage now below the warning threshold?" → goal achieved.
+        """
+        threshold = await self.get_threshold(metric_name, level)
+        return current_value < threshold
+
+    async def get_goal_thresholds(
+        self,
+        goal: str
+    ) -> Dict[str, Any]:
+        """
+        Get relevant thresholds for a goal.
+
+        Maps goal vocabulary to metric thresholds so the planner
+        doesn't need to know the internal metric-to-goal mapping.
+        One translation point between goal space and metric space.
+
+        Returns:
+            {'metric_name': str, 'level': str, 'threshold': float}
+
+        Raises:
+            ValueError: If goal is not in the known goal vocabulary.
+        """
+        GOAL_TO_METRIC: Dict[str, Tuple[str, str]] = {
+            'disk_full':              ('disk_usage',    'critical'),
+            'disk_high':              ('disk_usage',    'warning'),
+            'fragmentation_critical': ('fragmentation', 'critical'),
+            'fragmentation_high':     ('fragmentation', 'warning'),
+            'inode_exhaustion':       ('inode_usage',   'critical'),
+            'inode_high':             ('inode_usage',   'warning'),
+            'log_overflow':           ('disk_usage',    'warning'),
+            'slow_disk_io':           ('fragmentation', 'warning'),
+            'ssd_needs_trim':         ('fragmentation', 'warning'),
+            'disk_full_and_fragmented': ('disk_usage',  'critical'),
+            'preventive_maintenance': ('disk_usage',    'warning'),
+            'unknown_storage_issue':  ('disk_usage',    'warning'),
+        }
+
+        mapping = GOAL_TO_METRIC.get(goal)
+        if mapping is None:
+            raise ValueError(
+                f"Unknown goal '{goal}' — not in GOAL_TO_METRIC. "
+                f"Valid goals: {sorted(GOAL_TO_METRIC.keys())}"
+            )
+
+        metric_name, level = mapping
+        threshold = await self.get_threshold(metric_name, level)
+
+        return {
+            'metric_name': metric_name,
+            'level': level,
+            'threshold': threshold,
+        }

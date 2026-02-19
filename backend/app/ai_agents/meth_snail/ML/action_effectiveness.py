@@ -11,12 +11,34 @@ import logging
 import hashlib
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import statistics
-from sqlalchemy import and_, func
-from sqlalchemy.orm import Session
+from sqlalchemy import and_, func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.learned_thresholds import ActionOutcomeRecord
+
+
+def utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+# Heuristic scoring config — used for bootstrap when no historical data exists
+ACTION_HEURISTIC_CONFIG = {
+    'aggressive_actions': ['emergency_cache_clear', 'restart_service', 'kill_memory_hog'],
+    'gentle_actions': ['clear_cache', 'optimize_memory_allocation', 'adjust_process_priority'],
+    'aggressive_high_severity': 0.7,    # score when severity > 0.8
+    'aggressive_mid_severity': 0.5,     # score when severity > 0.6
+    'aggressive_low_severity': 0.3,     # score when severity <= 0.6
+    'gentle_low_severity': 0.7,         # score when severity < 0.5
+    'gentle_mid_severity': 0.6,         # score when severity < 0.7
+    'gentle_high_severity': 0.4,        # score when severity >= 0.7
+    'monitor_low_severity': 0.8,        # score when severity < 0.4
+    'monitor_high_severity': 0.3,       # score when severity >= 0.4
+    'escalate_out_of_domain': 0.7,      # score when metric is outside Terry's domain
+    'escalate_in_domain': 0.2,
+    'default_score': 0.5,
+}
 
 
 @dataclass
@@ -60,7 +82,7 @@ class ActionEffectivenessModel:
         'escalate',
     ]
     
-    def __init__(self, db_session: Session, agent_name: str = "meth_snail"):
+    def __init__(self, db_session: AsyncSession, agent_name: str = "meth_snail"):
         self.db = db_session
         self.agent_name = agent_name
         self.logger = logging.getLogger(f"{agent_name}.action_effectiveness")
@@ -140,19 +162,20 @@ class ActionEffectivenessModel:
         base_score = (success_rate * 0.6) + (min(1.0, avg_improvement) * 0.4)
         
         # Adjust score based on recency (recent outcomes weighted more)
-        recent_outcomes = [o for o in similar_outcomes if o.created_at >= datetime.utcnow() - timedelta(days=7)]
+        recent_outcomes = [o for o in similar_outcomes if o.created_at >= utc_now().replace(tzinfo=None) - timedelta(days=7)]
         if recent_outcomes:
             recent_success_rate = sum(1 for o in recent_outcomes if o.success) / len(recent_outcomes)
             # Blend recent with overall (70% recent, 30% overall)
             base_score = (recent_success_rate * 0.7) + (base_score * 0.3)
+        else:
+            recent_success_rate = None
         
         reasoning = (
             f"Success rate: {success_rate:.0%} in {len(similar_outcomes)} similar situations, "
             f"avg improvement: {avg_improvement:.1%}"
         )
         
-        if recent_outcomes and len(recent_outcomes) >= 3:
-            recent_success_rate = sum(1 for o in recent_outcomes if o.success) / len(recent_outcomes)
+        if recent_success_rate is not None and len(recent_outcomes) >= 3:
             reasoning += f" (recent: {recent_success_rate:.0%})"
         
         return ActionScore(
@@ -171,40 +194,33 @@ class ActionEffectivenessModel:
         
         This is the bootstrap - as data accumulates, historical scoring takes over.
         """
+        cfg = ACTION_HEURISTIC_CONFIG
         
-        # Aggressive actions score higher at high severity
-        if action in ['emergency_cache_clear', 'restart_service', 'kill_memory_hog']:
+        if action in cfg['aggressive_actions']:
             if severity > 0.8:
-                return 0.7
+                return cfg['aggressive_high_severity']
             elif severity > 0.6:
-                return 0.5
+                return cfg['aggressive_mid_severity']
             else:
-                return 0.3  # Too aggressive for low severity
+                return cfg['aggressive_low_severity']
         
-        # Gentle actions score higher at low-medium severity
-        elif action in ['clear_cache', 'optimize_memory_allocation', 'adjust_process_priority']:
+        elif action in cfg['gentle_actions']:
             if severity < 0.5:
-                return 0.7
+                return cfg['gentle_low_severity']
             elif severity < 0.7:
-                return 0.6
+                return cfg['gentle_mid_severity']
             else:
-                return 0.4  # May not be enough for high severity
+                return cfg['gentle_high_severity']
         
-        # Monitor scores high when severity is low
         elif action == 'monitor':
-            if severity < 0.4:
-                return 0.8
-            else:
-                return 0.3
+            return cfg['monitor_low_severity'] if severity < 0.4 else cfg['monitor_high_severity']
         
-        # Escalate scores high when uncertain or outside domain
         elif action == 'escalate':
             if 'disk' in primary_metric or 'network' in primary_metric:
-                return 0.7  # Outside Terry's domain
-            else:
-                return 0.2
+                return cfg['escalate_out_of_domain']
+            return cfg['escalate_in_domain']
         
-        return 0.5  # Default neutral score
+        return cfg['default_score']
     
     async def _query_similar_situations(
         self,
@@ -219,18 +235,21 @@ class ActionEffectivenessModel:
         - Severity was similar (±0.2)
         """
         
-        cutoff_date = datetime.utcnow() - timedelta(days=60)  # Last 60 days
+        cutoff_date = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=60)  # Last 60 days
         
         # Query for exact pattern match first
-        exact_matches = self.db.query(ActionOutcomeRecord).filter(
-            and_(
-                ActionOutcomeRecord.agent_name == self.agent_name,
-                ActionOutcomeRecord.action == action,
-                ActionOutcomeRecord.metric_pattern_fingerprint == pattern,
-                ActionOutcomeRecord.severity_score.between(severity - 0.2, severity + 0.2),
-                ActionOutcomeRecord.created_at >= cutoff_date
-            )
-        ).order_by(ActionOutcomeRecord.created_at.desc()).limit(50).all()
+        exact_result = await self.db.execute(
+            select(ActionOutcomeRecord).where(
+                and_(
+                    ActionOutcomeRecord.agent_name == self.agent_name,
+                    ActionOutcomeRecord.action == action,
+                    ActionOutcomeRecord.metric_pattern_fingerprint == pattern,
+                    ActionOutcomeRecord.severity_score.between(severity - 0.2, severity + 0.2),
+                    ActionOutcomeRecord.created_at >= cutoff_date
+                )
+            ).order_by(ActionOutcomeRecord.created_at.desc()).limit(50)
+        )
+        exact_matches = exact_result.scalars().all()
         
         if len(exact_matches) >= 5:
             return exact_matches
@@ -239,15 +258,18 @@ class ActionEffectivenessModel:
         # Similar = same metric bins, even if not identical
         similar_pattern = self._generalize_pattern(pattern)
         
-        similar_matches = self.db.query(ActionOutcomeRecord).filter(
-            and_(
-                ActionOutcomeRecord.agent_name == self.agent_name,
-                ActionOutcomeRecord.action == action,
-                ActionOutcomeRecord.metric_pattern_fingerprint.like(f"{similar_pattern}%"),
-                ActionOutcomeRecord.severity_score.between(severity - 0.3, severity + 0.3),
-                ActionOutcomeRecord.created_at >= cutoff_date
-            )
-        ).order_by(ActionOutcomeRecord.created_at.desc()).limit(50).all()
+        similar_result = await self.db.execute(
+            select(ActionOutcomeRecord).where(
+                and_(
+                    ActionOutcomeRecord.agent_name == self.agent_name,
+                    ActionOutcomeRecord.action == action,
+                    ActionOutcomeRecord.metric_pattern_fingerprint.like(f"{similar_pattern}%"),
+                    ActionOutcomeRecord.severity_score.between(severity - 0.3, severity + 0.3),
+                    ActionOutcomeRecord.created_at >= cutoff_date
+                )
+            ).order_by(ActionOutcomeRecord.created_at.desc()).limit(50)
+        )
+        similar_matches = similar_result.scalars().all()
         
         # Combine exact and similar matches
         all_matches = list(set(exact_matches + similar_matches))
@@ -332,14 +354,23 @@ class ActionEffectivenessModel:
         # Identify primary metric (one that changed most)
         primary_metric = self._identify_primary_metric(pre_metrics, post_metrics)
         
-        # Calculate improvement
+        # Calculate improvement (direction-aware)
         improvement = self._calculate_improvement(
             pre_metrics.get(primary_metric, 0),
-            post_metrics.get(primary_metric, 0)
+            post_metrics.get(primary_metric, 0),
+            metric_name=primary_metric
         )
         
         # Create pattern fingerprint
         pattern = self._create_metric_pattern(pre_metrics, severity)
+        
+        # Vocabulary guard: only record outcomes for known actions
+        if action not in set(self.ALL_ACTIONS):
+            self.logger.error(
+                f"record_outcome() rejected unknown action '{action}' — not in ALL_ACTIONS vocabulary. "
+                f"This is a vocabulary gap between action_selection.py and action_effectiveness.py."
+            )
+            return
         
         # Get old score before recording
         old_score = await self._score_action(action, pattern, pre_metrics, severity, primary_metric)
@@ -360,7 +391,7 @@ class ActionEffectivenessModel:
         )
         
         self.db.add(record)
-        self.db.commit()
+        await self.db.flush()
         
         # Invalidate cache for this pattern
         if pattern in self._effectiveness_cache:
@@ -403,17 +434,27 @@ class ActionEffectivenessModel:
                     user_id=user_id
                 )
             except Exception as e:
-                self.logger.warning(f"Failed to emit learning event: {e}")
+                self.logger.error(f"🐌💥 Failed to emit learning event: {e}")
+    
+    # Metrics where lower values are better (usage/load metrics)
+    _LOWER_IS_BETTER = frozenset([
+        'memory_usage', 'cpu_usage', 'swap_usage', 'disk_usage',
+        'memory_percent', 'cpu_percent', 'disk_percent',
+        'load_average', 'error_rate', 'latency_ms'
+    ])
     
     def _identify_primary_metric(
         self,
         pre_metrics: Dict[str, float],
         post_metrics: Dict[str, float]
     ) -> str:
-        """Identify which metric was the target of the action"""
+        """Identify which metric changed most between pre and post.
         
+        Returns the metric name with the largest absolute delta.
+        Falls back to 'memory_usage' only if no metrics are present in both dicts.
+        """
         max_change = 0.0
-        primary = 'memory_usage'
+        primary = None
         
         for metric in pre_metrics.keys():
             if metric in post_metrics:
@@ -422,34 +463,46 @@ class ActionEffectivenessModel:
                     max_change = change
                     primary = metric
         
+        if primary is None:
+            # No overlapping metrics — use first available key or last-resort default
+            primary = next(iter(pre_metrics.keys()), 'memory_usage')
+        
         return primary
     
-    def _calculate_improvement(self, before: float, after: float) -> float:
+    def _calculate_improvement(self, before: float, after: float, metric_name: str = '') -> float:
         """
         Calculate improvement percentage.
         
-        Positive = improvement (metric went down)
-        Negative = worsening (metric went up)
+        Direction is metric-aware:
+        - For usage/load metrics (lower is better): positive = improvement (went down)
+        - For throughput/score metrics (higher is better): positive = improvement (went up)
         """
         
         if before == 0:
             return 0.0
         
-        # For usage metrics, lower is better
-        return (before - after) / before
+        if metric_name in self._LOWER_IS_BETTER or not metric_name:
+            # Lower is better: improvement = reduction
+            return (before - after) / before
+        else:
+            # Higher is better: improvement = increase
+            return (after - before) / before
     
     async def get_action_statistics(self, action: str) -> Dict[str, Any]:
         """Get overall statistics for an action"""
         
-        cutoff_date = datetime.utcnow() - timedelta(days=30)
+        cutoff_date = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=30)
         
-        records = self.db.query(ActionOutcomeRecord).filter(
-            and_(
-                ActionOutcomeRecord.agent_name == self.agent_name,
-                ActionOutcomeRecord.action == action,
-                ActionOutcomeRecord.created_at >= cutoff_date
+        result = await self.db.execute(
+            select(ActionOutcomeRecord).where(
+                and_(
+                    ActionOutcomeRecord.agent_name == self.agent_name,
+                    ActionOutcomeRecord.action == action,
+                    ActionOutcomeRecord.created_at >= cutoff_date
+                )
             )
-        ).all()
+        )
+        records = result.scalars().all()
         
         if not records:
             return {
@@ -497,15 +550,18 @@ class ActionEffectivenessModel:
         """
         try:
             # Get action statistics
-            cutoff_date = datetime.utcnow() - timedelta(days=30)
-            records = self.db.query(ActionOutcomeRecord).filter(
-                and_(
-                    ActionOutcomeRecord.agent_name == self.agent_name,
-                    ActionOutcomeRecord.action == action,
-                    ActionOutcomeRecord.metric_pattern_fingerprint == metric_pattern,
-                    ActionOutcomeRecord.created_at >= cutoff_date
+            cutoff_date = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=30)
+            result = await self.db.execute(
+                select(ActionOutcomeRecord).where(
+                    and_(
+                        ActionOutcomeRecord.agent_name == self.agent_name,
+                        ActionOutcomeRecord.action == action,
+                        ActionOutcomeRecord.metric_pattern_fingerprint == metric_pattern,
+                        ActionOutcomeRecord.created_at >= cutoff_date
+                    )
                 )
-            ).all()
+            )
+            records = result.scalars().all()
             
             if not records:
                 self.logger.warning(f"No records found for {action} with pattern {metric_pattern}")
@@ -516,10 +572,14 @@ class ActionEffectivenessModel:
             raw_success_rate = successful_attempts / len(records) if records else 0.0
             
             # Get the learned effectiveness score from the action effectiveness model
-            # This would come from score_all_actions() or similar
-            # For now, use a placeholder that Terry would provide
-            action_scores = await self.score_all_actions(metric_pattern)
-            effectiveness_score = next((s.score for s in action_scores if s.action == action), raw_success_rate)
+            # Build a minimal metrics dict from the pattern string so score_all_actions() gets
+            # the right signature: (current_metrics, severity, primary_metric)
+            action_scores = await self.score_all_actions(
+                current_metrics={},
+                severity=raw_success_rate,
+                primary_metric=action
+            )
+            effectiveness_score = next((s.base_score for s in action_scores if s.action == action), raw_success_rate)
             
             # Get previous score for volatility check (if available)
             # Query historical scores from a previous validation or learning cycle
@@ -530,10 +590,7 @@ class ActionEffectivenessModel:
                 from app.ai_agents.the_stick.ML.learning import StickLearning
                 from app.ai_agents.the_stick.database_integration import StickDatabaseIntegration
                 
-                # Get user_id from first record or use system default
-                user_id = records[0].user_id if records else "system"
-                
-                stick_learning = StickLearning(db, user_id)
+                stick_learning = StickLearning(db, "system")
                 stick_db = StickDatabaseIntegration(db_getter)
                 
                 # Validate - returns standard ValidationAuditEntry
@@ -561,19 +618,22 @@ class ActionEffectivenessModel:
                 
         except Exception as e:
             self.logger.error(f"Failed to request Stick validation: {e}")
-            return False  # Conservative: if validation fails, assume not validated
+            raise  # Surface the failure — silent False conflates unreachable with rejected
     
     async def get_learning_summary(self) -> Dict[str, Any]:
         """Get summary of all action learning"""
         
-        cutoff_date = datetime.utcnow() - timedelta(days=30)
+        cutoff_date = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=30)
         
-        total_records = self.db.query(func.count(ActionOutcomeRecord.id)).filter(
-            and_(
-                ActionOutcomeRecord.agent_name == self.agent_name,
-                ActionOutcomeRecord.created_at >= cutoff_date
+        count_result = await self.db.execute(
+            select(func.count(ActionOutcomeRecord.id)).where(
+                and_(
+                    ActionOutcomeRecord.agent_name == self.agent_name,
+                    ActionOutcomeRecord.created_at >= cutoff_date
+                )
             )
-        ).scalar()
+        )
+        total_records = count_result.scalar()
         
         action_stats = {}
         for action in self.ALL_ACTIONS:

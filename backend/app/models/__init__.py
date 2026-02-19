@@ -18,7 +18,7 @@ from .agent_memory_banks import VIC20MemoryBank
 from .vector_tables import AgentDecisionVectors, AgentPatternVectors, AgentInteractionVectors
 
 # Learned thresholds and action effectiveness
-from .learned_thresholds import ThresholdLearningRecord, ActionOutcomeRecord, MetricPatternHistory
+from .learned_thresholds import ThresholdLearningRecord, ActionOutcomeRecord, MetricPatternHistory, LearnedSequence
 
 # Memory bank models
 # Ensure all models are imported and registered
@@ -36,5 +36,5 @@ __all__ = [
     'AgentDecisionVectors', 'AgentPatternVectors', 'AgentInteractionVectors',
     
     # Learned thresholds
-    'ThresholdLearningRecord', 'ActionOutcomeRecord', 'MetricPatternHistory',
+    'ThresholdLearningRecord', 'ActionOutcomeRecord', 'MetricPatternHistory', 'LearnedSequence',
 ]
