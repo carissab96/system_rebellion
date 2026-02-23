@@ -271,22 +271,24 @@ class VIC20Reasoning:
         """
         Determine what action to recommend to the specialist.
         """
-        # Map resource types to recommended actions
+        # Map resource types to recommended actions using each specialist's real action vocabulary.
+        # Normal severity → conservative action; critical → aggressive action.
+        # Terry (meth_snail): cpu, memory, swap
+        # Hamsters: disk
+        # QSP: network
         action_map = {
-            'cpu': 'optimize_processes',
-            'memory': 'clear_cache',
-            'swap': 'reduce_memory_pressure',
-            'disk': 'cleanup_storage',
-            'network': 'analyze_traffic'
+            'cpu':     ('adjust_process_priority',  'kill_memory_hog'),
+            'memory':  ('clear_cache',               'emergency_cache_clear'),
+            'swap':    ('clear_cache',               'emergency_cache_clear'),
+            'disk':    ('rm_temp',                   'e4defrag'),
+            'network': ('analyze_traffic',           'block_ips'),
         }
         
-        base_action = action_map.get(resource_type.lower(), 'investigate')
+        normal_action, critical_action = action_map.get(
+            resource_type.lower(), ('monitor', 'escalate')
+        )
         
-        # Adjust based on severity
-        if severity == 'critical':
-            return f'emergency_{base_action}'
-        else:
-            return base_action
+        return critical_action if severity == 'critical' else normal_action
     
     def _build_action_parameters(
         self,
