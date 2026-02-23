@@ -322,25 +322,53 @@ class SirHawkingtonTriageEngine(AgentInstrumentationMixin, TriageEngineWithRedis
         )
         
         # 🎯 CONNECT ML v2 PIPELINE: Trigger distributed Hawk's ML layers
+        # Fire one _perform_triage call per resource that exceeds its threshold.
+        # Uses real metric values (0-100 percentages) so _should_escalate works correctly.
         try:
             from app.ai_agents.sir_hawkington.distributed_hawkington import get_distributed_hawk
+            from app.optimization.resource_monitor import ResourceAlert
             distributed_hawk = await get_distributed_hawk()
             if distributed_hawk and hasattr(distributed_hawk, '_perform_triage'):
-                # Create ResourceAlert-like object for ML v2 pipeline
-                from dataclasses import dataclass
-                @dataclass
-                class ResourceAlert:
-                    payload: dict
-                
-                alert = ResourceAlert(payload={
-                    'severity': 'medium' if hawkington_decision and hawkington_decision.metrics.get('stress_score', 0) > 0.5 else 'normal',
-                    'current_value': hawkington_decision.metrics.get('stress_score', 0) if hawkington_decision else 0,
-                    'threshold': 0.5,
-                    'resource_type': 'system_metrics'
-                })
-                await distributed_hawk._perform_triage(alert)
+                from app.optimization.resource_monitor import ResourceType as RType
+                thresholds = distributed_hawk.resource_thresholds
+                # Map metric keys → (resource_type string, threshold)
+                RESOURCE_CHECKS = [
+                    ('cpu_usage',     'cpu',     thresholds.get(RType.CPU,     70.0)),
+                    ('memory_usage',  'memory',  thresholds.get(RType.MEMORY,  80.0)),
+                    ('disk_usage',    'disk',    thresholds.get(RType.DISK,    85.0)),
+                    ('network_usage', 'network', thresholds.get(RType.NETWORK, 80.0)),
+                ]
+
+                import socket
+                from datetime import datetime, timezone
+
+                for metric_key, resource_type, threshold in RESOURCE_CHECKS:
+                    current_value = metrics_data.get(metric_key)
+                    if current_value is None:
+                        continue
+                    if current_value < threshold:
+                        continue
+
+                    overage = current_value - threshold
+                    if overage >= threshold * 0.5:
+                        severity = 'critical'
+                    elif overage >= threshold * 0.25:
+                        severity = 'high'
+                    else:
+                        severity = 'medium'
+
+                    alert = ResourceAlert(
+                        resource_type=resource_type,
+                        current_value=current_value,
+                        threshold=threshold,
+                        severity=severity,
+                        timestamp=datetime.now(timezone.utc).isoformat(),
+                        hostname=socket.gethostname(),
+                        message=f"{resource_type} at {current_value:.1f}% exceeds threshold {threshold:.1f}%",
+                    )
+                    await distributed_hawk._perform_triage(alert)
         except Exception as e:
-            self.logger.debug(f"🧐 ML v2 pipeline not available: {e}")
+            self.logger.warning(f"🧐 ML v2 pipeline error: {e}")
         
         if hawkington_decision is None:
             self.monocle_yeet_incidents += 1
