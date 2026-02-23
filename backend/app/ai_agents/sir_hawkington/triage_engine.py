@@ -330,17 +330,17 @@ class SirHawkingtonTriageEngine(AgentInstrumentationMixin, TriageEngineWithRedis
             distributed_hawk = await get_distributed_hawk()
             if distributed_hawk and hasattr(distributed_hawk, '_perform_triage'):
                 from app.optimization.resource_monitor import ResourceType as RType
-                thresholds = distributed_hawk.resource_thresholds
-                # Map metric keys → (resource_type string, threshold)
-                RESOURCE_CHECKS = [
-                    ('cpu_usage',     'cpu',     thresholds.get(RType.CPU,     70.0)),
-                    ('memory_usage',  'memory',  thresholds.get(RType.MEMORY,  80.0)),
-                    ('disk_usage',    'disk',    thresholds.get(RType.DISK,    85.0)),
-                    ('network_usage', 'network', thresholds.get(RType.NETWORK, 80.0)),
-                ]
-
                 import socket
                 from datetime import datetime, timezone
+
+                thresholds = distributed_hawk.resource_thresholds
+
+                # --- Standard percentage-based resource checks ---
+                RESOURCE_CHECKS = [
+                    ('cpu_usage',    'cpu',    thresholds.get(RType.CPU,    70.0)),
+                    ('memory_usage', 'memory', thresholds.get(RType.MEMORY, 80.0)),
+                    ('disk_usage',   'disk',   thresholds.get(RType.DISK,   85.0)),
+                ]
 
                 for metric_key, resource_type, threshold in RESOURCE_CHECKS:
                     current_value = metrics_data.get(metric_key)
@@ -366,7 +366,56 @@ class SirHawkingtonTriageEngine(AgentInstrumentationMixin, TriageEngineWithRedis
                         hostname=socket.gethostname(),
                         message=f"{resource_type} at {current_value:.1f}% exceeds threshold {threshold:.1f}%",
                     )
-                    await distributed_hawk._perform_triage(alert)
+                    await distributed_hawk._perform_triage(alert, full_metrics=metrics_data)
+
+                # --- Network triage — multi-signal, not a single percentage ---
+                # network_sent_rate / network_recv_rate are bytes/sec from SimplifiedNetworkService.
+                # total_connections lives inside network.protocol_breakdown.total_connections.
+                # Thresholds are cold-start hypotheses; Hawk's learning adjusts them over time.
+                network_data  = metrics_data.get('network', {})
+                sent_rate     = metrics_data.get('network_sent_rate', 0) or 0
+                recv_rate     = metrics_data.get('network_recv_rate', 0) or 0
+                failed_auth   = metrics_data.get('failed_auth_attempts', 0) or 0
+                total_conn    = (
+                    network_data.get('protocol_breakdown', {})
+                    .get('total_connections', 0)
+                ) or 0
+
+                network_alerts = []
+
+                if recv_rate > 100_000_000:
+                    network_alerts.append(('bandwidth_recv', recv_rate, 100_000_000, 'critical'))
+                elif recv_rate > 50_000_000:
+                    network_alerts.append(('bandwidth_recv', recv_rate, 50_000_000, 'high'))
+
+                if sent_rate > 100_000_000:
+                    network_alerts.append(('bandwidth_sent', sent_rate, 100_000_000, 'critical'))
+                elif sent_rate > 50_000_000:
+                    network_alerts.append(('bandwidth_sent', sent_rate, 50_000_000, 'high'))
+
+                if failed_auth > 15:
+                    network_alerts.append(('auth_failures', failed_auth, 15, 'critical'))
+                elif failed_auth > 5:
+                    network_alerts.append(('auth_failures', failed_auth, 5, 'high'))
+
+                if total_conn > 1000:
+                    network_alerts.append(('connections', total_conn, 1000, 'critical'))
+                elif total_conn > 500:
+                    network_alerts.append(('connections', total_conn, 500, 'high'))
+
+                if network_alerts:
+                    severity_rank = {'critical': 3, 'high': 2, 'medium': 1}
+                    worst = max(network_alerts, key=lambda a: severity_rank.get(a[3], 0))
+                    net_alert = ResourceAlert(
+                        resource_type='network',
+                        current_value=worst[1],
+                        threshold=worst[2],
+                        severity=worst[3],
+                        timestamp=datetime.now(timezone.utc).isoformat(),
+                        hostname=socket.gethostname(),
+                        message=f"Network alert: {worst[0]}={worst[1]} exceeds threshold {worst[2]}",
+                    )
+                    await distributed_hawk._perform_triage(net_alert, full_metrics=metrics_data)
         except Exception as e:
             self.logger.warning(f"🧐 ML v2 pipeline error: {e}")
         

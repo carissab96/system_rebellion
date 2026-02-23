@@ -211,21 +211,19 @@ class HawkReasoning:
     ) -> float:
         """
         Calculate overall confidence in escalation decision.
+        Weights sum to 1.0: historical(0.25) + pattern(0.25) + quality(0.2) + severity(0.3)
         """
-        # Weight the factors
+        severity_scores = {'critical': 1.0, 'high': 0.75, 'medium': 0.5, 'low': 0.25}
+        severity_weight = severity_scores.get(severity, 0.5)
+
         confidence = (
-            historical_confidence * 0.3 +
-            pattern_match_confidence * 0.3 +
-            data_quality * 0.2
+            historical_confidence * 0.25 +
+            pattern_match_confidence * 0.25 +
+            data_quality * 0.2 +
+            severity_weight * 0.3
         )
-        
-        # Boost confidence for critical severity
-        if severity == 'critical':
-            confidence = min(1.0, confidence + 0.2)
-        elif severity == 'high':
-            confidence = min(1.0, confidence + 0.1)
-        
-        return confidence
+
+        return min(1.0, confidence)
     
     def _should_escalate(
         self,
@@ -269,7 +267,7 @@ class HawkReasoning:
             'network': 'quantum_shadow_people',
         }
         
-        return routing_map.get(resource_type.lower(), 'vic20_sage')
+        return routing_map.get(resource_type.lower(), 'vic_20_sage')
     
     def _determine_urgency(self, risk_level: str, severity: str) -> str:
         """

@@ -505,7 +505,7 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
             logger.info(f"🧐✅ {resource_type} alert RESOLVED - clearing state")
             del self._alert_states[resource_type]
     
-    async def _perform_triage(self, alert):
+    async def _perform_triage(self, alert, full_metrics: dict = None):
         """
         🎯 HAWK V2: ML-Enhanced Triage with Aristocratic Precision
         
@@ -513,26 +513,30 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
         
         Args:
             alert: ResourceAlert from the monitor
+            full_metrics: Raw metrics dict from the caller. When provided, skips the
+                          internal get_metrics() call to prevent recursive re-entry.
         """
-        logger.info(f"\n{'='*80}")
-        logger.info(f"🧐🎯 HAWK V2 TRIAGE INITIATED")
-        logger.info(f"{'='*80}")
-        logger.info(f"🧐🔍 DEBUG: _perform_triage called with severity={severity}, value={current_value}")
-
         # Extract alert data
         severity = alert.payload['severity']
         current_value = alert.payload['current_value']
         threshold = alert.payload['threshold']
         resource_type = alert.payload.get('resource_type', 'unknown')
-        
-        # Fetch full metrics from SimplifiedMetricsService for ML v2 specialists
-        try:
-            from app.services.metrics.simplified_metrics_service import SimplifiedMetricsService
-            metrics_service = await SimplifiedMetricsService.get_instance()
-            full_metrics = await metrics_service.get_metrics()
-        except Exception as e:
-            logger.warning(f"🧐⚠️ Could not fetch full metrics: {e}")
-            full_metrics = {}
+
+        logger.info(f"\n{'='*80}")
+        logger.info(f"🧐🎯 HAWK V2 TRIAGE INITIATED")
+        logger.info(f"{'='*80}")
+        logger.info(f"🧐🔍 DEBUG: _perform_triage called with severity={severity}, value={current_value}")
+
+        # Use caller-supplied metrics when available to avoid recursive get_metrics() call.
+        # Only fall back to fetching if nothing was passed (e.g. direct ResourceMonitor trigger).
+        if full_metrics is None:
+            try:
+                from app.optimization.resource_monitor import ResourceMonitor
+                rm = ResourceMonitor()
+                full_metrics = await rm.collect_metrics()
+            except Exception as e:
+                logger.warning(f"🧐⚠️ Could not collect raw metrics: {e}")
+                full_metrics = {}
         
         logger.warning(
             f"🧐⚠️ Sir Hawkington observes elevated {resource_type.upper()} usage: "

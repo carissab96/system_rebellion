@@ -623,8 +623,11 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
         # PHASE 2: Enhanced recommendations with context-aware action selection
         # Choose action based on severity and overage level
         base_recommendations = {
+            # Terry (meth_snail) vocabulary: adjust_process_priority, throttle_cpu_intensive_tasks,
+            # emergency_cache_clear, clear_cache, optimize_memory_allocation,
+            # reduce_memory_footprint, kill_memory_hog, restart_service, monitor, escalate
             'cpu': {
-                'action': 'adjust_process_priority' if overage < 50 else 'throttle_processes',
+                'action': 'adjust_process_priority' if overage < 50 else 'throttle_cpu_intensive_tasks',
                 'details': f'CPU {overage:.1f}% over threshold - {"granular priority adjustment" if overage < 50 else "aggressive throttling"}',
                 'confidence': 0.70,
                 'alternative': 'restart_service' if severity == 'critical' and overage > 100 else None
@@ -635,17 +638,20 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
                 'confidence': 0.70,
                 'alternative': 'restart_service' if severity == 'critical' and overage > 150 else None
             },
+            # Hamsters vocabulary: fstrim, e4defrag, logrotate, gzip_logs, rm_temp, apt_clean, tar_archive
             'disk': {
-                'action': 'rotate_logs' if overage < 30 else 'cleanup_temp_files',
-                'details': f'Disk {overage:.1f}% over threshold - {"log rotation" if overage < 30 else "aggressive cleanup"}',
+                'action': 'logrotate' if overage < 30 else 'rm_temp',
+                'details': f'Disk {overage:.1f}% over threshold - {"log rotation" if overage < 30 else "temp file cleanup"}',
                 'confidence': 0.70,
-                'alternative': 'create_backup_archive' if overage > 80 else None
+                'alternative': 'tar_archive' if overage > 80 else None
             },
+            # QSP vocabulary: scan_ports, analyze_traffic, throttle_network, block_ips,
+            # update_firewall, close_suspicious_connections, monitor, escalate
             'network': {
-                'action': 'scan_open_ports' if overage < 40 else 'analyze_connections',
-                'details': f'Network {overage:.1f}% over threshold - {"security scan" if overage < 40 else "connection analysis"}',
+                'action': 'scan_ports' if overage < 40 else 'analyze_traffic',
+                'details': f'Network {overage:.1f}% over threshold - {"security scan" if overage < 40 else "traffic analysis"}',
                 'confidence': 0.65,
-                'alternative': 'manage_firewall_rule' if severity == 'critical' else None
+                'alternative': 'update_firewall' if severity == 'critical' else None
             }
         }
         
