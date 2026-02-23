@@ -202,9 +202,9 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
                 
                 # STEP 2: REASONING - Quantum threat analysis
                 from app.ai_agents.quantum_shadow_people.ML.reasoning import QSPReasoning
-                
-                reasoning = QSPReasoning(self.personality_traits)
-                reasoning_result = reasoning.reason(context)  # Synchronous, not async
+
+                reasoning = QSPReasoning(self.personality_traits, db, self.system_id)
+                reasoning_result = await reasoning.reason(context)
                 
                 logger.info(
                     f"👻🧠 Quantum reasoning complete: {reasoning_result.threat_classification} → "
@@ -222,45 +222,43 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
                     f"(quantum_state: {decision.quantum_state})"
                 )
                 
-                # STEP 4: EXECUTION - Execute quantum security action
+                # STEP 4: EXECUTION - Execute via planner + primitives
                 logger.info(f"👻🔒 EXECUTING QUANTUM ACTION: {decision.action_type}")
-                
-                # Get metrics before action from SimplifiedMetricsService
-                try:
-                    before_metrics = await metrics_service.get_metrics(force_refresh=True)
-                    metrics_before = {
-                        'cpu_usage': before_metrics.get('cpu_usage', 0),
-                        'memory_usage': before_metrics.get('memory_usage', 0),
-                        'network_connections': before_metrics.get('network_connections', 0)
-                    }
-                    logger.info(f"👻📊 Metrics BEFORE: Network connections {metrics_before['network_connections']}")
-                except Exception as e:
-                    logger.error(f"👻💥 METRICS SERVICE FAILED: {e}", exc_info=True)
-                    logger.error("   Cannot execute action without fresh metrics. This is a critical failure.")
-                    from app.ai_agents.exceptions import MetricsServiceFailure
-                    raise MetricsServiceFailure(f"Unable to get current system metrics: {e}") from e
-                
-                # Execute the SELECTED action (not hardcoded throttle!)
-                from app.ai_agents.quantum_shadow_people.ML.action_executor import QSPActionExecutor
-                executor = QSPActionExecutor()
-                network_result = await executor.execute_action(decision.action_type, {})
-                
-                # Get REAL metrics AFTER action from SimplifiedMetricsService
-                try:
-                    import asyncio
-                    await asyncio.sleep(1.0)  # Wait for action effects to propagate
-                    after_metrics = await metrics_service.get_metrics(force_refresh=True)
-                    metrics_after = {
-                        'cpu_usage': after_metrics.get('cpu_usage', 0),
-                        'memory_usage': after_metrics.get('memory_usage', 0),
-                        'network_connections': after_metrics.get('network_connections', 0)
-                    }
-                    logger.info(f"👻📊 Metrics AFTER: Network connections {metrics_after['network_connections']}")
-                except Exception as e:
-                    logger.error(f"👻💥 METRICS SERVICE FAILED: {e}", exc_info=True)
-                    logger.error("   Cannot verify action results without fresh metrics. This is a critical failure.")
-                    from app.ai_agents.exceptions import MetricsServiceFailure
-                    raise MetricsServiceFailure(f"Unable to get post-action system metrics: {e}") from e
+
+                from app.ai_agents.quantum_shadow_people.ML.primitives import QSPPrimitiveExecutor
+                from app.ai_agents.quantum_shadow_people.ML.execution_planner import QSPExecutionPlanner
+                import asyncio
+
+                primitive_executor = QSPPrimitiveExecutor()
+                planner = QSPExecutionPlanner(
+                    primitive_executor=primitive_executor,
+                    effectiveness_model=action_selector.action_effectiveness,
+                    learned_thresholds=action_selector.learned_thresholds,
+                )
+
+                # Root cause IS the goal — flows directly from reasoning
+                goal = reasoning_result.root_cause
+
+                plan = await planner.compose_plan(
+                    goal=goal,
+                    severity=decision.severity_score,
+                    trend='rising' if decision.severity_score >= 0.5 else 'stable',
+                    context={},
+                )
+
+                execution_result = await planner.execute_plan(plan, context={})
+
+                # Build pre/post metric dicts from primitive results
+                metrics_before = execution_result.primitive_results[0].pre_metrics if execution_result.primitive_results else {}
+                metrics_after  = execution_result.primitive_results[-1].post_metrics if execution_result.primitive_results else {}
+                network_result = {
+                    'success':    execution_result.overall_success,
+                    'improvement': execution_result.overall_improvement,
+                    'plan_source': plan.source.value,
+                    'steps_completed': execution_result.steps_completed,
+                    'aborted': execution_result.was_aborted,
+                    'abort_reason': execution_result.abort_reason,
+                }
                 
                 # STEP 5: LEARNING - Store quantum decision outcome
                 from app.ai_agents.quantum_shadow_people.ML.learning import QSPLearning
@@ -273,38 +271,29 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
                     outcome_success=network_result.get('success', False)
                 )
                 
-                # Update action selector's adaptive bias based on outcome
-                action_selector.update_throttle_bias(decision.action_type, learning_record.success)
-                
                 if network_result['success']:
                     logger.info(
-                        f"👻✅ Network secured! Connections: {network_result['connections_before']} → "
-                        f"{network_result['connections_after']}. Quantum phase: {decision.quantum_state}"
+                        f"👻✅ Network secured! Plan: {network_result['plan_source']}, "
+                        f"steps: {network_result['steps_completed']}, "
+                        f"improvement: {network_result['improvement']:.3f}, "
+                        f"quantum_state: {decision.quantum_state}"
                     )
-                    
+
                     # BROADCAST FULL DECISION CHAIN TO FRONTEND
                     from app.services.agent_decision_emitter import emit_agent_decision
-                    
-                    # Calculate improvement percentage
-                    connections_improvement = 0.0
-                    if network_result['connections_before'] > 0:
-                        connections_improvement = (
-                            network_result['connections_reduced'] 
-                            / network_result['connections_before'] 
-                            * 100.0
-                        )
                     
                     await emit_agent_decision(
                         agent_name="quantum_shadow_people",
                         decision_id=learning_record.learning_record_id,
                         perception={
                             "threat_level": context.threat_level,
-                            "quantum_state": context.quantum_state.state,
-                            "paranoia_level": context.paranoia_level,
+                            "quantum_state": context.quantum_state.state if context.quantum_state else 'stable',
                             "existential_dread": context.existential_dread,
-                            "tequila_jello_shots_consumed": context.tequila_jello_shots_consumed,
-                            "network_connections": full_metrics.get('network_connections', 0),
-                            "suspicious_patterns_detected": len(context.suspicious_patterns) if hasattr(context, 'suspicious_patterns') else 0,
+                            "total_connections": context.total_connections,
+                            "suspicious_connections": context.suspicious_connections,
+                            "network_anomalies": context.network_anomalies,
+                            "failed_auth_attempts": context.failed_auth_attempts,
+                            "recv_rate_bps": context.recv_rate_bps,
                             "tequila_system": {
                                 "shots_today": self.tequila_shots_today,
                                 "paranoia_level": self.paranoia_level,
@@ -314,27 +303,29 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
                         },
                         reasoning={
                             "threat_classification": reasoning_result.threat_classification,
+                            "root_cause": reasoning_result.root_cause,
                             "confidence": reasoning_result.confidence,
-                            "recommended_response": reasoning_result.recommended_response,
-                            "paranoia_justified": reasoning_result.paranoia_justified,
-                            "quantum_analysis": reasoning_result.quantum_analysis if hasattr(reasoning_result, 'quantum_analysis') else None
+                            "severity_score": reasoning_result.severity_score,
+                            "risk_level": reasoning_result.risk_level,
+                            "situation_description": reasoning_result.situation_description,
                         },
                         action_selection={
                             "chosen_action": decision.action_type,
-                            "alternatives_considered": reasoning_result.alternative_responses if hasattr(reasoning_result, 'alternative_responses') else [],
-                            "exploration": False,  # QSP doesn't use epsilon-greedy yet
+                            "alternatives_considered": decision.alternatives_considered,
                             "confidence": decision.confidence,
+                            "priority": decision.priority,
                             "quantum_state": decision.quantum_state,
-                            "requires_lockdown": decision.requires_lockdown if hasattr(decision, 'requires_lockdown') else False
+                            "severity_score": decision.severity_score,
+                            "plan_source": network_result['plan_source'],
+                            "steps_completed": network_result['steps_completed'],
                         },
                         execution={
                             "metrics_before": metrics_before,
                             "metrics_after": metrics_after,
                             "success": network_result['success'],
-                            "improvement_percent": connections_improvement,
-                            "connections_before": network_result['connections_before'],
-                            "connections_after": network_result['connections_after'],
-                            "connections_reduced": network_result['connections_reduced']
+                            "improvement": network_result['improvement'],
+                            "aborted": network_result['aborted'],
+                            "abort_reason": network_result['abort_reason'],
                         },
                         learning={
                             "situation_fingerprint": learning_record.situation_fingerprint,
@@ -360,15 +351,13 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
                     )
                     # Update learning record with success and metrics
                     pre_metrics_dict = {
-                        'threat_count': context.threat_count,
-                        'failed_auth_attempts': context.failed_auth_attempts,
-                        'network_anomalies': context.network_anomalies
+                        'total_connections':      float(context.total_connections),
+                        'suspicious_connections': float(context.suspicious_connections),
+                        'network_anomalies':      float(context.network_anomalies),
+                        'failed_auth_attempts':   float(context.failed_auth_attempts),
+                        'recv_rate_bps':          float(context.recv_rate_bps),
                     }
-                    post_metrics_dict = {
-                        'threat_count': 0,  # Threat resolved
-                        'failed_auth_attempts': 0,
-                        'network_anomalies': 0
-                    }
+                    post_metrics_dict = dict(metrics_after) if metrics_after and not metrics_after.get('collection_failed') else pre_metrics_dict
                     
                     # Determine if this was a false positive or false negative
                     # False positive: escalated a non-threat
@@ -380,178 +369,54 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
                         learning_record,
                         success=True,
                         threat_resolved=True,
-                        false_positive=false_positive,
-                        false_negative=false_negative,
-                        outcome_notes=f"Reduced {network_result['connections_reduced']} connections",
+                        false_positive=False,
+                        false_negative=False,
+                        outcome_notes=f"Plan '{plan.source.value}' completed {network_result['steps_completed']} steps",
                         pre_metrics=pre_metrics_dict,
                         post_metrics=post_metrics_dict
                     )
-                    
-                    # Request The Stick validation for learned thresholds and action effectiveness
+
+                    # Validate action effectiveness with The Stick
                     from app.core.database import get_async_db
                     try:
-                        # Validate learned thresholds
-                        await learning.learned_thresholds.request_stick_validation(
-                            metric_name='failed_auth_attempts',
-                            threshold_level='warning' if context.failed_auth_attempts < 15 else 'critical',
-                            learned_value=await learning.learned_thresholds.get_threshold('failed_auth_attempts', 'warning'),
-                            default_value=5,
-                            db_getter=get_async_db
+                        pattern = learning.action_effectiveness._create_metric_pattern(
+                            pre_metrics_dict, decision.severity_score
                         )
-                        
-                        # Validate action effectiveness
                         await learning.action_effectiveness.request_stick_validation(
                             action=decision.action_type,
-                            metric_pattern=learning.action_effectiveness._generate_pattern_fingerprint(
-                                pre_metrics_dict, context.severity
-                            ),
+                            metric_pattern=pattern,
                             db_getter=get_async_db
                         )
-                        
-                        logger.info("👻📏 Validation requests sent to The Stick (PRIORITY 9/10)")
+                        logger.info("👻📏 Validation request sent to The Stick")
                     except Exception as e:
                         logger.error(f"👻⚠️ Validation request failed: {e}")
                 else:
-                    logger.error(f"👻❌ Network throttle failed: {network_result.get('error')}")
-                    
-                    # Update learning record with failure
+                    logger.error(
+                        f"👻❌ Execution failed: "
+                        f"abort={network_result['aborted']}, reason={network_result['abort_reason']}"
+                    )
+
                     pre_metrics_dict = {
-                        'threat_count': context.threat_count,
-                        'failed_auth_attempts': context.failed_auth_attempts,
-                        'network_anomalies': context.network_anomalies
+                        'total_connections':      float(context.total_connections),
+                        'suspicious_connections': float(context.suspicious_connections),
+                        'network_anomalies':      float(context.network_anomalies),
+                        'failed_auth_attempts':   float(context.failed_auth_attempts),
+                        'recv_rate_bps':          float(context.recv_rate_bps),
                     }
-                    post_metrics_dict = {
-                        'threat_count': context.threat_count,  # Threat not resolved
-                        'failed_auth_attempts': context.failed_auth_attempts,
-                        'network_anomalies': context.network_anomalies
-                    }
-                    
+
                     await learning.update_outcome(
                         learning_record,
                         success=False,
                         threat_resolved=False,
                         false_positive=False,
                         false_negative=False,
-                        outcome_notes=network_result.get('error', 'Unknown error'),
+                        outcome_notes=network_result.get('abort_reason', 'Execution failed'),
                         pre_metrics=pre_metrics_dict,
-                        post_metrics=post_metrics_dict
+                        post_metrics=pre_metrics_dict,
                     )
                 
-                # Use choice engine for legacy compatibility (but ML made the real decision)
-                legacy_decision = self.choice_engine.should_follow_recommendation(
-                recommendation=recommendation,
-                current_situation={
-                    'resource_type': resource_type,
-                    'current_value': current_value,
-                    'threshold': threshold,
-                    'security_threat': True  # QSP always assumes threat
-                }
-            )
-            
-            logger.info(
-                f"👻🔮 Legacy compatibility check: "
-                f"{'ACCEPTABLE' if legacy_legacy_decision['followed_recommendation'] else 'SUSPICIOUS - USING OWN PROTOCOL'}"
-            )
-            logger.info(f"👻💭 Legacy reasoning: {legacy_legacy_decision['reasoning']}")
-            
-            # Note: ML v2 already executed the action above, this is just legacy logging
-            action = legacy_legacy_decision['final_action']
-            logger.info("👻🔒 (Legacy path - action already executed by ML v2)")
-            
-            # Broadcast action to WebSocket
-            from app.services.agent_insight_emitter import emit_agent_insight
-            await emit_agent_insight(
-                from_agent="quantum_shadow_people",
-                to_agent="vic20_sage",
-                action="security_scan_executed",
-                reasoning=f"{'Following VIC-20 recommendation' if legacy_decision['followed_recommendation'] else 'SUSPICIOUS - Using own protocol!'} - {resource_type} security lockdown",
-                context={
-                    "resource_type": resource_type,
-                    "action": action,
-                    "followed_vic20": legacy_decision['followed_recommendation'],
-                    "severity": severity,
-                    "current_value": current_value,
-                    "threshold": threshold,
-                    "paranoia_justified": True,
-                    "quantum_state": "analyzing"
-                }
-            )
-            
-            network_result = await SystemActions.throttle_network_operations()
-            
-            if network_result['success']:
-                logger.info(
-                    f"👻✅ Network throttled! Connections: {network_result['connections_before']} → "
-                    f"{network_result['connections_after']}. Quantum phase secured!"
-                )
-                
-                # Broadcast success to WebSocket
-                await emit_agent_insight(
-                    from_agent="quantum_shadow_people",
-                    to_agent="vic20_sage",
-                    action="security_scan_success",
-                    reasoning=f"Network secured: {network_result['connections_reduced']} connections reduced - Quantum phase stable",
-                    context={
-                        "success": True,
-                        "connections_before": network_result['connections_before'],
-                        "connections_after": network_result['connections_after'],
-                        "connections_reduced": network_result['connections_reduced'],
-                        "followed_vic20": legacy_decision['followed_recommendation'],
-                        "paranoia_justified": True,
-                        "quantum_state": "secured"
-                    }
-                )
-                
-                # Record decision and effectiveness
-                await self.make_distributed_decision(
-                    decision_type="recommendation_response",
-                    input_data={
-                        "recommendation": recommendation.get('action'),
-                        "followed": legacy_decision['followed_recommendation'],
-                        "action_taken": action,
-                        "paranoia_justified": True
-                    },
-                    output_data={
-                        "result": network_result,
-                        "connections_reduced": network_result['connections_reduced'],
-                        "quantum_state": "secured"
-                    },
-                    confidence=legacy_decision['decision_score'],
-                    reasoning=legacy_decision['reasoning']
-                )
-                
-                # 💾 WRITE TO POSTGRESQL: Store quantum decision
-                if self.db_integration and self.user_id:
-                    try:
-                        from .data_types import QSPDecision, QSPDecisionType, QuantumPhaseState
-                        from datetime import datetime, timezone
-                        
-                        quantum_decision = QSPDecision(
-                            decision_type=QSPDecisionType.NETWORK_DIMENSION_SHIFT,
-                            quantum_state=QuantumPhaseState.PHASED,
-                            network_target=action,
-                            optimization_parameters={
-                                'connections_before': network_result.get('connections_before', 0),
-                                'connections_after': network_result.get('connections_after', 0),
-                                'connections_reduced': network_result.get('connections_reduced', 0)
-                            },
-                            tequila_jello_shots_required=self.tequila_shots_today,
-                            mysterious_explanation=legacy_decision['reasoning'],
-                            technical_details={
-                                'action': action,
-                                'paranoia_justified': True,
-                                'threat_level': 'elevated'
-                            },
-                            expected_improvement=min(1.0, network_result.get('connections_reduced', 0) / 100.0),
-                            confidence_level=legacy_decision['decision_score'],
-                            timestamp=datetime.now(timezone.utc)
-                        )
-                        await self.db_integration.store_decision(self.user_id, quantum_decision)
-                        logger.info(f"👻💾 Quantum decision written to PostgreSQL")
-                    except Exception as e:
-                        logger.error(f"👻💥 Failed to write to PostgreSQL: {e}")
-            else:
-                logger.error(f"👻❌ Network throttle failed: {network_result.get('error')}")
+                # ML v2 execution complete
+                logger.info("👻� ML v2 execution complete")
                 
         except Exception as e:
             logger.error(f"👻💥 QSP ML PIPELINE FAILED: {e}", exc_info=True)

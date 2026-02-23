@@ -2,42 +2,30 @@
 """
 QSP's Learned Thresholds System
 
-Adaptive threshold learning for security threat detection:
-- Failed auth attempt thresholds (warning, critical)
-- Network anomaly thresholds (suspicious connection counts)
-- Threat severity classification (confidence-based categorical boundaries)
-
+Adaptive threshold learning for security threat detection.
 Learns from false positives and false negatives to adjust thresholds over time.
 FALSE NEGATIVES (missed threats) are treated with higher urgency than false positives.
+
+Cold-start values imported from heuristic_config.py.
+Adjustment config imported from heuristic_config.py.
 """
 import logging
 from typing import Dict, Any, Optional, Tuple
 from datetime import datetime, timedelta, timezone
 from dataclasses import dataclass
-from sqlalchemy import and_, func
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.threshold_learning import ThresholdLearningRecord
+from .heuristic_config import DEFAULT_THRESHOLDS, THRESHOLD_ADJUSTMENT_CONFIG
 
 logger = logging.getLogger('QSPLearnedThresholds')
 
-# Security-specific defaults (industry standard starting points)
-DEFAULT_THRESHOLDS = {
-    'failed_auth_attempts': {
-        'warning': 5,      # attempts
-        'critical': 15     # attempts
-    },
-    'network_anomalies': {
-        'warning': 3,      # suspicious connections
-        'critical': 10     # suspicious connections
-    },
-    'threat_severity': {
-        'low': 0.3,        # confidence score
-        'medium': 0.6,     # confidence score
-        'high': 0.8,       # confidence score
-        'critical': 0.95   # confidence score
-    }
-}
+UTC = timezone.utc
+
+
+def utc_now() -> datetime:
+    return datetime.now(UTC)
 
 
 @dataclass
@@ -55,12 +43,15 @@ class ThresholdAssessment:
 class LearnedThresholds:
     """
     QSP's learned threshold system.
-    
+
     Learns when to escalate security threats based on observed outcomes.
     Tracks false positives (escalated non-threats) and false negatives (missed threats)
     separately due to asymmetric costs in security domain.
+
+    FALSE NEGATIVES weighted more heavily: missed threats are catastrophic.
+    Adjustment rates from THRESHOLD_ADJUSTMENT_CONFIG (asymmetric by design).
     """
-    
+
     def __init__(self, db: AsyncSession, system_id: str = "default"):
         self.db = db
         self.system_id = system_id
@@ -70,64 +61,114 @@ class LearnedThresholds:
     async def get_threshold(
         self,
         metric_name: str,
-        level: str = 'warning'
+        level: str = 'warning',
     ) -> float:
         """
         Get learned threshold for a metric.
-        
+
         Args:
-            metric_name: 'failed_auth_attempts', 'network_anomalies', 'threat_severity'
-            level: 'warning', 'critical', 'low', 'medium', 'high' (for threat_severity)
-            
+            metric_name: e.g. 'failed_auth_attempts', 'network_anomalies'
+            level: 'warning' or 'critical'
+
         Returns:
-            Learned threshold value (or default if not enough data)
+            Learned threshold value (or cold-start default if not enough data)
         """
         assessment = await self._get_threshold_assessment(metric_name)
-        
         if level == 'warning':
             return assessment.warning_threshold
         elif level == 'critical':
             return assessment.critical_threshold
-        else:
-            # For threat_severity categorical boundaries
-            defaults = DEFAULT_THRESHOLDS.get(metric_name, {})
-            return defaults.get(level, 0.5)
+        defaults = DEFAULT_THRESHOLDS.get(metric_name, {})
+        return float(defaults.get(level, 0.5))
+
+    async def assess_severity(
+        self,
+        current_metrics: Dict[str, float],
+        primary_metric: str,
+    ) -> Dict[str, Any]:
+        """
+        Compute a continuous severity score 0.0-1.0 for the given metrics.
+
+        Used by action_selection._get_severity_score() as the primary severity signal.
+
+        Returns dict with:
+            severity_score: float 0.0-1.0
+            primary_metric: str
+            threshold_levels: dict of metric → level hit ('ok'/'warning'/'critical')
+        """
+        threshold_levels: Dict[str, str] = {}
+        scores = []
+
+        for metric_name, value in current_metrics.items():
+            metric_defaults = DEFAULT_THRESHOLDS.get(metric_name)
+
+            if metric_defaults is not None:
+                warning  = await self.get_threshold(metric_name, 'warning')
+                critical = await self.get_threshold(metric_name, 'critical')
+
+                if value >= critical:
+                    threshold_levels[metric_name] = 'critical'
+                    normalised = min(1.0, value / max(critical, 1.0))
+                elif value >= warning:
+                    threshold_levels[metric_name] = 'warning'
+                    normalised = min(1.0, value / max(critical, 1.0))
+                else:
+                    threshold_levels[metric_name] = 'ok'
+                    normalised = 0.0
+
+                scores.append(normalised)
+            else:
+                # Unknown metric — include at half weight, log for awareness
+                if value > 0:
+                    threshold_levels[metric_name] = 'unknown'
+                    normalised = min(1.0, value / 1000.0)  # Conservative normalization
+                    scores.append(normalised * 0.5)  # Half weight for unknown metrics
+                    self.logger.debug(
+                        f"👻📏 Unknown metric '{metric_name}' with value {value:.1f} — "
+                        f"included at half weight (no learned thresholds yet)"
+                    )
+
+        severity_score = sum(scores) / len(scores) if scores else 0.0
+
+        return {
+            'severity_score':    severity_score,
+            'primary_metric':    primary_metric,
+            'threshold_levels':  threshold_levels,
+        }
     
     async def _get_threshold_assessment(
         self,
-        metric_name: str
+        metric_name: str,
     ) -> ThresholdAssessment:
         """
         Assess learned thresholds for a metric.
-        
-        Returns ThresholdAssessment with learned values or defaults.
+
+        Returns ThresholdAssessment with learned values or cold-start defaults.
         """
-        # Get learning records from last 30 days
-        cutoff_date = datetime.utcnow() - timedelta(days=30)
-        
-        records = await self.db.execute(
-            self.db.query(ThresholdLearningRecord).filter(
+        cutoff_date = utc_now().replace(tzinfo=None) - timedelta(days=30)
+
+        result = await self.db.execute(
+            select(ThresholdLearningRecord).where(
                 and_(
                     ThresholdLearningRecord.system_id == self.system_id,
                     ThresholdLearningRecord.agent_name == self.agent_name,
                     ThresholdLearningRecord.metric_name == metric_name,
-                    ThresholdLearningRecord.created_at >= cutoff_date
+                    ThresholdLearningRecord.created_at >= cutoff_date,
                 )
             )
         )
-        records = records.scalars().all()
-        
-        if not records or len(records) < 5:
-            # Not enough data - use defaults
+        records = result.scalars().all()
+
+        if len(records) < 5:
             default = DEFAULT_THRESHOLDS.get(metric_name, {})
             return ThresholdAssessment(
                 metric_name=metric_name,
-                warning_threshold=default.get('warning', 5),
-                critical_threshold=default.get('critical', 15),
+                warning_threshold=float(default.get('warning', 5)),
+                critical_threshold=float(default.get('critical', 15)),
                 warning_confidence=0.0,
                 critical_confidence=0.0,
                 sample_size=0,
-                last_adjustment=None
+                last_adjustment=None,
             )
         
         # Analyze records to determine learned thresholds
@@ -153,64 +194,60 @@ class LearnedThresholds:
     def _calculate_threshold_level(
         self,
         records: list,
-        level: str
+        level: str,
     ) -> Tuple[float, float]:
         """
         Calculate learned threshold from records.
-        
-        Logic:
-        - False positives (escalated non-threats) → raise threshold (less sensitive)
-        - False negatives (missed real threats) → lower threshold (more sensitive) URGENTLY
-        - Successful detections → reinforce current threshold
-        
-        FALSE NEGATIVES are weighted more heavily due to asymmetric cost in security.
-        
+
+        Asymmetric adjustment rates from THRESHOLD_ADJUSTMENT_CONFIG:
+        - false_negative_adjustment > false_alarm_adjustment (missed threats are catastrophic)
+        - false_alarm_adjustment raises threshold (less sensitive)
+        - false_negative_adjustment lowers threshold (more sensitive)
+
         Returns:
             (threshold_value, confidence)
         """
         level_records = [r for r in records if r.threshold_level == level]
-        
+
         if not level_records:
-            # No data for this level - use default
             metric_name = records[0].metric_name if records else 'failed_auth_attempts'
             default = DEFAULT_THRESHOLDS.get(metric_name, {})
-            return default.get(level, 5), 0.0
-        
-        # Count outcomes - SEPARATE false positives and false negatives
+            return float(default.get(level, 5)), 0.0
+
         false_positives = sum(1 for r in level_records if r.was_false_alarm)
         false_negatives = sum(1 for r in level_records if r.should_have_acted_sooner)
-        successful = sum(1 for r in level_records if r.was_successful)
-        
-        # Get baseline (most recent default or learned value)
-        baseline = level_records[-1].threshold_value
-        
-        # Adjustment logic with ASYMMETRIC WEIGHTING
+        successful      = sum(1 for r in level_records if r.was_successful)
+
+        baseline = float(level_records[-1].threshold_value)
         total_outcomes = len(level_records)
+
         false_positive_rate = false_positives / total_outcomes
         false_negative_rate = false_negatives / total_outcomes
-        success_rate = successful / total_outcomes
-        
-        # FALSE NEGATIVES get 2x weight - missed threats are catastrophic
-        weighted_false_negative_rate = false_negative_rate * 2.0
-        
-        # If too many false positives, raise threshold (less sensitive)
-        if false_positive_rate > 0.3:
-            adjustment = baseline * 0.05  # 5% increase
-            new_threshold = baseline + adjustment
-        # If ANY false negatives, lower threshold (more sensitive) - weighted heavily
-        elif weighted_false_negative_rate > 0.2:
-            adjustment = baseline * 0.1  # 10% decrease (more aggressive than false positive adjustment)
-            new_threshold = max(baseline - adjustment, 1.0)  # Floor at 1 (always detect something)
-        # Otherwise maintain current threshold
+        success_rate        = successful / total_outcomes
+
+        cfg = THRESHOLD_ADJUSTMENT_CONFIG
+        fp_adj     = cfg['false_positive_adjustment']       # 0.05 — already a ratio
+        fn_adj     = cfg['false_negative_adjustment']       # 0.10 — already a ratio
+        fp_trigger = cfg['false_positive_trigger_rate']     # 0.3
+        fn_trigger = cfg['false_negative_trigger_rate']     # 0.2
+
+        if false_negative_rate > fn_trigger:
+            # Missed threats: lower threshold aggressively (asymmetric)
+            new_threshold = max(
+                cfg['min_threshold_floor'],
+                baseline - (baseline * fn_adj)
+            )
+        elif false_positive_rate > fp_trigger:
+            # Too many false alarms: raise threshold
+            new_threshold = baseline + (baseline * fp_adj)
         else:
             new_threshold = baseline
-        
-        # Confidence based on sample size and success rate
-        # False negatives reduce confidence more than false positives
+
+        # Confidence: false negatives penalise more than false positives
         confidence_penalty = (false_negative_rate * 0.5) + (false_positive_rate * 0.2)
         confidence = min((success_rate - confidence_penalty) * (total_outcomes / 20.0), 1.0)
         confidence = max(confidence, 0.0)
-        
+
         return new_threshold, confidence
     
     async def record_outcome(
@@ -260,20 +297,19 @@ class LearnedThresholds:
         self.db.add(record)
         await self.db.commit()
         
-        # Log with appropriate urgency
         if was_false_negative:
-            self.logger.warning(
+            self.logger.error(
                 f"👻🚨 FALSE NEGATIVE recorded: {metric_name}.{threshold_level} "
                 f"(value={metric_value:.1f}, threshold={current_threshold:.1f}) - MISSED THREAT"
             )
         elif was_false_positive:
             self.logger.info(
-                f"👻📏 False positive recorded: {metric_name}.{threshold_level} "
+                f"👻� False positive recorded: {metric_name}.{threshold_level} "
                 f"(value={metric_value:.1f}, threshold={current_threshold:.1f})"
             )
         else:
             self.logger.info(
-                f"👻📏 Threshold learning recorded: {metric_name}.{threshold_level} "
+                f"👻� Threshold learning recorded: {metric_name}.{threshold_level} "
                 f"(value={metric_value:.1f}, threshold={current_threshold:.1f}, success={was_successful})"
             )
     
@@ -299,23 +335,27 @@ class LearnedThresholds:
             True if validation passed, False otherwise
         """
         if not db_getter:
-            self.logger.warning("👻⚠️ No db_getter provided for validation")
-            return True  # Skip validation if no db_getter
-        
-        try:
-            # Get learning metadata
-            cutoff_date = datetime.utcnow() - timedelta(days=30)
-            records = await self.db.execute(
-                self.db.query(ThresholdLearningRecord).filter(
-                    and_(
-                        ThresholdLearningRecord.system_id == self.system_id,
-                        ThresholdLearningRecord.agent_name == self.agent_name,
-                        ThresholdLearningRecord.metric_name == metric_name,
-                        ThresholdLearningRecord.created_at >= cutoff_date
-                    )
+            self.logger.error(
+                "👻💥 request_stick_validation() called with no db_getter — "
+                "cannot validate. Learning STOPS."
+            )
+            from app.ai_agents.exceptions import ValidationSystemFailure
+            raise ValidationSystemFailure("No db_getter provided for Stick validation.")
+
+        cutoff_date = utc_now().replace(tzinfo=None) - timedelta(days=30)
+        result = await self.db.execute(
+            select(ThresholdLearningRecord).where(
+                and_(
+                    ThresholdLearningRecord.system_id == self.system_id,
+                    ThresholdLearningRecord.agent_name == self.agent_name,
+                    ThresholdLearningRecord.metric_name == metric_name,
+                    ThresholdLearningRecord.created_at >= cutoff_date,
                 )
             )
-            records = records.scalars().all()
+        )
+        records = result.scalars().all()
+
+        try:
             
             # Determine trigger reason from learning records
             # SEPARATE false positives and false negatives
@@ -364,18 +404,18 @@ class LearnedThresholds:
                 await stick_db.record_validation(None, audit_entry)
                 
                 if trigger_reason == "false_negative":
-                    self.logger.warning(
+                    self.logger.error(
                         f"👻🚨 FALSE NEGATIVE validation result: {audit_entry.validation_result} "
                         f"({metric_name}.{threshold_level}) - PRIORITY 10"
                     )
                 else:
                     self.logger.info(
-                        f"👻📏 Threshold validation result: {audit_entry.validation_result} "
+                        f"👻� Threshold validation result: {audit_entry.validation_result} "
                         f"({metric_name}.{threshold_level})"
                     )
-                
+
                 return audit_entry.validation_result
-                
+
         except Exception as e:
             self.logger.error(f"👻💥 THE STICK VALIDATION FAILED: {e}", exc_info=True)
             self.logger.error("   Learning cannot proceed without validation. This is a critical failure.")
@@ -392,22 +432,14 @@ class LearnedThresholds:
         return getattr(assessment, f"{level}_confidence")
     
     async def get_learning_summary(self) -> Dict[str, Any]:
-        """Get summary of threshold learning across all metrics"""
+        """Get summary of threshold learning across all metrics."""
         summary = {}
-        
-        for metric_name in ['failed_auth_attempts', 'network_anomalies', 'threat_severity']:
+        for metric_name in DEFAULT_THRESHOLDS:
             assessment = await self._get_threshold_assessment(metric_name)
             summary[metric_name] = {
-                'warning': {
-                    'threshold': assessment.warning_threshold,
-                    'confidence': assessment.warning_confidence
-                },
-                'critical': {
-                    'threshold': assessment.critical_threshold,
-                    'confidence': assessment.critical_confidence
-                },
-                'sample_size': assessment.sample_size,
-                'last_adjustment': assessment.last_adjustment.isoformat() if assessment.last_adjustment else None
+                'warning':  {'threshold': assessment.warning_threshold,  'confidence': assessment.warning_confidence},
+                'critical': {'threshold': assessment.critical_threshold, 'confidence': assessment.critical_confidence},
+                'sample_size':     assessment.sample_size,
+                'last_adjustment': assessment.last_adjustment.isoformat() if assessment.last_adjustment else None,
             }
-        
         return summary

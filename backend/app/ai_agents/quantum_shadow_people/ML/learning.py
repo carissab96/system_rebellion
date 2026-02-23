@@ -15,12 +15,14 @@ import logging
 from typing import Dict, Any, Optional
 from datetime import datetime, timezone
 from dataclasses import dataclass, field
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.agent_learning import AgentLearningRecord
 from .perception import QSPPerceptionContext
 from .reasoning import SecurityReasoning
 from .action_selection import SecurityResponseAction
+from .situation_fingerprint import QSPSituationFingerprint
 
 logger = logging.getLogger('QSPLearning')
 
@@ -56,7 +58,8 @@ class QSPLearningRecord:
     
     # Risk assessment
     risk_level: str
-    
+    severity_score: float = 0.0
+
     # Outcome (filled in later)
     success: Optional[bool] = None
     threat_resolved: Optional[bool] = None
@@ -96,23 +99,29 @@ class QSPLearning:
         context: QSPPerceptionContext,
         reasoning: SecurityReasoning,
         action: SecurityResponseAction,
-        outcome_success: Optional[bool] = None
+        outcome_success: Optional[bool] = None,
     ) -> QSPLearningRecord:
         """
         Store security response decision for learning.
-        
+
         Args:
-            context: Perception context
-            reasoning: Reasoning analysis
-            action: Selected action
+            context:        Perception context
+            reasoning:      Reasoning analysis
+            action:         Selected action
             outcome_success: Whether the response was successful (if known)
-            
+
         Returns:
             QSPLearningRecord that was stored
         """
-        logger.info(f"👻📚 Recording quantum security response for learning...")
-        
-        # Create learning record
+        logger.info("👻📚 Recording quantum security response for learning...")
+
+        fingerprinter = QSPSituationFingerprint()
+        fingerprints = fingerprinter.generate(
+            resource_type=context.resource_type,
+            severity=reasoning.severity_score,
+            root_cause=reasoning.root_cause,
+        )
+
         learning_record = QSPLearningRecord(
             threat_count=context.threat_count,
             highest_severity=context.highest_severity,
@@ -126,21 +135,21 @@ class QSPLearning:
             quantum_messages_sent=action.quantum_messages_sent,
             hamster_assistance_requested=action.hamster_assistance_requested,
             risk_level=reasoning.risk_level,
-            success=outcome_success
+            severity_score=reasoning.severity_score,
+            success=outcome_success,
+            situation_fingerprint=fingerprints['l3'],
         )
-        
-        # Store in database
-        storage_success = await self._store_in_database(learning_record, context, reasoning, action)
+
+        storage_success = await self._store_in_database(
+            learning_record, context, reasoning, action, fingerprints
+        )
         learning_record.storage_success = storage_success
-        
-        # Set fingerprint for emission
-        learning_record.situation_fingerprint = f"{context.resource_type}_{context.severity}_{action.action_type}"
-        
+
         logger.info(
             f"👻✅ Learning recorded: {action.action_type}, "
-            f"quantum_state={action.quantum_state}, dread={action.existential_dread_level:.2f}"
+            f"severity={reasoning.severity_score:.2f}, fingerprint={fingerprints['l3'][:40]}..."
         )
-        
+
         return learning_record
     
     async def _store_in_database(
@@ -148,81 +157,74 @@ class QSPLearning:
         learning_record: QSPLearningRecord,
         context: QSPPerceptionContext,
         reasoning: SecurityReasoning,
-        action: SecurityResponseAction
+        action: SecurityResponseAction,
+        fingerprints: Dict[str, str],
     ) -> bool:
         """
-        Store learning record in PostgreSQL.
-        
+        Store learning record in PostgreSQL using hierarchical fingerprints.
+
         Returns:
             True if storage succeeded, False otherwise
         """
         try:
-            # Create hierarchical fingerprints for security responses
-            fingerprint_l1 = f"{context.resource_type}"
-            fingerprint_l2 = f"{context.resource_type}_{context.severity}"
-            fingerprint_l3 = f"{context.resource_type}_{context.severity}_{action.action_type}"
-            
-            # Prepare parameters with all context and action details
             parameters = {
-                'threat_count': context.threat_count,
-                'highest_severity': context.highest_severity,
-                'network_anomalies': context.network_anomalies,
-                'suspicious_connections': context.suspicious_connections,
-                'failed_auth_attempts': context.failed_auth_attempts,
-                'threat_assessment_confidence': context.threat_assessment_confidence,
-                'response_urgency': context.response_urgency,
-                'response_type': action.action_type,
-                'response_strategy': action.response_strategy,
-                'priority': action.priority,
-                'quantum_state': action.quantum_state,
-                'existential_dread_level': action.existential_dread_level,
-                'quantum_coherence': action.quantum_coherence,
-                'threat_classification': reasoning.threat_classification,
-                'hamster_assistance_requested': action.hamster_assistance_requested,
-                'requires_escalation': action.requires_escalation,
-                'estimated_resolution_time': action.estimated_resolution_time,
-                'threat_indicators': reasoning.threat_indicators,
-                'historical_precedent': reasoning.historical_precedent,
-                'similar_threat_count': reasoning.similar_threat_count
+                'threat_count':                  context.threat_count,
+                'highest_severity':              context.highest_severity,
+                'network_anomalies':             context.network_anomalies,
+                'suspicious_connections':        context.suspicious_connections,
+                'failed_auth_attempts':          context.failed_auth_attempts,
+                'threat_assessment_confidence':  context.threat_assessment_confidence,
+                'response_urgency':              context.response_urgency,
+                'response_type':                 action.action_type,
+                'response_strategy':             action.response_strategy,
+                'priority':                      action.priority,
+                'quantum_state':                 action.quantum_state,
+                'existential_dread_level':       action.existential_dread_level,
+                'quantum_coherence':             action.quantum_coherence,
+                'threat_classification':         reasoning.threat_classification,
+                'hamster_assistance_requested':  action.hamster_assistance_requested,
+                'requires_escalation':           action.requires_escalation,
+                'threat_indicators':             reasoning.threat_indicators,
+                'historical_precedent':          reasoning.historical_precedent,
+                'similar_threat_count':          reasoning.similar_threat_count,
+                'severity_score':                reasoning.severity_score,
+                'primary_metric':                reasoning.primary_metric,
             }
-            
-            # Prepare improvement metrics
+
             improvement = {
-                'action_type': action.action_type,
-                'quantum_state': action.quantum_state
+                'action_type':   action.action_type,
+                'quantum_state': action.quantum_state,
             }
-            
-            # Create database record
+
             db_record = AgentLearningRecord(
                 agent_name='quantum_shadow_people',
-                fingerprint_l1=fingerprint_l1,
-                fingerprint_l2=fingerprint_l2,
-                fingerprint_l3=fingerprint_l3,
+                fingerprint_l1=fingerprints['l1'],
+                fingerprint_l2=fingerprints['l2'],
+                fingerprint_l3=fingerprints['l3'],
                 resource_type=context.resource_type,
-                severity=context.severity,
+                severity=reasoning.severity_score,
                 root_cause=reasoning.root_cause,
                 process_category='security',
                 action=action.action_type,
                 parameters=parameters,
                 confidence=action.confidence,
-                followed_vic20=True,  # QSP follows VIC-20's routing
+                followed_vic20=True,
                 success=learning_record.success if learning_record.success is not None else True,
                 improvement=improvement,
                 what_worked=reasoning.root_cause if learning_record.success else None,
-                what_failed=None if learning_record.success else reasoning.root_cause
+                what_failed=None if learning_record.success else reasoning.root_cause,
             )
-            
+
             self.db.add(db_record)
-            await self.db.commit()
-            
-            # Set the ID on the record so we can emit it
+            await self.db.flush()
+
             learning_record.learning_record_id = str(db_record.id)
-            
-            logger.debug(f"👻💾 Learning record stored in database (ID: {db_record.id})")
+
+            logger.debug(f"👻💾 Learning record stored (ID: {db_record.id}, fingerprint={fingerprints['l3'][:32]}...)")
             return True
-            
+
         except Exception as e:
-            logger.error(f"👻💥 Error storing learning record: {e}")
+            logger.error(f"👻💥 LEARNING STORAGE FAILED: {e}", exc_info=True)
             await self.db.rollback()
             return False
     
@@ -250,9 +252,8 @@ class QSPLearning:
         learning_record.false_positive = false_positive
         learning_record.outcome_notes = outcome_notes
         
-        # Log with appropriate urgency for false negatives
         if false_negative:
-            logger.warning(
+            logger.error(
                 f"👻🚨 FALSE NEGATIVE: Updated learning record - MISSED THREAT "
                 f"(success={success}, resolved={threat_resolved})"
             )
@@ -261,45 +262,39 @@ class QSPLearning:
                 f"👻📝 Updated learning record: success={success}, "
                 f"resolved={threat_resolved}, false_positive={false_positive}"
             )
-        
-        # Record in learned thresholds if we have threshold data
-        if pre_metrics and 'failed_auth_attempts' in pre_metrics:
-            # Record for failed auth threshold
-            await self.learned_thresholds.record_outcome(
-                metric_name='failed_auth_attempts',
-                metric_value=pre_metrics.get('failed_auth_attempts', 0),
-                threshold_level='warning' if pre_metrics.get('failed_auth_attempts', 0) < 15 else 'critical',
-                was_successful=success,
-                was_false_positive=false_positive,
-                was_false_negative=false_negative,
-                outcome_notes=outcome_notes
-            )
-            
-            # Record for network anomalies threshold if relevant
-            if 'network_anomalies' in pre_metrics:
+
+        # Record in learned thresholds for each relevant metric
+        if pre_metrics:
+            for metric_name in ('suspicious_connections', 'network_anomalies', 'total_connections', 'failed_auth_attempts'):
+                value = pre_metrics.get(metric_name)
+                if value is None:
+                    continue
+                warning_threshold = await self.learned_thresholds.get_threshold(metric_name, 'warning')
+                critical_threshold = await self.learned_thresholds.get_threshold(metric_name, 'critical')
+                level = 'critical' if value >= critical_threshold else 'warning'
                 await self.learned_thresholds.record_outcome(
-                    metric_name='network_anomalies',
-                    metric_value=pre_metrics.get('network_anomalies', 0),
-                    threshold_level='warning' if pre_metrics.get('network_anomalies', 0) < 10 else 'critical',
+                    metric_name=metric_name,
+                    metric_value=value,
+                    threshold_level=level,
                     was_successful=success,
                     was_false_positive=false_positive,
                     was_false_negative=false_negative,
-                    outcome_notes=outcome_notes
+                    outcome_notes=outcome_notes,
                 )
-        
-        # Record in action effectiveness
+
+        # Record in action effectiveness using severity_score from the learning record
         if pre_metrics and post_metrics:
+            primary_metric = max(pre_metrics, key=lambda k: abs(pre_metrics[k]))
             await self.action_effectiveness.record_outcome(
                 action=learning_record.response_type,
+                current_metrics=pre_metrics,
+                severity=learning_record.severity_score,
+                primary_metric=primary_metric,
                 pre_metrics=pre_metrics,
                 post_metrics=post_metrics,
-                severity='warning' if pre_metrics.get('threat_count', 0) < 5 else 'critical',
                 success=success,
-                outcome_notes=outcome_notes
+                other_actions_considered=[],
             )
-        
-        # TODO: Update database record with outcome
-        # This requires querying by timestamp and updating the success field
     
     async def get_learning_stats(self) -> Dict[str, Any]:
         """
