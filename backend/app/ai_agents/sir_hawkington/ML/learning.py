@@ -169,17 +169,19 @@ class HawkLearning:
                 'reasoning_summary': action.reasoning_summary
             }
             
-            # Create database record
+            # Create database record — only columns that exist in the live DB schema
             db_record = AgentLearningRecord(
-                user_id=self.user_id,
                 agent_name='sir_hawkington',
-                decision_type=f'triage_{context.resource_type}',
-                input_data=input_data,
-                output_data=output_data,
+                fingerprint_l1=context.resource_type,
+                fingerprint_l2=f"{context.resource_type}_{context.severity}",
+                fingerprint_l3=f"{context.resource_type}_{context.severity}_{action.action_type}",
+                resource_type=context.resource_type,
+                severity=context.severity,
+                action=action.action_type,
+                parameters=output_data,
                 confidence=action.confidence,
-                success=learning_record.success,
-                reasoning=reasoning.primary_reason,
-                timestamp=learning_record.timestamp
+                success=learning_record.success if learning_record.success is not None else False,
+                root_cause=reasoning.primary_reason
             )
             
             self.db.add(db_record)

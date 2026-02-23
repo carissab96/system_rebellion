@@ -185,10 +185,13 @@ class VIC20DatabaseIntegration(BaseDatabaseIntegration):
                     'agent_actions': decision.agent_actions if decision.agent_actions else {}
                 })
                 
-                # Build mediation insight
+                # Build mediation insight — exclude system_context_snapshot (too large for btree index)
+                tech_orch = decision.technical_orchestration if decision.technical_orchestration else {}
                 mediation_insight = to_json_safe({
-                    'technical_orchestration': decision.technical_orchestration if decision.technical_orchestration else {},
-                    'system_context_snapshot': decision.system_context_snapshot if decision.system_context_snapshot else {}
+                    'technical_orchestration': {
+                        k: v for k, v in tech_orch.items()
+                        if k != 'system_context_snapshot'
+                    }
                 })
                 
                 # Build ancient wisdom application

@@ -264,7 +264,7 @@ class HamstersDistributed(AgentDecisionEngine, HamstersBrainV3):
                 
                 # 🎯 STEP 3: ACTION SELECTION - Choose execution strategy
                 logger.info("🐹⚡ Action selection phase...")
-                action_selector = HamstersActionSelection(self.personality_traits, db, self.system_id)
+                action_selector = HamstersActionSelection(self.personality_traits, db, self.user_id)
                 action = await action_selector.select_action(context, reasoning)
                 
                 logger.info(

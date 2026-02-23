@@ -270,7 +270,7 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
                     TerryExecutionPlanner, COLD_START_HYPOTHESES
                 )
                 
-                primitive_executor = TerryPrimitiveExecutor(agent_name='meth_snail')
+                primitive_executor = TerryPrimitiveExecutor()
                 execution_planner = TerryExecutionPlanner(
                     primitive_executor=primitive_executor,
                     effectiveness_model=action_selector.action_effectiveness,

@@ -204,12 +204,11 @@ class HawkPerception:
         Retrieve similar triage decisions from learning history.
         """
         try:
-            # Query for similar resource alerts in the past
             query = (
                 select(AgentLearningRecord)
                 .where(AgentLearningRecord.agent_name == 'sir_hawkington')
-                .where(AgentLearningRecord.decision_type.like(f'triage_{resource_type}%'))
-                .order_by(desc(AgentLearningRecord.timestamp))
+                .where(AgentLearningRecord.fingerprint_l1 == resource_type)
+                .order_by(desc(AgentLearningRecord.created_at))
                 .limit(10)
             )
             
@@ -219,12 +218,11 @@ class HawkPerception:
             similar = []
             for record in records:
                 similar.append({
-                    'resource_value': record.input_data.get('current_value'),
-                    'threshold': record.input_data.get('threshold'),
-                    'escalated': record.output_data.get('should_escalate', False),
+                    'resource_type': record.fingerprint_l1,
+                    'escalated': record.action == 'escalate',
                     'confidence': record.confidence,
                     'success': record.success,
-                    'timestamp': record.timestamp
+                    'timestamp': record.created_at
                 })
             
             logger.debug(f"🧐📚 Found {len(similar)} similar triage decisions")
@@ -242,8 +240,8 @@ class HawkPerception:
             query = (
                 select(AgentLearningRecord)
                 .where(AgentLearningRecord.agent_name == 'sir_hawkington')
-                .where(AgentLearningRecord.output_data['should_escalate'].astext == 'true')
-                .order_by(desc(AgentLearningRecord.timestamp))
+                .where(AgentLearningRecord.action == 'escalate')
+                .order_by(desc(AgentLearningRecord.created_at))
                 .limit(5)
             )
             
@@ -253,9 +251,9 @@ class HawkPerception:
             escalations = []
             for record in records:
                 escalations.append({
-                    'resource_type': record.input_data.get('resource_type'),
+                    'resource_type': record.fingerprint_l1,
                     'success': record.success,
-                    'timestamp': record.timestamp
+                    'timestamp': record.created_at
                 })
             
             logger.debug(f"🧐📚 Found {len(escalations)} recent escalations")
