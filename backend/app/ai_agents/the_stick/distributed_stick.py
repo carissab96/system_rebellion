@@ -108,7 +108,11 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
         self.bob_last_seen = None
         self.bob_activity_log = []
         self.bob_anxiety_multiplier = 3.0  # Bob causes 3x anxiety!
-        
+
+        # Section 4.2: Feedback engine — analyses chain outcomes, sends calibration feedback
+        from .ML.feedback import StickFeedbackEngine
+        self.feedback_engine = StickFeedbackEngine()
+
         logger.info("📏✨ The Stick's distributed consciousness initialized - COMPLIANCE PROTOCOLS ACTIVE!")
         logger.info("📏😰 Anxiety-driven hypervigilance ENABLED - Nothing escapes The Stick!")
         logger.info("📏🚨 Bob detection protocols ACTIVE - Paper bags at the ready!")
@@ -197,10 +201,33 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
         self.decision_log_buffer = []
         self.buffer_max_size = 10  # Batch write every 10 decisions
         self.total_decisions_logged = 0
-        
+
+        # Subscribe to CHAIN_OUTCOME from VIC-20 (Section 4.3)
+        try:
+            await self.subscribe_to_messages(
+                message_type=MessageType.CHAIN_OUTCOME,
+                callback=self._handle_chain_outcome
+            )
+            logger.info("📏📡 The Stick subscribed to CHAIN_OUTCOME - Full chain visibility ACTIVE!")
+        except Exception as e:
+            logger.error(f"📏💥 Failed to subscribe to CHAIN_OUTCOME: {e}")
+
+        # Subscribe to PIPELINE_INCONSISTENCY from specialists (Section 4.6)
+        try:
+            await self.subscribe_to_messages(
+                message_type=MessageType.PIPELINE_INCONSISTENCY,
+                callback=self._handle_pipeline_inconsistency
+            )
+            logger.info("📏📡 The Stick subscribed to PIPELINE_INCONSISTENCY")
+        except Exception as e:
+            logger.error(f"📏💥 Failed to subscribe to PIPELINE_INCONSISTENCY: {e}")
+
         # Start periodic flush task (every 30 seconds)
         import asyncio
         self._flush_task = asyncio.create_task(self._periodic_flush())
+
+        # Start feedback loop (every 5 minutes) — Section 4.4
+        self._feedback_task = asyncio.create_task(self._feedback_loop())
     
     async def _handle_coordination_request(self, message: AgentMessage) -> None:
         """
@@ -549,6 +576,131 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
                 logger.error(f"📏💥 Error in periodic flush: {e}", exc_info=True)
                 self._consume_paper_bag("periodic_flush_error")
     
+    async def _handle_chain_outcome(self, message: AgentMessage) -> None:
+        """
+        Section 4.3: Handle CHAIN_OUTCOME from VIC-20.
+
+        Records the full Hawk→VIC-20→Specialist chain result in the feedback engine
+        for later analysis. Triggers a paper bag if the chain failed.
+        """
+        try:
+            from .ML.feedback import ChainRecord
+
+            payload = message.payload
+            record = ChainRecord(
+                triage_alert_id=payload.get('triage_alert_id', 'unknown'),
+                resource_type=payload.get('resource_type', 'unknown'),
+                severity=payload.get('severity', 'unknown'),
+                specialist_name=payload.get('specialist_name', 'unknown'),
+                action_recommended=payload.get('action_recommended', 'unknown'),
+                action_taken=payload.get('action_taken', 'unknown'),
+                specialist_success=bool(payload.get('specialist_success', False)),
+                specialist_improvement=float(payload.get('specialist_improvement', 0.0)),
+                routing_was_correct=bool(payload.get('routing_was_correct', True)),
+                recommendation_was_followed=bool(payload.get('recommendation_was_followed', True)),
+                recommendation_was_effective=payload.get('recommendation_was_effective'),
+                hawk_severity=payload.get('hawk_severity', ''),
+                hawk_confidence=float(payload.get('hawk_confidence', 0.0)),
+            )
+
+            self.feedback_engine.record_chain(record)
+
+            if not record.specialist_success:
+                self._consume_paper_bag("chain_failure")
+                logger.warning(
+                    f"📏😰 Chain FAILED: {record.resource_type} → {record.specialist_name} "
+                    f"action={record.action_taken} *clutches paper bag*"
+                )
+            else:
+                logger.info(
+                    f"📏✅ Chain SUCCESS: {record.resource_type} → {record.specialist_name} "
+                    f"improvement={record.specialist_improvement:.1f}%"
+                )
+
+        except Exception as e:
+            logger.error(f"📏💥 Error handling chain outcome: {e}", exc_info=True)
+
+    async def _feedback_loop(self) -> None:
+        """
+        Section 4.4: Background task — runs every 5 minutes, generates feedback
+        from accumulated chain records and sends AGENT_FEEDBACK to Hawk and VIC-20.
+        """
+        import asyncio
+        FEEDBACK_INTERVAL_SECONDS = 300
+
+        while True:
+            try:
+                await asyncio.sleep(FEEDBACK_INTERVAL_SECONDS)
+
+                feedback_messages = self.feedback_engine.generate_feedback()
+                if not feedback_messages:
+                    logger.debug("📏🔄 Feedback loop: no feedback to send yet")
+                    continue
+
+                for fb in feedback_messages:
+                    await self.send_to_agent(
+                        to_agent=fb.target_agent,
+                        message_type=MessageType.AGENT_FEEDBACK,
+                        payload={
+                            'feedback_type': fb.feedback_type,
+                            'resource_type': fb.resource_type,
+                            'data': fb.data,
+                            'reasoning': fb.reasoning,
+                            'confidence': fb.confidence,
+                            'from_agent': 'the_stick',
+                        },
+                        priority=Priority.NORMAL,
+                    )
+                    logger.info(
+                        f"📏📤 Feedback sent to {fb.target_agent}: "
+                        f"type={fb.feedback_type}, resource={fb.resource_type}, "
+                        f"confidence={fb.confidence:.2f}"
+                    )
+
+                self.feedback_engine.clear_records()
+
+            except asyncio.CancelledError:
+                logger.info("📏🛑 Feedback loop cancelled")
+                break
+            except Exception as e:
+                logger.error(f"📏💥 Error in feedback loop: {e}", exc_info=True)
+                self._consume_paper_bag("feedback_loop_error")
+
+    async def _handle_pipeline_inconsistency(self, message: AgentMessage) -> None:
+        """
+        Section 4.6: Handle PIPELINE_INCONSISTENCY from specialists.
+
+        Logs the inconsistency, increases anxiety, and consumes a paper bag.
+        """
+        try:
+            payload = message.payload
+            from_agent = message.from_agent or payload.get('from_agent', 'unknown')
+            inconsistency_type = payload.get('inconsistency_type', 'unknown')
+            details = payload.get('details', {})
+
+            logger.warning(
+                f"📏⚠️ PIPELINE INCONSISTENCY from {from_agent}: "
+                f"type={inconsistency_type} *anxiety rising*"
+            )
+
+            self._consume_paper_bag("pipeline_inconsistency")
+            self.anxiety_spikes += 1
+
+            await self.broadcast_to_agents(
+                message_type=MessageType.DECISION_LOG,
+                payload={
+                    'decision_type': 'pipeline_inconsistency_logged',
+                    'from_agent': 'the_stick',
+                    'source_agent': from_agent,
+                    'inconsistency_type': inconsistency_type,
+                    'details': details,
+                },
+                priority=Priority.NORMAL,
+            )
+
+        except Exception as e:
+            logger.error(f"📏💥 Error handling pipeline inconsistency: {e}", exc_info=True)
+
     async def _handle_triage_decision(self, message: AgentMessage) -> None:
         """DEPRECATED: Handle triage decisions - now using DECISION_LOG instead."""
         try:

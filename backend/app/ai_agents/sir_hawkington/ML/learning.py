@@ -119,82 +119,17 @@ class HawkLearning:
             success=outcome_success
         )
         
-        # Store in database
-        storage_success = await self._store_in_database(learning_record, context, reasoning, action)
-        learning_record.storage_success = storage_success
+        # Hawk is ephemeral — no DB writes, no learning records.
+        # Triage data lives only in memory for the duration of this call.
+        learning_record.storage_success = False
         learning_record.situation_fingerprint = f"{context.resource_type}_{context.severity}_{action.action_type}"
-        
+
         logger.info(
-            f"🧐✅ Learning recorded: {action.action_type} for {context.resource_type}, "
-            f"confidence={action.confidence:.2f}"
+            f"🧐✅ Triage context recorded in-memory: {action.action_type} for {context.resource_type}, "
+            f"confidence={action.confidence:.2f} (ephemeral — no DB write)"
         )
-        
+
         return learning_record
-    
-    async def _store_in_database(
-        self,
-        learning_record: HawkLearningRecord,
-        context: HawkPerceptionContext,
-        reasoning: TriageReasoning,
-        action: TriageAction
-    ) -> bool:
-        """
-        Store learning record in PostgreSQL.
-        
-        Returns:
-            True if storage succeeded, False otherwise
-        """
-        try:
-            # Prepare input data
-            input_data = {
-                'resource_type': context.resource_type,
-                'current_value': context.current_value,
-                'threshold': context.threshold,
-                'severity': context.severity,
-                'data_quality_score': context.data_quality_score,
-                'monocle_yeets': context.monocle_yeet_count,
-                'similar_triages_count': len(context.similar_triages),
-                'recent_escalations_count': len(context.recent_escalations)
-            }
-            
-            # Prepare output data
-            output_data = {
-                'action_type': action.action_type,
-                'should_escalate': reasoning.should_escalate,
-                'target_specialist': action.target_agent,
-                'risk_level': reasoning.risk_level,
-                'priority': action.priority,
-                'monocle_state': action.monocle_state,
-                'aristocratic_confidence': action.aristocratic_confidence,
-                'reasoning_summary': action.reasoning_summary
-            }
-            
-            # Create database record — only columns that exist in the live DB schema
-            db_record = AgentLearningRecord(
-                agent_name='sir_hawkington',
-                fingerprint_l1=context.resource_type,
-                fingerprint_l2=f"{context.resource_type}_{context.severity}",
-                fingerprint_l3=f"{context.resource_type}_{context.severity}_{action.action_type}",
-                resource_type=context.resource_type,
-                severity=context.severity,
-                action=action.action_type,
-                parameters=output_data,
-                confidence=action.confidence,
-                success=learning_record.success if learning_record.success is not None else False,
-                root_cause=reasoning.primary_reason
-            )
-            
-            self.db.add(db_record)
-            await self.db.commit()
-            
-            learning_record.learning_record_id = str(db_record.id)
-            logger.debug(f"🧐💾 Learning record stored in database (ID: {db_record.id})")
-            return True
-            
-        except Exception as e:
-            logger.error(f"🧐💥 Error storing learning record: {e}")
-            await self.db.rollback()
-            return False
     
     async def update_outcome(
         self,

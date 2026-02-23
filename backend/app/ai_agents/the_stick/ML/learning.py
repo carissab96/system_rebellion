@@ -156,71 +156,64 @@ class StickLearning:
             True if storage succeeded, False otherwise
         """
         try:
-            # Prepare input data
-            input_data = {
-                'decision_complexity': context.decision_complexity,
-                'pending_decisions': context.pending_decisions,
-                'error_rate': context.error_rate,
-                'anomaly_count': context.anomaly_count,
-                'recent_decision_count': len(context.recent_decisions)
-            }
-            
-            # Prepare output data (includes personality behaviors)
-            output_data = {
+            resource_type = getattr(context, 'resource_type', 'logging')
+            severity = getattr(context, 'severity', 'normal')
+
+            # Hierarchical fingerprints
+            fingerprint_l1 = resource_type
+            fingerprint_l2 = f"{resource_type}_{severity}"
+            fingerprint_l3 = f"{resource_type}_{severity}_{action.action_type}"
+
+            # Parameters stored in the DB record
+            parameters = {
                 'action_type': action.action_type,
-                'logging_strategy': action.logging_strategy,
+                'logging_strategy': getattr(action, 'logging_strategy', 'standard'),
                 'priority': action.priority,
-                'confidence': action.confidence,
-                
-                # Anxiety tracking (personality)
                 'anxiety_level': context.anxiety_level,
                 'anxiety_category': action.anxiety_level,
                 'panic_attack_active': context.panic_attack_active,
                 'paper_bags_consumed': action.paper_bags_consumed,
-                'panic_attack_active': action.panic_attack_active,
-                'panic_attack_managed': action.panic_attack_managed,
+                'panic_attack_managed': getattr(action, 'panic_attack_managed', False),
                 'bob_detected': action.bob_detected,
-                'bob_avoidance_executed': action.bob_avoidance_executed,
-                'safe_distance_maintained': action.safe_distance_maintained,
-                'hamster_messages_archived': action.hamster_messages_archived,
-                'hamster_messages_understood': action.hamster_messages_understood,
-                'log_retention_days': action.log_retention_days,
-                'compression_applied': action.compression_applied
+                'bob_avoidance_executed': getattr(action, 'bob_avoidance_executed', False),
+                'hamster_messages_archived': getattr(action, 'hamster_messages_archived', 0),
+                'log_retention_days': getattr(action, 'log_retention_days', 7),
+                'compression_applied': getattr(action, 'compression_applied', False),
             }
-            
-            # Prepare improvement metrics
+
             improvement = {
                 'action_type': action.action_type,
-                'anxiety_managed': action.panic_attack_managed
+                'anxiety_managed': getattr(action, 'panic_attack_managed', False),
             }
-            
-            # Create database record
+
+            # success=False at write time (placeholder — updated by update_outcome()).
+            # DB column is NOT NULL so we cannot store None.
             db_record = AgentLearningRecord(
                 agent_name='the_stick',
                 fingerprint_l1=fingerprint_l1,
                 fingerprint_l2=fingerprint_l2,
                 fingerprint_l3=fingerprint_l3,
-                resource_type=context.resource_type,
-                severity=context.severity,
-                root_cause=reasoning.root_cause,
+                resource_type=resource_type,
+                severity=severity,
+                root_cause=getattr(reasoning, 'root_cause', None),
                 process_category='logging',
                 action=action.action_type,
                 parameters=parameters,
                 confidence=action.confidence,
-                followed_vic20=True,  # Stick follows VIC-20's routing
-                success=learning_record.success if learning_record.success is not None else True,
+                followed_vic20=True,
+                success=False,  # placeholder — updated by update_outcome()
                 improvement=improvement,
-                what_worked=reasoning.root_cause if learning_record.success else None,
-                what_failed=None if learning_record.success else reasoning.root_cause
+                what_worked=None,
+                what_failed=None,
             )
-            
+
             self.db.add(db_record)
             await self.db.commit()
-            
+
             learning_record.learning_record_id = str(db_record.id)
             logger.debug(f"📊💾 Learning record stored in database (ID: {db_record.id})")
             return True
-            
+
         except Exception as e:
             logger.error(f"📊💥 Error storing learning record: {e}")
             await self.db.rollback()

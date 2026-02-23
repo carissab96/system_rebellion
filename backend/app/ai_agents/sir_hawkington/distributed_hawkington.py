@@ -98,13 +98,13 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
         
         # 🎯 HIERARCHY: Sir Hawkington monitors ALL system metrics (sole system monitor)
         # As triage commander, he assesses        # Resource thresholds for triage (when to escalate to VIC-20)
-        # PHASE 1 TESTING: VERY LOW thresholds to trigger all agents and test direct calls
+        # Cold-start production values. The Stick adjusts these over time via agent_feedback.
         self.resource_thresholds = {
-            ResourceType.CPU: 5.0,        # → route to Terry (CPU issues often memory-related)
-            ResourceType.MEMORY: 30.0,    # → route to Terry (his specialty!)
-            ResourceType.DISK: 40.0,      # → route to Hamsters (duct tape time!)
-            ResourceType.NETWORK: 20.0,   # → route to QSP (quantum packet inspection!)
-            ResourceType.SWAP: 10.0,      # → route to Terry (swap usage is more concerning at lower %)
+            ResourceType.CPU: 70.0,
+            ResourceType.MEMORY: 80.0,
+            ResourceType.DISK: 85.0,
+            ResourceType.NETWORK: 70.0,
+            ResourceType.SWAP: 25.0,
         }
         
         # Week 4 System Integration
@@ -191,6 +191,16 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
         except Exception as e:
             logger.error(f"🧐💥 Failed to inject comm_hub into triage engine: {e}")
         
+        # Subscribe to AGENT_FEEDBACK from The Stick
+        try:
+            await self.subscribe_to_messages(
+                message_type=MessageType.AGENT_FEEDBACK,
+                callback=self._handle_stick_feedback
+            )
+            logger.info("🧐📡 Sir Hawkington subscribed to AGENT_FEEDBACK from The Stick")
+        except Exception as e:
+            logger.error(f"🧐💥 Failed to subscribe to agent feedback: {e}")
+
         # Initialize energy drink authorization system
         from .energy_drink_authorization import HawkEnergyDrinkAuthorizer
         self.energy_drink_authorizer = HawkEnergyDrinkAuthorizer()
@@ -522,6 +532,10 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
         threshold = alert.payload['threshold']
         resource_type = alert.payload.get('resource_type', 'unknown')
 
+        # Generate chain ID that flows through VIC-20 → specialist → outcome
+        import uuid
+        triage_alert_id = str(uuid.uuid4())
+
         logger.info(f"\n{'='*80}")
         logger.info(f"🧐🎯 HAWK V2 TRIAGE INITIATED")
         logger.info(f"{'='*80}")
@@ -676,7 +690,8 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
                         threshold=threshold,
                         severity=severity,
                         confidence=action.confidence,
-                        full_metrics=full_metrics  # Pass full metrics for specialist perception
+                        full_metrics=full_metrics,
+                        triage_alert_id=triage_alert_id
                     )
                     
                     logger.info(f"🧐✅ Escalation complete")
@@ -987,7 +1002,8 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
         threshold: float,
         severity: str,
         confidence: float,
-        full_metrics: Dict[str, Any] = None
+        full_metrics: Dict[str, Any] = None,
+        triage_alert_id: str = None
     ):
         """
         Send triage alert to VIC-20 for coordination.
@@ -1007,7 +1023,8 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
                 "severity": severity,
                 "confidence": confidence,
                 "triage_commander": "sir_hawkington",
-                "full_metrics": full_metrics or {},  # Pass full metrics for specialist perception
+                "full_metrics": full_metrics or {},
+                "triage_alert_id": triage_alert_id,
                 "timestamp": str(self._get_current_time()) if hasattr(self, '_get_current_time') else None
             }
         )
@@ -1037,6 +1054,43 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
             f"(severity={severity}, confidence={confidence:.2f})"
         )
     
+    async def _handle_stick_feedback(self, message: AgentMessage) -> None:
+        """The Stick says adjust thresholds. We listen."""
+        feedback = message.payload
+        feedback_type = feedback.get('feedback_type')
+
+        if feedback_type == 'threshold_adjustment':
+            resource_type = feedback.get('resource_type')
+            data = feedback.get('data', {})
+            direction = data.get('direction')
+            step = data.get('step', 5.0)
+            floor = data.get('floor', 50.0)
+            ceiling = data.get('ceiling', 95.0)
+
+            if resource_type and direction:
+                try:
+                    rt = ResourceType(resource_type)
+                    old = self.resource_thresholds.get(rt)
+                    if old is not None:
+                        if direction == 'raise':
+                            new = min(ceiling, old + step)
+                        elif direction == 'lower':
+                            new = max(floor, old - step)
+                        else:
+                            logger.warning(
+                                f"🧐❓ Unknown threshold direction: {direction}"
+                            )
+                            return
+
+                        self.resource_thresholds[rt] = new
+                        logger.info(
+                            f"🧐📏 Threshold adjusted by The Stick: "
+                            f"{resource_type} {old} → {new} "
+                            f"(direction={direction}, step={step})"
+                        )
+                except ValueError:
+                    logger.warning(f"🧐⚠️ Unknown resource type in feedback: {resource_type}")
+
     async def _cc_the_stick(self, decision_type: str, decision_data: Dict[str, Any]):
         """
         CC The Stick on all triage decisions for pattern learning.
@@ -1051,7 +1105,7 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
             payload={
                 "decision_type": decision_type,
                 "decision_data": decision_data,
-                "source_agent": "sir_hawkington",
+                "from_agent": "sir_hawkington",
                 "timestamp": str(self._get_current_time()) if hasattr(self, '_get_current_time') else None
             }
         )

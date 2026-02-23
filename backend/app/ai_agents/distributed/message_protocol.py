@@ -50,6 +50,13 @@ class MessageType(Enum):
     ACTION_REPORT = "action_report"            # Specialists → VIC-20
     DECISION_LOG = "decision_log"              # Everyone → The Stick (CC)
     
+    # Outcome chain (Specialist → VIC-20 → Stick → feedback)
+    ACTION_OUTCOME = "action_outcome"        # Specialist → VIC-20: action result
+    ROUTING_OUTCOME = "routing_outcome"      # VIC-20 internal: routing assessment
+    CHAIN_OUTCOME = "chain_outcome"          # VIC-20 → Stick: full chain result
+    AGENT_FEEDBACK = "agent_feedback"        # Stick → any agent: feedback
+    PIPELINE_INCONSISTENCY = "pipeline_inconsistency"  # Specialist → Stick: internal error
+
     # System events
     EMERGENCY = "emergency"
 

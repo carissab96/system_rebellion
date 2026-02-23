@@ -142,6 +142,15 @@ class HamstersDistributed(AgentDecisionEngine, HamstersBrainV3):
             callback=self._handle_coordination_request
         )
         
+        # Subscribe to AGENT_FEEDBACK from The Stick (Section 4.5)
+        try:
+            await self.subscribe_to_messages(
+                message_type=MessageType.AGENT_FEEDBACK,
+                callback=self._handle_stick_feedback
+            )
+        except Exception as e:
+            logger.error(f"🐹💥 Failed to subscribe to AGENT_FEEDBACK: {e}")
+
         logger.info("🐹🎯 Week 4 systems integrated - Coordination & Verification ONLINE!")
         logger.info("🐹🤝 Telepathic consensus ready for team coordination!")
         logger.info("🐹📡 Subscribed to COORDINATION_REQUEST - Ready to receive from VIC-20!")
@@ -491,6 +500,34 @@ class HamstersDistributed(AgentDecisionEngine, HamstersBrainV3):
                     }
                 )
 
+                # Section 5.1: Send ACTION_OUTCOME to VIC-20 so it can update the learning record
+                triage_alert_id = payload.get('triage_alert_id')
+                await self.send_to_agent(
+                    to_agent='vic_20_sage',
+                    message_type=MessageType.ACTION_OUTCOME,
+                    payload={
+                        'triage_alert_id': triage_alert_id,
+                        'agent_name': 'hamsters',
+                        'action_taken': action.goal,
+                        'recommended_action': recommendation.get('action', 'unknown'),
+                        'success': execution_result.overall_success,
+                        'improvement': disk_improvement_pct,
+                        'resource_type': resource_type,
+                        'severity': severity,
+                        'hawk_severity': payload.get('hawk_severity', severity),
+                        'hawk_confidence': payload.get('triage_confidence', 0.0),
+                        'followed_recommendation': True,
+                        'metrics_before': {'disk_usage': disk_before},
+                        'metrics_after': {'disk_usage': disk_after},
+                    },
+                    priority=Priority.NORMAL,
+                )
+                logger.info(
+                    f"🐹📤 ACTION_OUTCOME sent to VIC-20: "
+                    f"goal={action.goal}, success={execution_result.overall_success}, "
+                    f"improvement={disk_improvement_pct:.1f}%"
+                )
+
                 # Request The Stick validation for learned thresholds and action effectiveness
                 from app.core.database import get_async_db
                 try:
@@ -575,6 +612,29 @@ class HamstersDistributed(AgentDecisionEngine, HamstersBrainV3):
                 from app.ai_agents.exceptions import MLPipelineFailure
                 raise MLPipelineFailure(f"Hamsters ML pipeline failed: {e}") from e
     
+    async def _handle_stick_feedback(self, message: AgentMessage) -> None:
+        """
+        Section 4.5: Handle AGENT_FEEDBACK from The Stick.
+
+        The Stick may send action_effectiveness or routing_quality feedback.
+        Hamsters log it — Steve notes it carefully, Bob ignores it, Carl calculates duct tape.
+        """
+        feedback = message.payload
+        feedback_type = feedback.get('feedback_type', 'unknown')
+        resource_type = feedback.get('resource_type', 'unknown')
+        data = feedback.get('data', {})
+
+        logger.info(
+            f"🐹📏 Feedback from The Stick: type={feedback_type}, resource={resource_type}"
+        )
+
+        if feedback_type == 'action_effectiveness':
+            quality = data.get('quality', 'unknown')
+            logger.info(
+                f"🐹📊 Steve notes action effectiveness feedback: {quality} "
+                f"*Bob already forgot* *Carl calculates duct tape needed to fix it*"
+            )
+
     async def handle_coordination(self, coordination_request: Dict[str, Any]) -> Dict[str, Any]:
         """
         PHASE 1 REFACTOR: Accept coordination request directly from VIC-20 (not via Redis).

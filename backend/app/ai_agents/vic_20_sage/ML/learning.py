@@ -173,6 +173,8 @@ class VIC20Learning:
             }
             
             # Create database record
+            # success=False at write time (placeholder — updated by update_outcome() when specialist reports back).
+            # DB column is NOT NULL so we cannot store None.
             db_record = AgentLearningRecord(
                 agent_name='vic_20_sage',
                 fingerprint_l1=fingerprint_l1,
@@ -186,10 +188,10 @@ class VIC20Learning:
                 parameters=parameters,
                 confidence=action.confidence,
                 followed_vic20=False,  # VIC-20 IS the coordinator
-                success=learning_record.success if learning_record.success is not None else True,
+                success=False,  # placeholder — updated by update_outcome()
                 improvement=improvement,
-                what_worked=reasoning.primary_reason if learning_record.success else None,
-                what_failed=None if learning_record.success else reasoning.primary_reason
+                what_worked=None,
+                what_failed=None
             )
             
             self.db.add(db_record)
@@ -208,25 +210,51 @@ class VIC20Learning:
         self,
         learning_record: VIC20LearningRecord,
         success: bool,
+        improvement: Optional[float] = None,
         response_time: Optional[float] = None,
         outcome_notes: Optional[str] = None
     ):
         """
         Update a learning record with outcome information.
         
-        This is called after the specialist responds and we know if it succeeded.
+        Called after the specialist reports back with an ActionOutcome.
+        Updates the DB record that was written with success=False at decision time.
         """
         learning_record.success = success
         learning_record.specialist_response_time = response_time
         learning_record.outcome_notes = outcome_notes
-        
-        logger.info(
-            f"🖥️📝 Updated learning record: success={success}, "
-            f"response_time={response_time}s, notes={outcome_notes or 'none'}"
-        )
-        
-        # TODO: Update database record with outcome
-        # This requires querying by timestamp and updating the success field
+
+        if not learning_record.learning_record_id:
+            logger.warning("🖥️⚠️ update_outcome called but no learning_record_id — cannot update DB")
+            return
+
+        try:
+            from sqlalchemy import select, update as sa_update
+
+            record_id = int(learning_record.learning_record_id)
+            improvement_payload = {'improvement_percent': improvement} if improvement is not None else {}
+
+            what_note = outcome_notes or learning_record.outcome_notes
+            stmt = (
+                sa_update(AgentLearningRecord)
+                .where(AgentLearningRecord.id == record_id)
+                .values(
+                    success=success,
+                    improvement=improvement_payload,
+                    what_worked=what_note if success else None,
+                    what_failed=None if success else what_note,
+                )
+            )
+            await self.db.execute(stmt)
+            await self.db.commit()
+
+            logger.info(
+                f"🖥️📝 DB outcome updated: id={record_id}, success={success}, "
+                f"improvement={improvement}%, response_time={response_time}s"
+            )
+        except Exception as e:
+            logger.error(f"🖥️💥 Failed to update outcome in DB: {e}")
+            await self.db.rollback()
     
     async def get_learning_stats(self) -> Dict[str, Any]:
         """
@@ -294,9 +322,9 @@ class VIC20Learning:
         try:
             from sqlalchemy import select, func
             
-            # Query routings grouped by specialist
+            # Query routings grouped by specialist (action column stores target_specialist)
             query = select(
-                AgentLearningRecord.output_data['target_specialist'].label('specialist'),
+                AgentLearningRecord.action.label('specialist'),
                 func.count(AgentLearningRecord.id).label('total'),
                 func.sum(
                     func.cast(AgentLearningRecord.success, func.Integer())
@@ -305,7 +333,7 @@ class VIC20Learning:
             ).where(
                 AgentLearningRecord.agent_name == 'vic_20_sage'
             ).group_by(
-                AgentLearningRecord.output_data['target_specialist']
+                AgentLearningRecord.action
             )
             
             result = await self.db.execute(query)

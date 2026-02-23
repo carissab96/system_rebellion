@@ -59,31 +59,6 @@ PRIORITY_MAP = {
     "observation": 1
 }
 
-# Triage thresholds
-TRIAGE_THRESHOLDS = {
-    "normal_threshold": 0.30,
-    "medium_threshold": 0.65,
-    "emergency_threshold": 0.85,
-    "monocle_yeet_threshold": 0.95
-}
-
-# Learning thresholds
-LEARNING_THRESHOLDS = {
-    "min_observations": 25,  # Lower for Hawkington since triage is less frequent
-    "pattern_confidence_threshold": 0.7,
-    "pattern_promotion_threshold": 0.9,
-    "cross_validation_required": 5
-}
-
-# Hawkington-specific learning types
-class HawkingtonLearningTypes(str, Enum):
-    """Learning types specific to Sir Hawkington"""
-    TRIAGE_PATTERN = "triage_pattern"
-    SEVERITY_ASSESSMENT = "severity_assessment"
-    MONOCLE_YEET_TRIGGER = "monocle_yeet_trigger"
-    DATA_QUALITY_PATTERN = "data_quality_pattern"
-    ROUTING_EFFECTIVENESS = "routing_effectiveness"
-
 # Memory types for pinning
 class HawkingtonMemoryTypes(str, Enum):
     """Memory types for Sir Hawkington"""
@@ -118,21 +93,6 @@ ARISTOCRATIC_RESPONSES = {
     "triage_complete": "🧐✨ Triage completed with distinguished precision."
 }
 
-__all__ = [
-    'AGENT_NAME',
-    'HawkingtonEventTypes',
-    'PRIORITY_MAP',
-    'TRIAGE_THRESHOLDS',
-    'LEARNING_THRESHOLDS',
-    'HawkingtonLearningTypes',
-    'HawkingtonMemoryTypes',
-    'TriageRoutingTypes',
-    'MonocleStates',
-    'ARISTOCRATIC_RESPONSES',
-    'HawkingtonMemoryCategories',
-    'DATA_QUALITY_THRESHOLDS',
-    'TRIAGE_ACCURACY_THRESHOLDS'
-]
 # Memory categories for agent-specific table
 class HawkingtonMemoryCategories(str, Enum):
     """Memory categories for SirHawkingtonMemoryBank"""
@@ -150,27 +110,14 @@ DATA_QUALITY_THRESHOLDS = {
     'yeet_on_invalid': True
 }
 
-# Triage accuracy thresholds for learning
-TRIAGE_ACCURACY_THRESHOLDS = {
-    'excellent': 0.95,
-    'good': 0.85,
-    'acceptable': 0.70,
-    'poor': 0.50
-}
-
-# Update __all__ export
 __all__ = [
     'AGENT_NAME',
     'HawkingtonEventTypes',
     'PRIORITY_MAP',
-    'TRIAGE_THRESHOLDS',
-    'LEARNING_THRESHOLDS',
-    'HawkingtonLearningTypes',
     'HawkingtonMemoryTypes',
     'TriageRoutingTypes',
     'MonocleStates',
     'ARISTOCRATIC_RESPONSES',
-    'HawkingtonMemoryCategories',  # NEW
-    'DATA_QUALITY_THRESHOLDS',     # NEW
-    'TRIAGE_ACCURACY_THRESHOLDS'   # NEW
+    'HawkingtonMemoryCategories',
+    'DATA_QUALITY_THRESHOLDS',
 ]

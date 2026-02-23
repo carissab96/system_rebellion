@@ -151,6 +151,15 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
             callback=self._handle_coordination_request
         )
         
+        # Subscribe to AGENT_FEEDBACK from The Stick (Section 4.5)
+        try:
+            await self.subscribe_to_messages(
+                message_type=MessageType.AGENT_FEEDBACK,
+                callback=self._handle_stick_feedback
+            )
+        except Exception as e:
+            logger.error(f"🐌💥 Failed to subscribe to AGENT_FEEDBACK: {e}")
+
         logger.info("🐌🎯 Week 4 systems integrated - Coordination & Verification ONLINE!")
         logger.info("🐌📊 Learning when I'm FASTER than VIC-20!")
         logger.info("🐌📡 Subscribed to COORDINATION_REQUEST - Ready to receive from VIC-20!")
@@ -473,17 +482,46 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
                 }
             )
             
+            # Calculate improvement percentage from real metrics
+            cpu_improvement = metrics_before['cpu_usage'] - metrics_after['cpu_usage']
+            mem_improvement = metrics_before['memory_usage'] - metrics_after['memory_usage']
+            disk_improvement = metrics_before['disk_usage'] - metrics_after['disk_usage']
+            overall_improvement_pct = max(cpu_improvement, mem_improvement, disk_improvement)
+
+            # Section 5.1: Send ACTION_OUTCOME to VIC-20 so it can update the learning record
+            triage_alert_id = payload.get('triage_alert_id')
+            await self.send_to_agent(
+                to_agent='vic_20_sage',
+                message_type=MessageType.ACTION_OUTCOME,
+                payload={
+                    'triage_alert_id': triage_alert_id,
+                    'agent_name': 'meth_snail',
+                    'action_taken': decision.action,
+                    'recommended_action': recommendation.get('action', 'unknown'),
+                    'success': learning_record.success,
+                    'improvement': overall_improvement_pct,
+                    'resource_type': resource_type,
+                    'severity': severity,
+                    'hawk_severity': payload.get('hawk_severity', severity),
+                    'hawk_confidence': payload.get('triage_confidence', 0.0),
+                    'followed_recommendation': decision.followed_vic20,
+                    'metrics_before': metrics_before,
+                    'metrics_after': metrics_after,
+                },
+                priority=Priority.NORMAL,
+            )
+            logger.info(
+                f"🐌📤 ACTION_OUTCOME sent to VIC-20: "
+                f"action={decision.action}, success={learning_record.success}, "
+                f"improvement={overall_improvement_pct:.1f}%"
+            )
+
             if action_result['success']:
-                # Calculate improvement from real metrics
-                cpu_improvement = metrics_before['cpu_usage'] - metrics_after['cpu_usage']
-                mem_improvement = metrics_before['memory_usage'] - metrics_after['memory_usage']
-                disk_improvement = metrics_before['disk_usage'] - metrics_after['disk_usage']
-                
                 logger.info(
                     f"🐌✅ {decision.action} succeeded! "
                     f"CPU: {cpu_improvement:+.1f}%, Memory: {mem_improvement:+.1f}%, Disk: {disk_improvement:+.1f}%"
                 )
-                
+
                 # Broadcast success to WebSocket
                 await emit_agent_insight(
                     from_agent="meth_snail",
@@ -502,7 +540,7 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
                         "confidence": decision.confidence
                     }
                 )
-                
+
                 # Track override effectiveness (Terry v2 uses learning records now)
                 if not decision.followed_vic20:
                     if learning_record.success:
@@ -511,9 +549,9 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
                     else:
                         self.failed_overrides += 1
                         logger.warning(f"🐌⚠️ Maybe VIC-20 was right... ML says failed. (Success rate: {self.successful_overrides}/{self.total_overrides})")
-                    
+
                     self.override_success_rate = self.successful_overrides / max(1, self.total_overrides)
-                
+
                 # Write result to PostgreSQL (legacy compatibility)
                 await self._write_action_result(
                     resource_type=resource_type,
@@ -522,15 +560,15 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
                     followed_vic20=decision.followed_vic20,
                     severity=severity
                 )
-                
-                # Report back to VIC-20
+
+                # Report back to VIC-20 (legacy ACTION_REPORT — kept for backwards compat)
                 await self._report_to_vic20(
                     resource_type=resource_type,
                     action=decision.action,
                     result=action_result,
                     followed_recommendation=decision.followed_vic20
                 )
-                
+
                 # CC The Stick
                 await self._cc_the_stick(
                     decision_type='specialist_action',
@@ -802,6 +840,26 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
         except Exception as e:
             logger.error(f"🐌💥 Error CC'ing The Stick: {e}", exc_info=True)
     
+    async def _handle_stick_feedback(self, message: AgentMessage) -> None:
+        """
+        Section 4.5: Handle AGENT_FEEDBACK from The Stick.
+
+        The Stick may send action_effectiveness feedback to Terry.
+        Terry logs it and adjusts energy drink authorization threshold if needed.
+        """
+        feedback = message.payload
+        feedback_type = feedback.get('feedback_type', 'unknown')
+        resource_type = feedback.get('resource_type', 'unknown')
+        data = feedback.get('data', {})
+
+        logger.info(
+            f"🐌📏 Feedback from The Stick: type={feedback_type}, resource={resource_type}"
+        )
+
+        if feedback_type == 'action_effectiveness':
+            quality = data.get('quality', 'unknown')
+            logger.info(f"🐌📊 Action effectiveness feedback: {quality}")
+
     async def _handle_resource_alert(self, alert):
         """
         DEPRECATED: Terry no longer monitors resources directly.

@@ -82,12 +82,12 @@ async def emit_system_failure_event(
     try:
         from app.ai_agents.distributed.distributed_agent_manager import get_distributed_manager
         manager = get_distributed_manager()
-        
+
         if manager and manager.redis_client:
-            from app.ai_agents.distributed.message_protocol import Message, MessageType, Priority
-            
-            stick_message = Message(
-                type=MessageType.DECISION_LOG,
+            from app.ai_agents.distributed.message_protocol import AgentMessage, MessageType, Priority
+
+            stick_message = AgentMessage(
+                message_type=MessageType.DECISION_LOG,
                 from_agent=agent_name,
                 to_agent="the_stick",
                 payload={
@@ -98,27 +98,27 @@ async def emit_system_failure_event(
                 },
                 priority=Priority.CRITICAL
             )
-            
+
             await manager.redis_client.publish(
-                f"agent:the_stick:messages",
+                "agent:the_stick:messages",
                 stick_message.to_json()
             )
-            logger.debug(f"System failure logged to The Stick for learning hygiene review")
+            logger.debug("System failure logged to The Stick for learning hygiene review")
     except Exception as e:
         logger.error(f"Failed to notify The Stick: {e}")
-    
+
     # Send to VIC-20 for coordination awareness
     try:
         from app.ai_agents.distributed.distributed_agent_manager import get_distributed_manager
         manager = get_distributed_manager()
-        
+
         if manager and manager.redis_client:
-            from app.ai_agents.distributed.message_protocol import Message, MessageType, Priority
-            
-            vic20_message = Message(
-                type=MessageType.DECISION_LOG,
+            from app.ai_agents.distributed.message_protocol import AgentMessage, MessageType, Priority
+
+            vic20_message = AgentMessage(
+                message_type=MessageType.DECISION_LOG,
                 from_agent=agent_name,
-                to_agent="vic20_sage",
+                to_agent="vic_20_sage",
                 payload={
                     "log_type": "ml_pipeline_failure",
                     "failed_agent": agent_name,
@@ -127,12 +127,12 @@ async def emit_system_failure_event(
                 },
                 priority=Priority.CRITICAL
             )
-            
+
             await manager.redis_client.publish(
-                f"agent:vic20_sage:messages",
+                "agent:vic_20_sage:messages",
                 vic20_message.to_json()
             )
-            logger.debug(f"ML pipeline failure reported to VIC-20 for coordination awareness")
+            logger.debug("ML pipeline failure reported to VIC-20 for coordination awareness")
     except Exception as e:
         logger.error(f"Failed to notify VIC-20: {e}")
     

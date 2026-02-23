@@ -136,6 +136,15 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
             callback=self._handle_coordination_request
         )
         
+        # Subscribe to AGENT_FEEDBACK from The Stick (Section 4.5)
+        try:
+            await self.subscribe_to_messages(
+                message_type=MessageType.AGENT_FEEDBACK,
+                callback=self._handle_stick_feedback
+            )
+        except Exception as e:
+            logger.error(f"👻💥 Failed to subscribe to AGENT_FEEDBACK: {e}")
+
         logger.info("👻🎯 Week 4 systems integrated - Coordination & Verification ONLINE!")
         logger.info("👻🕵️ Paranoia levels optimal - Trust no one!")
         logger.info("👻📡 Subscribed to COORDINATION_REQUEST - Ready to receive from VIC-20!")
@@ -415,8 +424,37 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
                         post_metrics=pre_metrics_dict,
                     )
                 
+                # Section 5.1: Send ACTION_OUTCOME to VIC-20 so it can update the learning record
+                triage_alert_id = payload.get('triage_alert_id')
+                network_improvement_pct = float(network_result.get('improvement', 0.0)) * 100.0
+                await self.send_to_agent(
+                    to_agent='vic_20_sage',
+                    message_type=MessageType.ACTION_OUTCOME,
+                    payload={
+                        'triage_alert_id': triage_alert_id,
+                        'agent_name': 'quantum_shadow_people',
+                        'action_taken': decision.action_type,
+                        'recommended_action': recommendation.get('action', 'unknown'),
+                        'success': network_result['success'],
+                        'improvement': network_improvement_pct,
+                        'resource_type': resource_type,
+                        'severity': severity,
+                        'hawk_severity': payload.get('hawk_severity', severity),
+                        'hawk_confidence': payload.get('triage_confidence', 0.0),
+                        'followed_recommendation': True,
+                        'metrics_before': metrics_before,
+                        'metrics_after': metrics_after,
+                    },
+                    priority=Priority.NORMAL,
+                )
+                logger.info(
+                    f"👻📤 ACTION_OUTCOME sent to VIC-20: "
+                    f"action={decision.action_type}, success={network_result['success']}, "
+                    f"improvement={network_improvement_pct:.1f}%"
+                )
+
                 # ML v2 execution complete
-                logger.info("👻� ML v2 execution complete")
+                logger.info("👻🔒 ML v2 execution complete")
                 
         except Exception as e:
             logger.error(f"👻💥 QSP ML PIPELINE FAILED: {e}", exc_info=True)
@@ -499,6 +537,33 @@ class QuantumShadowPeopleDistributed(AgentDecisionEngine, QuantumShadowPeopleBra
                 from app.ai_agents.exceptions import MLPipelineFailure
                 raise MLPipelineFailure(f"QSP ML pipeline failed: {e}") from e
     
+    async def _handle_stick_feedback(self, message: AgentMessage) -> None:
+        """
+        Section 4.5: Handle AGENT_FEEDBACK from The Stick.
+
+        QSP is paranoid — even feedback from The Stick is treated with suspicion.
+        Logs it and adjusts paranoia level if routing quality is poor.
+        """
+        feedback = message.payload
+        feedback_type = feedback.get('feedback_type', 'unknown')
+        resource_type = feedback.get('resource_type', 'unknown')
+        data = feedback.get('data', {})
+
+        logger.info(
+            f"👻📏 Feedback from The Stick: type={feedback_type}, resource={resource_type} "
+            f"*quantum suspicion activated*"
+        )
+
+        if feedback_type == 'routing_quality':
+            quality = data.get('quality', 'unknown')
+            logger.info(
+                f"👻📊 Routing quality feedback: {quality} "
+                f"*adjusting quantum paranoia levels accordingly*"
+            )
+            if quality == 'poor':
+                self.paranoia_level = 'elevated'
+                logger.warning("👻⚠️ Paranoia elevated due to poor routing quality feedback")
+
     async def handle_coordination(self, coordination_request: Dict[str, Any]) -> Dict[str, Any]:
         """
         PHASE 1 REFACTOR: Accept coordination request directly from VIC-20 (not via Redis).

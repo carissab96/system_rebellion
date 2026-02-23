@@ -298,8 +298,9 @@ class HawkPerception:
         
         similar_overages = []
         for triage in similar_triages:
-            hist_value = triage.get('resource_value', 0)
-            hist_threshold = triage.get('threshold', 1)
+            params = triage.get('parameters') or {}
+            hist_value = params.get('current_value', 0)
+            hist_threshold = params.get('threshold', 1)
             if hist_threshold > 0:
                 hist_overage = (hist_value - hist_threshold) / hist_threshold
                 similar_overages.append(hist_overage)

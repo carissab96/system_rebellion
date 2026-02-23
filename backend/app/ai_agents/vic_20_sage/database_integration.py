@@ -185,13 +185,19 @@ class VIC20DatabaseIntegration(BaseDatabaseIntegration):
                     'agent_actions': decision.agent_actions if decision.agent_actions else {}
                 })
                 
-                # Build mediation insight — exclude system_context_snapshot (too large for btree index)
+                # Build mediation insight — store only index-safe summary fields.
+                # The full technical_orchestration blob is too large for the btree index on
+                # idx_vic20_mediation. We keep only scalar/short fields here.
                 tech_orch = decision.technical_orchestration if decision.technical_orchestration else {}
                 mediation_insight = to_json_safe({
-                    'technical_orchestration': {
-                        k: v for k, v in tech_orch.items()
-                        if k != 'system_context_snapshot'
-                    }
+                    'decision_type': tech_orch.get('decision_type') or (
+                        decision.decision_type.value
+                        if hasattr(decision.decision_type, 'value')
+                        else str(decision.decision_type)
+                    ),
+                    'coordination_target': decision.coordination_target,
+                    'agent_count': len(decision.agent_actions) if decision.agent_actions else 0,
+                    'has_ancient_wisdom': decision.ancient_wisdom_principle is not None,
                 })
                 
                 # Build ancient wisdom application
