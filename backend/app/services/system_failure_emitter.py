@@ -69,11 +69,11 @@ async def emit_system_failure_event(
         
         await emit_agent_decision(
             agent_name=agent_name,
-            decision_data={
-                "type": "system_failure",
-                "failure_event": failure_event
-            },
-            user_id="system"  # System-wide failure
+            decision_id=f"system_failure_{agent_name}_{failure_event['timestamp']}",
+            perception={"failure_type": failure_type, "error": error},
+            reasoning={"emergency_action_taken": emergency_action_taken},
+            action_selection={"type": "system_failure"},
+            learning={"failure_event": failure_event}
         )
     except Exception as e:
         logger.error(f"Failed to emit failure event to WebSocket: {e}")
@@ -232,10 +232,10 @@ async def record_emergency_action(
         manager = get_distributed_manager()
         
         if manager and manager.redis_client:
-            from app.ai_agents.distributed.message_protocol import Message, MessageType, Priority
+            from app.ai_agents.distributed.message_protocol import AgentMessage, MessageType, Priority
             
-            stick_message = Message(
-                type=MessageType.DECISION_LOG,
+            stick_message = AgentMessage(
+                message_type=MessageType.DECISION_LOG,
                 from_agent=agent,
                 to_agent="the_stick",
                 payload={

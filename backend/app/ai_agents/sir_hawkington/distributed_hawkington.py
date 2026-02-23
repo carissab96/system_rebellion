@@ -628,7 +628,7 @@ class SirHawkingtonDistributed(AgentDecisionEngine, SirHawkingtonBrainV2):
                 # 🎯 STEP 4: LEARNING - Store decision for future improvement
                 logger.info("🧐📚 Learning phase...")
                 learning = HawkLearning(db, self.user_id)
-                learning_record = await learning.learn(context, reasoning, action)
+                learning_record = await learning.learn(context, reasoning, action, outcome_success=True)
                 
                 logger.info(f"🧐💾 Learning record stored in PostgreSQL")
                 

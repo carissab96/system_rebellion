@@ -535,19 +535,19 @@ class HamstersLearning:
             # Query for beer and duct tape averages
             query = select(
                 func.avg(
-                    AgentLearningRecord.output_data['total_beers_consumed'].astext.cast(func.Float)
+                    AgentLearningRecord.output_data['total_beers_consumed'].as_float()
                 ).label('avg_beers'),
                 func.avg(
-                    AgentLearningRecord.output_data['duct_tape_rolls'].astext.cast(func.Float)
+                    AgentLearningRecord.output_data['duct_tape_rolls'].as_float()
                 ).label('avg_duct_tape'),
                 func.sum(
-                    AgentLearningRecord.output_data['steve_beers'].astext.cast(func.Integer)
+                    AgentLearningRecord.output_data['steve_beers'].as_integer()
                 ).label('steve_total_beers'),
                 func.sum(
-                    AgentLearningRecord.output_data['bob_beers'].astext.cast(func.Integer)
+                    AgentLearningRecord.output_data['bob_beers'].as_integer()
                 ).label('bob_total_beers'),
                 func.sum(
-                    AgentLearningRecord.output_data['carl_beers'].astext.cast(func.Integer)
+                    AgentLearningRecord.output_data['carl_beers'].as_integer()
                 ).label('carl_total_beers')
             ).where(
                 AgentLearningRecord.agent_name == 'hamsters'
@@ -582,24 +582,24 @@ class HamstersLearning:
             # Query for consensus metrics
             query = select(
                 func.avg(
-                    AgentLearningRecord.output_data['consensus_strength'].astext.cast(func.Float)
+                    AgentLearningRecord.output_data['consensus_strength'].as_float()
                 ).label('avg_consensus_strength'),
                 func.avg(
-                    AgentLearningRecord.output_data['disagreement_level'].astext.cast(func.Float)
+                    AgentLearningRecord.output_data['disagreement_level'].as_float()
                 ).label('avg_disagreement'),
                 func.count(
                     func.case(
-                        (AgentLearningRecord.output_data['steve_agreed'].astext == 'true', 1)
+                        (AgentLearningRecord.output_data['steve_agreed'].as_string() == 'true', 1)
                     )
                 ).label('steve_agreement_count'),
                 func.count(
                     func.case(
-                        (AgentLearningRecord.output_data['bob_agreed'].astext == 'true', 1)
+                        (AgentLearningRecord.output_data['bob_agreed'].as_string() == 'true', 1)
                     )
                 ).label('bob_agreement_count'),
                 func.count(
                     func.case(
-                        (AgentLearningRecord.output_data['carl_agreed'].astext == 'true', 1)
+                        (AgentLearningRecord.output_data['carl_agreed'].as_string() == 'true', 1)
                     )
                 ).label('carl_agreement_count')
             ).where(

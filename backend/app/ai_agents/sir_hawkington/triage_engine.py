@@ -809,24 +809,11 @@ class SirHawkingtonTriageEngine(AgentInstrumentationMixin, TriageEngineWithRedis
                     'system_impact': hd.system_impact
                 }
     
-            all_agent_data = {
-                'sir_hawkington': hawkington_data,
-                'system_metrics': metrics_data,
-            }
-            system_context = {
-                'triage_severity': triage_decision.severity.value,
-                'monocle_yeeted': triage_decision.monocle_yeeted,
-            }
-            vic20_decision = await vic20_coordinate_agents(
-                all_agent_data,
-                system_context,
-                user_id,
-            )
             return {
                 'agent': 'vic_20_sage',
                 'status': 'success',
-                'result': vic20_decision.to_dict() if vic20_decision else None,
-                'routing_reason': 'Medium severity - VIC-20 specialist coordination',
+                'result': None,
+                'routing_reason': 'Medium severity - VIC-20 ML pipeline via TRIAGE_ALERT broadcast',
                 'coordination_type': 'medium_severity',
             }
 
@@ -900,21 +887,11 @@ class SirHawkingtonTriageEngine(AgentInstrumentationMixin, TriageEngineWithRedis
                 user_id=user_id
             )
             
-            system_context = {
-                'metrics': metrics_data,
-                'triage_decision': triage_decision.to_dict(),
-            }
-            response = await vic20_emergency_response(
-                emergency_type,
-                triage_decision.target_agents,
-                system_context,
-                user_id,
-            )
             return {
                 'agent': 'vic_20_sage',
                 'status': 'success',
-                'result': response,
-                'routing_reason': '🧐💥 EMERGENCY - Monocle yeeted to VIC-20 multi-agent orchestration',
+                'result': None,
+                'routing_reason': '🧐💥 EMERGENCY - VIC-20 ML pipeline via TRIAGE_ALERT broadcast',
                 'emergency_type': emergency_type,
                 'aristocratic_authority': 'SUPREME',
             }
