@@ -376,10 +376,13 @@ class SirHawkingtonTriageEngine(AgentInstrumentationMixin, TriageEngineWithRedis
                 sent_rate     = metrics_data.get('network_sent_rate', 0) or 0
                 recv_rate     = metrics_data.get('network_recv_rate', 0) or 0
                 failed_auth   = metrics_data.get('failed_auth_attempts', 0) or 0
-                total_conn    = (
-                    network_data.get('protocol_breakdown', {})
-                    .get('total_connections', 0)
-                ) or 0
+                # total_connections is a top-level key from SimplifiedNetworkService.
+                # ResourceMonitor puts it under protocol_breakdown — check both.
+                total_conn = (
+                    network_data.get('total_connections')
+                    or network_data.get('protocol_breakdown', {}).get('total_connections')
+                    or 0
+                )
 
                 network_alerts = []
 
