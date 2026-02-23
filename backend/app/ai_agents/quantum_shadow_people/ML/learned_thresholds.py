@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.threshold_learning import ThresholdLearningRecord
+from app.models.learned_thresholds import ThresholdLearningRecord
 from .heuristic_config import DEFAULT_THRESHOLDS, THRESHOLD_ADJUSTMENT_CONFIG
 
 logger = logging.getLogger('QSPLearnedThresholds')

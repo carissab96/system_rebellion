@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.threshold_learning import ThresholdLearningRecord
+from app.models.learned_thresholds import ThresholdLearningRecord
 
 logger = logging.getLogger('HamstersLearnedThresholds')
 
