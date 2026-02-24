@@ -1262,6 +1262,18 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
             "compliance_records": "comprehensive",
             "paper_bag_inventory": self.paper_bag_inventory,
             "paper_bags_consumed": self.paper_bags_consumed,
+            "anxiety_level": getattr(self, 'current_anxiety_percentage', 0.0),
+            "anxiety_state": (
+                'calm' if getattr(self, 'current_anxiety_percentage', 0) < 30
+                else 'nervous' if getattr(self, 'current_anxiety_percentage', 0) < 60
+                else 'hyperventilating' if getattr(self, 'current_anxiety_percentage', 0) < 80
+                else 'paper_bag_emergency'
+            ),
+            "paper_bag_economy": {
+                "bags_remaining": getattr(self.paper_bag_economy, 'bags_remaining', 0),
+                "bags_consumed_today": getattr(self.paper_bag_economy, 'bags_consumed_today', 0),
+                "bags_consumed_total": getattr(self.paper_bag_economy, 'bags_consumed_total', 0),
+            },
             "distributed": distributed_state
         }
         

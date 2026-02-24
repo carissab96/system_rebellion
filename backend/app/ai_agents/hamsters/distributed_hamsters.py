@@ -112,6 +112,7 @@ class HamstersDistributed(AgentDecisionEngine, HamstersBrainV3):
         # Bob's wild idea counter (causes Stick anxiety!)
         self.bob_wild_ideas = 0
         self.bob_hold_my_beer_count = 0
+        self.bob_at_cupboard = False
         
         logger.info("🐹🐹🐹 Steve, Bob, and Carl's distributed consciousness initialized - TELEPATHIC LINK ACTIVE!")
         logger.info("🐹🧠 Choice engine online - Ready to evaluate VIC-20's recommendations!")
@@ -237,6 +238,9 @@ class HamstersDistributed(AgentDecisionEngine, HamstersBrainV3):
                         f"🐹📊 Synced beer consumption to brain state. "
                         f"Total today: {self.beer_consumption_today}"
                     )
+                
+                if context.bob_proximity:
+                    self.bob_at_cupboard = context.bob_proximity.bob_at_cupboard
                 
                 # Log duct tape
                 if context.duct_tape_assessment:
@@ -1041,6 +1045,7 @@ class HamstersDistributed(AgentDecisionEngine, HamstersBrainV3):
             "telepathic_bond": "strong",
             "bob_wild_ideas": self.bob_wild_ideas,
             "bob_hold_my_beer_count": self.bob_hold_my_beer_count,
+            "bob_at_cupboard": self.bob_at_cupboard,
             "duct_tape_inventory": self.carl['duct_tape_inventory'],
             "distributed": distributed_state
         }

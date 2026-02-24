@@ -262,6 +262,8 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
                         f"Total vetoes: {action_selector.energy_drink_system.hawk_vetoes}"
                     )
                 
+                self._last_energy_drink_system = action_selector.energy_drink_system
+                
                 logger.info(
                     f"🐌⚡ Action selected: {decision.action} "
                     f"({'FOLLOWING VIC-20' if decision.followed_vic20 else 'OVERRIDING VIC-20'})"
@@ -1110,7 +1112,10 @@ class MethSnailDistributed(AgentDecisionEngine, MethSnailBrainV2):
             "total_analyses": self.total_analyses,
             "successful_analyses": self.successful_analyses,
             "shell_spin_count": len(self.shell_spin_incidents),
-            "energy_drinks_consumed": len(getattr(self, 'energy_drink_history', [])),
+            "energy_drinks_consumed": getattr(
+                getattr(self, '_last_energy_drink_system', None),
+                'energy_drinks_today', 0
+            ),
             "current_jitter_level": self.current_jitter_level.value if hasattr(self, 'current_jitter_level') else "unknown",
             "optimization_stats": {
                 "total_optimizations": self.total_analyses,
