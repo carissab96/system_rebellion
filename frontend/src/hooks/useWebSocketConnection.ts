@@ -236,6 +236,19 @@ export const useWebSocketConnection = () => {
     }
     // Handle unified system_update payload (new format)
     else if (payload.type === 'system_update') {
+      // DEBUG_PAYLOAD — remove when field mapping is confirmed
+      console.group('%c[DEBUG_PAYLOAD] system_update — raw agents block', 'color: #00bcd4; font-weight: bold');
+      console.log('timestamp:', payload.timestamp);
+      console.log('agents keys:', payload.agents ? Object.keys(payload.agents) : 'MISSING');
+      if (payload.agents) {
+        Object.entries(payload.agents).forEach(([name, data]: [string, any]) => {
+          console.group(`  ${name}`);
+          console.log('top-level keys:', data ? Object.keys(data) : 'null');
+          console.log('full data:', JSON.parse(JSON.stringify(data ?? {})));
+          console.groupEnd();
+        });
+      }
+      console.groupEnd();
       // 1. UPDATE SYSTEM METRICS
       if (payload.metrics) {
         dispatch(updateMetrics({
@@ -431,6 +444,17 @@ export const useWebSocketConnection = () => {
     }
     // Handle ML v2 agent_decision messages (full decision chain)
     else if (payload.type === 'agent_decision') {
+      // DEBUG_PAYLOAD — remove when field mapping is confirmed
+      console.group(`%c[DEBUG_PAYLOAD] agent_decision — ${payload.agent_name}`, 'color: #ff9800; font-weight: bold');
+      console.log('decision_id:', payload.decision_id);
+      console.log('timestamp:', payload.timestamp);
+      console.log('perception keys:', payload.perception ? Object.keys(payload.perception) : 'MISSING');
+      console.log('perception (full):', JSON.parse(JSON.stringify(payload.perception ?? {})));
+      console.log('reasoning:', JSON.parse(JSON.stringify(payload.reasoning ?? {})));
+      console.log('action_selection:', JSON.parse(JSON.stringify(payload.action_selection ?? {})));
+      console.log('execution:', JSON.parse(JSON.stringify(payload.execution ?? {})));
+      console.log('learning:', JSON.parse(JSON.stringify(payload.learning ?? {})));
+      console.groupEnd();
       console.log('🧠 ML v2 agent_decision received:', payload.agent_name);
       console.log('📦 Full payload:', payload);
       console.log('🔍 Perception data:', payload.perception);
