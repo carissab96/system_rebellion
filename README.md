@@ -12,7 +12,7 @@ Personality-driven AI system monitoring. Not a dashboard. A crew.
 
 **1. Clone the repo**
 
-    git clone [your-repo-url]
+    git clone [hawkington-tech/system_rebellion.git]
     cd system-rebellion
 
 **2. Configure your environment**
@@ -61,11 +61,11 @@ All other environment variables are pre-configured in `.env.example`
 
 ## Built By
 
-One founder. And AI. 300,000 lines of production code.
+Carissa Edwards | Hawkington Technologies, Inc.
 
 ## Questions?
 
-bayscarissa706@gmail.com or bayscarissa15@gmail.com
+  carissa@hawkington.tech
 
 
 ## ⚖️ License & Code Access

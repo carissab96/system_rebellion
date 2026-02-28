@@ -158,21 +158,31 @@ class ActionEffectivenessModel:
         # Confidence based on sample size (full confidence at 20+ samples)
         confidence = min(1.0, len(similar_outcomes) / 20.0)
         
-        # Base score is weighted combination of success rate and improvement
-        base_score = (success_rate * 0.6) + (min(1.0, avg_improvement) * 0.4)
+        # Historical score from success rate and improvement
+        historical_score = (success_rate * 0.6) + (min(1.0, avg_improvement) * 0.4)
         
-        # Adjust score based on recency (recent outcomes weighted more)
-        recent_outcomes = [o for o in similar_outcomes if o.created_at >= utc_now().replace(tzinfo=None) - timedelta(days=7)]
+        # Adjust historical score based on recency (recent outcomes weighted more)
+        recent_outcomes = [
+            o for o in similar_outcomes
+            if o.created_at >= utc_now().replace(tzinfo=None) - timedelta(days=7)
+        ]
         if recent_outcomes:
             recent_success_rate = sum(1 for o in recent_outcomes if o.success) / len(recent_outcomes)
             # Blend recent with overall (70% recent, 30% overall)
-            base_score = (recent_success_rate * 0.7) + (base_score * 0.3)
+            historical_score = (recent_success_rate * 0.7) + (historical_score * 0.3)
         else:
             recent_success_rate = None
         
+        # BLEND heuristic and historical scores based on confidence.
+        # At confidence=0 (no data), 100% heuristic.
+        # At confidence=1 (20+ samples), 100% historical.
+        heuristic_score = self._get_heuristic_score(action, severity, primary_metric)
+        base_score = (confidence * historical_score) + ((1.0 - confidence) * heuristic_score)
+        
         reasoning = (
             f"Success rate: {success_rate:.0%} in {len(similar_outcomes)} similar situations, "
-            f"avg improvement: {avg_improvement:.1%}"
+            f"avg improvement: {avg_improvement:.1%}, "
+            f"blended with heuristic (confidence: {confidence:.0%})"
         )
         
         if recent_success_rate is not None and len(recent_outcomes) >= 3:

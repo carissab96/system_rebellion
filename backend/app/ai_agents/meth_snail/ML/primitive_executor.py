@@ -594,6 +594,8 @@ class TerryPrimitiveExecutor(PrimitiveExecutor):
                     # Field 14 (0-indexed 13) = utime, field 15 = stime
                     utime = int(parts[13]) + int(parts[14])
                     name = parts[1].strip('()')
+                    if name in PROTECTED_PROCESSES:
+                        continue
                     if utime > top_utime:
                         top_utime = utime
                         top_pid = pid

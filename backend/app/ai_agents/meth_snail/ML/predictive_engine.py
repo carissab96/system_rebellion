@@ -10,13 +10,17 @@ to prevent emergency intervention later."
 import logging
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import statistics
-from sqlalchemy import and_, func
-from sqlalchemy.orm import Session
+from sqlalchemy import and_, func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.learned_thresholds import MetricPatternHistory
 from .learned_thresholds import LearnedThresholds
+
+
+def utc_now() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 @dataclass
@@ -69,7 +73,7 @@ class PredictiveEngine:
     
     def __init__(
         self, 
-        db_session: Session, 
+        db_session: AsyncSession, 
         learned_thresholds: LearnedThresholds,
         system_id: str,
         agent_name: str = "meth_snail"
@@ -220,23 +224,31 @@ class PredictiveEngine:
         if not growth_rates:
             return None
         
-        # Use weighted average (recent rates weighted more)
-        weights = [i+1 for i in range(len(growth_rates))]  # 1, 2, 3, 4...
-        weighted_sum = sum(r * w for r, w in zip(growth_rates, weights))
+        # Use weighted average of absolute deltas (recent weighted more)
+        # Convert percentage growth rates back to absolute change per minute
+        absolute_rates = []
+        for i in range(1, len(values)):
+            absolute_rates.append(values[i] - values[i-1])  # Absolute change per interval
+        
+        if not absolute_rates:
+            return None
+        
+        weights = [i + 1 for i in range(len(absolute_rates))]  # 1, 2, 3, 4...
+        weighted_sum = sum(r * w for r, w in zip(absolute_rates, weights))
         weight_total = sum(weights)
-        avg_growth_rate = weighted_sum / weight_total if weight_total > 0 else 0.0
+        avg_change_per_min = weighted_sum / weight_total if weight_total > 0 else 0.0
         
-        # Extrapolate (compound growth)
-        forecast_15min = current_value * (1 + avg_growth_rate / 100) ** 15
-        forecast_30min = current_value * (1 + avg_growth_rate / 100) ** 30
-        forecast_1hr = current_value * (1 + avg_growth_rate / 100) ** 60
+        # Linear extrapolation (additive, not compound)
+        forecast_15min = current_value + (avg_change_per_min * 15)
+        forecast_30min = current_value + (avg_change_per_min * 30)
+        forecast_1hr = current_value + (avg_change_per_min * 60)
         
-        # Cap at 100% for percentage metrics
+        # Cap at 0-100% for percentage metrics
         return {
             '15min': min(100.0, max(0.0, forecast_15min)),
             '30min': min(100.0, max(0.0, forecast_30min)),
             '1hr': min(100.0, max(0.0, forecast_1hr)),
-            'growth_rate': avg_growth_rate
+            'growth_rate': avg_change_per_min  # Now in absolute units per minute
         }
     
     async def _pattern_based_forecast(
@@ -296,7 +308,7 @@ class PredictiveEngine:
         - Similar day of week
         """
         
-        cutoff_date = datetime.utcnow() - timedelta(days=60)
+        cutoff_date = utc_now().replace(tzinfo=None) - timedelta(days=60)
         
         # Build filters
         filters = [
@@ -306,21 +318,32 @@ class PredictiveEngine:
             MetricPatternHistory.starting_timestamp >= cutoff_date
         ]
         
-        # Time of day filter (if provided)
+        # Time of day filter (if provided) — handles midnight wraparound
         if 'time_of_day' in context:
             hour = context['time_of_day']
-            # Match records from ±2 hours
-            filters.append(
-                func.extract('hour', MetricPatternHistory.starting_timestamp).between(
-                    (hour - 2) % 24, (hour + 2) % 24
+            low = (hour - 2) % 24
+            high = (hour + 2) % 24
+            if low <= high:
+                filters.append(
+                    func.extract('hour', MetricPatternHistory.starting_timestamp).between(low, high)
                 )
-            )
+            else:
+                # Wraps midnight: e.g. hour=1 → low=23, high=3
+                from sqlalchemy import or_
+                filters.append(
+                    or_(
+                        func.extract('hour', MetricPatternHistory.starting_timestamp) >= low,
+                        func.extract('hour', MetricPatternHistory.starting_timestamp) <= high
+                    )
+                )
         
-        patterns = self.db.query(MetricPatternHistory).filter(
-            and_(*filters)
-        ).order_by(MetricPatternHistory.starting_timestamp.desc()).limit(20).all()
+        result = await self.db.execute(
+            select(MetricPatternHistory).where(
+                and_(*filters)
+            ).order_by(MetricPatternHistory.starting_timestamp.desc()).limit(20)
+        )
         
-        return patterns
+        return result.scalars().all()
     
     async def _check_threshold_crossing(
         self,
@@ -466,14 +489,13 @@ class PredictiveEngine:
             system_id=self.system_id,
             metric_name=metric_name,
             starting_value=starting_value,
-            starting_timestamp=datetime.utcnow(),
+            starting_timestamp=utc_now().replace(tzinfo=None),
             context=context,
             context_fingerprint=context_fingerprint
         )
         
         self.db.add(pattern)
-        self.db.commit()
-        self.db.refresh(pattern)
+        await self.db.flush()
         
         return str(pattern.id)
     
@@ -486,9 +508,12 @@ class PredictiveEngine:
     ):
         """Update a pattern record with future values"""
         
-        pattern = self.db.query(MetricPatternHistory).filter(
-            MetricPatternHistory.id == int(pattern_id)
-        ).first()
+        result = await self.db.execute(
+            select(MetricPatternHistory).where(
+                MetricPatternHistory.id == int(pattern_id)
+            )
+        )
+        pattern = result.scalar_one_or_none()
         
         if not pattern:
             self.logger.warning(f"Pattern {pattern_id} not found")
@@ -501,7 +526,7 @@ class PredictiveEngine:
         if value_1hr is not None:
             pattern.value_1hr_later = value_1hr
         
-        self.db.commit()
+        await self.db.flush()
         
         self.logger.debug(
             f"📚 Updated pattern {pattern_id}: "
@@ -539,16 +564,19 @@ class PredictiveEngine:
         Calculate forecast accuracy by comparing predictions to actual outcomes.
         """
         
-        cutoff_date = datetime.utcnow() - timedelta(days=30)
+        cutoff_date = utc_now().replace(tzinfo=None) - timedelta(days=30)
         
-        patterns = self.db.query(MetricPatternHistory).filter(
-            and_(
-                MetricPatternHistory.system_id == self.system_id,
-                MetricPatternHistory.metric_name == metric_name,
-                MetricPatternHistory.starting_timestamp >= cutoff_date,
-                MetricPatternHistory.value_15min_later.isnot(None)
+        result = await self.db.execute(
+            select(MetricPatternHistory).where(
+                and_(
+                    MetricPatternHistory.system_id == self.system_id,
+                    MetricPatternHistory.metric_name == metric_name,
+                    MetricPatternHistory.starting_timestamp >= cutoff_date,
+                    MetricPatternHistory.value_15min_later.isnot(None)
+                )
             )
-        ).all()
+        )
+        patterns = result.scalars().all()
         
         if not patterns:
             return {
