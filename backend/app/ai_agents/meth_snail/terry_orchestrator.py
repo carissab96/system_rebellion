@@ -96,10 +96,23 @@ class TerryOrchestrator:
 
                 logger.info("🐌👁️ Perception complete")
 
-                # STEP 2: REASONING
+                # STEP 2: ACTION SELECTOR (instantiated early so learned_thresholds
+                # can be passed to TerryReasoning in the next step)
+                from app.ai_agents.meth_snail.ML.action_selection import TerryActionSelection
+
+                action_selector = TerryActionSelection(
+                    comm_hub=self._comm_hub_ref,
+                    db=db,
+                    system_id=payload.get('system_id', 'default')
+                )
+
+                # STEP 3: REASONING (receives learned_thresholds from action_selector)
                 from app.ai_agents.meth_snail.ML.reasoning import TerryReasoning
 
-                reasoning = TerryReasoning(db)
+                reasoning = TerryReasoning(
+                    db,
+                    learned_thresholds=action_selector.learned_thresholds
+                )
                 reasoning_result = await reasoning.reason(context)
 
                 logger.info(
@@ -108,14 +121,7 @@ class TerryOrchestrator:
                     f"(confidence: {reasoning_result.action_confidence:.2f})"
                 )
 
-                # STEP 3: ACTION SELECTION
-                from app.ai_agents.meth_snail.ML.action_selection import TerryActionSelection
-
-                action_selector = TerryActionSelection(
-                    comm_hub=self._comm_hub_ref,
-                    db=db,
-                    system_id=payload.get('system_id', 'default')
-                )
+                # ACTION SELECTION (uses already-instantiated action_selector)
                 decision = await action_selector.select_action(reasoning_result, context)
 
                 # Log personality behaviors
@@ -303,7 +309,6 @@ class TerryOrchestrator:
                         action_selector.energy_drink_system.energy_drinks_today
                     ),
                     "exploration_rate": action_selector.epsilon,
-                    "cache_clear_bias": action_selector.cache_clear_bias
                 }
 
                 # Return everything communication and websocket layers need
