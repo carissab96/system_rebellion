@@ -35,6 +35,7 @@ THRESHOLD_LEARNING_CONFIG = {
 
 # Module-level default thresholds — extracted from instance to prevent drift
 DEFAULT_THRESHOLDS = {
+    # === Percentage resource metrics ===
     'memory_usage': {
         'monitor': 70.0,
         'warning': 80.0,
@@ -58,7 +59,62 @@ DEFAULT_THRESHOLDS = {
         'warning': 80.0,
         'critical': 90.0,
         'emergency': 95.0
-    }
+    },
+
+    # === Non-percentage diagnostic metrics ===
+
+    # Context switches per sampling interval
+    # Units: count (from /proc/stat or psutil)
+    'context_switches': {
+        'monitor': 50000.0,
+        'warning': 75000.0,
+        'critical': 100000.0,
+        'emergency': 200000.0
+    },
+
+    # Disk I/O throughput
+    # Units: bytes per second
+    'disk_io_bytes': {
+        'monitor': 50_000_000.0,
+        'warning': 100_000_000.0,
+        'critical': 500_000_000.0,
+        'emergency': 1_000_000_000.0
+    },
+
+    # Network throughput (total send + receive)
+    # Units: bytes per sampling interval
+    'network_io_bytes': {
+        'monitor': 50_000_000.0,
+        'warning': 100_000_000.0,
+        'critical': 500_000_000.0,
+        'emergency': 1_000_000_000.0
+    },
+
+    # Metric improvement thresholds (for success determination)
+    # Units: percentage points of change
+    # "Did this action actually help the primary metric?"
+    'improvement_primary': {
+        'monitor': 0.25,
+        'warning': 0.5,
+        'critical': 1.0,
+        'emergency': 5.0
+    },
+    # "Did this action help ANY metric?"
+    'improvement_any': {
+        'monitor': 0.5,
+        'warning': 1.0,
+        'critical': 2.0,
+        'emergency': 5.0
+    },
+
+    # Action outcome success threshold
+    # Units: percentage improvement required to count as "success"
+    'action_success': {
+        'monitor': 2.0,
+        'warning': 5.0,
+        'critical': 10.0,
+        'emergency': 20.0
+    },
 }
 
 # Goal → metric mapping for ExecutionPlanner integration.
@@ -176,6 +232,77 @@ class LearnedThresholds:
         
         return adjusted
     
+    async def assess_severity(
+        self,
+        metric_name: str,
+        current_value: float,
+        context: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Assess severity of current metric value against learned thresholds.
+        
+        Returns a dict with:
+            - 'severity': float 0.0-1.0 (how severe is this?)
+            - 'threshold_level': Optional[str] ('monitor', 'warning', 'critical', 'emergency', or None)
+            - 'confidence': float 0.0-1.0 (how confident are we in this assessment?)
+        
+        Called by action_selection.py to determine severity for action scoring.
+        """
+        # Get all thresholds for this metric (context-adjusted)
+        monitor_val = await self.get_threshold(metric_name, 'monitor', context)
+        warning_val = await self.get_threshold(metric_name, 'warning', context)
+        critical_val = await self.get_threshold(metric_name, 'critical', context)
+        emergency_val = await self.get_threshold(metric_name, 'emergency', context)
+        
+        # Determine which threshold level is crossed (highest first)
+        threshold_level: Optional[str] = None
+        severity: float = 0.0
+        
+        if current_value >= emergency_val:
+            threshold_level = 'emergency'
+            severity = 1.0
+        elif current_value >= critical_val:
+            threshold_level = 'critical'
+            # Interpolate between critical (0.7) and emergency (1.0)
+            if emergency_val > critical_val:
+                fraction = (current_value - critical_val) / (emergency_val - critical_val)
+            else:
+                fraction = 1.0
+            severity = 0.7 + (fraction * 0.3)
+        elif current_value >= warning_val:
+            threshold_level = 'warning'
+            # Interpolate between warning (0.4) and critical (0.7)
+            if critical_val > warning_val:
+                fraction = (current_value - warning_val) / (critical_val - warning_val)
+            else:
+                fraction = 1.0
+            severity = 0.4 + (fraction * 0.3)
+        elif current_value >= monitor_val:
+            threshold_level = 'monitor'
+            # Interpolate between monitor (0.1) and warning (0.4)
+            if warning_val > monitor_val:
+                fraction = (current_value - monitor_val) / (warning_val - monitor_val)
+            else:
+                fraction = 1.0
+            severity = 0.1 + (fraction * 0.3)
+        else:
+            # Below all thresholds
+            threshold_level = None
+            severity = max(0.0, current_value / monitor_val * 0.1) if monitor_val > 0 else 0.0
+        
+        # Get confidence from threshold assessment
+        assessment = await self._get_threshold_assessment(metric_name)
+        if threshold_level:
+            confidence = getattr(assessment, f"{threshold_level}_confidence", 0.3)
+        else:
+            confidence = assessment.monitor_confidence  # Use lowest level confidence
+        
+        return {
+            'severity': round(severity, 3),
+            'threshold_level': threshold_level,
+            'confidence': round(confidence, 3)
+        }
+
     async def _get_threshold_assessment(self, metric_name: str) -> ThresholdAssessment:
         """Get threshold assessment from cache or DB"""
         
@@ -287,6 +414,27 @@ class LearnedThresholds:
         
         # Monitor threshold is typically lower than warning
         monitor_threshold = warning_threshold + THRESHOLD_LEARNING_CONFIG['monitor_offset']
+        
+        # Enforce ordering: monitor < warning < critical < emergency
+        # If learning pushed thresholds out of order, force minimum gaps.
+        min_gap = 3.0  # Minimum 3 percentage points between adjacent levels
+        cfg = THRESHOLD_LEARNING_CONFIG
+        
+        # Start from warning (anchor) and enforce upward
+        if critical_threshold <= warning_threshold + min_gap:
+            critical_threshold = warning_threshold + min_gap
+        if emergency_threshold <= critical_threshold + min_gap:
+            emergency_threshold = critical_threshold + min_gap
+        
+        # Enforce downward from warning
+        if monitor_threshold >= warning_threshold - min_gap:
+            monitor_threshold = warning_threshold - min_gap
+        
+        # Clamp all to valid range
+        monitor_threshold = max(cfg['min_threshold'], min(cfg['max_threshold'], monitor_threshold))
+        warning_threshold = max(cfg['min_threshold'], min(cfg['max_threshold'], warning_threshold))
+        critical_threshold = max(cfg['min_threshold'], min(cfg['max_threshold'], critical_threshold))
+        emergency_threshold = max(cfg['min_threshold'], min(cfg['max_threshold'], emergency_threshold))
         
         # Calculate confidence based on sample size and consistency
         total_samples = len(records)

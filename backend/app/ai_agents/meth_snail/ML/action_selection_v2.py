@@ -211,15 +211,15 @@ class TerryActionSelectionV2:
             primary_metric=primary_metric
         )
         
-        if not action_scores:
-            # Cold start - no learned actions yet, use VIC-20
+        if not action_scores or all(s.confidence == 0.0 for s in action_scores):
+            # Cold start - no learned actions yet (all scores are pure heuristic)
             return await self._fallback_to_vic20(
                 context, current_metrics, primary_metric, 
                 severity_score, threshold_crossed
             )
         
         # Log top 3 actions
-        top_3 = sorted(action_scores.items(), key=lambda x: x[1], reverse=True)[:3]
+        top_3 = [(s.action, s.base_score) for s in action_scores[:3]]
         self.logger.info(f"   🎯 Top actions: {[(a, f'{s:.2f}') for a, s in top_3]}")
         
         # 4. Select best action
@@ -323,8 +323,9 @@ class TerryActionSelectionV2:
         else:
             observation.improvement = 0.0
         
-        # Determine success
-        observation.success = observation.improvement > 5.0  # 5% improvement = success
+        # Determine success using learned threshold — no hardcoded fallbacks
+        success_threshold = await self.learned_thresholds.get_threshold('action_success', 'warning')
+        observation.success = observation.improvement > success_threshold
         
         # LEARNING SIGNAL 1: Was it a false alarm?
         # Threshold crossed, we monitored (or took gentle action), it resolved naturally
@@ -405,8 +406,7 @@ class TerryActionSelectionV2:
             pre_metrics=decision.pre_metrics,
             post_metrics=post_metrics,
             severity=decision.severity_score,
-            success=observation.success,
-            improvement=observation.improvement
+            success=observation.success
         )
         
         # 3. Update predictive patterns (if we started tracking one)

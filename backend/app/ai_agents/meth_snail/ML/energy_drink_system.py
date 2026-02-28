@@ -187,6 +187,12 @@ class EnergyDrinkSystem:
                     
                     self._consume_energy_drink(authorization)
                     return authorization
+                finally:
+                    # Always unregister the handler to prevent accumulation
+                    try:
+                        comm_hub.unregister_handler(MessageType.AGENT_RESPONSE, handle_response)
+                    except Exception:
+                        pass  # Best effort — don't crash if unregister not supported
                     
             except Exception as e:
                 logger.error(f"🐌💥 Failed to send request to Hawk: {e}", exc_info=True)

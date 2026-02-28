@@ -134,10 +134,28 @@ class TerryLearning:
         
         # Check if ANY metric improved (not just the trigger resource)
         # Some actions help different resources or have indirect benefits
-        any_metric_improved = any(delta < -1.0 for delta in improvement.values())  # -1% threshold
+        # Use learned thresholds — no hardcoded fallbacks
+        if action_selector is None or not hasattr(action_selector, 'learned_thresholds'):
+            raise RuntimeError(
+                "TerryLearning.learn() requires action_selector with learned_thresholds "
+                "for success determination. No hardcoded fallbacks."
+            )
+        
+        any_improvement_threshold = await action_selector.learned_thresholds.get_threshold(
+            'improvement_any', 'warning'
+        )
+        primary_improvement_threshold = await action_selector.learned_thresholds.get_threshold(
+            'improvement_primary', 'warning'
+        )
+        
+        any_metric_improved = any(
+            delta < -any_improvement_threshold for delta in improvement.values()
+        )
         
         # Primary resource improvement (the one that triggered the alert)
-        primary_improved = improvement.get(context.resource_type, 0) < -0.5  # -0.5% threshold
+        primary_improved = (
+            improvement.get(context.resource_type, 0) < -primary_improvement_threshold
+        )
         
         # Success if action executed AND (primary improved OR any metric improved significantly)
         overall_success = action_succeeded and (primary_improved or any_metric_improved)
@@ -501,68 +519,3 @@ class TerryLearning:
         return "\n".join(parts)
 
 
-class ConfidenceCalculator:
-    """
-    Calculate confidence using Bayesian base + adaptive adjustments.
-    
-    🐌🎯 "My confidence grows with experience!"
-    """
-    
-    @staticmethod
-    def calculate(
-        historical_outcomes: list,
-        action: str,
-        context=None
-    ) -> float:
-        """
-        Hybrid confidence calculation:
-        - Bayesian base (statistically sound)
-        - Novelty boost (fast learning on new situations)
-        - Context adjustments (VIC-20 agreement, personality)
-        
-        Args:
-            historical_outcomes: List of past LearningRecords
-            action: Action being considered
-            context: Optional PerceptionContext for context adjustments
-            
-        Returns:
-            Confidence score (0.1 - 0.95)
-        """
-        if not historical_outcomes:
-            return 0.5  # Neutral starting point
-        
-        # 1. BAYESIAN BASE
-        successes = sum(1 for r in historical_outcomes if r.get('success', False))
-        failures = len(historical_outcomes) - successes
-        
-        # Beta distribution: alpha=successes+1, beta=failures+1
-        base_confidence = (successes + 1) / (successes + failures + 2)
-        
-        # 2. NOVELTY BOOST
-        # More data = less novelty = smaller boost
-        novelty_score = 1.0 / (1.0 + len(historical_outcomes))
-        novelty_boost = novelty_score * 0.2  # Up to +0.2 for novel situations
-        
-        # 3. CONTEXT ADJUSTMENTS
-        context_boost = 0.0
-        
-        if context:
-            # VIC-20 agreement signal
-            vic20_action = context.vic20_recommendation.get('action')
-            if vic20_action == action:
-                # Check if VIC-20 agreements tend to succeed
-                vic20_agreements = sum(
-                    1 for r in historical_outcomes 
-                    if r.get('success') and r.get('followed_vic20')
-                )
-                if vic20_agreements > 0:
-                    agreement_rate = vic20_agreements / successes if successes > 0 else 0
-                    context_boost += agreement_rate * 0.1  # Up to +0.1
-        
-        # 4. COMBINE
-        final_confidence = base_confidence + novelty_boost + context_boost
-        
-        # 5. BOUND [0.1, 0.95]
-        # Never 0.0 (always willing to try)
-        # Never 1.0 (never overconfident)
-        return max(0.1, min(0.95, final_confidence))

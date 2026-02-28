@@ -22,6 +22,8 @@ from datetime import datetime, timezone
 
 logger = logging.getLogger('TerryReasoning')
 
+from app.ai_agents.meth_snail.ML.situation_fingerprint import SituationFingerprint, FingerprintMatcher
+
 # Import ML components (graceful fallback if unavailable)
 try:
     from app.ml.pattern_recognition.pattern_validator import PatternValidator
@@ -98,14 +100,19 @@ class TerryReasoning:
     🐌🧠 "Now I understand WHY things are broken, not just THAT they're broken!"
     """
     
-    def __init__(self, db_session):
+    def __init__(self, db_session, learned_thresholds=None):
         """
         Initialize reasoning engine with ML enhancement.
         
         Args:
             db_session: AsyncSession for database queries
+            learned_thresholds: LearnedThresholds instance for adaptive diagnosis.
+                                Required for full pipeline operation. When None,
+                                _get_diagnostic_threshold raises RuntimeError.
         """
         self.db = db_session
+        self.learned_thresholds = learned_thresholds
+        self.fingerprint_matcher = FingerprintMatcher(db_session)
         self.logger = logger
         
         # Initialize ML components if available
@@ -122,6 +129,31 @@ class TerryReasoning:
         else:
             self.logger.info("🐌🧠 Terry's reasoning engine initialized (ML unavailable)")
     
+    async def _get_diagnostic_threshold(self, metric_name: str, level: str) -> float:
+        """
+        Get a threshold for root cause diagnosis from learned thresholds.
+        
+        NO FALLBACK. If learned thresholds are unavailable, this raises.
+        The pipeline fails loudly so we can fix the issue.
+        
+        Args:
+            metric_name: e.g. 'swap_usage', 'memory_usage', 'context_switches', 'disk_io_bytes'
+            level: e.g. 'warning', 'critical', 'emergency'
+            
+        Returns:
+            Threshold value from learned thresholds system
+            
+        Raises:
+            RuntimeError: If learned thresholds system is not available
+        """
+        if self.learned_thresholds is None:
+            raise RuntimeError(
+                f"_get_diagnostic_threshold('{metric_name}', '{level}') called but "
+                f"learned_thresholds is None. TerryReasoning must be initialized with "
+                f"a LearnedThresholds instance. No hardcoded fallbacks."
+            )
+        return await self.learned_thresholds.get_threshold(metric_name, level)
+
     async def reason(self, context) -> ReasoningResult:
         """
         Analyze the situation and determine best action.
@@ -264,7 +296,9 @@ class TerryReasoning:
         
         # CASE 1: Memory Thrashing
         # High swap + high memory = thrashing
-        if swap_percent > 80 and memory_percent > 85:
+        swap_critical = await self._get_diagnostic_threshold('swap_usage', 'critical')
+        memory_critical = await self._get_diagnostic_threshold('memory_usage', 'critical')
+        if swap_percent > swap_critical and memory_percent > memory_critical:
             return RootCauseAnalysis(
                 cause='memory_thrashing',
                 confidence=0.95,
@@ -305,12 +339,14 @@ class TerryReasoning:
         
         # CASE 1.6: High Context Switching
         # Too many processes competing for CPU
-        if context_switches > 100000:  # High context switch rate
+        ctx_switch_critical = await self._get_diagnostic_threshold('context_switches', 'critical')
+        if context_switches > ctx_switch_critical:
             return RootCauseAnalysis(
                 cause='high_context_switching',
                 confidence=0.80,
                 evidence={
                     'context_switches': context_switches,
+                    'context_switch_threshold': ctx_switch_critical,
                     'cpu_usage': cpu_usage,
                     'process_count': len(top_processes),
                     'indicator': 'Excessive context switching indicates process contention'
@@ -325,9 +361,12 @@ class TerryReasoning:
         # CASE 1.7: Resource Contention
         # Multiple resources stressed simultaneously
         stressed_resources = 0
-        if cpu_usage > 75: stressed_resources += 1
-        if memory_percent > 75: stressed_resources += 1
-        if disk_io_total > 100_000_000: stressed_resources += 1
+        cpu_warning = await self._get_diagnostic_threshold('cpu_usage', 'warning')
+        memory_warning = await self._get_diagnostic_threshold('memory_usage', 'warning')
+        disk_io_warning = await self._get_diagnostic_threshold('disk_io_bytes', 'warning')
+        if cpu_usage > cpu_warning: stressed_resources += 1
+        if memory_percent > memory_warning: stressed_resources += 1
+        if disk_io_total > disk_io_warning: stressed_resources += 1
         
         if stressed_resources >= 2:
             return RootCauseAnalysis(
@@ -349,7 +388,8 @@ class TerryReasoning:
         
         # CASE 2: I/O Wait
         # High disk I/O suggests CPU waiting on disk
-        if disk_io_total > 500_000_000:  # > 500MB/s
+        disk_io_critical = await self._get_diagnostic_threshold('disk_io_bytes', 'critical')
+        if disk_io_total > disk_io_critical:
             return RootCauseAnalysis(
                 cause='io_wait',
                 confidence=0.85,
@@ -371,7 +411,8 @@ class TerryReasoning:
         # CASE 3: Network-bound
         # High network activity with CPU stress
         network_total = network_sent + network_recv
-        if network_total > 100_000_000:  # > 100MB
+        network_warning = await self._get_diagnostic_threshold('network_io_bytes', 'warning')
+        if network_total > network_warning:
             return RootCauseAnalysis(
                 cause='network_bound',
                 confidence=0.75,
@@ -430,7 +471,8 @@ class TerryReasoning:
         top_processes = memory_data.get('top_processes', [])
         
         # CASE 1: Heavy swap usage (critical)
-        if swap_percent > 70:
+        swap_warning = await self._get_diagnostic_threshold('swap_usage', 'warning')
+        if swap_percent > swap_warning:
             return RootCauseAnalysis(
                 cause='swap_usage',
                 confidence=0.95,
@@ -447,7 +489,9 @@ class TerryReasoning:
             )
         
         # CASE 2: Memory leak (sustained high usage with swap)
-        if swap_percent > 30 and memory_percent > 85:
+        swap_monitor = await self._get_diagnostic_threshold('swap_usage', 'monitor')
+        memory_critical = await self._get_diagnostic_threshold('memory_usage', 'critical')
+        if swap_percent > swap_monitor and memory_percent > memory_critical:
             return RootCauseAnalysis(
                 cause='memory_leak',
                 confidence=0.85,
@@ -465,7 +509,8 @@ class TerryReasoning:
         
         # CASE 3: Memory fragmentation
         # High usage but some available memory (fragmented)
-        if memory_percent > 80 and available > (total * 0.1):
+        memory_warning = await self._get_diagnostic_threshold('memory_usage', 'warning')
+        if memory_percent > memory_warning and available > (total * 0.1):
             return RootCauseAnalysis(
                 cause='memory_fragmentation',
                 confidence=0.70,
@@ -545,8 +590,6 @@ class TerryReasoning:
         
         Query historical learning records to see what worked/failed before.
         """
-        from app.ai_agents.meth_snail.ML.situation_fingerprint import SituationFingerprint, FingerprintMatcher
-        
         # Generate fingerprints for this situation
         fingerprints = SituationFingerprint.generate(
             resource_type=context.resource_type,
@@ -555,9 +598,10 @@ class TerryReasoning:
             full_metrics=context.full_metrics
         )
         
-        # Query similar situations
-        matcher = FingerprintMatcher(self.db)
-        results = await matcher.find_similar_situations(fingerprints, agent_name='meth_snail')
+        # Query similar situations (matcher instantiated once in __init__)
+        results = await self.fingerprint_matcher.find_similar_situations(
+            fingerprints, agent_name='meth_snail'
+        )
         
         records = results['records']
         match_level = results['match_level']
@@ -659,6 +703,8 @@ class TerryReasoning:
             if context.threshold > 0:
                 overage = (context.current_value - context.threshold) / context.threshold
                 severity_score += min(0.4, overage * 0.4)
+            else:
+                overage = 0.0
             
             # Factor 3: Historical success rate (0.0 - 0.2 points)
             # If this action has high success rate, situation might be more severe

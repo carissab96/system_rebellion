@@ -58,14 +58,16 @@ class TerryMLReasoning:
     - Predictive capabilities (LSTM sequence prediction)
     """
     
-    def __init__(self, db_session):
+    def __init__(self, db_session, learned_thresholds=None):
         """
         Initialize ML-enhanced reasoning engine.
         
         Args:
             db_session: AsyncSession for database queries
+            learned_thresholds: LearnedThresholds instance for adaptive diagnosis
         """
         self.db = db_session
+        self.learned_thresholds = learned_thresholds
         self.logger = logger
         
         # Initialize ML components
@@ -134,7 +136,7 @@ class TerryMLReasoning:
         # Import and use our existing root cause analysis
         from app.ai_agents.meth_snail.ML.reasoning import TerryReasoning
         
-        basic_reasoning = TerryReasoning(self.db)
+        basic_reasoning = TerryReasoning(self.db, learned_thresholds=self.learned_thresholds)
         return await basic_reasoning._analyze_root_cause(context)
     
     async def _ml_enhance_analysis(
@@ -268,7 +270,7 @@ class TerryMLReasoning:
         from app.ai_agents.meth_snail.ML.reasoning import TerryReasoning
         
         # Use our existing historical learning
-        basic_reasoning = TerryReasoning(self.db)
+        basic_reasoning = TerryReasoning(self.db, learned_thresholds=self.learned_thresholds)
         learning = await basic_reasoning._apply_historical_learning(context, root_cause)
         
         # Adjust confidence based on ML validation
@@ -301,7 +303,7 @@ class TerryMLReasoning:
         from app.ai_agents.meth_snail.ML.reasoning import TerryReasoning
         
         # Use our existing decision synthesis
-        basic_reasoning = TerryReasoning(self.db)
+        basic_reasoning = TerryReasoning(self.db, learned_thresholds=self.learned_thresholds)
         decision = await basic_reasoning._synthesize_decision(root_cause, learning, context)
         
         # Enhance with ML insights

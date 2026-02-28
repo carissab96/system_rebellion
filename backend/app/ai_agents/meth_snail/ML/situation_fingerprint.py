@@ -150,7 +150,13 @@ class FingerprintMatcher:
     Query historical learning records using hierarchical fingerprints.
     
     🐌🎯 "Try specific first, fall back to general if needed!"
+    
+    Designed to be instantiated ONCE and reused across reasoning cycles.
     """
+    
+    # Maximum records to return per query level.
+    # Keeps memory bounded while providing enough data for statistical learning.
+    QUERY_LIMIT = 50
     
     def __init__(self, db_session):
         """
@@ -176,6 +182,10 @@ class FingerprintMatcher:
         2. If < min_records, add Level 2 - e.g., 'cpu_high_memory_thrashing'
         3. If still < min_records, add Level 1 - e.g., 'cpu_high'
         
+        NO SILENT FAILURES. If the database query fails, the exception propagates.
+        Empty results because no data exists is fine. Empty results because
+        something broke is not.
+        
         Args:
             fingerprints: Fingerprint dictionary from SituationFingerprint.generate()
             agent_name: Which agent's learning to query
@@ -183,99 +193,128 @@ class FingerprintMatcher:
             
         Returns:
             Dictionary with:
-                - records: List of matching learning records
-                - match_level: Which level matched (1, 2, or 3)
+                - records: List of matching learning records (dicts)
+                - match_level: Which level matched (1, 2, or 3), None if no records
                 - total_found: Total number of records found
+                
+        Raises:
+            Any database or model exception propagates directly.
         """
-        try:
-            from sqlalchemy import select
-            from app.models.agent_learning import AgentLearningRecord
+        from sqlalchemy import select
+        from app.models.agent_learning import AgentLearningRecord
+        
+        records = []
+        existing_ids = set()
+        match_level = None
+        
+        # Level 3: Most specific
+        self.logger.debug(f"🔍 Trying Level 3: {fingerprints['level_3']}")
+        level_3_records = await self._query_level(
+            AgentLearningRecord, agent_name,
+            AgentLearningRecord.fingerprint_l3, fingerprints['level_3']
+        )
+        
+        for record in level_3_records:
+            records.append(record)
+            existing_ids.add(record.id)
+        
+        if len(records) >= min_records:
+            match_level = 3
+            self.logger.info(f"   ✓ Found {len(records)} records at Level 3 (specific match)")
+        else:
+            # Level 2: Medium specificity
+            self.logger.debug(
+                f"   Only {len(records)} at Level 3, "
+                f"trying Level 2: {fingerprints['level_2']}"
+            )
+            level_2_records = await self._query_level(
+                AgentLearningRecord, agent_name,
+                AgentLearningRecord.fingerprint_l2, fingerprints['level_2']
+            )
             
-            records = []
-            match_level = None
-            
-            # Try Level 3 (most specific)
-            self.logger.debug(f"🔍 Trying Level 3: {fingerprints['level_3']}")
-            query = select(AgentLearningRecord).where(
-                AgentLearningRecord.agent_name == agent_name,
-                AgentLearningRecord.fingerprint_l3 == fingerprints['level_3']
-            ).order_by(AgentLearningRecord.created_at.desc())
-            
-            result = await self.db.execute(query)
-            level_3_records = result.scalars().all()
-            records.extend(level_3_records)
+            for record in level_2_records:
+                if record.id not in existing_ids:
+                    records.append(record)
+                    existing_ids.add(record.id)
             
             if len(records) >= min_records:
-                match_level = 3
-                self.logger.info(f"   ✓ Found {len(records)} records at Level 3 (specific match)")
+                match_level = 2
+                self.logger.info(f"   ✓ Found {len(records)} records at Level 2 (medium match)")
             else:
-                # Fall back to Level 2
-                self.logger.debug(f"   Only {len(records)} at Level 3, trying Level 2: {fingerprints['level_2']}")
-                query = select(AgentLearningRecord).where(
-                    AgentLearningRecord.agent_name == agent_name,
-                    AgentLearningRecord.fingerprint_l2 == fingerprints['level_2']
-                ).order_by(AgentLearningRecord.created_at.desc())
+                # Level 1: Broadest
+                self.logger.debug(
+                    f"   Only {len(records)} at Level 2, "
+                    f"trying Level 1: {fingerprints['level_1']}"
+                )
+                level_1_records = await self._query_level(
+                    AgentLearningRecord, agent_name,
+                    AgentLearningRecord.fingerprint_l1, fingerprints['level_1']
+                )
                 
-                result = await self.db.execute(query)
-                level_2_records = result.scalars().all()
-                
-                # Add records not already in list
-                existing_ids = {r.id for r in records}
-                for record in level_2_records:
+                for record in level_1_records:
                     if record.id not in existing_ids:
                         records.append(record)
+                        existing_ids.add(record.id)
                 
-                if len(records) >= min_records:
-                    match_level = 2
-                    self.logger.info(f"   ✓ Found {len(records)} records at Level 2 (medium match)")
-                else:
-                    # Fall back to Level 1
-                    self.logger.debug(f"   Only {len(records)} at Level 2, trying Level 1: {fingerprints['level_1']}")
-                    query = select(AgentLearningRecord).where(
-                        AgentLearningRecord.agent_name == agent_name,
-                        AgentLearningRecord.fingerprint_l1 == fingerprints['level_1']
-                    ).order_by(AgentLearningRecord.created_at.desc())
-                    
-                    result = await self.db.execute(query)
-                    level_1_records = result.scalars().all()
-                    
-                    # Add records not already in list
-                    for record in level_1_records:
-                        if record.id not in existing_ids:
-                            records.append(record)
-                    
+                if records:
                     match_level = 1
-                    self.logger.info(f"   ✓ Found {len(records)} records at Level 1 (broad match)")
+                self.logger.info(f"   ✓ Found {len(records)} records at Level 1 (broad match)")
+        
+        # Convert to dictionaries
+        record_dicts = self._records_to_dicts(records)
+        
+        return {
+            'records': record_dicts,
+            'match_level': match_level,
+            'total_found': len(record_dicts)
+        }
+    
+    async def _query_level(self, model, agent_name: str, column, value: str) -> list:
+        """
+        Query a single fingerprint level with LIMIT.
+        
+        Args:
+            model: SQLAlchemy model class (AgentLearningRecord)
+            agent_name: Agent to filter by
+            column: Model column to match (fingerprint_l1, l2, or l3)
+            value: Fingerprint value to match
             
-            # Convert to dictionaries
-            record_dicts = []
-            for record in records:
-                record_dicts.append({
-                    'id': record.id,
-                    'fingerprint_l1': record.fingerprint_l1,
-                    'fingerprint_l2': record.fingerprint_l2,
-                    'fingerprint_l3': record.fingerprint_l3,
-                    'root_cause': record.root_cause,
-                    'process_category': record.process_category,
-                    'action': record.action,
-                    'parameters': record.parameters,
-                    'confidence': record.confidence,
-                    'followed_vic20': record.followed_vic20,
-                    'success': record.success,
-                    'improvement': record.improvement,
-                    'created_at': record.created_at.isoformat()
-                })
+        Returns:
+            List of model instances
             
-            return {
-                'records': record_dicts,
-                'match_level': match_level,
-                'total_found': len(record_dicts)
-            }
-            
-        except ImportError:
-            # Model doesn't exist yet
-            self.logger.debug("   ⚠️ AgentLearningRecord model not yet available")
-            return {'records': [], 'match_level': None, 'total_found': 0}
-        except Exception as e:
-            self.logger.error(f"   💥 Failed to query similar situations: {str(e)}")
-            return {'records': [], 'match_level': None, 'total_found': 0}
+        Raises:
+            Any database exception propagates directly.
+        """
+        from sqlalchemy import select
+        
+        result = await self.db.execute(
+            select(model).where(
+                model.agent_name == agent_name,
+                column == value
+            ).order_by(
+                model.created_at.desc()
+            ).limit(self.QUERY_LIMIT)
+        )
+        return result.scalars().all()
+    
+    @staticmethod
+    def _records_to_dicts(records: list) -> list:
+        """Convert ORM records to plain dictionaries."""
+        record_dicts = []
+        for record in records:
+            record_dicts.append({
+                'id': record.id,
+                'fingerprint_l1': record.fingerprint_l1,
+                'fingerprint_l2': record.fingerprint_l2,
+                'fingerprint_l3': record.fingerprint_l3,
+                'root_cause': record.root_cause,
+                'process_category': record.process_category,
+                'action': record.action,
+                'parameters': record.parameters,
+                'confidence': record.confidence,
+                'followed_vic20': record.followed_vic20,
+                'success': record.success,
+                'improvement': record.improvement,
+                'created_at': record.created_at.isoformat()
+            })
+        return record_dicts
