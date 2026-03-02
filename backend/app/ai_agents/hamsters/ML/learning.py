@@ -13,15 +13,19 @@ Stores and learns from:
 This enables the Hamsters to improve their telepathic consensus over time.
 """
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from datetime import datetime, timezone
 from dataclasses import dataclass, field
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from sqlalchemy import select
 from app.models.agent_learning import AgentLearningRecord
+from app.models.learned_thresholds import LearnedSequence
 from .perception import HamstersPerceptionContext
 from .reasoning import StorageReasoning
 from .action_selection import StorageFixAction
+from .execution_planner import ExecutionPlan, PlanSource
+from app.ai_agents.distributed.base_execution_planner import ExecutionResult
 
 logger = logging.getLogger('HamstersLearning')
 
@@ -65,10 +69,12 @@ class HamstersLearningRecord:
     duct_tape_job_complexity: str
     bob_at_cupboard: bool
     
-    # Execution details
-    action_type: str
+    # Execution details — goal vocabulary, not composite action names
+    goal: str                          # From STORAGE_GOALS vocabulary
     sudo_command: Optional[str]
     execution_strategy: str
+    # Execution result (filled in after execution)
+    execution_result: Optional[Any] = None  # ExecutionResult from planner
     
     # Outcome (filled in later)
     success: Optional[bool] = None
@@ -89,9 +95,19 @@ class HamstersLearning:
     🐹🐹🐹 "Recording consensus outcome for future beer calculations..."
     """
     
-    def __init__(self, db: AsyncSession, user_id: str):
+    def __init__(self, db: AsyncSession, user_id: str, system_id: str = "default"):
         self.db = db
         self.user_id = user_id
+        self.system_id = system_id
+        
+        # Initialize learned thresholds and action effectiveness
+        from .learned_thresholds import LearnedThresholds
+        from .action_effectiveness import ActionEffectivenessModel
+        
+        self.learned_thresholds = LearnedThresholds(db, system_id)
+        self.action_effectiveness = ActionEffectivenessModel(db, system_id)
+        
+        logger.info("🐹🧠 Hamsters learning with adaptive thresholds enabled!")
         
     async def learn(
         self,
@@ -137,7 +153,7 @@ class HamstersLearning:
             duct_tape_rolls=action.duct_tape_rolls,
             duct_tape_job_complexity=action.duct_tape_breakdown.job_complexity,
             bob_at_cupboard=action.bob_at_cupboard,
-            action_type=action.action_type,
+            goal=action.goal,
             sudo_command=action.sudo_command,
             execution_strategy=action.execution_strategy,
             success=outcome_success
@@ -148,10 +164,10 @@ class HamstersLearning:
         learning_record.storage_success = storage_success
         
         # Set fingerprint for emission
-        learning_record.situation_fingerprint = f"{context.resource_type}_{context.severity}_{action.action_type}"
+        learning_record.situation_fingerprint = f"{context.resource_type}_{context.severity}_{action.goal}"
         
         logger.info(
-            f"🐹✅ Learning recorded: {action.action_type}, "
+            f"🐹✅ Learning recorded: goal={action.goal}, "
             f"beers={action.total_beers_consumed}, duct_tape={action.duct_tape_rolls:.1f} rolls"
         )
         
@@ -174,7 +190,7 @@ class HamstersLearning:
             # Create hierarchical fingerprints for storage fixes
             fingerprint_l1 = f"{context.resource_type}"
             fingerprint_l2 = f"{context.resource_type}_{context.severity}"
-            fingerprint_l3 = f"{context.resource_type}_{context.severity}_{action.action_type}"
+            fingerprint_l3 = f"{context.resource_type}_{context.severity}_{action.goal}"
             
             # Prepare parameters with all context and action details
             parameters = {
@@ -185,7 +201,7 @@ class HamstersLearning:
                 'complexity_level': context.complexity_level,
                 'ingenuity_required': context.ingenuity_required,
                 'consensus_fix': action.consensus_fix,
-                'action_type': action.action_type,
+                'goal': action.goal,
                 'requires_sudo': action.requires_sudo,
                 'sudo_command': action.sudo_command,
                 'execution_strategy': action.execution_strategy,
@@ -221,7 +237,7 @@ class HamstersLearning:
                 severity=context.severity,
                 root_cause=reasoning.root_cause,
                 process_category='storage',
-                action=action.action_type,
+                action=action.goal,
                 parameters=parameters,
                 confidence=action.confidence,
                 followed_vic20=True,  # Hamsters follow VIC-20's routing
@@ -232,7 +248,7 @@ class HamstersLearning:
             )
             
             self.db.add(db_record)
-            await self.db.commit()
+            await self.db.flush()
             
             # Set the ID on the record so we can emit it
             learning_record.learning_record_id = str(db_record.id)
@@ -241,21 +257,26 @@ class HamstersLearning:
             return True
             
         except Exception as e:
-            logger.error(f"🐹❌ Failed to store learning record: {e}")
+            logger.error(f"🐹💥 DATABASE WRITE FAILED: {e}", exc_info=True)
+            logger.error("   Learning record could not be stored. This is a critical failure.")
             await self.db.rollback()
-            return False
+            from app.ai_agents.exceptions import DatabaseWriteFailure
+            raise DatabaseWriteFailure(f"Failed to store learning record: {e}") from e
     
     async def update_outcome(
         self,
         learning_record: HamstersLearningRecord,
         success: bool,
         execution_time: Optional[float] = None,
-        outcome_notes: Optional[str] = None
+        outcome_notes: Optional[str] = None,
+        pre_metrics: Optional[Dict[str, float]] = None,
+        post_metrics: Optional[Dict[str, float]] = None
     ):
         """
         Update a learning record with outcome information.
         
         This is called after the fix executes and we know if it succeeded.
+        Records outcomes in both learned thresholds and action effectiveness.
         """
         learning_record.success = success
         learning_record.execution_time_seconds = execution_time
@@ -266,9 +287,178 @@ class HamstersLearning:
             f"execution_time={execution_time}s, notes={outcome_notes or 'none'}"
         )
         
-        # TODO: Update database record with outcome
-        # This requires querying by timestamp and updating the success field
+        # Record in learned thresholds if we have threshold data
+        if pre_metrics and 'disk_usage_percent' in pre_metrics:
+            # Determine if this was a false alarm or if we acted too late
+            was_false_alarm = success and pre_metrics.get('disk_usage_percent', 0) < 75
+            should_have_acted_sooner = not success and pre_metrics.get('disk_usage_percent', 0) > 95
+            
+            # Record for disk usage threshold
+            await self.learned_thresholds.record_outcome(
+                metric_name='disk_usage',
+                metric_value=pre_metrics.get('disk_usage_percent', 0),
+                threshold_level='warning' if pre_metrics.get('disk_usage_percent', 0) < 90 else 'critical',
+                was_successful=success,
+                was_false_alarm=was_false_alarm,
+                should_have_acted_sooner=should_have_acted_sooner,
+                outcome_notes=outcome_notes
+            )
+            
+            # Record for fragmentation threshold if relevant
+            if 'fragmentation_level' in pre_metrics:
+                await self.learned_thresholds.record_outcome(
+                    metric_name='fragmentation',
+                    metric_value=pre_metrics.get('fragmentation_level', 0),
+                    threshold_level='warning' if pre_metrics.get('fragmentation_level', 0) < 40 else 'critical',
+                    was_successful=success,
+                    was_false_alarm=was_false_alarm,
+                    should_have_acted_sooner=should_have_acted_sooner,
+                    outcome_notes=outcome_notes
+                )
+        
+        # Record in action effectiveness
+        if pre_metrics and post_metrics:
+            await self.action_effectiveness.record_outcome(
+                action=learning_record.goal,
+                pre_metrics=pre_metrics,
+                post_metrics=post_metrics,
+                severity='warning' if pre_metrics.get('disk_usage_percent', 0) < 90 else 'critical',
+                success=success,
+                outcome_notes=outcome_notes
+            )
+
+        # TODO: Update AgentLearningRecord with outcome
+        # Requires querying by timestamp and updating the success field
     
+    async def record_sequence_outcome(
+        self,
+        execution_result: ExecutionResult,
+        system_id: str = "default"
+    ) -> None:
+        """
+        Record the outcome of an executed plan into the LearnedSequence table.
+
+        - If a matching sequence exists: update sample_size, success_count,
+          success_rate, avg_improvement, avg_duration_seconds.
+        - If no matching sequence exists (cold start): create a new one.
+        - Confidence is calculated as min(1.0, sample_size / 10) — grows
+          toward 1.0 as we accumulate 10+ samples.
+        """
+        plan = execution_result.plan
+        goal = plan.goal
+        primitives = plan.primitives
+        success = execution_result.overall_success
+        improvement = execution_result.overall_improvement
+        duration = execution_result.total_duration_seconds
+
+        try:
+            # Look for an existing sequence with the same goal + primitives
+            stmt = select(LearnedSequence).where(
+                LearnedSequence.agent_name == 'hamsters',
+                LearnedSequence.system_id == system_id,
+                LearnedSequence.goal == goal,
+                LearnedSequence.deprecated == False,
+            )
+            result = await self.db.execute(stmt)
+            sequences = result.scalars().all()
+
+            # Match on exact primitive list
+            existing = next(
+                (s for s in sequences if s.primitives == primitives),
+                None
+            )
+
+            if existing:
+                # Update existing sequence
+                existing.sample_size += 1
+                if success:
+                    existing.success_count += 1
+                existing.success_rate = existing.success_count / existing.sample_size
+                # Rolling average for improvement and duration
+                n = existing.sample_size
+                existing.avg_improvement = (
+                    (existing.avg_improvement * (n - 1) + improvement) / n
+                )
+                existing.avg_duration_seconds = (
+                    (existing.avg_duration_seconds * (n - 1) + duration) / n
+                )
+                # Effectiveness = success_rate weighted by avg_improvement
+                existing.effectiveness_score = (
+                    existing.success_rate * max(0.0, existing.avg_improvement)
+                )
+                # Confidence grows with sample size, caps at 1.0
+                existing.confidence = min(1.0, existing.sample_size / 10.0)
+                existing.last_used = datetime.now(UTC)
+                existing.trigger_severity = plan.trigger_severity
+                existing.trigger_trend = plan.trigger_trend
+                existing.intervention_type = plan.intervention_type.value
+
+                logger.info(
+                    f"🐹📊 Updated LearnedSequence id={existing.id}: "
+                    f"goal='{goal}', primitives={primitives}, "
+                    f"samples={existing.sample_size}, "
+                    f"success_rate={existing.success_rate:.0%}, "
+                    f"effectiveness={existing.effectiveness_score:.3f}"
+                )
+            else:
+                # First time we've seen this sequence — create it
+                learned_from = (
+                    'cold_start'
+                    if plan.source == PlanSource.COLD_START
+                    else 'experience'
+                )
+                new_seq = LearnedSequence(
+                    agent_name='hamsters',
+                    system_id=system_id,
+                    goal=goal,
+                    primitives=primitives,
+                    effectiveness_score=float(success) * max(0.0, improvement),
+                    confidence=0.1,  # First sample — low confidence
+                    sample_size=1,
+                    success_count=1 if success else 0,
+                    success_rate=1.0 if success else 0.0,
+                    avg_improvement=improvement,
+                    avg_duration_seconds=duration,
+                    intervention_type=plan.intervention_type.value,
+                    trigger_severity=plan.trigger_severity,
+                    trigger_trend=plan.trigger_trend,
+                    learned_from=learned_from,
+                    stick_validated=False,
+                    promoted=False,
+                    deprecated=False,
+                )
+                self.db.add(new_seq)
+                logger.info(
+                    f"🐹🆕 New LearnedSequence discovered: "
+                    f"goal='{goal}', primitives={primitives}, "
+                    f"success={success}, improvement={improvement:.3f}, "
+                    f"source={plan.source.value}"
+                )
+
+            await self.db.flush()
+
+            # Deprecation check: if success_rate drops below 20% with 5+ samples,
+            # flag for Stick review
+            if existing and existing.sample_size >= 5 and existing.success_rate < 0.2:
+                existing.deprecated = True
+                existing.deprecated_reason = (
+                    f"Success rate dropped to {existing.success_rate:.0%} "
+                    f"after {existing.sample_size} samples"
+                )
+                logger.warning(
+                    f"🐹⚠️ LearnedSequence id={existing.id} deprecated: "
+                    f"{existing.deprecated_reason}"
+                )
+
+        except Exception as e:
+            logger.error(
+                f"🐹💥 Failed to record sequence outcome: {e}", exc_info=True
+            )
+            from app.ai_agents.exceptions import DatabaseWriteFailure
+            raise DatabaseWriteFailure(
+                f"Failed to record sequence outcome: {e}"
+            ) from e
+
     async def get_learning_stats(self) -> Dict[str, Any]:
         """
         Get learning statistics for the Hamsters.
@@ -345,19 +535,19 @@ class HamstersLearning:
             # Query for beer and duct tape averages
             query = select(
                 func.avg(
-                    AgentLearningRecord.output_data['total_beers_consumed'].astext.cast(func.Float)
+                    AgentLearningRecord.output_data['total_beers_consumed'].as_float()
                 ).label('avg_beers'),
                 func.avg(
-                    AgentLearningRecord.output_data['duct_tape_rolls'].astext.cast(func.Float)
+                    AgentLearningRecord.output_data['duct_tape_rolls'].as_float()
                 ).label('avg_duct_tape'),
                 func.sum(
-                    AgentLearningRecord.output_data['steve_beers'].astext.cast(func.Integer)
+                    AgentLearningRecord.output_data['steve_beers'].as_integer()
                 ).label('steve_total_beers'),
                 func.sum(
-                    AgentLearningRecord.output_data['bob_beers'].astext.cast(func.Integer)
+                    AgentLearningRecord.output_data['bob_beers'].as_integer()
                 ).label('bob_total_beers'),
                 func.sum(
-                    AgentLearningRecord.output_data['carl_beers'].astext.cast(func.Integer)
+                    AgentLearningRecord.output_data['carl_beers'].as_integer()
                 ).label('carl_total_beers')
             ).where(
                 AgentLearningRecord.agent_name == 'hamsters'
@@ -392,24 +582,24 @@ class HamstersLearning:
             # Query for consensus metrics
             query = select(
                 func.avg(
-                    AgentLearningRecord.output_data['consensus_strength'].astext.cast(func.Float)
+                    AgentLearningRecord.output_data['consensus_strength'].as_float()
                 ).label('avg_consensus_strength'),
                 func.avg(
-                    AgentLearningRecord.output_data['disagreement_level'].astext.cast(func.Float)
+                    AgentLearningRecord.output_data['disagreement_level'].as_float()
                 ).label('avg_disagreement'),
                 func.count(
                     func.case(
-                        (AgentLearningRecord.output_data['steve_agreed'].astext == 'true', 1)
+                        (AgentLearningRecord.output_data['steve_agreed'].as_string() == 'true', 1)
                     )
                 ).label('steve_agreement_count'),
                 func.count(
                     func.case(
-                        (AgentLearningRecord.output_data['bob_agreed'].astext == 'true', 1)
+                        (AgentLearningRecord.output_data['bob_agreed'].as_string() == 'true', 1)
                     )
                 ).label('bob_agreement_count'),
                 func.count(
                     func.case(
-                        (AgentLearningRecord.output_data['carl_agreed'].astext == 'true', 1)
+                        (AgentLearningRecord.output_data['carl_agreed'].as_string() == 'true', 1)
                     )
                 ).label('carl_agreement_count')
             ).where(

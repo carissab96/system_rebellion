@@ -46,6 +46,8 @@ from .ML.perception import HamstersPerception, HamstersPerceptionContext
 from .ML.reasoning import HamstersReasoning, StorageReasoning
 from .ML.action_selection import HamstersActionSelection, StorageFixAction
 from .ML.learning import HamstersLearning, HamstersLearningRecord
+from .ML.primitive_executor import HamsterPrimitiveExecutor
+from .ML.execution_planner import HamsterExecutionPlanner
 
 
 logger = logging.getLogger("Hamsters.Distributed")
@@ -110,6 +112,7 @@ class HamstersDistributed(AgentDecisionEngine, HamstersBrainV3):
         # Bob's wild idea counter (causes Stick anxiety!)
         self.bob_wild_ideas = 0
         self.bob_hold_my_beer_count = 0
+        self.bob_at_cupboard = False
         
         logger.info("🐹🐹🐹 Steve, Bob, and Carl's distributed consciousness initialized - TELEPATHIC LINK ACTIVE!")
         logger.info("🐹🧠 Choice engine online - Ready to evaluate VIC-20's recommendations!")
@@ -140,6 +143,15 @@ class HamstersDistributed(AgentDecisionEngine, HamstersBrainV3):
             callback=self._handle_coordination_request
         )
         
+        # Subscribe to AGENT_FEEDBACK from The Stick (Section 4.5)
+        try:
+            await self.subscribe_to_messages(
+                message_type=MessageType.AGENT_FEEDBACK,
+                callback=self._handle_stick_feedback
+            )
+        except Exception as e:
+            logger.error(f"🐹💥 Failed to subscribe to AGENT_FEEDBACK: {e}")
+
         logger.info("🐹🎯 Week 4 systems integrated - Coordination & Verification ONLINE!")
         logger.info("🐹🤝 Telepathic consensus ready for team coordination!")
         logger.info("🐹📡 Subscribed to COORDINATION_REQUEST - Ready to receive from VIC-20!")
@@ -227,6 +239,9 @@ class HamstersDistributed(AgentDecisionEngine, HamstersBrainV3):
                         f"Total today: {self.beer_consumption_today}"
                     )
                 
+                if context.bob_proximity:
+                    self.bob_at_cupboard = context.bob_proximity.bob_at_cupboard
+                
                 # Log duct tape
                 if context.duct_tape_assessment:
                     logger.info(
@@ -262,209 +277,274 @@ class HamstersDistributed(AgentDecisionEngine, HamstersBrainV3):
                 
                 # 🎯 STEP 3: ACTION SELECTION - Choose execution strategy
                 logger.info("🐹⚡ Action selection phase...")
-                action_selector = HamstersActionSelection(self.personality_traits)
-                action = action_selector.select_action(context, reasoning)
+                action_selector = HamstersActionSelection(self.personality_traits, db, self.user_id)
+                action = await action_selector.select_action(context, reasoning)
                 
                 logger.info(
-                    f"🐹✅ Action selected: {action.action_type}, "
+                    f"🐹✅ Goal selected: {action.goal}, "
                     f"beers={action.total_beers_consumed}, "
                     f"duct_tape={action.duct_tape_rolls:.1f} rolls"
                 )
-                
+
                 if action.sudo_command:
-                    logger.info(f"🐹🔧 Sudo command: {action.sudo_command}")
+                    logger.info(f"🐹🔧 Sudo hint: {action.sudo_command}")
                 
-                # 🎯 STEP 4: LEARNING - Store consensus decision
-                logger.info("🐹📚 Learning phase...")
+                # 🎯 STEP 4: LEARNING - Store consensus decision (pre-execution record)
+                logger.info("🐹📚 Learning phase (pre-execution)...")
                 learning = HamstersLearning(db, self.user_id)
                 learning_record = await learning.learn(context, reasoning, action)
-                
+
                 logger.info(f"🐹💾 Learning record stored in PostgreSQL")
-                
-                # 🎯 STEP 5: EXECUTE ACTION - Run storage fix
-                logger.info(f"🐹🔧 Executing {action.action_type}...")
-                
-                # Get REAL metrics BEFORE action from SimplifiedMetricsService
-                from app.services.metrics.simplified_metrics_service import SimplifiedMetricsService
-                metrics_service = await SimplifiedMetricsService.get_instance()
-                
-                try:
-                    before_metrics = await metrics_service.get_metrics(force_refresh=True)
-                    metrics_before = {
-                        'disk_usage': before_metrics.get('disk_usage', 0),
-                        'cpu_usage': before_metrics.get('cpu_usage', 0),
-                        'memory_usage': before_metrics.get('memory_usage', 0)
-                    }
-                    logger.info(f"🐹📊 Metrics BEFORE: Disk {metrics_before['disk_usage']:.1f}%")
-                except Exception as e:
-                    logger.error(f"🐹⚠️ Failed to get before metrics: {e}")
-                    metrics_before = {
-                        'disk_usage': full_metrics.get('disk_usage', 0),
-                        'cpu_usage': full_metrics.get('cpu_usage', 0),
-                        'memory_usage': full_metrics.get('memory_usage', 0)
-                    }
-                
-                # Execute the SELECTED action (not hardcoded defrag!)
-                from app.ai_agents.hamsters.ML.action_executor import HamstersActionExecutor
-                executor = HamstersActionExecutor()
-                cleanup_result = await executor.execute_action(action.action_type, {})
-                
-                # Get REAL metrics AFTER action from SimplifiedMetricsService
-                try:
-                    import asyncio
-                    await asyncio.sleep(1.0)  # Wait for action effects to propagate
-                    after_metrics = await metrics_service.get_metrics(force_refresh=True)
-                    metrics_after = {
-                        'disk_usage': after_metrics.get('disk_usage', 0),
-                        'cpu_usage': after_metrics.get('cpu_usage', 0),
-                        'memory_usage': after_metrics.get('memory_usage', 0)
-                    }
-                    logger.info(f"🐹📊 Metrics AFTER: Disk {metrics_after['disk_usage']:.1f}%")
-                except Exception as e:
-                    logger.error(f"🐹⚠️ Failed to get after metrics: {e}")
-                    metrics_after = {
-                        'disk_usage': cleanup_result.get('disk_after_percent', metrics_before['disk_usage']),
-                        'cpu_usage': metrics_before['cpu_usage'],
-                        'memory_usage': metrics_before['memory_usage']
-                    }
-                
-                if cleanup_result['success']:
+
+                # 🎯 STEP 5: EXECUTE — compose plan from goal, then execute primitives
+                logger.info(f"🐹🔧 Execution phase: goal='{action.goal}'...")
+
+                primitive_executor = HamsterPrimitiveExecutor(agent_name='hamsters')
+                planner = HamsterExecutionPlanner(
+                    primitive_executor=primitive_executor,
+                    effectiveness_model=learning.action_effectiveness,
+                    learned_thresholds=learning.learned_thresholds,
+                )
+
+                severity_float = {
+                    'low': 0.2, 'medium': 0.4, 'warning': 0.5,
+                    'high': 0.7, 'critical': 0.9, 'emergency': 1.0
+                }.get(str(severity).lower(), 0.5)
+
+                plan = await planner.compose_plan(
+                    goal=action.goal,
+                    severity=severity_float,
+                    trend='rising',
+                    context={},
+                )
+
+                execution_result = await planner.execute_plan(plan, context={})
+
+                # Record sequence outcome into LearnedSequence table
+                await learning.record_sequence_outcome(
+                    execution_result,
+                    system_id=self.system_id
+                )
+
+                # Build metrics_before / metrics_after from ExecutionResult for emission
+                first_result = execution_result.primitive_results[0] if execution_result.primitive_results else None
+                last_result = execution_result.primitive_results[-1] if execution_result.primitive_results else None
+
+                metrics_before = (
+                    first_result.pre_metrics if first_result and not first_result.pre_metrics.get('collection_failed')
+                    else {'disk_usage': context.disk_usage_percent, 'cpu_usage': 0, 'memory_usage': 0}
+                )
+                metrics_after = (
+                    last_result.post_metrics if last_result and not last_result.post_metrics.get('collection_failed')
+                    else {'disk_usage': context.disk_usage_percent, 'cpu_usage': 0, 'memory_usage': 0}
+                )
+
+                disk_before = metrics_before.get('disk_usage_percent', metrics_before.get('disk_usage', 0))
+                disk_after = metrics_after.get('disk_usage_percent', metrics_after.get('disk_usage', 0))
+                disk_improvement_pct = (
+                    ((disk_before - disk_after) / disk_before * 100.0)
+                    if disk_before > 0 else 0.0
+                )
+
+                # Update learning record outcome
+                pre_metrics_dict = {
+                    'disk_usage_percent': disk_before,
+                    'fragmentation_level': context.fragmentation_level,
+                    'inode_usage_percent': context.inode_usage_percent,
+                }
+                post_metrics_dict = {
+                    'disk_usage_percent': disk_after,
+                    'fragmentation_level': context.fragmentation_level,
+                    'inode_usage_percent': context.inode_usage_percent,
+                }
+
+                await learning.update_outcome(
+                    learning_record,
+                    success=execution_result.overall_success,
+                    outcome_notes=(
+                        execution_result.abort_reason
+                        if execution_result.was_aborted
+                        else f"improvement={execution_result.overall_improvement:.3f}"
+                    ),
+                    pre_metrics=pre_metrics_dict,
+                    post_metrics=post_metrics_dict
+                )
+
+                if execution_result.overall_success:
                     logger.info(
-                        f"🐹✅ Fix successful! Freed {cleanup_result['disk_freed_mb']:.2f} MB "
-                        f"({cleanup_result['improvement_percent']:.1f}% improvement)"
+                        f"🐹✅ Execution successful: goal='{action.goal}', "
+                        f"steps={execution_result.steps_completed}/{execution_result.steps_planned}, "
+                        f"improvement={execution_result.overall_improvement:.3f}, "
+                        f"duration={execution_result.total_duration_seconds:.1f}s"
                     )
-                    
-                    # BROADCAST FULL DECISION CHAIN TO FRONTEND
-                    from app.services.agent_decision_emitter import emit_agent_decision
-                    
-                    # Calculate improvement percentage
-                    disk_improvement = 0.0
-                    if metrics_before['disk_usage'] > 0:
-                        disk_improvement = (
-                            (metrics_before['disk_usage'] - metrics_after['disk_usage']) 
-                            / metrics_before['disk_usage'] 
-                            * 100.0
-                        )
-                    
-                    await emit_agent_decision(
-                        agent_name="hamsters",
-                        decision_id=learning_record.learning_record_id,
-                        perception={
-                            "disk_usage_percent": context.disk_usage_percent,
-                            "fragmentation_level": context.fragmentation_level,
-                            "duct_tape_assessment": {
-                                "regular_rolls": context.duct_tape_assessment.regular_rolls,
-                                "premium_rolls": context.duct_tape_assessment.premium_rolls,
-                                "quantum_rolls": context.duct_tape_assessment.quantum_rolls,
-                                "total_rolls": context.duct_tape_assessment.total_rolls,
-                                "job_complexity": context.duct_tape_assessment.job_complexity
-                            },
-                            "beer_consumption": {
-                                "steve_beers_today": context.steve_beers_today,
-                                "bob_beers_today": context.bob_beers_today,
-                                "carl_beers_today": context.carl_beers_today,
-                                "total_beers_today": context.steve_beers_today + context.bob_beers_today + context.carl_beers_today
-                            },
-                            "supply_closet": {
-                                "bob_at_cupboard": context.bob_proximity.bob_at_cupboard if context.bob_proximity else False,
-                                "stick_panic_level": context.bob_proximity.stick_panic_level if context.bob_proximity else 0.0,
-                                "items_acquired": context.bob_proximity.items_acquired if context.bob_proximity else [],
-                                "time_of_raid": context.bob_proximity.time_of_raid.isoformat() if (context.bob_proximity and context.bob_proximity.time_of_raid) else None
-                            },
-                            "complexity_level": context.complexity_level,
-                            "ingenuity_required": context.ingenuity_required
-                        },
-                        reasoning={
-                            "steve_assessment": {
-                                "recommended_fix": reasoning.steve_assessment.recommended_fix,
-                                "confidence": reasoning.steve_assessment.confidence,
-                                "reasoning": reasoning.steve_assessment.reasoning
-                            },
-                            "bob_assessment": {
-                                "recommended_fix": reasoning.bob_assessment.recommended_fix,
-                                "confidence": reasoning.bob_assessment.confidence,
-                                "reasoning": reasoning.bob_assessment.reasoning
-                            },
-                            "carl_assessment": {
-                                "recommended_fix": reasoning.carl_assessment.recommended_fix,
-                                "confidence": reasoning.carl_assessment.confidence,
-                                "reasoning": reasoning.carl_assessment.reasoning
-                            },
-                            "consensus": reasoning.consensus_fix,
-                            "consensus_confidence": reasoning.consensus_confidence,
-                            "disagreement_level": reasoning.disagreement_level
-                        },
-                        action_selection={
-                            "chosen_action": action.action_type,
-                            "alternatives_considered": [
-                                reasoning.steve_assessment.recommended_fix,
-                                reasoning.bob_assessment.recommended_fix,
-                                reasoning.carl_assessment.recommended_fix
-                            ],
-                            "exploration": hasattr(action_selector, 'epsilon') and action_selector.epsilon > 0,
-                            "epsilon": getattr(action_selector, 'epsilon', 0.0),
-                            "total_beers_consumed": action.total_beers_consumed,
-                            "duct_tape_rolls": action.duct_tape_rolls,
-                            "requires_sudo": action.requires_sudo,
-                            "steve_agreed": action.steve_agreed,
-                            "bob_agreed": action.bob_agreed,
-                            "carl_agreed": action.carl_agreed
-                        },
-                        execution={
-                            "metrics_before": metrics_before,
-                            "metrics_after": metrics_after,
-                            "success": cleanup_result['success'],
-                            "improvement_percent": disk_improvement,
-                            "disk_freed_mb": cleanup_result['disk_freed_mb'],
-                            "duration_seconds": cleanup_result.get('duration_seconds', 0)
-                        },
-                        learning={
-                            "situation_fingerprint": learning_record.situation_fingerprint,
-                            "stored": learning_record.storage_success,
-                            "learning_record_id": learning_record.learning_record_id,
-                            "success": learning_record.success
-                        }
-                    )
-                    
-                    # Broadcast to WebSocket (legacy - keeping for backwards compatibility)
-                    from app.services.agent_insight_emitter import emit_agent_insight
-                    await emit_agent_insight(
-                        from_agent="hamsters",
-                        to_agent="vic20_sage",
-                        action="storage_fix_success",
-                        reasoning=f"Telepathic consensus: {reasoning.consensus_fix}",
-                        context={
-                            "action_type": action.action_type,
-                            "disk_freed_mb": cleanup_result['disk_freed_mb'],
-                            "improvement_percent": cleanup_result['improvement_percent'],
-                            "total_beers": action.total_beers_consumed,
-                            "duct_tape_rolls": action.duct_tape_rolls,
-                            "steve_agreed": action.steve_agreed,
-                            "bob_agreed": action.bob_agreed,
-                            "carl_agreed": action.carl_agreed,
-                            "bob_at_cupboard": action.bob_at_cupboard
-                        }
-                    )
-                    
-                    # Update learning record with success
-                    await learning.update_outcome(
-                        learning_record,
-                        success=True,
-                        outcome_notes=f"Freed {cleanup_result.get('disk_freed_mb', 0):.2f} MB"
-                    )
-                    
-                    # Update action selector's adaptive bias based on outcome
-                    action_selector.update_defrag_bias(action.action_type, True)
                 else:
-                    logger.error(f"🐹❌ Fix failed: {cleanup_result.get('error')}")
-                    await learning.update_outcome(
-                        learning_record,
-                        success=False,
-                        outcome_notes=cleanup_result.get('error', 'Unknown error')
+                    logger.warning(
+                        f"🐹⚠️ Execution incomplete: goal='{action.goal}', "
+                        f"aborted={execution_result.was_aborted}, "
+                        f"reason={execution_result.abort_reason}"
                     )
-                    
-                    # Update action selector's adaptive bias based on outcome
-                    action_selector.update_defrag_bias(action.action_type, False)
+
+                # BROADCAST FULL DECISION CHAIN TO FRONTEND
+                from app.services.agent_decision_emitter import emit_agent_decision
+                await emit_agent_decision(
+                    agent_name="hamsters",
+                    decision_id=learning_record.learning_record_id,
+                    perception={
+                        "disk_usage_percent": context.disk_usage_percent,
+                        "fragmentation_level": context.fragmentation_level,
+                        "duct_tape_assessment": {
+                            "regular_rolls": context.duct_tape_assessment.regular_rolls,
+                            "premium_rolls": context.duct_tape_assessment.premium_rolls,
+                            "quantum_rolls": context.duct_tape_assessment.quantum_rolls,
+                            "total_rolls": context.duct_tape_assessment.total_rolls,
+                            "job_complexity": context.duct_tape_assessment.job_complexity
+                        },
+                        "beer_consumption": {
+                            "steve_beers_today": context.steve_beers_today,
+                            "bob_beers_today": context.bob_beers_today,
+                            "carl_beers_today": context.carl_beers_today,
+                            "total_beers_today": (
+                                context.steve_beers_today
+                                + context.bob_beers_today
+                                + context.carl_beers_today
+                            )
+                        },
+                        "supply_closet": {
+                            "bob_at_cupboard": context.bob_proximity.bob_at_cupboard if context.bob_proximity else False,
+                            "stick_panic_level": context.bob_proximity.stick_panic_level if context.bob_proximity else 0.0,
+                            "items_acquired": context.bob_proximity.items_acquired if context.bob_proximity else [],
+                            "time_of_raid": (
+                                context.bob_proximity.time_of_raid.isoformat()
+                                if (context.bob_proximity and context.bob_proximity.time_of_raid)
+                                else None
+                            )
+                        },
+                        "complexity_level": context.complexity_level,
+                        "ingenuity_required": context.ingenuity_required
+                    },
+                    reasoning={
+                        "steve_assessment": {
+                            "recommended_fix": reasoning.steve_assessment.recommended_fix,
+                            "confidence": reasoning.steve_assessment.confidence,
+                            "reasoning": reasoning.steve_assessment.reasoning
+                        },
+                        "bob_assessment": {
+                            "recommended_fix": reasoning.bob_assessment.recommended_fix,
+                            "confidence": reasoning.bob_assessment.confidence,
+                            "reasoning": reasoning.bob_assessment.reasoning
+                        },
+                        "carl_assessment": {
+                            "recommended_fix": reasoning.carl_assessment.recommended_fix,
+                            "confidence": reasoning.carl_assessment.confidence,
+                            "reasoning": reasoning.carl_assessment.reasoning
+                        },
+                        "consensus": reasoning.consensus_fix,
+                        "consensus_confidence": reasoning.consensus_confidence,
+                        "disagreement_level": reasoning.disagreement_level
+                    },
+                    action_selection={
+                        "goal": action.goal,
+                        "plan_source": plan.source.value,
+                        "plan_primitives": plan.primitives,
+                        "plan_confidence": plan.confidence,
+                        "alternatives_considered": [
+                            reasoning.steve_assessment.recommended_fix,
+                            reasoning.bob_assessment.recommended_fix,
+                            reasoning.carl_assessment.recommended_fix
+                        ],
+                        "exploration": hasattr(action_selector, 'epsilon') and action_selector.epsilon > 0,
+                        "epsilon": getattr(action_selector, 'epsilon', 0.0),
+                        "total_beers_consumed": action.total_beers_consumed,
+                        "duct_tape_rolls": action.duct_tape_rolls,
+                        "requires_sudo": action.requires_sudo,
+                        "steve_agreed": action.steve_agreed,
+                        "bob_agreed": action.bob_agreed,
+                        "carl_agreed": action.carl_agreed
+                    },
+                    execution={
+                        "metrics_before": {"disk_usage": disk_before},
+                        "metrics_after": {"disk_usage": disk_after},
+                        "success": execution_result.overall_success,
+                        "improvement_percent": disk_improvement_pct,
+                        "overall_improvement": execution_result.overall_improvement,
+                        "steps_completed": execution_result.steps_completed,
+                        "steps_planned": execution_result.steps_planned,
+                        "aborted": execution_result.was_aborted,
+                        "abort_reason": execution_result.abort_reason,
+                        "duration_seconds": execution_result.total_duration_seconds,
+                        "plan_source": plan.source.value,
+                    },
+                    learning={
+                        "situation_fingerprint": learning_record.situation_fingerprint,
+                        "stored": learning_record.storage_success,
+                        "learning_record_id": learning_record.learning_record_id,
+                        "success": execution_result.overall_success
+                    }
+                )
+
+                # Broadcast to WebSocket for Agent Monitor
+                from app.services.agent_insight_emitter import emit_agent_insight
+                await emit_agent_insight(
+                    from_agent="hamsters",
+                    to_agent="vic20_sage",
+                    action="storage_fix_complete",
+                    reasoning=f"Telepathic consensus: {reasoning.consensus_fix}",
+                    context={
+                        "goal": action.goal,
+                        "plan_source": plan.source.value,
+                        "primitives_executed": plan.primitives,
+                        "overall_success": execution_result.overall_success,
+                        "improvement": execution_result.overall_improvement,
+                        "total_beers": action.total_beers_consumed,
+                        "duct_tape_rolls": action.duct_tape_rolls,
+                        "steve_agreed": action.steve_agreed,
+                        "bob_agreed": action.bob_agreed,
+                        "carl_agreed": action.carl_agreed,
+                        "bob_at_cupboard": action.bob_at_cupboard
+                    }
+                )
+
+                # Section 5.1: Send ACTION_OUTCOME to VIC-20 so it can update the learning record
+                triage_alert_id = payload.get('triage_alert_id')
+                await self.send_to_agent(
+                    to_agent='vic_20_sage',
+                    message_type=MessageType.ACTION_OUTCOME,
+                    payload={
+                        'triage_alert_id': triage_alert_id,
+                        'agent_name': 'hamsters',
+                        'action_taken': action.goal,
+                        'recommended_action': recommendation.get('action', 'unknown'),
+                        'success': execution_result.overall_success,
+                        'improvement': disk_improvement_pct,
+                        'resource_type': resource_type,
+                        'severity': severity,
+                        'hawk_severity': payload.get('hawk_severity', severity),
+                        'hawk_confidence': payload.get('triage_confidence', 0.0),
+                        'followed_recommendation': True,
+                        'metrics_before': {'disk_usage': disk_before},
+                        'metrics_after': {'disk_usage': disk_after},
+                    },
+                    priority=Priority.NORMAL,
+                )
+                logger.info(
+                    f"🐹📤 ACTION_OUTCOME sent to VIC-20: "
+                    f"goal={action.goal}, success={execution_result.overall_success}, "
+                    f"improvement={disk_improvement_pct:.1f}%"
+                )
+
+                # Request The Stick validation for learned thresholds and action effectiveness
+                from app.core.database import get_async_db
+                try:
+                    await learning.learned_thresholds.request_stick_validation(
+                        metric_name='disk_usage',
+                        threshold_level='warning' if disk_before < 90 else 'critical',
+                        learned_value=await learning.learned_thresholds.get_threshold('disk_usage', 'warning'),
+                        default_value=80.0,
+                        db_getter=get_async_db
+                    )
+                    logger.info("🐹📏 Threshold validation request sent to The Stick")
+                except Exception as e:
+                    logger.error(f"🐹⚠️ Validation request failed: {e}")
                 
                 logger.info(f"{'='*80}")
                 logger.info(f"🐹✅ HAMSTERS V2 TELEPATHIC CONSENSUS COMPLETE")
@@ -473,15 +553,92 @@ class HamstersDistributed(AgentDecisionEngine, HamstersBrainV3):
                 break  # Exit db session loop
                 
         except Exception as e:
-            logger.error(f"🐹💥 Hamsters v2 consensus failed: {e}")
-            logger.exception(e)
+            logger.error(f"🐹💥 HAMSTERS ML PIPELINE FAILED: {e}", exc_info=True)
+            logger.error(
+                "   ML-informed decision UNAVAILABLE. "
+                "   Checking if emergency action needed to prevent catastrophe."
+            )
             
-            # Fallback to basic cleanup (no defrag for safety)
-            logger.warning("🐹⚠️ Falling back to basic cleanup...")
-            cleanup_result = await SystemActions.emergency_disk_cleanup(include_defrag=False)
-            if cleanup_result['success']:
-                logger.info(f"🐹✅ Fallback cleanup succeeded")
+            # Import emergency action utilities
+            from app.services.system_failure_emitter import emit_system_failure_event, record_emergency_action
+            
+            # Emit failure event - EVERYONE sees this
+            await emit_system_failure_event(
+                agent_name="hamsters",
+                failure_type="ML_PIPELINE_FAILURE",
+                error=str(e),
+                emergency_action_taken=False,  # Will update if we take action
+                context={
+                    "resource_type": resource_type,
+                    "current_value": current_value,
+                    "threshold": threshold,
+                    "severity": severity
+                }
+            )
+            
+            # Emergency action ONLY if disk is critical
+            if current_value >= 95.0:
+                logger.error(
+                    f"� DISK CRITICAL ({current_value:.1f}%) + ML DOWN: "
+                    "Emergency cleanup to prevent system failure"
+                )
+                
+                cleanup_result = await SystemActions.emergency_disk_cleanup(include_defrag=False)
+                
+                # Record emergency action with proper flagging
+                await record_emergency_action(
+                    agent="hamsters",
+                    action="emergency_disk_cleanup",
+                    reason=f"ML_PIPELINE_FAILURE + disk_critical_{current_value:.1f}%",
+                    ml_informed=False,  # THIS IS KEY - not a learned decision
+                    metrics_before={"disk_usage": current_value},
+                    metrics_after={"disk_usage": cleanup_result.get('disk_after_percent', current_value)},
+                    success=cleanup_result.get('success', False)
+                )
+                
+                if cleanup_result['success']:
+                    logger.error(
+                        f"🚨 Emergency cleanup succeeded. "
+                        f"Disk: {current_value:.1f}% → {cleanup_result.get('disk_after_percent', 0):.1f}%"
+                    )
+                    logger.error("   ⚠️ THIS WAS NOT ML-INFORMED. FIX THE ML PIPELINE. ⚠️")
+                else:
+                    logger.error(f"� Emergency cleanup FAILED: {cleanup_result.get('error')}")
+            else:
+                # Disk is not critical - safe to fail without action
+                logger.error(
+                    f"   Disk at {current_value:.1f}% - not critical. "
+                    "   No emergency action needed."
+                )
+                logger.error("   FIX THE ML PIPELINE.")
+                
+                # Re-raise to make failure visible up the chain
+                from app.ai_agents.exceptions import MLPipelineFailure
+                raise MLPipelineFailure(f"Hamsters ML pipeline failed: {e}") from e
     
+    async def _handle_stick_feedback(self, message: AgentMessage) -> None:
+        """
+        Section 4.5: Handle AGENT_FEEDBACK from The Stick.
+
+        The Stick may send action_effectiveness or routing_quality feedback.
+        Hamsters log it — Steve notes it carefully, Bob ignores it, Carl calculates duct tape.
+        """
+        feedback = message.payload
+        feedback_type = feedback.get('feedback_type', 'unknown')
+        resource_type = feedback.get('resource_type', 'unknown')
+        data = feedback.get('data', {})
+
+        logger.info(
+            f"🐹📏 Feedback from The Stick: type={feedback_type}, resource={resource_type}"
+        )
+
+        if feedback_type == 'action_effectiveness':
+            quality = data.get('quality', 'unknown')
+            logger.info(
+                f"🐹📊 Steve notes action effectiveness feedback: {quality} "
+                f"*Bob already forgot* *Carl calculates duct tape needed to fix it*"
+            )
+
     async def handle_coordination(self, coordination_request: Dict[str, Any]) -> Dict[str, Any]:
         """
         PHASE 1 REFACTOR: Accept coordination request directly from VIC-20 (not via Redis).
@@ -888,6 +1045,7 @@ class HamstersDistributed(AgentDecisionEngine, HamstersBrainV3):
             "telepathic_bond": "strong",
             "bob_wild_ideas": self.bob_wild_ideas,
             "bob_hold_my_beer_count": self.bob_hold_my_beer_count,
+            "bob_at_cupboard": self.bob_at_cupboard,
             "duct_tape_inventory": self.carl['duct_tape_inventory'],
             "distributed": distributed_state
         }

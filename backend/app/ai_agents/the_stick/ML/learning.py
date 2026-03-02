@@ -156,71 +156,64 @@ class StickLearning:
             True if storage succeeded, False otherwise
         """
         try:
-            # Prepare input data
-            input_data = {
-                'decision_complexity': context.decision_complexity,
-                'pending_decisions': context.pending_decisions,
-                'error_rate': context.error_rate,
-                'anomaly_count': context.anomaly_count,
-                'recent_decision_count': len(context.recent_decisions)
-            }
-            
-            # Prepare output data (includes personality behaviors)
-            output_data = {
+            resource_type = getattr(context, 'resource_type', 'logging')
+            severity = getattr(context, 'severity', 'normal')
+
+            # Hierarchical fingerprints
+            fingerprint_l1 = resource_type
+            fingerprint_l2 = f"{resource_type}_{severity}"
+            fingerprint_l3 = f"{resource_type}_{severity}_{action.action_type}"
+
+            # Parameters stored in the DB record
+            parameters = {
                 'action_type': action.action_type,
-                'logging_strategy': action.logging_strategy,
+                'logging_strategy': getattr(action, 'logging_strategy', 'standard'),
                 'priority': action.priority,
-                'confidence': action.confidence,
-                
-                # Anxiety tracking (personality)
                 'anxiety_level': context.anxiety_level,
                 'anxiety_category': action.anxiety_level,
                 'panic_attack_active': context.panic_attack_active,
                 'paper_bags_consumed': action.paper_bags_consumed,
-                'panic_attack_active': action.panic_attack_active,
-                'panic_attack_managed': action.panic_attack_managed,
+                'panic_attack_managed': getattr(action, 'panic_attack_managed', False),
                 'bob_detected': action.bob_detected,
-                'bob_avoidance_executed': action.bob_avoidance_executed,
-                'safe_distance_maintained': action.safe_distance_maintained,
-                'hamster_messages_archived': action.hamster_messages_archived,
-                'hamster_messages_understood': action.hamster_messages_understood,
-                'log_retention_days': action.log_retention_days,
-                'compression_applied': action.compression_applied
+                'bob_avoidance_executed': getattr(action, 'bob_avoidance_executed', False),
+                'hamster_messages_archived': getattr(action, 'hamster_messages_archived', 0),
+                'log_retention_days': getattr(action, 'log_retention_days', 7),
+                'compression_applied': getattr(action, 'compression_applied', False),
             }
-            
-            # Prepare improvement metrics
+
             improvement = {
                 'action_type': action.action_type,
-                'anxiety_managed': action.panic_attack_managed
+                'anxiety_managed': getattr(action, 'panic_attack_managed', False),
             }
-            
-            # Create database record
+
+            # success=False at write time (placeholder — updated by update_outcome()).
+            # DB column is NOT NULL so we cannot store None.
             db_record = AgentLearningRecord(
                 agent_name='the_stick',
                 fingerprint_l1=fingerprint_l1,
                 fingerprint_l2=fingerprint_l2,
                 fingerprint_l3=fingerprint_l3,
-                resource_type=context.resource_type,
-                severity=context.severity,
-                root_cause=reasoning.root_cause,
+                resource_type=resource_type,
+                severity=severity,
+                root_cause=getattr(reasoning, 'root_cause', None),
                 process_category='logging',
                 action=action.action_type,
                 parameters=parameters,
                 confidence=action.confidence,
-                followed_vic20=True,  # Stick follows VIC-20's routing
-                success=learning_record.success if learning_record.success is not None else True,
+                followed_vic20=True,
+                success=False,  # placeholder — updated by update_outcome()
                 improvement=improvement,
-                what_worked=reasoning.root_cause if learning_record.success else None,
-                what_failed=None if learning_record.success else reasoning.root_cause
+                what_worked=None,
+                what_failed=None,
             )
-            
+
             self.db.add(db_record)
             await self.db.commit()
-            
+
             learning_record.learning_record_id = str(db_record.id)
             logger.debug(f"📊💾 Learning record stored in database (ID: {db_record.id})")
             return True
-            
+
         except Exception as e:
             logger.error(f"📊💥 Error storing learning record: {e}")
             await self.db.rollback()
@@ -435,3 +428,493 @@ class StickLearning:
         except Exception as e:
             logger.error(f"📊💥 Error getting hamster translation stats: {e}")
             return {}
+    
+    async def validate_cross_agent_learning(
+        self,
+        interaction,
+        config=None
+    ):
+        """
+        Validate a cross-agent learning interaction.
+        
+        The Stick's job: Ensure agents are learning CORRECTLY from each other.
+        
+        Args:
+            interaction: AgentLearningInteractions instance to validate
+            config: Optional ValidationConfig override (defaults to global VALIDATION_CONFIG)
+            
+        Returns:
+            ValidationAuditEntry with validation decision and reasoning
+        """
+        from ..validation_config import VALIDATION_CONFIG
+        from ..data_types import ValidationAuditEntry
+        from app.models.agent_memory_banks import AgentLearningInteractions
+        
+        config = config or VALIDATION_CONFIG
+        thresholds = config.get_active_thresholds()
+        
+        logger.info(f"📏🔍 Validating learning interaction {interaction.interaction_id}")
+        logger.info(f"   Source: {interaction.source_agent} → Target: {interaction.target_agent}")
+        logger.info(f"   Thresholds: {thresholds['threshold_state']}")
+        
+        # Calculate interaction age
+        now = datetime.now(timezone.utc)
+        age_delta = now - interaction.timestamp
+        age_hours = age_delta.total_seconds() / 3600
+        
+        # Validation checks
+        validation_failures = []
+        
+        # Check 1: Age
+        if age_hours > thresholds['max_age_hours']:
+            validation_failures.append(
+                f"Interaction too old: {age_hours:.1f}h > {thresholds['max_age_hours']}h"
+            )
+        
+        # Check 2: Effectiveness score
+        if interaction.effectiveness_score is not None:
+            if interaction.effectiveness_score < thresholds['min_effectiveness']:
+                validation_failures.append(
+                    f"Effectiveness too low: {interaction.effectiveness_score:.2f} < {thresholds['min_effectiveness']}"
+                )
+        else:
+            validation_failures.append("No effectiveness score available")
+        
+        # Check 3: Success rate (if improvement_measured available)
+        if interaction.improvement_measured is not None:
+            # Treat improvement as proxy for success rate
+            if interaction.improvement_measured < thresholds['min_success_rate']:
+                validation_failures.append(
+                    f"Success rate too low: {interaction.improvement_measured:.2f} < {thresholds['min_success_rate']}"
+                )
+        
+        # Determine validation result
+        validation_passed = len(validation_failures) == 0
+        
+        # Build reasoning
+        if validation_passed:
+            reasoning = (
+                f"✅ Validation PASSED. "
+                f"Effectiveness: {interaction.effectiveness_score:.2f}, "
+                f"Age: {age_hours:.1f}h, "
+                f"Thresholds: {thresholds['threshold_state']}"
+            )
+        else:
+            reasoning = (
+                f"❌ Validation FAILED. "
+                f"Failures: {'; '.join(validation_failures)}"
+            )
+        
+        # Check if this is a retry
+        was_retry = interaction.cross_validation_count > 0
+        
+        # Create audit entry
+        audit_entry = ValidationAuditEntry(
+            timestamp=now,
+            interaction_id=interaction.interaction_id,
+            source_agent=interaction.source_agent,
+            target_agent=interaction.target_agent,
+            learning_type=interaction.learning_type,
+            validation_result=validation_passed,
+            reasoning=reasoning,
+            thresholds_applied=thresholds,
+            threshold_state=thresholds['threshold_state'],
+            was_retry=was_retry,
+            retry_count=interaction.cross_validation_count,
+            effectiveness_score=interaction.effectiveness_score,
+            success_rate=interaction.improvement_measured,
+            interaction_age_hours=age_hours,
+            stick_anxiety_level=self._calculate_validation_anxiety(validation_passed)
+        )
+        
+        logger.info(f"📏✅ Validation result: {reasoning}")
+        
+        return audit_entry
+    
+    async def validate_unvalidated_interactions(
+        self,
+        max_age_days: int = 7,
+        session=None  # OPUS 4.6 CHANGE: Accept optional session from caller
+    ) -> Dict[str, Any]:
+        """
+        Sweep through unvalidated learning interactions and validate them.
+        
+        The Stick's anxiety-driven thoroughness ensures NO learning goes unvalidated.
+        
+        Args:
+            max_age_days: Skip interactions older than this (default 7 days)
+            session: Optional existing session from caller
+            
+        Returns:
+            Statistics on validated interactions
+        """
+        logger.info("📏🔍 Starting validation sweep for unvalidated interactions...")
+        
+        from sqlalchemy import select, and_, or_
+        from sqlalchemy.sql import func
+        from datetime import timedelta
+        from app.models.agent_memory_banks import AgentLearningInteractions
+        
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=max_age_days)
+        now = datetime.now(timezone.utc)
+        
+        try:
+            active_session = session or self.db
+            
+            # OPUS 4.6 CHANGE: Added retry window filtering.
+            # Previously: Query only checked validated_by_stick == False and age.
+            # Problem: Failed validations stay validated_by_stick == False, so
+            # the next sweep immediately re-validates them — ignoring the 24-hour
+            # retry window specified in the failure metadata.
+            # 
+            # Now: We filter out interactions that have failed validation AND
+            # haven't reached their retry_after window yet.
+            #
+            # NOTE: The JSON field query syntax below assumes PostgreSQL with JSONB.
+            
+            query = select(AgentLearningInteractions).where(
+                and_(
+                    AgentLearningInteractions.validated_by_stick == False,
+                    AgentLearningInteractions.timestamp >= cutoff_date,
+                    # Include interactions that either:
+                    # 1. Have never been validated (cross_validation_count == 0), OR
+                    # 2. Have been validated before but retry window has elapsed
+                    or_(
+                        AgentLearningInteractions.cross_validation_count == 0,
+                        # Previously failed — check retry window
+                        # This handles the case where adaptation_method contains
+                        # retry_after timestamp from a previous failed validation
+                        and_(
+                            AgentLearningInteractions.cross_validation_count > 0,
+                            # PostgreSQL JSONB syntax for retry window check
+                            AgentLearningInteractions.adaptation_method['retry_after'].astext <= now.isoformat()
+                        )
+                    )
+                )
+            ).order_by(AgentLearningInteractions.timestamp.desc())
+            
+            result = await active_session.execute(query)
+            interactions = result.scalars().all()
+            
+            logger.info(f"📏📊 Found {len(interactions)} unvalidated interactions")
+            
+            validated_count = 0
+            failed_count = 0
+            skipped_count = 0
+            audit_entries = []
+            
+            for interaction in interactions:
+                # Validate the interaction
+                audit_entry = await self.validate_cross_agent_learning(interaction)
+                audit_entries.append(audit_entry)
+                
+                # Note: record_validation will be called from distributed_stick.py
+                # to avoid needing db_integration reference here
+                
+                if audit_entry.validation_result:
+                    validated_count += 1
+                else:
+                    failed_count += 1
+            
+            stats = {
+                'total_checked': len(interactions),
+                'validated': validated_count,
+                'failed': failed_count,
+                'skipped': skipped_count,
+                'validation_rate': (
+                    validated_count / len(interactions) if interactions else 0.0
+                ),
+                'audit_entries': audit_entries,
+                'interactions': interactions  # Return for caller to record
+            }
+            
+            logger.info(
+                f"📏✅ Validation sweep complete: "
+                f"{validated_count} passed, {failed_count} failed, "
+                f"{skipped_count} skipped (retry window)"
+            )
+            
+            return stats
+            
+        except Exception as e:
+            logger.error(f"📏💥 Error during validation sweep: {e}")
+            return {
+                'total_checked': 0,
+                'validated': 0,
+                'failed': 0,
+                'skipped': 0,
+                'validation_rate': 0.0,
+                'error': str(e)
+            }
+    
+    def _calculate_validation_anxiety(self, validation_passed: bool) -> float:
+        """
+        Calculate The Stick's anxiety level during validation.
+        Failed validations increase anxiety.
+        
+        OPUS 4.6 NOTE: This is intentionally simple for Phase 1.
+        Current behavior: binary 25.0 (pass) or 40.0 (fail).
+        
+        POST-LAUNCH ENHANCEMENT (flag for Phase 2+):
+        Should factor in:
+        - Failure RATE over rolling window (not just single result)
+        - Consecutive failures (streak detection)
+        - Ratio of validated to unvalidated interactions system-wide
+        - Time since last successful validation
+        - Agent-specific failure patterns (e.g., Terry always failing = 
+          different anxiety profile than random failures across agents)
+        
+        Example future signature:
+            def _calculate_validation_anxiety(
+                self, 
+                validation_passed: bool,
+                recent_failure_rate: float,
+                consecutive_failures: int,
+                system_validation_ratio: float
+            ) -> float:
+        
+        For now: simple binary is sufficient. The interface exists.
+        The Stick will develop more nuanced anxiety when there's data to be anxious about.
+        """
+        base_anxiety = 25.0
+        if not validation_passed:
+            base_anxiety += 15.0  # Failed validation = more anxiety
+        return min(base_anxiety, 100.0)
+    
+    def validate_learned_threshold(
+        self,
+        agent_name: str,
+        metric_name: str,
+        threshold_level: str,
+        learned_value: float,
+        default_value: float,
+        sample_size: int,
+        trigger_reason: str = None,
+        config=None
+    ):
+        """
+        Validate Terry's learned threshold.
+        
+        The Stick's job: Ensure Terry's ML learning produces REASONABLE thresholds.
+        
+        Validation checks:
+        1. Sample size >= min_threshold_sample_size
+        2. Shift magnitude <= max_threshold_shift_magnitude
+        3. Direction consistency with trigger reason (catches learning logic errors)
+        
+        Args:
+            agent_name: Agent that learned this threshold (e.g., 'meth_snail')
+            metric_name: Metric being thresholded (e.g., 'memory_usage')
+            threshold_level: Level being learned (e.g., 'warning', 'critical')
+            learned_value: The threshold value Terry learned
+            default_value: The default/baseline threshold
+            sample_size: Number of learning records used
+            trigger_reason: Why threshold was adjusted ('false_alarms', 'missed_actions', 'too_late')
+            config: Optional ValidationConfig override
+            
+        Returns:
+            ValidationAuditEntry with learning_type="threshold_adjustment"
+        """
+        from ..validation_config import VALIDATION_CONFIG
+        from ..data_types import ValidationAuditEntry
+        
+        config = config or VALIDATION_CONFIG
+        thresholds = config.get_active_thresholds()
+        now = datetime.now(timezone.utc)
+        
+        logger.info(
+            f"📏🔍 Validating learned threshold: {agent_name}.{metric_name}.{threshold_level} = {learned_value:.1f}"
+        )
+        
+        # Calculate shift magnitude (as ratio of old threshold)
+        shift_magnitude = abs(learned_value - default_value) / default_value if default_value != 0 else 0.0
+        
+        # Validation checks
+        validation_failures = []
+        
+        # Check 1: Sample size
+        if sample_size < thresholds['min_threshold_sample_size']:
+            validation_failures.append(
+                f"Insufficient data: {sample_size} samples < {thresholds['min_threshold_sample_size']} minimum"
+            )
+        
+        # Check 2: Shift magnitude
+        if shift_magnitude > thresholds['max_threshold_shift_magnitude']:
+            validation_failures.append(
+                f"Threshold shift too large: {shift_magnitude:.2f} > {thresholds['max_threshold_shift_magnitude']:.2f}"
+            )
+        
+        # Check 3: Direction consistency with trigger reason
+        # This catches actual learning errors - if Terry sees false alarms and lowers threshold (more sensitive),
+        # something is broken in the learning logic
+        if trigger_reason:
+            threshold_went_up = learned_value > default_value
+            threshold_went_down = learned_value < default_value
+            
+            if trigger_reason == "false_alarms":
+                # False alarms mean threshold should go UP (less sensitive)
+                if threshold_went_down:
+                    validation_failures.append(
+                        f"Direction inconsistent: false_alarms should move threshold UP (less sensitive), got DOWN"
+                    )
+            elif trigger_reason in ["missed_actions", "too_late"]:
+                # Missed actions or acting too late means threshold should go DOWN (more sensitive)
+                if threshold_went_up:
+                    validation_failures.append(
+                        f"Direction inconsistent: {trigger_reason} should move threshold DOWN (more sensitive), got UP"
+                    )
+        
+        # Determine validation result
+        validation_passed = len(validation_failures) == 0
+        
+        # Build reasoning
+        if validation_passed:
+            reasoning = (
+                f"✅ Threshold VALIDATED. "
+                f"Learned: {learned_value:.1f} (default: {default_value:.1f}, "
+                f"shift: {shift_magnitude:.2f}), "
+                f"samples: {sample_size}"
+            )
+            if trigger_reason:
+                reasoning += f", trigger: {trigger_reason}"
+        else:
+            reasoning = (
+                f"❌ Threshold REJECTED. "
+                f"Failures: {'; '.join(validation_failures)}"
+            )
+        
+        # Create audit entry using standard ValidationAuditEntry
+        # learning_type="threshold_adjustment" discriminates this from cross-agent learning
+        interaction_id = f"{agent_name}_{metric_name}_{threshold_level}_{now.isoformat()}"
+        
+        audit_entry = ValidationAuditEntry(
+            timestamp=now,
+            interaction_id=interaction_id,
+            source_agent=agent_name,
+            target_agent=agent_name,  # Terry validating Terry's own learning
+            learning_type="threshold_adjustment",
+            validation_result=validation_passed,
+            reasoning=reasoning,
+            thresholds_applied=thresholds,
+            threshold_state=thresholds['threshold_state'],
+            effectiveness_score=shift_magnitude,  # Reuse field: shift magnitude
+            stick_anxiety_level=self._calculate_validation_anxiety(validation_passed)
+        )
+        
+        logger.info(f"📏✅ Threshold validation result: {reasoning}")
+        
+        return audit_entry
+    
+    def validate_action_effectiveness(
+        self,
+        agent_name: str,
+        action: str,
+        metric_pattern: str,
+        effectiveness_score: float,
+        raw_success_rate: float,
+        sample_size: int,
+        previous_score: float = None,
+        config=None
+    ):
+        """
+        Validate Terry's learned action effectiveness.
+        
+        The Stick's job: Ensure Terry's ML learning produces RELIABLE action recommendations.
+        
+        Validation checks:
+        1. Sample size >= min_action_sample_size
+        2. Score volatility <= max_action_score_volatility (if previous score exists)
+        3. Score consistency with raw data (catches model drift)
+        
+        Args:
+            agent_name: Agent that learned this (e.g., 'meth_snail')
+            action: Action being validated (e.g., 'restart_service')
+            metric_pattern: Pattern fingerprint for this learning
+            effectiveness_score: Learned effectiveness score from model (0.0-1.0)
+            raw_success_rate: Raw success rate from outcomes (0.0-1.0)
+            sample_size: Number of attempts
+            previous_score: Previous effectiveness score for volatility check (optional)
+            config: Optional ValidationConfig override
+            
+        Returns:
+            ValidationAuditEntry with learning_type="action_effectiveness"
+        """
+        from ..validation_config import VALIDATION_CONFIG
+        from ..data_types import ValidationAuditEntry
+        
+        config = config or VALIDATION_CONFIG
+        thresholds = config.get_active_thresholds()
+        now = datetime.now(timezone.utc)
+        
+        logger.info(
+            f"📏🔍 Validating action effectiveness: {agent_name}.{action} "
+            f"(score: {effectiveness_score:.2f}, raw_rate: {raw_success_rate:.2f}, samples: {sample_size})"
+        )
+        
+        # Validation checks
+        validation_failures = []
+        
+        # Check 1: Sample size
+        if sample_size < thresholds['min_action_sample_size']:
+            validation_failures.append(
+                f"Insufficient data: {sample_size} outcomes < {thresholds['min_action_sample_size']} minimum"
+            )
+        
+        # Check 2: Score volatility (if we have previous score)
+        if previous_score is not None:
+            score_delta = abs(effectiveness_score - previous_score)
+            if score_delta > thresholds['max_action_score_volatility']:
+                validation_failures.append(
+                    f"Score volatility too high: {score_delta:.2f} > {thresholds['max_action_score_volatility']:.2f}"
+                )
+        
+        # Check 3: Score consistency with raw data
+        # This catches scoring model drift - if model says 0.9 but raw success is 0.4, model is wrong
+        score_gap = abs(effectiveness_score - raw_success_rate)
+        if score_gap > thresholds['min_action_consistency']:
+            validation_failures.append(
+                f"Score diverges from raw data: score={effectiveness_score:.2f}, raw_success_rate={raw_success_rate:.2f}, gap={score_gap:.2f} > {thresholds['min_action_consistency']:.2f}"
+            )
+        
+        # Determine validation result
+        validation_passed = len(validation_failures) == 0
+        
+        # Build reasoning
+        if validation_passed:
+            reasoning = (
+                f"✅ Action VALIDATED. "
+                f"Score: {effectiveness_score:.2f}, "
+                f"raw rate: {raw_success_rate:.2f}, "
+                f"samples: {sample_size}"
+            )
+            if previous_score is not None:
+                reasoning += f", volatility: {abs(effectiveness_score - previous_score):.2f}"
+        else:
+            reasoning = (
+                f"❌ Action REJECTED. "
+                f"Failures: {'; '.join(validation_failures)}"
+            )
+        
+        # Create audit entry using standard ValidationAuditEntry
+        # learning_type="action_effectiveness" discriminates this from cross-agent learning
+        interaction_id = f"{agent_name}_{action}_{metric_pattern[:16]}_{now.isoformat()}"
+        
+        audit_entry = ValidationAuditEntry(
+            timestamp=now,
+            interaction_id=interaction_id,
+            source_agent=agent_name,
+            target_agent=agent_name,  # Terry validating Terry's own learning
+            learning_type="action_effectiveness",
+            validation_result=validation_passed,
+            reasoning=reasoning,
+            thresholds_applied=thresholds,
+            threshold_state=thresholds['threshold_state'],
+            success_rate=raw_success_rate,  # Maps directly to raw success rate
+            effectiveness_score=effectiveness_score,  # Learned score from model
+            pattern_similarity=1.0 - score_gap,  # Reuse field: consistency (inverted gap)
+            stick_anxiety_level=self._calculate_validation_anxiety(validation_passed)
+        )
+        
+        logger.info(f"📏✅ Action validation result: {reasoning}")
+        
+        return audit_entry

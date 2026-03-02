@@ -105,7 +105,8 @@ class VIC20Reasoning:
             context.resource_type,
             context.current_value,
             context.threshold,
-            context.severity
+            context.severity,
+            historical_outcomes=context.similar_routings
         )
         
         # Build action parameters
@@ -266,27 +267,64 @@ class VIC20Reasoning:
         resource_type: str,
         current_value: float,
         threshold: float,
-        severity: str
+        severity: str,
+        historical_outcomes: list = None
     ) -> str:
         """
         Determine what action to recommend to the specialist.
+
+        Queries historical specialist outcomes from AgentLearningRecord.
+        Requires min 3 successful samples; ranks by avg improvement, tiebreak by sample count.
+        Falls back to cold-start hypothesis if insufficient data.
         """
-        # Map resource types to recommended actions
-        action_map = {
-            'cpu': 'optimize_processes',
-            'memory': 'clear_cache',
-            'swap': 'reduce_memory_pressure',
-            'disk': 'cleanup_storage',
-            'network': 'analyze_traffic'
-        }
-        
-        base_action = action_map.get(resource_type.lower(), 'investigate')
-        
-        # Adjust based on severity
-        if severity == 'critical':
-            return f'emergency_{base_action}'
-        else:
-            return base_action
+        from app.ai_agents.vic_20_sage.ML.goals import COLD_START_HYPOTHESES
+
+        if historical_outcomes and len(historical_outcomes) >= 3:
+            successful = [o for o in historical_outcomes if o.get('success') is True]
+            if len(successful) >= 3:
+                action_stats: dict = {}
+                for record in successful:
+                    action = record.get('action')
+                    if not action:
+                        continue
+                    improvement_raw = record.get('improvement')
+                    if isinstance(improvement_raw, dict):
+                        improvement = float(improvement_raw.get('improvement_percent', 0.0))
+                    elif isinstance(improvement_raw, (int, float)):
+                        improvement = float(improvement_raw)
+                    else:
+                        improvement = 0.0
+                    if action not in action_stats:
+                        action_stats[action] = {'total_improvement': 0.0, 'count': 0}
+                    action_stats[action]['total_improvement'] += improvement
+                    action_stats[action]['count'] += 1
+
+                if action_stats:
+                    best_action = max(
+                        action_stats,
+                        key=lambda a: (
+                            action_stats[a]['total_improvement'] / action_stats[a]['count'],
+                            action_stats[a]['count']
+                        )
+                    )
+                    logger.info(
+                        f"🖥️🧠 Learned recommendation for {resource_type}: '{best_action}' "
+                        f"(samples={action_stats[best_action]['count']}, "
+                        f"avg_improvement={action_stats[best_action]['total_improvement'] / action_stats[best_action]['count']:.1f}%)"
+                    )
+                    return best_action
+
+        hypothesis = COLD_START_HYPOTHESES.get(resource_type.lower())
+        if hypothesis:
+            logger.info(
+                f"🖥️📚 Cold-start recommendation for {resource_type}: '{hypothesis['action']}'"
+            )
+            return hypothesis['action']
+
+        raise ValueError(
+            f"VIC20Reasoning._determine_recommended_action: no recommendation available "
+            f"for resource_type='{resource_type}'. No historical data and no cold-start hypothesis."
+        )
     
     def _build_action_parameters(
         self,

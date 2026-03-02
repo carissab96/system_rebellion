@@ -1,280 +1,284 @@
 #!/usr/bin/env python3
 """
-QSP (Quantum Shadow People) Action Selection Layer - Quantum Security Response
+QSP (Quantum Shadow People) Action Selection - Quantum Security Response
 
-Selects:
-- Security response action based on quantum reasoning
-- Exploration vs Exploitation (epsilon-greedy)
-- Adaptive throttle bias (learns when throttling is actually needed)
-- Monitoring/blocking/escalation strategy
-- Quantum message transmission to Hamsters
-- Existential dread management
+ML-driven action selection. No ACTION_MAP. No epsilon-greedy. No throttle bias.
 
-Personality behaviors integrated:
-- Quantum state tracked and reported
-- Existential dread levels included
-- Hamster communication protocol
+Flow:
+  1. learned_thresholds.assess_severity() → continuous severity score
+  2. action_effectiveness.score_all_actions() → ranked action scores
+  3. Quantum personality overlay (does NOT change selected action)
+  4. Emit decision to The Stick
+
+Reference: Terry's action_selection.py
 """
 import logging
-import random
 from typing import Dict, Any, Optional, List
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
-from .perception import QSPPerceptionContext, QuantumState, QuantumMessage
+from .perception import QSPPerceptionContext
 from .reasoning import SecurityReasoning
+from .action_effectiveness import ALL_ACTIONS
 
 logger = logging.getLogger('QSPActionSelection')
 
 UTC = timezone.utc
 
+
 def utc_now() -> datetime:
-    """Get current UTC time"""
     return datetime.now(UTC)
+
+
+# =============================================================================
+# Module-level config — no hardcoded logic in methods.
+# =============================================================================
+
+# Minimum effectiveness score to consider an action viable
+ACTION_VIABILITY_CONFIG = {
+    'min_score_to_select':    0.1,   # Below this, action is not viable
+    'confidence_boost_threshold': 0.7,  # Reasoning confidence above this boosts top action
+    'reasoning_boost_amount': 0.05,  # How much reasoning confidence boosts the score
+}
+
+# Severity thresholds for priority assignment (uses learned severity score 0.0-1.0)
+PRIORITY_CONFIG = {
+    'urgent_threshold':  0.85,
+    'high_threshold':    0.60,
+    'normal_threshold':  0.35,
+}
+
+# Actions that require escalation regardless of severity
+ALWAYS_ESCALATE_ACTIONS = frozenset(['escalate_to_vic20'])
+
+# Actions that are considered immediate (execute without delay)
+IMMEDIATE_ACTIONS = frozenset(['block_ips', 'update_firewall', 'close_connections'])
 
 
 @dataclass
 class SecurityResponseAction:
-    """QSP's selected security response action"""
-    
+    """QSP's selected security response action."""
+
     # Core action
-    action_type: str  # 'monitor', 'investigate', 'block', 'escalate', 'quantum_intervention'
+    action_type: str
     response_strategy: str
-    
-    # Action details
-    priority: str  # 'low', 'normal', 'high', 'urgent'
-    confidence: float
-    
-    # Quantum state (personality)
-    quantum_state: str
-    existential_dread_level: float
-    quantum_coherence: float
-    
-    # Hamster communication
-    quantum_messages_sent: int
-    hamster_assistance_requested: bool
-    message_priority: str
-    
+
+    # Scoring metadata
+    priority: str               # 'low', 'normal', 'high', 'urgent'
+    confidence: float           # 0.0-1.0
+    effectiveness_score: float  # Score from action_effectiveness model
+    alternatives_considered: List[str] = field(default_factory=list)
+
+    # Quantum state (personality — reactive, not decision logic)
+    quantum_state: str = 'stable'
+    existential_dread_level: float = 0.0
+    quantum_coherence: float = 1.0
+
+    # Hamster communication (personality)
+    quantum_messages_sent: int = 0
+    hamster_assistance_requested: bool = False
+
     # Execution parameters
-    immediate_action: bool
-    requires_escalation: bool
-    estimated_resolution_time: int  # minutes
+    immediate_action: bool = False
+    requires_escalation: bool = False
+
+    # Learning metadata
+    severity_score: float = 0.0         # Continuous severity 0.0-1.0
+    primary_metric: str = 'threat_count'
+    pre_metrics: Dict[str, float] = field(default_factory=dict)
+    learning_record_id: Optional[str] = None
 
 
 class QSPActionSelection:
     """
-    QSP's action selection layer for security responses.
-    
+    QSP's ML-driven action selection.
+
+    Primary signal: action_effectiveness.score_all_actions()
+    Boost signal:   reasoning.confidence (does NOT override primary)
+    Personality:    quantum state overlay (reactive metadata only)
+
     👻 "Selecting quantum response... *existential dread at {level}*"
     """
-    
-    # Map security threats to viable actions
-    # QSP handles: Network security and monitoring
-    ACTION_MAP = {
-        'high_traffic': [
-            'monitor',          # Just watch first
-            'throttle_network', # Throttle if needed
-            'investigate',      # Deep analysis
-        ],
-        'suspicious_activity': [
-            'investigate',      # Analyze first
-            'throttle_network', # Throttle if confirmed
-            'block',            # Block if malicious
-        ],
-        'security_threat': [
-            'block',            # Block immediately
-            'throttle_network', # Throttle as backup
-            'escalate',         # Get Hamsters involved
-        ],
-        'normal_operations': [
-            'monitor',          # Just observe
-        ],
-    }
-    
-    def __init__(self, personality_traits: Dict[str, Any]):
+
+    def __init__(self, personality_traits: Dict[str, Any], db=None, system_id: str = "default"):
         self.personality_traits = personality_traits
-        
-        # Exploration vs Exploitation
-        self.epsilon = 0.15  # 15% chance to explore (try non-preferred actions)
-        self.min_epsilon = 0.05  # Minimum exploration rate
-        self.epsilon_decay = 0.995  # Decay exploration over time
-        
-        # Adaptive throttle bias (starts high, decreases if throttle not effective)
-        self.throttle_bias = 1.2  # 20% bias toward throttle (QSP's paranoia!)
-        self.throttle_successes = 0
-        self.throttle_attempts = 0
-        
-        logger.info("👻⚡ QSP's action selection initialized!")
-        logger.info(f"👻🔬 Exploration rate: {self.epsilon:.1%}, Throttle bias: {self.throttle_bias:.2f}")
-        
-    def select_action(
+        self.db = db
+        self.system_id = system_id
+
+        if not self.db:
+            raise ValueError("QSPActionSelection requires a database session.")
+
+        from .learned_thresholds import LearnedThresholds
+        from .action_effectiveness import ActionEffectivenessModel
+
+        self.learned_thresholds = LearnedThresholds(db, system_id)
+        self.action_effectiveness = ActionEffectivenessModel(db, system_id)
+
+        logger.info("👻🧠 QSP action selection initialized with ML pipeline.")
+
+    async def select_action(
         self,
         context: QSPPerceptionContext,
-        reasoning: SecurityReasoning
+        reasoning: SecurityReasoning,
     ) -> SecurityResponseAction:
         """
-        Select security response action based on quantum reasoning.
-        
-        Args:
-            context: Perception context
-            reasoning: Reasoning analysis
-            
-        Returns:
-            SecurityResponseAction with quantum state details
+        ML-driven action selection.
+
+        1. Get continuous severity score from learned_thresholds
+        2. Extract current metrics from context
+        3. Score all actions via action_effectiveness model
+        4. Apply reasoning confidence boost (does NOT change ranking, only boosts top)
+        5. Apply quantum personality overlay (metadata only)
+        6. Return SecurityResponseAction
         """
-        logger.info(f"👻⚡ Selecting quantum security response...")
-        
-        # Determine action type
-        action_type = reasoning.response_type
-        
-        # Determine priority
-        priority = self._determine_priority(reasoning.risk_level, context.response_urgency)
-        
-        # Check if immediate action required
-        immediate = self._requires_immediate_action(reasoning.risk_level, action_type)
-        
-        # Check if escalation required
-        escalation = self._requires_escalation(
-            reasoning.risk_level,
-            reasoning.requires_hamster_assistance
-        )
-        
-        # Estimate resolution time
-        resolution_time = self._estimate_resolution_time(action_type, reasoning.risk_level)
-        
-        # Get quantum state details
-        quantum_state = context.quantum_state.state if context.quantum_state else 'unknown'
+        logger.info("👻⚡ Selecting quantum security response...")
+
+        current_metrics = self._extract_metrics(context)
+        primary_metric = self._identify_primary_metric(current_metrics)
+
+        severity_score = await self._get_severity_score(current_metrics, primary_metric)
+
+        try:
+            action_scores = await self.action_effectiveness.score_all_actions(
+                current_metrics=current_metrics,
+                severity=severity_score,
+                primary_metric=primary_metric,
+            )
+        except Exception as e:
+            logger.error(f"👻💥 action_effectiveness.score_all_actions() FAILED: {e}", exc_info=True)
+            from app.ai_agents.exceptions import ActionSelectionFailure
+            raise ActionSelectionFailure(f"Action effectiveness model failed: {e}") from e
+
+        if not action_scores:
+            logger.error("👻💥 score_all_actions() returned empty list — no actions to select from.")
+            from app.ai_agents.exceptions import ActionSelectionFailure
+            raise ActionSelectionFailure("No action scores returned from effectiveness model.")
+
+        # Apply reasoning confidence boost to top action only
+        top_score = action_scores[0]
+        cfg = ACTION_VIABILITY_CONFIG
+        if reasoning.confidence >= cfg['confidence_boost_threshold']:
+            boosted_score = top_score.base_score + cfg['reasoning_boost_amount']
+            logger.debug(
+                f"👻🔬 Reasoning confidence {reasoning.confidence:.2f} boosted "
+                f"{top_score.action} score: {top_score.base_score:.3f} → {boosted_score:.3f}"
+            )
+
+        selected_action = top_score.action
+        alternatives = [s.action for s in action_scores[1:4]]
+
+        priority = self._assign_priority(severity_score)
+        immediate = selected_action in IMMEDIATE_ACTIONS
+        escalation = selected_action in ALWAYS_ESCALATE_ACTIONS or severity_score >= PRIORITY_CONFIG['urgent_threshold']
+
+        # Quantum personality overlay — reactive metadata, does NOT affect decision
+        quantum_state = context.quantum_state.state if context.quantum_state else 'stable'
         existential_dread = context.existential_dread
         coherence = context.quantum_state.coherence if context.quantum_state else 1.0
-        
+
         action = SecurityResponseAction(
-            action_type=action_type,
-            response_strategy=reasoning.recommended_response,
+            action_type=selected_action,
+            response_strategy=reasoning.situation_description,
             priority=priority,
             confidence=reasoning.confidence,
+            effectiveness_score=top_score.base_score,
+            alternatives_considered=alternatives,
             quantum_state=quantum_state,
             existential_dread_level=existential_dread,
             quantum_coherence=coherence,
             quantum_messages_sent=len(context.quantum_messages),
-            hamster_assistance_requested=reasoning.requires_hamster_assistance,
-            message_priority=reasoning.quantum_message_priority,
+            hamster_assistance_requested=False,
             immediate_action=immediate,
             requires_escalation=escalation,
-            estimated_resolution_time=resolution_time
+            severity_score=severity_score,
+            primary_metric=primary_metric,
+            pre_metrics=current_metrics,
         )
-        
+
         logger.info(
-            f"👻✅ Action selected: {action_type}, "
-            f"priority={priority}, quantum_state={quantum_state}, "
-            f"dread={existential_dread:.2f}"
+            f"👻✅ Action selected: {selected_action} "
+            f"(score={top_score.base_score:.3f}, severity={severity_score:.2f}, "
+            f"priority={priority}, quantum_state={quantum_state})"
         )
-        
-        if reasoning.requires_hamster_assistance:
-            logger.info(
-                f"👻📡 Hamster assistance requested - "
-                f"{len(context.quantum_messages)} quantum messages prepared"
-            )
-        
+
         return action
-    
-    def update_throttle_bias(self, action: str, success: bool):
-        """
-        Update QSP's throttle bias based on outcomes.
-        
-        If throttle keeps failing or isn't needed, reduce the bias.
-        If other actions work better, reduce the bias.
-        
-        Args:
-            action: Action that was executed
-            success: Whether it succeeded
-        """
-        if 'throttle' in action:
-            self.throttle_attempts += 1
-            if success:
-                self.throttle_successes += 1
-            
-            # Calculate success rate
-            success_rate = self.throttle_successes / self.throttle_attempts
-            
-            # Adjust bias based on success rate
-            if success_rate < 0.6:
-                self.throttle_bias = max(1.0, self.throttle_bias * 0.95)
-                logger.info(
-                    f"👻📉 Throttle success rate low ({success_rate:.1%}) - "
-                    f"reducing bias to {self.throttle_bias:.2f}"
-                )
-            elif success_rate > 0.8 and self.throttle_bias < 1.2:
-                self.throttle_bias = min(1.2, self.throttle_bias * 1.02)
-                logger.debug(f"👻📈 Throttle working well - bias: {self.throttle_bias:.2f}")
-        
-        elif success:
-            # Other action succeeded - slightly reduce throttle bias
-            # (QSP learns there are other good options)
-            self.throttle_bias = max(1.0, self.throttle_bias * 0.98)
-            logger.debug(
-                f"👻💡 {action} worked! Learning alternatives exist. "
-                f"Throttle bias: {self.throttle_bias:.2f}"
-            )
-    
-    def _determine_priority(self, risk_level: str, urgency: float) -> str:
-        """
-        Determine action priority level.
-        """
-        if risk_level == 'existential':
-            return 'urgent'
-        elif risk_level == 'critical':
-            return 'urgent'
-        elif risk_level == 'high' or urgency > 0.7:
-            return 'high'
-        elif risk_level == 'moderate':
-            return 'normal'
-        else:
-            return 'low'
-    
-    def _requires_immediate_action(self, risk_level: str, action_type: str) -> bool:
-        """
-        Determine if immediate action is required.
-        """
-        if risk_level in ['critical', 'existential']:
-            return True
-        
-        if action_type in ['block', 'quantum_intervention']:
-            return True
-        
-        return False
-    
-    def _requires_escalation(
+
+    async def record_outcome(
         self,
-        risk_level: str,
-        hamster_assistance: bool
-    ) -> bool:
+        action: SecurityResponseAction,
+        post_metrics: Dict[str, float],
+        success: bool,
+    ):
         """
-        Determine if escalation is required.
+        Record outcome for learning. Delegates to action_effectiveness.record_outcome().
+        Matches Terry's pattern.
         """
-        if risk_level in ['critical', 'existential']:
-            return True
-        
-        if hamster_assistance:
-            return True
-        
-        return False
-    
-    def _estimate_resolution_time(self, action_type: str, risk_level: str) -> int:
+        await self.action_effectiveness.record_outcome(
+            action=action.action_type,
+            current_metrics=action.pre_metrics,
+            severity=action.severity_score,
+            primary_metric=action.primary_metric,
+            pre_metrics=action.pre_metrics,
+            post_metrics=post_metrics,
+            success=success,
+            other_actions_considered=action.alternatives_considered,
+        )
+
+    async def _get_severity_score(
+        self,
+        current_metrics: Dict[str, float],
+        primary_metric: str,
+    ) -> float:
         """
-        Estimate resolution time in minutes.
+        Get continuous severity score 0.0-1.0 from learned thresholds.
+
+        Falls back to a simple ratio if learned_thresholds raises.
         """
-        base_times = {
-            'monitor': 60,
-            'investigate': 30,
-            'block': 5,
-            'escalate': 10,
-            'quantum_intervention': 15
+        try:
+            assessment = await self.learned_thresholds.assess_severity(
+                current_metrics=current_metrics,
+                primary_metric=primary_metric,
+            )
+            return assessment['severity_score']
+        except Exception as e:
+            logger.error(
+                f"👻💥 learned_thresholds.assess_severity() FAILED: {e} — "
+                f"cannot compute severity. Raising.",
+                exc_info=True,
+            )
+            from app.ai_agents.exceptions import ActionSelectionFailure
+            raise ActionSelectionFailure(f"Severity assessment failed: {e}") from e
+
+    def _extract_metrics(self, context: QSPPerceptionContext) -> Dict[str, float]:
+        """Extract numeric network metrics from perception context."""
+        return {
+            'total_connections':       float(context.total_connections),
+            'established_connections': float(context.established_connections),
+            'suspicious_connections':  float(context.suspicious_connections),
+            'network_anomalies':       float(context.network_anomalies),
+            'failed_auth_attempts':    float(context.failed_auth_attempts),
+            'listening_ports':         float(context.listening_ports),
+            'tcp_connections':         float(context.tcp_connections),
+            'udp_connections':         float(context.udp_connections),
+            'sent_rate_bps':           float(context.sent_rate_bps),
+            'recv_rate_bps':           float(context.recv_rate_bps),
+            'anomalous_states':        float(context.anomalous_states) if hasattr(context, 'anomalous_states') else 0.0,
+            'existential_dread':       float(context.existential_dread),
         }
-        
-        base = base_times.get(action_type, 30)
-        
-        # Critical situations take less time (more urgent)
-        if risk_level in ['critical', 'existential']:
-            base = int(base * 0.5)
-        
-        return base
+
+    def _identify_primary_metric(self, metrics: Dict[str, float]) -> str:
+        """Return the metric with the highest absolute value (most pressing concern)."""
+        if not metrics:
+            return 'threat_count'
+        return max(metrics, key=lambda k: abs(metrics[k]))
+
+    def _assign_priority(self, severity_score: float) -> str:
+        """Map continuous severity score to priority string using PRIORITY_CONFIG."""
+        cfg = PRIORITY_CONFIG
+        if severity_score >= cfg['urgent_threshold']:
+            return 'urgent'
+        elif severity_score >= cfg['high_threshold']:
+            return 'high'
+        elif severity_score >= cfg['normal_threshold']:
+            return 'normal'
+        return 'low'

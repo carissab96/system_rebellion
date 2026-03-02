@@ -22,6 +22,8 @@ from datetime import datetime, timezone
 
 logger = logging.getLogger('TerryReasoning')
 
+from app.ai_agents.meth_snail.ML.situation_fingerprint import SituationFingerprint, FingerprintMatcher
+
 # Import ML components (graceful fallback if unavailable)
 try:
     from app.ml.pattern_recognition.pattern_validator import PatternValidator
@@ -98,14 +100,19 @@ class TerryReasoning:
     🐌🧠 "Now I understand WHY things are broken, not just THAT they're broken!"
     """
     
-    def __init__(self, db_session):
+    def __init__(self, db_session, learned_thresholds=None):
         """
         Initialize reasoning engine with ML enhancement.
         
         Args:
             db_session: AsyncSession for database queries
+            learned_thresholds: LearnedThresholds instance for adaptive diagnosis.
+                                Required for full pipeline operation. When None,
+                                _get_diagnostic_threshold raises RuntimeError.
         """
         self.db = db_session
+        self.learned_thresholds = learned_thresholds
+        self.fingerprint_matcher = FingerprintMatcher(db_session)
         self.logger = logger
         
         # Initialize ML components if available
@@ -122,6 +129,31 @@ class TerryReasoning:
         else:
             self.logger.info("🐌🧠 Terry's reasoning engine initialized (ML unavailable)")
     
+    async def _get_diagnostic_threshold(self, metric_name: str, level: str) -> float:
+        """
+        Get a threshold for root cause diagnosis from learned thresholds.
+        
+        NO FALLBACK. If learned thresholds are unavailable, this raises.
+        The pipeline fails loudly so we can fix the issue.
+        
+        Args:
+            metric_name: e.g. 'swap_usage', 'memory_usage', 'context_switches', 'disk_io_bytes'
+            level: e.g. 'warning', 'critical', 'emergency'
+            
+        Returns:
+            Threshold value from learned thresholds system
+            
+        Raises:
+            RuntimeError: If learned thresholds system is not available
+        """
+        if self.learned_thresholds is None:
+            raise RuntimeError(
+                f"_get_diagnostic_threshold('{metric_name}', '{level}') called but "
+                f"learned_thresholds is None. TerryReasoning must be initialized with "
+                f"a LearnedThresholds instance. No hardcoded fallbacks."
+            )
+        return await self.learned_thresholds.get_threshold(metric_name, level)
+
     async def reason(self, context) -> ReasoningResult:
         """
         Analyze the situation and determine best action.
@@ -236,6 +268,9 @@ class TerryReasoning:
         
         Possibilities:
         - Memory thrashing (high swap usage)
+        - CPU spike (sudden temporary increase)
+        - High context switching (too many processes competing)
+        - Resource contention (multiple resources stressed)
         - I/O wait (high disk I/O)
         - Network-bound (high network activity)
         - CPU-bound (pure computation)
@@ -247,6 +282,8 @@ class TerryReasoning:
         
         top_processes = cpu_data.get('top_processes', [])
         cpu_usage = context.current_value
+        cpu_count = cpu_data.get('count', 1)
+        context_switches = cpu_data.get('ctx_switches', 0)
         
         # Get key metrics
         memory_percent = memory_data.get('percent', 0)
@@ -259,7 +296,9 @@ class TerryReasoning:
         
         # CASE 1: Memory Thrashing
         # High swap + high memory = thrashing
-        if swap_percent > 80 and memory_percent > 85:
+        swap_critical = await self._get_diagnostic_threshold('swap_usage', 'critical')
+        memory_critical = await self._get_diagnostic_threshold('memory_usage', 'critical')
+        if swap_percent > swap_critical and memory_percent > memory_critical:
             return RootCauseAnalysis(
                 cause='memory_thrashing',
                 confidence=0.95,
@@ -277,9 +316,80 @@ class TerryReasoning:
                 )
             )
         
+        # CASE 1.5: CPU Spike (sudden temporary increase)
+        # Check historical data to see if this is a spike vs sustained load
+        similar_situations = context.similar_situations
+        if len(similar_situations) > 0 and cpu_usage > context.threshold * 1.2:
+            # If we have history and this is 20% above threshold, might be a spike
+            return RootCauseAnalysis(
+                cause='cpu_spike',
+                confidence=0.70,
+                evidence={
+                    'cpu_usage': cpu_usage,
+                    'threshold': context.threshold,
+                    'overage': cpu_usage - context.threshold,
+                    'indicator': 'Sudden CPU increase above normal patterns'
+                },
+                top_culprits=top_processes[:3] if top_processes else [],
+                explanation=(
+                    f"CPU spike detected at {cpu_usage:.1f}% (threshold: {context.threshold:.1f}%). "
+                    f"May be temporary - monitoring recommended."
+                )
+            )
+        
+        # CASE 1.6: High Context Switching
+        # Too many processes competing for CPU
+        ctx_switch_critical = await self._get_diagnostic_threshold('context_switches', 'critical')
+        if context_switches > ctx_switch_critical:
+            return RootCauseAnalysis(
+                cause='high_context_switching',
+                confidence=0.80,
+                evidence={
+                    'context_switches': context_switches,
+                    'context_switch_threshold': ctx_switch_critical,
+                    'cpu_usage': cpu_usage,
+                    'process_count': len(top_processes),
+                    'indicator': 'Excessive context switching indicates process contention'
+                },
+                top_culprits=top_processes[:3] if top_processes else [],
+                explanation=(
+                    f"High context switching ({context_switches} switches). "
+                    f"Too many processes competing for CPU time."
+                )
+            )
+        
+        # CASE 1.7: Resource Contention
+        # Multiple resources stressed simultaneously
+        stressed_resources = 0
+        cpu_warning = await self._get_diagnostic_threshold('cpu_usage', 'warning')
+        memory_warning = await self._get_diagnostic_threshold('memory_usage', 'warning')
+        disk_io_warning = await self._get_diagnostic_threshold('disk_io_bytes', 'warning')
+        if cpu_usage > cpu_warning: stressed_resources += 1
+        if memory_percent > memory_warning: stressed_resources += 1
+        if disk_io_total > disk_io_warning: stressed_resources += 1
+        
+        if stressed_resources >= 2:
+            return RootCauseAnalysis(
+                cause='resource_contention',
+                confidence=0.85,
+                evidence={
+                    'cpu_usage': cpu_usage,
+                    'memory_percent': memory_percent,
+                    'disk_io': disk_io_total,
+                    'stressed_resources': stressed_resources,
+                    'indicator': 'Multiple resources stressed simultaneously'
+                },
+                top_culprits=top_processes[:3] if top_processes else [],
+                explanation=(
+                    f"Resource contention detected. {stressed_resources} resources stressed. "
+                    f"CPU: {cpu_usage:.1f}%, Memory: {memory_percent:.1f}%, Disk I/O: {disk_io_total/1_000_000:.1f}MB"
+                )
+            )
+        
         # CASE 2: I/O Wait
         # High disk I/O suggests CPU waiting on disk
-        if disk_io_total > 500_000_000:  # > 500MB/s
+        disk_io_critical = await self._get_diagnostic_threshold('disk_io_bytes', 'critical')
+        if disk_io_total > disk_io_critical:
             return RootCauseAnalysis(
                 cause='io_wait',
                 confidence=0.85,
@@ -301,7 +411,8 @@ class TerryReasoning:
         # CASE 3: Network-bound
         # High network activity with CPU stress
         network_total = network_sent + network_recv
-        if network_total > 100_000_000:  # > 100MB
+        network_warning = await self._get_diagnostic_threshold('network_io_bytes', 'warning')
+        if network_total > network_warning:
             return RootCauseAnalysis(
                 cause='network_bound',
                 confidence=0.75,
@@ -341,47 +452,132 @@ class TerryReasoning:
         )
     
     async def _analyze_memory_stress(self, metrics: Dict[str, Any], context) -> RootCauseAnalysis:
-        """Analyze memory stress root cause"""
+        """
+        Analyze memory stress root cause.
+        
+        Possibilities:
+        - Memory leak (sustained growth with swap usage)
+        - Swap usage (using swap heavily)
+        - Memory fragmentation (available but fragmented)
+        - Memory pressure (high usage but manageable)
+        """
         memory_data = metrics.get('memory', {})
         
         memory_percent = context.current_value
         swap_percent = memory_data.get('swap_percent', 0)
+        available = memory_data.get('available', 0)
+        total = memory_data.get('total', 1)
         
-        if swap_percent > 50:
+        top_processes = memory_data.get('top_processes', [])
+        
+        # CASE 1: Heavy swap usage (critical)
+        swap_warning = await self._get_diagnostic_threshold('swap_usage', 'warning')
+        if swap_percent > swap_warning:
+            return RootCauseAnalysis(
+                cause='swap_usage',
+                confidence=0.95,
+                evidence={
+                    'memory_percent': memory_percent,
+                    'swap_percent': swap_percent,
+                    'indicator': 'Heavy swap usage indicates RAM exhaustion'
+                },
+                top_culprits=top_processes[:3] if top_processes else [],
+                explanation=(
+                    f"Critical swap usage at {swap_percent:.1f}%. "
+                    f"RAM exhausted, system swapping to disk."
+                )
+            )
+        
+        # CASE 2: Memory leak (sustained high usage with swap)
+        swap_monitor = await self._get_diagnostic_threshold('swap_usage', 'monitor')
+        memory_critical = await self._get_diagnostic_threshold('memory_usage', 'critical')
+        if swap_percent > swap_monitor and memory_percent > memory_critical:
             return RootCauseAnalysis(
                 cause='memory_leak',
                 confidence=0.85,
-                evidence={'memory_percent': memory_percent, 'swap_percent': swap_percent},
-                explanation=f"Memory stress with {swap_percent:.1f}% swap usage suggests memory leak"
+                evidence={
+                    'memory_percent': memory_percent,
+                    'swap_percent': swap_percent,
+                    'indicator': 'High memory + swap suggests memory leak'
+                },
+                top_culprits=top_processes[:3] if top_processes else [],
+                explanation=(
+                    f"Possible memory leak. Memory at {memory_percent:.1f}%, "
+                    f"swap at {swap_percent:.1f}%."
+                )
             )
         
+        # CASE 3: Memory fragmentation
+        # High usage but some available memory (fragmented)
+        memory_warning = await self._get_diagnostic_threshold('memory_usage', 'warning')
+        if memory_percent > memory_warning and available > (total * 0.1):
+            return RootCauseAnalysis(
+                cause='memory_fragmentation',
+                confidence=0.70,
+                evidence={
+                    'memory_percent': memory_percent,
+                    'available': available,
+                    'total': total,
+                    'indicator': 'Memory available but fragmented'
+                },
+                top_culprits=top_processes[:3] if top_processes else [],
+                explanation=(
+                    f"Memory fragmentation suspected. {memory_percent:.1f}% used "
+                    f"but {available/1_000_000:.1f}MB available."
+                )
+            )
+        
+        # CASE 4: Memory pressure (default)
         return RootCauseAnalysis(
             cause='memory_pressure',
             confidence=0.75,
             evidence={'memory_percent': memory_percent},
+            top_culprits=top_processes[:3] if top_processes else [],
             explanation=f"High memory usage at {memory_percent:.1f}%"
         )
     
     async def _analyze_disk_stress(self, metrics: Dict[str, Any], context) -> RootCauseAnalysis:
-        """Analyze disk stress root cause"""
+        """
+        Analyze disk stress root cause.
+        
+        NOTE: Disk issues should be handled by Hamsters, not Terry.
+        Terry will escalate disk issues to VIC-20.
+        """
         disk_data = metrics.get('disk', {})
         
         return RootCauseAnalysis(
             cause='disk_full',
             confidence=0.80,
-            evidence={'disk_percent': context.current_value},
-            explanation=f"Disk usage at {context.current_value:.1f}%"
+            evidence={
+                'disk_percent': context.current_value,
+                'note': 'Disk issues are Hamster territory - Terry should escalate'
+            },
+            explanation=(
+                f"Disk usage at {context.current_value:.1f}%. "
+                f"This is Hamster territory - Terry should escalate."
+            )
         )
     
     async def _analyze_network_stress(self, metrics: Dict[str, Any], context) -> RootCauseAnalysis:
-        """Analyze network stress root cause"""
+        """
+        Analyze network stress root cause.
+        
+        NOTE: Network issues should be handled by QSP, not Terry.
+        Terry will escalate network issues to VIC-20.
+        """
         network_data = metrics.get('network', {})
         
         return RootCauseAnalysis(
             cause='network_congestion',
             confidence=0.75,
-            evidence={'network_rate': context.current_value},
-            explanation=f"High network activity"
+            evidence={
+                'network_rate': context.current_value,
+                'note': 'Network issues are QSP territory - Terry should escalate'
+            },
+            explanation=(
+                f"High network activity. "
+                f"This is QSP territory - Terry should escalate."
+            )
         )
     
     async def _apply_historical_learning(
@@ -394,8 +590,6 @@ class TerryReasoning:
         
         Query historical learning records to see what worked/failed before.
         """
-        from app.ai_agents.meth_snail.ML.situation_fingerprint import SituationFingerprint, FingerprintMatcher
-        
         # Generate fingerprints for this situation
         fingerprints = SituationFingerprint.generate(
             resource_type=context.resource_type,
@@ -404,9 +598,10 @@ class TerryReasoning:
             full_metrics=context.full_metrics
         )
         
-        # Query similar situations
-        matcher = FingerprintMatcher(self.db)
-        results = await matcher.find_similar_situations(fingerprints, agent_name='meth_snail')
+        # Query similar situations (matcher instantiated once in __init__)
+        results = await self.fingerprint_matcher.find_similar_situations(
+            fingerprints, agent_name='meth_snail'
+        )
         
         records = results['records']
         match_level = results['match_level']
@@ -487,23 +682,104 @@ class TerryReasoning:
         vic20_confidence = context.vic20_recommendation.get('confidence', 0.5)
         
         # Start with historical learning if available
+        # BUT: Don't blindly follow history - check if aggressive action is actually needed
         if learning.most_successful_action and learning.confidence_boost > 0:
-            recommended_action = learning.most_successful_action
-            confidence = learning.success_rates.get(recommended_action, 0.5)
-            confidence += learning.confidence_boost
-            followed_vic20 = (recommended_action == vic20_action)
+            historical_action = learning.most_successful_action
             
-            reasoning = (
-                f"Based on {learning.similar_situations_found} similar situations "
-                f"(match level {learning.match_level}), {recommended_action} has "
-                f"{confidence:.0%} success rate. Root cause: {root_cause.cause}. "
-                f"{root_cause.explanation}"
-            )
+            # DYNAMIC SEVERITY ASSESSMENT - No hardcoded lists!
+            # Calculate severity based on:
+            # 1. Root cause confidence (how sure are we this is the problem?)
+            # 2. Current metric value vs threshold (how bad is it?)
+            # 3. Historical success rate (does this action actually help?)
             
-            override_reason = None if followed_vic20 else (
-                f"Historical data shows {recommended_action} works better than "
-                f"VIC-20's {vic20_action} for this situation"
-            )
+            severity_score = 0.0
+            
+            # Factor 1: Root cause confidence (0.0 - 0.4 points)
+            # High confidence in diagnosis = higher severity
+            severity_score += root_cause.confidence * 0.4
+            
+            # Factor 2: Metric overage (0.0 - 0.4 points)
+            # How far over threshold are we?
+            if context.threshold > 0:
+                overage = (context.current_value - context.threshold) / context.threshold
+                severity_score += min(0.4, overage * 0.4)
+            else:
+                overage = 0.0
+            
+            # Factor 3: Historical success rate (0.0 - 0.2 points)
+            # If this action has high success rate, situation might be more severe
+            historical_success = learning.success_rates.get(historical_action, 0.5)
+            severity_score += historical_success * 0.2
+            
+            # Severity thresholds (learned through experience):
+            # < 0.4: Low severity - monitor
+            # 0.4-0.7: Medium severity - gentle actions (clear_cache, optimize)
+            # > 0.7: High severity - aggressive actions (emergency_cache_clear, restart_service)
+            
+            aggressive_actions = ['emergency_cache_clear', 'restart_service', 'kill_process']
+            
+            # If severity is low but history suggests aggressive action, downgrade to monitor
+            if severity_score < 0.4 and historical_action in aggressive_actions:
+                self.logger.info(
+                    f"   🐌🧠 Severity score {severity_score:.2f} is LOW (root cause confidence: {root_cause.confidence:.0%}, "
+                    f"overage: {overage:.1%}). Historical learning suggests {historical_action}, but "
+                    f"downgrading to 'monitor' to learn if aggressive action is actually needed."
+                )
+                recommended_action = 'monitor'
+                confidence = 0.7  # Moderate confidence in monitoring
+                followed_vic20 = (recommended_action == vic20_action)
+                
+                reasoning = (
+                    f"Severity score {severity_score:.2f}/1.0 (LOW). Root cause '{root_cause.cause}' "
+                    f"confidence: {root_cause.confidence:.0%}, metric overage: {overage:.1%}. "
+                    f"While history shows {historical_action} worked before, monitoring is more appropriate "
+                    f"to learn if aggressive action is truly needed. {root_cause.explanation}"
+                )
+                
+                override_reason = None if followed_vic20 else (
+                    f"Severity score too low ({severity_score:.2f}) for {historical_action} - monitoring to learn patterns"
+                )
+            
+            # If severity is medium but action is very aggressive, consider gentler alternative
+            elif 0.4 <= severity_score < 0.7 and historical_action in ['restart_service', 'kill_process']:
+                self.logger.info(
+                    f"   🐌🧠 Severity score {severity_score:.2f} is MEDIUM. Historical learning suggests "
+                    f"{historical_action}, but trying gentler 'clear_cache' first to learn optimal response."
+                )
+                recommended_action = 'clear_cache'
+                confidence = 0.75
+                followed_vic20 = (recommended_action == vic20_action)
+                
+                reasoning = (
+                    f"Severity score {severity_score:.2f}/1.0 (MEDIUM). Root cause '{root_cause.cause}'. "
+                    f"Trying gentler action before escalating to {historical_action}. "
+                    f"{root_cause.explanation}"
+                )
+                
+                override_reason = None if followed_vic20 else (
+                    f"Medium severity ({severity_score:.2f}) - trying gentler approach before {historical_action}"
+                )
+            
+            else:
+                # Severity is high enough - use historical learning
+                self.logger.info(
+                    f"   🐌🧠 Severity score {severity_score:.2f} is HIGH. Using historical learning: {historical_action}"
+                )
+                recommended_action = historical_action
+                confidence = learning.success_rates.get(recommended_action, 0.5)
+                confidence += learning.confidence_boost
+                followed_vic20 = (recommended_action == vic20_action)
+                
+                reasoning = (
+                    f"Severity score {severity_score:.2f}/1.0 (HIGH). Based on {learning.similar_situations_found} "
+                    f"similar situations (match level {learning.match_level}), {recommended_action} has "
+                    f"{confidence:.0%} success rate. Root cause: {root_cause.cause}. "
+                    f"{root_cause.explanation}"
+                )
+                
+                override_reason = None if followed_vic20 else (
+                    f"High severity ({severity_score:.2f}) - historical data shows {recommended_action} works best"
+                )
         else:
             # No historical data - follow VIC-20 but with low confidence
             recommended_action = vic20_action

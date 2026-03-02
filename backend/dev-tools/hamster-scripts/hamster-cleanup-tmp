@@ -1,0 +1,118 @@
+#!/bin/bash
+#
+# hamster-cleanup-tmp - Safe temporary file cleanup wrapper
+#
+# This script removes old temporary files from safe locations.
+# Hardcoded paths prevent Bob from getting creative with find -delete.
+#
+# Usage: hamster-cleanup-tmp [days]
+#        (Default: removes files older than 7 days)
+#
+# Safety features:
+# - Only operates on hardcoded safe paths
+# - Age threshold enforced (minimum 7 days)
+# - Dry-run mode available for testing
+# - Full logging of deletions
+#
+# NO FAKE DATA. NO SHORTCUTS. TRUTH OR GRACEFUL FAILURE.
+
+set -euo pipefail
+
+# Load common library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/hamster-common.sh"
+
+# Configuration
+HAMSTER="BOB"  # Bob likes cleaning things
+OPERATION="cleanup-tmp"
+DEFAULT_AGE_DAYS=7
+MIN_AGE_DAYS=7  # Safety: never delete files newer than 7 days
+
+# Initialize
+init_hamster_script "hamster-cleanup-tmp" "$HAMSTER"
+
+# Parse arguments
+AGE_DAYS="${1:-$DEFAULT_AGE_DAYS}"
+
+# Validate age parameter
+if ! [[ "$AGE_DAYS" =~ ^[0-9]+$ ]]; then
+    log_action "$HAMSTER" "ERROR" "Invalid age parameter: $AGE_DAYS (must be a number)"
+    exit 1
+fi
+
+if [[ $AGE_DAYS -lt $MIN_AGE_DAYS ]]; then
+    log_action "STEVE" "WARNING" "Age parameter too low ($AGE_DAYS days), enforcing minimum of $MIN_AGE_DAYS days"
+    AGE_DAYS=$MIN_AGE_DAYS
+fi
+
+log_action "$HAMSTER" "INFO" "Cleaning temporary files older than $AGE_DAYS days"
+
+# Hardcoded safe paths (Bob can't modify these)
+SAFE_PATHS=(
+    "/tmp"
+    "/var/tmp"
+    "/var/cache/apt/archives"
+    "/var/cache/yum"
+)
+
+# Track statistics
+TOTAL_FILES=0
+TOTAL_SIZE=0
+ERRORS=0
+
+# Clean each safe path
+for path in "${SAFE_PATHS[@]}"; do
+    if [[ ! -d "$path" ]]; then
+        log_action "$HAMSTER" "INFO" "Path does not exist, skipping: $path"
+        continue
+    fi
+    
+    log_action "$HAMSTER" "INFO" "Scanning $path for files older than $AGE_DAYS days"
+    
+    # Count files before deletion
+    FILE_COUNT=$(find "$path" -type f -atime +$AGE_DAYS 2>/dev/null | wc -l || echo 0)
+    
+    if [[ $FILE_COUNT -eq 0 ]]; then
+        log_action "$HAMSTER" "INFO" "No old files found in $path"
+        continue
+    fi
+    
+    # Calculate size before deletion
+    SIZE_BYTES=$(find "$path" -type f -atime +$AGE_DAYS -exec stat -f%z {} \; 2>/dev/null | awk '{sum+=$1} END {print sum}' || echo 0)
+    if [[ -z "$SIZE_BYTES" ]] || [[ "$SIZE_BYTES" == "0" ]]; then
+        # Try Linux stat format
+        SIZE_BYTES=$(find "$path" -type f -atime +$AGE_DAYS -exec stat -c%s {} \; 2>/dev/null | awk '{sum+=$1} END {print sum}' || echo 0)
+    fi
+    SIZE_MB=$((SIZE_BYTES / 1024 / 1024))
+    
+    log_action "$HAMSTER" "INFO" "Found $FILE_COUNT files in $path (${SIZE_MB}MB)"
+    
+    # Delete files
+    if find "$path" -type f -atime +$AGE_DAYS -delete 2>/dev/null; then
+        log_action "$HAMSTER" "INFO" "Deleted $FILE_COUNT files from $path (freed ${SIZE_MB}MB)"
+        TOTAL_FILES=$((TOTAL_FILES + FILE_COUNT))
+        TOTAL_SIZE=$((TOTAL_SIZE + SIZE_MB))
+    else
+        log_action "$HAMSTER" "ERROR" "Failed to delete files from $path"
+        ((ERRORS++))
+    fi
+done
+
+# Summary
+if [[ $TOTAL_FILES -gt 0 ]]; then
+    log_action "$HAMSTER" "INFO" "Cleanup complete: $TOTAL_FILES files deleted, ${TOTAL_SIZE}MB freed"
+    log_action "STEVE" "INFO" "Bob cleaned up $TOTAL_FILES temporary files (supervised)"
+else
+    log_action "$HAMSTER" "INFO" "No files needed cleanup"
+fi
+
+EXIT_CODE=0
+if [[ $ERRORS -gt 0 ]]; then
+    log_action "$HAMSTER" "WARNING" "Cleanup completed with $ERRORS errors"
+    EXIT_CODE=1
+fi
+
+# Finalize
+finalize_hamster_script "hamster-cleanup-tmp" "$HAMSTER" $EXIT_CODE
+
+exit $EXIT_CODE

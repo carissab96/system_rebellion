@@ -158,7 +158,7 @@ class HawkActionSelection:
             self.current_monocle_state = 'yeeted'
             logger.warning("🧐💥 Monocle yeeted due to poor data quality!")
         elif confidence < 0.6:
-            self.current_monocle_state = 'adjusting'
+            self.current_monocle_state = 'adjusted'
             logger.info("🧐🔧 Adjusting monocle - confidence needs improvement")
         else:
             self.current_monocle_state = 'polished'

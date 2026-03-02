@@ -1,6 +1,6 @@
 PROPRIETARY SOFTWARE LICENSE
 
-Copyright (c) 2024 Hawkington Technologies, Inc.
+Copyright (c) 2024 Hawkington Technologies, Inc
 All Rights Reserved.
 
 This software and associated documentation files (the "Software") are the
@@ -19,7 +19,7 @@ If you have gained access to this Software without explicit written permission
 from Hawkington Technologies, Inc., you must immediately cease use and destroy
 all copies.
 
-For licensing inquiries, please contact: hawkington-tech@[your-email].com
+For licensing inquiries, please contact: carissa@hawkington.tech
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
 

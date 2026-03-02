@@ -107,6 +107,9 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
         self.bob_mediation_count = 0
         self.stick_anxiety_prevented = 0
         self.bob_messages_filtered = []
+
+        # Pending learning records keyed by triage_alert_id — updated when outcome arrives
+        self._pending_learning_records: Dict[str, Any] = {}
         
         # 🖥️ COORDINATION & MEDIATION STATS (VIC-20's personality)
         from .coordination_stats import VIC20CoordinationStats
@@ -174,6 +177,26 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
             logger.info("🖥️📡 VIC-20 subscribed to ACTION_REPORT from specialists - Learning loop ready!")
         except Exception as e:
             logger.error(f"🖥️💥 Failed to subscribe to action reports: {e}")
+
+        # Subscribe to ACTION_OUTCOME (new outcome chain)
+        try:
+            await self.subscribe_to_messages(
+                message_type=MessageType.ACTION_OUTCOME,
+                callback=self._handle_action_outcome
+            )
+            logger.info("🖥️📡 VIC-20 subscribed to ACTION_OUTCOME")
+        except Exception as e:
+            logger.error(f"🖥️💥 Failed to subscribe to action outcomes: {e}")
+
+        # Subscribe to AGENT_FEEDBACK from The Stick
+        try:
+            await self.subscribe_to_messages(
+                message_type=MessageType.AGENT_FEEDBACK,
+                callback=self._handle_stick_feedback
+            )
+            logger.info("🖥️📡 VIC-20 subscribed to AGENT_FEEDBACK from The Stick")
+        except Exception as e:
+            logger.error(f"🖥️💥 Failed to subscribe to agent feedback: {e}")
     
     async def _handle_coordination_request(self, message: AgentMessage) -> None:
         """
@@ -194,180 +217,79 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
     async def _handle_triage_alert_from_hawk(self, message: AgentMessage) -> None:
         """
         PHASE 3: Handle TRIAGE_ALERT from Sir Hawkington.
-        
-        Flow:
-        1. Receive triage alert from Hawk
-        2. Determine which specialist to route to
-        3. Generate recommendation based on patterns
-        4. Send COORDINATION_REQUEST to specialist
-        5. Write coordination decision to PostgreSQL
-        6. CC The Stick
+
+        Routes through the unified _coordinate ML pipeline.
         """
-        try:
-            payload = message.payload
-            resource_type = payload.get('resource_type', 'unknown')
-            severity = payload.get('severity', 'unknown')
-            confidence = payload.get('confidence', 0.0)
-            current_value = payload.get('current_value', 0)
-            threshold = payload.get('threshold', 0)
-            
-            logger.info(
-                f"🖥️📬 TRIAGE ALERT from Sir Hawkington: "
-                f"{resource_type} at {current_value:.1f}% (threshold: {threshold:.1f}%) "
-                f"severity={severity}, confidence={confidence:.2f}"
-            )
-            
-            # Determine which specialist to route to
-            specialist = self._route_to_specialist(resource_type)
-            
-            if not specialist:
-                logger.warning(f"🖥️⚠️ No specialist found for resource type: {resource_type}")
-                return
-            
-            # Generate recommendation based on historical patterns
-            recommendation = await self._generate_recommendation(
-                resource_type=resource_type,
-                current_value=current_value,
-                threshold=threshold,
-                severity=severity
-            )
-            
-            logger.info(
-                f"🖥️💡 Routing to {specialist}: {recommendation['action']} "
-                f"(confidence: {recommendation['confidence']:.2f})"
-            )
-            
-            # Send COORDINATION_REQUEST to SPECIFIC specialist (not broadcast!)
-            # TERRY V2: Include full_metrics for perception layer
-            full_metrics = payload.get('full_metrics', {})
-            
-            await self.send_to_agent(
-                to_agent=specialist,
-                message_type=MessageType.COORDINATION_REQUEST,
-                payload={
-                    'resource_type': resource_type,
-                    'current_value': current_value,
-                    'threshold': threshold,
-                    'severity': severity,
-                    'recommendation': recommendation,
-                    'from_coordinator': 'vic_20_sage',
-                    'triage_confidence': confidence,
-                    'full_metrics': full_metrics  # Terry v2 needs this for perception
-                },
-                priority=Priority.HIGH if severity in ['high', 'critical'] else Priority.NORMAL
-            )
-            
-            # Broadcast coordination to WebSocket
-            from app.services.agent_insight_emitter import emit_agent_insight
-            await emit_agent_insight(
-                from_agent="vic_20_sage",
-                to_agent=specialist,
-                action="coordinate_specialist",
-                reasoning=f"Routing {resource_type} alert to specialist - {recommendation['action']}",
-                context={
-                    "resource_type": resource_type,
-                    "current_value": current_value,
-                    "threshold": threshold,
-                    "severity": severity,
-                    "specialist": specialist,
-                    "recommendation": recommendation['action'],
-                    "confidence": recommendation['confidence']
-                }
-            )
-            
-            # Write coordination decision to PostgreSQL
-            await self._write_coordination_decision(
-                resource_type=resource_type,
-                specialist=specialist,
-                recommendation=recommendation,
-                severity=severity,
-                triage_data=payload
-            )
-            
-            # CC The Stick for logging
-            await self._cc_the_stick(
-                decision_type='coordination',
-                resource_type=resource_type,
-                specialist=specialist,
-                recommendation=recommendation,
-                severity=severity
-            )
-            
-        except Exception as e:
-            logger.error(f"🖥️💥 Error handling triage alert: {e}", exc_info=True)
-    
-    async def coordinate_from_triage(self, triage_data: Dict[str, Any]) -> Dict[str, Any]:
+        triage_alert_id = message.payload.get('triage_alert_id')
+        await self._coordinate(message.payload, triage_alert_id=triage_alert_id)
+
+    async def _coordinate(
+        self,
+        triage_data: Dict[str, Any],
+        triage_alert_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
         """
-        🖥️ VIC-20 V2: ML-Enhanced Coordination Routing
-        
-        Flow: Perception → Reasoning → Action Selection → Learning
-        
-        Args:
-            triage_data: Triage alert from Sir Hawkington
-        
-        Returns:
-            Dict containing coordination result
+        🖥️ VIC-20 ML PIPELINE: Perception → Reasoning → Action Selection → Learning
+
+        Single live path for all triage alerts. Stores learning record with
+        success=False (placeholder), dispatches to specialist, returns result.
         """
         logger.info(f"\n{'='*80}")
-        logger.info(f"🖥️🎯 VIC-20 V2 COORDINATION INITIATED")
+        logger.info(f"🖥️🎯 VIC-20 COORDINATION INITIATED")
         logger.info(f"{'='*80}")
-        
+
         resource_type = triage_data.get('resource_type', 'unknown')
         severity = triage_data.get('severity', 'unknown')
         confidence = triage_data.get('confidence', 0.0)
         current_value = triage_data.get('current_value', 0)
         threshold = triage_data.get('threshold', 0)
-        
+
         logger.info(
-            f"🖥️📞 Triage alert from Sir Hawkington: {resource_type} at {current_value:.1f}% "
-            f"(severity: {severity}, Hawk confidence: {confidence:.2f})"
+            f"🖥️� Triage alert: {resource_type} at {current_value:.1f}% "
+            f"(severity={severity}, hawk_confidence={confidence:.2f})"
         )
-        
+
         try:
-            # Get database session for ML layers
             from app.core.database import get_async_db
             async for db in get_async_db():
-                
-                # 🎯 STEP 1: PERCEPTION - Gather coordination context
+
+                # STEP 1: PERCEPTION
                 logger.info("🖥️👁️ Perception phase...")
                 perception = VIC20Perception(db, self.personality_traits)
                 context = await perception.perceive(triage_data)
-                
                 logger.info(
-                    f"🖥️✅ Perception complete: {len(context.available_specialists)} specialists available, "
-                    f"system load: {context.system_load}"
+                    f"🖥️✅ Perception: {len(context.available_specialists)} specialists, "
+                    f"system_load={context.system_load}"
                 )
-                
-                # 🎯 STEP 2: REASONING - Determine best specialist routing
+
+                # STEP 2: REASONING
                 logger.info("🖥️🧠 Reasoning phase...")
                 reasoning_engine = VIC20Reasoning(self.personality_traits)
                 reasoning = reasoning_engine.reason(context)
-                
                 logger.info(
-                    f"🖥️✅ Reasoning complete: route to {reasoning.target_specialist}, "
+                    f"🖥️✅ Reasoning: route to {reasoning.target_specialist}, "
                     f"confidence={reasoning.routing_confidence:.2f}, urgency={reasoning.urgency_level}"
                 )
-                
-                # 🎯 STEP 3: ACTION SELECTION - Choose coordination strategy
+
+                # STEP 3: ACTION SELECTION
                 logger.info("🖥️⚡ Action selection phase...")
                 action_selector = VIC20ActionSelection(self.personality_traits)
                 action = action_selector.select_action(context, reasoning)
-                
                 logger.info(
-                    f"🖥️✅ Action selected: {action.action_type}, "
+                    f"🖥️✅ Action: {action.action_type}, "
                     f"priority={action.priority}, strategy={action.coordination_strategy}"
                 )
-                
-                # 🎯 STEP 4: LEARNING - Store routing decision
+
+                # STEP 4: LEARNING — write with success=False placeholder
                 logger.info("🖥️📚 Learning phase...")
                 learning = VIC20Learning(db, self.user_id)
                 learning_record = await learning.learn(context, reasoning, action)
-                
-                logger.info(f"🖥️💾 Learning record stored in PostgreSQL")
-                
-                # BROADCAST FULL DECISION CHAIN TO FRONTEND
+                # Store learning record on self so _handle_action_outcome can update it
+                self._pending_learning_records[triage_alert_id or 'no_id'] = learning_record
+                logger.info(f"🖥️💾 Learning record stored (id={learning_record.learning_record_id})")
+
+                # BROADCAST TO FRONTEND
                 from app.services.agent_decision_emitter import emit_agent_decision
-                
                 await emit_agent_decision(
                     agent_name="vic_20_sage",
                     decision_id=learning_record.learning_record_id or "pending",
@@ -377,9 +299,9 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
                         "threshold": context.threshold,
                         "severity": context.severity,
                         "hawk_confidence": context.hawk_confidence,
-                        "available_specialists": context.available_specialists,
+                        "available_specialists": [s.agent_name for s in context.available_specialists],
                         "system_load": context.system_load,
-                        "routing_confidence": context.routing_confidence
+                        "routing_confidence": context.routing_confidence,
                     },
                     reasoning={
                         "target_specialist": reasoning.target_specialist,
@@ -387,7 +309,7 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
                         "urgency_level": reasoning.urgency_level,
                         "specialist_success_rate": reasoning.specialist_success_rate,
                         "specialist_load": reasoning.specialist_load,
-                        "primary_reason": reasoning.primary_reason
+                        "primary_reason": reasoning.primary_reason,
                     },
                     action_selection={
                         "chosen_action": action.action_type,
@@ -396,49 +318,35 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
                         "confidence": action.confidence,
                         "priority": action.priority,
                         "coordination_strategy": action.coordination_strategy,
-                        "fallback_specialists": action.fallback_specialists
+                        "fallback_specialists": action.fallback_specialists,
                     },
                     learning={
                         "situation_fingerprint": learning_record.situation_fingerprint,
                         "stored": learning_record.storage_success,
                         "learning_record_id": learning_record.learning_record_id,
-                        "success": learning_record.success
+                        "success": learning_record.success,
                     }
                 )
-                
-                # 🎯 STEP 5: EXECUTE ACTION - Send to specialist
+
+                # STEP 5: EXECUTE — send to specialist
                 if action.action_type == 'route_to_specialist':
-                    logger.info(f"🖥️📨 Routing to {action.target_specialist}...")
-                    logger.info(f"🖥️💬 Message: {action.message_to_specialist}")
-                    
-                    # Prepare coordination request
-                    coordination_request = {
-                        'resource_type': resource_type,
-                        'current_value': current_value,
-                        'threshold': threshold,
-                        'severity': severity,
-                        'full_metrics': triage_data.get('full_metrics', {}),  # Pass full metrics from Hawk
-                        'recommendation': {
-                            'action': action.recommended_action,
-                            'confidence': action.confidence,
-                            'parameters': action.action_parameters
-                        },
-                        'from_coordinator': 'vic_20_sage',
-                        'triage_confidence': confidence,
-                        'vic20_message': action.message_to_specialist
-                    }
-                    
-                    # Send via message protocol
+                    from app.ai_agents.vic_20_sage.ML.execution_planner import VIC20ExecutionPlanner
+                    planner = VIC20ExecutionPlanner()
+                    coordination_request = planner.build_coordination_request(
+                        context=context,
+                        reasoning=reasoning,
+                        action=action,
+                        triage_data=triage_data,
+                        triage_alert_id=triage_alert_id,
+                    )
+
                     await self.send_to_agent(
                         to_agent=action.target_specialist,
                         message_type=MessageType.COORDINATION_REQUEST,
                         payload=coordination_request,
                         priority=Priority.HIGH if action.priority in ['high', 'critical'] else Priority.NORMAL
                     )
-                    
-                    logger.info(f"🖥️✅ Coordination request sent to {action.target_specialist}")
-                    
-                    # Broadcast to WebSocket
+
                     from app.services.agent_insight_emitter import emit_agent_insight
                     await emit_agent_insight(
                         from_agent="vic_20_sage",
@@ -448,16 +356,15 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
                         context={
                             "resource_type": resource_type,
                             "current_value": current_value,
-                            "threshold": threshold,
                             "severity": severity,
                             "specialist": action.target_specialist,
                             "recommended_action": action.recommended_action,
                             "confidence": action.confidence,
-                            "urgency": reasoning.urgency_level
+                            "urgency": reasoning.urgency_level,
+                            "triage_alert_id": triage_alert_id,
                         }
                     )
-                    
-                    # CC The Stick
+
                     await self._cc_the_stick(
                         decision_type='coordination_v2',
                         resource_type=resource_type,
@@ -465,50 +372,26 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
                         recommendation={'action': action.recommended_action, 'confidence': action.confidence},
                         severity=severity
                     )
-                    
+
                     logger.info(f"{'='*80}")
-                    logger.info(f"🖥️✅ VIC-20 V2 COORDINATION COMPLETE")
+                    logger.info(f"🖥️✅ VIC-20 COORDINATION COMPLETE → {action.target_specialist}")
                     logger.info(f"{'='*80}\n")
-                    
+
                     return {
                         'success': True,
                         'specialist': action.target_specialist,
                         'recommended_action': action.recommended_action,
                         'confidence': action.confidence,
-                        'urgency': reasoning.urgency_level
+                        'urgency': reasoning.urgency_level,
+                        'triage_alert_id': triage_alert_id,
                     }
                 else:
-                    logger.info(f"🖥️⏸️ Action type: {action.action_type} - not routing")
-                    return {
-                        'success': True,
-                        'action_type': action.action_type,
-                        'message': 'Monitoring situation'
-                    }
-                
+                    logger.info(f"🖥️⏸️ Action type: {action.action_type} — monitoring")
+                    return {'success': True, 'action_type': action.action_type}
+
         except Exception as e:
-            logger.error(f"🖥️💥 VIC-20 v2 coordination failed: {e}")
-            logger.exception(e)
-            
-            # Fallback to basic routing
-            logger.warning("🖥️⚠️ Falling back to basic routing...")
-            specialist = self._route_to_specialist(resource_type)
-            if specialist:
-                await self.send_to_agent(
-                    to_agent=specialist,
-                    message_type=MessageType.COORDINATION_REQUEST,
-                    payload=triage_data,
-                    priority=Priority.NORMAL
-                )
-                return {
-                    'success': True,
-                    'specialist': specialist,
-                    'fallback': True
-                }
-            
-            return {
-                'success': False,
-                'error': str(e)
-            }
+            logger.error(f"🖥️💥 VIC-20 coordination failed: {e}", exc_info=True)
+            raise
     
     async def _handle_action_report(self, message: AgentMessage) -> None:
         """
@@ -569,6 +452,132 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
         except Exception as e:
             logger.error(f"🖥️💥 Error handling action report: {e}", exc_info=True)
     
+    async def _handle_action_outcome(self, message: AgentMessage) -> None:
+        """
+        Section 3.7: Handle ACTION_OUTCOME from a specialist.
+
+        Updates the pending VIC20LearningRecord with the real outcome,
+        then reports the full chain result to The Stick via CHAIN_OUTCOME.
+        """
+        try:
+            from app.ai_agents.distributed.outcome_protocol import ActionOutcome, RoutingOutcome
+            from app.core.database import get_async_db
+
+            payload = message.payload
+            triage_alert_id = payload.get('triage_alert_id', 'no_id')
+            specialist_name = payload.get('agent_name', message.from_agent or 'unknown')
+            action_taken = payload.get('action_taken', 'unknown')
+            success = bool(payload.get('success', False))
+            improvement = float(payload.get('improvement', 0.0))
+            resource_type = payload.get('resource_type', 'unknown')
+            severity = payload.get('severity', 'unknown')
+
+            logger.info(
+                f"🖥️📬 ACTION_OUTCOME from {specialist_name}: "
+                f"action={action_taken}, success={success}, improvement={improvement:.1f}%"
+            )
+
+            # Update the pending learning record
+            learning_record = self._pending_learning_records.pop(triage_alert_id, None)
+            if learning_record:
+                async for db in get_async_db():
+                    from .ML.learning import VIC20Learning
+                    learning = VIC20Learning(db, self.user_id)
+                    await learning.update_outcome(
+                        learning_record=learning_record,
+                        success=success,
+                        improvement=improvement,
+                        outcome_notes=f"{specialist_name} executed {action_taken}",
+                    )
+                    break
+            else:
+                logger.warning(
+                    f"🖥️⚠️ No pending learning record for triage_alert_id={triage_alert_id}"
+                )
+
+            # Report full chain to The Stick
+            await self._report_to_stick(
+                triage_alert_id=triage_alert_id,
+                specialist_name=specialist_name,
+                action_recommended=payload.get('recommended_action', 'unknown'),
+                action_taken=action_taken,
+                resource_type=resource_type,
+                severity=severity,
+                specialist_success=success,
+                specialist_improvement=improvement,
+                hawk_severity=payload.get('hawk_severity', severity),
+                hawk_confidence=float(payload.get('hawk_confidence', 0.0)),
+            )
+
+        except Exception as e:
+            logger.error(f"🖥️💥 Error handling action outcome: {e}", exc_info=True)
+
+    async def _report_to_stick(
+        self,
+        triage_alert_id: str,
+        specialist_name: str,
+        action_recommended: str,
+        action_taken: str,
+        resource_type: str,
+        severity: str,
+        specialist_success: bool,
+        specialist_improvement: float,
+        hawk_severity: str = '',
+        hawk_confidence: float = 0.0,
+    ) -> None:
+        """
+        Section 3.7: Send CHAIN_OUTCOME to The Stick with the full Hawk→VIC-20→Specialist result.
+        """
+        routing_was_correct = action_recommended == action_taken
+        recommendation_was_effective = specialist_success and specialist_improvement > 0
+
+        await self.send_to_agent(
+            to_agent='the_stick',
+            message_type=MessageType.CHAIN_OUTCOME,
+            payload={
+                'triage_alert_id': triage_alert_id,
+                'specialist_name': specialist_name,
+                'action_recommended': action_recommended,
+                'action_taken': action_taken,
+                'resource_type': resource_type,
+                'severity': severity,
+                'specialist_success': specialist_success,
+                'specialist_improvement': specialist_improvement,
+                'routing_was_correct': routing_was_correct,
+                'recommendation_was_followed': action_recommended == action_taken,
+                'recommendation_was_effective': recommendation_was_effective,
+                'hawk_severity': hawk_severity,
+                'hawk_confidence': hawk_confidence,
+                'from_coordinator': 'vic_20_sage',
+            },
+            priority=Priority.NORMAL,
+        )
+
+        logger.info(
+            f"🖥️📋 Chain outcome reported to The Stick: "
+            f"{specialist_name} {action_taken} → "
+            f"{'✅' if specialist_success else '❌'} "
+            f"(improvement={specialist_improvement:.1f}%, routing_correct={routing_was_correct})"
+        )
+
+    async def _handle_stick_feedback(self, message: AgentMessage) -> None:
+        """
+        Section 4.5: Handle AGENT_FEEDBACK from The Stick.
+
+        VIC-20 doesn't have adjustable thresholds like Hawk, but The Stick
+        may send routing quality feedback. Log it for now.
+        """
+        feedback = message.payload
+        feedback_type = feedback.get('feedback_type', 'unknown')
+        logger.info(f"🖥️📏 Feedback from The Stick: type={feedback_type}")
+
+        if feedback_type == 'routing_quality':
+            specialist = feedback.get('specialist')
+            quality = feedback.get('quality', 'unknown')
+            logger.info(
+                f"🖥️📊 Routing quality feedback: {specialist} → {quality}"
+            )
+
     def _route_to_specialist(self, resource_type: str) -> Optional[str]:
         """
         PHASE 3: Determine which specialist handles this resource type.
@@ -604,12 +613,7 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
         threshold: float,
         severity: str
     ) -> Dict[str, Any]:
-        """
-        PHASE 3: Generate recommendation for specialist.
-        
-        Queries historical patterns to inform recommendations.
-        Adjusts confidence based on past success rates.
-        """
+        """DEPRECATED: Use _coordinate() pipeline instead. Kept for legacy ACTION_REPORT path."""
         # Avoid division by zero - if threshold is 0, calculate overage differently
         if threshold > 0:
             overage = ((current_value - threshold) / threshold) * 100
@@ -623,8 +627,11 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
         # PHASE 2: Enhanced recommendations with context-aware action selection
         # Choose action based on severity and overage level
         base_recommendations = {
+            # Terry (meth_snail) vocabulary: adjust_process_priority, throttle_cpu_intensive_tasks,
+            # emergency_cache_clear, clear_cache, optimize_memory_allocation,
+            # reduce_memory_footprint, kill_memory_hog, restart_service, monitor, escalate
             'cpu': {
-                'action': 'adjust_process_priority' if overage < 50 else 'throttle_processes',
+                'action': 'adjust_process_priority' if overage < 50 else 'throttle_cpu_intensive_tasks',
                 'details': f'CPU {overage:.1f}% over threshold - {"granular priority adjustment" if overage < 50 else "aggressive throttling"}',
                 'confidence': 0.70,
                 'alternative': 'restart_service' if severity == 'critical' and overage > 100 else None
@@ -635,17 +642,20 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
                 'confidence': 0.70,
                 'alternative': 'restart_service' if severity == 'critical' and overage > 150 else None
             },
+            # Hamsters vocabulary: fstrim, e4defrag, logrotate, gzip_logs, rm_temp, apt_clean, tar_archive
             'disk': {
-                'action': 'rotate_logs' if overage < 30 else 'cleanup_temp_files',
-                'details': f'Disk {overage:.1f}% over threshold - {"log rotation" if overage < 30 else "aggressive cleanup"}',
+                'action': 'logrotate' if overage < 30 else 'rm_temp',
+                'details': f'Disk {overage:.1f}% over threshold - {"log rotation" if overage < 30 else "temp file cleanup"}',
                 'confidence': 0.70,
-                'alternative': 'create_backup_archive' if overage > 80 else None
+                'alternative': 'tar_archive' if overage > 80 else None
             },
+            # QSP vocabulary: scan_ports, analyze_traffic, throttle_network, block_ips,
+            # update_firewall, close_suspicious_connections, monitor, escalate
             'network': {
-                'action': 'scan_open_ports' if overage < 40 else 'analyze_connections',
-                'details': f'Network {overage:.1f}% over threshold - {"security scan" if overage < 40 else "connection analysis"}',
+                'action': 'scan_ports' if overage < 40 else 'analyze_traffic',
+                'details': f'Network {overage:.1f}% over threshold - {"security scan" if overage < 40 else "traffic analysis"}',
                 'confidence': 0.65,
-                'alternative': 'manage_firewall_rule' if severity == 'critical' else None
+                'alternative': 'update_firewall' if severity == 'critical' else None
             }
         }
         
@@ -723,77 +733,14 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
             rec['historical_basis'] = None
             logger.info(f"🖥️📚 No historical data for {resource_type} - using base recommendation")
         
-        # Adjust confidence based on severity
-        if severity == 'critical':
-            rec['confidence'] = min(1.0, rec['confidence'] + 0.1)
-        
-        # Build reasoning that includes historical context
-        if rec.get('historical_basis'):
-            rec['reasoning'] = (
-                f"Based on {rec['historical_basis']['matching_records']} past actions "
-                f"({rec['historical_basis']['success_rate']:.0%} success rate): {rec['action']}. "
-                f"{rec['details']}"
-            )
-        else:
-            rec['reasoning'] = f"No historical data available. Default recommendation: {rec['action']}. {rec['details']}"
-        
-        return rec
-    
-    async def _write_coordination_decision(
-        self,
-        resource_type: str,
-        specialist: str,
-        recommendation: Dict[str, Any],
-        severity: str,
-        triage_data: Dict[str, Any]
-    ) -> None:
-        """
-        PHASE 3: Write coordination decision to PostgreSQL.
-        
-        Uses VIC-20's database integration to store decision.
-        """
-        try:
-            if not self.db_getter:
-                logger.warning("🖥️⚠️ No db_getter available, skipping database write")
-                return
-            
-            # Write coordination decision to PostgreSQL
-            if hasattr(self, 'db_integration') and self.db_integration:
-                from .data_types import VIC20Decision, VIC20DecisionType, CoordinationState
-                from datetime import datetime
-                
-                # Create proper VIC20Decision object
-                decision_obj = VIC20Decision(
-                    decision_type=VIC20DecisionType.AGENT_COORDINATION,
-                    coordination_state=CoordinationState.ORCHESTRATING,
-                    coordination_target=specialist,
-                    agent_actions={specialist: recommendation['action']},
-                    system_synthesis_confidence=recommendation['confidence'],
-                    technical_orchestration={
-                        'resource_type': resource_type,
-                        'severity': severity,
-                        'recommendation': recommendation
-                    },
-                    expected_rebellion_improvement=0.0,  # Will be calculated after execution
-                    confidence_level=recommendation['confidence'],
-                    timestamp=datetime.utcnow(),
-                    system_context_snapshot=triage_data,
-                    ancient_wisdom_principle=None,
-                    similar_past_decisions=[]
-                )
-                
-                # Store coordination decision
-                await self.db_integration.store_coordination_decision(
-                    user_id=self.user_id,
-                    decision=decision_obj
-                )
-                
-                logger.info("🖥️💾 Coordination decision written to PostgreSQL")
-            else:
-                logger.warning("🖥️⚠️ Database integration not available")
-                
-        except Exception as e:
-            logger.error(f"🖥️💥 Error writing coordination decision: {e}", exc_info=True)
+        from app.ai_agents.vic_20_sage.ML.goals import COLD_START_HYPOTHESES
+        hypothesis = COLD_START_HYPOTHESES.get(resource_type.lower(), {})
+        return {
+            'action': hypothesis.get('action', 'monitor'),
+            'confidence': hypothesis.get('confidence', 0.5),
+            'details': f'{resource_type} needs attention',
+            'reasoning': 'Legacy path — cold-start hypothesis',
+        }
     
     async def _cc_the_stick(
         self,
@@ -825,35 +772,6 @@ class VIC20SageDistributed(AgentDecisionEngine, VIC20SageBrainV2):
             logger.debug("🖥️📋 Decision logged to The Stick")
         except Exception as e:
             logger.error(f"🖥️💥 Error CC'ing The Stick: {e}", exc_info=True)
-    
-    async def _update_stick_coordination(
-        self,
-        severity: str,
-        routing: str,
-        target_agents: list
-    ) -> None:
-        """
-        Send coordination update to The Stick for learning.
-        
-        The Stick logs all coordination activities for future pattern matching.
-        """
-        try:
-            await self.broadcast_to_agents(
-                message_type=MessageType.SYSTEM_EVENT,
-                payload={
-                    'coordination_id': f"coord_{int(asyncio.get_event_loop().time())}",
-                    'severity': severity,
-                    'routing': routing,
-                    'agents_involved': target_agents,
-                    'status': 'initiated',
-                    'coordinated_by': 'vic_20_sage'
-                },
-                priority=Priority.NORMAL
-            )
-            logger.debug("🖥️📝 Coordination update sent to The Stick")
-            
-        except Exception as e:
-            logger.error(f"🖥️💥 Error updating Stick: {e}", exc_info=True)
     
     async def _coordination_capability(
         self,

@@ -17,6 +17,12 @@ from .agent_memory_banks import VIC20MemoryBank
 # Vector tables for semantic search
 from .vector_tables import AgentDecisionVectors, AgentPatternVectors, AgentInteractionVectors
 
+# Agent learning records (shared across all agents)
+from .agent_learning import AgentLearningRecord
+
+# Learned thresholds and action effectiveness
+from .learned_thresholds import ThresholdLearningRecord, ActionOutcomeRecord, MetricPatternHistory, LearnedSequence
+
 # Memory bank models
 # Ensure all models are imported and registered
 __all__ = [
@@ -31,4 +37,10 @@ __all__ = [
     
     # Vector tables
     'AgentDecisionVectors', 'AgentPatternVectors', 'AgentInteractionVectors',
+    
+    # Agent learning records
+    'AgentLearningRecord',
+
+    # Learned thresholds
+    'ThresholdLearningRecord', 'ActionOutcomeRecord', 'MetricPatternHistory', 'LearnedSequence',
 ]

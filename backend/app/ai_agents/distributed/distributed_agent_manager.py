@@ -42,7 +42,7 @@ class DistributedAgentManager:
             # 🔧 CIRCULAR IMPORT FIX: Import agents here, not at module level
             # This breaks the circular dependency chain
             from app.ai_agents.sir_hawkington.distributed_hawkington import SirHawkingtonDistributed
-            from app.ai_agents.meth_snail.distributed_meth_snail import MethSnailDistributed
+            from app.ai_agents.meth_snail.terry_agent import TerryAgent
             from app.ai_agents.hamsters.distributed_hamsters import HamstersDistributed
             from app.ai_agents.quantum_shadow_people.distributed_qsp import QuantumShadowPeopleDistributed
             from app.ai_agents.the_stick.distributed_stick import TheStickDistributed
@@ -70,8 +70,8 @@ class DistributedAgentManager:
             logger.info("✅ Sir Hawkington initialized")
             
             # Terry the Meth Snail - Memory Monitor
-            terry = MethSnailDistributed(db_getter=self.db_getter, user_id=self.user_id)
-            await terry.initialize_distributed(self.redis_client)
+            terry = TerryAgent(db_getter=self.db_getter, user_id=self.user_id)
+            await terry.initialize(self.redis_client)
             self.agents["meth_snail"] = terry
             register_agent("meth_snail", terry)
             logger.info("✅ Terry the Meth Snail initialized")

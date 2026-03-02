@@ -721,6 +721,72 @@ async def run_consciousness_checkpoint():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/debug/payloads")
+async def debug_payloads():
+    """
+    DEBUG ONLY — Live payload inspector.
+
+    Returns three blocks:
+    1. get_agent_status() output per agent — exactly what the heartbeat sends
+    2. assembled_system_update_agents — what simplified_websocket_routes builds
+       into system_update.agents before sending to the frontend
+    3. registry_summary — which agents are registered and their class names
+
+    This endpoint is the authoritative source for current payload shapes.
+    No transformations. Raw dicts from the running agents.
+    """
+    from app.ai_agents.distributed.distributed_agent_manager import get_distributed_manager
+    from datetime import datetime, timezone
+
+    result: Dict[str, Any] = {
+        "captured_at": datetime.now(timezone.utc).isoformat(),
+        "registry_summary": {},
+        "get_agent_status_per_agent": {},
+        "assembled_system_update_agents": {},
+        "errors": {}
+    }
+
+    # 1. _agent_registry (set via register_agent() from distributed_agents.py)
+    for agent_name, agent in _agent_registry.items():
+        result["registry_summary"][agent_name] = {
+            "class": type(agent).__name__,
+            "has_get_agent_status": hasattr(agent, "get_agent_status"),
+            "is_distributed": getattr(agent, "is_distributed", False)
+        }
+
+    # 2. get_agent_status() — raw output, no transformation
+    for agent_name, agent in _agent_registry.items():
+        if hasattr(agent, "get_agent_status"):
+            try:
+                result["get_agent_status_per_agent"][agent_name] = agent.get_agent_status()
+            except Exception as e:
+                result["errors"][f"get_agent_status:{agent_name}"] = str(e)
+        else:
+            result["errors"][f"get_agent_status:{agent_name}"] = "method not found"
+
+    # 3. assembled_system_update_agents — mirrors what the WS loop builds
+    #    (status + is_distributed spread + all get_agent_status() fields)
+    try:
+        manager = get_distributed_manager()
+        if manager and manager.initialized:
+            for agent_name in manager.agents:
+                agent = manager.get_agent(agent_name)
+                if agent and hasattr(agent, "get_agent_status"):
+                    try:
+                        agent_status = agent.get_agent_status()
+                        result["assembled_system_update_agents"][agent_name] = {
+                            "status": "active",
+                            "distributed": getattr(agent, "is_distributed", False),
+                            **agent_status
+                        }
+                    except Exception as e:
+                        result["errors"][f"assembled:{agent_name}"] = str(e)
+    except Exception as e:
+        result["errors"]["manager"] = str(e)
+
+    return result
+
+
 @router.get("/system/week4-stats")
 async def get_week4_system_stats():
     """

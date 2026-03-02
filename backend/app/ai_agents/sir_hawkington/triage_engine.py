@@ -322,25 +322,105 @@ class SirHawkingtonTriageEngine(AgentInstrumentationMixin, TriageEngineWithRedis
         )
         
         # 🎯 CONNECT ML v2 PIPELINE: Trigger distributed Hawk's ML layers
+        # Fire one _perform_triage call per resource that exceeds its threshold.
+        # Uses real metric values (0-100 percentages) so _should_escalate works correctly.
         try:
             from app.ai_agents.sir_hawkington.distributed_hawkington import get_distributed_hawk
+            from app.optimization.resource_monitor import ResourceAlert
             distributed_hawk = await get_distributed_hawk()
             if distributed_hawk and hasattr(distributed_hawk, '_perform_triage'):
-                # Create ResourceAlert-like object for ML v2 pipeline
-                from dataclasses import dataclass
-                @dataclass
-                class ResourceAlert:
-                    payload: dict
-                
-                alert = ResourceAlert(payload={
-                    'severity': 'medium' if hawkington_decision and hawkington_decision.metrics.get('stress_score', 0) > 0.5 else 'normal',
-                    'current_value': hawkington_decision.metrics.get('stress_score', 0) if hawkington_decision else 0,
-                    'threshold': 0.5,
-                    'resource_type': 'system_metrics'
-                })
-                await distributed_hawk._perform_triage(alert)
+                from app.optimization.resource_monitor import ResourceType as RType
+                import socket
+                from datetime import datetime, timezone
+
+                thresholds = distributed_hawk.resource_thresholds
+
+                # --- Standard percentage-based resource checks ---
+                RESOURCE_CHECKS = [
+                    ('cpu_usage',    'cpu',    thresholds.get(RType.CPU,    70.0)),
+                    ('memory_usage', 'memory', thresholds.get(RType.MEMORY, 80.0)),
+                    ('disk_usage',   'disk',   thresholds.get(RType.DISK,   85.0)),
+                ]
+
+                for metric_key, resource_type, threshold in RESOURCE_CHECKS:
+                    current_value = metrics_data.get(metric_key)
+                    if current_value is None:
+                        continue
+                    if current_value < threshold:
+                        continue
+
+                    overage = current_value - threshold
+                    if overage >= threshold * 0.5:
+                        severity = 'critical'
+                    elif overage >= threshold * 0.25:
+                        severity = 'high'
+                    else:
+                        severity = 'medium'
+
+                    alert = ResourceAlert(
+                        resource_type=resource_type,
+                        current_value=current_value,
+                        threshold=threshold,
+                        severity=severity,
+                        timestamp=datetime.now(timezone.utc).isoformat(),
+                        hostname=socket.gethostname(),
+                        message=f"{resource_type} at {current_value:.1f}% exceeds threshold {threshold:.1f}%",
+                    )
+                    await distributed_hawk._perform_triage(alert, full_metrics=metrics_data)
+
+                # --- Network triage — multi-signal, not a single percentage ---
+                # network_sent_rate / network_recv_rate are bytes/sec from SimplifiedNetworkService.
+                # total_connections lives inside network.protocol_breakdown.total_connections.
+                # Thresholds are cold-start hypotheses; Hawk's learning adjusts them over time.
+                network_data  = metrics_data.get('network', {})
+                sent_rate     = metrics_data.get('network_sent_rate', 0) or 0
+                recv_rate     = metrics_data.get('network_recv_rate', 0) or 0
+                failed_auth   = metrics_data.get('failed_auth_attempts', 0) or 0
+                # total_connections is a top-level key from SimplifiedNetworkService.
+                # ResourceMonitor puts it under protocol_breakdown — check both.
+                total_conn = (
+                    network_data.get('total_connections')
+                    or network_data.get('protocol_breakdown', {}).get('total_connections')
+                    or 0
+                )
+
+                network_alerts = []
+
+                if recv_rate > 100_000_000:
+                    network_alerts.append(('bandwidth_recv', recv_rate, 100_000_000, 'critical'))
+                elif recv_rate > 50_000_000:
+                    network_alerts.append(('bandwidth_recv', recv_rate, 50_000_000, 'high'))
+
+                if sent_rate > 100_000_000:
+                    network_alerts.append(('bandwidth_sent', sent_rate, 100_000_000, 'critical'))
+                elif sent_rate > 50_000_000:
+                    network_alerts.append(('bandwidth_sent', sent_rate, 50_000_000, 'high'))
+
+                if failed_auth > 15:
+                    network_alerts.append(('auth_failures', failed_auth, 15, 'critical'))
+                elif failed_auth > 5:
+                    network_alerts.append(('auth_failures', failed_auth, 5, 'high'))
+
+                if total_conn > 1000:
+                    network_alerts.append(('connections', total_conn, 1000, 'critical'))
+                elif total_conn > 500:
+                    network_alerts.append(('connections', total_conn, 500, 'high'))
+
+                if network_alerts:
+                    severity_rank = {'critical': 3, 'high': 2, 'medium': 1}
+                    worst = max(network_alerts, key=lambda a: severity_rank.get(a[3], 0))
+                    net_alert = ResourceAlert(
+                        resource_type='network',
+                        current_value=worst[1],
+                        threshold=worst[2],
+                        severity=worst[3],
+                        timestamp=datetime.now(timezone.utc).isoformat(),
+                        hostname=socket.gethostname(),
+                        message=f"Network alert: {worst[0]}={worst[1]} exceeds threshold {worst[2]}",
+                    )
+                    await distributed_hawk._perform_triage(net_alert, full_metrics=metrics_data)
         except Exception as e:
-            self.logger.debug(f"🧐 ML v2 pipeline not available: {e}")
+            self.logger.warning(f"🧐 ML v2 pipeline error: {e}")
         
         if hawkington_decision is None:
             self.monocle_yeet_incidents += 1
@@ -729,24 +809,11 @@ class SirHawkingtonTriageEngine(AgentInstrumentationMixin, TriageEngineWithRedis
                     'system_impact': hd.system_impact
                 }
     
-            all_agent_data = {
-                'sir_hawkington': hawkington_data,
-                'system_metrics': metrics_data,
-            }
-            system_context = {
-                'triage_severity': triage_decision.severity.value,
-                'monocle_yeeted': triage_decision.monocle_yeeted,
-            }
-            vic20_decision = await vic20_coordinate_agents(
-                all_agent_data,
-                system_context,
-                user_id,
-            )
             return {
                 'agent': 'vic_20_sage',
                 'status': 'success',
-                'result': vic20_decision.to_dict() if vic20_decision else None,
-                'routing_reason': 'Medium severity - VIC-20 specialist coordination',
+                'result': None,
+                'routing_reason': 'Medium severity - VIC-20 ML pipeline via TRIAGE_ALERT broadcast',
                 'coordination_type': 'medium_severity',
             }
 
@@ -820,21 +887,11 @@ class SirHawkingtonTriageEngine(AgentInstrumentationMixin, TriageEngineWithRedis
                 user_id=user_id
             )
             
-            system_context = {
-                'metrics': metrics_data,
-                'triage_decision': triage_decision.to_dict(),
-            }
-            response = await vic20_emergency_response(
-                emergency_type,
-                triage_decision.target_agents,
-                system_context,
-                user_id,
-            )
             return {
                 'agent': 'vic_20_sage',
                 'status': 'success',
-                'result': response,
-                'routing_reason': '🧐💥 EMERGENCY - Monocle yeeted to VIC-20 multi-agent orchestration',
+                'result': None,
+                'routing_reason': '🧐💥 EMERGENCY - VIC-20 ML pipeline via TRIAGE_ALERT broadcast',
                 'emergency_type': emergency_type,
                 'aristocratic_authority': 'SUPREME',
             }

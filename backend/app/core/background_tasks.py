@@ -78,9 +78,7 @@ async def run_metrics_aggregation():
                         
                 except Exception as e:
                     logger.error(f"🐌 Meth Snail aggregation error: {str(e)}", exc_info=True)
-                finally:
-                    # Context manager handles cleanup automatically
-                    break  # Exit the async for loop after one iteration
+                break  # Exit after one iteration; context manager handles cleanup
                     
         except asyncio.CancelledError:
             logger.info("🐌 Meth Snail received shutdown signal, cleaning up...")
@@ -182,9 +180,7 @@ async def run_realtime_optimization():
                                 
                 except Exception as e:
                     logger.error(f"🐌 Error in real-time optimization for users: {str(e)}")
-                finally:
-                    # Context manager handles cleanup automatically
-                    break  # Exit the async for loop after one iteration
+                break  # Exit after one iteration; context manager handles cleanup
             
             # Wait before next optimization check
             await asyncio.sleep(optimization_interval)

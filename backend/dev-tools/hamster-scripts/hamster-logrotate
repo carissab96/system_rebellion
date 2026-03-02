@@ -1,0 +1,149 @@
+#!/bin/bash
+#
+# hamster-logrotate - Safe log compression and archival wrapper
+#
+# This script compresses and archives old log files to prevent /var/log
+# from filling up. Carl handles this with quantum precision.
+#
+# Usage: hamster-logrotate [days]
+#        (Default: rotates logs older than 7 days)
+#
+# Safety features:
+# - Only operates on /var/log
+# - Preserves recent logs (minimum 7 days)
+# - Compresses instead of deleting
+# - Validates log files before rotation
+# - Full logging of operations
+#
+# NO FAKE DATA. NO SHORTCUTS. TRUTH OR GRACEFUL FAILURE.
+
+set -euo pipefail
+
+# Load common library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/hamster-common.sh"
+
+# Configuration
+HAMSTER="CARL"  # Carl's quantum precision for log management
+OPERATION="logrotate"
+LOG_DIR="/var/log"
+DEFAULT_AGE_DAYS=7
+MIN_AGE_DAYS=7  # Safety: never rotate logs newer than 7 days
+MAX_LOG_SIZE_MB=100  # Only rotate logs larger than this
+
+# Initialize
+init_hamster_script "hamster-logrotate" "$HAMSTER"
+
+# Parse arguments
+AGE_DAYS="${1:-$DEFAULT_AGE_DAYS}"
+
+# Validate age parameter
+if ! [[ "$AGE_DAYS" =~ ^[0-9]+$ ]]; then
+    log_action "$HAMSTER" "ERROR" "Invalid age parameter: $AGE_DAYS (must be a number)"
+    exit 1
+fi
+
+if [[ $AGE_DAYS -lt $MIN_AGE_DAYS ]]; then
+    log_action "STEVE" "WARNING" "Age parameter too low ($AGE_DAYS days), enforcing minimum of $MIN_AGE_DAYS days"
+    AGE_DAYS=$MIN_AGE_DAYS
+fi
+
+log_action "$HAMSTER" "INFO" "Rotating logs older than $AGE_DAYS days in $LOG_DIR"
+
+# Check if log directory exists
+if [[ ! -d "$LOG_DIR" ]]; then
+    log_action "$HAMSTER" "ERROR" "Log directory does not exist: $LOG_DIR"
+    exit 1
+fi
+
+# Check if gzip is available
+if ! command_exists gzip; then
+    log_action "$HAMSTER" "ERROR" "gzip command not found (install gzip)"
+    exit 1
+fi
+
+# Track statistics
+TOTAL_LOGS=0
+TOTAL_SIZE_BEFORE=0
+TOTAL_SIZE_AFTER=0
+ERRORS=0
+
+# Find log files to rotate
+# Look for .log files that are:
+# 1. Older than AGE_DAYS
+# 2. Larger than MAX_LOG_SIZE_MB
+# 3. Not already compressed (.gz)
+log_action "$HAMSTER" "INFO" "Scanning for log files to rotate (age: ${AGE_DAYS}d, min size: ${MAX_LOG_SIZE_MB}MB)"
+
+while IFS= read -r log_file; do
+    # Skip if already compressed
+    if [[ "$log_file" == *.gz ]]; then
+        continue
+    fi
+    
+    # Get file size in MB
+    FILE_SIZE_BYTES=$(stat -f%z "$log_file" 2>/dev/null || stat -c%s "$log_file" 2>/dev/null || echo 0)
+    FILE_SIZE_MB=$((FILE_SIZE_BYTES / 1024 / 1024))
+    
+    # Skip if too small
+    if [[ $FILE_SIZE_MB -lt $MAX_LOG_SIZE_MB ]]; then
+        continue
+    fi
+    
+    # Get file age in days
+    if [[ "$(uname)" == "Darwin" ]]; then
+        # macOS
+        FILE_AGE_DAYS=$(( ($(date +%s) - $(stat -f%m "$log_file")) / 86400 ))
+    else
+        # Linux
+        FILE_AGE_DAYS=$(( ($(date +%s) - $(stat -c%Y "$log_file")) / 86400 ))
+    fi
+    
+    # Skip if too recent
+    if [[ $FILE_AGE_DAYS -lt $AGE_DAYS ]]; then
+        continue
+    fi
+    
+    log_action "$HAMSTER" "INFO" "Found log to rotate: $log_file (${FILE_SIZE_MB}MB, ${FILE_AGE_DAYS}d old)"
+    
+    # Compress the log file
+    if gzip -9 "$log_file" 2>&1 | tee -a "$STICK_LOG"; then
+        # Get compressed size
+        COMPRESSED_FILE="${log_file}.gz"
+        COMPRESSED_SIZE_BYTES=$(stat -f%z "$COMPRESSED_FILE" 2>/dev/null || stat -c%s "$COMPRESSED_FILE" 2>/dev/null || echo 0)
+        COMPRESSED_SIZE_MB=$((COMPRESSED_SIZE_BYTES / 1024 / 1024))
+        
+        SPACE_SAVED=$((FILE_SIZE_MB - COMPRESSED_SIZE_MB))
+        
+        log_action "$HAMSTER" "INFO" "Compressed $log_file: ${FILE_SIZE_MB}MB -> ${COMPRESSED_SIZE_MB}MB (saved ${SPACE_SAVED}MB)"
+        
+        ((TOTAL_LOGS++))
+        TOTAL_SIZE_BEFORE=$((TOTAL_SIZE_BEFORE + FILE_SIZE_MB))
+        TOTAL_SIZE_AFTER=$((TOTAL_SIZE_AFTER + COMPRESSED_SIZE_MB))
+    else
+        log_action "$HAMSTER" "ERROR" "Failed to compress $log_file"
+        ((ERRORS++))
+    fi
+done < <(find "$LOG_DIR" -type f -name "*.log" 2>/dev/null || true)
+
+# Summary
+TOTAL_SAVED=$((TOTAL_SIZE_BEFORE - TOTAL_SIZE_AFTER))
+
+if [[ $TOTAL_LOGS -gt 0 ]]; then
+    log_action "$HAMSTER" "INFO" "Log rotation complete: $TOTAL_LOGS logs compressed"
+    log_action "$HAMSTER" "INFO" "Space usage: ${TOTAL_SIZE_BEFORE}MB -> ${TOTAL_SIZE_AFTER}MB (saved ${TOTAL_SAVED}MB)"
+    log_action "STEVE" "INFO" "Carl rotated $TOTAL_LOGS logs with quantum precision"
+else
+    log_action "$HAMSTER" "INFO" "No logs needed rotation"
+fi
+
+EXIT_CODE=0
+if [[ $ERRORS -gt 0 ]]; then
+    log_action "$HAMSTER" "WARNING" "Log rotation completed with $ERRORS errors"
+    EXIT_CODE=1
+fi
+
+# Finalize
+finalize_hamster_script "hamster-logrotate" "$HAMSTER" $EXIT_CODE
+
+exit $EXIT_CODE

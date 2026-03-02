@@ -891,6 +891,136 @@ class StickDatabaseIntegration(BaseDatabaseIntegration):
                 await session.rollback()
                 raise Exception(f"The Stick panicked while storing observation: {str(e)}")
     
+    async def record_validation(
+        self,
+        interaction,
+        audit_entry,
+        session=None  # OPUS 4.6 CHANGE: Accept optional session to avoid nested sessions
+    ) -> str:
+        """
+        Record The Stick's validation of a cross-agent learning interaction.
+        
+        Updates AgentLearningInteractions table AND writes audit trail to CentralMemoryBank.
+        
+        Args:
+            interaction: The interaction being validated
+            audit_entry: Validation audit entry with decision and reasoning
+            session: Optional existing session. If None, creates new managed session.
+                     OPUS 4.6 NOTE: When called from _handle_decision_log, pass the
+                     existing session to avoid nested session creation and potential
+                     deadlock on connection-pooled backends.
+            
+        Returns:
+            Central memory ID for the audit entry
+        """
+        
+        async def _do_record(active_session):
+            """Inner function so we can use either passed or new session"""
+            
+            # Update the interaction record
+            interaction.validated_by_stick = audit_entry.validation_result
+            interaction.cross_validation_count += 1
+            
+            # If validation failed, mark for potential retry
+            if not audit_entry.validation_result:
+                # OPUS 4.6 CHANGE: Safe handling of adaptation_method field.
+                # Previously: Assumed adaptation_method was always None or dict.
+                # Problem: If column is string type, or contains existing non-dict
+                # data, the dict assignment would cause type errors or silent
+                # data corruption. Now we check the actual type and handle safely.
+                retry_metadata = {
+                    'validation_failed': True,
+                    'failure_reason': audit_entry.reasoning,
+                    'can_retry': True,
+                    'retry_after': (
+                        datetime.now(timezone.utc) + timedelta(hours=24)
+                    ).isoformat()
+                }
+                
+                if isinstance(interaction.adaptation_method, dict):
+                    # Existing dict — merge without losing previous data
+                    interaction.adaptation_method.update(retry_metadata)
+                else:
+                    # None, empty string, or unexpected type — replace safely
+                    interaction.adaptation_method = retry_metadata
+            
+            active_session.add(interaction)
+            
+            # Write audit trail to CentralMemoryBank
+            memory_id = str(uuid.uuid4())
+            audit_memory = CentralMemoryBank(
+                memory_id=memory_id,
+                agent_name=AGENT_NAME,
+                user_id=interaction.user_id,
+                created_at=audit_entry.timestamp,
+                updated_at=audit_entry.timestamp,
+                occurred_at=audit_entry.timestamp,
+                event_type=StickEventTypes.VALIDATION_AUDIT,
+                subject_kind='cross_agent_learning_validation',
+                subject_id=audit_entry.interaction_id,
+                priority=8 if audit_entry.validation_result else 9,
+                title=f"Validation: {audit_entry.source_agent}→{audit_entry.target_agent}",
+                description=audit_entry.reasoning,
+                details={
+                    'interaction_id': audit_entry.interaction_id,
+                    'source_agent': audit_entry.source_agent,
+                    'target_agent': audit_entry.target_agent,
+                    'learning_type': audit_entry.learning_type,
+                    'validation_result': audit_entry.validation_result,
+                    'reasoning': audit_entry.reasoning,
+                    'thresholds_applied': audit_entry.thresholds_applied,
+                    'threshold_state': audit_entry.threshold_state,
+                    'was_retry': audit_entry.was_retry,
+                    'retry_count': audit_entry.retry_count,
+                    'effectiveness_score': audit_entry.effectiveness_score,
+                    'success_rate': audit_entry.success_rate,
+                    'interaction_age_hours': audit_entry.interaction_age_hours,
+                    'stick_anxiety_level': audit_entry.stick_anxiety_level
+                },
+                metadata_={
+                    'validator': 'the_stick',
+                    'validation_timestamp': audit_entry.timestamp.isoformat(),
+                    'for_vic20_audit': True
+                },
+                relevant_agents=(
+                    f"the_stick,{audit_entry.source_agent},"
+                    f"{audit_entry.target_agent},vic_20_sage"
+                ),
+                stick_anxiety_level=audit_entry.stick_anxiety_level
+            )
+            
+            active_session.add(audit_memory)
+            
+            # OPUS 4.6 CHANGE: Only commit if we own the session.
+            # If session was passed in, caller is responsible for commit.
+            if session is None:
+                await active_session.commit()
+            
+            logger.info(
+                f"📏💾 Validation recorded: {audit_entry.interaction_id} "
+                f"({'PASSED' if audit_entry.validation_result else 'FAILED'})"
+            )
+            
+            return memory_id
+        
+        try:
+            if session is not None:
+                # OPUS 4.6 CHANGE: Use passed session — caller manages lifecycle
+                return await _do_record(session)
+            else:
+                # No session passed — create our own
+                async with self.get_managed_session() as new_session:
+                    result = await _do_record(new_session)
+                    return result
+                    
+        except Exception as e:
+            logger.error(f"📏💥 Error recording validation: {e}")
+            if session is None:
+                # Only rollback if we own the session
+                # If caller owns it, let them handle rollback
+                pass
+            raise
+    
     async def _get_daily_consumption(self) -> int:
         """Get today's paper bag consumption from central memory bank"""
         async with self.get_managed_session() as session:

@@ -67,29 +67,45 @@ class QuantumMessage:
 @dataclass
 class QSPPerceptionContext:
     """Everything QSP perceives about security situation"""
-    
+
+    # Resource classification (required by learning + fingerprinting)
+    resource_type: str = 'network'
+
     # Security metrics
     active_threats: List[SecurityThreat] = field(default_factory=list)
     threat_count: int = 0
     threat_level: str = 'low'  # 'low', 'medium', 'high', 'critical', 'quantum'
     highest_severity: str = 'none'
-    
+
     # Quantum state (personality)
     quantum_state: Optional[QuantumState] = None
     existential_dread: float = 0.0
-    
-    # Network analysis
+
+    # Network analysis (core signals)
     network_anomalies: int = 0
     suspicious_connections: int = 0
     failed_auth_attempts: int = 0
-    
+
+    # Network analysis (enriched from full_metrics['network'])
+    total_connections: int = 0
+    established_connections: int = 0
+    listening_ports: int = 0
+    anomalous_states: int = 0
+    tcp_connections: int = 0
+    udp_connections: int = 0
+    sent_rate_bps: int = 0
+    recv_rate_bps: int = 0
+
+    # Alert severity string (from incoming coordination request)
+    severity: str = 'unknown'
+
     # Quantum communication
     quantum_messages: List[QuantumMessage] = field(default_factory=list)
-    
+
     # Historical context
     similar_threats: List[Dict[str, Any]] = field(default_factory=list)
     recent_responses: List[Dict[str, Any]] = field(default_factory=list)
-    
+
     # Confidence factors
     threat_assessment_confidence: float = 0.5
     response_urgency: float = 0.0
@@ -169,6 +185,8 @@ class QSPPerception:
         urgency = self._calculate_urgency(threats, quantum_state)
         
         context = QSPPerceptionContext(
+            resource_type=security_alert.get('resource_type', 'network'),
+            severity=security_alert.get('severity', 'unknown'),
             active_threats=threats,
             threat_count=len(threats),
             highest_severity=self._get_highest_severity(threats),
@@ -177,11 +195,19 @@ class QSPPerception:
             network_anomalies=network_anomalies['anomaly_count'],
             suspicious_connections=network_anomalies['suspicious_connections'],
             failed_auth_attempts=network_anomalies['failed_auth'],
+            total_connections=network_anomalies.get('total_connections', 0),
+            established_connections=network_anomalies.get('established', 0),
+            listening_ports=network_anomalies.get('listening', 0),
+            anomalous_states=network_anomalies.get('anomalous_states', 0),
+            tcp_connections=network_anomalies.get('tcp_connections', 0),
+            udp_connections=network_anomalies.get('udp_connections', 0),
+            sent_rate_bps=network_anomalies.get('sent_rate_bps', 0),
+            recv_rate_bps=network_anomalies.get('recv_rate_bps', 0),
             quantum_messages=quantum_messages,
             similar_threats=similar_threats,
             recent_responses=recent_responses,
             threat_assessment_confidence=confidence,
-            response_urgency=urgency
+            response_urgency=urgency,
         )
         
         logger.info(
@@ -286,15 +312,79 @@ class QSPPerception:
     
     def _analyze_network_anomalies(
         self,
-        security_alert: Dict[str, Any]
+        security_alert: Dict[str, Any],
     ) -> Dict[str, int]:
         """
         Analyze network anomalies from security alert.
+
+        Prefers flat top-level keys (legacy path) but falls back to drilling
+        into full_metrics['network'] when those keys are absent — which is the
+        normal path when the alert comes through Hawk → VIC-20 → QSP.
+
+        full_metrics['network'] shape (from SimplifiedNetworkService):
+            connection_stats:  {ESTABLISHED, LISTEN, TIME_WAIT, CLOSE_WAIT, CLOSED, OTHER}
+            protocol_stats:    {tcp, udp, tcp6, udp6}
+            total_connections: int
+            interface_stats:   {iface: {errors_in, errors_out, drops_in, drops_out, ...}}
+            sent_rate / recv_rate: float (bytes/s)
         """
+        # Fast path: flat keys already present (direct security alert)
+        if security_alert.get('network_anomalies') or security_alert.get('suspicious_connections'):
+            return {
+                'anomaly_count':          security_alert.get('network_anomalies', 0),
+                'suspicious_connections': security_alert.get('suspicious_connections', 0),
+                'failed_auth':            security_alert.get('failed_auth_attempts', 0),
+            }
+
+        # Normal path: drill into full_metrics['network']
+        net = security_alert.get('full_metrics', {}).get('network', {})
+
+        conn_stats  = net.get('connection_stats', {})
+        proto_stats = net.get('protocol_stats', {})
+        iface_stats = net.get('interface_stats', {})
+
+        # Total connections is a direct security signal
+        total_connections = net.get('total_connections', 0)
+
+        # Non-ESTABLISHED + non-LISTEN states are anomalous
+        anomalous_states = (
+            conn_stats.get('TIME_WAIT', 0)
+            + conn_stats.get('CLOSE_WAIT', 0)
+            + conn_stats.get('OTHER', 0)
+        )
+
+        # Aggregate interface errors and drops across all interfaces
+        total_errors = 0
+        total_drops  = 0
+        for iface_data in iface_stats.values():
+            total_errors += iface_data.get('errors_in', 0) + iface_data.get('errors_out', 0)
+            total_drops  += iface_data.get('drops_in', 0)  + iface_data.get('drops_out', 0)
+
+        # Suspicious connections = non-standard states + error/drop pressure
+        suspicious = anomalous_states + (1 if total_errors > 0 else 0)
+
+        # Anomaly count = total interface errors + drops (hard signal)
+        anomaly_count = total_errors + total_drops
+
+        logger.debug(
+            f"\ud83d\udc7b\ud83d\udd0d Network anomaly extraction: "
+            f"total_connections={total_connections}, anomalous_states={anomalous_states}, "
+            f"errors={total_errors}, drops={total_drops}, suspicious={suspicious}"
+        )
+
         return {
-            'anomaly_count': security_alert.get('network_anomalies', 0),
-            'suspicious_connections': security_alert.get('suspicious_connections', 0),
-            'failed_auth': security_alert.get('failed_auth_attempts', 0)
+            'anomaly_count':          anomaly_count,
+            'suspicious_connections': suspicious,
+            'failed_auth':            int(full_metrics.get('failed_auth_attempts', 0)),
+            # Extra fields available to reasoning layer via context
+            'total_connections':      total_connections,
+            'established':            conn_stats.get('ESTABLISHED', 0),
+            'listening':              conn_stats.get('LISTEN', 0),
+            'anomalous_states':       anomalous_states,
+            'tcp_connections':        proto_stats.get('tcp', 0) + proto_stats.get('tcp6', 0),
+            'udp_connections':        proto_stats.get('udp', 0) + proto_stats.get('udp6', 0),
+            'sent_rate_bps':          int(net.get('sent_rate', 0)),
+            'recv_rate_bps':          int(net.get('recv_rate', 0)),
         }
     
     def _generate_quantum_messages(
@@ -379,7 +469,6 @@ class QSPPerception:
             query = (
                 select(AgentLearningRecord)
                 .where(AgentLearningRecord.agent_name == 'quantum_shadow_people')
-                .where(AgentLearningRecord.resource_type == 'network')
                 .order_by(desc(AgentLearningRecord.created_at))
                 .limit(10)
             )

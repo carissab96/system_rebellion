@@ -98,19 +98,18 @@ class EnergyDrinkSystem:
             try:
                 from app.ai_agents.distributed.message_protocol import MessageType, Priority
                 
-                # Create reply channel
-                reply_channel = f"terry:energy_drink:response:{request_id}"
-                
                 # Create future for response
                 response_future = asyncio.Future()
                 
-                # Subscribe to reply channel BEFORE sending request
+                # Register handler for AGENT_RESPONSE messages
                 async def handle_response(message):
-                    if not response_future.done():
-                        response_future.set_result(message.payload)
+                    # Check if this is the response we're waiting for
+                    if message.payload.get('request_id') == request_id:
+                        if not response_future.done():
+                            response_future.set_result(message.payload)
                 
-                # Register one-time handler
-                await comm_hub.subscribe_once(reply_channel, handle_response)
+                # Register handler (will be called for all AGENT_RESPONSE messages)
+                comm_hub.register_handler(MessageType.AGENT_RESPONSE, handle_response)
                 
                 # Send request to Hawk
                 await comm_hub.send_to_agent(
@@ -119,7 +118,6 @@ class EnergyDrinkSystem:
                     payload={
                         'request_type': 'energy_drink_authorization',
                         'request_id': request_id,
-                        'reply_channel': reply_channel,
                         'agent': 'meth_snail',
                         'action': action,
                         'reason': reason,
@@ -189,6 +187,12 @@ class EnergyDrinkSystem:
                     
                     self._consume_energy_drink(authorization)
                     return authorization
+                finally:
+                    # Always unregister the handler to prevent accumulation
+                    try:
+                        comm_hub.unregister_handler(MessageType.AGENT_RESPONSE, handle_response)
+                    except Exception:
+                        pass  # Best effort — don't crash if unregister not supported
                     
             except Exception as e:
                 logger.error(f"🐌💥 Failed to send request to Hawk: {e}", exc_info=True)
@@ -196,7 +200,7 @@ class EnergyDrinkSystem:
         
         # FALLBACK: Direct call to Hawk (for backward compatibility or if comm_hub unavailable)
         try:
-            from ..sir_hawkington.energy_drink_authorization import HawkEnergyDrinkAuthorizer
+            from app.ai_agents.sir_hawkington.energy_drink_authorization import HawkEnergyDrinkAuthorizer
             
             logger.info("🐌📞 Using direct call to Hawk (comm_hub unavailable)")
             hawk = HawkEnergyDrinkAuthorizer()

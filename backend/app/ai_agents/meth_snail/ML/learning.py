@@ -89,7 +89,10 @@ class TerryLearning:
         context,
         reasoning_result,
         decision,
-        execution_result
+        execution_result,
+        action_selector=None,
+        central_memory_id: Optional[str] = None,
+        user_id: Optional[str] = None
     ) -> LearningRecord:
         """
         Store this experience for future reference.
@@ -101,6 +104,8 @@ class TerryLearning:
             reasoning_result: ReasoningResult from reasoning engine
             decision: ActionDecision from action selection
             execution_result: ExecutionResult from action execution
+            central_memory_id: Link to CentralMemoryBank (for learned thresholds)
+            user_id: User ID for learning event emissions
             
         Returns:
             LearningRecord that was stored
@@ -129,10 +134,28 @@ class TerryLearning:
         
         # Check if ANY metric improved (not just the trigger resource)
         # Some actions help different resources or have indirect benefits
-        any_metric_improved = any(delta < -1.0 for delta in improvement.values())  # -1% threshold
+        # Use learned thresholds — no hardcoded fallbacks
+        if action_selector is None or not hasattr(action_selector, 'learned_thresholds'):
+            raise RuntimeError(
+                "TerryLearning.learn() requires action_selector with learned_thresholds "
+                "for success determination. No hardcoded fallbacks."
+            )
+        
+        any_improvement_threshold = await action_selector.learned_thresholds.get_threshold(
+            'improvement_any', 'warning'
+        )
+        primary_improvement_threshold = await action_selector.learned_thresholds.get_threshold(
+            'improvement_primary', 'warning'
+        )
+        
+        any_metric_improved = any(
+            delta < -any_improvement_threshold for delta in improvement.values()
+        )
         
         # Primary resource improvement (the one that triggered the alert)
-        primary_improved = improvement.get(context.resource_type, 0) < -0.5  # -0.5% threshold
+        primary_improved = (
+            improvement.get(context.resource_type, 0) < -primary_improvement_threshold
+        )
         
         # Success if action executed AND (primary improved OR any metric improved significantly)
         overall_success = action_succeeded and (primary_improved or any_metric_improved)
@@ -171,14 +194,80 @@ class TerryLearning:
             agent_name='meth_snail'
         )
         
-        # 5. Store in database
-        storage_success = await self._store_learning(record)
+        # 5. Store in database (returns central_memory_id)
+        storage_success, central_memory_id = await self._store_learning(record)
         record.storage_success = storage_success
         
-        # 6. Update agent state
+        # 6. NEW: Record in learned thresholds and action effectiveness systems
+        if action_selector and central_memory_id:
+            try:
+                # Get metrics
+                metrics_before = execution_result.get('metrics_before', {})
+                metrics_after = execution_result.get('metrics_after', {})
+                
+                # Record in action effectiveness (emits learning event)
+                # Skip monitor/escalate — they produce synthetic outcomes that would
+                # bias the effectiveness model toward actions that did nothing.
+                # These are observation/delegation actions, not interventions.
+                INTERVENTION_ACTIONS = {
+                    a for a in action_selector.action_effectiveness.ALL_ACTIONS
+                    if a not in ('monitor', 'escalate')
+                }
+                if decision.action in INTERVENTION_ACTIONS:
+                    # alternatives_considered may be a list of strings (from action_selection.py)
+                    # or a list of dicts — normalise to strings at the call site
+                    alts = decision.alternatives_considered or []
+                    other_actions = [
+                        a if isinstance(a, str) else a.get('action', '')
+                        for a in alts
+                    ]
+                    await action_selector.action_effectiveness.record_outcome(
+                        action=decision.action,
+                        pre_metrics=metrics_before,
+                        post_metrics=metrics_after,
+                        severity=self._calculate_severity_score(context.severity),
+                        success=overall_success,
+                        other_actions_considered=other_actions,
+                        central_memory_id=central_memory_id,
+                        user_id=user_id
+                    )
+                else:
+                    self.logger.debug(
+                        f"   ⏭️ Skipping effectiveness record for '{decision.action}' "
+                        f"(observation/delegation action — not an intervention)"
+                    )
+                
+                # Record in learned thresholds if threshold was crossed (emits learning event)
+                if hasattr(decision, 'threshold_crossed') and decision.threshold_crossed:
+                    primary_metric = f"{context.resource_type}_usage"
+                    await action_selector.learned_thresholds.record_outcome(
+                        metric_name=primary_metric,
+                        metric_value=metrics_before.get(primary_metric, 0.0),
+                        threshold_level=decision.threshold_crossed,
+                        action_taken=decision.action,
+                        outcome={
+                            'success': overall_success,
+                            'system_state': metrics_before,
+                            'resolved_naturally': False,
+                            'became_critical_before_action': False,
+                            'rapid_escalation': False
+                        },
+                        context={
+                            'time_of_day': utc_now().hour,
+                            'day_of_week': utc_now().weekday(),
+                            'root_cause': reasoning_result.root_cause
+                        },
+                        user_id=user_id
+                    )
+                
+                self.logger.debug("   ✓ Recorded in learned thresholds and action effectiveness systems")
+            except Exception as e:
+                self.logger.error(f"   💥 Failed to record in learned systems: {e}")
+        
+        # 7. Update agent state
         await self._update_agent_state(record, decision)
         
-        # 7. Share with The Stick
+        # 8. Share with The Stick
         await self._share_with_stick(record)
         
         if overall_success:
@@ -187,6 +276,22 @@ class TerryLearning:
             self.logger.info(f"   ✗ FAILURE. {decision.action} didn't work. Learning from it.")
         
         return record
+    
+    def _calculate_severity_score(self, severity_str: str) -> float:
+        """Convert severity string to numeric score for learned systems.
+        
+        NOTE: This is intentionally duplicated in action_selection.py as
+        _severity_to_float(). Both maps MUST stay in sync. If you change
+        the severity vocabulary here, change it there too.
+        """
+        severity_map = {
+            'low': 0.3,
+            'moderate': 0.5,
+            'high': 0.7,
+            'critical': 0.9,
+            'emergency': 1.0
+        }
+        return severity_map.get(severity_str.lower(), 0.5)
     
     def _calculate_improvement(
         self,
@@ -221,7 +326,7 @@ class TerryLearning:
         
         return improvement
     
-    async def _store_learning(self, record: LearningRecord) -> bool:
+    async def _store_learning(self, record: LearningRecord) -> tuple[bool, Optional[str]]:
         """
         Store learning record in database.
         
@@ -229,11 +334,17 @@ class TerryLearning:
             record: LearningRecord to store
             
         Returns:
-            True if storage succeeded, False otherwise
+            Tuple of (success: bool, central_memory_id: Optional[str])
         """
         try:
+            import uuid
             from app.models.agent_learning import AgentLearningRecord
+            from app.models.agent_memory_banks import CentralMemoryBank
             
+            # Generate central_memory_id
+            central_memory_id = str(uuid.uuid4())
+            
+            # Store in AgentLearningRecord (agent-specific table)
             db_record = AgentLearningRecord(
                 agent_name=record.agent_name,
                 fingerprint_l1=record.fingerprint_l1,
@@ -254,18 +365,44 @@ class TerryLearning:
             )
             
             self.db.add(db_record)
-            await self.db.commit()
+            await self.db.flush()  # Get the ID without committing
             
             # Set the ID on the record so we can emit it
             record.learning_record_id = str(db_record.id)
             
-            self.logger.debug(f"   ✓ Learning record stored in database (ID: {db_record.id})")
-            return True
+            # Also store in CentralMemoryBank (cross-agent table)
+            central_memory = CentralMemoryBank(
+                memory_id=central_memory_id,
+                agent_name=record.agent_name,
+                event_type="learning_outcome",
+                title=f"{record.action} → {'SUCCESS' if record.success else 'FAILURE'}",
+                description=f"Action: {record.action}, Root cause: {record.root_cause}",
+                details={
+                    'fingerprint_l1': record.fingerprint_l1,
+                    'fingerprint_l2': record.fingerprint_l2,
+                    'fingerprint_l3': record.fingerprint_l3,
+                    'action': record.action,
+                    'success': record.success,
+                    'improvement': record.improvement,
+                    'followed_vic20': record.followed_vic20,
+                    'energy_drink_consumed': record.energy_drink_consumed,
+                    'hawk_veto': record.hawk_veto,
+                    'learning_record_id': str(db_record.id)
+                },
+                priority=3 if record.success else 4,
+                occurred_at=utc_now()
+            )
+            
+            self.db.add(central_memory)
+            await self.db.flush()  # commit happens at the distributed boundary (get_async_db context)
+            
+            self.logger.debug(f"   ✓ Learning stored: AgentLearningRecord (ID: {db_record.id}), CentralMemoryBank (ID: {central_memory_id})")
+            return True, central_memory_id
             
         except Exception as e:
             self.logger.error(f"   💥 Failed to store learning record: {str(e)}")
             await self.db.rollback()
-            return False
+            return False, None
     
     async def _update_agent_state(self, record: LearningRecord, decision):
         """
@@ -296,21 +433,47 @@ class TerryLearning:
     
     async def _share_with_stick(self, record: LearningRecord):
         """
-        Share learning with The Stick for cross-agent knowledge.
+        Share learning with The Stick via DECISION_LOG.
         
-        The Stick will aggregate learning from all Terry instances
-        and make it available to other agents.
+        Every learning outcome — success or failure — is auditable.
+        The Stick aggregates these across all agents.
         
         Args:
             record: LearningRecord to share
         """
         try:
-            # TODO: Implement when The Stick's learning hub is ready
-            # For now, just log that we would share
-            self.logger.debug(f"   📤 Would share with The Stick: {record.action} {'succeeded' if record.success else 'failed'}")
+            from app.services.agent_insight_emitter import emit_agent_insight
+            
+            await emit_agent_insight(
+                from_agent=record.agent_name,
+                to_agent='the_stick',
+                action='learning_outcome',
+                reasoning=f"{record.action} → {'SUCCESS' if record.success else 'FAILURE'} | root_cause: {record.root_cause}",
+                context={
+                    'decision_type': 'learning_outcome',
+                    'action': record.action,
+                    'success': record.success,
+                    'root_cause': record.root_cause,
+                    'fingerprint_l1': record.fingerprint_l1,
+                    'fingerprint_l2': record.fingerprint_l2,
+                    'fingerprint_l3': record.fingerprint_l3,
+                    'improvement': record.improvement,
+                    'followed_vic20': record.followed_vic20,
+                    'energy_drink_consumed': record.energy_drink_consumed,
+                    'hawk_veto': record.hawk_veto,
+                    'learning_record_id': record.learning_record_id,
+                    'timestamp': record.timestamp,
+                }
+            )
+            
+            self.logger.debug(
+                f"   📤 Shared with The Stick: {record.action} "
+                f"{'succeeded' if record.success else 'failed'} "
+                f"(record: {record.learning_record_id})"
+            )
             
         except Exception as e:
-            self.logger.warning(f"   ⚠️ Failed to share with The Stick: {str(e)}")
+            self.logger.error(f"   💥 Failed to share with The Stick: {str(e)}")
     
     def summarize_learning(self, record: LearningRecord) -> str:
         """
@@ -356,72 +519,3 @@ class TerryLearning:
         return "\n".join(parts)
 
 
-class ConfidenceCalculator:
-    """
-    Calculate confidence using Bayesian base + adaptive adjustments.
-    
-    🐌🎯 "My confidence grows with experience!"
-    """
-    
-    @staticmethod
-    def calculate(
-        historical_outcomes: list,
-        action: str,
-        context=None
-    ) -> float:
-        """
-        Hybrid confidence calculation:
-        - Bayesian base (statistically sound)
-        - Novelty boost (fast learning on new situations)
-        - Context adjustments (VIC-20 agreement, personality)
-        
-        Args:
-            historical_outcomes: List of past LearningRecords
-            action: Action being considered
-            context: Optional PerceptionContext for context adjustments
-            
-        Returns:
-            Confidence score (0.1 - 0.95)
-        """
-        if not historical_outcomes:
-            return 0.5  # Neutral starting point
-        
-        # 1. BAYESIAN BASE
-        successes = sum(1 for r in historical_outcomes if r.get('success', False))
-        failures = len(historical_outcomes) - successes
-        
-        # Beta distribution: alpha=successes+1, beta=failures+1
-        base_confidence = (successes + 1) / (successes + failures + 2)
-        
-        # 2. NOVELTY BOOST
-        # More data = less novelty = smaller boost
-        novelty_score = 1.0 / (1.0 + len(historical_outcomes))
-        novelty_boost = novelty_score * 0.2  # Up to +0.2 for novel situations
-        
-        # 3. CONTEXT ADJUSTMENTS
-        context_boost = 0.0
-        
-        if context:
-            # VIC-20 agreement signal
-            vic20_action = context.vic20_recommendation.get('action')
-            if vic20_action == action:
-                # Check if VIC-20 agreements tend to succeed
-                vic20_agreements = sum(
-                    1 for r in historical_outcomes 
-                    if r.get('success') and r.get('followed_vic20')
-                )
-                if vic20_agreements > 0:
-                    agreement_rate = vic20_agreements / successes if successes > 0 else 0
-                    context_boost += agreement_rate * 0.1  # Up to +0.1
-        
-        # Personality bias (Terry loves cache clears)
-        if action == 'emergency_cache_clear':
-            context_boost += 0.05  # Meth-fueled bias
-        
-        # 4. COMBINE
-        final_confidence = base_confidence + novelty_boost + context_boost
-        
-        # 5. BOUND [0.1, 0.95]
-        # Never 0.0 (always willing to try)
-        # Never 1.0 (never overconfident)
-        return max(0.1, min(0.95, final_confidence))

@@ -1,0 +1,109 @@
+#!/bin/bash
+#
+# hamster-fstrim - Safe SSD TRIM operation wrapper
+#
+# This script performs TRIM operations on mounted filesystems that support it.
+# Critical for SSD health and performance.
+#
+# Usage: hamster-fstrim [mount_point]
+#        (If no mount point specified, TRIMs all supported mounted filesystems)
+#
+# Safety features:
+# - Only operates on filesystems that support TRIM
+# - Skips critical system paths
+# - Validates filesystem is mounted and safe
+# - Logs all operations
+#
+# NO FAKE DATA. NO SHORTCUTS. TRUTH OR GRACEFUL FAILURE.
+
+set -euo pipefail
+
+# Load common library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/hamster-common.sh"
+
+# Configuration
+HAMSTER="STEVE"  # Steve handles TRIM operations (more careful than Bob)
+OPERATION="fstrim"
+
+# Initialize
+init_hamster_script "hamster-fstrim" "$HAMSTER"
+
+# Check if fstrim is available
+if ! command_exists fstrim; then
+    log_action "$HAMSTER" "ERROR" "fstrim command not found (install util-linux)"
+    echo "ERROR: fstrim not installed. Install with: sudo apt-get install util-linux" >&2
+    exit 1
+fi
+
+# Parse arguments
+MOUNT_POINT="${1:-}"
+
+# Function to TRIM a single mount point
+trim_filesystem() {
+    local mount=$1
+    
+    # Check if it's a critical system path
+    if is_path_critical "$mount"; then
+        log_action "$HAMSTER" "WARNING" "Skipping critical system path: $mount"
+        return 0
+    fi
+    
+    # Check filesystem safety
+    if ! is_filesystem_safe "$mount"; then
+        log_action "$HAMSTER" "WARNING" "Filesystem safety check failed for $mount, skipping"
+        return 0
+    fi
+    
+    # Get filesystem type and size
+    local fs_type=$(get_filesystem_type "$mount")
+    local fs_size=$(df -h "$mount" | tail -1 | awk '{print $2}')
+    
+    log_action "$HAMSTER" "INFO" "TRIMming $mount (type: $fs_type, size: $fs_size)"
+    
+    # Attempt TRIM
+    local trim_output
+    if trim_output=$(fstrim -v "$mount" 2>&1); then
+        log_action "$HAMSTER" "INFO" "TRIM completed on $mount: $trim_output"
+        return 0
+    else
+        # TRIM not supported or failed
+        log_action "$HAMSTER" "WARNING" "TRIM failed or not supported on $mount: $trim_output"
+        return 1
+    fi
+}
+
+EXIT_CODE=0
+
+if [[ -n "$MOUNT_POINT" ]]; then
+    # TRIM specific mount point
+    if [[ ! -e "$MOUNT_POINT" ]]; then
+        log_action "$HAMSTER" "ERROR" "Mount point does not exist: $MOUNT_POINT"
+        exit 1
+    fi
+    
+    trim_filesystem "$MOUNT_POINT" || EXIT_CODE=$?
+else
+    # TRIM all supported mounted filesystems
+    log_action "$HAMSTER" "INFO" "TRIMming all supported mounted filesystems"
+    
+    # Get list of mounted filesystems that typically support TRIM
+    # (ext4, xfs, btrfs, f2fs on SSDs)
+    TRIM_COUNT=0
+    SKIP_COUNT=0
+    
+    while IFS= read -r mount; do
+        if trim_filesystem "$mount"; then
+            ((TRIM_COUNT++))
+        else
+            ((SKIP_COUNT++))
+        fi
+    done < <(findmnt -t ext4,xfs,btrfs,f2fs -n -o TARGET 2>/dev/null || true)
+    
+    log_action "$HAMSTER" "INFO" "TRIM operation complete: $TRIM_COUNT filesystems trimmed, $SKIP_COUNT skipped"
+fi
+
+# Finalize
+finalize_hamster_script "hamster-fstrim" "$HAMSTER" $EXIT_CODE
+
+exit $EXIT_CODE

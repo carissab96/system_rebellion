@@ -187,6 +187,12 @@ class SimplifiedMetricsService:
             )
             
             # PHASE 2: COMPILE RAW METRICS
+            # Poll auth failure monitor for real failed_auth_attempts count
+            from app.services.auth_failure_monitor import get_auth_failure_monitor
+            auth_monitor = get_auth_failure_monitor()
+            await auth_monitor.poll()
+            failed_auth_count = auth_monitor.get_failed_auth_count()
+
             raw_metrics = {
                 'timestamp': utc_now().isoformat(),
                 'cpu_usage': cpu_data.get('usage_percent'),
@@ -194,6 +200,7 @@ class SimplifiedMetricsService:
                 'disk_usage': disk_data.get('percent'),
                 'network_sent_rate': network_data.get('sent_rate'),
                 'network_recv_rate': network_data.get('recv_rate'),
+                'failed_auth_attempts': failed_auth_count,
                 'cpu': cpu_data,
                 'memory': memory_data,
                 'disk': disk_data,

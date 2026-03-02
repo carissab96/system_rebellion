@@ -470,7 +470,7 @@ class HamstersPerception:
             query = (
                 select(AgentLearningRecord)
                 .where(AgentLearningRecord.agent_name == 'hamsters')
-                .where(AgentLearningRecord.parameters['requires_sudo'].astext.cast(String) == 'true')
+                .where(AgentLearningRecord.parameters['requires_sudo'].as_string() == 'true')
                 .order_by(desc(AgentLearningRecord.created_at))
                 .limit(5)
             )

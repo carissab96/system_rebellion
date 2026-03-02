@@ -108,7 +108,11 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
         self.bob_last_seen = None
         self.bob_activity_log = []
         self.bob_anxiety_multiplier = 3.0  # Bob causes 3x anxiety!
-        
+
+        # Section 4.2: Feedback engine — analyses chain outcomes, sends calibration feedback
+        from .ML.feedback import StickFeedbackEngine
+        self.feedback_engine = StickFeedbackEngine()
+
         logger.info("📏✨ The Stick's distributed consciousness initialized - COMPLIANCE PROTOCOLS ACTIVE!")
         logger.info("📏😰 Anxiety-driven hypervigilance ENABLED - Nothing escapes The Stick!")
         logger.info("📏🚨 Bob detection protocols ACTIVE - Paper bags at the ready!")
@@ -142,9 +146,21 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
                 self.StickMemoryEntry = StickMemoryEntry  # Store for later use
                 
                 logger.info("📏💾 Database integration initialized")
+                
+                # OPUS 4.6 CHANGE: Instantiate StickLearning ONCE during initialization
+                # instead of per-call in handlers. Avoids unnecessary construction cost,
+                # preserves state across validations if StickLearning ever accumulates it.
+                # Get a database session for StickLearning
+                async for db in self.db_getter():
+                    from .ML.learning import StickLearning
+                    self.learning = StickLearning(db, self.user_id)
+                    logger.info("📏🔍 StickLearning initialized for validation")
+                    break  # Only need one session to create the instance
+                    
             except Exception as e:
                 logger.error(f"📏💥 Failed to initialize database: {e}", exc_info=True)
                 self.db_integration = None
+                self.learning = None
         
         # Initialize Week 4 systems
         self.verification_manager = get_verification_manager()
@@ -152,6 +168,11 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
         
         logger.info("📏🎯 Week 4 systems integrated - Verification & Escalation tracking ONLINE!")
         logger.info("📏📋 The Stick will track EVERYTHING! (Anxiety-driven hypervigilance activated)")
+        
+        # Start validation sweep loop
+        import asyncio
+        asyncio.create_task(self._validation_sweep_loop())
+        logger.info("📏🔍 Validation sweep loop started (every 2 hours)")
         
         # 🎯 PHASE 5: Subscribe to DECISION_LOG from ALL agents
         try:
@@ -180,10 +201,33 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
         self.decision_log_buffer = []
         self.buffer_max_size = 10  # Batch write every 10 decisions
         self.total_decisions_logged = 0
-        
+
+        # Subscribe to CHAIN_OUTCOME from VIC-20 (Section 4.3)
+        try:
+            await self.subscribe_to_messages(
+                message_type=MessageType.CHAIN_OUTCOME,
+                callback=self._handle_chain_outcome
+            )
+            logger.info("📏📡 The Stick subscribed to CHAIN_OUTCOME - Full chain visibility ACTIVE!")
+        except Exception as e:
+            logger.error(f"📏💥 Failed to subscribe to CHAIN_OUTCOME: {e}")
+
+        # Subscribe to PIPELINE_INCONSISTENCY from specialists (Section 4.6)
+        try:
+            await self.subscribe_to_messages(
+                message_type=MessageType.PIPELINE_INCONSISTENCY,
+                callback=self._handle_pipeline_inconsistency
+            )
+            logger.info("📏📡 The Stick subscribed to PIPELINE_INCONSISTENCY")
+        except Exception as e:
+            logger.error(f"📏💥 Failed to subscribe to PIPELINE_INCONSISTENCY: {e}")
+
         # Start periodic flush task (every 30 seconds)
         import asyncio
         self._flush_task = asyncio.create_task(self._periodic_flush())
+
+        # Start feedback loop (every 5 minutes) — Section 4.4
+        self._feedback_task = asyncio.create_task(self._feedback_loop())
     
     async def _handle_coordination_request(self, message: AgentMessage) -> None:
         """
@@ -362,11 +406,15 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
         """
         PHASE 5: Handle DECISION_LOG from any agent.
         
+        Enhanced: Check if decision involved cross-agent learning and validate real-time.
+        
         Flow:
         1. Receive DECISION_LOG
-        2. Add to buffer
-        3. When buffer full → batch write to PostgreSQL with vector embeddings
-        4. Track anxiety (Bob causes 3x anxiety!)
+        2. Check for cross-agent learning interaction
+        3. If found, validate immediately
+        4. Add to buffer
+        5. When buffer full → batch write to PostgreSQL with vector embeddings
+        6. Track anxiety (Bob causes 3x anxiety!)
         
         PERSONALITY: Anxious but thorough, remembers EVERYTHING (eidetic memory)
         """
@@ -387,6 +435,45 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
                 f"📏📬 DECISION_LOG from {from_agent}: {decision_type} "
                 f"{'🚨 BOB ALERT!' if is_bob else ''}"
             )
+            
+            # Check if this decision involved cross-agent learning
+            if payload and 'learning_interaction_id' in payload:
+                interaction_id = payload['learning_interaction_id']
+                logger.info(f"📏🔍 Real-time validation triggered for {interaction_id}")
+                
+                try:
+                    # OPUS 4.6 CHANGE: Single session context for query + validation + recording.
+                    # Previously: Handler opened a session to query, then record_validation
+                    # opened its OWN session internally. Nested sessions risk deadlock
+                    # on connection-pooled backends. Now everything runs in one session.
+                    async with self.db_integration.get_managed_session() as session:
+                        # Query the interaction
+                        from sqlalchemy import select
+                        from app.models.agent_memory_banks import AgentLearningInteractions
+                        
+                        query = select(AgentLearningInteractions).where(
+                            AgentLearningInteractions.interaction_id == interaction_id
+                        )
+                        result = await session.execute(query)
+                        interaction = result.scalar_one_or_none()
+                        
+                        if interaction and not interaction.validated_by_stick:
+                            # OPUS 4.6 CHANGE: Use self.learning instead of instantiating new
+                            audit_entry = await self.learning.validate_cross_agent_learning(
+                                interaction
+                            )
+                            # OPUS 4.6 CHANGE: Pass session to avoid nested session creation
+                            await self.db_integration.record_validation(
+                                interaction, audit_entry, session=session
+                            )
+                            await session.commit()
+                            
+                            logger.info(
+                                f"📏✅ Real-time validation complete: "
+                                f"{audit_entry.validation_result}"
+                            )
+                except Exception as e:
+                    logger.error(f"📏💥 Real-time validation failed: {e}")
             
             # Add to buffer
             from datetime import datetime
@@ -489,6 +576,131 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
                 logger.error(f"📏💥 Error in periodic flush: {e}", exc_info=True)
                 self._consume_paper_bag("periodic_flush_error")
     
+    async def _handle_chain_outcome(self, message: AgentMessage) -> None:
+        """
+        Section 4.3: Handle CHAIN_OUTCOME from VIC-20.
+
+        Records the full Hawk→VIC-20→Specialist chain result in the feedback engine
+        for later analysis. Triggers a paper bag if the chain failed.
+        """
+        try:
+            from .ML.feedback import ChainRecord
+
+            payload = message.payload
+            record = ChainRecord(
+                triage_alert_id=payload.get('triage_alert_id', 'unknown'),
+                resource_type=payload.get('resource_type', 'unknown'),
+                severity=payload.get('severity', 'unknown'),
+                specialist_name=payload.get('specialist_name', 'unknown'),
+                action_recommended=payload.get('action_recommended', 'unknown'),
+                action_taken=payload.get('action_taken', 'unknown'),
+                specialist_success=bool(payload.get('specialist_success', False)),
+                specialist_improvement=float(payload.get('specialist_improvement', 0.0)),
+                routing_was_correct=bool(payload.get('routing_was_correct', True)),
+                recommendation_was_followed=bool(payload.get('recommendation_was_followed', True)),
+                recommendation_was_effective=payload.get('recommendation_was_effective'),
+                hawk_severity=payload.get('hawk_severity', ''),
+                hawk_confidence=float(payload.get('hawk_confidence', 0.0)),
+            )
+
+            self.feedback_engine.record_chain(record)
+
+            if not record.specialist_success:
+                self._consume_paper_bag("chain_failure")
+                logger.warning(
+                    f"📏😰 Chain FAILED: {record.resource_type} → {record.specialist_name} "
+                    f"action={record.action_taken} *clutches paper bag*"
+                )
+            else:
+                logger.info(
+                    f"📏✅ Chain SUCCESS: {record.resource_type} → {record.specialist_name} "
+                    f"improvement={record.specialist_improvement:.1f}%"
+                )
+
+        except Exception as e:
+            logger.error(f"📏💥 Error handling chain outcome: {e}", exc_info=True)
+
+    async def _feedback_loop(self) -> None:
+        """
+        Section 4.4: Background task — runs every 5 minutes, generates feedback
+        from accumulated chain records and sends AGENT_FEEDBACK to Hawk and VIC-20.
+        """
+        import asyncio
+        FEEDBACK_INTERVAL_SECONDS = 300
+
+        while True:
+            try:
+                await asyncio.sleep(FEEDBACK_INTERVAL_SECONDS)
+
+                feedback_messages = self.feedback_engine.generate_feedback()
+                if not feedback_messages:
+                    logger.debug("📏🔄 Feedback loop: no feedback to send yet")
+                    continue
+
+                for fb in feedback_messages:
+                    await self.send_to_agent(
+                        to_agent=fb.target_agent,
+                        message_type=MessageType.AGENT_FEEDBACK,
+                        payload={
+                            'feedback_type': fb.feedback_type,
+                            'resource_type': fb.resource_type,
+                            'data': fb.data,
+                            'reasoning': fb.reasoning,
+                            'confidence': fb.confidence,
+                            'from_agent': 'the_stick',
+                        },
+                        priority=Priority.NORMAL,
+                    )
+                    logger.info(
+                        f"📏📤 Feedback sent to {fb.target_agent}: "
+                        f"type={fb.feedback_type}, resource={fb.resource_type}, "
+                        f"confidence={fb.confidence:.2f}"
+                    )
+
+                self.feedback_engine.clear_records()
+
+            except asyncio.CancelledError:
+                logger.info("📏🛑 Feedback loop cancelled")
+                break
+            except Exception as e:
+                logger.error(f"📏💥 Error in feedback loop: {e}", exc_info=True)
+                self._consume_paper_bag("feedback_loop_error")
+
+    async def _handle_pipeline_inconsistency(self, message: AgentMessage) -> None:
+        """
+        Section 4.6: Handle PIPELINE_INCONSISTENCY from specialists.
+
+        Logs the inconsistency, increases anxiety, and consumes a paper bag.
+        """
+        try:
+            payload = message.payload
+            from_agent = message.from_agent or payload.get('from_agent', 'unknown')
+            inconsistency_type = payload.get('inconsistency_type', 'unknown')
+            details = payload.get('details', {})
+
+            logger.warning(
+                f"📏⚠️ PIPELINE INCONSISTENCY from {from_agent}: "
+                f"type={inconsistency_type} *anxiety rising*"
+            )
+
+            self._consume_paper_bag("pipeline_inconsistency")
+            self.anxiety_spikes += 1
+
+            await self.broadcast_to_agents(
+                message_type=MessageType.DECISION_LOG,
+                payload={
+                    'decision_type': 'pipeline_inconsistency_logged',
+                    'from_agent': 'the_stick',
+                    'source_agent': from_agent,
+                    'inconsistency_type': inconsistency_type,
+                    'details': details,
+                },
+                priority=Priority.NORMAL,
+            )
+
+        except Exception as e:
+            logger.error(f"📏💥 Error handling pipeline inconsistency: {e}", exc_info=True)
+
     async def _handle_triage_decision(self, message: AgentMessage) -> None:
         """DEPRECATED: Handle triage decisions - now using DECISION_LOG instead."""
         try:
@@ -1050,10 +1262,74 @@ class TheStickDistributed(AgentDecisionEngine, TheStickBrainV3):
             "compliance_records": "comprehensive",
             "paper_bag_inventory": self.paper_bag_inventory,
             "paper_bags_consumed": self.paper_bags_consumed,
+            "anxiety_level": getattr(self, 'current_anxiety_percentage', 0.0),
+            "anxiety_state": (
+                'calm' if getattr(self, 'current_anxiety_percentage', 0) < 30
+                else 'nervous' if getattr(self, 'current_anxiety_percentage', 0) < 60
+                else 'hyperventilating' if getattr(self, 'current_anxiety_percentage', 0) < 80
+                else 'paper_bag_emergency'
+            ),
+            "paper_bag_economy": {
+                "bags_remaining": getattr(self.paper_bag_economy, 'bags_remaining', 0),
+                "bags_consumed_today": getattr(self.paper_bag_economy, 'bags_consumed_today', 0),
+                "bags_consumed_total": getattr(self.paper_bag_economy, 'bags_consumed_total', 0),
+            },
             "distributed": distributed_state
         }
         
         return status
+    
+    async def _validation_sweep_loop(self):
+        """
+        Background task: Periodically validate unvalidated learning interactions.
+        
+        Runs every 2 hours as fallback to catch anything missed by real-time validation.
+        """
+        import asyncio
+        await asyncio.sleep(60)  # Wait 1 minute after startup
+        
+        while True:
+            try:
+                logger.info("📏🔍 Starting scheduled validation sweep...")
+                
+                if self.db_integration and self.learning:
+                    # OPUS 4.6 CHANGE: Use self.learning instead of instantiating new.
+                    # Pass session through to avoid nested session creation.
+                    async with self.db_integration.get_managed_session() as session:
+                        stats = await self.learning.validate_unvalidated_interactions(
+                            session=session
+                        )
+                        
+                        # Now record all validations with the same session
+                        if 'interactions' in stats and 'audit_entries' in stats:
+                            for i, interaction in enumerate(stats['interactions']):
+                                if i < len(stats['audit_entries']):
+                                    audit_entry = stats['audit_entries'][i]
+                                    await self.db_integration.record_validation(
+                                        interaction, audit_entry, session=session
+                                    )
+                        
+                        # OPUS 4.6 CHANGE: Batch commit at the end
+                        await session.commit()
+                        
+                        logger.info(
+                            f"📏📊 Validation sweep complete: "
+                            f"{stats['validated']} validated, {stats['failed']} failed"
+                        )
+                        
+                        # Increase anxiety if many validations failed
+                        if stats['total_checked'] > 0:
+                            failure_rate = stats['failed'] / stats['total_checked']
+                            if failure_rate > 0.3:  # More than 30% failed
+                                self.paper_bag_economy.consume_bag(
+                                    reason="High validation failure rate detected!"
+                                )
+                
+            except Exception as e:
+                logger.error(f"📏💥 Validation sweep error: {e}")
+            
+            # Wait 2 hours before next sweep
+            await asyncio.sleep(7200)
     
     def __repr__(self):
         """Patient string representation"""

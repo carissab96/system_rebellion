@@ -177,15 +177,68 @@ class HamstersReasoning:
     def _identify_root_cause(self, context: HamstersPerceptionContext) -> str:
         """
         Identify root cause of storage issue.
+        
+        Possibilities:
+        - Disk space issues (critical, full, logs, temp files, cache)
+        - Disk performance issues (fragmentation, SSD, I/O)
+        - General maintenance
+        - Unknown/insufficient data
         """
-        if context.fragmentation_level > 0.7:
-            return "High fragmentation - disk needs defragmentation"
-        elif context.inode_usage_percent > 0.8:
-            return "Inode exhaustion - too many small files"
-        elif context.disk_usage_percent > 90:
-            return "Disk space critically low - cleanup required"
+        disk_usage = context.disk_usage_percent
+        fragmentation = context.fragmentation_level
+        inode_usage = context.inode_usage_percent
+        
+        # CRITICAL: Disk space critically low
+        if disk_usage > 95:
+            return "disk_critical"
+        
+        # DISK FULL: Disk space very high
+        elif disk_usage > 90:
+            return "disk_full"
+        
+        # LOG OVERFLOW: Check if logs are the problem
+        elif disk_usage > 85:
+            # TODO: Check if /var/log is the culprit
+            return "log_overflow"
+        
+        # TEMP FILES BLOAT: Check if temp files are the problem
+        elif disk_usage > 80:
+            # TODO: Check if /tmp is large
+            return "temp_files_bloat"
+        
+        # PACKAGE CACHE BLOAT: Check if package cache is large
+        elif disk_usage > 75:
+            # TODO: Check apt/yum cache size
+            return "package_cache_bloat"
+        
+        # HIGH FRAGMENTATION: Disk needs defragmentation
+        elif fragmentation > 0.7:
+            return "high_fragmentation"
+        
+        # SSD PERFORMANCE: SSD needs TRIM
+        elif fragmentation > 0.5:
+            # TODO: Detect if disk is SSD
+            return "ssd_performance"
+        
+        # SLOW DISK I/O: Performance degradation
+        elif fragmentation > 0.3:
+            return "slow_disk_io"
+        
+        # INODE EXHAUSTION: Too many small files
+        elif inode_usage > 0.8:
+            return "inode_exhaustion"
+        
+        # PREVENTIVE MAINTENANCE: Disk usage elevated but manageable
+        elif disk_usage > 70:
+            return "preventive_maintenance"
+        
+        # GENERAL STORAGE: Normal maintenance
+        elif disk_usage > 60:
+            return "general_storage"
+        
+        # INSUFFICIENT DATA: Not enough info to determine cause
         else:
-            return "Disk usage elevated - preventive maintenance needed"
+            return "insufficient_data"
     
     def _generate_fix_options(
         self,
