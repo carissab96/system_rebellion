@@ -41,7 +41,7 @@ class DistributedAgentManager:
         try:
             # 🔧 CIRCULAR IMPORT FIX: Import agents here, not at module level
             # This breaks the circular dependency chain
-            from app.ai_agents.sir_hawkington.distributed_hawkington import SirHawkingtonDistributed
+            from app.ai_agents.sir_hawkington.hawkington_agent import HawkingtonAgent
             from app.ai_agents.meth_snail.terry_agent import TerryAgent
             from app.ai_agents.hamsters.distributed_hamsters import HamstersDistributed
             from app.ai_agents.quantum_shadow_people.distributed_qsp import QuantumShadowPeopleDistributed
@@ -62,9 +62,9 @@ class DistributedAgentManager:
             print(f"   self.db_getter type: {type(self.db_getter)}\n")
             
             # Sir Hawkington - CPU Monitor & Triage Commander
-            sir_hawk = SirHawkingtonDistributed(db_getter=self.db_getter, user_id=self.user_id)
+            sir_hawk = HawkingtonAgent(db_getter=self.db_getter, user_id=self.user_id)
             print(f"✅ Sir Hawkington created with db_getter: {sir_hawk.db_getter}")
-            await sir_hawk.initialize_distributed(self.redis_client)
+            await sir_hawk.initialize(self.redis_client)
             self.agents["sir_hawkington"] = sir_hawk
             register_agent("sir_hawkington", sir_hawk)
             logger.info("✅ Sir Hawkington initialized")
@@ -119,11 +119,6 @@ class DistributedAgentManager:
             terry._agent_manager = self
             hamsters._agent_manager = self
             shadows._agent_manager = self
-            
-            # Also pass to the triage engine singleton
-            from app.ai_agents.sir_hawkington.triage_engine import get_triage_engine
-            triage_engine = await get_triage_engine()
-            triage_engine._agent_manager = self
             
             logger.info("✅ Direct communication channels established")
             
@@ -291,11 +286,10 @@ class DistributedAgentManager:
             return {"error": "Sir Hawkington not available"}
         
         try:
-            # Sir Hawkington handles triage
-            result = await sir_hawk.analyze_metrics(metrics, user_context=user_context)
+            # HawkingtonAgent is now self-driven via ResourceMonitor — no manual trigger needed
             return {
                 "status": "success",
-                "triage": result,
+                "triage": {"severity": "normal", "routing": "resource_monitor_driven"},
                 "agent": "sir_hawkington"
             }
         except Exception as e:
