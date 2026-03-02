@@ -486,7 +486,7 @@ def create_application() -> FastAPI:
     
     # Add Meth Snail API Router
     app.include_router(
-        meth_snail.router
+        meth_snail.router,
         prefix="/api/meth-snail",
         tags=["Meth Snail"]
     )
