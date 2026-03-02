@@ -217,19 +217,9 @@ class SimplifiedMetricsService:
             
             self.logger.info(f"🧐✅ Raw metrics collected successfully: CPU {raw_metrics['cpu_usage']}%, Memory {raw_metrics['memory_usage']}%")
             
-            # PHASE 3: ROUTE THROUGH SIR HAWKINGTON'S TRIAGE ENGINE
-            self.logger.info("🧐⚡ Routing metrics through Sir Hawkington's Triage Engine")
-            
-            from app.ai_agents.sir_hawkington.triage_engine import process_metrics_through_triage
-            
-            enhanced_metrics = await process_metrics_through_triage(
-                raw_metrics,
-                user_id=None,  # TODO: Get from context if available
-                user_context=None
-            )
-            
-            self.logger.info("🧐✨ Triage processing complete - enhanced metrics ready")
-            return enhanced_metrics
+            # HawkingtonAgent is now self-driven via ResourceMonitor — no manual triage push needed
+            self.logger.info("🧐✅ Metrics collected — HawkingtonAgent self-triggers via ResourceMonitor")
+            return raw_metrics
                 
         except Exception as e:
             self.logger.error(f"🧐💥 SYSTEM METRICS COLLECTION FAILURE: {str(e)}")
