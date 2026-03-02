@@ -530,7 +530,7 @@ def create_application() -> FastAPI:
     app.include_router(
         reports.router,
         prefix="/api",
-        tags=["Reports"]/
+        tags=["Reports"]
     )
     
     # Note: agent_insights and agent_events routers already registered above (lines 362-383)
