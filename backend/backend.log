@@ -6262,3 +6262,286 @@ Traceback (most recent call last):
 ImportError: cannot import name 'ActionEffectivenessModel' from 'app.models.learned_thresholds' (/home/carissa/system_rebellion/backend/app/models/learned_thresholds.py)
 ERROR:SirHawkington.Communication:🧐💥 Pipeline returned no result for memory
 INFO:SimplifiedMetricsService:🧐📊 Collecting real system metrics from all services
+INFO:SimplifiedMemoryService:🧐✅ Memory metrics collected successfully: 93.2% usage, 10 processes analyzed, swap: 51.2%
+INFO:SimplifiedDiskService:🧐✅ Disk metrics collected successfully: 17.5% usage, 4 partitions, 10 I/O devices
+INFO:SimplifiedNetworkService:🧐✅ Network metrics collected successfully: 2 interfaces, 111 connections, rates: 27816/26419 bytes/s
+INFO:SimplifiedCPUService:🧐✅ CPU metrics collected successfully: 35.9% usage, 10 processes
+INFO:SimplifiedMetricsService:🧐✅ Raw metrics collected successfully: CPU 35.9%, Memory 93.2%
+INFO:SimplifiedMetricsService:🧐✅ Metrics collected — HawkingtonAgent self-triggers via ResourceMonitor
+INFO:app.api.simplified_websocket_routes:🐌 TERRY PAYLOAD FIELDS: ['status', 'distributed', 'agent_name', 'agent_type', 'is_active', 'total_analyses', 'successful_analyses', 'shell_spin_count', 'energy_drinks_consumed', 'current_jitter_level', 'optimization_stats', 'personality_traits', 'override_stats']
+INFO:app.api.simplified_websocket_routes:🐌 shell_spin_count: 0
+INFO:app.api.simplified_websocket_routes:🐌 energy_drinks_consumed: 0
+INFO:app.api.simplified_websocket_routes:🎯 TRIAGE RESULT KEYS: ['status', 'triage', 'agent']
+INFO:app.api.simplified_websocket_routes:🎯 DISPOSITION: None
+INFO:app.api.simplified_websocket_routes:🎯 AGENT_DISPATCH: []
+INFO:app.api.simplified_websocket_routes:✅ Extracted 6 agent insights (cached for reuse)
+INFO:app.api.simplified_websocket_routes:🔍 Agent insights keys: ['the_stick', 'sir_hawkington', 'meth_snail', 'hamsters', 'quantum_shadow_people', 'vic_20_sage']
+INFO:app.api.simplified_websocket_routes:🔍 the_stick data: {'status': 'active', 'memory_id': '4ce2f9df-7da1-4f3a-b10c-d1db6b2b8783', 'timestamp': '2026-03-05T12:28:43.273602+00:00', 'user_id': '76c420df-efb7-4ca8-845e-d6dc3c6bfd08', 'agent_name': 'the_stick',
+INFO:app.api.simplified_websocket_routes:🔍 sir_hawkington data: {'status': 'active', 'distributed': {'distributed_enabled': True, 'agent_name': 'sir_hawkington', 'health': 'healthy', 'total_decisions': 0, 'total_messages_sent': 0, 'total_messages_received': 0, 'up
+INFO:app.api.simplified_websocket_routes:🔍 meth_snail data: {'status': 'active', 'distributed': {'distributed_enabled': True, 'agent_name': 'meth_snail', 'health': 'healthy', 'total_decisions': 0, 'total_messages_sent': 0, 'total_messages_received': 0, 'uptime
+INFO:app.api.simplified_websocket_routes:🔍 hamsters data: {'status': 'active', 'distributed': {'distributed_enabled': True, 'agent_name': 'hamsters', 'health': 'healthy', 'total_decisions': 0, 'total_messages_sent': 0, 'total_messages_received': 0, 'uptime_s
+INFO:app.api.simplified_websocket_routes:🔍 quantum_shadow_people data: {'status': 'active', 'distributed': {'distributed_enabled': True, 'agent_name': 'quantum_shadow_people', 'health': 'healthy', 'total_decisions': 0, 'total_messages_sent': 0, 'total_messages_received':
+INFO:app.api.simplified_websocket_routes:🔍 vic_20_sage data: {'status': 'active', 'distributed': AgentState(agent_name='vic_20_sage', agent_role='AI Agent', personality_traits={'coordinator': True, 'pattern_matcher': True, 'orchestrator': True, 'wise': True, 'p
+INFO:MetricsRepository:💾 SystemMetrics persisted id=1088 user=76c420df-efb7-4ca8-845e-d6dc3c6bfd08
+INFO:app.api.simplified_websocket_routes:📊 Metrics structure: ['timestamp', 'cpu_usage', 'memory_usage', 'disk_usage', 'network_sent_rate', 'network_recv_rate', 'failed_auth_attempts', 'cpu', 'memory', 'disk', 'network', 'process_count', 'system_info']
+INFO:app.api.simplified_websocket_routes:📊 Metrics size: 23457 chars
+INFO:app.api.simplified_websocket_routes:🤖 Agent insights: ['the_stick', 'sir_hawkington', 'meth_snail', 'hamsters', 'quantum_shadow_people', 'vic_20_sage']
+INFO:app.api.simplified_websocket_routes:💡 Insights: 1, Events: 0
+ERROR:app.api.simplified_websocket_routes:JSON serialization error: Object of type AgentState is not JSON serializable. Data keys: ['type', 'timestamp', 'metrics', 'agents', 'recent_insights', 'recent_events']
+ERROR:app.api.simplified_websocket_routes:Field 'agents' contains non-serializable data
+WARNING:app.api.simplified_websocket_routes:❌ Failed to send system_update - connection likely closed
+INFO:HawkPerception:🧐👁️ Perceiving memory alert: 91.7% (threshold: 80.0%)
+INFO:HawkPerception:🧐✅ Perception complete: data_quality=1.00, monocle_yeets=0, historical_confidence=0.70
+INFO:HawkReasoning:🧐🧠 Reasoning about memory alert...
+INFO:HawkReasoning:🧐✅ Reasoning complete: escalate=False, confidence=0.65, risk=medium
+ERROR:SirHawkington.Orchestrator:🧐💥 ARISTOCRATIC HORROR — Pipeline failed for memory: cannot import name 'ActionEffectivenessModel' from 'app.models.learned_thresholds' (/home/carissa/system_rebellion/backend/app/models/learned_thresholds.py)
+Traceback (most recent call last):
+  File "/home/carissa/system_rebellion/backend/app/ai_agents/sir_hawkington/hawk_orchestrator.py", line 112, in run_pipeline
+    from app.ai_agents.sir_hawkington.ML.action_selection import HawkActionSelection
+  File "/home/carissa/system_rebellion/backend/app/ai_agents/sir_hawkington/ML/action_selection.py", line 22, in <module>
+    from app.models.learned_thresholds import ActionEffectivenessModel
+ImportError: cannot import name 'ActionEffectivenessModel' from 'app.models.learned_thresholds' (/home/carissa/system_rebellion/backend/app/models/learned_thresholds.py)
+ERROR:SirHawkington.Communication:🧐💥 Pipeline returned no result for memory
+INFO:SimplifiedMetricsService:🧐📊 Collecting real system metrics from all services
+INFO:SimplifiedMemoryService:🧐✅ Memory metrics collected successfully: 91.7% usage, 10 processes analyzed, swap: 50.5%
+INFO:SimplifiedDiskService:🧐✅ Disk metrics collected successfully: 17.5% usage, 4 partitions, 10 I/O devices
+INFO:SimplifiedNetworkService:🧐✅ Network metrics collected successfully: 2 interfaces, 115 connections, rates: 2776540/2767438 bytes/s
+INFO:SimplifiedCPUService:🧐✅ CPU metrics collected successfully: 5.1% usage, 6 processes
+INFO:SimplifiedMetricsService:🧐✅ Raw metrics collected successfully: CPU 5.1%, Memory 91.7%
+INFO:SimplifiedMetricsService:🧐✅ Metrics collected — HawkingtonAgent self-triggers via ResourceMonitor
+INFO:app.api.simplified_websocket_routes:🐌 TERRY PAYLOAD FIELDS: ['status', 'distributed', 'agent_name', 'agent_type', 'is_active', 'total_analyses', 'successful_analyses', 'shell_spin_count', 'energy_drinks_consumed', 'current_jitter_level', 'optimization_stats', 'personality_traits', 'override_stats']
+INFO:app.api.simplified_websocket_routes:🐌 shell_spin_count: 0
+INFO:app.api.simplified_websocket_routes:🐌 energy_drinks_consumed: 0
+INFO:MetricsRepository:💾 SystemMetrics persisted id=1089 user=76c420df-efb7-4ca8-845e-d6dc3c6bfd08
+INFO:app.api.simplified_websocket_routes:📊 Metrics structure: ['timestamp', 'cpu_usage', 'memory_usage', 'disk_usage', 'network_sent_rate', 'network_recv_rate', 'failed_auth_attempts', 'cpu', 'memory', 'disk', 'network', 'process_count', 'system_info']
+INFO:app.api.simplified_websocket_routes:📊 Metrics size: 23527 chars
+INFO:app.api.simplified_websocket_routes:🤖 Agent insights: ['the_stick', 'sir_hawkington', 'meth_snail', 'hamsters', 'quantum_shadow_people', 'vic_20_sage']
+INFO:app.api.simplified_websocket_routes:💡 Insights: 1, Events: 0
+ERROR:app.api.simplified_websocket_routes:JSON serialization error: Object of type AgentState is not JSON serializable. Data keys: ['type', 'timestamp', 'metrics', 'agents', 'recent_insights', 'recent_events']
+ERROR:app.api.simplified_websocket_routes:Field 'agents' contains non-serializable data
+WARNING:app.api.simplified_websocket_routes:❌ Failed to send system_update - connection likely closed
+INFO:HawkPerception:🧐👁️ Perceiving memory alert: 91.9% (threshold: 80.0%)
+INFO:HawkPerception:🧐✅ Perception complete: data_quality=1.00, monocle_yeets=0, historical_confidence=0.70
+INFO:HawkReasoning:🧐🧠 Reasoning about memory alert...
+INFO:HawkReasoning:🧐✅ Reasoning complete: escalate=False, confidence=0.65, risk=medium
+ERROR:SirHawkington.Orchestrator:🧐💥 ARISTOCRATIC HORROR — Pipeline failed for memory: cannot import name 'ActionEffectivenessModel' from 'app.models.learned_thresholds' (/home/carissa/system_rebellion/backend/app/models/learned_thresholds.py)
+Traceback (most recent call last):
+  File "/home/carissa/system_rebellion/backend/app/ai_agents/sir_hawkington/hawk_orchestrator.py", line 112, in run_pipeline
+    from app.ai_agents.sir_hawkington.ML.action_selection import HawkActionSelection
+  File "/home/carissa/system_rebellion/backend/app/ai_agents/sir_hawkington/ML/action_selection.py", line 22, in <module>
+    from app.models.learned_thresholds import ActionEffectivenessModel
+ImportError: cannot import name 'ActionEffectivenessModel' from 'app.models.learned_thresholds' (/home/carissa/system_rebellion/backend/app/models/learned_thresholds.py)
+ERROR:SirHawkington.Communication:🧐💥 Pipeline returned no result for memory
+INFO:SimplifiedMetricsService:🧐📊 Collecting real system metrics from all services
+INFO:SimplifiedMemoryService:🧐✅ Memory metrics collected successfully: 92.0% usage, 10 processes analyzed, swap: 50.5%
+INFO:SimplifiedDiskService:🧐✅ Disk metrics collected successfully: 17.5% usage, 4 partitions, 10 I/O devices
+INFO:SimplifiedNetworkService:🧐✅ Network metrics collected successfully: 2 interfaces, 116 connections, rates: 101419/103902 bytes/s
+INFO:SimplifiedCPUService:🧐✅ CPU metrics collected successfully: 7.4% usage, 4 processes
+INFO:SimplifiedMetricsService:🧐✅ Raw metrics collected successfully: CPU 7.4%, Memory 92.0%
+INFO:SimplifiedMetricsService:🧐✅ Metrics collected — HawkingtonAgent self-triggers via ResourceMonitor
+INFO:app.api.simplified_websocket_routes:🐌 TERRY PAYLOAD FIELDS: ['status', 'distributed', 'agent_name', 'agent_type', 'is_active', 'total_analyses', 'successful_analyses', 'shell_spin_count', 'energy_drinks_consumed', 'current_jitter_level', 'optimization_stats', 'personality_traits', 'override_stats']
+INFO:app.api.simplified_websocket_routes:🐌 shell_spin_count: 0
+INFO:app.api.simplified_websocket_routes:🐌 energy_drinks_consumed: 0
+INFO:app.api.simplified_websocket_routes:🎯 TRIAGE RESULT KEYS: ['status', 'triage', 'agent']
+INFO:app.api.simplified_websocket_routes:🎯 DISPOSITION: None
+INFO:app.api.simplified_websocket_routes:🎯 AGENT_DISPATCH: []
+INFO:app.api.simplified_websocket_routes:✅ Extracted 6 agent insights (cached for reuse)
+INFO:app.api.simplified_websocket_routes:🔍 Agent insights keys: ['the_stick', 'sir_hawkington', 'meth_snail', 'hamsters', 'quantum_shadow_people', 'vic_20_sage']
+INFO:app.api.simplified_websocket_routes:🔍 the_stick data: {'status': 'active', 'memory_id': '4ce2f9df-7da1-4f3a-b10c-d1db6b2b8783', 'timestamp': '2026-03-05T12:28:43.273602+00:00', 'user_id': '76c420df-efb7-4ca8-845e-d6dc3c6bfd08', 'agent_name': 'the_stick',
+INFO:app.api.simplified_websocket_routes:🔍 sir_hawkington data: {'status': 'active', 'distributed': {'distributed_enabled': True, 'agent_name': 'sir_hawkington', 'health': 'healthy', 'total_decisions': 0, 'total_messages_sent': 0, 'total_messages_received': 0, 'up
+INFO:app.api.simplified_websocket_routes:🔍 meth_snail data: {'status': 'active', 'distributed': {'distributed_enabled': True, 'agent_name': 'meth_snail', 'health': 'healthy', 'total_decisions': 0, 'total_messages_sent': 0, 'total_messages_received': 0, 'uptime
+INFO:app.api.simplified_websocket_routes:🔍 hamsters data: {'status': 'active', 'distributed': {'distributed_enabled': True, 'agent_name': 'hamsters', 'health': 'healthy', 'total_decisions': 0, 'total_messages_sent': 0, 'total_messages_received': 0, 'uptime_s
+INFO:app.api.simplified_websocket_routes:🔍 quantum_shadow_people data: {'status': 'active', 'distributed': {'distributed_enabled': True, 'agent_name': 'quantum_shadow_people', 'health': 'healthy', 'total_decisions': 0, 'total_messages_sent': 0, 'total_messages_received':
+INFO:app.api.simplified_websocket_routes:🔍 vic_20_sage data: {'status': 'active', 'distributed': AgentState(agent_name='vic_20_sage', agent_role='AI Agent', personality_traits={'coordinator': True, 'pattern_matcher': True, 'orchestrator': True, 'wise': True, 'p
+INFO:MetricsRepository:💾 SystemMetrics persisted id=1090 user=76c420df-efb7-4ca8-845e-d6dc3c6bfd08
+INFO:app.api.simplified_websocket_routes:📊 Metrics structure: ['timestamp', 'cpu_usage', 'memory_usage', 'disk_usage', 'network_sent_rate', 'network_recv_rate', 'failed_auth_attempts', 'cpu', 'memory', 'disk', 'network', 'process_count', 'system_info']
+INFO:app.api.simplified_websocket_routes:📊 Metrics size: 23412 chars
+INFO:app.api.simplified_websocket_routes:🤖 Agent insights: ['the_stick', 'sir_hawkington', 'meth_snail', 'hamsters', 'quantum_shadow_people', 'vic_20_sage']
+INFO:app.api.simplified_websocket_routes:💡 Insights: 1, Events: 0
+ERROR:app.api.simplified_websocket_routes:JSON serialization error: Object of type AgentState is not JSON serializable. Data keys: ['type', 'timestamp', 'metrics', 'agents', 'recent_insights', 'recent_events']
+ERROR:app.api.simplified_websocket_routes:Field 'agents' contains non-serializable data
+WARNING:app.api.simplified_websocket_routes:❌ Failed to send system_update - connection likely closed
+INFO:HawkPerception:🧐👁️ Perceiving memory alert: 92.1% (threshold: 80.0%)
+INFO:HawkPerception:🧐✅ Perception complete: data_quality=1.00, monocle_yeets=0, historical_confidence=0.70
+INFO:HawkReasoning:🧐🧠 Reasoning about memory alert...
+INFO:HawkReasoning:🧐✅ Reasoning complete: escalate=False, confidence=0.65, risk=medium
+ERROR:SirHawkington.Orchestrator:🧐💥 ARISTOCRATIC HORROR — Pipeline failed for memory: cannot import name 'ActionEffectivenessModel' from 'app.models.learned_thresholds' (/home/carissa/system_rebellion/backend/app/models/learned_thresholds.py)
+Traceback (most recent call last):
+  File "/home/carissa/system_rebellion/backend/app/ai_agents/sir_hawkington/hawk_orchestrator.py", line 112, in run_pipeline
+    from app.ai_agents.sir_hawkington.ML.action_selection import HawkActionSelection
+  File "/home/carissa/system_rebellion/backend/app/ai_agents/sir_hawkington/ML/action_selection.py", line 22, in <module>
+    from app.models.learned_thresholds import ActionEffectivenessModel
+ImportError: cannot import name 'ActionEffectivenessModel' from 'app.models.learned_thresholds' (/home/carissa/system_rebellion/backend/app/models/learned_thresholds.py)
+ERROR:SirHawkington.Communication:🧐💥 Pipeline returned no result for memory
+INFO:SimplifiedMetricsService:🧐📊 Collecting real system metrics from all services
+INFO:SimplifiedMemoryService:🧐✅ Memory metrics collected successfully: 92.1% usage, 10 processes analyzed, swap: 50.5%
+INFO:SimplifiedDiskService:🧐✅ Disk metrics collected successfully: 17.5% usage, 4 partitions, 10 I/O devices
+INFO:SimplifiedNetworkService:🧐✅ Network metrics collected successfully: 2 interfaces, 115 connections, rates: 28925/28388 bytes/s
+INFO:SimplifiedCPUService:🧐✅ CPU metrics collected successfully: 18.5% usage, 3 processes
+INFO:SimplifiedMetricsService:🧐✅ Raw metrics collected successfully: CPU 18.5%, Memory 92.1%
+INFO:SimplifiedMetricsService:🧐✅ Metrics collected — HawkingtonAgent self-triggers via ResourceMonitor
+INFO:app.api.simplified_websocket_routes:🐌 TERRY PAYLOAD FIELDS: ['status', 'distributed', 'agent_name', 'agent_type', 'is_active', 'total_analyses', 'successful_analyses', 'shell_spin_count', 'energy_drinks_consumed', 'current_jitter_level', 'optimization_stats', 'personality_traits', 'override_stats']
+INFO:app.api.simplified_websocket_routes:🐌 shell_spin_count: 0
+INFO:app.api.simplified_websocket_routes:🐌 energy_drinks_consumed: 0
+INFO:MetricsRepository:💾 SystemMetrics persisted id=1091 user=76c420df-efb7-4ca8-845e-d6dc3c6bfd08
+INFO:app.api.simplified_websocket_routes:📊 Metrics structure: ['timestamp', 'cpu_usage', 'memory_usage', 'disk_usage', 'network_sent_rate', 'network_recv_rate', 'failed_auth_attempts', 'cpu', 'memory', 'disk', 'network', 'process_count', 'system_info']
+INFO:app.api.simplified_websocket_routes:📊 Metrics size: 23152 chars
+INFO:app.api.simplified_websocket_routes:🤖 Agent insights: ['the_stick', 'sir_hawkington', 'meth_snail', 'hamsters', 'quantum_shadow_people', 'vic_20_sage']
+INFO:app.api.simplified_websocket_routes:💡 Insights: 1, Events: 0
+ERROR:app.api.simplified_websocket_routes:JSON serialization error: Object of type AgentState is not JSON serializable. Data keys: ['type', 'timestamp', 'metrics', 'agents', 'recent_insights', 'recent_events']
+ERROR:app.api.simplified_websocket_routes:Field 'agents' contains non-serializable data
+WARNING:app.api.simplified_websocket_routes:❌ Failed to send system_update - connection likely closed
+INFO:HawkPerception:🧐👁️ Perceiving memory alert: 92.1% (threshold: 80.0%)
+INFO:HawkPerception:🧐✅ Perception complete: data_quality=1.00, monocle_yeets=0, historical_confidence=0.70
+INFO:HawkReasoning:🧐🧠 Reasoning about memory alert...
+INFO:HawkReasoning:🧐✅ Reasoning complete: escalate=False, confidence=0.65, risk=medium
+ERROR:SirHawkington.Orchestrator:🧐💥 ARISTOCRATIC HORROR — Pipeline failed for memory: cannot import name 'ActionEffectivenessModel' from 'app.models.learned_thresholds' (/home/carissa/system_rebellion/backend/app/models/learned_thresholds.py)
+Traceback (most recent call last):
+  File "/home/carissa/system_rebellion/backend/app/ai_agents/sir_hawkington/hawk_orchestrator.py", line 112, in run_pipeline
+    from app.ai_agents.sir_hawkington.ML.action_selection import HawkActionSelection
+  File "/home/carissa/system_rebellion/backend/app/ai_agents/sir_hawkington/ML/action_selection.py", line 22, in <module>
+    from app.models.learned_thresholds import ActionEffectivenessModel
+ImportError: cannot import name 'ActionEffectivenessModel' from 'app.models.learned_thresholds' (/home/carissa/system_rebellion/backend/app/models/learned_thresholds.py)
+ERROR:SirHawkington.Communication:🧐💥 Pipeline returned no result for memory
+INFO:SimplifiedMetricsService:🧐📊 Collecting real system metrics from all services
+INFO:SimplifiedMemoryService:🧐✅ Memory metrics collected successfully: 90.7% usage, 10 processes analyzed, swap: 49.9%
+INFO:SimplifiedDiskService:🧐✅ Disk metrics collected successfully: 17.5% usage, 4 partitions, 10 I/O devices
+INFO:SimplifiedNetworkService:🧐✅ Network metrics collected successfully: 2 interfaces, 113 connections, rates: 28333/26756 bytes/s
+INFO:MessageBus.sir_hawkington:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=sir_hawkington | priority=10 | id=8b2fd861
+INFO:StateManager.sir_hawkington:💾 REDIS SAVE: sir_hawkington state | decisions=0 | msgs_sent=0 | health=healthy | uptime=240s
+INFO:SimplifiedCPUService:🧐✅ CPU metrics collected successfully: 18.7% usage, 5 processes
+INFO:SimplifiedMetricsService:🧐✅ Raw metrics collected successfully: CPU 18.7%, Memory 90.7%
+INFO:SimplifiedMetricsService:🧐✅ Metrics collected — HawkingtonAgent self-triggers via ResourceMonitor
+INFO:app.api.simplified_websocket_routes:🐌 TERRY PAYLOAD FIELDS: ['status', 'distributed', 'agent_name', 'agent_type', 'is_active', 'total_analyses', 'successful_analyses', 'shell_spin_count', 'energy_drinks_consumed', 'current_jitter_level', 'optimization_stats', 'personality_traits', 'override_stats']
+INFO:app.api.simplified_websocket_routes:🐌 shell_spin_count: 0
+INFO:app.api.simplified_websocket_routes:🐌 energy_drinks_consumed: 0
+INFO:app.api.simplified_websocket_routes:🎯 TRIAGE RESULT KEYS: ['status', 'triage', 'agent']
+INFO:app.api.simplified_websocket_routes:🎯 DISPOSITION: None
+INFO:app.api.simplified_websocket_routes:🎯 AGENT_DISPATCH: []
+INFO:app.api.simplified_websocket_routes:✅ Extracted 6 agent insights (cached for reuse)
+INFO:app.api.simplified_websocket_routes:🔍 Agent insights keys: ['the_stick', 'sir_hawkington', 'meth_snail', 'hamsters', 'quantum_shadow_people', 'vic_20_sage']
+INFO:app.api.simplified_websocket_routes:🔍 the_stick data: {'status': 'active', 'memory_id': '4ce2f9df-7da1-4f3a-b10c-d1db6b2b8783', 'timestamp': '2026-03-05T12:28:43.273602+00:00', 'user_id': '76c420df-efb7-4ca8-845e-d6dc3c6bfd08', 'agent_name': 'the_stick',
+INFO:app.api.simplified_websocket_routes:🔍 sir_hawkington data: {'status': 'active', 'distributed': {'distributed_enabled': True, 'agent_name': 'sir_hawkington', 'health': 'healthy', 'total_decisions': 0, 'total_messages_sent': 0, 'total_messages_received': 0, 'up
+INFO:app.api.simplified_websocket_routes:🔍 meth_snail data: {'status': 'active', 'distributed': {'distributed_enabled': True, 'agent_name': 'meth_snail', 'health': 'healthy', 'total_decisions': 0, 'total_messages_sent': 0, 'total_messages_received': 0, 'uptime
+INFO:app.api.simplified_websocket_routes:🔍 hamsters data: {'status': 'active', 'distributed': {'distributed_enabled': True, 'agent_name': 'hamsters', 'health': 'healthy', 'total_decisions': 0, 'total_messages_sent': 0, 'total_messages_received': 0, 'uptime_s
+INFO:app.api.simplified_websocket_routes:🔍 quantum_shadow_people data: {'status': 'active', 'distributed': {'distributed_enabled': True, 'agent_name': 'quantum_shadow_people', 'health': 'healthy', 'total_decisions': 0, 'total_messages_sent': 0, 'total_messages_received':
+INFO:app.api.simplified_websocket_routes:🔍 vic_20_sage data: {'status': 'active', 'distributed': AgentState(agent_name='vic_20_sage', agent_role='AI Agent', personality_traits={'coordinator': True, 'pattern_matcher': True, 'orchestrator': True, 'wise': True, 'p
+INFO:MetricsRepository:💾 SystemMetrics persisted id=1092 user=76c420df-efb7-4ca8-845e-d6dc3c6bfd08
+INFO:app.api.simplified_websocket_routes:📊 Metrics structure: ['timestamp', 'cpu_usage', 'memory_usage', 'disk_usage', 'network_sent_rate', 'network_recv_rate', 'failed_auth_attempts', 'cpu', 'memory', 'disk', 'network', 'process_count', 'system_info']
+INFO:app.api.simplified_websocket_routes:📊 Metrics size: 23142 chars
+INFO:app.api.simplified_websocket_routes:🤖 Agent insights: ['the_stick', 'sir_hawkington', 'meth_snail', 'hamsters', 'quantum_shadow_people', 'vic_20_sage']
+INFO:app.api.simplified_websocket_routes:💡 Insights: 1, Events: 0
+ERROR:app.api.simplified_websocket_routes:JSON serialization error: Object of type AgentState is not JSON serializable. Data keys: ['type', 'timestamp', 'metrics', 'agents', 'recent_insights', 'recent_events']
+ERROR:app.api.simplified_websocket_routes:Field 'agents' contains non-serializable data
+WARNING:app.api.simplified_websocket_routes:❌ Failed to send system_update - connection likely closed
+INFO:MessageBus.meth_snail:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=meth_snail | priority=10 | id=e2b48457
+INFO:StateManager.meth_snail:💾 REDIS SAVE: meth_snail state | decisions=0 | msgs_sent=0 | health=healthy | uptime=240s
+INFO:MessageBus.hamsters:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=hamsters | priority=10 | id=6385ab5c
+INFO:StateManager.hamsters:💾 REDIS SAVE: hamsters state | decisions=0 | msgs_sent=0 | health=healthy | uptime=240s
+INFO:MessageBus.quantum_shadow_people:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=quantum_shadow_people | priority=10 | id=81e35b7a
+INFO:StateManager.quantum_shadow_people:💾 REDIS SAVE: quantum_shadow_people state | decisions=0 | msgs_sent=0 | health=healthy | uptime=240s
+INFO:MessageBus.the_stick:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=the_stick | priority=10 | id=8f2a05a3
+INFO:StateManager.the_stick:💾 REDIS SAVE: the_stick state | decisions=0 | msgs_sent=0 | health=healthy | uptime=240s
+INFO:MessageBus.vic_20_sage:📡 REDIS PUB: agent_heartbeat → agents:heartbeats | from=vic_20_sage | priority=10 | id=5ff60267
+INFO:StateManager.vic_20_sage:💾 REDIS SAVE: vic_20_sage state | decisions=0 | msgs_sent=0 | health=healthy | uptime=240s
+INFO:HawkPerception:🧐👁️ Perceiving memory alert: 90.6% (threshold: 80.0%)
+INFO:HawkPerception:🧐✅ Perception complete: data_quality=1.00, monocle_yeets=0, historical_confidence=0.70
+INFO:HawkReasoning:🧐🧠 Reasoning about memory alert...
+INFO:HawkReasoning:🧐✅ Reasoning complete: escalate=False, confidence=0.65, risk=medium
+ERROR:SirHawkington.Orchestrator:🧐💥 ARISTOCRATIC HORROR — Pipeline failed for memory: cannot import name 'ActionEffectivenessModel' from 'app.models.learned_thresholds' (/home/carissa/system_rebellion/backend/app/models/learned_thresholds.py)
+Traceback (most recent call last):
+  File "/home/carissa/system_rebellion/backend/app/ai_agents/sir_hawkington/hawk_orchestrator.py", line 112, in run_pipeline
+    from app.ai_agents.sir_hawkington.ML.action_selection import HawkActionSelection
+  File "/home/carissa/system_rebellion/backend/app/ai_agents/sir_hawkington/ML/action_selection.py", line 22, in <module>
+    from app.models.learned_thresholds import ActionEffectivenessModel
+ImportError: cannot import name 'ActionEffectivenessModel' from 'app.models.learned_thresholds' (/home/carissa/system_rebellion/backend/app/models/learned_thresholds.py)
+ERROR:SirHawkington.Communication:🧐💥 Pipeline returned no result for memory
+INFO:SimplifiedMetricsService:🧐📊 Collecting real system metrics from all services
+INFO:SimplifiedMemoryService:🧐✅ Memory metrics collected successfully: 90.6% usage, 10 processes analyzed, swap: 49.9%
+INFO:SimplifiedDiskService:🧐✅ Disk metrics collected successfully: 17.5% usage, 4 partitions, 10 I/O devices
+INFO:SimplifiedNetworkService:🧐✅ Network metrics collected successfully: 2 interfaces, 113 connections, rates: 530938/525328 bytes/s
+INFO:SimplifiedCPUService:🧐✅ CPU metrics collected successfully: 6.3% usage, 6 processes
+INFO:SimplifiedMetricsService:🧐✅ Raw metrics collected successfully: CPU 6.3%, Memory 90.6%
+INFO:SimplifiedMetricsService:🧐✅ Metrics collected — HawkingtonAgent self-triggers via ResourceMonitor
+INFO:app.api.simplified_websocket_routes:🐌 TERRY PAYLOAD FIELDS: ['status', 'distributed', 'agent_name', 'agent_type', 'is_active', 'total_analyses', 'successful_analyses', 'shell_spin_count', 'energy_drinks_consumed', 'current_jitter_level', 'optimization_stats', 'personality_traits', 'override_stats']
+INFO:app.api.simplified_websocket_routes:🐌 shell_spin_count: 0
+INFO:app.api.simplified_websocket_routes:🐌 energy_drinks_consumed: 0
+INFO:MetricsRepository:💾 SystemMetrics persisted id=1093 user=76c420df-efb7-4ca8-845e-d6dc3c6bfd08
+INFO:app.api.simplified_websocket_routes:📊 Metrics structure: ['timestamp', 'cpu_usage', 'memory_usage', 'disk_usage', 'network_sent_rate', 'network_recv_rate', 'failed_auth_attempts', 'cpu', 'memory', 'disk', 'network', 'process_count', 'system_info']
+INFO:app.api.simplified_websocket_routes:📊 Metrics size: 23259 chars
+INFO:app.api.simplified_websocket_routes:🤖 Agent insights: ['the_stick', 'sir_hawkington', 'meth_snail', 'hamsters', 'quantum_shadow_people', 'vic_20_sage']
+INFO:app.api.simplified_websocket_routes:💡 Insights: 1, Events: 0
+ERROR:app.api.simplified_websocket_routes:JSON serialization error: Object of type AgentState is not JSON serializable. Data keys: ['type', 'timestamp', 'metrics', 'agents', 'recent_insights', 'recent_events']
+ERROR:app.api.simplified_websocket_routes:Field 'agents' contains non-serializable data
+WARNING:app.api.simplified_websocket_routes:❌ Failed to send system_update - connection likely closed
+INFO:HawkPerception:🧐👁️ Perceiving memory alert: 90.6% (threshold: 80.0%)
+INFO:HawkPerception:🧐✅ Perception complete: data_quality=1.00, monocle_yeets=0, historical_confidence=0.70
+INFO:HawkReasoning:🧐🧠 Reasoning about memory alert...
+INFO:HawkReasoning:🧐✅ Reasoning complete: escalate=False, confidence=0.65, risk=medium
+ERROR:SirHawkington.Orchestrator:🧐💥 ARISTOCRATIC HORROR — Pipeline failed for memory: cannot import name 'ActionEffectivenessModel' from 'app.models.learned_thresholds' (/home/carissa/system_rebellion/backend/app/models/learned_thresholds.py)
+Traceback (most recent call last):
+  File "/home/carissa/system_rebellion/backend/app/ai_agents/sir_hawkington/hawk_orchestrator.py", line 112, in run_pipeline
+    from app.ai_agents.sir_hawkington.ML.action_selection import HawkActionSelection
+  File "/home/carissa/system_rebellion/backend/app/ai_agents/sir_hawkington/ML/action_selection.py", line 22, in <module>
+    from app.models.learned_thresholds import ActionEffectivenessModel
+ImportError: cannot import name 'ActionEffectivenessModel' from 'app.models.learned_thresholds' (/home/carissa/system_rebellion/backend/app/models/learned_thresholds.py)
+ERROR:SirHawkington.Communication:🧐💥 Pipeline returned no result for memory
+INFO:SimplifiedMetricsService:🧐📊 Collecting real system metrics from all services
+INFO:SimplifiedMemoryService:🧐✅ Memory metrics collected successfully: 90.3% usage, 10 processes analyzed, swap: 49.9%
+INFO:SimplifiedDiskService:🧐✅ Disk metrics collected successfully: 17.5% usage, 4 partitions, 10 I/O devices
+INFO:SimplifiedNetworkService:🧐✅ Network metrics collected successfully: 2 interfaces, 113 connections, rates: 27935/26935 bytes/s
+INFO:SimplifiedCPUService:🧐✅ CPU metrics collected successfully: 3.7% usage, 4 processes
+INFO:SimplifiedMetricsService:🧐✅ Raw metrics collected successfully: CPU 3.7%, Memory 90.3%
+INFO:SimplifiedMetricsService:🧐✅ Metrics collected — HawkingtonAgent self-triggers via ResourceMonitor
+INFO:app.api.simplified_websocket_routes:🐌 TERRY PAYLOAD FIELDS: ['status', 'distributed', 'agent_name', 'agent_type', 'is_active', 'total_analyses', 'successful_analyses', 'shell_spin_count', 'energy_drinks_consumed', 'current_jitter_level', 'optimization_stats', 'personality_traits', 'override_stats']
+INFO:app.api.simplified_websocket_routes:🐌 shell_spin_count: 0
+INFO:app.api.simplified_websocket_routes:🐌 energy_drinks_consumed: 0
+INFO:app.api.simplified_websocket_routes:🎯 TRIAGE RESULT KEYS: ['status', 'triage', 'agent']
+INFO:app.api.simplified_websocket_routes:🎯 DISPOSITION: None
+INFO:app.api.simplified_websocket_routes:🎯 AGENT_DISPATCH: []
+INFO:app.api.simplified_websocket_routes:✅ Extracted 6 agent insights (cached for reuse)
+INFO:app.api.simplified_websocket_routes:🔍 Agent insights keys: ['the_stick', 'sir_hawkington', 'meth_snail', 'hamsters', 'quantum_shadow_people', 'vic_20_sage']
+INFO:app.api.simplified_websocket_routes:🔍 the_stick data: {'status': 'active', 'memory_id': '4ce2f9df-7da1-4f3a-b10c-d1db6b2b8783', 'timestamp': '2026-03-05T12:28:43.273602+00:00', 'user_id': '76c420df-efb7-4ca8-845e-d6dc3c6bfd08', 'agent_name': 'the_stick',
+INFO:app.api.simplified_websocket_routes:🔍 sir_hawkington data: {'status': 'active', 'distributed': {'distributed_enabled': True, 'agent_name': 'sir_hawkington', 'health': 'healthy', 'total_decisions': 0, 'total_messages_sent': 0, 'total_messages_received': 0, 'up
+INFO:app.api.simplified_websocket_routes:🔍 meth_snail data: {'status': 'active', 'distributed': {'distributed_enabled': True, 'agent_name': 'meth_snail', 'health': 'healthy', 'total_decisions': 0, 'total_messages_sent': 0, 'total_messages_received': 0, 'uptime
+INFO:app.api.simplified_websocket_routes:🔍 hamsters data: {'status': 'active', 'distributed': {'distributed_enabled': True, 'agent_name': 'hamsters', 'health': 'healthy', 'total_decisions': 0, 'total_messages_sent': 0, 'total_messages_received': 0, 'uptime_s
+INFO:app.api.simplified_websocket_routes:🔍 quantum_shadow_people data: {'status': 'active', 'distributed': {'distributed_enabled': True, 'agent_name': 'quantum_shadow_people', 'health': 'healthy', 'total_decisions': 0, 'total_messages_sent': 0, 'total_messages_received':
+INFO:app.api.simplified_websocket_routes:🔍 vic_20_sage data: {'status': 'active', 'distributed': AgentState(agent_name='vic_20_sage', agent_role='AI Agent', personality_traits={'coordinator': True, 'pattern_matcher': True, 'orchestrator': True, 'wise': True, 'p
+INFO:MetricsRepository:💾 SystemMetrics persisted id=1094 user=76c420df-efb7-4ca8-845e-d6dc3c6bfd08
+INFO:app.api.simplified_websocket_routes:📊 Metrics structure: ['timestamp', 'cpu_usage', 'memory_usage', 'disk_usage', 'network_sent_rate', 'network_recv_rate', 'failed_auth_attempts', 'cpu', 'memory', 'disk', 'network', 'process_count', 'system_info']
+INFO:app.api.simplified_websocket_routes:📊 Metrics size: 23014 chars
+INFO:app.api.simplified_websocket_routes:🤖 Agent insights: ['the_stick', 'sir_hawkington', 'meth_snail', 'hamsters', 'quantum_shadow_people', 'vic_20_sage']
+INFO:app.api.simplified_websocket_routes:💡 Insights: 1, Events: 0
+ERROR:app.api.simplified_websocket_routes:JSON serialization error: Object of type AgentState is not JSON serializable. Data keys: ['type', 'timestamp', 'metrics', 'agents', 'recent_insights', 'recent_events']
+ERROR:app.api.simplified_websocket_routes:Field 'agents' contains non-serializable data
+WARNING:app.api.simplified_websocket_routes:❌ Failed to send system_update - connection likely closed
+INFO:HawkPerception:🧐👁️ Perceiving memory alert: 90.4% (threshold: 80.0%)
+INFO:HawkPerception:🧐✅ Perception complete: data_quality=1.00, monocle_yeets=0, historical_confidence=0.70
+INFO:HawkReasoning:🧐🧠 Reasoning about memory alert...
+INFO:HawkReasoning:🧐✅ Reasoning complete: escalate=False, confidence=0.65, risk=medium
+ERROR:SirHawkington.Orchestrator:🧐💥 ARISTOCRATIC HORROR — Pipeline failed for memory: cannot import name 'ActionEffectivenessModel' from 'app.models.learned_thresholds' (/home/carissa/system_rebellion/backend/app/models/learned_thresholds.py)
+Traceback (most recent call last):
+  File "/home/carissa/system_rebellion/backend/app/ai_agents/sir_hawkington/hawk_orchestrator.py", line 112, in run_pipeline
+    from app.ai_agents.sir_hawkington.ML.action_selection import HawkActionSelection
+  File "/home/carissa/system_rebellion/backend/app/ai_agents/sir_hawkington/ML/action_selection.py", line 22, in <module>
+    from app.models.learned_thresholds import ActionEffectivenessModel
+ImportError: cannot import name 'ActionEffectivenessModel' from 'app.models.learned_thresholds' (/home/carissa/system_rebellion/backend/app/models/learned_thresholds.py)
+ERROR:SirHawkington.Communication:🧐💥 Pipeline returned no result for memory
+INFO:SimplifiedMetricsService:🧐📊 Collecting real system metrics from all services
+INFO:SimplifiedMemoryService:🧐✅ Memory metrics collected successfully: 89.3% usage, 10 processes analyzed, swap: 49.9%
+INFO:SimplifiedDiskService:🧐✅ Disk metrics collected successfully: 17.5% usage, 4 partitions, 10 I/O devices
+INFO:SimplifiedNetworkService:🧐✅ Network metrics collected successfully: 2 interfaces, 113 connections, rates: 2355941/2354448 bytes/s
+INFO:SimplifiedCPUService:🧐✅ CPU metrics collected successfully: 16.5% usage, 5 processes
+INFO:SimplifiedMetricsService:🧐✅ Raw metrics collected successfully: CPU 16.5%, Memory 89.3%
+INFO:SimplifiedMetricsService:🧐✅ Metrics collected — HawkingtonAgent self-triggers via ResourceMonitor
+INFO:app.api.simplified_websocket_routes:🐌 TERRY PAYLOAD FIELDS: ['status', 'distributed', 'agent_name', 'agent_type', 'is_active', 'total_analyses', 'successful_analyses', 'shell_spin_count', 'energy_drinks_consumed', 'current_jitter_level', 'optimization_stats', 'personality_traits', 'override_stats']
+INFO:app.api.simplified_websocket_routes:🐌 shell_spin_count: 0
+INFO:app.api.simplified_websocket_routes:🐌 energy_drinks_consumed: 0
+INFO:MetricsRepository:💾 SystemMetrics persisted id=1095 user=76c420df-efb7-4ca8-845e-d6dc3c6bfd08
+INFO:app.api.simplified_websocket_routes:📊 Metrics structure: ['timestamp', 'cpu_usage', 'memory_usage', 'disk_usage', 'network_sent_rate', 'network_recv_rate', 'failed_auth_attempts', 'cpu', 'memory', 'disk', 'network', 'process_count', 'system_info']
+INFO:app.api.simplified_websocket_routes:📊 Metrics size: 23139 chars
+INFO:app.api.simplified_websocket_routes:🤖 Agent insights: ['the_stick', 'sir_hawkington', 'meth_snail', 'hamsters', 'quantum_shadow_people', 'vic_20_sage']
+INFO:app.api.simplified_websocket_routes:💡 Insights: 1, Events: 0
+ERROR:app.api.simplified_websocket_routes:JSON serialization error: Object of type AgentState is not JSON serializable. Data keys: ['type', 'timestamp', 'metrics', 'agents', 'recent_insights', 'recent_events']
+ERROR:app.api.simplified_websocket_routes:Field 'agents' contains non-serializable data
+WARNING:app.api.simplified_websocket_routes:❌ Failed to send system_update - connection likely closed
