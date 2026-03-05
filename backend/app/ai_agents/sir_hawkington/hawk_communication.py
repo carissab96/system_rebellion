@@ -170,6 +170,9 @@ class HawkCommunication:
             # Register the callback that feeds alerts into the ML pipeline
             self._resource_monitor.register_alert_callback(self._handle_resource_alert)
 
+            # Start the monitoring loop so thresholds are actually checked
+            self._monitoring_task = asyncio.create_task(self._resource_monitor.start_monitoring())
+
             logger.info("🧐📊 ResourceMonitor initialized — Hawk watches ALL resources")
 
         except Exception as e:
@@ -189,7 +192,7 @@ class HawkCommunication:
                 pass
 
         if self._resource_monitor:
-            await self._resource_monitor.stop()
+            await self._resource_monitor.stop_monitoring()
 
         if self._comm_hub:
             await self._comm_hub.shutdown()
@@ -246,7 +249,7 @@ class HawkCommunication:
             'severity':        severity,
             'triage_alert_id': triage_alert_id,
             'alert_state':     alert_state,
-            'full_metrics':    {},   # Will be populated by perception layer
+            'full_metrics':    self._resource_monitor.last_metrics if self._resource_monitor else {},
         }
 
         # Run the ML pipeline

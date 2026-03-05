@@ -242,8 +242,27 @@ class StickLearning:
             f"complete={logging_complete}, anxiety_managed={anxiety_managed}"
         )
         
-        # TODO: Update database record with outcome
-        # This requires querying by timestamp and updating the success field
+        # Update database record with outcome
+        if not learning_record.learning_record_id:
+            logger.warning("📊⚠️ Cannot update database: record ID is missing.")
+            return
+
+        try:
+            from sqlalchemy import update
+            from app.models.agent_learning import AgentLearningRecord
+
+            stmt = (
+                update(AgentLearningRecord)
+                .where(AgentLearningRecord.id == int(learning_record.learning_record_id))
+                .values(success=success)
+            )
+
+            await self.db.execute(stmt)
+            await self.db.commit()
+            logger.debug(f"📊✅ Database learning record {learning_record.learning_record_id} updated with outcome.")
+        except Exception as e:
+            await self.db.rollback()
+            logger.error(f"📊💥 Failed to update learning record outcome: {e}")
     
     async def get_learning_stats(self) -> Dict[str, Any]:
         """

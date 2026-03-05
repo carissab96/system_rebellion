@@ -111,8 +111,38 @@ class HawkOrchestrator:
                 # ── STEP 3: ACTION SELECTION ──────────────────────────────────
                 from app.ai_agents.sir_hawkington.ML.action_selection import HawkActionSelection
 
-                action_layer = HawkActionSelection(self.personality.personality_traits)
-                action = action_layer.select_action(context, reasoning)
+                action_layer = HawkActionSelection(
+                    db=db,
+                    personality_traits=self.personality.personality_traits,
+                    system_id="default"
+                )
+                action = await action_layer.select_action(context, reasoning)
+
+                # ── STEP 4: EXECUTION ─────────────────────────────────────────
+                from app.ai_agents.sir_hawkington.ML.primitives import HawkPrimitiveExecutor
+                from app.ai_agents.sir_hawkington.ML.execution_planner import HawkExecutionPlanner
+                
+                primitive_executor = HawkPrimitiveExecutor()
+                execution_planner = HawkExecutionPlanner(
+                    primitive_executor=primitive_executor,
+                    effectiveness_model=action_layer.action_effectiveness
+                )
+                
+                goal = f"triage_{reasoning.risk_level}"
+                trend = full_metrics.get('trend', 'stable') if full_metrics else 'stable'
+                severity_float = context.current_value / 100.0 if context.current_value else 0.5
+                
+                plan = await execution_planner.compose_plan(
+                    goal=goal,
+                    severity=severity_float,
+                    trend=trend,
+                    context={'metrics_snapshot': full_metrics}
+                )
+                
+                execution_result_obj = await execution_planner.execute_plan(
+                    plan=plan,
+                    context={'metrics_snapshot': full_metrics}
+                )
 
                 # ── EARL GREY / MONOCLE YEET CALL SITES ──────────────────────
                 #
@@ -153,7 +183,7 @@ class HawkOrchestrator:
                         emergency=(action.priority == 'critical')
                     )
 
-                # ── STEP 4: LEARNING ──────────────────────────────────────────
+                # ── STEP 5: LEARNING ──────────────────────────────────────────
                 from app.ai_agents.sir_hawkington.ML.learning import HawkLearning
 
                 learning_layer = HawkLearning(db, self.user_id)
@@ -161,6 +191,7 @@ class HawkOrchestrator:
                     context=context,
                     reasoning=reasoning,
                     action=action,
+                    outcome_success=execution_result_obj.overall_success
                 )
 
                 # Update analysis counters
@@ -178,6 +209,7 @@ class HawkOrchestrator:
                     'context':         context,
                     'reasoning':       reasoning,
                     'action':          action,
+                    'execution_result': execution_result_obj,
                     'learning_record': learning_record,
 
                     # Personality state snapshot for emission

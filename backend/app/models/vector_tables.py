@@ -80,6 +80,7 @@ class AgentDecisionVectors(Base):
     # Decision quality metrics
     confidence_score = Column(Float, nullable=True)
     decision_summary = Column(String, nullable=True)
+    embedding_model = Column(String(100), nullable=False, default='all-MiniLM-L6-v2')
     
     # Timestamps
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))

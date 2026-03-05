@@ -124,11 +124,8 @@ class HawkWebSocket:
                     "situation_fingerprint": getattr(learning, 'situation_fingerprint', None),
                     "stored":                getattr(learning, 'storage_success', False),
                     "learning_record_id":    getattr(learning, 'learning_record_id', None),
-                },
-                # Earl grey and monocle personality data
-                personality={
-                    "earl_grey":     pipeline_result['earl_grey'],
-                    "monocle_state": pipeline_result['monocle_state'],
+                    "earl_grey":             pipeline_result.get('earl_grey'),
+                    "monocle_state":         pipeline_result.get('monocle_state'),
                 },
             )
 

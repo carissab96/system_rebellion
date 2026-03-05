@@ -327,8 +327,27 @@ class HamstersLearning:
                 outcome_notes=outcome_notes
             )
 
-        # TODO: Update AgentLearningRecord with outcome
-        # Requires querying by timestamp and updating the success field
+        # Update AgentLearningRecord with outcome
+        if not learning_record.learning_record_id:
+            logger.warning("🐹⚠️ Cannot update database: record ID is missing.")
+            return
+
+        try:
+            from sqlalchemy import update
+            from app.models.agent_learning import AgentLearningRecord
+
+            stmt = (
+                update(AgentLearningRecord)
+                .where(AgentLearningRecord.id == int(learning_record.learning_record_id))
+                .values(success=success)
+            )
+
+            await self.db.execute(stmt)
+            await self.db.commit()
+            logger.debug(f"🐹✅ Database learning record {learning_record.learning_record_id} updated with outcome.")
+        except Exception as e:
+            await self.db.rollback()
+            logger.error(f"🐹💥 Failed to update learning record outcome: {e}")
     
     async def record_sequence_outcome(
         self,

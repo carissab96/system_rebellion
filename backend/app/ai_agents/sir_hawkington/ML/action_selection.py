@@ -13,10 +13,13 @@ Personality Behaviors:
 - Aristocratic tone in communications
 """
 import logging
-from typing import Dict, Any, Optional
-from dataclasses import dataclass
+import random
+from typing import Dict, Any, Optional, List
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.learned_thresholds import ActionEffectivenessModel
 from .perception import HawkPerceptionContext
 from .reasoning import TriageReasoning
 
@@ -27,6 +30,13 @@ UTC = timezone.utc
 def utc_now() -> datetime:
     """Get current UTC time"""
     return datetime.now(UTC)
+
+
+EXPLORATION_CONFIG = {
+    'initial_epsilon': 0.35,
+    'min_epsilon': 0.15,
+    'decay_rate': 0.998,
+}
 
 
 @dataclass
@@ -48,6 +58,11 @@ class TriageAction:
     # Personality state
     monocle_state: str  # 'polished', 'adjusting', 'yeeted'
     aristocratic_confidence: float
+    
+    # ML Tracking
+    exploration: bool = False
+    epsilon: float = 0.0
+    alternatives_considered: List[str] = field(default_factory=list)
 
 
 class HawkActionSelection:
@@ -57,42 +72,72 @@ class HawkActionSelection:
     🧐 "One must select the proper course of action with aristocratic precision!"
     """
     
-    def __init__(self, personality_traits: Dict[str, Any]):
+    ACTION_MAP = {
+        'critical': ['escalate'],
+        'high': ['escalate', 'monitor'],
+        'medium': ['monitor', 'escalate', 'dismiss'],
+        'low': ['dismiss', 'monitor'],
+    }
+    
+    def __init__(self, db: AsyncSession, personality_traits: Dict[str, Any], system_id: str = "default"):
+        self.db = db
         self.personality_traits = personality_traits
+        self.system_id = system_id
         self.current_monocle_state = 'polished'
         
-    def select_action(
+        self.action_effectiveness = ActionEffectivenessModel(
+            db=db,
+            system_id=self.system_id,
+            agent_name="sir_hawkington"
+        )
+        self.epsilon = EXPLORATION_CONFIG['initial_epsilon']
+        
+    async def select_action(
         self,
         context: HawkPerceptionContext,
         reasoning: TriageReasoning
     ) -> TriageAction:
         """
-        Select the appropriate triage action based on reasoning.
-        
-        Args:
-            context: Perception context
-            reasoning: Reasoning analysis
-            
-        Returns:
-            TriageAction with selected action and details
+        Select the appropriate triage action based on reasoning and learned effectiveness.
         """
         logger.info(f"🧐⚡ Selecting action for {context.resource_type} triage...")
         
-        # Determine action type
-        action_type = self._determine_action_type(reasoning)
+        # 1) Determine viable actions purely from Action Map
+        risk_level = reasoning.risk_level
+        viable_actions = self.ACTION_MAP.get(risk_level, ['monitor'])
+        
+        # 2) Score them via EventEffectivenessModel
+        scored_actions = await self._score_viable_actions(viable_actions, risk_level, context)
+        
+        # 3) Select action (Epsilon-greedy)
+        exploration = False
+        if random.random() < self.epsilon and len(viable_actions) > 1:
+            exploration = True
+            action_type = random.choice([a for a in viable_actions if a != scored_actions[0][0]])
+            confidence = 0.3  # Low confidence for random exploration
+            logger.info(f"🧐🎲 Aristocratic curiosity — exploring {action_type} over {scored_actions[0][0]}")
+        else:
+            action_type = scored_actions[0][0]
+            confidence = scored_actions[0][1]
+            
+        # Update exploration decay for next time (in-memory for now)
+        self.epsilon = max(
+            EXPLORATION_CONFIG['min_epsilon'],
+            self.epsilon * EXPLORATION_CONFIG['decay_rate']
+        )
         
         # Select target agent
         target_agent = reasoning.target_specialist if action_type == 'escalate' else None
         
-        # Determine priority
+        # Determine priority based on action and reasoning urgency
         priority = self._determine_priority(reasoning)
         
         # Update monocle state based on data quality and confidence
-        self._update_monocle_state(context.data_quality_score, reasoning.confidence)
+        self._update_monocle_state(context.data_quality_score, confidence)
         
         # Calculate aristocratic confidence (personality-adjusted)
         aristocratic_confidence = self._calculate_aristocratic_confidence(
-            reasoning.confidence,
+            confidence,
             context.data_quality_score,
             context.monocle_yeet_count
         )
@@ -114,7 +159,10 @@ class HawkActionSelection:
             message_to_vic20=message_to_vic20,
             reasoning_summary=reasoning_summary,
             monocle_state=self.current_monocle_state,
-            aristocratic_confidence=aristocratic_confidence
+            aristocratic_confidence=aristocratic_confidence,
+            exploration=exploration,
+            epsilon=self.epsilon,
+            alternatives_considered=viable_actions
         )
         
         logger.info(
@@ -123,17 +171,36 @@ class HawkActionSelection:
         )
         
         return action
-    
-    def _determine_action_type(self, reasoning: TriageReasoning) -> str:
-        """
-        Determine the type of action to take.
-        """
-        if reasoning.should_escalate:
-            return 'escalate'
-        elif reasoning.risk_level in ['medium', 'high']:
-            return 'monitor'
-        else:
-            return 'dismiss'
+        
+    async def _score_viable_actions(self, viable_actions: List[str], risk_level: str, context: HawkPerceptionContext) -> List[tuple[str, float]]:
+        """Score actions based on expected effectiveness"""
+        scored = []
+        
+        try:
+            effectiveness_scores = await self.action_effectiveness.score_all_actions(
+                root_cause=risk_level,
+                severity=context.severity
+            )
+        except Exception as e:
+            logger.warning(f"🧐⚠️ Effectiveness model failed, falling back to basic scoring: {e}")
+            effectiveness_scores = {}
+            
+        for action in viable_actions:
+            score = effectiveness_scores.get(action, 0.5)
+            
+            # Contextual modifiers
+            if action == 'escalate' and risk_level == 'critical':
+                score += 0.3
+            elif action == 'dismiss' and context.data_quality_score < 0.5:
+                # Never confidently dismiss if data is trash
+                score -= 0.4
+                
+            score = max(0.1, min(0.99, score))
+            scored.append((action, score))
+            
+        # Sort descending
+        scored.sort(key=lambda x: x[1], reverse=True)
+        return scored
     
     def _determine_priority(self, reasoning: TriageReasoning) -> str:
         """
@@ -175,19 +242,11 @@ class HawkActionSelection:
         
         🧐 "One's confidence must be tempered by the quality of one's data!"
         """
-        # Start with base confidence
         confidence = base_confidence
-        
-        # Reduce confidence for each monocle yeet
         confidence -= (monocle_yeets * 0.05)
-        
-        # Boost confidence if data quality is excellent
         if data_quality > 0.9:
             confidence += 0.1
-        
-        # Aristocratic personality: slightly more conservative
         confidence *= 0.95
-        
         return max(0.0, min(1.0, confidence))
     
     def _build_escalation_message(
@@ -197,8 +256,6 @@ class HawkActionSelection:
     ) -> str:
         """
         Build aristocratic message to VIC-20.
-        
-        🧐 "One must communicate with proper decorum!"
         """
         message = (
             f"My dear VIC-20, I must bring to your attention a matter of some urgency. "

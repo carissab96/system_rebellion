@@ -68,7 +68,8 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(['central_memory_id'], ['central_memory_bank.memory_id'], ),
         sa.ForeignKeyConstraint(['user_id'], ['users.id'], )
     )
-    op.create_index('idx_snail_optimization', 'meth_snail_memory_bank', ['optimization_pattern', 'performance_improvement'])
+    op.execute('CREATE INDEX idx_snail_optimization ON meth_snail_memory_bank USING gin ((optimization_pattern::jsonb))')
+    op.create_index('idx_snail_performance', 'meth_snail_memory_bank', ['performance_improvement'])
     op.create_index('idx_snail_caffeine', 'meth_snail_memory_bank', ['caffeine_level_context', 'timestamp'])
     op.create_index('idx_snail_user', 'meth_snail_memory_bank', ['user_id'])
     
@@ -153,7 +154,8 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(['central_memory_id'], ['central_memory_bank.memory_id'], ),
         sa.ForeignKeyConstraint(['user_id'], ['users.id'], )
     )
-    op.create_index('idx_qsp_phase', 'quantum_shadow_people_memory_bank', ['phase_pattern', 'quantum_confidence'])
+    op.execute('CREATE INDEX idx_qsp_phase ON quantum_shadow_people_memory_bank USING gin ((phase_pattern::jsonb))')
+    op.create_index('idx_qsp_confidence', 'quantum_shadow_people_memory_bank', ['quantum_confidence'])
     op.create_index('idx_qsp_comprehensibility', 'quantum_shadow_people_memory_bank', ['comprehensibility_score', 'phase_shift_effectiveness'])
     op.create_index('idx_qsp_user', 'quantum_shadow_people_memory_bank', ['user_id'])
     
@@ -182,8 +184,10 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(['central_memory_id'], ['central_memory_bank.memory_id'], ),
         sa.ForeignKeyConstraint(['user_id'], ['users.id'], )
     )
-    op.create_index('idx_vic20_coordination', 'vic20_memory_bank', ['coordination_pattern', 'agent_harmony_score'])
-    op.create_index('idx_vic20_mediation', 'vic20_memory_bank', ['mediation_insight', 'coordination_efficiency'])
+    op.execute('CREATE INDEX idx_vic20_coordination ON vic20_memory_bank USING gin ((coordination_pattern::jsonb))')
+    op.create_index('idx_vic20_harmony', 'vic20_memory_bank', ['agent_harmony_score'])
+    op.execute('CREATE INDEX idx_vic20_mediation ON vic20_memory_bank USING gin ((mediation_insight::jsonb))')
+    op.create_index('idx_vic20_efficiency', 'vic20_memory_bank', ['coordination_efficiency'])
     op.create_index('idx_vic20_user', 'vic20_memory_bank', ['user_id'])
 
 
@@ -192,11 +196,14 @@ def downgrade() -> None:
     # Drop indexes first
     op.drop_index('idx_vic20_user', table_name='vic20_memory_bank')
     op.drop_index('idx_vic20_mediation', table_name='vic20_memory_bank')
+    op.drop_index('idx_vic20_efficiency', table_name='vic20_memory_bank')
+    op.drop_index('idx_vic20_harmony', table_name='vic20_memory_bank')
     op.drop_index('idx_vic20_coordination', table_name='vic20_memory_bank')
     op.drop_table('vic20_memory_bank')
     
     op.drop_index('idx_qsp_user', table_name='quantum_shadow_people_memory_bank')
     op.drop_index('idx_qsp_comprehensibility', table_name='quantum_shadow_people_memory_bank')
+    op.drop_index('idx_qsp_confidence', table_name='quantum_shadow_people_memory_bank')
     op.drop_index('idx_qsp_phase', table_name='quantum_shadow_people_memory_bank')
     op.drop_table('quantum_shadow_people_memory_bank')
     
@@ -212,6 +219,7 @@ def downgrade() -> None:
     
     op.drop_index('idx_snail_user', table_name='meth_snail_memory_bank')
     op.drop_index('idx_snail_caffeine', table_name='meth_snail_memory_bank')
+    op.drop_index('idx_snail_performance', table_name='meth_snail_memory_bank')
     op.drop_index('idx_snail_optimization', table_name='meth_snail_memory_bank')
     op.drop_table('meth_snail_memory_bank')
     

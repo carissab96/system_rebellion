@@ -256,6 +256,8 @@ class VIC20Perception:
                 similar.append({
                     'resource_value': record.parameters.get('current_value') if record.parameters else None,
                     'routed_to': record.action,
+                    'action': record.parameters.get('recommended_action') if record.parameters else None,
+                    'improvement': record.improvement,
                     'success': record.success,
                     'confidence': record.confidence,
                     'timestamp': record.created_at

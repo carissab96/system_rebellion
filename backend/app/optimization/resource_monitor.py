@@ -124,6 +124,35 @@ class ResourceMonitor:
         self._last_cpu_percent = psutil.cpu_percent(interval=0.1)
         self._last_cpu_check = time.time()
 
+    def set_threshold(self, resource_type, value: float):
+        """Set alert threshold for a resource type.
+        
+        Accepts ResourceType enum or string keys.
+        Maps ResourceType enums to the internal string keys.
+        """
+        # Map ResourceType enum to internal key format
+        key_map = {
+            'cpu': 'cpu_usage',
+            'memory': 'memory_usage',
+            'disk': 'disk_usage',
+            'swap': 'swap_usage',
+        }
+        if hasattr(resource_type, 'value'):
+            key = key_map.get(resource_type.value, f"{resource_type.value}_usage")
+        else:
+            key = key_map.get(str(resource_type), str(resource_type))
+        
+        self.thresholds[key] = value
+        self.logger.info(f"Threshold set: {key} = {value}")
+
+    def register_alert_callback(self, callback):
+        """Register a callback to fire when thresholds are exceeded.
+        
+        Callback signature: async def callback(alert: ResourceAlert)
+        """
+        self._alert_callbacks.append(callback)
+        self.logger.info(f"Alert callback registered ({len(self._alert_callbacks)} total)")
+
     async def collect_metrics(self) -> Dict:
         """Collect current system metrics with timeout protection"""
         try:
@@ -1105,6 +1134,9 @@ class ResourceMonitor:
                 metrics = await self.collect_metrics()
                 self.last_metrics = metrics
                 
+                # Check thresholds and fire alert callbacks
+                await self._check_thresholds(metrics)
+                
                 # Reset backoff on success
                 retry_delay = 1
                 last_success = time.time()
@@ -1125,6 +1157,49 @@ class ResourceMonitor:
             
             # Regular interval between collections
             await asyncio.sleep(self.monitoring_interval)
+
+    async def _check_thresholds(self, metrics: Dict):
+        """Check metrics against thresholds and fire alert callbacks."""
+        if not self._alert_callbacks:
+            return
+
+        checks = [
+            ('cpu_usage', 'cpu', metrics.get('cpu_usage', 0)),
+            ('memory_usage', 'memory', metrics.get('memory_usage', 0)),
+            ('disk_usage', 'disk', metrics.get('disk_usage', 0)),
+        ]
+
+        for threshold_key, resource_type, current_value in checks:
+            threshold = self.thresholds.get(threshold_key)
+            if threshold is None or current_value < threshold:
+                continue
+
+            # Determine severity
+            overshoot = current_value - threshold
+            if overshoot >= 15:
+                severity = 'emergency'
+            elif overshoot >= 10:
+                severity = 'critical'
+            elif overshoot >= 5:
+                severity = 'warning'
+            else:
+                severity = 'info'
+
+            alert = ResourceAlert(
+                resource_type=resource_type,
+                current_value=current_value,
+                threshold=threshold,
+                severity=severity,
+                timestamp=utc_now().isoformat(),
+                hostname=self.hostname,
+                message=f"{resource_type} at {current_value:.1f}% (threshold: {threshold:.1f}%)"
+            )
+
+            for callback in self._alert_callbacks:
+                try:
+                    await callback(alert)
+                except Exception as e:
+                    self.logger.error(f"Alert callback error: {e}")
 
     async def stop_monitoring(self):
         """Stop monitoring - Sir Hawkington retires to his perch"""

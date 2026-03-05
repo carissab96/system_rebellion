@@ -1,99 +1,63 @@
+#!/usr/bin/env python3
 """
-VIC-20 Primitive Executor.
-
-Primitives are the atomic operations VIC-20 can perform directly
-(not delegated to specialists). These are coordination-layer actions only.
+VIC-20 Sage's Primitive Executor
+Registers atomic coordination and routing actions.
 """
 
-import logging
-from typing import Any, Dict
+from typing import Dict, Any
+from app.ai_agents.distributed.base_primitive_executor import PrimitiveExecutor, PrimitiveDefinition, PrimitiveResult
 
-logger = logging.getLogger('VIC20PrimitiveExecutor')
-
-
-class VIC20PrimitiveExecutor:
-    """
-    Executes VIC-20's own coordination primitives.
-
-    VIC-20 does NOT fix resources directly — that is the specialists' job.
-    These primitives are coordination actions: routing, logging, monitoring.
-    """
-
-    PRIMITIVES = frozenset([
-        'route_to_specialist',
-        'log_to_stick',
-        'monitor_situation',
-        'request_status_update',
-        'escalate_to_emergency',
-    ])
-
-    async def execute(self, primitive: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Execute a VIC-20 coordination primitive.
-
-        Args:
-            primitive: Name of the primitive to execute
-            parameters: Parameters for the primitive
-
-        Returns:
-            Result dict with success, primitive, and any output
-
-        Raises:
-            ValueError: If primitive is unknown — no fallback
-        """
-        if primitive not in self.PRIMITIVES:
-            raise ValueError(
-                f"VIC20PrimitiveExecutor: unknown primitive '{primitive}'. "
-                f"Valid primitives: {sorted(self.PRIMITIVES)}"
-            )
-
-        handler = getattr(self, f'_execute_{primitive}', None)
-        if handler is None:
-            raise NotImplementedError(
-                f"VIC20PrimitiveExecutor: primitive '{primitive}' is declared but not implemented."
-            )
-
-        logger.debug(f"🖥️⚙️ Executing primitive: {primitive}")
-        return await handler(parameters)
-
-    async def _execute_route_to_specialist(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        return {
-            'success': True,
-            'primitive': 'route_to_specialist',
-            'specialist': params.get('specialist'),
-            'action': params.get('action'),
-        }
-
-    async def _execute_log_to_stick(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        return {
-            'success': True,
-            'primitive': 'log_to_stick',
-            'logged': True,
-        }
-
-    async def _execute_monitor_situation(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        return {
-            'success': True,
-            'primitive': 'monitor_situation',
-            'monitoring': True,
-            'resource_type': params.get('resource_type'),
-        }
-
-    async def _execute_request_status_update(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        return {
-            'success': True,
-            'primitive': 'request_status_update',
-            'target': params.get('target'),
-        }
-
-    async def _execute_escalate_to_emergency(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        logger.warning(
-            f"🖥️🚨 EMERGENCY ESCALATION: {params.get('resource_type')} "
-            f"at {params.get('current_value')}%"
+class VIC20PrimitiveExecutor(PrimitiveExecutor):
+    def __init__(self):
+        super().__init__("vic_20_sage")
+        
+    def _register_primitives(self):
+        self.register(PrimitiveDefinition(
+            name="route_to_primary_specialist",
+            command=None,
+            requires_sudo=False,
+            domain="coordination",
+            description="Route the alert to the primary recommended specialist."
+        ))
+        self.register(PrimitiveDefinition(
+            name="route_to_fallback",
+            command=None,
+            requires_sudo=False,
+            domain="coordination",
+            description="Route the alert to a fallback specialist."
+        ))
+        self.register(PrimitiveDefinition(
+            name="escalate_to_human",
+            command=None,
+            requires_sudo=False,
+            domain="coordination",
+            description="Escalate the alert to a human operator.",
+            risk_level=3
+        ))
+        self.register(PrimitiveDefinition(
+            name="monitor_resolution",
+            command=None,
+            requires_sudo=False,
+            domain="coordination",
+            description="Monitor the alert resolution without active routing."
+        ))
+        
+    async def _execute_python_primitive(self, name: str, context: Dict[str, Any]) -> PrimitiveResult:
+        """Execute a Python primitive for coordination."""
+        self.logger.info(f"🖥️ Executing formalized coordination action: {name}")
+        return PrimitiveResult(
+            primitive_name=name,
+            success=True,
+            pre_metrics=context.get('metrics_snapshot', {}),
+            post_metrics=context.get('metrics_snapshot', {}),
+            improvement=0.1,  # Base improvement for a successful routing decision
+            duration_seconds=0.1
         )
-        return {
-            'success': True,
-            'primitive': 'escalate_to_emergency',
-            'resource_type': params.get('resource_type'),
-            'current_value': params.get('current_value'),
-        }
+        
+    async def _collect_metrics(self) -> Dict[str, Any]:
+        """Collect metrics (mocked/passthrough for coordination agent)."""
+        return {"routing_state": "executed"}
+        
+    def _calculate_improvement(self, pre: Dict[str, Any], post: Dict[str, Any]) -> float:
+        """Improvement calculation for coordination."""
+        return 0.1

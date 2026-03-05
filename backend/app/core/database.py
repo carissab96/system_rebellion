@@ -7,8 +7,19 @@ import os
 from dotenv import load_dotenv
 
 # Load environment variables FIRST
-env_file = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), '.env.development')
-if os.path.exists(env_file):
+_backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+_project_dir = os.path.dirname(_backend_dir)
+env_file = None
+for candidate in [
+    os.path.join(_project_dir, '.env'),
+    os.path.join(_backend_dir, '.env'),
+    os.path.join(_project_dir, '.env.development'),
+    os.path.join(_backend_dir, '.env.development'),
+]:
+    if os.path.exists(candidate):
+        env_file = candidate
+        break
+if env_file:
     load_dotenv(env_file, override=True)
     print(f"✅ [database.py] Loaded environment from: {env_file}")
 

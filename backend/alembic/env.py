@@ -3,6 +3,9 @@ import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from dotenv import load_dotenv
+load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '..', '.env'))
+
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
@@ -13,7 +16,6 @@ from alembic import context
 # Import all your models so alembic can see them
 from app.models import user
 from app.models import agent_memory_banks
-from app.models import agent_events  # NEW: Three-tier event system
 from app.models import metrics
 from app.models import metrics_aggregates
 from app.models import agent_memory
