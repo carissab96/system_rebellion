@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.learned_thresholds import ActionEffectivenessModel
+from .action_effectiveness import ActionEffectivenessModel
 from .perception import StickPerceptionContext, PaperBagConsumption, HamsterTelepathyMessage
 from .reasoning import LoggingReasoning
 
