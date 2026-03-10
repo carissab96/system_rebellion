@@ -102,8 +102,7 @@ class StickActionSelection:
         self.system_id = system_id
         
         self.action_effectiveness = ActionEffectivenessModel(
-            db=db,
-            system_id=self.system_id,
+            db_session=db,
             agent_name="the_stick"
         )
         self.epsilon = EXPLORATION_CONFIG['initial_epsilon']

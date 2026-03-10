@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.learned_thresholds import ActionEffectivenessModel
+from .action_effectiveness import ActionEffectivenessModel
 from .perception import HawkPerceptionContext
 from .reasoning import TriageReasoning
 
@@ -82,12 +82,10 @@ class HawkActionSelection:
     def __init__(self, db: AsyncSession, personality_traits: Dict[str, Any], system_id: str = "default"):
         self.db = db
         self.personality_traits = personality_traits
-        self.system_id = system_id
         self.current_monocle_state = 'polished'
         
         self.action_effectiveness = ActionEffectivenessModel(
-            db=db,
-            system_id=self.system_id,
+            db_session=db,
             agent_name="sir_hawkington"
         )
         self.epsilon = EXPLORATION_CONFIG['initial_epsilon']

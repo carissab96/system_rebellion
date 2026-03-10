@@ -16,9 +16,7 @@ from typing import Dict, Any, Optional, List
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
-
-
-# from .action_effectiveness import ActionEffectivenessModel
+from .action_effectiveness import ActionEffectivenessModel
 from .perception import VIC20PerceptionContext
 from .reasoning import CoordinationReasoning
 
@@ -84,8 +82,7 @@ class VIC20ActionSelection:
         self.system_id = system_id
         
         self.action_effectiveness = ActionEffectivenessModel(
-            db=db,
-            system_id=self.system_id,
+            db_session=db,
             agent_name="vic_20_sage"
         )
         self.epsilon = EXPLORATION_CONFIG['initial_epsilon']
