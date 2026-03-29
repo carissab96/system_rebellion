@@ -807,7 +807,13 @@ class VIC20Communication:
         """Get distributed state from communication hub."""
         if self._comm_hub:
             try:
-                return self._comm_hub.get_state()
+                state = self._comm_hub.get_state()
+                if state is None:
+                    return {"is_connected": False, "agent_name": "vic_20_sage", "status": "not_initialized"}
+                from dataclasses import asdict
+                data = asdict(state)
+                data['health'] = state.health.value
+                return data
             except Exception:
                 pass
         return {

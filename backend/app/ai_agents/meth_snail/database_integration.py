@@ -810,13 +810,11 @@ class MethSnailDatabaseIntegration(BaseDatabaseIntegration):
 
     async def increment_shell_spin_count(self, user_id: str) -> None:
         """Record a shell spin incident in central memory bank."""
-        if not self._initialized:
-            await self.initialize()
-            
+        await self.ensure_initialized()
+
         try:
             memory_id = str(uuid.uuid4())
-            
-            # Shell spins are always high priority
+
             memory_entry = CentralMemoryBank(
                 memory_id=memory_id,
                 created_at=datetime.utcnow(),
@@ -854,62 +852,63 @@ class MethSnailDatabaseIntegration(BaseDatabaseIntegration):
                 times_referenced=0,
                 successful_applications=0
             )
-            
-            self.session.add(memory_entry)
-            await self.session.commit()
-            
-            # Pin shell spin memory (priority >= 8)
-            await self._pin_shell_spin_memory(user_id, memory_id)
-            
-            # Check for shell spin patterns
-            await self._check_for_shell_spin_patterns(user_id, memory_id)
-            
+
+            async for session in self.get_session():
+                try:
+                    session.add(memory_entry)
+                    await session.commit()
+
+                    await self._pin_shell_spin_memory(user_id, memory_id)
+                    await self._check_for_shell_spin_patterns(user_id, memory_id)
+                except Exception as e:
+                    await session.rollback()
+                    raise
+
         except Exception as e:
-            await self.session.rollback()
             self.logger.error(f"Failed to record shell spin incident: {e}")
             raise
 
     async def get_jitter_levels(self, user_id: str, limit: int = 100) -> List[Dict[str, Any]]:
         """Get recent jitter level history from central memory bank."""
-        if not self._initialized:
-            await self.initialize()
-            
+        await self.ensure_initialized()
+
         try:
-            result = await self.session.execute(
-                select(CentralMemoryBank)
-                .where(CentralMemoryBank.agent_name == self.agent_name)
-                .where(CentralMemoryBank.user_id == user_id)
-                .where(CentralMemoryBank.event_type == EventTypes.STATE_CHANGED.value)
-                .where(CentralMemoryBank.subject_kind == "jitter_level")
-                .order_by(desc(CentralMemoryBank.occurred_at))
-                .limit(limit)
-            )
-            
-            jitter_records = result.scalars().all()
-            
-            # Apply learned patterns to jitter data
-            jitter_patterns = await get_agent_learned_patterns(
-                self.session,
-                user_id,
-                self.agent_name,
-                pattern_type="caffeine_management"
-            )
-            
-            return [
-                {
-                    'timestamp': record.occurred_at,
-                    'current_jitter_level': record.details.get('current_jitter_level', 0.0),
-                    'caffeine_level_mg': record.details.get('caffeine_level_mg', 0.0),
-                    'focus_level': record.details.get('focus_level', 0.5),
-                    'energy_source': record.details.get('energy_source', 'none'),
-                    'jitter_trend': record.details.get('jitter_trend', 'stable'),
-                    'pattern_match': self._check_jitter_pattern_match(
-                        record.details.get('current_jitter_level', 0.0),
-                        jitter_patterns
-                    )
-                } for record in jitter_records
-            ]
-            
+            async for session in self.get_session():
+                result = await session.execute(
+                    select(CentralMemoryBank)
+                    .where(CentralMemoryBank.agent_name == self.agent_name)
+                    .where(CentralMemoryBank.user_id == user_id)
+                    .where(CentralMemoryBank.event_type == EventTypes.STATE_CHANGED.value)
+                    .where(CentralMemoryBank.subject_kind == "jitter_level")
+                    .order_by(desc(CentralMemoryBank.occurred_at))
+                    .limit(limit)
+                )
+
+                jitter_records = result.scalars().all()
+
+                jitter_patterns = await get_agent_learned_patterns(
+                    session,
+                    user_id,
+                    self.agent_name,
+                    pattern_type="caffeine_management"
+                )
+
+                return [
+                    {
+                        'timestamp': record.occurred_at,
+                        'current_jitter_level': record.details.get('current_jitter_level', 0.0),
+                        'caffeine_level_mg': record.details.get('caffeine_level_mg', 0.0),
+                        'focus_level': record.details.get('focus_level', 0.5),
+                        'energy_source': record.details.get('energy_source', 'none'),
+                        'jitter_trend': record.details.get('jitter_trend', 'stable'),
+                        'pattern_match': self._check_jitter_pattern_match(
+                            record.details.get('current_jitter_level', 0.0),
+                            jitter_patterns
+                        )
+                    } for record in jitter_records
+                ]
+            return []
+
         except Exception as e:
             self.logger.error(f"Failed to get jitter levels: {e}")
             raise
