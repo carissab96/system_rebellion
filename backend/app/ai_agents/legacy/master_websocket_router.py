@@ -13,8 +13,8 @@ from typing import Dict, Any, Optional, List
 from datetime import datetime, timezone
 
 # Import individual handlers for non-metrics operations
-from .sir_hawkington.hawks_websocket_integration import get_hawkington_websocket_handler
-from .meth_snail.websocket_handler import get_meth_snail_ws_handler
+from .hawk_websocket import HawkWebSocket
+from .terry_websocket import TerryWebSocket
 from .hamsters.hamsters_websocket_integration import get_hamsters_websocket_handler
 from .the_stick.sticks_websocket_integration import get_stick_websocket_handler
 from .vic_20_sage.vic20_websocket_handler import get_vic20_sage_websocket_handler

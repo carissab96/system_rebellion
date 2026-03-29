@@ -1,51 +1,53 @@
+#!/usr/bin/env python3
 """
-VIC-20 Execution Planner.
-
-Translates a CoordinationAction into a concrete coordination_request payload
-that can be sent to a specialist via the message bus.
+VIC-20 Sage's Execution Planner
+Maps coordination goals to routing sequences.
 """
 
 import logging
-from typing import Any, Dict, Optional
-
-from .action_selection import CoordinationAction
-from .reasoning import CoordinationReasoning
-from .perception import VIC20PerceptionContext
+from typing import Dict, List, Any
+from app.ai_agents.distributed.base_execution_planner import ExecutionPlanner, ExecutionPlan, PrimitiveResult
 
 logger = logging.getLogger('VIC20ExecutionPlanner')
 
+COLD_START_HYPOTHESES = {
+    'route_critical': ['route_to_primary_specialist', 'escalate_to_human'],
+    'route_high': ['route_to_primary_specialist'],
+    'route_medium': ['route_to_fallback'],
+    'route_low': ['monitor_resolution'],
+}
 
-class VIC20ExecutionPlanner:
-    """
-    Builds the coordination_request payload for a specialist.
+class VIC20ExecutionPlanner(ExecutionPlanner):
+    def __init__(self, primitive_executor, effectiveness_model):
+        super().__init__(
+            agent_name="vic_20_sage",
+            primitive_executor=primitive_executor,
+            effectiveness_model=effectiveness_model,
+            cold_start_hypotheses=COLD_START_HYPOTHESES
+        )
 
-    Responsibilities:
-    - Translate VIC-20's internal action into a specialist-facing request
-    - Attach triage_alert_id for chain tracking
-    - Attach full_metrics so the specialist can make informed decisions
-    """
+    async def _mid_sequence_decision(
+        self, plan: ExecutionPlan, results_so_far: List[PrimitiveResult], current_step: int, context: Dict[str, Any]
+    ) -> str:
+        """Routing sequences usually fire completely, so just continue."""
+        return 'continue'
+
+    def _abort_reason(self, plan: ExecutionPlan, results: List[PrimitiveResult], step: int) -> str:
+        return "Routing primitive failed."
+
+    async def _goal_satisfied(self, goal: str, current_metrics: Dict[str, Any]) -> bool:
+        """Coordination goals are satisfied once the routing decision is executed."""
+        return True
 
     def build_coordination_request(
         self,
-        context: VIC20PerceptionContext,
-        reasoning: CoordinationReasoning,
-        action: CoordinationAction,
+        context: Any,
+        reasoning: Any,
+        action: Any,
         triage_data: Dict[str, Any],
-        triage_alert_id: Optional[str] = None,
+        triage_alert_id: str = None,
     ) -> Dict[str, Any]:
-        """
-        Build the coordination_request payload to send to the specialist.
-
-        Args:
-            context: VIC-20 perception context
-            reasoning: VIC-20 reasoning result
-            action: VIC-20 action selection result
-            triage_data: Raw triage alert from Hawk (contains full_metrics)
-            triage_alert_id: Chain tracking ID from Hawk
-
-        Returns:
-            Dict ready to be sent as COORDINATION_REQUEST payload
-        """
+        """Retained from legacy planner for orchestrator compatibility."""
         request = {
             'resource_type': context.resource_type,
             'current_value': context.current_value,
@@ -53,33 +55,14 @@ class VIC20ExecutionPlanner:
             'severity': context.severity,
             'full_metrics': triage_data.get('full_metrics', {}),
             'recommendation': {
-                'action': action.recommended_action,
+                'action': getattr(action, 'recommended_action', 'unknown'),
                 'confidence': action.confidence,
-                'parameters': action.action_parameters,
+                'parameters': getattr(action, 'action_parameters', {}),
             },
             'from_coordinator': 'vic_20_sage',
-            'triage_confidence': context.hawk_confidence,
-            'vic20_message': action.message_to_specialist,
-            'urgency': reasoning.urgency_level,
+            'triage_confidence': getattr(context, 'hawk_confidence', 0.5),
+            'vic20_message': getattr(action, 'message_to_specialist', ''),
+            'urgency': getattr(reasoning, 'urgency_level', 'normal'),
             'triage_alert_id': triage_alert_id,
         }
-
-        logger.debug(
-            f"🖥️📋 Built coordination_request for {action.target_specialist}: "
-            f"action={action.recommended_action}, urgency={reasoning.urgency_level}"
-        )
-
         return request
-
-    def validate_request(self, request: Dict[str, Any]) -> bool:
-        """
-        Validate that a coordination_request has all required fields.
-        Raises ValueError if invalid — no silent defaults.
-        """
-        required = ['resource_type', 'current_value', 'threshold', 'severity', 'recommendation']
-        missing = [k for k in required if k not in request]
-        if missing:
-            raise ValueError(
-                f"VIC20ExecutionPlanner: coordination_request missing required fields: {missing}"
-            )
-        return True

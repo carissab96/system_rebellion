@@ -236,7 +236,7 @@ class ActionEffectivenessModel:
         )
 
         self.db.add(record)
-        await self.db.flush()
+        await self.db.commit()
 
         self._invalidate_cache(pattern)
 

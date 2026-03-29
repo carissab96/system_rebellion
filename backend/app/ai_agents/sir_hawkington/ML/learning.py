@@ -119,15 +119,43 @@ class HawkLearning:
             success=outcome_success
         )
         
-        # Hawk is ephemeral — no DB writes, no learning records.
-        # Triage data lives only in memory for the duration of this call.
-        learning_record.storage_success = False
-        learning_record.situation_fingerprint = f"{context.resource_type}_{context.severity}_{action.action_type}"
+        # Generate fingerprint
+        fingerprint = f"{context.resource_type}_{context.severity}_{action.action_type}"
+        learning_record.situation_fingerprint = fingerprint
 
-        logger.info(
-            f"🧐✅ Triage context recorded in-memory: {action.action_type} for {context.resource_type}, "
-            f"confidence={action.confidence:.2f} (ephemeral — no DB write)"
-        )
+        # Persist to database
+        try:
+            db_record = AgentLearningRecord(
+                agent_name='sir_hawkington',
+                action=action.action_type,
+                confidence=action.confidence,
+                success=outcome_success,
+                fingerprint_l1=context.resource_type,
+                fingerprint_l2=context.severity,
+                fingerprint_l3=action.action_type,
+                parameters={
+                    'current_value': context.current_value,
+                    'threshold': context.threshold,
+                    'should_escalate': reasoning.should_escalate,
+                    'risk_level': reasoning.risk_level,
+                    'data_quality': context.data_quality_score
+                }
+            )
+            
+            self.db.add(db_record)
+            await self.db.commit()
+            
+            learning_record.learning_record_id = str(db_record.id)
+            learning_record.storage_success = True
+            
+            logger.info(
+                f"🧐✅ Triage context recorded in DB: {action.action_type} for {context.resource_type}, "
+                f"confidence={action.confidence:.2f}"
+            )
+        except Exception as e:
+            await self.db.rollback()
+            logger.error(f"🧐💥 Failed to store learning record: {e}")
+            learning_record.storage_success = False
 
         return learning_record
     
@@ -150,8 +178,25 @@ class HawkLearning:
             f"notes={outcome_notes or 'none'}"
         )
         
-        # TODO: Update database record with outcome
-        # This requires querying by timestamp and updating the success field
+        if not learning_record.storage_success or not learning_record.learning_record_id:
+            logger.warning("🧐⚠️ Cannot update database: record was never successfully stored initally.")
+            return
+
+        try:
+            from sqlalchemy import select, update
+            
+            stmt = (
+                update(AgentLearningRecord)
+                .where(AgentLearningRecord.id == int(learning_record.learning_record_id))
+                .values(success=success)
+            )
+            
+            await self.db.execute(stmt)
+            await self.db.commit()
+            logger.debug(f"🧐✅ Database learning record {learning_record.learning_record_id} updated with outcome.")
+        except Exception as e:
+            await self.db.rollback()
+            logger.error(f"🧐💥 Failed to update learning record outcome: {e}")
     
     async def get_learning_stats(self) -> Dict[str, Any]:
         """

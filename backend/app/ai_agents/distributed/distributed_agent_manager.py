@@ -43,10 +43,10 @@ class DistributedAgentManager:
             # This breaks the circular dependency chain
             from app.ai_agents.sir_hawkington.hawkington_agent import HawkingtonAgent
             from app.ai_agents.meth_snail.terry_agent import TerryAgent
-            from app.ai_agents.hamsters.distributed_hamsters import HamstersDistributed
-            from app.ai_agents.quantum_shadow_people.distributed_qsp import QuantumShadowPeopleDistributed
-            from app.ai_agents.the_stick.distributed_stick import TheStickDistributed
-            from app.ai_agents.vic_20_sage.distributed_vic20 import VIC20SageDistributed
+            from app.ai_agents.hamsters.hamsters_agent import HamstersAgent
+            from app.ai_agents.quantum_shadow_people.qsp_agent import QSPAgent
+            from app.ai_agents.the_stick.stick_agent import StickAgent
+            from app.ai_agents.vic_20_sage.vic20_agent import VIC20Agent
             from app.api.endpoints.distributed_agents import register_agent
             from app.ai_agents.distributed.behavior_tracker import get_behavior_tracker
             
@@ -77,29 +77,29 @@ class DistributedAgentManager:
             logger.info("✅ Terry the Meth Snail initialized")
             
             # The Hamsters - Disk Monitor (Steve, Bob and Carl)
-            hamsters = HamstersDistributed(db_getter=self.db_getter, user_id=self.user_id)
-            await hamsters.initialize_distributed(self.redis_client)
+            hamsters = HamstersAgent(db_getter=self.db_getter, user_id=self.user_id)
+            await hamsters.initialize(self.redis_client)
             self.agents["hamsters"] = hamsters
             register_agent("hamsters", hamsters)
             logger.info("✅ The Hamsters initialized (Steve, Bob and Carl)")
             
             # Quantum Shadow People - Network Monitor
-            shadows = QuantumShadowPeopleDistributed(db_getter=self.db_getter, user_id=self.user_id)
-            await shadows.initialize_distributed(self.redis_client)
+            shadows = QSPAgent(db_getter=self.db_getter, user_id=self.user_id)
+            await shadows.initialize(self.redis_client)
             self.agents["quantum_shadow_people"] = shadows
             register_agent("quantum_shadow_people", shadows)
             logger.info("✅ Quantum Shadow People initialized")
             
             # The Stick - Learning Coordinator
-            stick = TheStickDistributed(db_getter=self.db_getter, user_id=self.user_id)
-            await stick.initialize_distributed(self.redis_client)
+            stick = StickAgent(db_getter=self.db_getter, user_id=self.user_id)
+            await stick.initialize(self.redis_client)
             self.agents["the_stick"] = stick
             register_agent("the_stick", stick)
             logger.info("✅ The Stick initialized")
             
             # VIC-20 Sage - Orchestrator
-            vic20 = VIC20SageDistributed(db_getter=self.db_getter, user_id=self.user_id)
-            await vic20.initialize_distributed(self.redis_client)
+            vic20 = VIC20Agent(db_getter=self.db_getter, user_id=self.user_id)
+            await vic20.initialize(self.redis_client)
             self.agents["vic_20_sage"] = vic20
             register_agent("vic_20_sage", vic20)
             logger.info("✅ VIC-20 Sage initialized")

@@ -1,7 +1,12 @@
 from dataclasses import dataclass
 from typing import Dict, Any, Optional, List
 from enum import Enum
-from datetime import datetime
+from datetime import datetime, timezone
+
+
+def utc_now() -> datetime:
+    """Get current UTC time"""
+    return datetime.now(timezone.utc)
 
 class AnxietyLevel(Enum):
     CALM = "calm"  # 0-20%

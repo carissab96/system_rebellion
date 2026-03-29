@@ -263,6 +263,27 @@ class QSPLearning:
                 f"resolved={threat_resolved}, false_positive={false_positive}"
             )
 
+        # Update persistent AgentLearningRecord with final outcome
+        if learning_record.learning_record_id:
+            try:
+                from sqlalchemy import update
+                from app.models.agent_learning import AgentLearningRecord
+                
+                stmt = (
+                    update(AgentLearningRecord)
+                    .where(AgentLearningRecord.id == int(learning_record.learning_record_id))
+                    .values(
+                        success=success,
+                        what_worked=learning_record.response_strategy if success else None,
+                        what_failed=None if success else learning_record.response_strategy,
+                    )
+                )
+                await self.db.execute(stmt)
+                await self.db.commit()
+            except Exception as e:
+                await self.db.rollback()
+                logger.error(f"👻💥 Failed to update AgentLearningRecord: {e}")
+
         # Record in learned thresholds for each relevant metric
         if pre_metrics:
             for metric_name in ('suspicious_connections', 'network_anomalies', 'total_connections', 'failed_auth_attempts'):

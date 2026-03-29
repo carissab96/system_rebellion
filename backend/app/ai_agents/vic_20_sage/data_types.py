@@ -1,8 +1,15 @@
 # /agents/vic20_sage/data_types.py
 from dataclasses import dataclass
 from typing import Dict, Any, List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
+
+
+UTC = timezone.utc
+
+
+def utc_now() -> datetime:
+    return datetime.now(UTC)
 
 class CoordinationState(Enum):
     """VIC-20 Sage coordination states"""
@@ -30,6 +37,14 @@ class AncientWisdomPrinciple(Enum):
     PATIENCE_AND_PERSISTENCE = "patience_and_persistence"
     MEMORY_CONSERVATION = "memory_conservation"
     PATTERN_RECOGNITION = "pattern_recognition"
+
+class AncientWisdom(Enum):
+    """Ancient wisdom principles for coordination decisions"""
+    HARMONY_OF_OPPOSITES = "What pulls apart also holds together"
+    PATIENCE_OF_STONE = "The mountain moves not, yet shapes the wind"
+    CHAOS_AS_TEACHER = "In disorder, find the pattern"
+    STRENGTH_IN_DIFFERENCE = "The oak and reed both survive the storm"
+    CAFFEINATED_MEDITATION = "Even the energized must sometimes rest"
 
 @dataclass
 class VIC20Decision:
@@ -334,9 +349,11 @@ VIC20_COORDINATION_CONFIG = {
 
 # Export all coordination data types
 __all__ = [
+    "utc_now",
     "CoordinationState",
     "VIC20DecisionType", 
     "AncientWisdomPrinciple",
+    "AncientWisdom",
     "VIC20Decision",
     "SystemSynthesisData",
     "AgentHarmonySnapshot",

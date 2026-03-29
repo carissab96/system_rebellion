@@ -96,7 +96,7 @@ class VectorStorageService:
                         "event_type": event_type_str,
                         "priority": priority,
                         "occurred_at": occurred_at,
-                        "embedding": embedding,
+                        "embedding": str(embedding),
                         "decision_text": decision_text,
                         "decision_summary": decision_summary,
                         "metadata": metadata_json,
@@ -167,7 +167,7 @@ class VectorStorageService:
             # Build query with optional filters
             where_clauses = []
             params = {
-                "embedding": query_embedding,
+                "embedding": str(query_embedding),
                 "limit": limit,
                 "threshold": similarity_threshold
             }
@@ -288,7 +288,7 @@ class VectorStorageService:
                         "first_observed": first_observed,
                         "last_observed": last_observed,
                         "occurrence_count": occurrence_count,
-                        "embedding": embedding,
+                        "embedding": str(embedding),
                         "confidence_score": confidence_score,
                         "metadata": metadata_json,
                         "pattern_summary": pattern_summary,
@@ -396,7 +396,7 @@ class VectorStorageService:
                         "secondary_agent": secondary_agent or "broadcast",
                         "interaction_type": interaction_type,
                         "interaction_text": interaction_text,
-                        "embedding": embedding,
+                        "embedding": str(embedding),
                         "occurred_at": occurred_at,
                         "user_id": user_id,
                         "outcome": outcome,

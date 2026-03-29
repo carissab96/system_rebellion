@@ -124,6 +124,8 @@ class AuthFailureMonitor:
                 f"Cannot read {self._log_path} — permission denied. "
                 f"Run with appropriate permissions or add user to adm group."
             )
+            # Stop retrying — one warning is enough, don't spam every cycle
+            self._log_path = None
         except Exception as e:
             logger.error(f"Error polling auth log: {e}")
 

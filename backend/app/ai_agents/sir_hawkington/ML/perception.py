@@ -149,11 +149,16 @@ class HawkPerception:
         quality_score = 1.0
         missing_metrics = []
         
-        # Check for required metrics
-        required_metrics = ['cpu', 'memory', 'disk']
-        for metric in required_metrics:
-            if metric not in full_metrics or full_metrics[metric] is None:
-                missing_metrics.append(metric)
+        # Check for required metrics (mapping to ResourceMonitor keys)
+        required_metrics = {
+            'cpu': 'cpu_usage',
+            'memory': 'memory_usage',
+            'disk': 'disk_usage'
+        }
+        
+        for name, key in required_metrics.items():
+            if key not in full_metrics or full_metrics[key] is None:
+                missing_metrics.append(name)
                 quality_score -= 0.2
         
         # Check for stale data

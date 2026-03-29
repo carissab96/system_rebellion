@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 INFO:     Will watch for changes in these directories: ['/home/carissab/Documents/system_rebellion/backend']
 INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
 INFO:     Started reloader process [3952] using StatReload
@@ -21482,3 +21483,6 @@ INFO:StateManager.quantum_shadow_people:💾 REDIS SAVE: quantum_shadow_people s
 INFO:StateManager.vic_20_sage:💾 REDIS SAVE: vic_20_sage state | decisions=0 | msgs_sent=309 | health=healthy | uptime=48762s
 INFO:StateManager.the_stick:💾 REDIS SAVE: the_stick state | decisions=0 | msgs_sent=0 | health=healthy | uptime=48762s
 INFO:StateManager.meth_snail:💾 REDIS SAVE: meth_snail state | decisions=0 | msgs_sent=188 | health=healthy | uptime=48762s
+=======
+sudo: uvicorn: command not found
+>>>>>>> 6cce8b5156dad09ff3ee0a873c82a6e9c3363d61
