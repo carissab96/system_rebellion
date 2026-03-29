@@ -96,11 +96,11 @@ class HawkPersonalityState:
         # The ML reasoning layer uses these; they are tunable over time.
         from app.optimization.resource_monitor import ResourceType
         self.resource_thresholds = {
-            ResourceType.CPU:     70.0,
-            ResourceType.MEMORY:  80.0,
-            ResourceType.DISK:    85.0,
-            ResourceType.NETWORK: 80.0,
-            ResourceType.SWAP:    60.0,
+            ResourceType.CPU:     10.0,
+            ResourceType.MEMORY:  20.0,
+            ResourceType.DISK:    30.0,
+            ResourceType.NETWORK: 20.0,
+            ResourceType.SWAP:    10.0,
         }
 
         # === PERSONALITY TRAITS ===
